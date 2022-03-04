@@ -229,6 +229,16 @@ SELECT * FROM journal
   ORDER BY date_from DESC
   LIMIT :limit;
 
+filteredByTaggedWithId:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND id IN (SELECT journal_id FROM tagged WHERE tag_entity_id = :tag_id)
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
+  ORDER BY date_from DESC
+  LIMIT :limit;
+
 filteredTasks:
 SELECT * FROM journal
   WHERE type IN :types
@@ -385,6 +395,9 @@ DELETE FROM tagged;
 entryIdsForTagId:
 SELECT journal_id FROM tagged
   WHERE tag_entity_id = :tag_id;
+
+countTagged:
+SELECT COUNT(*) FROM tagged;
 
 linkedEntriesFor:
 SELECT to_id FROM linked_entries

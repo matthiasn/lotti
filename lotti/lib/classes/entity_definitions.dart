@@ -150,6 +150,11 @@ class DashboardItem with _$DashboardItem {
     required String surveyName,
   }) = DashboardSurveyItem;
 
+  factory DashboardItem.storyTimeChart({
+    required String storyTagId,
+    required String color,
+  }) = DashboardStoryTimeItem;
+
   factory DashboardItem.fromJson(Map<String, dynamic> json) =>
       _$DashboardItemFromJson(json);
 }

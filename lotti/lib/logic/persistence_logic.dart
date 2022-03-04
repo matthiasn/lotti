@@ -749,6 +749,7 @@ class PersistenceLogic {
       int res = await _journalDb.updateJournalEntity(journalEntity);
       debugPrint('updateDbEntity res $res');
       await saveJournalEntityJson(journalEntity);
+      await _journalDb.addTagged(journalEntity);
 
       if (enqueueSync) {
         await _outboxService.enqueueMessage(

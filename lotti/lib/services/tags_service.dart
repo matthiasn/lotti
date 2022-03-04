@@ -25,6 +25,22 @@ class TagsService {
     return tagsById[id];
   }
 
+  List<StoryTag> getAllStoryTags() {
+    List<StoryTag> storyTags = [];
+
+    for (TagEntity tag in tagsById.values) {
+      tag.map(
+        genericTag: (_) {},
+        personTag: (_) {},
+        storyTag: (StoryTag storyTag) {
+          storyTags.add(storyTag);
+        },
+      );
+    }
+
+    return storyTags;
+  }
+
   List<String> getClipboard() {
     return _clipboard;
   }

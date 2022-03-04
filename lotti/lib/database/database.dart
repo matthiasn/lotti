@@ -162,17 +162,25 @@ class JournalDb extends _$JournalDb {
     return VclockStatus.b_gt_a;
   }
 
+  Future<void> insertTag(String id, String tagId) async {
+    try {
+      await into(tagged).insert(TaggedWith(
+        id: uuid.v1(),
+        journalId: id,
+        tagEntityId: tagId,
+      ));
+    } catch (ex) {
+      debugPrint(ex.toString());
+    }
+  }
+
   Future<void> addTagged(JournalEntity journalEntity) async {
     String id = journalEntity.meta.id;
     List<String> tagIds = journalEntity.meta.tagIds ?? [];
     await deleteTaggedForId(id);
 
     for (String tagId in tagIds) {
-      into(tagged).insert(TaggedWith(
-        id: uuid.v1(),
-        journalId: id,
-        tagEntityId: tagId,
-      ));
+      insertTag(id, tagId);
     }
   }
 
@@ -261,6 +269,20 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Stream<List<JournalEntity>> watchJournalEntitiesByTag({
+    required String tagId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    int limit = 1000,
+  }) {
+    return filteredByTaggedWithId(
+      tagId,
+      rangeStart,
+      rangeEnd,
+      limit,
+    ).watch().map(entityStreamMapper);
+  }
+
   Stream<List<JournalEntity>> watchTasks({
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
@@ -324,6 +346,10 @@ class JournalDb extends _$JournalDb {
 
   Stream<int> watchJournalCount() {
     return countJournalEntries().watch().map((List<int> res) => res.first);
+  }
+
+  Stream<int> watchTaggedCount() {
+    return countTagged().watch().map((List<int> res) => res.first);
   }
 
   Future<int> getJournalCount() async {
@@ -559,8 +585,7 @@ class JournalDb extends _$JournalDb {
     return linesAffected;
   }
 
-  Future<void> recreateTagged() async {
-    deleteTagged();
+  Future<void> recreateTaggedLinks() async {
     int count = await getJournalCount();
     int pageSize = 100;
     int pages = (count / pageSize).ceil();
@@ -574,6 +599,10 @@ class JournalDb extends _$JournalDb {
         await addTagged(entry);
       }
     }
+  }
+
+  Future<void> deleteTaggedLinks() async {
+    await deleteTagged();
   }
 }
 

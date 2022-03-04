@@ -2,13 +2,17 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
+import 'package:lotti/widgets/pages/settings/dashboards/chart_multi_select.dart';
+import 'package:lotti/widgets/pages/settings/dashboards/dashboard_item_card.dart';
 import 'package:lotti/widgets/pages/settings/form_text_field.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
@@ -28,6 +32,7 @@ class DashboardDetailRoute extends StatefulWidget {
 }
 
 class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
+  final TagsService tagsService = getIt<TagsService>();
   final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
@@ -140,6 +145,32 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
     }
   }
 
+  void onConfirmAddStoryTimeType(List<DashboardStoryTimeItem?> selection) {
+    dashboardItems = dashboardItems ?? widget.dashboard.items;
+
+    for (DashboardStoryTimeItem? selected in selection) {
+      if (selected != null) {
+        bool exists = dashboardItems!.where(
+          (DashboardItem item) {
+            return item.maybeMap(
+              storyTimeChart: (storyTime) =>
+                  storyTime.storyTagId == selected.storyTagId,
+              orElse: () => false,
+            );
+          },
+        ).isNotEmpty;
+
+        if (!exists) {
+          setState(() {
+            dashboardItems?.add(
+              selected,
+            );
+          });
+        }
+      }
+    }
+  }
+
   void dismissItem(int index) {
     setState(() {
       dashboardItems = dashboardItems ?? widget.dashboard.items;
@@ -189,6 +220,17 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
           return MultiSelectItem<DashboardWorkoutItem>(
             item!,
             item.displayName,
+          );
+        }).toList();
+
+        final List<MultiSelectItem<DashboardStoryTimeItem>> storySelectItems =
+            tagsService.getAllStoryTags().map((StoryTag storyTag) {
+          return MultiSelectItem<DashboardStoryTimeItem>(
+            DashboardStoryTimeItem(
+              storyTagId: storyTag.id,
+              color: '#0000FF',
+            ),
+            storyTag.tag,
           );
         }).toList();
 
@@ -331,236 +373,40 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                             ),
                           ),
                           if (measurableSelectItems.isNotEmpty)
-                            SizedBox(
-                              width: 280,
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 16.0,
-                                  right: 16.0,
-                                  top: 16,
-                                ),
-                                child:
-                                    MultiSelectDialogField<MeasurableDataType?>(
-                                  searchable: true,
-                                  backgroundColor: AppColors.bodyBgColor,
-                                  items: measurableSelectItems,
-                                  initialValue: const [],
-                                  title: Text(
-                                    "Add Measurement Charts",
-                                    style: titleStyle,
-                                  ),
-                                  checkColor: AppColors.entryTextColor,
-                                  selectedColor: Colors.blue,
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.withOpacity(0.1),
-                                    borderRadius: const BorderRadius.all(
-                                      Radius.circular(40),
-                                    ),
-                                    border: Border.all(
-                                      color: AppColors.entryTextColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  itemsTextStyle: multiSelectStyle,
-                                  selectedItemsTextStyle:
-                                      multiSelectStyle.copyWith(
-                                    fontWeight: FontWeight.normal,
-                                  ),
-                                  unselectedColor: AppColors.entryTextColor,
-                                  searchIcon: Icon(
-                                    Icons.search,
-                                    size: 32,
-                                    color: AppColors.entryTextColor,
-                                  ),
-                                  searchTextStyle: formLabelStyle,
-                                  searchHintStyle: formLabelStyle,
-                                  buttonIcon: Icon(
-                                    MdiIcons.tapeMeasure,
-                                    color: AppColors.entryTextColor,
-                                  ),
-                                  buttonText: Text(
-                                    "Add Measurement Charts",
-                                    style: TextStyle(
-                                      color: AppColors.entryTextColor,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  onConfirm: onConfirmAddMeasurement,
-                                ),
-                              ),
+                            ChartMultiSelect<MeasurableDataType>(
+                              multiSelectItems: measurableSelectItems,
+                              onConfirm: onConfirmAddMeasurement,
+                              title: 'Add Measurement Charts',
+                              buttonText: 'Add Measurement Charts',
+                              iconData: MdiIcons.tapeMeasure,
                             ),
-                          SizedBox(
-                            width: 280,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 16.0,
-                                right: 16.0,
-                                top: 16,
-                              ),
-                              child: MultiSelectDialogField<HealthTypeConfig?>(
-                                searchable: true,
-                                backgroundColor: AppColors.bodyBgColor,
-                                items: healthSelectItems,
-                                initialValue: const [],
-                                title: Text(
-                                  "Add Health Charts",
-                                  style: titleStyle,
-                                ),
-                                checkColor: AppColors.entryTextColor,
-                                selectedColor: Colors.blue,
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
-                                  borderRadius: const BorderRadius.all(
-                                    Radius.circular(40),
-                                  ),
-                                  border: Border.all(
-                                    color: AppColors.entryTextColor,
-                                    width: 2,
-                                  ),
-                                ),
-                                itemsTextStyle: multiSelectStyle,
-                                selectedItemsTextStyle:
-                                    multiSelectStyle.copyWith(
-                                  fontWeight: FontWeight.normal,
-                                ),
-                                unselectedColor: AppColors.entryTextColor,
-                                searchIcon: Icon(
-                                  Icons.search,
-                                  size: 32,
-                                  color: AppColors.entryTextColor,
-                                ),
-                                searchTextStyle: formLabelStyle,
-                                searchHintStyle: formLabelStyle,
-                                buttonIcon: Icon(
-                                  MdiIcons.stethoscope,
-                                  color: AppColors.entryTextColor,
-                                ),
-                                buttonText: Text(
-                                  "Add Health Charts",
-                                  style: TextStyle(
-                                    color: AppColors.entryTextColor,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                onConfirm: onConfirmAddHealthType,
-                              ),
-                            ),
+                          ChartMultiSelect<HealthTypeConfig>(
+                            multiSelectItems: healthSelectItems,
+                            onConfirm: onConfirmAddHealthType,
+                            title: 'Add Health Charts',
+                            buttonText: 'Add Health Charts',
+                            iconData: MdiIcons.stethoscope,
                           ),
-                          SizedBox(
-                            width: 280,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 16.0,
-                                right: 16.0,
-                                top: 16,
-                              ),
-                              child:
-                                  MultiSelectDialogField<DashboardSurveyItem?>(
-                                searchable: true,
-                                backgroundColor: AppColors.bodyBgColor,
-                                items: surveySelectItems,
-                                initialValue: const [],
-                                title: Text(
-                                  "Add Survey Charts",
-                                  style: titleStyle,
-                                ),
-                                checkColor: AppColors.entryTextColor,
-                                selectedColor: Colors.blue,
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
-                                  borderRadius: const BorderRadius.all(
-                                    Radius.circular(40),
-                                  ),
-                                  border: Border.all(
-                                    color: AppColors.entryTextColor,
-                                    width: 2,
-                                  ),
-                                ),
-                                itemsTextStyle: multiSelectStyle,
-                                selectedItemsTextStyle:
-                                    multiSelectStyle.copyWith(
-                                  fontWeight: FontWeight.normal,
-                                ),
-                                unselectedColor: AppColors.entryTextColor,
-                                searchIcon: Icon(
-                                  Icons.search,
-                                  size: 32,
-                                  color: AppColors.entryTextColor,
-                                ),
-                                searchTextStyle: formLabelStyle,
-                                searchHintStyle: formLabelStyle,
-                                buttonIcon: Icon(
-                                  MdiIcons.clipboardOutline,
-                                  color: AppColors.entryTextColor,
-                                ),
-                                buttonText: Text(
-                                  "Add Survey Charts",
-                                  style: TextStyle(
-                                    color: AppColors.entryTextColor,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                onConfirm: onConfirmAddSurveyType,
-                              ),
-                            ),
+                          ChartMultiSelect<DashboardSurveyItem>(
+                            multiSelectItems: surveySelectItems,
+                            onConfirm: onConfirmAddSurveyType,
+                            title: 'Add Survey Charts',
+                            buttonText: 'Add Survey Charts',
+                            iconData: MdiIcons.clipboardOutline,
                           ),
-                          SizedBox(
-                            width: 280,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 16.0,
-                                right: 16.0,
-                                top: 16,
-                              ),
-                              child:
-                                  MultiSelectDialogField<DashboardWorkoutItem?>(
-                                searchable: true,
-                                backgroundColor: AppColors.bodyBgColor,
-                                items: workoutSelectItems,
-                                initialValue: const [],
-                                title: Text(
-                                  "Add Workout Charts",
-                                  style: titleStyle,
-                                ),
-                                checkColor: AppColors.entryTextColor,
-                                selectedColor: Colors.blue,
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
-                                  borderRadius: const BorderRadius.all(
-                                    Radius.circular(40),
-                                  ),
-                                  border: Border.all(
-                                    color: AppColors.entryTextColor,
-                                    width: 2,
-                                  ),
-                                ),
-                                itemsTextStyle: multiSelectStyle,
-                                selectedItemsTextStyle:
-                                    multiSelectStyle.copyWith(
-                                  fontWeight: FontWeight.normal,
-                                ),
-                                unselectedColor: AppColors.entryTextColor,
-                                searchIcon: Icon(
-                                  Icons.search,
-                                  size: 32,
-                                  color: AppColors.entryTextColor,
-                                ),
-                                searchTextStyle: formLabelStyle,
-                                searchHintStyle: formLabelStyle,
-                                buttonIcon: Icon(
-                                  Icons.sports_gymnastics,
-                                  color: AppColors.entryTextColor,
-                                ),
-                                buttonText: Text(
-                                  "Add Workout Charts",
-                                  style: TextStyle(
-                                    color: AppColors.entryTextColor,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                onConfirm: onConfirmAddWorkoutType,
-                              ),
-                            ),
+                          ChartMultiSelect<DashboardWorkoutItem>(
+                            multiSelectItems: workoutSelectItems,
+                            onConfirm: onConfirmAddWorkoutType,
+                            title: 'Add Workout Charts',
+                            buttonText: 'Add Workout Charts',
+                            iconData: Icons.sports_gymnastics,
+                          ),
+                          ChartMultiSelect<DashboardStoryTimeItem>(
+                            multiSelectItems: storySelectItems,
+                            onConfirm: onConfirmAddStoryTimeType,
+                            title: 'Add Story/Time Charts',
+                            buttonText: 'Add Story/Time Charts',
+                            iconData: MdiIcons.watch,
                           ),
                           Padding(
                             padding: const EdgeInsets.only(top: 16.0),
@@ -612,92 +458,6 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
           ),
         );
       },
-    );
-  }
-}
-
-class DashboardItemCard extends StatelessWidget {
-  final DashboardItem item;
-  final List<MeasurableDataType> measurableTypes;
-
-  const DashboardItemCard({
-    Key? key,
-    required this.item,
-    required this.measurableTypes,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    String itemName = item.map(
-      measurement: (measurement) {
-        Iterable<MeasurableDataType> matches =
-            measurableTypes.where((m) => measurement.id == m.id);
-        if (matches.isNotEmpty) {
-          return matches.first.displayName;
-        }
-        return '';
-      },
-      healthChart: (healthLineChart) {
-        String type = healthLineChart.healthType;
-        String itemName = healthTypes[type]?.displayName ?? type;
-        return itemName;
-      },
-      surveyChart: (surveyChart) {
-        return surveyChart.surveyName;
-      },
-      workoutChart: (workoutChart) {
-        return workoutChart.displayName;
-      },
-    );
-
-    return Card(
-      color: AppColors.headerBgColor,
-      elevation: 8.0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 8,
-          horizontal: 16,
-        ),
-        leading: item.map(
-          measurement: (_) => Icon(
-            MdiIcons.tapeMeasure,
-            size: 32,
-            color: AppColors.entryTextColor,
-          ),
-          healthChart: (_) => Icon(
-            MdiIcons.stethoscope,
-            size: 32,
-            color: AppColors.entryTextColor,
-          ),
-          workoutChart: (_) => Icon(
-            Icons.sports_gymnastics,
-            size: 32,
-            color: AppColors.entryTextColor,
-          ),
-          surveyChart: (_) => Icon(
-            MdiIcons.clipboardOutline,
-            size: 32,
-            color: AppColors.entryTextColor,
-          ),
-        ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              itemName,
-              style: TextStyle(
-                color: AppColors.entryTextColor,
-                fontFamily: 'Oswald',
-                fontSize: 20.0,
-              ),
-            ),
-          ],
-        ),
-        enabled: true,
-      ),
     );
   }
 }
