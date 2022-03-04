@@ -19,6 +19,7 @@ import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/outbox.dart';
 import 'package:lotti/sync/vector_clock.dart';
@@ -426,17 +427,28 @@ class PersistenceLogic {
     bool enqueueSync = false,
     JournalEntity? linked,
   }) async {
+    final TagsService tagsService = getIt<TagsService>();
+
     final transaction =
         _insightsDb.startTransaction('createDbEntity()', 'task');
     try {
-      int? res = await _journalDb.addJournalEntity(journalEntity);
+      List<String>? linkedTagIds = linked?.meta.tagIds;
+      List<String> storyTags = tagsService.getFilteredStoryTagIds(linkedTagIds);
+
+      JournalEntity withTags = journalEntity.copyWith(
+        meta: journalEntity.meta.copyWith(
+          tagIds: storyTags,
+        ),
+      );
+
+      int? res = await _journalDb.addJournalEntity(withTags);
       bool saved = (res != 0);
-      await saveJournalEntityJson(journalEntity);
-      await _journalDb.addTagged(journalEntity);
+      await saveJournalEntityJson(withTags);
+      await _journalDb.addTagged(withTags);
 
       if (saved && enqueueSync) {
         await _outboxService.enqueueMessage(SyncMessage.journalEntity(
-          journalEntity: journalEntity,
+          journalEntity: withTags,
           status: SyncEntryStatus.initial,
         ));
       }
@@ -444,7 +456,7 @@ class PersistenceLogic {
       if (linked != null) {
         createLink(
           fromId: linked.meta.id,
-          toId: journalEntity.meta.id,
+          toId: withTags.meta.id,
         );
       }
 
