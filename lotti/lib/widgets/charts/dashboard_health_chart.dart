@@ -83,11 +83,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
         BuildContext context,
         AsyncSnapshot<List<JournalEntity?>> snapshot,
       ) {
-        List<JournalEntity?>? items = snapshot.data;
-
-        if (items == null || items.isEmpty) {
-          return const SizedBox.shrink();
-        }
+        List<JournalEntity?>? items = snapshot.data ?? [];
 
         List<charts.Series<Observation, DateTime>> seriesList = [
           charts.Series<Observation, DateTime>(

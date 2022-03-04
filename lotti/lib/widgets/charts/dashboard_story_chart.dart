@@ -55,11 +55,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
         BuildContext context,
         AsyncSnapshot<List<JournalEntity?>> snapshot,
       ) {
-        List<JournalEntity?>? items = snapshot.data;
-
-        if (items == null || items.isEmpty) {
-          return const SizedBox.shrink();
-        }
+        List<JournalEntity?>? items = snapshot.data ?? [];
 
         List<Observation> data = aggregateStoryDailyTimeSum(
           items,
