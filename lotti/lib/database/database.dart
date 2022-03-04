@@ -162,17 +162,25 @@ class JournalDb extends _$JournalDb {
     return VclockStatus.b_gt_a;
   }
 
+  Future<void> insertTag(String id, String tagId) async {
+    try {
+      await into(tagged).insert(TaggedWith(
+        id: uuid.v1(),
+        journalId: id,
+        tagEntityId: tagId,
+      ));
+    } catch (ex) {
+      debugPrint(ex.toString());
+    }
+  }
+
   Future<void> addTagged(JournalEntity journalEntity) async {
     String id = journalEntity.meta.id;
     List<String> tagIds = journalEntity.meta.tagIds ?? [];
     await deleteTaggedForId(id);
 
     for (String tagId in tagIds) {
-      await into(tagged).insert(TaggedWith(
-        id: uuid.v1(),
-        journalId: id,
-        tagEntityId: tagId,
-      ));
+      insertTag(id, tagId);
     }
   }
 
@@ -338,6 +346,10 @@ class JournalDb extends _$JournalDb {
 
   Stream<int> watchJournalCount() {
     return countJournalEntries().watch().map((List<int> res) => res.first);
+  }
+
+  Stream<int> watchTaggedCount() {
+    return countTagged().watch().map((List<int> res) => res.first);
   }
 
   Future<int> getJournalCount() async {
