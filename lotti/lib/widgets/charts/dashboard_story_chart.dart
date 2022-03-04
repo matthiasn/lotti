@@ -49,9 +49,10 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
     String title = tagsService.getTagById(storyTagId)?.tag ?? storyTagId;
 
     return StreamBuilder<List<JournalEntity?>>(
-      stream: _db.watchWorkouts(
+      stream: _db.watchJournalEntitiesByTag(
         rangeStart: widget.rangeStart,
         rangeEnd: widget.rangeEnd,
+        tagId: storyTagId,
       ),
       builder: (
         BuildContext context,

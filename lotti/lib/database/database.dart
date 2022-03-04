@@ -261,6 +261,20 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Stream<List<JournalEntity>> watchJournalEntitiesByTag({
+    required String tagId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    int limit = 1000,
+  }) {
+    return filteredByTaggedWithId(
+      tagId,
+      rangeStart,
+      rangeEnd,
+      limit,
+    ).watch().map(entityStreamMapper);
+  }
+
   Stream<List<JournalEntity>> watchTasks({
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
