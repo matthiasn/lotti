@@ -54,7 +54,8 @@ class DashboardMeasurablesChart extends StatelessWidget {
             BuildContext context,
             AsyncSnapshot<List<JournalEntity?>> measurementsSnapshot,
           ) {
-            List<JournalEntity?>? measurements = measurementsSnapshot.data;
+            List<JournalEntity?>? measurements =
+                measurementsSnapshot.data ?? [];
 
             charts.SeriesRendererConfig<DateTime>? defaultRenderer;
 
@@ -65,10 +66,6 @@ class DashboardMeasurablesChart extends StatelessWidget {
               );
             } else {
               defaultRenderer = charts.BarRendererConfig<DateTime>();
-            }
-
-            if (measurements == null || measurements.isEmpty) {
-              return const SizedBox.shrink();
             }
 
             void onDoubleTap() {

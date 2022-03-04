@@ -61,11 +61,7 @@ class DashboardHealthBmiChart extends StatelessWidget {
             BuildContext context,
             AsyncSnapshot<List<JournalEntity?>> snapshot,
           ) {
-            List<JournalEntity?>? items = snapshot.data;
-
-            if (items == null || items.isEmpty) {
-              return const SizedBox.shrink();
-            }
+            List<JournalEntity?>? items = snapshot.data ?? [];
 
             List<Observation> weightData = aggregateNone(items);
 
