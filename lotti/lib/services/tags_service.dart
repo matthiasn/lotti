@@ -41,6 +41,23 @@ class TagsService {
     return storyTags;
   }
 
+  List<String> getFilteredStoryTagIds(List<String>? tagIds) {
+    List<String> storyTagIds = [];
+
+    for (String tagId in tagIds ?? []) {
+      TagEntity? tag = getTagById(tagId);
+      tag?.map(
+        genericTag: (_) {},
+        personTag: (_) {},
+        storyTag: (StoryTag storyTag) {
+          storyTagIds.add(storyTag.id);
+        },
+      );
+    }
+
+    return storyTagIds;
+  }
+
   List<String> getClipboard() {
     return _clipboard;
   }

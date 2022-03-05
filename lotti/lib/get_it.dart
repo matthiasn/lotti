@@ -10,6 +10,7 @@ import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/outbox.dart';
 
 import 'database/database.dart';
+import 'database/maintenance.dart';
 import 'database/sync_db.dart';
 import 'logic/health_import.dart';
 import 'logic/persistence_logic.dart';
@@ -31,4 +32,5 @@ void registerSingletons() {
   getIt.registerSingleton<SyncInboxService>(SyncInboxService());
   getIt.registerSingleton<LinkService>(LinkService());
   getIt.registerSingleton<NotificationService>(NotificationService());
+  getIt.registerSingleton<Maintenance>(Maintenance());
 }
