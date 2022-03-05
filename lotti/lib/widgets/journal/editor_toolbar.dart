@@ -64,28 +64,16 @@ class ToolbarWidget extends StatelessWidget {
           controller: _controller,
           iconTheme: iconTheme,
         ),
-        ToggleStyleButton(
-          attribute: Attribute.inlineCode,
-          icon: Icons.code,
-          iconSize: _toolbarIconSize,
-          controller: _controller,
-          iconTheme: iconTheme,
-        ),
-        ClearFormatButton(
-          icon: Icons.format_clear,
-          iconSize: _toolbarIconSize,
-          controller: _controller,
-          iconTheme: iconTheme,
-        ),
+        // TODO: bring back when supported by delta_markdown
+        // ToggleStyleButton(
+        //   attribute: Attribute.inlineCode,
+        //   icon: Icons.code,
+        //   iconSize: _toolbarIconSize,
+        //   controller: _controller,
+        //   iconTheme: iconTheme,
+        // ),
         SelectHeaderStyleButton(
           controller: _controller,
-          iconSize: _toolbarIconSize,
-          iconTheme: iconTheme,
-        ),
-        ToggleStyleButton(
-          attribute: Attribute.ol,
-          controller: _controller,
-          icon: Icons.format_list_numbered,
           iconSize: _toolbarIconSize,
           iconTheme: iconTheme,
         ),
@@ -93,6 +81,13 @@ class ToolbarWidget extends StatelessWidget {
           attribute: Attribute.ul,
           controller: _controller,
           icon: Icons.format_list_bulleted,
+          iconSize: _toolbarIconSize,
+          iconTheme: iconTheme,
+        ),
+        ToggleStyleButton(
+          attribute: Attribute.ol,
+          controller: _controller,
+          icon: Icons.format_list_numbered,
           iconSize: _toolbarIconSize,
           iconTheme: iconTheme,
         ),
@@ -117,6 +112,12 @@ class ToolbarWidget extends StatelessWidget {
             tooltip: 'Link to',
             onPressed: () => _linkService.linkTo(_journalEntity!.meta.id),
           ),
+        ClearFormatButton(
+          icon: Icons.format_clear,
+          iconSize: _toolbarIconSize,
+          controller: _controller,
+          iconTheme: iconTheme,
+        ),
       ],
     );
   }
