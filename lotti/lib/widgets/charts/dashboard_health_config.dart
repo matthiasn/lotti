@@ -39,6 +39,18 @@ Map<String, HealthTypeConfig> healthTypes = {
     chartType: HealthChartType.lineChart,
     aggregationType: HealthAggregationType.none,
   ),
+  'HealthDataType.BODY_FAT_PERCENTAGE': HealthTypeConfig(
+    displayName: 'Body Fat Percentage',
+    healthType: 'HealthDataType.BODY_FAT_PERCENTAGE',
+    chartType: HealthChartType.lineChart,
+    aggregationType: HealthAggregationType.none,
+  ),
+  'HealthDataType.BODY_MASS_INDEX': HealthTypeConfig(
+    displayName: 'Body Mass Index',
+    healthType: 'HealthDataType.BODY_MASS_INDEX',
+    chartType: HealthChartType.lineChart,
+    aggregationType: HealthAggregationType.none,
+  ),
   'BODY_MASS_INDEX': HealthTypeConfig(
     displayName: 'Weight vs. Body Mass Index',
     healthType: 'BODY_MASS_INDEX',
@@ -48,6 +60,12 @@ Map<String, HealthTypeConfig> healthTypes = {
   'HealthDataType.RESTING_HEART_RATE': HealthTypeConfig(
     displayName: 'Resting Heart Rate',
     healthType: 'HealthDataType.RESTING_HEART_RATE',
+    chartType: HealthChartType.lineChart,
+    aggregationType: HealthAggregationType.none,
+  ),
+  'HealthDataType.WALKING_HEART_RATE': HealthTypeConfig(
+    displayName: 'Walking Heart Rate',
+    healthType: 'HealthDataType.WALKING_HEART_RATE',
     chartType: HealthChartType.lineChart,
     aggregationType: HealthAggregationType.none,
   ),

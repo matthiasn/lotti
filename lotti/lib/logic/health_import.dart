@@ -248,11 +248,13 @@ List<HealthDataType> bpTypes = [
 
 List<HealthDataType> heartRateTypes = [
   HealthDataType.RESTING_HEART_RATE,
+  HealthDataType.WALKING_HEART_RATE,
   HealthDataType.HEART_RATE_VARIABILITY_SDNN,
 ];
 
 List<HealthDataType> bodyMeasurementTypes = [
   HealthDataType.WEIGHT,
   HealthDataType.BODY_FAT_PERCENTAGE,
+  HealthDataType.BODY_MASS_INDEX,
   HealthDataType.HEIGHT,
 ];
