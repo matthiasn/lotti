@@ -86,7 +86,11 @@ class DashboardMeasurablesChart extends StatelessWidget {
             if (measurableDataType.aggregationType == AggregationType.none) {
               data = aggregateMeasurementNone(measurements);
             } else {
-              data = aggregateSumByDay(measurements);
+              data = aggregateSumByDay(
+                measurements,
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              );
             }
 
             List<charts.Series<MeasureObservation, DateTime>> seriesList = [

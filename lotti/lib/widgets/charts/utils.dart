@@ -22,8 +22,22 @@ String ymd(DateTime day) {
   return day.toIso8601String().substring(0, 10);
 }
 
-List<MeasureObservation> aggregateSumByDay(List<JournalEntity?> entities) {
+List<MeasureObservation> aggregateSumByDay(
+  List<JournalEntity?> entities, {
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) {
   Map<String, num> sumsByDay = {};
+
+  Duration range = rangeEnd.difference(rangeStart);
+  List<String> dayStrings = List<String>.generate(range.inDays, (days) {
+    DateTime day = rangeStart.add(Duration(days: days));
+    return ymd(day);
+  });
+
+  for (final dayString in dayStrings) {
+    sumsByDay[dayString] = 0;
+  }
 
   for (final entity in entities) {
     String dayString = ymd(entity!.meta.dateFrom);

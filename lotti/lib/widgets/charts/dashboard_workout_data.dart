@@ -6,10 +6,22 @@ import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 List<Observation> aggregateWorkoutDailySum(
-  List<JournalEntity?> entities,
-  DashboardWorkoutItem chartConfig,
-) {
+  List<JournalEntity?> entities, {
+  required DashboardWorkoutItem chartConfig,
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) {
   Map<String, num> sumsByDay = {};
+
+  Duration range = rangeEnd.difference(rangeStart);
+  List<String> dayStrings = List<String>.generate(range.inDays, (days) {
+    DateTime day = rangeStart.add(Duration(days: days));
+    return ymd(day);
+  });
+
+  for (final dayString in dayStrings) {
+    sumsByDay[dayString] = 0;
+  }
 
   for (JournalEntity? entity in entities) {
     entity?.maybeMap(

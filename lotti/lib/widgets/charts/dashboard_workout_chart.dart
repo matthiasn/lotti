@@ -59,7 +59,12 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
             id: widget.chartConfig.workoutType,
             domainFn: (Observation val, _) => val.dateTime,
             measureFn: (Observation val, _) => val.value,
-            data: aggregateWorkoutDailySum(items, widget.chartConfig),
+            data: aggregateWorkoutDailySum(
+              items,
+              chartConfig: widget.chartConfig,
+              rangeStart: widget.rangeStart,
+              rangeEnd: widget.rangeEnd,
+            ),
           )
         ];
         return Padding(
