@@ -5,36 +5,76 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 
+void addDiscreteQuantEntity({
+  required DateTime dt,
+  required String dataType,
+  required num value,
+  required List<JournalEntity> entities,
+}) {
+  entities.add(
+    JournalEntity.quantitative(
+      meta: Metadata(
+        createdAt: dt,
+        id: 'test-id',
+        dateTo: dt,
+        dateFrom: dt,
+        updatedAt: dt,
+      ),
+      data: QuantitativeData.discreteQuantityData(
+        dateFrom: dt,
+        dateTo: dt,
+        value: value,
+        dataType: dataType,
+        unit: 'unit',
+      ),
+    ),
+  );
+}
+
 void main() {
   List<JournalEntity> entities = [];
 
-  void addDiscreteQuantEntity(DateTime dt, num value) {
-    entities.add(
-      JournalEntity.quantitative(
-        meta: Metadata(
-          createdAt: dt,
-          id: 'test-id',
-          dateTo: dt,
-          dateFrom: dt,
-          updatedAt: dt,
-        ),
-        data: QuantitativeData.discreteQuantityData(
-          dateFrom: dt,
-          dateTo: dt,
-          value: value,
-          dataType: 'dataType',
-          unit: 'unit',
-        ),
-      ),
-    );
-  }
+  addDiscreteQuantEntity(
+    dt: DateTime(2022, 02, 23, 1),
+    dataType: '',
+    value: 1,
+    entities: entities,
+  );
 
-  addDiscreteQuantEntity(DateTime(2022, 02, 23, 1), 1);
-  addDiscreteQuantEntity(DateTime(2022, 02, 23, 2), 2);
-  addDiscreteQuantEntity(DateTime(2022, 02, 23, 3), 3);
-  addDiscreteQuantEntity(DateTime(2022, 02, 24, 10), 8);
-  addDiscreteQuantEntity(DateTime(2022, 02, 24, 9), 9);
-  addDiscreteQuantEntity(DateTime(2022, 02, 24, 8), 10);
+  addDiscreteQuantEntity(
+    dt: DateTime(2022, 02, 23, 2),
+    dataType: '',
+    value: 2,
+    entities: entities,
+  );
+
+  addDiscreteQuantEntity(
+    dt: DateTime(2022, 02, 23, 3),
+    dataType: '',
+    value: 3,
+    entities: entities,
+  );
+
+  addDiscreteQuantEntity(
+    dt: DateTime(2022, 02, 24, 10),
+    dataType: '',
+    value: 8,
+    entities: entities,
+  );
+
+  addDiscreteQuantEntity(
+    dt: DateTime(2022, 02, 24, 9),
+    dataType: '',
+    value: 9,
+    entities: entities,
+  );
+
+  addDiscreteQuantEntity(
+    dt: DateTime(2022, 02, 24, 8),
+    dataType: '',
+    value: 10,
+    entities: entities,
+  );
 
   test(
     'Weight data is transformed into discrete values',
@@ -50,6 +90,36 @@ void main() {
         Observation(DateTime(2022, 02, 24, 10), 8),
         Observation(DateTime(2022, 02, 24, 9), 9),
         Observation(DateTime(2022, 02, 24, 8), 10),
+      ]);
+    },
+  );
+
+  test(
+    'Percentages are multiplied by a hundred',
+    () async {
+      List<JournalEntity> percentageEntities = [];
+
+      addDiscreteQuantEntity(
+        dt: DateTime(2022, 2, 6),
+        dataType: 'HealthDataType.BODY_FAT_PERCENTAGE',
+        value: 0.25,
+        entities: percentageEntities,
+      );
+
+      addDiscreteQuantEntity(
+        dt: DateTime(2022, 3, 6),
+        dataType: 'HealthDataType.BODY_FAT_PERCENTAGE',
+        value: 0.2,
+        entities: percentageEntities,
+      );
+
+      final aggregated = aggregateByType(
+        percentageEntities,
+        'HealthDataType.BODY_FAT_PERCENTAGE',
+      );
+      expect(aggregated, [
+        Observation(DateTime(2022, 2, 6), 25.0),
+        Observation(DateTime(2022, 3, 6), 20.0),
       ]);
     },
   );

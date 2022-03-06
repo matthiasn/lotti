@@ -50,15 +50,19 @@ class Observation extends Equatable {
   List<Object?> get props => [dateTime, value];
 }
 
-List<Observation> aggregateNone(List<JournalEntity?> entities) {
+List<Observation> aggregateNone(
+  List<JournalEntity?> entities,
+  String healthType,
+) {
   List<Observation> aggregated = [];
+  int multiplier = healthType.contains('PERCENTAGE') ? 100 : 1;
 
   for (JournalEntity? entity in entities) {
     entity?.maybeMap(
       quantitative: (QuantitativeEntry quant) {
         aggregated.add(Observation(
           quant.data.dateFrom,
-          quant.data.value,
+          quant.data.value * multiplier,
         ));
       },
       orElse: () {},
@@ -124,7 +128,7 @@ List<Observation> aggregateByType(
 
   switch (config?.aggregationType) {
     case HealthAggregationType.none:
-      return aggregateNone(entities);
+      return aggregateNone(entities, dataType);
     case HealthAggregationType.dailyMax:
       return aggregateDailyMax(entities);
     case HealthAggregationType.dailySum:
@@ -140,13 +144,15 @@ List<Observation> aggregateNoneFilteredBy(
   List<JournalEntity?> entities,
   String healthType,
 ) {
-  return aggregateNone(entities.where((entity) {
-    if (entity is QuantitativeEntry) {
-      return entity.data.dataType == healthType;
-    } else {
-      return false;
-    }
-  }).toList());
+  return aggregateNone(
+      entities.where((entity) {
+        if (entity is QuantitativeEntry) {
+          return entity.data.dataType == healthType;
+        } else {
+          return false;
+        }
+      }).toList(),
+      healthType);
 }
 
 num findExtreme(
