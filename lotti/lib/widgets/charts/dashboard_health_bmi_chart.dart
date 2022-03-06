@@ -63,7 +63,7 @@ class DashboardHealthBmiChart extends StatelessWidget {
           ) {
             List<JournalEntity?>? items = snapshot.data ?? [];
 
-            List<Observation> weightData = aggregateNone(items);
+            List<Observation> weightData = aggregateNone(items, weightType);
 
             List<charts.RangeAnnotationSegment<num>> rangeAnnotationSegments =
                 makeRangeAnnotationSegments(weightData, height);
