@@ -165,38 +165,42 @@ class EntryInfoRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SwitchRow(
-                label: 'Starred:',
-                activeColor: AppColors.starredGold,
-                onChanged: (bool value) {
-                  Metadata newMeta = liveEntity.meta.copyWith(
-                    starred: value,
-                  );
-                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-                },
-                value: liveEntity.meta.starred ?? false,
-              ),
-              SwitchRow(
-                label: 'Private:',
-                activeColor: AppColors.error,
-                onChanged: (bool value) {
-                  Metadata newMeta = liveEntity.meta.copyWith(
-                    private: value,
-                  );
-                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-                },
-                value: liveEntity.meta.private ?? false,
-              ),
-              SwitchRow(
-                label: 'Flag:',
-                activeColor: AppColors.error,
-                onChanged: (bool value) {
-                  Metadata newMeta = liveEntity.meta.copyWith(
-                    flag: value ? EntryFlag.import : EntryFlag.none,
-                  );
-                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-                },
-                value: liveEntity.meta.flag == EntryFlag.import,
+              Row(
+                children: [
+                  SwitchRow(
+                    label: 'Starred:',
+                    activeColor: AppColors.starredGold,
+                    onChanged: (bool value) {
+                      Metadata newMeta = liveEntity.meta.copyWith(
+                        starred: value,
+                      );
+                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
+                    },
+                    value: liveEntity.meta.starred ?? false,
+                  ),
+                  SwitchRow(
+                    label: 'Private:',
+                    activeColor: AppColors.error,
+                    onChanged: (bool value) {
+                      Metadata newMeta = liveEntity.meta.copyWith(
+                        private: value,
+                      );
+                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
+                    },
+                    value: liveEntity.meta.private ?? false,
+                  ),
+                  SwitchRow(
+                    label: 'Flag:',
+                    activeColor: AppColors.error,
+                    onChanged: (bool value) {
+                      Metadata newMeta = liveEntity.meta.copyWith(
+                        flag: value ? EntryFlag.import : EntryFlag.none,
+                      );
+                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
+                    },
+                    value: liveEntity.meta.flag == EntryFlag.import,
+                  ),
+                ],
               ),
               IconButton(
                 icon: const Icon(MdiIcons.trashCanOutline),
@@ -219,6 +223,8 @@ class EntryInfoRow extends StatelessWidget {
                         icon: Icons.warning,
                         label: 'Delete journal entry',
                         key: deleteKey,
+                        isDestructiveAction: true,
+                        isDefaultAction: true,
                       ),
                     ],
                   );

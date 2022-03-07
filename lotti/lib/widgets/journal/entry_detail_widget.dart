@@ -100,7 +100,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(top: 8.0, left: 8, right: 8),
+                    padding: const EdgeInsets.all(8.0),
                     child: TagsWidget(item: widget.item),
                   ),
                   widget.item.map(
