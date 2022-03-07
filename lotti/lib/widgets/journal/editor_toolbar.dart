@@ -35,7 +35,7 @@ class ToolbarWidget extends StatelessWidget {
       toolbarHeight: _toolbarIconSize * 2,
       toolbarSectionSpacing: 4,
       toolbarIconAlignment: toolbarIconAlignment,
-      multiRowsDisplay: false,
+      multiRowsDisplay: true,
       children: [
         IconButton(
           icon: const Icon(Icons.save),
