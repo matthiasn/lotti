@@ -14,6 +14,7 @@ import 'database/maintenance.dart';
 import 'database/sync_db.dart';
 import 'logic/health_import.dart';
 import 'logic/persistence_logic.dart';
+import 'logic/spotify_import.dart';
 
 final getIt = GetIt.instance;
 
@@ -33,4 +34,5 @@ void registerSingletons() {
   getIt.registerSingleton<LinkService>(LinkService());
   getIt.registerSingleton<NotificationService>(NotificationService());
   getIt.registerSingleton<Maintenance>(Maintenance());
+  getIt.registerSingleton<SpotifyImport>(SpotifyImport());
 }

@@ -104,6 +104,7 @@ dependencies:
   wechat_assets_picker: ^6.3.0
   window_manager: ^0.1.5
   yaml: ^3.1.0
+  dio: ^4.0.4
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/spotify_import.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 
@@ -15,6 +16,7 @@ class MaintenancePage extends StatefulWidget {
 class _MaintenancePageState extends State<MaintenancePage> {
   final JournalDb _db = getIt<JournalDb>();
   final Maintenance _maintenance = getIt<Maintenance>();
+  final SpotifyImport _spotifyImport = getIt<SpotifyImport>();
 
   late final Stream<List<ConfigFlag>> stream = _db.watchConfigFlags();
 
@@ -57,6 +59,10 @@ class _MaintenancePageState extends State<MaintenancePage> {
                   MaintenanceCard(
                     title: 'Assign stories from parents',
                     onTap: () => _maintenance.recreateStoryAssignment(),
+                  ),
+                  MaintenanceCard(
+                    title: 'Import from Spotify',
+                    onTap: () => _spotifyImport.importRecentlyPlayed(),
                   ),
                 ],
               ),
