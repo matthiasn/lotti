@@ -18,6 +18,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 class HealthImport {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final JournalDb _db = getIt<JournalDb>();
+  final HealthFactory _healthFactory = HealthFactory();
   Duration defaultFetchDuration = const Duration(days: 30);
 
   late final String platform;
@@ -94,6 +95,10 @@ class HealthImport {
     await transaction.finish();
   }
 
+  Future<bool> authorizeHealth(List<HealthDataType> types) async {
+    return await _healthFactory.requestAuthorization(types);
+  }
+
   Future fetchHealthData({
     required List<HealthDataType> types,
     required DateTime dateFrom,
@@ -104,15 +109,18 @@ class HealthImport {
 
     final transaction =
         _insightsDb.startTransaction('fetchHealthData()', 'task');
-    HealthFactory health = HealthFactory();
-    bool accessWasGranted = await health.requestAuthorization(types);
+    bool accessWasGranted = await authorizeHealth(types);
 
     if (accessWasGranted) {
       try {
         DateTime now = DateTime.now();
         DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
         List<HealthDataPoint> dataPoints =
-            await health.getHealthDataFromTypes(dateFrom, dateToOrNow, types);
+            await _healthFactory.getHealthDataFromTypes(
+          dateFrom,
+          dateToOrNow,
+          types,
+        );
 
         for (HealthDataPoint dataPoint in dataPoints) {
           DiscreteQuantityData discreteQuantity = DiscreteQuantityData(
@@ -181,7 +189,9 @@ class HealthImport {
       }
     }
 
-    if (healthDataTypes.isNotEmpty) {
+    bool accessWasGranted = await authorizeHealth(healthDataTypes);
+
+    if (accessWasGranted && healthDataTypes.isNotEmpty) {
       fetchHealthData(
         types: healthDataTypes,
         dateFrom: dateFrom,
