@@ -2,18 +2,20 @@ import 'dart:core';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
+import 'package:health/health.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_data.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-class DashboardHealthBmiChart extends StatelessWidget {
+class DashboardHealthBmiChart extends StatefulWidget {
   final DashboardHealthItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
@@ -25,7 +27,23 @@ class DashboardHealthBmiChart extends StatelessWidget {
     required this.rangeEnd,
   }) : super(key: key);
 
+  @override
+  State<DashboardHealthBmiChart> createState() =>
+      _DashboardHealthBmiChartState();
+}
+
+class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
   final JournalDb _db = getIt<JournalDb>();
+  final HealthImport _healthImport = getIt<HealthImport>();
+
+  _DashboardHealthBmiChartState() {
+    DateTime now = DateTime.now();
+    _healthImport.fetchHealthData(
+      dateFrom: now.subtract(const Duration(days: 3650)),
+      dateTo: now,
+      types: [HealthDataType.HEIGHT],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,22 +65,28 @@ class DashboardHealthBmiChart extends StatelessWidget {
         BuildContext context,
         AsyncSnapshot<List<JournalEntity?>> snapshot,
       ) {
-        QuantitativeEntry? weightEntry =
+        QuantitativeEntry? heightEntry =
             snapshot.data?.first as QuantitativeEntry?;
-        num height = weightEntry?.data.value ?? 0;
+        num? height = heightEntry?.data.value;
+
+        if (height == null) {
+          return Text(
+            'Missing height entry',
+            style: labelStyle,
+          );
+        }
 
         return StreamBuilder<List<JournalEntity?>>(
           stream: _db.watchQuantitativeByType(
             type: weightType,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
+            rangeStart: widget.rangeStart,
+            rangeEnd: widget.rangeEnd,
           ),
           builder: (
             BuildContext context,
             AsyncSnapshot<List<JournalEntity?>> snapshot,
           ) {
             List<JournalEntity?>? items = snapshot.data ?? [];
-
             List<Observation> weightData = aggregateNone(items, weightType);
 
             List<charts.RangeAnnotationSegment<num>> rangeAnnotationSegments =
@@ -86,7 +110,7 @@ class DashboardHealthBmiChart extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  key: Key('${chartConfig.hashCode}'),
+                  key: Key('${widget.chartConfig.hashCode}'),
                   color: Colors.white,
                   height: 320,
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -97,7 +121,9 @@ class DashboardHealthBmiChart extends StatelessWidget {
                         animate: true,
                         behaviors: [
                           charts.RangeAnnotation([
-                            charts.RangeAnnotationSegment(rangeStart, rangeEnd,
+                            charts.RangeAnnotationSegment(
+                                widget.rangeStart,
+                                widget.rangeEnd,
                                 charts.RangeAnnotationAxisType.domain,
                                 color: charts.Color.white),
                             ...rangeAnnotationSegments,
@@ -124,9 +150,9 @@ class DashboardHealthBmiChart extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Text(
-                                healthTypes[chartConfig.healthType]
+                                healthTypes[widget.chartConfig.healthType]
                                         ?.displayName ??
-                                    chartConfig.healthType,
+                                    widget.chartConfig.healthType,
                                 style: chartTitleStyle,
                               ),
                             ],

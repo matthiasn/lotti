@@ -162,20 +162,8 @@ class HealthImport {
         await _db.latestQuantitativeByType(actualTypes.first);
     DateTime now = DateTime.now();
 
-    DateTime dateFrom = latest?.data.map(
-          cumulativeQuantityData: (cumulativeQuantityData) {
-            return latest.meta.dateFrom;
-          },
-          discreteQuantityData: (discreteQuantityData) {
-            return latest.meta.dateFrom;
-          },
-        ) ??
-        now.subtract(defaultFetchDuration);
-
-    getActivityHealthData(
-      dateFrom: dateFrom,
-      dateTo: now,
-    );
+    DateTime dateFrom =
+        latest?.meta.dateFrom ?? now.subtract(defaultFetchDuration);
 
     List<HealthDataType> healthDataTypes = [];
 
@@ -189,14 +177,20 @@ class HealthImport {
       }
     }
 
-    bool accessWasGranted = await authorizeHealth(healthDataTypes);
-
-    if (accessWasGranted && healthDataTypes.isNotEmpty) {
-      fetchHealthData(
-        types: healthDataTypes,
+    if (type.contains('cumulative')) {
+      getActivityHealthData(
         dateFrom: dateFrom,
         dateTo: now,
       );
+    } else {
+      bool accessWasGranted = await authorizeHealth(healthDataTypes);
+      if (accessWasGranted && healthDataTypes.isNotEmpty) {
+        fetchHealthData(
+          types: healthDataTypes,
+          dateFrom: dateFrom,
+          dateTo: now,
+        );
+      }
     }
   }
 
