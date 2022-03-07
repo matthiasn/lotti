@@ -12,9 +12,9 @@ import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/screenshots.dart';
-import 'package:lotti/widgets/home.dart';
 import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
@@ -39,7 +39,7 @@ Future<void> main() async {
     initializeDateFormatting();
     registerScreenshotHotkey();
 
-    runApp(const LottiApp());
+    runApp(LottiApp());
   }, (Object error, StackTrace stackTrace) {
     final InsightsDb _insightsDb = getIt<InsightsDb>();
     _insightsDb.captureException(error, stackTrace: stackTrace);
@@ -47,7 +47,8 @@ Future<void> main() async {
 }
 
 class LottiApp extends StatelessWidget {
-  const LottiApp({Key? key}) : super(key: key);
+  LottiApp({Key? key}) : super(key: key);
+  final _appRouter = AppRouter();
 
   @override
   Widget build(BuildContext context) {
@@ -68,17 +69,20 @@ class LottiApp extends StatelessWidget {
           create: (BuildContext context) => AudioPlayerCubit(),
         ),
       ],
-      child: MaterialApp(
-        title: 'Lotti',
+      child: MaterialApp.router(
         theme: ThemeData(
           primarySwatch: Colors.grey,
         ),
-        home: const HomePage(),
         supportedLocales: const [
           Locale('en'),
         ],
         localizationsDelegates: const [FormBuilderLocalizations.delegate],
+        debugShowCheckedModeBanner: true,
+        routerDelegate: _appRouter.delegate(),
+        routeInformationParser: _appRouter.defaultRouteParser(),
       ),
     );
   }
 }
+
+//void main() => runApp(AutoRouteAppWidget());

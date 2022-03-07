@@ -6,11 +6,11 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/pages/add/survey_page.dart';
 import 'package:lotti/surveys/calculate.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:lotti/widgets/pages/add/survey_page.dart';
 import 'package:research_package/model.dart';
 
 class DashboardSurveyChart extends StatelessWidget {

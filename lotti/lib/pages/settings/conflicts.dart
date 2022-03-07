@@ -40,72 +40,66 @@ class _ConflictsPageState extends State<ConflictsPage> {
       ) {
         List<Conflict> items = snapshot.data ?? [];
 
-        return Scaffold(
-          appBar: AppBar(
-            backgroundColor: AppColors.headerBgColor,
-            foregroundColor: AppColors.appBarFgColor,
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CupertinoSegmentedControl(
-                  selectedColor: AppColors.entryBgColor,
-                  unselectedColor: AppColors.headerBgColor,
-                  borderColor: AppColors.entryBgColor,
-                  groupValue: _selectedValue,
-                  onValueChanged: (String value) {
-                    setState(() {
-                      _selectedValue = value;
-                      if (_selectedValue == 'unresolved') {
-                        stream = _db.watchConflicts(ConflictStatus.unresolved);
-                      }
-                      if (_selectedValue == 'resolved') {
-                        stream = _db.watchConflicts(ConflictStatus.resolved);
-                      }
-                    });
-                  },
-                  children: const {
-                    'unresolved': SizedBox(
-                      width: 64,
-                      height: 32,
-                      child: Center(
-                        child: Text(
-                          'unresolved',
-                          style: TextStyle(
-                            fontFamily: 'Oswald',
-                            fontSize: 14,
-                          ),
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              CupertinoSegmentedControl(
+                selectedColor: AppColors.entryBgColor,
+                unselectedColor: AppColors.headerBgColor,
+                borderColor: AppColors.entryBgColor,
+                groupValue: _selectedValue,
+                onValueChanged: (String value) {
+                  setState(() {
+                    _selectedValue = value;
+                    if (_selectedValue == 'unresolved') {
+                      stream = _db.watchConflicts(ConflictStatus.unresolved);
+                    }
+                    if (_selectedValue == 'resolved') {
+                      stream = _db.watchConflicts(ConflictStatus.resolved);
+                    }
+                  });
+                },
+                children: const {
+                  'unresolved': SizedBox(
+                    width: 64,
+                    height: 32,
+                    child: Center(
+                      child: Text(
+                        'unresolved',
+                        style: TextStyle(
+                          fontFamily: 'Oswald',
+                          fontSize: 14,
                         ),
                       ),
                     ),
-                    'resolved': SizedBox(
-                      child: Center(
-                        child: Text(
-                          'resolved',
-                          style: TextStyle(
-                            fontFamily: 'Oswald',
-                            fontSize: 14,
-                          ),
+                  ),
+                  'resolved': SizedBox(
+                    child: Center(
+                      child: Text(
+                        'resolved',
+                        style: TextStyle(
+                          fontFamily: 'Oswald',
+                          fontSize: 14,
                         ),
                       ),
                     ),
+                  ),
+                },
+              ),
+              ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(8.0),
+                children: List.generate(
+                  items.length,
+                  (int index) {
+                    return ConflictCard(
+                      conflict: items.elementAt(index),
+                      index: index,
+                    );
                   },
                 ),
-              ],
-            ),
-          ),
-          backgroundColor: AppColors.bodyBgColor,
-          body: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.all(8.0),
-            children: List.generate(
-              items.length,
-              (int index) {
-                return ConflictCard(
-                  conflict: items.elementAt(index),
-                  index: index,
-                );
-              },
-            ),
+              ),
+            ],
           ),
         );
       },

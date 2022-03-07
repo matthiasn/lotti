@@ -1,19 +1,19 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/misc/app_bar_version.dart';
-import 'package:lotti/widgets/pages/insights/dashboard_viewer.dart';
 
-class DashboardsViewPage extends StatefulWidget {
-  const DashboardsViewPage({Key? key}) : super(key: key);
+class DashboardsListPage extends StatefulWidget {
+  const DashboardsListPage({Key? key}) : super(key: key);
 
   @override
-  State<DashboardsViewPage> createState() => _DashboardsViewPageState();
+  State<DashboardsListPage> createState() => _DashboardsListPageState();
 }
 
-class _DashboardsViewPageState extends State<DashboardsViewPage> {
+class _DashboardsListPageState extends State<DashboardsListPage> {
   final JournalDb _db = getIt<JournalDb>();
   late final Stream<List<DashboardDefinition>> stream = _db.watchDashboards();
   String match = '';
@@ -37,25 +37,17 @@ class _DashboardsViewPageState extends State<DashboardsViewPage> {
                 dashboard.name.toLowerCase().contains(match))
             .toList();
 
-        return Scaffold(
-          appBar: const VersionAppBar(title: 'Dashboards'),
-          backgroundColor: AppColors.bodyBgColor,
-          body: Stack(
-            children: [
-              ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(8.0),
-                children: List.generate(
-                  filtered.length,
-                  (int index) {
-                    return DashboardCard(
-                      dashboard: filtered.elementAt(index),
-                      index: index,
-                    );
-                  },
-                ),
-              ),
-            ],
+        return ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(8.0),
+          children: List.generate(
+            filtered.length,
+            (int index) {
+              return DashboardCard(
+                dashboard: filtered.elementAt(index),
+                index: index,
+              );
+            },
           ),
         );
       },
@@ -104,13 +96,9 @@ class DashboardCard extends StatelessWidget {
         ),
         enabled: true,
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return DashboardViewerRoute(
-                  dashboard: dashboard,
-                );
-              },
+          context.router.push(
+            DashboardRoute(
+              dashboardId: dashboard.id,
             ),
           );
         },

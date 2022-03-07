@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/misc/app_bar_version.dart';
 
 class FlagsPage extends StatefulWidget {
   const FlagsPage({Key? key}) : super(key: key);
@@ -33,21 +32,17 @@ class _FlagsPageState extends State<FlagsPage> {
         List<ConfigFlag> items = snapshot.data ?? [];
         debugPrint('$items');
 
-        return Scaffold(
-          appBar: const VersionAppBar(title: 'Flags'),
-          backgroundColor: AppColors.bodyBgColor,
-          body: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.all(8.0),
-            children: List.generate(
-              items.length,
-              (int index) {
-                return ConfigFlagCard(
-                  item: items.elementAt(index),
-                  index: index,
-                );
-              },
-            ),
+        return ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(8.0),
+          children: List.generate(
+            items.length,
+            (int index) {
+              return ConfigFlagCard(
+                item: items.elementAt(index),
+                index: index,
+              );
+            },
           ),
         );
       },

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/pages/settings/tags/tag_details.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/widgets/pages/settings/tags/tag_details.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
 

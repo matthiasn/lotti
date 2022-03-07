@@ -3,7 +3,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/misc/app_bar_version.dart';
 
 class MaintenancePage extends StatefulWidget {
   const MaintenancePage({Key? key}) : super(key: key);
@@ -39,27 +38,23 @@ class _MaintenancePageState extends State<MaintenancePage> {
             BuildContext context,
             AsyncSnapshot<int> snapshot,
           ) {
-            return Scaffold(
-              appBar: const VersionAppBar(title: 'Maintenance'),
-              backgroundColor: AppColors.bodyBgColor,
-              body: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(8.0),
-                children: [
-                  MaintenanceCard(
-                    title: 'Delete tagged, n = ${snapshot.data}',
-                    onTap: () => _maintenance.deleteTaggedLinks(),
-                  ),
-                  MaintenanceCard(
-                    title: 'Recreate tagged',
-                    onTap: () => _maintenance.recreateTaggedLinks(),
-                  ),
-                  MaintenanceCard(
-                    title: 'Assign stories from parents',
-                    onTap: () => _maintenance.recreateStoryAssignment(),
-                  ),
-                ],
-              ),
+            return ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.all(8.0),
+              children: [
+                MaintenanceCard(
+                  title: 'Delete tagged, n = ${snapshot.data}',
+                  onTap: () => _maintenance.deleteTaggedLinks(),
+                ),
+                MaintenanceCard(
+                  title: 'Recreate tagged',
+                  onTap: () => _maintenance.recreateTaggedLinks(),
+                ),
+                MaintenanceCard(
+                  title: 'Assign stories from parents',
+                  onTap: () => _maintenance.recreateStoryAssignment(),
+                ),
+              ],
             );
           },
         );

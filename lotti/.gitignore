@@ -61,3 +61,5 @@ local.properties
 
 classes.viz.png
 classes.viz.puml
+
+lib/routes/router.gr.dart

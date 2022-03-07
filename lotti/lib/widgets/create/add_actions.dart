@@ -7,13 +7,13 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/pages/add/editor_page.dart';
+import 'package:lotti/pages/add/new_measurement_page.dart';
+import 'package:lotti/pages/add/new_task_page.dart';
+import 'package:lotti/pages/add/survey_page.dart';
+import 'package:lotti/pages/audio.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
-import 'package:lotti/widgets/pages/add/editor_page.dart';
-import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
-import 'package:lotti/widgets/pages/add/new_task_page.dart';
-import 'package:lotti/widgets/pages/add/survey_page.dart';
-import 'package:lotti/widgets/pages/audio.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
 

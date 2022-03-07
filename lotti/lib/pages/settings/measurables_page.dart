@@ -4,11 +4,10 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/misc/app_bar_version.dart';
-import 'package:lotti/widgets/pages/settings/form_text_field.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 const double iconSize = 24.0;
@@ -70,49 +69,55 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       ) {
         List<MeasurableDataType> items = snapshot.data ?? [];
 
-        return Scaffold(
-          appBar: const VersionAppBar(title: 'Measurables'),
-          backgroundColor: AppColors.bodyBgColor,
-          floatingActionButton: FloatingActionButton(
-            child: const Icon(MdiIcons.plus, size: 32),
-            backgroundColor: AppColors.entryBgColor,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (BuildContext context) {
-                    DateTime now = DateTime.now();
-                    return DetailRoute(
-                      item: MeasurableDataType(
-                        id: uuid.v1(),
-                        name: '',
-                        displayName: '',
-                        version: 0,
-                        createdAt: now,
-                        updatedAt: now,
-                        unitName: '',
-                        description: '',
-                        vectorClock: null,
+        return Stack(
+          children: [
+            ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.all(8.0),
+              children: List.generate(
+                items.length,
+                (int index) {
+                  return MeasurableTypeCard(
+                    item: items.elementAt(index),
+                    index: index,
+                  );
+                },
+              ),
+            ),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: FloatingActionButton(
+                  child: const Icon(MdiIcons.plus, size: 32),
+                  backgroundColor: AppColors.entryBgColor,
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (BuildContext context) {
+                          DateTime now = DateTime.now();
+                          return DetailRoute(
+                            item: MeasurableDataType(
+                              id: uuid.v1(),
+                              name: '',
+                              displayName: '',
+                              version: 0,
+                              createdAt: now,
+                              updatedAt: now,
+                              unitName: '',
+                              description: '',
+                              vectorClock: null,
+                            ),
+                            index: -1,
+                          );
+                        },
                       ),
-                      index: -1,
                     );
                   },
                 ),
-              );
-            },
-          ),
-          body: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.all(8.0),
-            children: List.generate(
-              items.length,
-              (int index) {
-                return MeasurableTypeCard(
-                  item: items.elementAt(index),
-                  index: index,
-                );
-              },
-            ),
-          ),
+              ),
+            )
+          ],
         );
       },
     );

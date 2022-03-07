@@ -3,21 +3,20 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/pages/settings/dashboards/dashboard_details.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/widgets/misc/app_bar_version.dart';
-import 'package:lotti/widgets/pages/settings/dashboards/dashboard_details.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
-class DashboardsPage extends StatefulWidget {
-  const DashboardsPage({Key? key}) : super(key: key);
+class DashboardSettingsPage extends StatefulWidget {
+  const DashboardSettingsPage({Key? key}) : super(key: key);
 
   @override
-  State<DashboardsPage> createState() => _DashboardsPageState();
+  State<DashboardSettingsPage> createState() => _DashboardSettingsPageState();
 }
 
-class _DashboardsPageState extends State<DashboardsPage> {
+class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
   final JournalDb _db = getIt<JournalDb>();
   late final Stream<List<DashboardDefinition>> stream = _db.watchDashboards();
   String match = '';
@@ -87,60 +86,62 @@ class _DashboardsPageState extends State<DashboardsPage> {
                 dashboard.name.toLowerCase().contains(match))
             .toList();
 
-        return Scaffold(
-          appBar: VersionAppBar(title: 'Dashboards, n= ${items.length}'),
-          backgroundColor: AppColors.bodyBgColor,
-          floatingActionButton: FloatingActionButton(
-            child: const Icon(MdiIcons.plus, size: 32),
-            backgroundColor: AppColors.entryBgColor,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (BuildContext context) {
-                    DateTime now = DateTime.now();
-                    return DashboardDetailRoute(
-                      dashboard: DashboardDefinition(
-                        id: uuid.v1(),
-                        name: '',
-                        createdAt: now,
-                        updatedAt: now,
-                        lastReviewed: now,
-                        description: '',
-                        vectorClock: null,
-                        version: '',
-                        items: [],
-                        active: true,
-                        private: false,
+        return Stack(
+          children: [
+            ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.only(
+                left: 8.0,
+                right: 8.0,
+                bottom: 8,
+                top: 64,
+              ),
+              children: List.generate(
+                filtered.length,
+                (int index) {
+                  return DashboardCard(
+                    dashboard: filtered.elementAt(index),
+                    index: index,
+                  );
+                },
+              ),
+            ),
+            buildFloatingSearchBar(),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: FloatingActionButton(
+                  child: const Icon(MdiIcons.plus, size: 32),
+                  backgroundColor: AppColors.entryBgColor,
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (BuildContext context) {
+                          DateTime now = DateTime.now();
+                          return DashboardDetailRoute(
+                            dashboard: DashboardDefinition(
+                              id: uuid.v1(),
+                              name: '',
+                              createdAt: now,
+                              updatedAt: now,
+                              lastReviewed: now,
+                              description: '',
+                              vectorClock: null,
+                              version: '',
+                              items: [],
+                              active: true,
+                              private: false,
+                            ),
+                          );
+                        },
                       ),
                     );
                   },
                 ),
-              );
-            },
-          ),
-          body: Stack(
-            children: [
-              ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.only(
-                  left: 8.0,
-                  right: 8.0,
-                  bottom: 8,
-                  top: 64,
-                ),
-                children: List.generate(
-                  filtered.length,
-                  (int index) {
-                    return DashboardCard(
-                      dashboard: filtered.elementAt(index),
-                      index: index,
-                    );
-                  },
-                ),
               ),
-              buildFloatingSearchBar(),
-            ],
-          ),
+            )
+          ],
         );
       },
     );

@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' as drift;
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -41,94 +41,93 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             List<OutboxItem> items = snapshot.data ?? [];
             bool onlineStatus = state is! OutboxDisabled;
 
-            return Scaffold(
-              appBar: AppBar(
-                backgroundColor: AppColors.headerBgColor,
-                foregroundColor: AppColors.appBarFgColor,
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CupertinoSegmentedControl(
-                      selectedColor: AppColors.entryBgColor,
-                      unselectedColor: AppColors.headerBgColor,
-                      borderColor: AppColors.entryBgColor,
-                      groupValue: _selectedValue,
-                      onValueChanged: (String value) {
-                        setState(() {
-                          _selectedValue = value;
-                          if (_selectedValue == 'all') {
-                            stream = _db.watchOutboxItems();
-                          }
-                          if (_selectedValue == 'pending') {
-                            stream = _db.watchOutboxItems(
-                                statuses: [OutboxStatus.pending]);
-                          }
-                          if (_selectedValue == 'error') {
-                            stream = _db.watchOutboxItems(
-                                statuses: [OutboxStatus.error]);
-                          }
-                        });
-                      },
-                      children: const {
-                        'pending': SizedBox(
-                          width: 64,
-                          height: 32,
-                          child: Center(
-                            child: Text(
-                              'pending',
-                              style: TextStyle(
-                                fontFamily: 'Oswald',
-                                fontSize: 14,
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CupertinoSegmentedControl(
+                        selectedColor: AppColors.entryBgColor,
+                        unselectedColor: AppColors.headerBgColor,
+                        borderColor: AppColors.entryBgColor,
+                        groupValue: _selectedValue,
+                        onValueChanged: (String value) {
+                          setState(() {
+                            _selectedValue = value;
+                            if (_selectedValue == 'all') {
+                              stream = _db.watchOutboxItems();
+                            }
+                            if (_selectedValue == 'pending') {
+                              stream = _db.watchOutboxItems(
+                                  statuses: [OutboxStatus.pending]);
+                            }
+                            if (_selectedValue == 'error') {
+                              stream = _db.watchOutboxItems(
+                                  statuses: [OutboxStatus.error]);
+                            }
+                          });
+                        },
+                        children: const {
+                          'pending': SizedBox(
+                            width: 64,
+                            height: 32,
+                            child: Center(
+                              child: Text(
+                                'pending',
+                                style: TextStyle(
+                                  fontFamily: 'Oswald',
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        'error': SizedBox(
-                          child: Center(
-                            child: Text(
-                              'error',
-                              style: TextStyle(
-                                fontFamily: 'Oswald',
-                                fontSize: 14,
+                          'error': SizedBox(
+                            child: Center(
+                              child: Text(
+                                'error',
+                                style: TextStyle(
+                                  fontFamily: 'Oswald',
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        'all': SizedBox(
-                          child: Center(
-                            child: Text(
-                              'all',
-                              style: TextStyle(
-                                fontFamily: 'Oswald',
-                                fontSize: 14,
+                          'all': SizedBox(
+                            child: Center(
+                              child: Text(
+                                'all',
+                                style: TextStyle(
+                                  fontFamily: 'Oswald',
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        },
+                      ),
+                      CupertinoSwitch(
+                        value: onlineStatus,
+                        onChanged: (_) {
+                          context.read<OutboxCubit>().toggleStatus();
+                        },
+                      ),
+                    ],
+                  ),
+                  ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.all(8.0),
+                    children: List.generate(
+                      items.length,
+                      (int index) {
+                        return OutboxItemCard(
+                          item: items.elementAt(index),
+                          index: index,
+                        );
                       },
                     ),
-                    CupertinoSwitch(
-                      value: onlineStatus,
-                      onChanged: (_) {
-                        context.read<OutboxCubit>().toggleStatus();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              backgroundColor: AppColors.bodyBgColor,
-              body: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(8.0),
-                children: List.generate(
-                  items.length,
-                  (int index) {
-                    return OutboxItemCard(
-                      item: items.elementAt(index),
-                      index: index,
-                    );
-                  },
-                ),
+                  ),
+                ],
               ),
             );
           },
@@ -198,10 +197,10 @@ class OutboxItemCard extends StatelessWidget {
               if (statusEnum == OutboxStatus.error) {
                 _db.updateOutboxItem(
                   OutboxCompanion(
-                    id: Value(item.id),
-                    status: Value(OutboxStatus.pending.index),
-                    retries: Value(item.retries + 1),
-                    updatedAt: Value(DateTime.now()),
+                    id: drift.Value(item.id),
+                    status: drift.Value(OutboxStatus.pending.index),
+                    retries: drift.Value(item.retries + 1),
+                    updatedAt: drift.Value(DateTime.now()),
                   ),
                 );
               }

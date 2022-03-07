@@ -6,14 +6,14 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/pages/settings/dashboards/chart_multi_select.dart';
+import 'package:lotti/pages/settings/dashboards/dashboard_item_card.dart';
+import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
-import 'package:lotti/widgets/pages/settings/dashboards/chart_multi_select.dart';
-import 'package:lotti/widgets/pages/settings/dashboards/dashboard_item_card.dart';
-import 'package:lotti/widgets/pages/settings/form_text_field.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
