@@ -18,6 +18,8 @@ import 'package:lotti/logic/persistence_logic.dart';
 class HealthImport {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final JournalDb _db = getIt<JournalDb>();
+  final HealthFactory _healthFactory = HealthFactory();
+  Duration defaultFetchDuration = const Duration(days: 30);
 
   late final String platform;
   String? deviceType;
@@ -93,6 +95,10 @@ class HealthImport {
     await transaction.finish();
   }
 
+  Future<bool> authorizeHealth(List<HealthDataType> types) async {
+    return await _healthFactory.requestAuthorization(types);
+  }
+
   Future fetchHealthData({
     required List<HealthDataType> types,
     required DateTime dateFrom,
@@ -103,15 +109,18 @@ class HealthImport {
 
     final transaction =
         _insightsDb.startTransaction('fetchHealthData()', 'task');
-    HealthFactory health = HealthFactory();
-    bool accessWasGranted = await health.requestAuthorization(types);
+    bool accessWasGranted = await authorizeHealth(types);
 
     if (accessWasGranted) {
       try {
         DateTime now = DateTime.now();
         DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
         List<HealthDataPoint> dataPoints =
-            await health.getHealthDataFromTypes(dateFrom, dateToOrNow, types);
+            await _healthFactory.getHealthDataFromTypes(
+          dateFrom,
+          dateToOrNow,
+          types,
+        );
 
         for (HealthDataPoint dataPoint in dataPoints) {
           DiscreteQuantityData discreteQuantity = DiscreteQuantityData(
@@ -152,35 +161,37 @@ class HealthImport {
     QuantitativeEntry? latest =
         await _db.latestQuantitativeByType(actualTypes.first);
     DateTime now = DateTime.now();
-    latest?.data.map(
-      cumulativeQuantityData: (cumulativeQuantityData) {
-        getActivityHealthData(
-          dateFrom: latest.meta.dateFrom,
+
+    DateTime dateFrom =
+        latest?.meta.dateFrom ?? now.subtract(defaultFetchDuration);
+
+    List<HealthDataType> healthDataTypes = [];
+
+    for (String type in actualTypes) {
+      String subType = type.replaceAll('HealthDataType.', '');
+      HealthDataType? healthDataType =
+          EnumToString.fromString(HealthDataType.values, subType);
+
+      if (healthDataType != null) {
+        healthDataTypes.add(healthDataType);
+      }
+    }
+
+    if (type.contains('cumulative')) {
+      getActivityHealthData(
+        dateFrom: dateFrom,
+        dateTo: now,
+      );
+    } else {
+      bool accessWasGranted = await authorizeHealth(healthDataTypes);
+      if (accessWasGranted && healthDataTypes.isNotEmpty) {
+        fetchHealthData(
+          types: healthDataTypes,
+          dateFrom: dateFrom,
           dateTo: now,
         );
-      },
-      discreteQuantityData: (discreteQuantityData) {
-        List<HealthDataType> healthDataTypes = [];
-
-        for (String type in actualTypes) {
-          String subType = type.replaceAll('HealthDataType.', '');
-          HealthDataType? healthDataType =
-              EnumToString.fromString(HealthDataType.values, subType);
-
-          if (healthDataType != null) {
-            healthDataTypes.add(healthDataType);
-          }
-        }
-
-        if (healthDataTypes.isNotEmpty) {
-          fetchHealthData(
-            types: healthDataTypes,
-            dateFrom: latest.meta.dateFrom,
-            dateTo: now,
-          );
-        }
-      },
-    );
+      }
+    }
   }
 
   Future getWorkoutsHealthData({
@@ -226,12 +237,10 @@ class HealthImport {
     WorkoutEntry? latest = await _db.latestWorkout();
     DateTime now = DateTime.now();
 
-    if (latest != null) {
-      getWorkoutsHealthData(
-        dateFrom: latest.data.dateFrom,
-        dateTo: now,
-      );
-    }
+    getWorkoutsHealthData(
+      dateFrom: latest?.data.dateFrom ?? now.subtract(defaultFetchDuration),
+      dateTo: now,
+    );
   }
 }
 
