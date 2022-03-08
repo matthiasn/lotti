@@ -1,5 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:lotti/pages/settings/conflicts.dart';
+import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
+import 'package:lotti/pages/settings/dashboards/dashboard_details_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
 import 'package:lotti/pages/settings/health_import_page.dart';
@@ -37,6 +39,14 @@ const AutoRoute settingsRoutes = AutoRoute(
     AutoRoute(
       path: 'dashboards',
       page: DashboardSettingsPage,
+    ),
+    AutoRoute(
+      path: 'dashboards/:dashboardId',
+      page: EditDashboardPage,
+    ),
+    AutoRoute(
+      path: 'dashboards/create',
+      page: CreateDashboardPage,
     ),
     AutoRoute(
       path: 'health_import',

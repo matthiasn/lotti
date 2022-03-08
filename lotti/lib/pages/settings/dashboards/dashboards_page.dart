@@ -1,11 +1,11 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/settings/dashboards/dashboard_details.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
@@ -115,28 +115,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
                   child: const Icon(MdiIcons.plus, size: 32),
                   backgroundColor: AppColors.entryBgColor,
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (BuildContext context) {
-                          DateTime now = DateTime.now();
-                          return DashboardDetailRoute(
-                            dashboard: DashboardDefinition(
-                              id: uuid.v1(),
-                              name: '',
-                              createdAt: now,
-                              updatedAt: now,
-                              lastReviewed: now,
-                              description: '',
-                              vectorClock: null,
-                              version: '',
-                              items: [],
-                              active: true,
-                              private: false,
-                            ),
-                          );
-                        },
-                      ),
-                    );
+                    context.router.push(const CreateDashboardRoute());
                   },
                 ),
               ),
@@ -190,14 +169,8 @@ class DashboardCard extends StatelessWidget {
         ),
         enabled: true,
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return DashboardDetailRoute(
-                  dashboard: dashboard,
-                );
-              },
-            ),
+          context.router.push(
+            EditDashboardRoute(dashboardId: dashboard.id),
           );
         },
       ),
