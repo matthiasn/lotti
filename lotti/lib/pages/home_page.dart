@@ -13,6 +13,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AutoTabsScaffold(
+      animationDuration: const Duration(milliseconds: 500),
       appBarBuilder: (context, tabsRouter) => AppBar(
         backgroundColor: AppColors.headerBgColor,
         title: const VersionAppBar(title: 'Lotti'),
