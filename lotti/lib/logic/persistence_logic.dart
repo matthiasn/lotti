@@ -148,7 +148,7 @@ class PersistenceLogic {
       await createDbEntity(
         journalEntity,
         enqueueSync: true,
-        linked: linked,
+        linkedId: linked?.meta.id,
       );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
@@ -197,7 +197,7 @@ class PersistenceLogic {
       await createDbEntity(
         journalEntity,
         enqueueSync: true,
-        linked: linked,
+        linkedId: linked?.meta.id,
       );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
@@ -248,7 +248,7 @@ class PersistenceLogic {
       await createDbEntity(
         journalEntity,
         enqueueSync: true,
-        linked: linked,
+        linkedId: linked?.meta.id,
       );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
@@ -292,7 +292,7 @@ class PersistenceLogic {
       await createDbEntity(
         journalEntity,
         enqueueSync: true,
-        linked: linked,
+        linkedId: linked?.meta.id,
       );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
@@ -344,7 +344,7 @@ class PersistenceLogic {
       await createDbEntity(
         journalEntity,
         enqueueSync: true,
-        linked: linked,
+        linkedId: linked?.meta.id,
       );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
@@ -357,7 +357,7 @@ class PersistenceLogic {
   Future<bool> createTextEntry(
     EntryText entryText, {
     required DateTime started,
-    JournalEntity? linked,
+    String? linkedId,
   }) async {
     final transaction =
         _insightsDb.startTransaction('createTextEntry()', 'task');
@@ -388,7 +388,7 @@ class PersistenceLogic {
       await createDbEntity(
         journalEntity,
         enqueueSync: true,
-        linked: linked,
+        linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
@@ -425,9 +425,15 @@ class PersistenceLogic {
   Future<bool?> createDbEntity(
     JournalEntity journalEntity, {
     bool enqueueSync = false,
-    JournalEntity? linked,
+    String? linkedId,
   }) async {
     final TagsService tagsService = getIt<TagsService>();
+
+    JournalEntity? linked;
+
+    if (linkedId != null) {
+      linked = await _journalDb.journalEntityById(linkedId);
+    }
 
     final transaction =
         _insightsDb.startTransaction('createDbEntity()', 'task');
