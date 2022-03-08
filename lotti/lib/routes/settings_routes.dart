@@ -9,6 +9,8 @@ import 'package:lotti/pages/settings/measurables_page.dart';
 import 'package:lotti/pages/settings/outbox_monitor.dart';
 import 'package:lotti/pages/settings/settings_page.dart';
 import 'package:lotti/pages/settings/sync_settings.dart';
+import 'package:lotti/pages/settings/tags/create_tag_page.dart';
+import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';
 
 const AutoRoute settingsRoutes = AutoRoute(
@@ -23,6 +25,14 @@ const AutoRoute settingsRoutes = AutoRoute(
     AutoRoute(
       path: 'tags',
       page: TagsPage,
+    ),
+    AutoRoute(
+      path: 'tags/:tagId',
+      page: EditExistingTagPage,
+    ),
+    AutoRoute(
+      path: 'tags/create/:tagType',
+      page: CreateTagPage,
     ),
     AutoRoute(
       path: 'dashboards',

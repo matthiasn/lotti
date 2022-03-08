@@ -1,10 +1,11 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/settings/tags/tag_details.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/create/add_tag_actions.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
@@ -167,13 +168,9 @@ class TagCard extends StatelessWidget {
           ),
           enabled: true,
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return TagDetailRoute(
-                    tagEntity: tagEntity,
-                  );
-                },
+            context.router.push(
+              EditExistingTagRoute(
+                tagEntityId: tagEntity.id,
               ),
             );
           },
