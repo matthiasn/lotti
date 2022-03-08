@@ -17,7 +17,9 @@ class HomePage extends StatelessWidget {
         backgroundColor: AppColors.headerBgColor,
         title: const VersionAppBar(title: 'Lotti'),
         centerTitle: true,
-        leading: const AutoBackButton(),
+        leading: AutoBackButton(
+          color: AppColors.entryTextColor,
+        ),
       ),
       backgroundColor: AppColors.bodyBgColor,
       routes: const [
