@@ -1,9 +1,9 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -35,13 +35,8 @@ class TimeRecordingIndicator extends StatelessWidget {
           bottom: 0,
           child: GestureDetector(
             onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (BuildContext context) {
-                    return EntryDetailRoute(item: current);
-                  },
-                ),
-              );
+              String entryId = current.meta.id;
+              context.router.pushNamed('/journal/$entryId');
             },
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
