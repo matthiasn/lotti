@@ -25,6 +25,8 @@ class AppColors {
   static Color storyTagColor = const Color.fromRGBO(200, 120, 0, 1);
   static Color privateTagColor = Colors.red;
   static Color entryTextColor = const Color.fromRGBO(158, 158, 158, 1);
+  static Color bottomNavIconUnselected = entryTextColor;
+  static Color bottomNavIconSelected = const Color.fromRGBO(200, 120, 0, 1);
   static Color editorTextColor = const Color.fromRGBO(51, 51, 51, 1);
   static Color starredGold = const Color.fromRGBO(255, 215, 0, 1);
   static Color recordingTextColor = const Color.fromRGBO(224, 224, 224, 0.8);
@@ -55,6 +57,10 @@ class AppColors {
       TinyColor(headerBgColor).lighten(40).color;
   static Color inactiveAudioControl = const Color.fromRGBO(155, 155, 177, 1);
   static Color listItemText = bodyBgColor;
+}
+
+class AppTheme {
+  static const double bottomNavIconSize = 24;
 }
 
 const double chipBorderRadius = 8.0;
@@ -102,6 +108,12 @@ TextStyle labelStyle = TextStyle(
 TextStyle formLabelStyle = TextStyle(
   color: AppColors.entryTextColor,
   height: 1.6,
+  fontFamily: 'Oswald',
+  fontSize: 20,
+);
+
+TextStyle appBarTextStyle = TextStyle(
+  color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 20,
 );

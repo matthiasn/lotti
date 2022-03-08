@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TasksBadgeIcon extends StatelessWidget {
@@ -29,7 +30,10 @@ class TasksBadgeIcon extends StatelessWidget {
           showBadge: count != 0,
           toAnimate: false,
           elevation: 3,
-          child: const Icon(MdiIcons.checkboxOutline),
+          child: const Icon(
+            MdiIcons.checkboxOutline,
+            size: AppTheme.bottomNavIconSize,
+          ),
         );
       },
     );

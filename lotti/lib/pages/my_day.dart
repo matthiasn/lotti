@@ -5,7 +5,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 class MyDayPage extends StatelessWidget {
@@ -83,26 +82,24 @@ class MyDayPage extends StatelessWidget {
           }
         }
 
-        return Scaffold(
-          appBar: const VersionAppBar(title: 'My Day'),
-          body: SfCalendar(
-            view: CalendarView.timelineWeek,
-            dataSource: MeetingDataSource(meetings),
-            onTap: (CalendarTapDetails cal) {
-              cal.appointments?.forEach((element) {
-                Meeting meeting = element as Meeting;
-                debugPrint(meeting.journalEntity.toString());
+        return SfCalendar(
+          backgroundColor: Colors.white,
+          view: CalendarView.timelineWeek,
+          dataSource: MeetingDataSource(meetings),
+          onTap: (CalendarTapDetails cal) {
+            cal.appointments?.forEach((element) {
+              Meeting meeting = element as Meeting;
+              debugPrint(meeting.journalEntity.toString());
 
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (BuildContext context) {
-                      return EntryDetailRoute(item: meeting.journalEntity);
-                    },
-                  ),
-                );
-              });
-            },
-          ),
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) {
+                    return EntryDetailRoute(item: meeting.journalEntity);
+                  },
+                ),
+              );
+            });
+          },
         );
       },
     );

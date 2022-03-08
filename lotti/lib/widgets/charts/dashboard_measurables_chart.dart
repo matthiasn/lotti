@@ -6,9 +6,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/pages/add/new_measurement_page.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
 
 class DashboardMeasurablesChart extends StatelessWidget {
   final String measurableDataTypeId;

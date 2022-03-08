@@ -29,25 +29,17 @@ class _InsightsPageState extends State<InsightsPage> {
       ) {
         List<Insight> insights = snapshot.data ?? [];
 
-        return Scaffold(
-          appBar: AppBar(
-            backgroundColor: AppColors.headerBgColor,
-            foregroundColor: AppColors.appBarFgColor,
-            title: const Text('Logging'),
-          ),
-          backgroundColor: AppColors.bodyBgColor,
-          body: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.all(8.0),
-            children: List.generate(
-              insights.length,
-              (int index) {
-                return InsightCard(
-                  insight: insights.elementAt(index),
-                  index: index,
-                );
-              },
-            ),
+        return ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(8.0),
+          children: List.generate(
+            insights.length,
+            (int index) {
+              return InsightCard(
+                insight: insights.elementAt(index),
+                index: index,
+              );
+            },
           ),
         );
       },

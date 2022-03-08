@@ -1,13 +1,13 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/create/add_tag_actions.dart';
-import 'package:lotti/widgets/misc/app_bar_version.dart';
-import 'package:lotti/widgets/pages/settings/tags/tag_details.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 class TagsPage extends StatefulWidget {
@@ -87,33 +87,35 @@ class _TagsPageState extends State<TagsPage> {
                 (TagEntity entity) => entity.tag.toLowerCase().contains(match))
             .toList();
 
-        return Scaffold(
-          appBar: VersionAppBar(title: 'Tags, n= ${items.length}'),
-          backgroundColor: AppColors.bodyBgColor,
-          floatingActionButton: const RadialAddTagButtons(),
-          body: Stack(
-            children: [
-              ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.only(
-                  left: 8.0,
-                  right: 8.0,
-                  bottom: 8,
-                  top: 64,
-                ),
-                children: List.generate(
-                  filtered.length,
-                  (int index) {
-                    return TagCard(
-                      tagEntity: filtered.elementAt(index),
-                      index: index,
-                    );
-                  },
-                ),
+        return Stack(
+          children: [
+            ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.only(
+                left: 8.0,
+                right: 8.0,
+                bottom: 8,
+                top: 64,
               ),
-              buildFloatingSearchBar(),
-            ],
-          ),
+              children: List.generate(
+                filtered.length,
+                (int index) {
+                  return TagCard(
+                    tagEntity: filtered.elementAt(index),
+                    index: index,
+                  );
+                },
+              ),
+            ),
+            buildFloatingSearchBar(),
+            const Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: RadialAddTagButtons(),
+              ),
+            )
+          ],
         );
       },
     );
@@ -166,13 +168,9 @@ class TagCard extends StatelessWidget {
           ),
           enabled: true,
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return TagDetailRoute(
-                    tagEntity: tagEntity,
-                  );
-                },
+            context.router.push(
+              EditExistingTagRoute(
+                tagEntityId: tagEntity.id,
               ),
             );
           },

@@ -52,30 +52,22 @@ class _VersionAppBarState extends State<VersionAppBar> {
           if (snapshot.data == null) {
             return const SizedBox.shrink();
           } else {
-            return AppBar(
-              backgroundColor: AppColors.headerBgColor,
-              foregroundColor: AppColors.appBarFgColor,
-              title: Column(
-                children: [
-                  Text(
-                    widget.title,
-                    style: TextStyle(
-                      color: AppColors.appBarFgColor,
-                      fontFamily: 'Oswald',
-                    ),
+            return Column(
+              children: [
+                Text(
+                  widget.title,
+                  style: appBarTextStyle,
+                ),
+                Text(
+                  'v$version ($buildNumber), n = ${snapshot.data}',
+                  style: TextStyle(
+                    color: AppColors.headerFontColor2,
+                    fontFamily: 'Oswald',
+                    fontSize: 10.0,
+                    fontWeight: FontWeight.w300,
                   ),
-                  Text(
-                    'v$version ($buildNumber), n = ${snapshot.data}',
-                    style: TextStyle(
-                      color: AppColors.headerFontColor2,
-                      fontFamily: 'Oswald',
-                      fontSize: 10.0,
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
-                ],
-              ),
-              centerTitle: true,
+                ),
+              ],
             );
           }
         });
