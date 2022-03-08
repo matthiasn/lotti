@@ -1,10 +1,10 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-
-import 'measurable_detail_page.dart';
 
 const double iconSize = 24.0;
 
@@ -76,15 +76,8 @@ class MeasurableTypeCard extends StatelessWidget {
             ),
             enabled: true,
             onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (BuildContext context) {
-                    return DetailRoute(
-                      item: item,
-                      index: index,
-                    );
-                  },
-                ),
+              context.router.push(
+                EditMeasurableRoute(measurableId: item.id),
               );
             },
           ),
