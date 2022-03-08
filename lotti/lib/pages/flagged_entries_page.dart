@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
-import 'package:lotti/widgets/misc/app_bar_version.dart';
 
 class FlaggedEntriesPage extends StatefulWidget {
   const FlaggedEntriesPage({
@@ -31,59 +29,44 @@ class _FlaggedEntriesPageState extends State<FlaggedEntriesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Navigator(
-      key: widget.navigatorKey,
-      onGenerateRoute: (RouteSettings settings) {
-        return MaterialPageRoute(
-          settings: settings,
-          builder: (BuildContext context) {
-            return StreamBuilder<List<JournalEntity>>(
-              stream: stream,
-              builder: (
-                BuildContext context,
-                AsyncSnapshot<List<JournalEntity>> snapshot,
-              ) {
-                if (snapshot.data == null) {
-                  return const SizedBox.shrink();
-                } else {
-                  List<JournalEntity> items = snapshot.data!;
+    return StreamBuilder<List<JournalEntity>>(
+      stream: stream,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<JournalEntity>> snapshot,
+      ) {
+        if (snapshot.data == null) {
+          return const SizedBox.shrink();
+        } else {
+          List<JournalEntity> items = snapshot.data!;
 
-                  return Scaffold(
-                    appBar: const VersionAppBar(title: 'Flagged'),
-                    backgroundColor: AppColors.bodyBgColor,
-                    body: Container(
-                      margin: const EdgeInsets.symmetric(
-                        vertical: 8.0,
-                        horizontal: 8.0,
-                      ),
-                      child: ListView(
-                        children: List.generate(
-                          items.length,
-                          (int index) {
-                            JournalEntity item = items.elementAt(index);
-                            return item.maybeMap(
-                                journalImage: (JournalImage image) {
-                              return JournalImageCard(
-                                item: image,
-                                index: index,
-                              );
-                            }, orElse: () {
-                              return JournalCard(
-                                item: item,
-                                index: index,
-                              );
-                            });
-                          },
-                          growable: true,
-                        ),
-                      ),
-                    ),
-                  );
-                }
-              },
-            );
-          },
-        );
+          return Container(
+            margin: const EdgeInsets.symmetric(
+              vertical: 8.0,
+              horizontal: 8.0,
+            ),
+            child: ListView(
+              children: List.generate(
+                items.length,
+                (int index) {
+                  JournalEntity item = items.elementAt(index);
+                  return item.maybeMap(journalImage: (JournalImage image) {
+                    return JournalImageCard(
+                      item: image,
+                      index: index,
+                    );
+                  }, orElse: () {
+                    return JournalCard(
+                      item: item,
+                      index: index,
+                    );
+                  });
+                },
+                growable: true,
+              ),
+            ),
+          );
+        }
       },
     );
   }
