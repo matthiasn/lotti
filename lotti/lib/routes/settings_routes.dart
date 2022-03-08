@@ -7,7 +7,7 @@ import 'package:lotti/pages/settings/flags_page.dart';
 import 'package:lotti/pages/settings/health_import_page.dart';
 import 'package:lotti/pages/settings/insights_page.dart';
 import 'package:lotti/pages/settings/maintenance_page.dart';
-import 'package:lotti/pages/settings/measurables_page.dart';
+import 'package:lotti/pages/settings/measurables/measurables_page.dart';
 import 'package:lotti/pages/settings/outbox_monitor.dart';
 import 'package:lotti/pages/settings/settings_page.dart';
 import 'package:lotti/pages/settings/sync_settings.dart';
