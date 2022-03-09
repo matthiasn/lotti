@@ -69,11 +69,7 @@ class AudioRecorderWidget extends StatelessWidget {
               ),
             ],
           ),
-          VuMeterWidget(
-            decibels: state.decibels,
-            height: 16,
-            width: 280,
-          ),
+          const VuMeterWidget(height: 16, width: 280),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(

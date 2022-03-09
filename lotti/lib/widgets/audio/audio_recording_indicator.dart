@@ -61,7 +61,7 @@ class AudioRecordingIndicator extends StatelessWidget {
                           ),
                         ],
                       ),
-                      VuMeterWidget(decibels: state.decibels),
+                      const VuMeterWidget(),
                     ],
                   ),
                 ),
