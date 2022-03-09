@@ -7,10 +7,10 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class TimeRecordingIndicator extends StatelessWidget {
+class TimeRecordingIndicatorWidget extends StatelessWidget {
   final TimeService _timeService = getIt<TimeService>();
 
-  TimeRecordingIndicator({
+  TimeRecordingIndicatorWidget({
     Key? key,
   }) : super(key: key);
 
@@ -30,51 +30,62 @@ class TimeRecordingIndicator extends StatelessWidget {
 
         String durationString = formatDuration(entryDuration(current));
 
-        return Positioned(
-          left: 0,
-          bottom: 0,
-          child: GestureDetector(
-            onTap: () {
-              String entryId = current.meta.id;
-              context.router.pushNamed('/journal/$entryId');
-            },
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(8),
-                ),
-                child: Container(
-                  color: AppColors.timeRecordingBg,
-                  width: 110,
-                  height: 32,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        MdiIcons.timerOutline,
-                        color: AppColors.editorTextColor,
-                        size: 16,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Text(
-                          durationString,
-                          style: TextStyle(
-                            fontFamily: 'ShareTechMono',
-                            fontSize: 18.0,
-                            color: AppColors.editorTextColor,
-                          ),
+        return GestureDetector(
+          onTap: () {
+            String entryId = current.meta.id;
+            context.router.pushNamed('/journal/$entryId');
+          },
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(8),
+              ),
+              child: Container(
+                color: AppColors.timeRecordingBg,
+                width: 110,
+                height: 32,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      MdiIcons.timerOutline,
+                      color: AppColors.editorTextColor,
+                      size: 16,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Text(
+                        durationString,
+                        style: TextStyle(
+                          fontFamily: 'ShareTechMono',
+                          fontSize: 18.0,
+                          color: AppColors.editorTextColor,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class TimeRecordingIndicator extends StatelessWidget {
+  const TimeRecordingIndicator({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: 0,
+      bottom: 0,
+      child: TimeRecordingIndicatorWidget(),
     );
   }
 }

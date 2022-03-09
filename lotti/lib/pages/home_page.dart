@@ -6,6 +6,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
+import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -13,6 +14,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AutoTabsScaffold(
+      lazyLoad: false,
       animationDuration: const Duration(milliseconds: 500),
       appBarBuilder: (context, tabsRouter) => AppBar(
         backgroundColor: AppColors.headerBgColor,
@@ -22,6 +24,19 @@ class HomePage extends StatelessWidget {
           color: AppColors.entryTextColor,
         ),
       ),
+      builder: (context, child, _) {
+        return Container(
+          color: AppColors.bodyBgColor,
+          height: double.maxFinite,
+          width: double.maxFinite,
+          child: Stack(
+            children: [
+              child,
+              const TimeRecordingIndicator(),
+            ],
+          ),
+        );
+      },
       backgroundColor: AppColors.bodyBgColor,
       routes: const [
         JournalRouter(),
