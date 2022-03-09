@@ -8,7 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/add/new_measurement_page.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -71,15 +71,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return NewMeasurementPage(
-                  linked: widget.linked,
-                );
-              },
-            ),
-          );
+          String? linkedId = widget.linked?.meta.id;
+          context.router.push(CreateMeasurementWithLinkedRoute(
+            linkedId: linkedId,
+          ));
         },
       ),
     );

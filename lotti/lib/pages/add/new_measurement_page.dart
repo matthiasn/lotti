@@ -83,7 +83,7 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                     );
                     persistenceLogic.createMeasurementEntry(
                       data: measurement,
-                      linked: widget.linked,
+                      linkedId: widget.linked?.meta.id,
                     );
                     context.router.pop();
                   }
