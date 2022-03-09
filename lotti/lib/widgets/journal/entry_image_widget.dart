@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -112,7 +113,7 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
             child: IconButton(
               padding: const EdgeInsets.all(48.0),
               onPressed: () {
-                Navigator.pop(context);
+                context.router.pop();
                 focusNode.requestFocus();
               },
               icon: const Icon(

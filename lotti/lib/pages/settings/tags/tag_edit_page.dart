@@ -1,4 +1,5 @@
 import 'package:auto_route/annotations.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -180,7 +181,7 @@ class _TagEditPageState extends State<TagEditPage> {
                               }
 
                               persistenceLogic.upsertTagEntity(newTagEntity);
-                              Navigator.pop(context);
+                              context.router.pop();
                             }
                           },
                           child: const Padding(
@@ -206,7 +207,7 @@ class _TagEditPageState extends State<TagEditPage> {
                                 deletedAt: DateTime.now(),
                               ),
                             );
-                            Navigator.pop(context);
+                            context.router.pop();
                           },
                         ),
                       ],
