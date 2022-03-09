@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/audio/vu_meter.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class AudioRecordingIndicator extends StatelessWidget {
@@ -19,7 +20,7 @@ class AudioRecordingIndicator extends StatelessWidget {
         }
 
         return Positioned(
-          right: MediaQuery.of(context).size.width / 2 - 110,
+          right: MediaQuery.of(context).size.width / 2 - 60,
           bottom: 0,
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
@@ -60,9 +61,7 @@ class AudioRecordingIndicator extends StatelessWidget {
                           ),
                         ],
                       ),
-                      VuMeterWidget(
-                        decibels: state.decibels,
-                      ),
+                      const VuMeterWidget(),
                     ],
                   ),
                 ),
@@ -71,28 +70,6 @@ class AudioRecordingIndicator extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class VuMeterWidget extends StatelessWidget {
-  double decibels = 0;
-  VuMeterWidget({Key? key, required this.decibels}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 140,
-      child: LinearProgressIndicator(
-        value: decibels / 160,
-        minHeight: 6.0,
-        color: (decibels > 130)
-            ? AppColors.audioMeterPeakedBar
-            : (decibels > 100)
-                ? AppColors.audioMeterTooHotBar
-                : AppColors.audioMeterBar,
-        backgroundColor: AppColors.vuBgColor,
-      ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/pages/settings/outbox_badge.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
@@ -33,6 +34,7 @@ class HomePage extends StatelessWidget {
             children: [
               child,
               const TimeRecordingIndicator(),
+              const AudioRecordingIndicator(),
             ],
           ),
         );

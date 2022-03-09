@@ -137,7 +137,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: AppColors.actionColor,
           onPressed: () {
             String? linkedId = widget.linked?.meta.id;
-            context.router.pushNamed('/record_audio/$linkedId');
+            context.router.pushNamed('/journal/record_audio/$linkedId');
 
             context.read<AudioRecorderCubit>().record(
                   linkedId: widget.linked?.meta.id,
