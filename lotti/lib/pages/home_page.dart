@@ -14,6 +14,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AutoTabsScaffold(
+      lazyLoad: false,
       animationDuration: const Duration(milliseconds: 500),
       appBarBuilder: (context, tabsRouter) => AppBar(
         backgroundColor: AppColors.headerBgColor,
@@ -23,6 +24,19 @@ class HomePage extends StatelessWidget {
           color: AppColors.entryTextColor,
         ),
       ),
+      builder: (context, child, _) {
+        return Container(
+          color: AppColors.bodyBgColor,
+          height: double.maxFinite,
+          width: double.maxFinite,
+          child: Stack(
+            children: [
+              child,
+              const TimeRecordingIndicator(),
+            ],
+          ),
+        );
+      },
       backgroundColor: AppColors.bodyBgColor,
       routes: const [
         JournalRouter(),
@@ -33,46 +47,39 @@ class HomePage extends StatelessWidget {
         SettingsRouter(),
       ],
       bottomNavigationBuilder: (_, tabsRouter) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TimeRecordingIndicatorWidget(),
-            BottomNavigationBar(
-              type: BottomNavigationBarType.fixed,
-              backgroundColor: AppColors.headerBgColor,
-              unselectedItemColor: AppColors.bottomNavIconUnselected,
-              selectedItemColor: AppColors.bottomNavIconSelected,
-              currentIndex: tabsRouter.activeIndex,
-              onTap: tabsRouter.setActiveIndex,
-              items: [
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.home_outlined),
-                  label: 'Journal',
-                ),
-                BottomNavigationBarItem(
-                  icon: FlaggedBadgeIcon(),
-                  label: 'Flagged',
-                ),
-                BottomNavigationBarItem(
-                  icon: TasksBadgeIcon(),
-                  label: 'Tasks',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.lightbulb_outline),
-                  label: 'Dashboards',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.calendar_today),
-                  label: 'My Day',
-                ),
-                BottomNavigationBarItem(
-                  icon: OutboxBadgeIcon(
-                    icon: const Icon(Icons.settings_outlined),
-                  ),
-                  label: 'Settings',
-                ),
-              ],
+        return BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: AppColors.headerBgColor,
+          unselectedItemColor: AppColors.bottomNavIconUnselected,
+          selectedItemColor: AppColors.bottomNavIconSelected,
+          currentIndex: tabsRouter.activeIndex,
+          onTap: tabsRouter.setActiveIndex,
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              label: 'Journal',
+            ),
+            BottomNavigationBarItem(
+              icon: FlaggedBadgeIcon(),
+              label: 'Flagged',
+            ),
+            BottomNavigationBarItem(
+              icon: TasksBadgeIcon(),
+              label: 'Tasks',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.lightbulb_outline),
+              label: 'Dashboards',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today),
+              label: 'My Day',
+            ),
+            BottomNavigationBarItem(
+              icon: OutboxBadgeIcon(
+                icon: const Icon(Icons.settings_outlined),
+              ),
+              label: 'Settings',
             ),
           ],
         );
