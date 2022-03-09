@@ -35,9 +35,5 @@ const AutoRoute journalRoutes = AutoRoute(
       path: 'create_measurement_linked/:linkedId',
       page: CreateMeasurementWithLinkedPage,
     ),
-    AutoRoute(
-      path: 'dashboard_add_measurement/:selectedId',
-      page: CreateMeasurementWithTypePage,
-    ),
   ],
 );
