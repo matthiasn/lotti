@@ -20,7 +20,7 @@ class DashboardHealthBmiChart extends StatefulWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
 
-  DashboardHealthBmiChart({
+  const DashboardHealthBmiChart({
     Key? key,
     required this.chartConfig,
     required this.rangeStart,
