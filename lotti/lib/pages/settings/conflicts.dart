@@ -5,9 +5,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/journal/entry_detail_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class ConflictsPage extends StatefulWidget {
@@ -234,7 +234,9 @@ class DetailRoute extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-                  child: EntryDetailWidget(item: withResolvedVectorClock),
+                  child: EntryDetailPage(
+                    entryId: withResolvedVectorClock.meta.id,
+                  ),
                 ),
               ),
               Text(
@@ -251,8 +253,8 @@ class DetailRoute extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-                  child: EntryDetailWidget(
-                    item: fromSync,
+                  child: EntryDetailPage(
+                    entryId: fromSync.meta.id,
                     readOnly: true,
                   ),
                 ),

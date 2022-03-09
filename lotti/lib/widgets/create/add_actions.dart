@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
@@ -7,11 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/add/editor_page.dart';
 import 'package:lotti/pages/add/new_measurement_page.dart';
-import 'package:lotti/pages/add/new_task_page.dart';
-import 'package:lotti/pages/add/survey_page.dart';
-import 'package:lotti/pages/audio.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -96,15 +93,8 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return SurveyPage(
-                  linked: widget.linked,
-                );
-              },
-            ),
-          );
+          String? linkedId = widget.linked?.meta.id;
+          context.router.pushNamed('/journal/create_survey/$linkedId');
         },
       ),
     );
@@ -135,15 +125,8 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return EditorPage(
-                  linked: widget.linked,
-                );
-              },
-            ),
-          );
+          String? linkedId = widget.linked?.meta.id;
+          context.router.pushNamed('/journal/create/$linkedId');
         },
       ),
     );
@@ -158,17 +141,11 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           ),
           backgroundColor: AppColors.actionColor,
           onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return AudioPage(
-                    linked: widget.linked,
-                  );
-                },
-              ),
-            );
+            String? linkedId = widget.linked?.meta.id;
+            context.router.pushNamed('/record_audio/$linkedId');
+
             context.read<AudioRecorderCubit>().record(
-                  linked: widget.linked,
+                  linkedId: widget.linked?.meta.id,
                 );
           },
         ),
@@ -184,15 +161,8 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return NewTaskPage(
-                  linked: widget.linked,
-                );
-              },
-            ),
-          );
+          String? linkedId = widget.linked?.meta.id;
+          context.router.pushNamed('/tasks/create/$linkedId');
         },
       ),
     );

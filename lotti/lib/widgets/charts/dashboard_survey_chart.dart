@@ -1,17 +1,15 @@
 import 'dart:core';
 
+import 'package:auto_route/auto_route.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/add/survey_page.dart';
-import 'package:lotti/surveys/calculate.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:research_package/model.dart';
 
 class DashboardSurveyChart extends StatelessWidget {
   final DashboardSurveyItem chartConfig;
@@ -48,32 +46,7 @@ class DashboardSurveyChart extends StatelessWidget {
         List<JournalEntity?>? items = snapshot.data ?? [];
 
         void onDoubleTap() async {
-          RPOrderedTask? task = surveyTasks[chartConfig.surveyType];
-          Map<String, Set<String>>? scoreDefinitions =
-              surveyScoreDefinitions[chartConfig.surveyType];
-
-          if (task == null || scoreDefinitions == null) {
-            return;
-          }
-
-          void Function(RPTaskResult) resultCallback = createResultCallback(
-            scoreDefinitions: scoreDefinitions,
-            context: context,
-          );
-
-          showModalBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-            ),
-            clipBehavior: Clip.antiAliasWithSaveLayer,
-            builder: (BuildContext context) {
-              return SurveyWidget(task, resultCallback);
-            },
-          );
+          context.router.pushNamed('/journal/create_survey/${null}');
         }
 
         return GestureDetector(

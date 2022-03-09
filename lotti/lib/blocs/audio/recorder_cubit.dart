@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/geolocation.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/location.dart';
@@ -24,7 +23,7 @@ AudioRecorderState initialState = AudioRecorderState(
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   final InsightsDb _insightsDb = getIt<InsightsDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-  JournalEntity? _linked;
+  String? _linkedId;
 
   FlutterSoundRecorder? _myRecorder;
   AudioNote? _audioNote;
@@ -84,9 +83,9 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   void record({
-    JournalEntity? linked,
+    String? linkedId,
   }) async {
-    _linked = linked;
+    _linkedId = linkedId;
     try {
       await _openAudioSession();
       DateTime created = DateTime.now();
@@ -136,9 +135,9 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         AudioNote audioNote = _audioNote!;
         persistenceLogic.createAudioEntry(
           audioNote,
-          linked: _linked,
+          linkedId: _linkedId,
         );
-        _linked = null;
+        _linkedId = null;
       }
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);

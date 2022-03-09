@@ -119,7 +119,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
                   },
                 ),
               ),
-            )
+            ),
           ],
         );
       },

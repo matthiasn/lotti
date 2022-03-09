@@ -1,13 +1,12 @@
 // modified from https://github.com/cph-cachet/research.package/blob/master/example/lib/linear_survey_page.dart
 import 'dart:convert';
 
+import 'package:auto_route/annotations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/surveys/calculate.dart';
 import 'package:lotti/surveys/cfq11_survey.dart';
 import 'package:lotti/surveys/panas_survey.dart';
-import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:research_package/research_package.dart';
 
@@ -83,13 +82,13 @@ class SurveyWidget extends StatelessWidget {
   }
 }
 
-class SurveyPage extends StatelessWidget {
-  const SurveyPage({
+class FillSurveyPage extends StatelessWidget {
+  const FillSurveyPage({
     Key? key,
-    this.linked,
+    @PathParam() this.linkedId,
   }) : super(key: key);
 
-  final JournalEntity? linked;
+  final String? linkedId;
 
   @override
   Widget build(BuildContext context) {
@@ -112,50 +111,36 @@ class SurveyPage extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Add Survey',
-          style: TextStyle(
-            color: AppColors.entryTextColor,
-            fontFamily: 'Oswald',
-          ),
-        ),
-        backgroundColor: AppColors.headerBgColor,
-        foregroundColor: AppColors.appBarFgColor,
-      ),
-      backgroundColor: AppColors.bodyBgColor,
-      body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Button(
-                'CFQ 11',
-                onPressed: () => runSurvey(
-                  cfq11SurveyTask,
-                  createResultCallback(
-                    scoreDefinitions: cfq11ScoreDefinitions,
-                    context: context,
-                    linked: linked,
-                  ),
+    return Center(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Button(
+              'CFQ 11',
+              onPressed: () => runSurvey(
+                cfq11SurveyTask,
+                createResultCallback(
+                  scoreDefinitions: cfq11ScoreDefinitions,
+                  context: context,
+                  linkedId: linkedId,
                 ),
-                primaryColor: CupertinoColors.systemOrange,
               ),
-              Button(
-                'PANAS',
-                onPressed: () => runSurvey(
-                  panasSurveyTask,
-                  createResultCallback(
-                    scoreDefinitions: panasScoreDefinitions,
-                    context: context,
-                    linked: linked,
-                  ),
+              primaryColor: CupertinoColors.systemOrange,
+            ),
+            Button(
+              'PANAS',
+              onPressed: () => runSurvey(
+                panasSurveyTask,
+                createResultCallback(
+                  scoreDefinitions: panasScoreDefinitions,
+                  context: context,
+                  linkedId: linkedId,
                 ),
-                primaryColor: CupertinoColors.systemOrange,
               ),
-            ],
-          ),
+              primaryColor: CupertinoColors.systemOrange,
+            ),
+          ],
         ),
       ),
     );

@@ -19,7 +19,7 @@ class TaskForm extends StatefulWidget {
     required this.controller,
     required this.focusNode,
     required this.saveFn,
-    required this.task,
+    this.task,
     this.data,
     this.focusOnTitle = false,
     this.withOpenDetails = false,

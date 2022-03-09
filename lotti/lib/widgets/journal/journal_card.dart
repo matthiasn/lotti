@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:getwidget/components/list_tile/gf_list_tile.dart';
@@ -6,9 +7,9 @@ import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
-import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
 import 'package:lotti/widgets/journal/linked_duration.dart';
@@ -207,13 +208,7 @@ class JournalCard extends StatelessWidget {
               context.read<AudioPlayerCubit>().setAudioNote(audioNote);
             });
 
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return EntryDetailRoute(item: item);
-                },
-              ),
-            );
+            context.router.push(EntryDetailRoute(entryId: item.meta.id));
           },
         ),
       );
@@ -286,14 +281,8 @@ class JournalImageCard extends StatelessWidget {
               item.mapOrNull(journalAudio: (JournalAudio audioNote) {
                 context.read<AudioPlayerCubit>().setAudioNote(audioNote);
               });
-
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (BuildContext context) {
-                    return EntryDetailRoute(item: item);
-                  },
-                ),
-              );
+              String entryId = item.meta.id;
+              context.router.push(EntryDetailRoute(entryId: entryId));
             },
           ),
         ),
