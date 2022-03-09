@@ -28,7 +28,7 @@ PODS:
     - FlutterMacOS
   - path_provider_macos (0.0.1):
     - FlutterMacOS
-  - photo_manager (1.0.0):
+  - photo_manager (2.0.0):
     - Flutter
     - FlutterMacOS
   - ReachabilitySwift (5.0.0)
@@ -135,7 +135,7 @@ SPEC CHECKSUMS:
   location: 7cdb0665bd6577d382b0a343acdadbcb7f964775
   package_info_plus_macos: f010621b07802a241d96d01876d6705f15e77c1c
   path_provider_macos: 160cab0d5461f0c0e02995469a98f24bdb9a3f1f
-  photo_manager: 84fa94fbeb82e607333ea9a13c43b58e0903a463
+  photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
   sqflite: a5789cceda41d54d23f31d6de539d65bb14100ea
   sqlite3: 2c78798a817aa040981e2b0cfb4eb94523c0f55f
