@@ -20,9 +20,11 @@ Future<void> importImageAssets(
 
   final List<AssetEntity>? assets = await AssetPicker.pickAssets(
     context,
-    maxAssets: 40,
-    textDelegate: EnglishTextDelegate(),
-    routeDuration: const Duration(seconds: 0),
+    pickerConfig: AssetPickerConfig(
+      maxAssets: 40,
+      requestType: RequestType.image,
+      textDelegate: EnglishAssetPickerTextDelegate(),
+    ),
   );
   if (assets != null) {
     for (final AssetEntity asset in assets) {

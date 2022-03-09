@@ -102,7 +102,7 @@ dependencies:
   syncfusion_flutter_datepicker: ^19.3.57
   tinycolor2: ^2.0.0
   uuid: ^3.0.4
-  wechat_assets_picker: ^6.3.0
+  wechat_assets_picker: ^7.0.1
   window_manager: ^0.1.5
   yaml: ^3.1.0
 
