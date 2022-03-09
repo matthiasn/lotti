@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/audio/vu_meter.dart';
 
 const double iconSize = 64.0;
 
@@ -70,6 +71,8 @@ class AudioRecorderWidget extends StatelessWidget {
           ),
           VuMeterWidget(
             decibels: state.decibels,
+            height: 16,
+            width: 280,
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -85,30 +88,5 @@ class AudioRecorderWidget extends StatelessWidget {
         ],
       );
     });
-  }
-}
-
-class VuMeterWidget extends StatelessWidget {
-  double decibels = 0;
-  VuMeterWidget({Key? key, required this.decibels}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-      child: SizedBox(
-        width: 280,
-        child: LinearProgressIndicator(
-          value: decibels / 160,
-          minHeight: 16.0,
-          color: (decibels > 130)
-              ? AppColors.audioMeterPeakedBar
-              : (decibels > 100)
-                  ? AppColors.audioMeterTooHotBar
-                  : AppColors.audioMeterBar,
-          backgroundColor: AppColors.audioMeterBarBackground,
-        ),
-      ),
-    );
   }
 }
