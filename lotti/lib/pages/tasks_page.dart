@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,8 +14,6 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags_search_widget.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
-
-import 'add/new_task_page.dart';
 
 class TasksPage extends StatefulWidget {
   const TasksPage({
@@ -349,13 +348,8 @@ class AddTask extends StatelessWidget {
         ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return const NewTaskPage();
-              },
-            ),
-          );
+          String? linkedId;
+          context.router.pushNamed('/tasks/create/$linkedId');
         },
       ),
     );

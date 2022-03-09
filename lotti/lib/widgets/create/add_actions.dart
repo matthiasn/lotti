@@ -9,7 +9,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/add/new_measurement_page.dart';
-import 'package:lotti/pages/add/new_task_page.dart';
 import 'package:lotti/pages/add/survey_page.dart';
 import 'package:lotti/pages/audio.dart';
 import 'package:lotti/theme.dart';
@@ -177,15 +176,8 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return NewTaskPage(
-                  linked: widget.linked,
-                );
-              },
-            ),
-          );
+          String? linkedId = widget.linked?.meta.id;
+          context.router.pushNamed('/tasks/create/$linkedId');
         },
       ),
     );
