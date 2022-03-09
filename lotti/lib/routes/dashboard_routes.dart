@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:lotti/pages/create/create_measurement_page.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/pages/dashboards/dashboards_list_page.dart';
 
@@ -14,6 +15,10 @@ const AutoRoute dashboardRoutes = AutoRoute(
     AutoRoute(
       path: ':dashboardId',
       page: DashboardPage,
+    ),
+    AutoRoute(
+      path: 'add_measurement/:selectedId',
+      page: CreateMeasurementWithTypePage,
     ),
   ],
 );
