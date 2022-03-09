@@ -285,7 +285,10 @@ class TagsListWidget extends StatelessWidget {
             }
 
             return ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 24),
+              constraints: BoxConstraints(
+                minHeight: 24,
+                maxWidth: MediaQuery.of(context).size.width - 80,
+              ),
               child: Wrap(
                   spacing: 4,
                   runSpacing: 4,
