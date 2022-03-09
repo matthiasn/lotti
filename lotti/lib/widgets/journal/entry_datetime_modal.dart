@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -172,7 +173,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                               dateFrom: dateFrom,
                               dateTo: dateTo,
                             );
-                            Navigator.pop(context);
+                            context.router.pop();
                           },
                           child: Text(
                             'SAVE',

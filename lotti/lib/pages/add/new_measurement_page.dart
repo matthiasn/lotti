@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -84,7 +85,7 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                       data: measurement,
                       linked: widget.linked,
                     );
-                    Navigator.pop(context);
+                    context.router.pop();
                   }
                 },
                 child: Padding(
