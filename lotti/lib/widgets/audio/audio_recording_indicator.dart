@@ -19,7 +19,7 @@ class AudioRecordingIndicator extends StatelessWidget {
         }
 
         return Positioned(
-          right: MediaQuery.of(context).size.width / 2 - 110,
+          right: MediaQuery.of(context).size.width / 2 - 60,
           bottom: 0,
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
