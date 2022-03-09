@@ -115,7 +115,7 @@ class PersistenceLogic {
 
   Future<bool> createSurveyEntry({
     required SurveyData data,
-    JournalEntity? linked,
+    String? linkedId,
   }) async {
     final transaction =
         _insightsDb.startTransaction('createSurveyEntry()', 'task');
@@ -148,7 +148,7 @@ class PersistenceLogic {
       await createDbEntity(
         journalEntity,
         enqueueSync: true,
-        linkedId: linked?.meta.id,
+        linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);

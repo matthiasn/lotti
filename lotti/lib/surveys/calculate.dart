@@ -31,7 +31,7 @@ Map<String, int> calculateScores({
 Function(RPTaskResult) createResultCallback({
   required Map<String, Set<String>> scoreDefinitions,
   required BuildContext context,
-  JournalEntity? linked,
+  String? linkedId,
 }) {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
@@ -45,7 +45,7 @@ Function(RPTaskResult) createResultCallback({
           taskResult: taskResult,
         ),
       ),
-      linked: linked,
+      linkedId: linkedId,
     );
   };
 }
