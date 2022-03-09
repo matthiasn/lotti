@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:lotti/pages/create/create_text_entry_page.dart';
 import 'package:lotti/pages/create/fill_survey_page.dart';
+import 'package:lotti/pages/create/record_audio_page.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/pages/journal_page.dart';
 
@@ -24,6 +25,10 @@ const AutoRoute journalRoutes = AutoRoute(
     AutoRoute(
       path: 'create_survey/:linkedId',
       page: FillSurveyPage,
+    ),
+    AutoRoute(
+      path: 'record_audio/:linkedId',
+      page: RecordAudioPage,
     ),
   ],
 );

@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 
 const double iconSize = 64.0;
@@ -11,10 +10,10 @@ const double iconSize = 64.0;
 class AudioRecorderWidget extends StatelessWidget {
   const AudioRecorderWidget({
     Key? key,
-    this.linked,
+    this.linkedId,
   }) : super(key: key);
 
-  final JournalEntity? linked;
+  final String? linkedId;
 
   String formatDuration(String str) {
     return str.substring(0, str.length - 7);
@@ -41,8 +40,9 @@ class AudioRecorderWidget extends StatelessWidget {
                 color: state.status == AudioRecorderStatus.recording
                     ? AppColors.activeAudioControl
                     : AppColors.inactiveAudioControl,
-                onPressed: () =>
-                    context.read<AudioRecorderCubit>().record(linked: linked),
+                onPressed: () => context
+                    .read<AudioRecorderCubit>()
+                    .record(linkedId: linkedId),
               ),
               IconButton(
                 icon: const Icon(Icons.stop),
