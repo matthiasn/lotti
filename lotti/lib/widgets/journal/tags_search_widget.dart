@@ -119,7 +119,7 @@ class SelectedTagsWidget extends StatelessWidget {
                 }
                 return TagWidget(
                   tagEntity: tagEntity,
-                  onTap: () {
+                  onTapRemove: () {
                     removeTag(tagEntity.id);
                   },
                 );

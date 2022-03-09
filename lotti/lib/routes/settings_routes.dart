@@ -31,7 +31,7 @@ const AutoRoute settingsRoutes = AutoRoute(
       page: TagsPage,
     ),
     AutoRoute(
-      path: 'tags/:tagId',
+      path: 'tags/:tagEntityId',
       page: EditExistingTagPage,
     ),
     AutoRoute(
