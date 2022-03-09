@@ -70,6 +70,11 @@ class DashboardMeasurablesChart extends StatelessWidget {
 
             void onDoubleTap() {
               if (enableCreate) {
+                // String selectedId = measurableDataType.id;
+                // context.router
+                //     .pushNamed('journal/dashboard_add_measurement/$selectedId');
+
+                // TODO: fix above & remove code below
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (BuildContext context) {

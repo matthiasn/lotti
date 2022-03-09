@@ -160,7 +160,7 @@ class PersistenceLogic {
 
   Future<bool> createMeasurementEntry({
     required MeasurementData data,
-    JournalEntity? linked,
+    String? linkedId,
   }) async {
     final transaction =
         _insightsDb.startTransaction('createMeasurementEntry()', 'task');
@@ -197,7 +197,7 @@ class PersistenceLogic {
       await createDbEntity(
         journalEntity,
         enqueueSync: true,
-        linkedId: linked?.meta.id,
+        linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);

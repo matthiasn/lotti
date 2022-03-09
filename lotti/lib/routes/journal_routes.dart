@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:lotti/pages/create/create_measurement_page.dart';
 import 'package:lotti/pages/create/create_text_entry_page.dart';
 import 'package:lotti/pages/create/fill_survey_page.dart';
 import 'package:lotti/pages/create/record_audio_page.dart';
@@ -29,6 +30,14 @@ const AutoRoute journalRoutes = AutoRoute(
     AutoRoute(
       path: 'record_audio/:linkedId',
       page: RecordAudioPage,
+    ),
+    AutoRoute(
+      path: 'create_measurement_linked/:linkedId',
+      page: CreateMeasurementWithLinkedPage,
+    ),
+    AutoRoute(
+      path: 'dashboard_add_measurement/:selectedId',
+      page: CreateMeasurementWithTypePage,
     ),
   ],
 );
