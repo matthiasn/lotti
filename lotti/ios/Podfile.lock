@@ -83,9 +83,9 @@ PODS:
     - Flutter
     - MTBBarcodeScanner
   - ReachabilitySwift (5.0.0)
-  - SDWebImage (5.12.3):
-    - SDWebImage/Core (= 5.12.3)
-  - SDWebImage/Core (5.12.3)
+  - SDWebImage (5.12.4):
+    - SDWebImage/Core (= 5.12.4)
+  - SDWebImage/Core (5.12.4)
   - SDWebImageWebPCoder (0.8.4):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.10)
@@ -258,7 +258,7 @@ SPEC CHECKSUMS:
   photo_manager: 84fa94fbeb82e607333ea9a13c43b58e0903a463
   qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  SDWebImage: 53179a2dba77246efa8a9b85f5c5b21f8f43e38f
+  SDWebImage: 631cf572cc93dfdfe54162e556410a61f1141928
   SDWebImageWebPCoder: f93010f3f6c031e2f8fb3081ca4ee6966c539815
   sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
   sqlite3: 2c78798a817aa040981e2b0cfb4eb94523c0f55f

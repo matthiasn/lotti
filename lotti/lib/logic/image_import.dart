@@ -30,11 +30,11 @@ Future<void> importImageAssets(
       if (asset.latitude != 0.0 && asset.longitude != 0.0) {
         geolocation = Geolocation(
           createdAt: asset.createDateTime,
-          latitude: asset.latitude,
-          longitude: asset.longitude,
+          latitude: asset.latitude!,
+          longitude: asset.longitude!,
           geohashString: DeviceLocation.getGeoHash(
-            latitude: asset.latitude,
-            longitude: asset.longitude,
+            latitude: asset.latitude!,
+            longitude: asset.longitude!,
           ),
         );
       }
