@@ -46,31 +46,43 @@ class TagsViewWidget extends StatelessWidget {
                 spacing: 4,
                 runSpacing: 4,
                 children: tagsFromTagIds
-                    .map(
-                      (TagEntity tagEntity) => Padding(
-                        padding: const EdgeInsets.only(bottom: 1.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(chipBorderRadius),
-                          child: Container(
-                            padding: chipPadding,
-                            color: getTagColor(tagEntity),
-                            child: Text(
-                              tagEntity.tag,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Oswald',
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
+                    .map((tagEntity) => TagChip(tagEntity))
                     .toList(),
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class TagChip extends StatelessWidget {
+  final TagEntity tagEntity;
+
+  const TagChip(
+    this.tagEntity, {
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 1.0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(chipBorderRadius),
+        child: Container(
+          padding: chipPadding,
+          color: getTagColor(tagEntity),
+          child: Text(
+            tagEntity.tag,
+            style: const TextStyle(
+              fontSize: 12,
+              fontFamily: 'Oswald',
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

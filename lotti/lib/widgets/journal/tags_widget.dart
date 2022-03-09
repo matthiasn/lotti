@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
@@ -295,7 +296,7 @@ class TagsListWidget extends StatelessWidget {
                   children: tagsFromTagIds
                       .map((TagEntity tagEntity) => TagWidget(
                             tagEntity: tagEntity,
-                            onTap: () {
+                            onTapRemove: () {
                               removeTagId(tagEntity.id);
                             },
                           ))
@@ -312,45 +313,50 @@ class TagWidget extends StatelessWidget {
   const TagWidget({
     Key? key,
     required this.tagEntity,
-    required this.onTap,
+    required this.onTapRemove,
   }) : super(key: key);
 
   final TagEntity tagEntity;
-  final void Function()? onTap;
+  final void Function()? onTapRemove;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(chipBorderRadius),
-      child: Container(
-        padding: chipPaddingClosable,
-        color: getTagColor(tagEntity),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              tagEntity.tag,
-              style: TextStyle(
-                fontSize: 14,
-                fontFamily: 'Oswald',
-                color: AppColors.tagTextColor,
-              ),
-            ),
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 4.0),
-                  child: Icon(
-                    MdiIcons.close,
-                    size: 16,
-                    color: AppColors.tagTextColor,
-                  ),
+    return GestureDetector(
+      onDoubleTap: () {
+        context.router.pushNamed('/settings/tags/${tagEntity.id}');
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(chipBorderRadius),
+        child: Container(
+          padding: chipPaddingClosable,
+          color: getTagColor(tagEntity),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                tagEntity.tag,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Oswald',
+                  color: AppColors.tagTextColor,
                 ),
-                onTap: onTap,
               ),
-            ),
-          ],
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 4.0),
+                    child: Icon(
+                      MdiIcons.close,
+                      size: 16,
+                      color: AppColors.tagTextColor,
+                    ),
+                  ),
+                  onTap: onTapRemove,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
