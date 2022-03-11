@@ -168,8 +168,8 @@ class TagsWidget extends StatelessWidget {
                                   onTap: () {
                                     if (liveEntity.meta.tagIds != null) {
                                       HapticFeedback.heavyImpact();
-                                      tagsService.setClipboard(
-                                          liveEntity.meta.tagIds!);
+                                      tagsService
+                                          .setClipboard(liveEntity.meta.id);
                                     }
                                   },
                                 ),
@@ -188,8 +188,10 @@ class TagsWidget extends StatelessWidget {
                                       color: AppColors.entryTextColor,
                                     ),
                                   ),
-                                  onTap: () {
-                                    addTagIds(tagsService.getClipboard());
+                                  onTap: () async {
+                                    List<String> tagsFromClipboard =
+                                        await tagsService.getClipboard();
+                                    addTagIds(tagsFromClipboard);
                                     HapticFeedback.heavyImpact();
                                   },
                                 ),

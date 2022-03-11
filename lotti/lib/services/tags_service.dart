@@ -1,3 +1,4 @@
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -5,7 +6,7 @@ import 'package:lotti/get_it.dart';
 class TagsService {
   late final JournalDb _db;
   late final Stream<List<TagEntity>> _stream;
-  List<String> _clipboard = [];
+  String? _clipboardCopiedId;
 
   Map<String, TagEntity> tagsById = {};
 
@@ -58,11 +59,24 @@ class TagsService {
     return storyTagIds;
   }
 
-  List<String> getClipboard() {
-    return _clipboard;
+  Future<List<String>> getClipboard() async {
+    List<String> tags = [];
+
+    if (_clipboardCopiedId != null) {
+      JournalEntity? copiedFrom =
+          await _db.journalEntityById(_clipboardCopiedId!);
+
+      if (copiedFrom != null) {
+        copiedFrom.meta.tagIds?.forEach((String tagId) {
+          tags.add(tagId);
+        });
+      }
+    }
+
+    return tags;
   }
 
-  void setClipboard(List<String> tagIds) {
-    _clipboard = tagIds;
+  void setClipboard(String copiedEntryId) {
+    _clipboardCopiedId = copiedEntryId;
   }
 }
