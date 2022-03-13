@@ -11,13 +11,13 @@ import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-class DashboardMeasurablesChart extends StatelessWidget {
+class DashboardMeasurablesChart extends StatefulWidget {
   final String measurableDataTypeId;
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final bool enableCreate;
 
-  DashboardMeasurablesChart({
+  const DashboardMeasurablesChart({
     Key? key,
     required this.measurableDataTypeId,
     required this.rangeStart,
@@ -25,12 +25,20 @@ class DashboardMeasurablesChart extends StatelessWidget {
     this.enableCreate = false,
   }) : super(key: key);
 
+  @override
+  State<DashboardMeasurablesChart> createState() =>
+      _DashboardMeasurablesChartState();
+}
+
+class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
+  MeasureObservation? selected;
+
   final JournalDb _db = getIt<JournalDb>();
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<MeasurableDataType?>>(
-      stream: _db.watchMeasurableDataTypeById(measurableDataTypeId),
+      stream: _db.watchMeasurableDataTypeById(widget.measurableDataTypeId),
       builder: (
         BuildContext context,
         AsyncSnapshot<List<MeasurableDataType?>> typeSnapshot,
@@ -48,8 +56,8 @@ class DashboardMeasurablesChart extends StatelessWidget {
         return StreamBuilder<List<JournalEntity?>>(
           stream: _db.watchMeasurementsByType(
             type: measurableDataType.name,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
+            rangeStart: widget.rangeStart,
+            rangeEnd: widget.rangeEnd,
           ),
           builder: (
             BuildContext context,
@@ -70,7 +78,7 @@ class DashboardMeasurablesChart extends StatelessWidget {
             }
 
             void onDoubleTap() {
-              if (enableCreate) {
+              if (widget.enableCreate) {
                 context.router.push(CreateMeasurementWithTypeRoute(
                     selectedId: measurableDataType.id));
               }
@@ -82,14 +90,29 @@ class DashboardMeasurablesChart extends StatelessWidget {
             } else {
               data = aggregateSumByDay(
                 measurements,
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
+                rangeStart: widget.rangeStart,
+                rangeEnd: widget.rangeEnd,
               );
+            }
+
+            void _infoSelectionModelUpdated(
+                charts.SelectionModel<DateTime> model) {
+              if (model.hasDatumSelection) {
+                MeasureObservation newSelection =
+                    model.selectedDatum.first.datum as MeasureObservation;
+                debugPrint(
+                    'Date: ${newSelection.dateTime} Value: ${newSelection.value}');
+                setState(() {
+                  selected = selected?.dateTime == newSelection.dateTime
+                      ? null
+                      : newSelection;
+                });
+              }
             }
 
             List<charts.Series<MeasureObservation, DateTime>> seriesList = [
               charts.Series<MeasureObservation, DateTime>(
-                id: measurableDataType.id,
+                id: measurableDataType.displayName,
                 colorFn: (MeasureObservation val, _) {
                   return charts.MaterialPalette.blue.shadeDefault;
                 },
@@ -116,8 +139,15 @@ class DashboardMeasurablesChart extends StatelessWidget {
                           seriesList,
                           animate: true,
                           defaultRenderer: defaultRenderer,
+                          selectionModels: [
+                            charts.SelectionModelConfig(
+                              type: charts.SelectionModelType.info,
+                              updatedListener: _infoSelectionModelUpdated,
+                            )
+                          ],
                           behaviors: [
-                            chartRangeAnnotation(rangeStart, rangeEnd),
+                            chartRangeAnnotation(
+                                widget.rangeStart, widget.rangeEnd)
                           ],
                           domainAxis: timeSeriesAxis,
                         ),
@@ -135,6 +165,19 @@ class DashboardMeasurablesChart extends StatelessWidget {
                                   measurableDataType.displayName,
                                   style: chartTitleStyle,
                                 ),
+                                if (selected != null) ...[
+                                  const Spacer(),
+                                  Text(
+                                    ' ${ymd(selected!.dateTime)}',
+                                    style: chartTitleStyle,
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    ' ${selected?.value.floor()} ${measurableDataType.unitName}',
+                                    style: chartTitleStyle.copyWith(
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
