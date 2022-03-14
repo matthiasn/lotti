@@ -31,7 +31,7 @@ class DashboardMeasurablesChart extends StatefulWidget {
 }
 
 class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
-  MeasureObservation? selected;
+  MeasuredObservation? selected;
 
   final JournalDb _db = getIt<JournalDb>();
 
@@ -84,7 +84,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
             }
 
-            List<MeasureObservation> data;
+            List<MeasuredObservation> data;
             if (measurableDataType.aggregationType == AggregationType.none) {
               data = aggregateMeasurementNone(measurements);
             } else {
@@ -98,8 +98,8 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
             void _infoSelectionModelUpdated(
                 charts.SelectionModel<DateTime> model) {
               if (model.hasDatumSelection) {
-                MeasureObservation newSelection =
-                    model.selectedDatum.first.datum as MeasureObservation;
+                MeasuredObservation newSelection =
+                    model.selectedDatum.first.datum as MeasuredObservation;
                 setState(() {
                   selected = selected?.dateTime == newSelection.dateTime
                       ? null
@@ -108,14 +108,14 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
             }
 
-            List<charts.Series<MeasureObservation, DateTime>> seriesList = [
-              charts.Series<MeasureObservation, DateTime>(
+            List<charts.Series<MeasuredObservation, DateTime>> seriesList = [
+              charts.Series<MeasuredObservation, DateTime>(
                 id: measurableDataType.displayName,
-                colorFn: (MeasureObservation val, _) {
+                colorFn: (MeasuredObservation val, _) {
                   return charts.MaterialPalette.blue.shadeDefault;
                 },
-                domainFn: (MeasureObservation val, _) => val.dateTime,
-                measureFn: (MeasureObservation val, _) => val.value,
+                domainFn: (MeasuredObservation val, _) => val.dateTime,
+                measureFn: (MeasuredObservation val, _) => val.value,
                 data: data,
               )
             ];

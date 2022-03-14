@@ -4,7 +4,7 @@ import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/blocs/charts/chart_info_cubit.dart';
+import 'package:lotti/blocs/charts/health_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -77,8 +77,8 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
       );
     }
 
-    return BlocProvider<ChartInfoCubit>(
-      create: (BuildContext context) => ChartInfoCubit(),
+    return BlocProvider<HealthChartInfoCubit>(
+      create: (BuildContext context) => HealthChartInfoCubit(),
       child: StreamBuilder<List<JournalEntity?>>(
         stream: _db.watchQuantitativeByType(
           type: widget.chartConfig.healthType,
@@ -94,12 +94,12 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
             if (model.hasDatumSelection) {
               Observation newSelection =
                   model.selectedDatum.first.datum as Observation;
-              context.read<ChartInfoCubit>().setSelected(newSelection);
+              context.read<HealthChartInfoCubit>().setSelected(newSelection);
 
               _chartState.selectionModels[charts.SelectionModelType.info] =
                   charts.UserManagedSelectionModel(model: model);
             } else {
-              context.read<ChartInfoCubit>().clearSelected();
+              context.read<HealthChartInfoCubit>().clearSelected();
               _chartState.selectionModels[charts.SelectionModelType.info] =
                   charts.UserManagedSelectionModel();
             }
@@ -182,8 +182,8 @@ class ChartInfoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ChartInfoCubit, ChartInfoState>(
-        builder: (BuildContext context, ChartInfoState state) {
+    return BlocBuilder<HealthChartInfoCubit, HealthChartInfoState>(
+        builder: (BuildContext context, HealthChartInfoState state) {
       final Observation? selected = state.selected;
 
       return Positioned(
