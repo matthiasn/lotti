@@ -158,9 +158,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                                 : null,
                       ),
                     ),
-                    ChartInfoWidget(
-                      chartConfig: widget.chartConfig,
-                    ),
+                    HealthChartInfoWidget(widget.chartConfig),
                   ],
                 ),
               ),
@@ -172,10 +170,10 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
   }
 }
 
-class ChartInfoWidget extends StatelessWidget {
-  const ChartInfoWidget({
+class HealthChartInfoWidget extends StatelessWidget {
+  const HealthChartInfoWidget(
+    this.chartConfig, {
     Key? key,
-    required this.chartConfig,
   }) : super(key: key);
 
   final DashboardHealthItem chartConfig;
@@ -187,7 +185,7 @@ class ChartInfoWidget extends StatelessWidget {
       final Observation? selected = state.selected;
 
       return Positioned(
-        top: 0,
+        top: -1,
         left: MediaQuery.of(context).size.width / 4,
         child: SizedBox(
           width: MediaQuery.of(context).size.width / 2,
