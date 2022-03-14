@@ -2,7 +2,9 @@ import 'dart:core';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/blocs/charts/chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -35,8 +37,6 @@ class DashboardHealthChart extends StatefulWidget {
 class _DashboardHealthChartState extends State<DashboardHealthChart> {
   final JournalDb _db = getIt<JournalDb>();
   final HealthImport _healthImport = getIt<HealthImport>();
-
-  Observation? selected;
 
   @override
   void initState() {
@@ -76,121 +76,143 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
       );
     }
 
-    void _infoSelectionModelUpdated(charts.SelectionModel<DateTime> model) {
-      if (model.hasDatumSelection) {
-        Observation newSelection =
-            model.selectedDatum.first.datum as Observation;
-        setState(() {
-          selected =
-              selected?.dateTime == newSelection.dateTime ? null : newSelection;
-        });
-      }
-    }
+    return BlocProvider<ChartInfoCubit>(
+      create: (BuildContext context) => ChartInfoCubit(),
+      child: StreamBuilder<List<JournalEntity?>>(
+        stream: _db.watchQuantitativeByType(
+          type: widget.chartConfig.healthType,
+          rangeStart: widget.rangeStart,
+          rangeEnd: widget.rangeEnd,
+        ),
+        builder: (
+          BuildContext context,
+          AsyncSnapshot<List<JournalEntity?>> snapshot,
+        ) {
+          void _infoSelectionModelUpdated(
+              charts.SelectionModel<DateTime> model) {
+            if (model.hasDatumSelection) {
+              Observation newSelection =
+                  model.selectedDatum.first.datum as Observation;
+              context.read<ChartInfoCubit>().toggleSelected(newSelection);
+            }
+          }
 
-    return StreamBuilder<List<JournalEntity?>>(
-      stream: _db.watchQuantitativeByType(
-        type: widget.chartConfig.healthType,
-        rangeStart: widget.rangeStart,
-        rangeEnd: widget.rangeEnd,
-      ),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<JournalEntity?>> snapshot,
-      ) {
-        List<JournalEntity?>? items = snapshot.data ?? [];
+          List<JournalEntity?>? items = snapshot.data ?? [];
 
-        List<charts.Series<Observation, DateTime>> seriesList = [
-          charts.Series<Observation, DateTime>(
-            id: dataType,
-            colorFn: (Observation val, _) {
-              return colorByValue(val, healthType);
-            },
-            domainFn: (Observation val, _) => val.dateTime,
-            measureFn: (Observation val, _) => val.value,
-            data: aggregateByType(items, dataType),
-          )
-        ];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              key: Key('${widget.chartConfig.hashCode}'),
-              color: Colors.white,
-              height: 120,
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: Stack(
-                children: [
-                  charts.TimeSeriesChart(
-                    seriesList,
-                    animate: false,
-                    behaviors: [
-                      chartRangeAnnotation(widget.rangeStart, widget.rangeEnd),
-                    ],
-                    domainAxis: timeSeriesAxis,
-                    defaultRenderer: defaultRenderer,
-                    selectionModels: [
-                      charts.SelectionModelConfig(
-                        type: charts.SelectionModelType.info,
-                        updatedListener: _infoSelectionModelUpdated,
-                      )
-                    ],
-                    primaryMeasureAxis: charts.NumericAxisSpec(
-                      tickProviderSpec:
-                          const charts.BasicNumericTickProviderSpec(
-                        zeroBound: false,
-                        desiredTickCount: 5,
-                        dataIsInWholeNumbers: true,
-                      ),
-                      tickFormatterSpec:
-                          healthType != null && healthType.hoursMinutes
-                              ? const charts.BasicNumericTickFormatterSpec(
-                                  hoursToHhMm)
-                              : null,
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    left: MediaQuery.of(context).size.width / 4,
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width / 2,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Spacer(),
-                          Text(
-                            healthTypes[widget.chartConfig.healthType]
-                                    ?.displayName ??
-                                widget.chartConfig.healthType,
-                            style: chartTitleStyle,
-                          ),
-                          if (selected != null) ...[
-                            const Spacer(),
-                            Text(
-                              ' ${ymd(selected!.dateTime)}',
-                              style: chartTitleStyle,
-                            ),
-                            const Spacer(),
-                            Text(
-                              ' ${NumberFormat('#,###.##').format(selected?.value)}',
-                              style: chartTitleStyle.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                          const Spacer(),
-                        ],
+          List<charts.Series<Observation, DateTime>> seriesList = [
+            charts.Series<Observation, DateTime>(
+              id: dataType,
+              colorFn: (Observation val, _) {
+                return colorByValue(val, healthType);
+              },
+              domainFn: (Observation val, _) => val.dateTime,
+              measureFn: (Observation val, _) => val.value,
+              data: aggregateByType(items, dataType),
+            )
+          ];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                key: Key('${widget.chartConfig.hashCode}'),
+                color: Colors.white,
+                height: 120,
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: Stack(
+                  children: [
+                    charts.TimeSeriesChart(
+                      seriesList,
+                      animate: false,
+                      behaviors: [
+                        chartRangeAnnotation(
+                            widget.rangeStart, widget.rangeEnd),
+                      ],
+                      domainAxis: timeSeriesAxis,
+                      defaultRenderer: defaultRenderer,
+                      selectionModels: [
+                        charts.SelectionModelConfig(
+                          type: charts.SelectionModelType.info,
+                          updatedListener: _infoSelectionModelUpdated,
+                        )
+                      ],
+                      primaryMeasureAxis: charts.NumericAxisSpec(
+                        tickProviderSpec:
+                            const charts.BasicNumericTickProviderSpec(
+                          zeroBound: false,
+                          desiredTickCount: 5,
+                          dataIsInWholeNumbers: true,
+                        ),
+                        tickFormatterSpec:
+                            healthType != null && healthType.hoursMinutes
+                                ? const charts.BasicNumericTickFormatterSpec(
+                                    hoursToHhMm)
+                                : null,
                       ),
                     ),
-                  ),
-                ],
+                    ChartInfoWidget(
+                      chartConfig: widget.chartConfig,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
+  }
+}
+
+class ChartInfoWidget extends StatelessWidget {
+  const ChartInfoWidget({
+    Key? key,
+    required this.chartConfig,
+  }) : super(key: key);
+
+  final DashboardHealthItem chartConfig;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ChartInfoCubit, ChartInfoState>(
+        builder: (BuildContext context, ChartInfoState state) {
+      final Observation? selected = state.selected;
+
+      return Positioned(
+        top: 0,
+        left: MediaQuery.of(context).size.width / 4,
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width / 2,
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Spacer(),
+              Text(
+                healthTypes[chartConfig.healthType]?.displayName ??
+                    chartConfig.healthType,
+                style: chartTitleStyle,
+              ),
+              if (selected != null) ...[
+                const Spacer(),
+                Text(
+                  ' ${ymd(selected.dateTime)}',
+                  style: chartTitleStyle,
+                ),
+                const Spacer(),
+                Text(
+                  ' ${NumberFormat('#,###.##').format(selected.value)}',
+                  style: chartTitleStyle.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+              const Spacer(),
+            ],
+          ),
+        ),
+      );
+    });
   }
 }
