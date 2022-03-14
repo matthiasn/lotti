@@ -84,7 +84,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
                 children: [
                   charts.TimeSeriesChart(
                     seriesList,
-                    animate: true,
+                    animate: false,
                     behaviors: [
                       chartRangeAnnotation(widget.rangeStart, widget.rangeEnd),
                     ],

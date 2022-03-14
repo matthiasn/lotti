@@ -464,14 +464,14 @@ packages:
       name: drift
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.4.0"
+    version: "1.5.0"
   drift_dev:
     dependency: "direct dev"
     description:
       name: drift_dev
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.4.0"
+    version: "1.5.0"
   encrypt:
     dependency: transitive
     description:
@@ -756,7 +756,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.8"
+    version: "4.0.9"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -946,7 +946,7 @@ packages:
       name: health
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.4.3"
+    version: "3.4.4"
   hexcolor:
     dependency: "direct main"
     description:
@@ -1023,7 +1023,7 @@ packages:
       name: image_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.4+10"
+    version: "0.8.4+11"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -1098,7 +1098,7 @@ packages:
       name: just_audio_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.6"
+    version: "0.4.7"
   keyboard_dismisser:
     dependency: "direct main"
     description:
@@ -1674,7 +1674,7 @@ packages:
       name: sqlparser
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.20.1"
+    version: "0.21.0"
   stack_trace:
     dependency: transitive
     description:
@@ -1982,7 +1982,7 @@ packages:
       name: wechat_assets_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.0.1"
+    version: "7.0.3"
   win32:
     dependency: transitive
     description:
