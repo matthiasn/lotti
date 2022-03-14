@@ -2,6 +2,7 @@ import 'dart:core';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -34,6 +35,8 @@ class DashboardHealthChart extends StatefulWidget {
 class _DashboardHealthChartState extends State<DashboardHealthChart> {
   final JournalDb _db = getIt<JournalDb>();
   final HealthImport _healthImport = getIt<HealthImport>();
+
+  Observation? selected;
 
   @override
   void initState() {
@@ -71,6 +74,17 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
         includePoints: false,
         strokeWidthPx: 2,
       );
+    }
+
+    void _infoSelectionModelUpdated(charts.SelectionModel<DateTime> model) {
+      if (model.hasDatumSelection) {
+        Observation newSelection =
+            model.selectedDatum.first.datum as Observation;
+        setState(() {
+          selected =
+              selected?.dateTime == newSelection.dateTime ? null : newSelection;
+        });
+      }
     }
 
     return StreamBuilder<List<JournalEntity?>>(
@@ -115,6 +129,12 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                     ],
                     domainAxis: timeSeriesAxis,
                     defaultRenderer: defaultRenderer,
+                    selectionModels: [
+                      charts.SelectionModelConfig(
+                        type: charts.SelectionModelType.info,
+                        updatedListener: _infoSelectionModelUpdated,
+                      )
+                    ],
                     primaryMeasureAxis: charts.NumericAxisSpec(
                       tickProviderSpec:
                           const charts.BasicNumericTickProviderSpec(
@@ -139,12 +159,28 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          const Spacer(),
                           Text(
                             healthTypes[widget.chartConfig.healthType]
                                     ?.displayName ??
                                 widget.chartConfig.healthType,
                             style: chartTitleStyle,
                           ),
+                          if (selected != null) ...[
+                            const Spacer(),
+                            Text(
+                              ' ${ymd(selected!.dateTime)}',
+                              style: chartTitleStyle,
+                            ),
+                            const Spacer(),
+                            Text(
+                              ' ${NumberFormat('#,###.##').format(selected?.value)}',
+                              style: chartTitleStyle.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                          const Spacer(),
                         ],
                       ),
                     ),

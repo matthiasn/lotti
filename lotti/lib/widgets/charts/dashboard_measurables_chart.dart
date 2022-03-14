@@ -100,8 +100,6 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               if (model.hasDatumSelection) {
                 MeasureObservation newSelection =
                     model.selectedDatum.first.datum as MeasureObservation;
-                debugPrint(
-                    'Date: ${newSelection.dateTime} Value: ${newSelection.value}');
                 setState(() {
                   selected = selected?.dateTime == newSelection.dateTime
                       ? null
@@ -161,6 +159,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
+                                const Spacer(),
                                 Text(
                                   measurableDataType.displayName,
                                   style: chartTitleStyle,
@@ -178,6 +177,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                                         fontWeight: FontWeight.bold),
                                   ),
                                 ],
+                                const Spacer(),
                               ],
                             ),
                           ),
