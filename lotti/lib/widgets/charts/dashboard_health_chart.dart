@@ -203,9 +203,12 @@ class HealthChartInfoWidget extends StatelessWidget {
                 ),
                 if (selected != null) ...[
                   const Spacer(),
-                  Text(
-                    ' ${ymd(selected.dateTime)}',
-                    style: chartTitleStyle,
+                  Padding(
+                    padding: AppTheme.chartDateHorizontalPadding,
+                    child: Text(
+                      ' ${ymd(selected.dateTime)}',
+                      style: chartTitleStyle,
+                    ),
                   ),
                   const Spacer(),
                   Text(
