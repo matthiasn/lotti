@@ -91,7 +91,7 @@ class DashboardHealthBpChart extends StatelessWidget {
                 children: [
                   charts.TimeSeriesChart(
                     seriesList,
-                    animate: true,
+                    animate: false,
                     behaviors: [
                       charts.RangeAnnotation(
                         [

@@ -118,7 +118,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                     children: [
                       charts.TimeSeriesChart(
                         seriesList,
-                        animate: true,
+                        animate: false,
                         behaviors: [
                           charts.RangeAnnotation([
                             charts.RangeAnnotationSegment(

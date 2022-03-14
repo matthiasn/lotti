@@ -80,7 +80,7 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
                 children: [
                   charts.TimeSeriesChart(
                     seriesList,
-                    animate: true,
+                    animate: false,
                     behaviors: [
                       chartRangeAnnotation(widget.rangeStart, widget.rangeEnd),
                     ],

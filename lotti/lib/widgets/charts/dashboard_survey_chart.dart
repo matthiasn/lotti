@@ -68,7 +68,7 @@ class DashboardSurveyChart extends StatelessWidget {
                         entities: items,
                         dashboardSurveyItem: chartConfig,
                       ),
-                      animate: true,
+                      animate: false,
                       behaviors: [
                         chartRangeAnnotation(rangeStart, rangeEnd),
                       ],

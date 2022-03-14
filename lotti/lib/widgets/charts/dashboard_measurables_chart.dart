@@ -135,7 +135,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                       children: [
                         charts.TimeSeriesChart(
                           seriesList,
-                          animate: true,
+                          animate: false,
                           defaultRenderer: defaultRenderer,
                           selectionModels: [
                             charts.SelectionModelConfig(

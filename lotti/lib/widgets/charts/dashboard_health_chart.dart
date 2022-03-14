@@ -123,7 +123,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                 children: [
                   charts.TimeSeriesChart(
                     seriesList,
-                    animate: true,
+                    animate: false,
                     behaviors: [
                       chartRangeAnnotation(widget.rangeStart, widget.rangeEnd),
                     ],
