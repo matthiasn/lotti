@@ -37,6 +37,7 @@ class DashboardHealthChart extends StatefulWidget {
 class _DashboardHealthChartState extends State<DashboardHealthChart> {
   final JournalDb _db = getIt<JournalDb>();
   final HealthImport _healthImport = getIt<HealthImport>();
+  final _chartState = charts.UserManagedState<DateTime>();
 
   @override
   void initState() {
@@ -93,7 +94,14 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
             if (model.hasDatumSelection) {
               Observation newSelection =
                   model.selectedDatum.first.datum as Observation;
-              context.read<ChartInfoCubit>().toggleSelected(newSelection);
+              context.read<ChartInfoCubit>().setSelected(newSelection);
+
+              _chartState.selectionModels[charts.SelectionModelType.info] =
+                  charts.UserManagedSelectionModel(model: model);
+            } else {
+              context.read<ChartInfoCubit>().clearSelected();
+              _chartState.selectionModels[charts.SelectionModelType.info] =
+                  charts.UserManagedSelectionModel();
             }
           }
 
@@ -183,33 +191,35 @@ class ChartInfoWidget extends StatelessWidget {
         left: MediaQuery.of(context).size.width / 4,
         child: SizedBox(
           width: MediaQuery.of(context).size.width / 2,
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Spacer(),
-              Text(
-                healthTypes[chartConfig.healthType]?.displayName ??
-                    chartConfig.healthType,
-                style: chartTitleStyle,
-              ),
-              if (selected != null) ...[
+          child: IgnorePointer(
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
                 const Spacer(),
                 Text(
-                  ' ${ymd(selected.dateTime)}',
+                  healthTypes[chartConfig.healthType]?.displayName ??
+                      chartConfig.healthType,
                   style: chartTitleStyle,
                 ),
-                const Spacer(),
-                Text(
-                  ' ${NumberFormat('#,###.##').format(selected.value)}',
-                  style: chartTitleStyle.copyWith(
-                    fontWeight: FontWeight.bold,
+                if (selected != null) ...[
+                  const Spacer(),
+                  Text(
+                    ' ${ymd(selected.dateTime)}',
+                    style: chartTitleStyle,
                   ),
-                ),
+                  const Spacer(),
+                  Text(
+                    ' ${NumberFormat('#,###.##').format(selected.value)}',
+                    style: chartTitleStyle.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+                const Spacer(),
               ],
-              const Spacer(),
-            ],
+            ),
           ),
         ),
       );
