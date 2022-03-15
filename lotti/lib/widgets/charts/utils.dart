@@ -4,10 +4,10 @@ import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/widgets.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
-class MeasureObservation {
+class MeasuredObservation {
   final DateTime dateTime;
   final num value;
-  MeasureObservation(this.dateTime, this.value);
+  MeasuredObservation(this.dateTime, this.value);
 
   @override
   String toString() {
@@ -22,7 +22,7 @@ String ymd(DateTime day) {
   return day.toIso8601String().substring(0, 10);
 }
 
-List<MeasureObservation> aggregateSumByDay(
+List<MeasuredObservation> aggregateSumByDay(
   List<JournalEntity?> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
@@ -47,23 +47,23 @@ List<MeasureObservation> aggregateSumByDay(
     }
   }
 
-  List<MeasureObservation> aggregated = [];
+  List<MeasuredObservation> aggregated = [];
   for (final dayString in sumsByDay.keys) {
     DateTime day = DateTime.parse(dayString);
-    aggregated.add(MeasureObservation(day, sumsByDay[dayString] ?? 0));
+    aggregated.add(MeasuredObservation(day, sumsByDay[dayString] ?? 0));
   }
 
   return aggregated;
 }
 
-List<MeasureObservation> aggregateMeasurementNone(
+List<MeasuredObservation> aggregateMeasurementNone(
     List<JournalEntity?> entities) {
-  List<MeasureObservation> aggregated = [];
+  List<MeasuredObservation> aggregated = [];
 
   for (JournalEntity? entity in entities) {
     entity?.maybeMap(
       measurement: (MeasurementEntry entry) {
-        aggregated.add(MeasureObservation(
+        aggregated.add(MeasuredObservation(
           entry.data.dateFrom,
           entry.data.value,
         ));

@@ -61,6 +61,10 @@ class AppColors {
 
 class AppTheme {
   static const double bottomNavIconSize = 24;
+
+  static const chartDateHorizontalPadding = EdgeInsets.symmetric(
+    horizontal: 4,
+  );
 }
 
 const double chipBorderRadius = 8.0;
