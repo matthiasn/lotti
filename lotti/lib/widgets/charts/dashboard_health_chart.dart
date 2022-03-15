@@ -142,7 +142,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                         charts.SelectionModelConfig(
                           type: charts.SelectionModelType.info,
                           updatedListener: _infoSelectionModelUpdated,
-                        )
+                        ),
                       ],
                       primaryMeasureAxis: charts.NumericAxisSpec(
                         tickProviderSpec:
