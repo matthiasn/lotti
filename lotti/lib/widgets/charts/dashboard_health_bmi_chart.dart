@@ -279,13 +279,13 @@ class BmiChartInfoWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Spacer(),
-                Text(
-                  healthTypes[chartConfig.healthType]?.displayName ??
-                      chartConfig.healthType,
-                  style: chartTitleStyle,
-                ),
+                if (selected == null)
+                  Text(
+                    healthTypes[chartConfig.healthType]?.displayName ??
+                        chartConfig.healthType,
+                    style: chartTitleStyle,
+                  ),
                 if (selected != null) ...[
-                  const Spacer(),
                   Padding(
                     padding: AppTheme.chartDateHorizontalPadding,
                     child: Text(
@@ -295,14 +295,14 @@ class BmiChartInfoWidget extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    ' ${NumberFormat('#,###.##').format(selected.value)} kg',
+                    ' ${NumberFormat('#,###.##').format(selected.value)} kg ',
                     style: chartTitleStyle.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const Spacer(),
                   Text(
-                    'BMI: ${NumberFormat('#.#').format(calculateBMI(height!, weight!))}',
+                    ' BMI: ${NumberFormat('#.#').format(calculateBMI(height!, weight!))}',
                     style: chartTitleStyle.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
