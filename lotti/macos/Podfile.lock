@@ -55,7 +55,7 @@ PODS:
     - sqlite3/rtree
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
-  - window_manager (0.1.4):
+  - window_manager (0.2.0):
     - FlutterMacOS
 
 DEPENDENCIES:
@@ -141,7 +141,7 @@ SPEC CHECKSUMS:
   sqlite3: 2c78798a817aa040981e2b0cfb4eb94523c0f55f
   sqlite3_flutter_libs: b1616736450363a4257c184b8774ab54298c0b8e
   url_launcher_macos: 597e05b8e514239626bcf4a850fcf9ef5c856ec3
-  window_manager: 02776e5a599084cd4576e27a42dd5ec6f49132cf
+  window_manager: 3a1844359a6295ab1e47659b1a777e36773cd6e8
 
 PODFILE CHECKSUM: 8d40c19d3cbdb380d870685c3a564c989f1efa52
 
