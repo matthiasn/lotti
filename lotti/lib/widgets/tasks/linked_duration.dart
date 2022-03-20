@@ -59,7 +59,7 @@ class LinkedDuration extends StatelessWidget {
                           progress: progress,
                           total: total,
                           progressBarColor:
-                              (progress >= total) ? Colors.red : Colors.green,
+                              (progress > total) ? Colors.red : Colors.green,
                           thumbColor: Colors.white,
                           barHeight: 8.0,
                           thumbRadius: 8.0,
