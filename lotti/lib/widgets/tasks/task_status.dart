@@ -7,16 +7,18 @@ class TaskStatusWidget extends StatelessWidget {
   const TaskStatusWidget(
     this.task, {
     Key? key,
+    this.padding = chipPadding,
   }) : super(key: key);
 
   final Task task;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(chipBorderRadius),
       child: Container(
-        padding: chipPadding,
+        padding: padding,
         color: taskColor(task.data.status),
         child: Text(
           task.data.status.map(
