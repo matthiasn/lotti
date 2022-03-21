@@ -107,8 +107,6 @@ class NotificationService {
     required notificationId,
     String? deepLink,
   }) async {
-    bool notifyEnabled = await _db.getConfigFlag('enable_notifications');
-
     if (Platform.isWindows || Platform.isLinux) {
       return;
     }
@@ -117,7 +115,6 @@ class NotificationService {
     flutterLocalNotificationsPlugin.cancel(notificationId);
 
     DateTime now = DateTime.now();
-    await tz.initializeTimeZone();
 
     tz.TZDateTime scheduledDate = tz.TZDateTime(
       tz.getLocation('Europe/Berlin'),

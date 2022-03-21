@@ -816,6 +816,16 @@ class PersistenceLogic {
         status: SyncEntryStatus.update,
       ),
     );
+
+    if (dashboard.reviewAt != null) {
+      getIt<NotificationService>().scheduleNotification(
+        title: 'Time for a Dashboard Review!',
+        body: dashboard.name,
+        notifyAt: dashboard.reviewAt!,
+        notificationId: dashboard.id.hashCode,
+      );
+    }
+
     return linesAffected;
   }
 
