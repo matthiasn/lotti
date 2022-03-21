@@ -11,9 +11,7 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  Future<void> updateBadge() async {
-    bool notifyEnabled = await _db.getConfigFlag('enable_notifications');
-
+  Future<void> _requestPermissions() async {
     if (Platform.isWindows || Platform.isLinux) {
       return;
     }
@@ -35,6 +33,16 @@ class NotificationService {
           badge: true,
           sound: true,
         );
+  }
+
+  Future<void> updateBadge() async {
+    bool notifyEnabled = await _db.getConfigFlag('enable_notifications');
+
+    if (Platform.isWindows || Platform.isLinux) {
+      return;
+    }
+
+    await _requestPermissions();
 
     int count = await _db.getWipCount();
 
