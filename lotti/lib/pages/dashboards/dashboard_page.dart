@@ -1,4 +1,5 @@
 import 'package:auto_route/annotations.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -90,7 +91,23 @@ class DashboardPage extends StatelessWidget {
                     },
                   );
                 }),
-                Text(dashboard.description, style: formLabelStyle),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: Text(dashboard.description, style: formLabelStyle),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.settings),
+                      color: AppColors.entryTextColor,
+                      onPressed: () {
+                        context.router
+                            .pushNamed('/settings/dashboards/$dashboardId');
+                      },
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
