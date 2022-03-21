@@ -70,6 +70,7 @@ class EntityDefinition with _$EntityDefinition {
     required VectorClock? vectorClock,
     required bool active,
     required bool private,
+    DateTime? reviewAt,
     @Default(30) int days,
     DateTime? deletedAt,
   }) = DashboardDefinition;
