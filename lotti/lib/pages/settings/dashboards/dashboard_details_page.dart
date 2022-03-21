@@ -235,6 +235,33 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
           );
         }).toList();
 
+        Future<void> saveDashboard() async {
+          _formKey.currentState!.save();
+          if (_formKey.currentState!.validate()) {
+            final formData = _formKey.currentState?.value;
+            DashboardDefinition dashboard = widget.dashboard.copyWith(
+              name: '${formData!['name']}'.trim(),
+              description: '${formData['description']}'.trim(),
+              private: formData['private'],
+              active: formData['active'],
+              updatedAt: DateTime.now(),
+              items: dashboardItems ?? widget.dashboard.items,
+            );
+
+            persistenceLogic.upsertDashboardDefinition(dashboard);
+          }
+        }
+
+        Future<void> saveDashboardPress() async {
+          await saveDashboard();
+          context.router.pop();
+        }
+
+        Future<void> saveAndViewDashboard() async {
+          await saveDashboard();
+          context.router.pushNamed('/dashboards/${widget.dashboard.id}');
+        }
+
         return SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -367,34 +394,29 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               TextButton(
-                                key: const Key('tag_save'),
-                                onPressed: () async {
-                                  _formKey.currentState!.save();
-                                  if (_formKey.currentState!.validate()) {
-                                    final formData =
-                                        _formKey.currentState?.value;
-                                    DashboardDefinition dashboard =
-                                        widget.dashboard.copyWith(
-                                      name: '${formData!['name']}'.trim(),
-                                      description:
-                                          '${formData['description']}'.trim(),
-                                      private: formData['private'],
-                                      active: formData['active'],
-                                      updatedAt: DateTime.now(),
-                                      items: dashboardItems ??
-                                          widget.dashboard.items,
-                                    );
-
-                                    persistenceLogic
-                                        .upsertDashboardDefinition(dashboard);
-                                    context.router.pop();
-                                  }
-                                },
+                                key: const Key('dashboard_save'),
+                                onPressed: saveDashboardPress,
                                 child: const Padding(
                                   padding:
                                       EdgeInsets.symmetric(horizontal: 24.0),
                                   child: Text(
-                                    'Save',
+                                    'Save & Close',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontFamily: 'Oswald',
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                key: const Key('dashboard_view'),
+                                onPressed: saveAndViewDashboard,
+                                child: const Padding(
+                                  padding:
+                                      EdgeInsets.symmetric(horizontal: 24.0),
+                                  child: Text(
+                                    'Save & View',
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontFamily: 'Oswald',
