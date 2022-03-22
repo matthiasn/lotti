@@ -69,10 +69,12 @@ class Maintenance {
       for (JournalEntity entry in entries) {
         if (entry is MeasurementEntry) {
           var data = entry.data;
-          await persistenceLogic.updateJournalEntity(
-            entry.copyWith(data: data.copyWith(dataTypeId: data.dataType.id)),
-            entry.meta,
-          );
+          if (data.dataTypeId == null) {
+            await persistenceLogic.updateJournalEntity(
+              entry.copyWith(data: data.copyWith(dataTypeId: data.dataType.id)),
+              entry.meta,
+            );
+          }
         }
       }
     }
