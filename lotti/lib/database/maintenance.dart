@@ -56,6 +56,28 @@ class Maintenance {
     }
   }
 
+  Future<void> migrateMeasurableTypeIds() async {
+    final int count = await _db.getJournalCount();
+    const int pageSize = 100;
+    final int pages = (count / pageSize).ceil();
+
+    for (int page = 0; page <= pages; page++) {
+      List<JournalDbEntity> dbEntities =
+          await _db.orderedJournal(pageSize, page * pageSize).get();
+
+      List<JournalEntity> entries = entityStreamMapper(dbEntities);
+      for (JournalEntity entry in entries) {
+        if (entry is MeasurementEntry) {
+          var data = entry.data;
+          await persistenceLogic.updateJournalEntity(
+            entry.copyWith(data: data.copyWith(dataTypeId: data.dataType.id)),
+            entry.meta,
+          );
+        }
+      }
+    }
+  }
+
   Future<void> deleteTaggedLinks() async {
     await _db.deleteTagged();
   }

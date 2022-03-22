@@ -54,6 +54,10 @@ class _MaintenancePageState extends State<MaintenancePage> {
                   title: 'Assign stories from parents',
                   onTap: () => _maintenance.recreateStoryAssignment(),
                 ),
+                MaintenanceCard(
+                  title: 'Migrate measurable type IDs',
+                  onTap: () => _maintenance.migrateMeasurableTypeIds(),
+                ),
               ],
             );
           },
