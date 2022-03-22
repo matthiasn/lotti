@@ -48,7 +48,7 @@ Future<void> main() async {
 
 class LottiApp extends StatelessWidget {
   LottiApp({Key? key}) : super(key: key);
-  final _appRouter = AppRouter();
+  final router = getIt<AppRouter>();
 
   @override
   Widget build(BuildContext context) {
@@ -78,8 +78,8 @@ class LottiApp extends StatelessWidget {
         ],
         localizationsDelegates: const [FormBuilderLocalizations.delegate],
         debugShowCheckedModeBanner: true,
-        routerDelegate: _appRouter.delegate(),
-        routeInformationParser: _appRouter.defaultRouteParser(),
+        routerDelegate: router.delegate(),
+        routeInformationParser: router.defaultRouteParser(),
       ),
     );
   }

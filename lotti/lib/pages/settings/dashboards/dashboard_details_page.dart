@@ -1,7 +1,9 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -15,6 +17,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
+import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -244,6 +247,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
               description: '${formData['description']}'.trim(),
               private: formData['private'],
               active: formData['active'],
+              reviewAt: formData['review_at'],
               updatedAt: DateTime.now(),
               items: dashboardItems ?? widget.dashboard.items,
             );
@@ -308,6 +312,36 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                   style: formLabelStyle,
                                 ),
                                 activeColor: AppColors.starredGold,
+                              ),
+                              FormBuilderCupertinoDateTimePicker(
+                                name: 'review_at',
+                                alwaysUse24HourFormat: true,
+                                format: DateFormat('HH:mm'),
+                                inputType:
+                                    CupertinoDateTimePickerInputType.time,
+                                style: inputStyle.copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w300,
+                                  fontFamily: 'Oswald',
+                                ),
+                                initialValue: widget.dashboard.reviewAt,
+                                decoration: InputDecoration(
+                                  labelText: 'Daily Review Time:',
+                                  labelStyle: labelStyle,
+                                ),
+                                theme: DatePickerTheme(
+                                  headerColor: AppColors.headerBgColor,
+                                  backgroundColor: AppColors.bodyBgColor,
+                                  itemStyle: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                  doneStyle: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -396,16 +430,12 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                               TextButton(
                                 key: const Key('dashboard_save'),
                                 onPressed: saveDashboardPress,
-                                child: const Padding(
-                                  padding:
-                                      EdgeInsets.symmetric(horizontal: 24.0),
-                                  child: Text(
-                                    'Save & Close',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontFamily: 'Oswald',
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                child: const Text(
+                                  'Save & Close',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontFamily: 'Oswald',
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
@@ -414,7 +444,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                 onPressed: saveAndViewDashboard,
                                 child: const Padding(
                                   padding:
-                                      EdgeInsets.symmetric(horizontal: 24.0),
+                                      EdgeInsets.symmetric(horizontal: 8.0),
                                   child: Text(
                                     'Save & View',
                                     style: TextStyle(
