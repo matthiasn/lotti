@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:timezone/standalone.dart' as tz;
 
 final JournalDb _db = getIt<JournalDb>();
@@ -11,6 +12,37 @@ class NotificationService {
   int badgeCount = 0;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+
+  Future<void> onSelectNotification(String? payload) async {
+    if (payload != null) {
+      getIt<AppRouter>().pushNamed(payload);
+    }
+
+    final NotificationAppLaunchDetails? details =
+        await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+
+    if (details?.payload != null) {
+      getIt<AppRouter>().pushNamed('${details?.payload}');
+    }
+  }
+
+  NotificationService() {
+    flutterLocalNotificationsPlugin.initialize(
+      const InitializationSettings(
+        macOS: MacOSInitializationSettings(
+          requestSoundPermission: false,
+          requestBadgePermission: false,
+          requestAlertPermission: false,
+        ),
+        iOS: IOSInitializationSettings(
+          requestSoundPermission: false,
+          requestBadgePermission: false,
+          requestAlertPermission: false,
+        ),
+      ),
+      onSelectNotification: onSelectNotification,
+    );
+  }
 
   Future<void> _requestPermissions() async {
     if (Platform.isWindows || Platform.isLinux) {
@@ -144,6 +176,7 @@ class NotificationService {
           UILocalNotificationDateInterpretation.wallClockTime,
       androidAllowWhileIdle: true,
       matchDateTimeComponents: DateTimeComponents.time,
+      payload: deepLink,
     );
   }
 }

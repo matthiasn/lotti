@@ -823,6 +823,7 @@ class PersistenceLogic {
         body: dashboard.name,
         notifyAt: dashboard.reviewAt!,
         notificationId: dashboard.id.hashCode,
+        deepLink: '/dashboards/${dashboard.id}',
       );
     }
 
