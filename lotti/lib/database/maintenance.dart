@@ -12,6 +12,8 @@ class Maintenance {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
   Future<void> recreateTaggedLinks() async {
+    await createDbBackup();
+
     int count = await _db.getJournalCount();
     int pageSize = 100;
     int pages = (count / pageSize).ceil();
@@ -28,6 +30,8 @@ class Maintenance {
   }
 
   Future<void> recreateStoryAssignment() async {
+    await createDbBackup();
+
     final int count = await _db.getJournalCount();
     const int pageSize = 100;
     final int pages = (count / pageSize).ceil();
@@ -57,6 +61,8 @@ class Maintenance {
   }
 
   Future<void> migrateMeasurableTypeIds() async {
+    await createDbBackup();
+
     final int count = await _db.getJournalCount();
     const int pageSize = 100;
     final int pages = (count / pageSize).ceil();
@@ -81,6 +87,7 @@ class Maintenance {
   }
 
   Future<void> deleteTaggedLinks() async {
+    await createDbBackup();
     await _db.deleteTagged();
   }
 }

@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -595,10 +596,22 @@ class JournalDb extends _$JournalDb {
   }
 }
 
+Future<File> getDatabaseFile() async {
+  final dbFolder = await getApplicationDocumentsDirectory();
+  return File(p.join(dbFolder.path, 'db.sqlite'));
+}
+
+Future<void> createDbBackup() async {
+  final File file = await getDatabaseFile();
+  String ts = DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(DateTime.now());
+  Directory backupDir =
+      await Directory('${file.parent.path}/backup').create(recursive: true);
+  await file.copy('${backupDir.path}/db.$ts.sqlite');
+}
+
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'db.sqlite'));
+    final File file = await getDatabaseFile();
     return NativeDatabase(file);
   });
 }
