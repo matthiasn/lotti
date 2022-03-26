@@ -64,7 +64,10 @@ class HealthImport {
         'flutterHealthFit isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
 
     Future<void> addEntries(Map<DateTime, int> data, String type) async {
-      for (MapEntry<DateTime, int> dailyStepsEntry in data.entries) {
+      List<MapEntry<DateTime, int>> entries = List.from(data.entries);
+      entries.sort((a, b) => a.key.compareTo(b.key));
+
+      for (MapEntry<DateTime, int> dailyStepsEntry in entries) {
         DateTime dateFrom = dailyStepsEntry.key;
         DateTime dateTo = dateFrom
             .add(const Duration(days: 1))
@@ -122,7 +125,7 @@ class HealthImport {
           types,
         );
 
-        for (HealthDataPoint dataPoint in dataPoints) {
+        for (HealthDataPoint dataPoint in dataPoints.reversed) {
           DiscreteQuantityData discreteQuantity = DiscreteQuantityData(
             dateFrom: dataPoint.dateFrom,
             dateTo: dataPoint.dateTo,
