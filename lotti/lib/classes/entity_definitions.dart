@@ -85,7 +85,7 @@ class MeasurementData with _$MeasurementData {
     required DateTime dateFrom,
     required DateTime dateTo,
     required num value,
-    required String dataTypeId,
+    String? dataTypeId,
     MeasurableDataType? dataType,
   }) = _MeasurementData;
 

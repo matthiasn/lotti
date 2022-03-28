@@ -22,7 +22,7 @@ class MeasurementSummary extends StatelessWidget {
     MeasurementData data = measurementEntry.data;
 
     return StreamBuilder<MeasurableDataType?>(
-        stream: _db.watchMeasurableDataTypeById(data.dataTypeId),
+        stream: _db.watchMeasurableDataTypeById('${data.dataTypeId}'),
         builder: (
           BuildContext context,
           AsyncSnapshot<MeasurableDataType?> typeSnapshot,

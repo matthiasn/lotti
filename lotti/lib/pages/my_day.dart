@@ -49,7 +49,7 @@ class MyDayPage extends StatelessWidget {
               task: (task) => task.data.title,
               quantitative: (quantitative) => quantitative.data.dataType,
               workout: (workout) => workout.data.workoutType,
-              measurement: (measurement) => measurement.data.dataTypeId,
+              measurement: (measurement) => '${measurement.data.dataTypeId}',
               habitCompletion: (habitCompletion) => '',
               survey: (survey) => survey.data.taskResult.identifier,
             );
