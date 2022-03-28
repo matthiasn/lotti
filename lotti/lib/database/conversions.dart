@@ -12,8 +12,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
   final DateTime createdAt = entity.meta.createdAt;
   final String subtype = entity.maybeMap(
     quantitative: (QuantitativeEntry entry) => entry.data.dataType,
-    measurement: (MeasurementEntry entry) =>
-        entry.data.dataType.name.toLowerCase(),
+    measurement: (MeasurementEntry entry) => entry.data.dataTypeId,
     survey: (SurveyEntry entry) =>
         entry.data.taskResult.identifier.toLowerCase(),
     workout: (WorkoutEntry entry) => entry.data.workoutType,

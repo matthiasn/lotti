@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:enum_to_string/enum_to_string.dart';
@@ -432,8 +433,11 @@ class JournalDb extends _$JournalDb {
     return activeMeasurableTypes().watch().map(measurableDataTypeStreamMapper);
   }
 
-  Stream<List<MeasurableDataType>> watchMeasurableDataTypeById(String id) {
-    return measurableTypeById(id).watch().map(measurableDataTypeStreamMapper);
+  Stream<MeasurableDataType?> watchMeasurableDataTypeById(String id) {
+    return measurableTypeById(id)
+        .watch()
+        .map(measurableDataTypeStreamMapper)
+        .map((List<MeasurableDataType> res) => res.firstOrNull);
   }
 
   Stream<List<JournalEntity>> watchMeasurementsByType({
