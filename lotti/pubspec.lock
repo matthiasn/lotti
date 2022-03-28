@@ -14,7 +14,7 @@ packages:
       name: adaptive_dialog
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.4.0"
+    version: "1.5.0"
   analyzer:
     dependency: transitive
     description:
@@ -399,7 +399,7 @@ packages:
       name: dbus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.7.1"
+    version: "0.7.2"
   delta_markdown:
     dependency: "direct main"
     description:
@@ -756,7 +756,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.10"
+    version: "4.1.0"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -925,7 +925,7 @@ packages:
       name: go_router
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.4"
+    version: "3.0.6"
   google_fonts:
     dependency: "direct main"
     description:
@@ -1406,7 +1406,7 @@ packages:
       name: photo_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.2"
+    version: "2.0.6"
   photo_view:
     dependency: "direct main"
     description:
@@ -1744,7 +1744,7 @@ packages:
       name: synchronized
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.0"
+    version: "3.0.0+2"
   term_glyph:
     dependency: transitive
     description:
@@ -1793,7 +1793,7 @@ packages:
       name: tinycolor2
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.0"
+    version: "2.0.1"
   transparent_image:
     dependency: transitive
     description:
@@ -1919,7 +1919,7 @@ packages:
       name: video_player_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   video_player_avfoundation:
     dependency: transitive
     description:
@@ -1933,7 +1933,7 @@ packages:
       name: video_player_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.1.0"
+    version: "5.1.1"
   video_player_web:
     dependency: transitive
     description:
@@ -1989,7 +1989,7 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.1"
+    version: "2.5.0"
   window_manager:
     dependency: "direct main"
     description:
