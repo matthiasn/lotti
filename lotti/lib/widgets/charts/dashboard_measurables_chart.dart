@@ -55,7 +55,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
           create: (BuildContext context) => MeasurablesChartInfoCubit(),
           child: StreamBuilder<List<JournalEntity?>>(
             stream: _db.watchMeasurementsByType(
-              type: measurableDataType.name,
+              type: measurableDataType.id,
               rangeStart: widget.rangeStart,
               rangeEnd: widget.rangeEnd,
             ),
