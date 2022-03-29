@@ -30,7 +30,6 @@ class EntityDefinition with _$EntityDefinition {
     required String id,
     required DateTime createdAt,
     required DateTime updatedAt,
-    required String name,
     required String displayName,
     required String description,
     required String unitName,

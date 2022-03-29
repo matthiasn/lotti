@@ -22,7 +22,6 @@ class _CreateMeasurablePageState extends State<CreateMeasurablePage> {
     final DateTime now = DateTime.now();
     _measurableDataType = MeasurableDataType(
       id: uuid.v1(),
-      name: '',
       displayName: '',
       version: 0,
       createdAt: now,

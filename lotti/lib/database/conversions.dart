@@ -95,7 +95,7 @@ List<MeasurableDataType> measurableDataTypeStreamMapper(
 MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {
   return MeasurableDbEntity(
     id: dataType.id,
-    uniqueName: dataType.name,
+    uniqueName: dataType.id,
     createdAt: dataType.createdAt,
     updatedAt: dataType.updatedAt,
     serialized: jsonEncode(dataType),

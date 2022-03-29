@@ -51,11 +51,6 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                       child: Column(
                         children: <Widget>[
                           FormTextField(
-                            initialValue: item.name,
-                            labelText: 'Name',
-                            name: 'name',
-                          ),
-                          FormTextField(
                             initialValue: item.displayName,
                             labelText: 'Display name',
                             name: 'displayName',
@@ -136,12 +131,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                 final formData = _formKey.currentState?.value;
                                 debugPrint('$formData');
                                 MeasurableDataType dataType = item.copyWith(
-                                  name: '${formData!['name']}'
-                                      .trim()
-                                      .replaceAll(' ', '_')
-                                      .toLowerCase(),
                                   description:
-                                      '${formData['description']}'.trim(),
+                                      '${formData!['description']}'.trim(),
                                   unitName: '${formData['unitName']}'.trim(),
                                   displayName:
                                       '${formData['displayName']}'.trim(),
