@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:getwidget/components/list_tile/gf_list_tile.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/routes/router.gr.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
+import 'package:lotti/widgets/journal/measurement_summary.dart';
 import 'package:lotti/widgets/journal/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
@@ -111,22 +111,8 @@ class JournalCardTitle extends StatelessWidget {
             ),
             survey: (SurveyEntry surveyEntry) =>
                 SurveySummaryWidget(surveyEntry),
-            measurement: (MeasurementEntry measurementEntry) {
-              MeasurementData data = measurementEntry.data;
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (measurementEntry.entryText?.plainText != null)
-                    TextViewerWidget(entryText: measurementEntry.entryText),
-                  EntryTextWidget(
-                    '${data.dataType.displayName}: '
-                    '${nf.format(data.value)}',
-                    padding: EdgeInsets.zero,
-                  ),
-                ],
-              );
-            },
+            measurement: (MeasurementEntry measurementEntry) =>
+                MeasurementSummary(measurementEntry),
             task: (Task task) {
               TaskData data = task.data;
               return Column(

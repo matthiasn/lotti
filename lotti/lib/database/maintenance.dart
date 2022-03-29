@@ -75,9 +75,14 @@ class Maintenance {
       for (JournalEntity entry in entries) {
         if (entry is MeasurementEntry) {
           var data = entry.data;
-          if (data.dataTypeId == null) {
+          if (data.dataType != null) {
             await persistenceLogic.updateJournalEntity(
-              entry.copyWith(data: data.copyWith(dataTypeId: data.dataType.id)),
+              entry.copyWith(
+                data: data.copyWith(
+                  dataTypeId: data.dataType!.id,
+                  dataType: null,
+                ),
+              ),
               entry.meta,
             );
           }

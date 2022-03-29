@@ -39,17 +39,13 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<MeasurableDataType?>>(
+    return StreamBuilder<MeasurableDataType?>(
       stream: _db.watchMeasurableDataTypeById(widget.measurableDataTypeId),
       builder: (
         BuildContext context,
-        AsyncSnapshot<List<MeasurableDataType?>> typeSnapshot,
+        AsyncSnapshot<MeasurableDataType?> typeSnapshot,
       ) {
-        if (typeSnapshot.data == null || typeSnapshot.data!.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        MeasurableDataType? measurableDataType = typeSnapshot.data?.first;
+        MeasurableDataType? measurableDataType = typeSnapshot.data;
 
         if (measurableDataType == null) {
           return const SizedBox.shrink();
@@ -59,7 +55,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
           create: (BuildContext context) => MeasurablesChartInfoCubit(),
           child: StreamBuilder<List<JournalEntity?>>(
             stream: _db.watchMeasurementsByType(
-              type: measurableDataType.name,
+              type: measurableDataType.id,
               rangeStart: widget.rangeStart,
               rangeEnd: widget.rangeEnd,
             ),

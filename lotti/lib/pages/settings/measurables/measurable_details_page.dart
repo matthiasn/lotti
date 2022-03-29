@@ -210,13 +210,9 @@ class EditMeasurablePage extends StatelessWidget {
       stream: _db.watchMeasurableDataTypeById(measurableId),
       builder: (
         BuildContext context,
-        AsyncSnapshot<List<MeasurableDataType>> snapshot,
+        AsyncSnapshot<MeasurableDataType?> snapshot,
       ) {
-        MeasurableDataType? dataType;
-        var data = snapshot.data ?? [];
-        if (data.isNotEmpty) {
-          dataType = data.first;
-        }
+        MeasurableDataType? dataType = snapshot.data;
 
         if (dataType == null) {
           return const SizedBox.shrink();

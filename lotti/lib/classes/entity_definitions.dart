@@ -85,8 +85,8 @@ class MeasurementData with _$MeasurementData {
     required DateTime dateFrom,
     required DateTime dateTo,
     required num value,
-    required MeasurableDataType dataType,
     String? dataTypeId,
+    MeasurableDataType? dataType,
   }) = _MeasurementData;
 
   factory MeasurementData.fromJson(Map<String, dynamic> json) =>

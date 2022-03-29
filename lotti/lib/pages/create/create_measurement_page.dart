@@ -64,7 +64,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
               return;
             }
             MeasurementData measurement = MeasurementData(
-              dataType: selected!,
+              dataTypeId: selected!.id,
               dateTo: formData!['date'],
               dateFrom: formData['date'],
               value: nf.parse('${formData['value']}'.replaceAll(',', '.')),
