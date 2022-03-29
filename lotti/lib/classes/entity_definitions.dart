@@ -30,7 +30,6 @@ class EntityDefinition with _$EntityDefinition {
     required String id,
     required DateTime createdAt,
     required DateTime updatedAt,
-    required String name,
     required String displayName,
     required String description,
     required String unitName,
@@ -85,8 +84,7 @@ class MeasurementData with _$MeasurementData {
     required DateTime dateFrom,
     required DateTime dateTo,
     required num value,
-    String? dataTypeId,
-    MeasurableDataType? dataType,
+    required String dataTypeId,
   }) = _MeasurementData;
 
   factory MeasurementData.fromJson(Map<String, dynamic> json) =>

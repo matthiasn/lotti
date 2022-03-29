@@ -12,7 +12,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
   final DateTime createdAt = entity.meta.createdAt;
   final String subtype = entity.maybeMap(
     quantitative: (QuantitativeEntry entry) => entry.data.dataType,
-    measurement: (MeasurementEntry entry) => '${entry.data.dataTypeId}',
+    measurement: (MeasurementEntry entry) => entry.data.dataTypeId,
     survey: (SurveyEntry entry) =>
         entry.data.taskResult.identifier.toLowerCase(),
     workout: (WorkoutEntry entry) => entry.data.workoutType,
@@ -95,7 +95,7 @@ List<MeasurableDataType> measurableDataTypeStreamMapper(
 MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {
   return MeasurableDbEntity(
     id: dataType.id,
-    uniqueName: dataType.name,
+    uniqueName: dataType.id,
     createdAt: dataType.createdAt,
     updatedAt: dataType.updatedAt,
     serialized: jsonEncode(dataType),
