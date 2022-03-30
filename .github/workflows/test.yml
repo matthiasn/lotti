@@ -29,8 +29,11 @@ jobs:
         with:
           node-version: '12.x'
       - name: Update apt-get
+        working-directory: ./meins
         run: sudo apt-get update
       - name: Setup build dependencies
+        working-directory: ./meins
         run: make deps-ubuntu
       - name: Test & Build
+        working-directory: ./meins
         run: make install
