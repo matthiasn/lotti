@@ -45,7 +45,8 @@ class HomePage extends StatelessWidget {
         FlaggedRouter(),
         TasksRouter(),
         DashboardsRouter(),
-        MyDayRouter(),
+        // TODO: bring back or remove
+        // MyDayRouter(),
         SettingsRouter(),
       ],
       bottomNavigationBuilder: (_, tabsRouter) {
@@ -73,10 +74,11 @@ class HomePage extends StatelessWidget {
               icon: Icon(Icons.lightbulb_outline),
               label: 'Dashboards',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today),
-              label: 'My Day',
-            ),
+            // TODO: bring back or remove
+            // const BottomNavigationBarItem(
+            //   icon: Icon(Icons.calendar_today),
+            //   label: 'My Day',
+            // ),
             BottomNavigationBarItem(
               icon: OutboxBadgeIcon(
                 icon: const Icon(Icons.settings_outlined),
