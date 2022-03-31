@@ -88,8 +88,14 @@ MeasurableDataType measurableDataType(MeasurableDbEntity dbEntity) {
 }
 
 List<MeasurableDataType> measurableDataTypeStreamMapper(
-    List<MeasurableDbEntity> dbEntities) {
-  return dbEntities.map((e) => measurableDataType(e)).toList();
+    List<MeasurableDbEntity> items) {
+  List<MeasurableDataType> res =
+      items.map((e) => measurableDataType(e)).toList();
+
+  res.sort((a, b) =>
+      a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+
+  return res;
 }
 
 MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {

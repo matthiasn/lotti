@@ -284,15 +284,13 @@ SELECT * FROM conflicts
 activeMeasurableTypes:
 SELECT * FROM measurable_types
   WHERE deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  ORDER BY unique_name ASC;
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
 measurableTypeById:
 SELECT * FROM measurable_types
   WHERE deleted = false
   AND id = :id
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  ORDER BY unique_name ASC;
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
 measurementsByType:
 SELECT * FROM journal
