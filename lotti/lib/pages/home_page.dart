@@ -72,7 +72,7 @@ class HomePage extends StatelessWidget {
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.lightbulb_outline),
-              label: 'Dashboards',
+              label: 'Insights',
             ),
             // TODO: bring back or remove
             // const BottomNavigationBarItem(
