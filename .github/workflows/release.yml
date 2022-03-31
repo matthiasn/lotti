@@ -28,10 +28,13 @@ jobs:
         with:
           node-version: '12.x'
       - name: Setup build dependencies
+        working-directory: ./meins
         run: make deps-ubuntu
       - name: Test & Build
+        working-directory: ./meins
         run: make install
       - name: Publish via GitHub Releases
+        working-directory: ./meins
         run: make publish-github
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -75,10 +78,13 @@ jobs:
         with:
           node-version: '12.x'
       - name: Setup build dependencies
+        working-directory: ./meins
         run: make deps-mac
       - name: Test & Build
+        working-directory: ./meins
         run: make install
       - name: Publish via GitHub Releases
+        working-directory: ./meins
         run: make publish-github
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -103,6 +109,7 @@ jobs:
         with:
           node-version: '12.x'
       - name: Setup build dependencies
+        working-directory: ./meins
         run: |
           choco install make -y --no-progress
           choco install lein -y --no-progress
@@ -115,62 +122,10 @@ jobs:
           npm install -g electron-rebuild
         shell: pwsh
       - name: Test & Build
+        working-directory: ./meins
         run: make install
       - name: Publish via GitHub Releases
+        working-directory: ./meins
         run: make publish-github
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-
-  build-release-ios-nightly:
-    name: Build & Release on TestFlight - Nightly
-    runs-on: macOS-latest
-    steps:
-      - uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
-      - uses: webfactory/ssh-agent@v0.1.1
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-      - name: Clone mailcore
-        working-directory: ../
-        run: git clone https://github.com/MailCore/mailcore2.git
-      - name: Git setup
-        run: git config --global url."git@github.com:".insteadOf "https://github.com/"
-      - name: Fastlane match certificates
-        working-directory: MeinsApp/ios
-        run: fastlane certificates
-        env:
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          KEYCHAIN_PW: ${{ secrets.KEYCHAIN_PW }}
-      - name: Install iOS Distribution certificate
-        run: |
-          echo "$IOS_DISTRIBUTION_CERT" | base64 -D > ios_distribution.p12
-          security import ios_distribution.p12 -k ~/Library/Keychains/fastlane.keychain -P ${{ secrets.DEV_CERT_PW }} -A
-        env:
-          IOS_DISTRIBUTION_CERT: ${{ secrets.IOS_DISTRIBUTION_CERT }}
-          DEV_CERT_PW: ${{ secrets.DEV_CERT_PW }}
-          KEYCHAIN_PW: ${{ secrets.KEYCHAIN_PW }}
-      - name: List identities
-        run: |
-          security list-keychains
-          security find-identity -v fastlane.keychain
-      - name: Prepare java
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.11
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '10.x'
-      - name: Install yarn
-        run: npm install -g yarn
-      - name: Install shadow-cljs
-        run: npm install -g shadow-cljs
-      - name: Release
-        working-directory: MeinsApp
-        run: make testflight-nightly
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
-          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
-          DEVELOPER_DIR: /Applications/Xcode_11.1.app/Contents/Developer
