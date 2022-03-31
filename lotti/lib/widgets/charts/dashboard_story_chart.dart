@@ -91,11 +91,10 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
                     domainAxis: timeSeriesAxis,
                     defaultRenderer: defaultRenderer,
                     primaryMeasureAxis: const charts.NumericAxisSpec(
-                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                          zeroBound: true,
-                        ),
-                        tickFormatterSpec:
-                            charts.BasicNumericTickFormatterSpec(hoursToHhMm)),
+                      tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                        zeroBound: true,
+                      ),
+                    ),
                   ),
                   Positioned(
                     top: 0,
