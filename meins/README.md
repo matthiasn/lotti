@@ -21,13 +21,9 @@ See this [blog post](http://matthiasnehlsen.com/blog/2018/03/15/introducing-meo/
 
 ## Components
 
-**meins** consists of a **[Clojure](https://clojure.org/)** and **[ClojureScript](https://github.com/clojure/clojurescript)** system spanning an **Electron** application and a backend that runs on the **[JVM](https://en.wikipedia.org/wiki/Java_virtual_machine)**. There's also a **mobile companion app** written in **ClojureScript** on top of **[React Native](https://facebook.github.io/react-native/)**, see `./rn-app` in this repository. 
+**meins** consists of a **[Clojure](https://clojure.org/)** and **[ClojureScript](https://github.com/clojure/clojurescript)** system spanning an **Electron** application and a backend that runs on the **[JVM](https://en.wikipedia.org/wiki/Java_virtual_machine)**.
 
 All subsystems in meins make use of the **[systems-toolbox](https://github.com/matthiasn/systems-toolbox)** for their architecture.
-
-Here's how the app currently looks like:
-
-![screenshot](https://raw.githubusercontent.com/matthiasn/octopress-blog/master/source/images/2018-03-08-mobile.png)
 
 
 ## Installation

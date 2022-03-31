@@ -26,8 +26,8 @@ Thanks!
 
 ### Mac
 
-Tested on `macOS 12.3`: no additional steps necessary, other than having Xcode
-installed.
+Tested on `macOS 12.3`: no additional steps necessary. You only need to have 
+Xcode installed.
 
 ### Linux
 
