@@ -10,6 +10,7 @@ import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -85,42 +86,46 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   void record({
     String? linkedId,
   }) async {
-    _linkedId = linkedId;
-    try {
-      await _openAudioSession();
-      DateTime created = DateTime.now();
-      String fileName =
-          '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
-      String day = DateFormat('yyyy-MM-dd').format(created);
-      String relativePath = '/audio/$day/';
-      String directory = await createAssetDirectory(relativePath);
-      String filePath = '$directory$fileName';
+    if (state.status == AudioRecorderStatus.recording) {
+      stop();
+    } else {
+      _linkedId = linkedId;
+      try {
+        await _openAudioSession();
+        DateTime created = DateTime.now();
+        String fileName =
+            '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
+        String day = DateFormat('yyyy-MM-dd').format(created);
+        String relativePath = '/audio/$day/';
+        String directory = await createAssetDirectory(relativePath);
+        String filePath = '$directory$fileName';
 
-      _audioNote = AudioNote(
-          id: uuid.v1(options: {'msecs': created.millisecondsSinceEpoch}),
-          timestamp: created.millisecondsSinceEpoch,
-          createdAt: created,
-          utcOffset: created.timeZoneOffset.inMinutes,
-          timezone: await getLocalTimezone(),
-          audioFile: fileName,
-          audioDirectory: relativePath,
-          duration: const Duration(seconds: 0));
+        _audioNote = AudioNote(
+            id: uuid.v1(options: {'msecs': created.millisecondsSinceEpoch}),
+            timestamp: created.millisecondsSinceEpoch,
+            createdAt: created,
+            utcOffset: created.timeZoneOffset.inMinutes,
+            timezone: await getLocalTimezone(),
+            audioFile: fileName,
+            audioDirectory: relativePath,
+            duration: const Duration(seconds: 0));
 
-      _saveAudioNoteJson();
-      _addGeolocation();
+        _saveAudioNoteJson();
+        _addGeolocation();
 
-      _myRecorder
-          ?.startRecorder(
-        toFile: filePath,
-        codec: Codec.aacADTS,
-        sampleRate: 48000,
-        bitRate: 128000,
-      )
-          .then((value) {
-        emit(state.copyWith(status: AudioRecorderStatus.recording));
-      });
-    } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+        _myRecorder
+            ?.startRecorder(
+          toFile: filePath,
+          codec: Codec.aacADTS,
+          sampleRate: 48000,
+          bitRate: 128000,
+        )
+            .then((value) {
+          emit(state.copyWith(status: AudioRecorderStatus.recording));
+        });
+      } catch (exception, stackTrace) {
+        await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      }
     }
   }
 
@@ -142,6 +147,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
+    getIt<AppRouter>().pop();
   }
 
   @override
