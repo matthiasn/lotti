@@ -443,7 +443,10 @@ class PersistenceLogic {
 
       JournalEntity withTags = journalEntity.copyWith(
         meta: journalEntity.meta.copyWith(
-          tagIds: storyTags,
+          tagIds: <String>{
+            ...?journalEntity.meta.tagIds,
+            ...storyTags,
+          }.toList(),
         ),
       );
 
