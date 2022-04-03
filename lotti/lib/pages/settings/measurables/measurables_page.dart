@@ -7,6 +7,7 @@ import 'package:lotti/pages/settings/measurables/measurable_type_card.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 const double iconSize = 24.0;
 
@@ -19,6 +20,7 @@ class MeasurablesPage extends StatefulWidget {
 
 class _MeasurablesPageState extends State<MeasurablesPage> {
   final JournalDb _db = getIt<JournalDb>();
+  String match = '';
 
   late final Stream<List<MeasurableDataType>> stream =
       _db.watchMeasurableDataTypes();
@@ -55,6 +57,52 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
     ));
   }
 
+  Widget buildFloatingSearchBar() {
+    final isPortrait =
+        MediaQuery.of(context).orientation == Orientation.portrait;
+
+    double portraitWidth = MediaQuery.of(context).size.width * 0.5;
+
+    return FloatingSearchBar(
+      clearQueryOnClose: false,
+      automaticallyImplyBackButton: false,
+      hint: 'Search measurables...',
+      scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
+      transitionDuration: const Duration(milliseconds: 800),
+      transitionCurve: Curves.easeInOut,
+      backgroundColor: AppColors.appBarFgColor,
+      margins: const EdgeInsets.only(top: 8),
+      queryStyle: const TextStyle(
+        fontFamily: 'Lato',
+        fontSize: 20,
+        fontWeight: FontWeight.w300,
+      ),
+      hintStyle: const TextStyle(
+        fontFamily: 'Lato',
+        fontSize: 20,
+        fontWeight: FontWeight.w300,
+      ),
+      physics: const BouncingScrollPhysics(),
+      borderRadius: BorderRadius.circular(8.0),
+      axisAlignment: isPortrait ? 0.0 : -1.0,
+      openAxisAlignment: 0.0,
+      width: isPortrait ? portraitWidth : 400,
+      onQueryChanged: (query) async {
+        setState(() {
+          match = query.toLowerCase();
+        });
+      },
+      actions: [
+        FloatingSearchBarAction.searchToClear(
+          showIfClosed: false,
+        ),
+      ],
+      builder: (context, transition) {
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<MeasurableDataType>>(
@@ -64,22 +112,32 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
         AsyncSnapshot<List<MeasurableDataType>> snapshot,
       ) {
         List<MeasurableDataType> items = snapshot.data ?? [];
+        List<MeasurableDataType> filtered = items
+            .where((MeasurableDataType dataType) =>
+                dataType.displayName.toLowerCase().contains(match))
+            .toList();
 
         return Stack(
           children: [
             ListView(
               shrinkWrap: true,
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.only(
+                left: 8,
+                right: 8,
+                bottom: 8,
+                top: 64,
+              ),
               children: List.generate(
-                items.length,
+                filtered.length,
                 (int index) {
                   return MeasurableTypeCard(
-                    item: items.elementAt(index),
+                    item: filtered.elementAt(index),
                     index: index,
                   );
                 },
               ),
             ),
+            buildFloatingSearchBar(),
             Align(
               alignment: Alignment.bottomRight,
               child: Padding(
