@@ -92,20 +92,20 @@ PODS:
   - sqflite (0.0.2):
     - Flutter
     - FMDB (>= 2.7.5)
-  - sqlite3 (3.38.0):
-    - sqlite3/common (= 3.38.0)
-  - sqlite3/common (3.38.0)
-  - sqlite3/fts5 (3.38.0):
+  - sqlite3 (3.38.2):
+    - sqlite3/common (= 3.38.2)
+  - sqlite3/common (3.38.2)
+  - sqlite3/fts5 (3.38.2):
     - sqlite3/common
-  - sqlite3/json1 (3.38.0):
+  - sqlite3/json1 (3.38.2):
     - sqlite3/common
-  - sqlite3/perf-threadsafe (3.38.0):
+  - sqlite3/perf-threadsafe (3.38.2):
     - sqlite3/common
-  - sqlite3/rtree (3.38.0):
+  - sqlite3/rtree (3.38.2):
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - Flutter
-    - sqlite3 (~> 3.38.0)
+    - sqlite3 (~> 3.38.2)
     - sqlite3/fts5
     - sqlite3/json1
     - sqlite3/perf-threadsafe
@@ -261,8 +261,8 @@ SPEC CHECKSUMS:
   SDWebImage: 631cf572cc93dfdfe54162e556410a61f1141928
   SDWebImageWebPCoder: f93010f3f6c031e2f8fb3081ca4ee6966c539815
   sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
-  sqlite3: 2c78798a817aa040981e2b0cfb4eb94523c0f55f
-  sqlite3_flutter_libs: 14a93fdcff62c6a346356df0b8e1b3f35fbab8f2
+  sqlite3: e26e8422c1f5780d0a3db283eb095a03a10e121c
+  sqlite3_flutter_libs: e21c8c90448ce608a0d685e717727c46f37c6695
   url_launcher_ios: 839c58cdb4279282219f5e248c3321761ff3c4de
   video_player_avfoundation: e489aac24ef5cf7af82702979ed16f2a5ef84cff
 
