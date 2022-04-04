@@ -189,8 +189,6 @@ CREATE TABLE linked_entries (
   type TEXT NOT NULL,
   serialized TEXT NOT NULL,
   PRIMARY KEY (id),
-  FOREIGN KEY(from_id) REFERENCES journal(id) ON DELETE CASCADE,
-  FOREIGN KEY(to_id) REFERENCES journal(id) ON DELETE CASCADE,
   UNIQUE(from_id, to_id, type)
 ) as LinkedDbEntry;
 
