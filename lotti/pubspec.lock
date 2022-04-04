@@ -1525,7 +1525,7 @@ packages:
       name: qr_code_scanner
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.6.1"
+    version: "0.7.0"
   qr_flutter:
     dependency: "direct main"
     description:

@@ -94,7 +94,7 @@ dependencies:
   path_provider: ^2.0.8
   permission_handler: ^9.2.0
   photo_view: ^0.13.0
-  qr_code_scanner: ^0.6.1
+  qr_code_scanner: ^0.7.0
   qr_flutter: ^4.0.0
   sqflite: ^2.0.1
   sqlite3_flutter_libs: ^0.5.2
