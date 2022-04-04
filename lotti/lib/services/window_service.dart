@@ -81,4 +81,14 @@ class WindowService implements WindowListener {
   void onWindowClose() {
     // TODO: implement onWindowClose
   }
+
+  @override
+  void onWindowMoved() {
+    // TODO: implement onWindowMoved
+  }
+
+  @override
+  void onWindowResized() {
+    // TODO: implement onWindowResized
+  }
 }
