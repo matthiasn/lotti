@@ -98,8 +98,8 @@ dependencies:
   qr_flutter: ^4.0.0
   sqflite: ^2.0.1
   sqlite3_flutter_libs: ^0.5.2
-  syncfusion_flutter_calendar: ^19.4.48
-  syncfusion_flutter_datepicker: ^19.3.57
+  syncfusion_flutter_calendar: ^20.1.47
+  syncfusion_flutter_datepicker: ^20.1.47
   tinycolor2: ^2.0.0
   uuid: ^3.0.4
   wechat_assets_picker: ^7.0.1
