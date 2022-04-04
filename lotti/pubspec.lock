@@ -637,7 +637,7 @@ packages:
       name: flutter_fgbg
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.0"
+    version: "0.2.0"
   flutter_form_builder:
     dependency: "direct main"
     description:

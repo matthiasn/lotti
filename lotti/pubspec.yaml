@@ -58,7 +58,7 @@ dependencies:
   flutter_bloc: ^8.0.0
   flutter_datetime_picker: ^1.5.1
   flutter_dotenv: ^5.0.2
-  flutter_fgbg: ^0.1.0
+  flutter_fgbg: ^0.2.0
   flutter_form_builder: ^7.0.0
   flutter_image_compress: ^1.1.0
   flutter_local_notifications: ^9.2.0
