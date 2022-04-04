@@ -1219,12 +1219,12 @@ packages:
     source: hosted
     version: "1.0.1"
   mocktail:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: mocktail
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.0"
+    version: "0.3.0"
   multi_select_flutter:
     dependency: "direct main"
     description:
