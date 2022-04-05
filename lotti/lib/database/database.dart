@@ -11,6 +11,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -226,6 +227,7 @@ class JournalDb extends _$JournalDb {
     Stream<JournalEntity?> res = (select(journal)
           ..where((t) => t.id.equals(id)))
         .watch()
+        .where(makeDuplicateFilter())
         .map(entityStreamMapper)
         .map((event) => event.first);
     return res;
@@ -263,10 +265,12 @@ class JournalDb extends _$JournalDb {
       return filteredByTagJournal(
               types, ids, starredStatuses, privateStatuses, limit)
           .watch()
+          .where(makeDuplicateFilter())
           .map(entityStreamMapper);
     } else {
       return filteredJournal(types, starredStatuses, privateStatuses, limit)
           .watch()
+          .where(makeDuplicateFilter())
           .map(entityStreamMapper);
     }
   }
@@ -282,7 +286,7 @@ class JournalDb extends _$JournalDb {
       rangeStart,
       rangeEnd,
       limit,
-    ).watch().map(entityStreamMapper);
+    ).watch().where(makeDuplicateFilter()).map(entityStreamMapper);
   }
 
   Stream<List<JournalEntity>> watchTasks({
@@ -296,10 +300,12 @@ class JournalDb extends _$JournalDb {
       return filteredTasksByTag(
               types, ids, starredStatuses, taskStatuses, limit)
           .watch()
+          .where(makeDuplicateFilter())
           .map(entityStreamMapper);
     } else {
       return filteredTasks(types, starredStatuses, taskStatuses, limit)
           .watch()
+          .where(makeDuplicateFilter())
           .map(entityStreamMapper);
     }
   }
@@ -314,7 +320,10 @@ class JournalDb extends _$JournalDb {
   Stream<List<JournalEntity>> watchLinkedEntities({
     required String linkedFrom,
   }) {
-    return linkedJournalEntities(linkedFrom).watch().map(entityStreamMapper);
+    return linkedJournalEntities(linkedFrom)
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(entityStreamMapper);
   }
 
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
@@ -342,21 +351,33 @@ class JournalDb extends _$JournalDb {
   Stream<List<JournalEntity>> watchLinkedToEntities({
     required String linkedTo,
   }) {
-    return linkedToJournalEntities(linkedTo).watch().map(entityStreamMapper);
+    return linkedToJournalEntities(linkedTo)
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(entityStreamMapper);
   }
 
   Stream<List<JournalEntity>> watchFlaggedImport({
     int limit = 1000,
   }) {
-    return entriesFlaggedImport(limit).watch().map(entityStreamMapper);
+    return entriesFlaggedImport(limit)
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(entityStreamMapper);
   }
 
   Stream<int> watchJournalCount() {
-    return countJournalEntries().watch().map((List<int> res) => res.first);
+    return countJournalEntries()
+        .watch()
+        .where(makeDuplicateFilter())
+        .map((List<int> res) => res.first);
   }
 
   Stream<int> watchTaggedCount() {
-    return countTagged().watch().map((List<int> res) => res.first);
+    return countTagged()
+        .watch()
+        .where(makeDuplicateFilter())
+        .map((List<int> res) => res.first);
   }
 
   Future<int> getJournalCount() async {
@@ -364,7 +385,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Stream<List<ConfigFlag>> watchConfigFlags() {
-    return listConfigFlags().watch();
+    return listConfigFlags().watch().where(makeDuplicateFilter());
   }
 
   Future<void> initConfigFlags() async {
@@ -426,16 +447,23 @@ class JournalDb extends _$JournalDb {
   }
 
   Stream<int> watchCountImportFlagEntries() {
-    return countImportFlagEntries().watch().map((event) => event.first);
+    return countImportFlagEntries()
+        .watch()
+        .where(makeDuplicateFilter())
+        .map((event) => event.first);
   }
 
   Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
-    return activeMeasurableTypes().watch().map(measurableDataTypeStreamMapper);
+    return activeMeasurableTypes()
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(measurableDataTypeStreamMapper);
   }
 
   Stream<MeasurableDataType?> watchMeasurableDataTypeById(String id) {
     return measurableTypeById(id)
         .watch()
+        .where(makeDuplicateFilter())
         .map(measurableDataTypeStreamMapper)
         .map((List<MeasurableDataType> res) => res.firstOrNull);
   }
@@ -447,6 +475,7 @@ class JournalDb extends _$JournalDb {
   }) {
     return measurementsByType(type, rangeStart, rangeEnd)
         .watch()
+        .where(makeDuplicateFilter())
         .map(entityStreamMapper);
   }
 
@@ -457,6 +486,7 @@ class JournalDb extends _$JournalDb {
   }) {
     return quantitativeByType(type, rangeStart, rangeEnd)
         .watch()
+        .where(makeDuplicateFilter())
         .map(entityStreamMapper);
   }
 
@@ -485,6 +515,7 @@ class JournalDb extends _$JournalDb {
   }) {
     return surveysByType(type, rangeStart, rangeEnd)
         .watch()
+        .where(makeDuplicateFilter())
         .map(entityStreamMapper);
   }
 
@@ -495,6 +526,7 @@ class JournalDb extends _$JournalDb {
   }) {
     return quantitativeByTypes(types, rangeStart, rangeEnd)
         .watch()
+        .where(makeDuplicateFilter())
         .map(entityStreamMapper);
   }
 
@@ -502,30 +534,47 @@ class JournalDb extends _$JournalDb {
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) {
-    return workouts(rangeStart, rangeEnd).watch().map(entityStreamMapper);
+    return workouts(rangeStart, rangeEnd)
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(entityStreamMapper);
   }
 
   Stream<List<Conflict>> watchConflicts(
     ConflictStatus status, {
     int limit = 1000,
   }) {
-    return conflictsByStatus(status.index, limit).watch();
+    return conflictsByStatus(status.index, limit)
+        .watch()
+        .where(makeDuplicateFilter());
   }
 
   Stream<List<TagEntity>> watchTags() {
-    return allTagEntities().watch().map(tagStreamMapper);
+    return allTagEntities()
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(tagStreamMapper);
   }
 
   Stream<List<DashboardDefinition>> watchDashboards() {
-    return allDashboards().watch().map(dashboardStreamMapper);
+    return allDashboards()
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(dashboardStreamMapper);
   }
 
   Stream<List<DashboardDefinition>> watchDashboardById(String id) {
-    return dashboardById(id).watch().map(dashboardStreamMapper);
+    return dashboardById(id)
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(dashboardStreamMapper);
   }
 
   Stream<List<HabitDefinition>> watchHabitDefinitions() {
-    return allHabitDefinitions().watch().map(habitDefinitionsStreamMapper);
+    return allHabitDefinitions()
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(habitDefinitionsStreamMapper);
   }
 
   Future<List<TagEntity>> getMatchingTags(
