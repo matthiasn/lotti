@@ -68,7 +68,9 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
     HealthTypeConfig? healthType = healthTypes[dataType];
     charts.SeriesRendererConfig<DateTime>? defaultRenderer;
 
-    if (healthType?.chartType == HealthChartType.barChart) {
+    final bool isBarChart = healthType?.chartType == HealthChartType.barChart;
+
+    if (isBarChart) {
       defaultRenderer = charts.BarRendererConfig<DateTime>();
     } else {
       defaultRenderer = charts.LineRendererConfig<DateTime>(
@@ -145,11 +147,10 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                         ),
                       ],
                       primaryMeasureAxis: charts.NumericAxisSpec(
-                        tickProviderSpec:
-                            const charts.BasicNumericTickProviderSpec(
-                          zeroBound: false,
+                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                          zeroBound: isBarChart,
                           desiredTickCount: 5,
-                          dataIsInWholeNumbers: true,
+                          dataIsInWholeNumbers: false,
                         ),
                         tickFormatterSpec:
                             healthType != null && healthType.hoursMinutes
