@@ -68,7 +68,10 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
               charts.SeriesRendererConfig<DateTime>? defaultRenderer;
 
-              if (measurableDataType.aggregationType == AggregationType.none) {
+              final bool aggregationNone =
+                  measurableDataType.aggregationType == AggregationType.none;
+
+              if (aggregationNone) {
                 defaultRenderer = charts.LineRendererConfig<DateTime>(
                   includePoints: false,
                   strokeWidthPx: 2,
@@ -153,6 +156,14 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                                   widget.rangeStart, widget.rangeEnd)
                             ],
                             domainAxis: timeSeriesAxis,
+                            primaryMeasureAxis: charts.NumericAxisSpec(
+                              tickProviderSpec:
+                                  charts.BasicNumericTickProviderSpec(
+                                zeroBound: !aggregationNone,
+                                dataIsInWholeNumbers: true,
+                                desiredTickCount: 4,
+                              ),
+                            ),
                           ),
                           MeasurablesChartInfoWidget(measurableDataType),
                         ],
