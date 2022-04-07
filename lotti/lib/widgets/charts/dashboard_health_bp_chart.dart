@@ -66,9 +66,14 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
           void _infoSelectionModelUpdated(
               charts.SelectionModel<DateTime> model) {
             if (model.hasDatumSelection) {
+              Iterable<Observation> data =
+                  model.selectedDatum.map((d) => d.datum as Observation);
+
               context.read<BpChartInfoCubit>().setSelected(
-                    systolic: model.selectedDatum.first.datum as Observation,
-                    diastolic: model.selectedDatum[1].datum as Observation,
+                    systolic: data.reduce((Observation a, Observation b) =>
+                        a.value < b.value ? b : a),
+                    diastolic: data.reduce((Observation a, Observation b) =>
+                        a.value > b.value ? b : a),
                   );
 
               _chartState.selectionModels[charts.SelectionModelType.info] =
