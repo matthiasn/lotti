@@ -160,8 +160,9 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                               tickProviderSpec:
                                   charts.BasicNumericTickProviderSpec(
                                 zeroBound: !aggregationNone,
-                                dataIsInWholeNumbers: true,
-                                desiredTickCount: 4,
+                                dataIsInWholeNumbers: false,
+                                desiredMinTickCount: 4,
+                                desiredMaxTickCount: 5,
                               ),
                             ),
                           ),
