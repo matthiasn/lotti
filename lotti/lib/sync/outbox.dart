@@ -179,7 +179,11 @@ class OutboxService {
         stopPolling();
       }
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'outbox sendNext',
+        stackTrace: stackTrace,
+      );
       if (sendMutex.isLocked) {
         sendMutex.release();
       }
@@ -262,7 +266,11 @@ class OutboxService {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await _insightsDb.captureException(exception, stackTrace: stackTrace);
+        await _insightsDb.captureException(
+          exception,
+          domain: 'outbox enqueueMessage',
+          stackTrace: stackTrace,
+        );
       }
     }
 
@@ -291,7 +299,11 @@ class OutboxService {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await _insightsDb.captureException(exception, stackTrace: stackTrace);
+        await _insightsDb.captureException(
+          exception,
+          domain: 'outbox enqueueMessage',
+          stackTrace: stackTrace,
+        );
       }
     }
 
@@ -317,7 +329,11 @@ class OutboxService {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await _insightsDb.captureException(exception, stackTrace: stackTrace);
+        await _insightsDb.captureException(
+          exception,
+          domain: 'outbox enqueueMessage',
+          stackTrace: stackTrace,
+        );
       }
     }
 
@@ -343,7 +359,11 @@ class OutboxService {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await _insightsDb.captureException(exception, stackTrace: stackTrace);
+        await _insightsDb.captureException(
+          exception,
+          domain: 'outbox enqueueMessage',
+          stackTrace: stackTrace,
+        );
       }
     }
   }

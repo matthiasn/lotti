@@ -33,7 +33,11 @@ Future<ImapClient?> createImapClient() async {
       throw Exception('missing IMAP config');
     }
   } catch (e, stackTrace) {
-    await _insightsDb.captureException(e, stackTrace: stackTrace);
+    await _insightsDb.captureException(
+      e,
+      domain: 'imap_client createImapClient',
+      stackTrace: stackTrace,
+    );
   }
   await transaction.finish();
   return null;

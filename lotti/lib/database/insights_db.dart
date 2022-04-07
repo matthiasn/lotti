@@ -51,7 +51,7 @@ class InsightsDb extends _$InsightsDb {
 
   Future<void> captureException(
     dynamic exception, {
-    String domain = '',
+    required String domain,
     dynamic stackTrace,
     InsightLevel level = InsightLevel.error,
     InsightType type = InsightType.exception,

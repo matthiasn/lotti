@@ -42,7 +42,11 @@ Future<void> main() async {
     runApp(LottiApp());
   }, (Object error, StackTrace stackTrace) {
     final InsightsDb _insightsDb = getIt<InsightsDb>();
-    _insightsDb.captureException(error, stackTrace: stackTrace);
+    _insightsDb.captureException(
+      error,
+      domain: 'main',
+      stackTrace: stackTrace,
+    );
   });
 }
 

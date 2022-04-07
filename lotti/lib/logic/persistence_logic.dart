@@ -74,7 +74,11 @@ class PersistenceLogic {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -106,7 +110,11 @@ class PersistenceLogic {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -151,7 +159,11 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -200,7 +212,11 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -251,7 +267,11 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -295,7 +315,11 @@ class PersistenceLogic {
         linkedId: linked?.meta.id,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -347,7 +371,11 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -391,7 +419,11 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -475,7 +507,11 @@ class PersistenceLogic {
 
       return saved;
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
       debugPrint('Exception $exception');
     }
     return null;
@@ -549,7 +585,11 @@ class PersistenceLogic {
         await updateDbEntity(newEntry, enqueueSync: true);
       }
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -591,10 +631,17 @@ class PersistenceLogic {
 
           await updateDbEntity(newJournalEntry, enqueueSync: true);
         },
-        orElse: () => _insightsDb.captureException('not a task'),
+        orElse: () => _insightsDb.captureException(
+          'not a task',
+          domain: 'persistence_logic',
+        ),
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -626,7 +673,11 @@ class PersistenceLogic {
 
       await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -656,7 +707,11 @@ class PersistenceLogic {
       await updateDbEntity(newJournalEntity, enqueueSync: true);
       await _journalDb.addTagged(newJournalEntity);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -691,7 +746,11 @@ class PersistenceLogic {
 
       return await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -725,7 +784,11 @@ class PersistenceLogic {
 
       return await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -753,7 +816,11 @@ class PersistenceLogic {
 
       getIt<NotificationService>().updateBadge();
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -786,7 +853,11 @@ class PersistenceLogic {
 
       return true;
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
       debugPrint('Exception $exception');
     }
     return null;

@@ -53,7 +53,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         updateProgress(event);
       });
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'recorder_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -79,7 +83,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         }
       });
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'recorder_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -124,7 +132,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           emit(state.copyWith(status: AudioRecorderStatus.recording));
         });
       } catch (exception, stackTrace) {
-        await _insightsDb.captureException(exception, stackTrace: stackTrace);
+        await _insightsDb.captureException(
+          exception,
+          domain: 'recorder_cubit',
+          stackTrace: stackTrace,
+        );
       }
     }
   }
@@ -145,7 +157,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         _linkedId = null;
       }
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'recorder_cubit',
+        stackTrace: stackTrace,
+      );
     }
     getIt<AppRouter>().pop();
   }

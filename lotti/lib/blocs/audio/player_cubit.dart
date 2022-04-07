@@ -50,7 +50,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         emit(newState.copyWith(totalDuration: totalDuration));
       }
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -61,7 +65,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       await _audioPlayer.seek(state.pausedAt);
       emit(state.copyWith(status: AudioPlayerStatus.playing));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -73,7 +81,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         progress: const Duration(minutes: 0),
       ));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -85,7 +97,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         pausedAt: newPosition,
       ));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -94,7 +110,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       await _audioPlayer.setSpeed(speed);
       emit(state.copyWith(speed: speed));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -106,7 +126,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         pausedAt: state.progress,
       ));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -120,7 +144,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         pausedAt: newPosition,
       ));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -134,7 +162,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         pausedAt: newPosition,
       ));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 

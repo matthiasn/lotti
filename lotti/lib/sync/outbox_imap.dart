@@ -43,6 +43,7 @@ Future<GenericImapResult> saveImapMessage(
   } catch (exception, stackTrace) {
     await _insightsDb.captureException(
       exception,
+      domain: 'outbox_imap saveImapMessage',
       stackTrace: stackTrace,
     );
     rethrow;
@@ -96,6 +97,7 @@ Future<ImapClient?> persistImap({
   } catch (exception, stackTrace) {
     await _insightsDb.captureException(
       exception,
+      domain: 'outbox_imap persistImap',
       stackTrace: stackTrace,
     );
     rethrow;

@@ -133,7 +133,11 @@ class SyncInboxService {
         throw Exception('missing IMAP config');
       }
     } catch (e, stackTrace) {
-      await _insightsDb.captureException(e, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        e,
+        domain: 'inbox_service processMessage',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -206,10 +210,18 @@ class SyncInboxService {
         }
       } on MailException catch (e, stackTrace) {
         debugPrint('High level API failed with $e');
-        await _insightsDb.captureException(e, stackTrace: stackTrace);
+        await _insightsDb.captureException(
+          e,
+          domain: 'inbox_service _fetchInbox',
+          stackTrace: stackTrace,
+        );
       } catch (e, stackTrace) {
         debugPrint('Exception $e');
-        await _insightsDb.captureException(e, stackTrace: stackTrace);
+        await _insightsDb.captureException(
+          e,
+          domain: 'inbox_service _fetchInbox',
+          stackTrace: stackTrace,
+        );
       } finally {
         imapClient?.disconnect();
         if (fetchMutex.isLocked) {
@@ -244,9 +256,16 @@ class SyncInboxService {
         }
       } on MailException catch (e) {
         debugPrint('High level API failed with $e');
-        await _insightsDb.captureException(e);
+        await _insightsDb.captureException(
+          e,
+          domain: 'inbox_service _fetchByUid',
+        );
       } catch (e, stackTrace) {
-        await _insightsDb.captureException(e, stackTrace: stackTrace);
+        await _insightsDb.captureException(
+          e,
+          domain: 'inbox_service _fetchByUid',
+          stackTrace: stackTrace,
+        );
       } finally {}
     }
     await transaction.finish();
@@ -291,12 +310,16 @@ class SyncInboxService {
             _observingClient?.disconnect();
             _observingClient = null;
           } catch (e, stackTrace) {
-            _insightsDb.captureException(e, stackTrace: stackTrace);
+            _insightsDb.captureException(
+              e,
+              domain: 'inbox_service _observeInbox',
+              stackTrace: stackTrace,
+            );
           }
 
           _insightsDb.captureEvent(
-            'isConnected: ${_observingClient!.isConnected} '
-            'isPolling: ${_observingClient!.isPolling()}',
+            'isConnected: ${_observingClient?.isConnected} '
+            'isPolling: ${_observingClient?.isPolling()}',
           );
         });
 
@@ -304,9 +327,16 @@ class SyncInboxService {
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
-      await _insightsDb.captureException(e);
+      await _insightsDb.captureException(
+        e,
+        domain: 'inbox_service',
+      );
     } catch (e, stackTrace) {
-      await _insightsDb.captureException(e, stackTrace: stackTrace);
+      await _insightsDb.captureException(
+        e,
+        domain: 'inbox_service _observeInbox',
+        stackTrace: stackTrace,
+      );
     }
   }
 
