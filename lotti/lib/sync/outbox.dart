@@ -193,6 +193,11 @@ class OutboxService {
 
   void startPolling() async {
     _insightsDb.captureEvent('startPolling()', domain: 'OUTBOX_CUBIT');
+
+    if ((timer != null && timer!.isActive) || false) {
+      return;
+    }
+
     sendNext();
     timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       _connectivityResult = await Connectivity().checkConnectivity();
@@ -215,7 +220,7 @@ class OutboxService {
     _insightsDb.captureEvent('stopPolling()', domain: 'OUTBOX_CUBIT');
 
     if (timer != null) {
-      timer!.cancel();
+      timer?.cancel();
       timer = null;
     }
   }
