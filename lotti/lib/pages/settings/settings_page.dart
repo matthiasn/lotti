@@ -81,7 +81,7 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: const SettingsIcon(MdiIcons.informationOutline),
             title: 'Logs',
             onTap: () {
-              context.router.push(const InsightsRoute());
+              context.router.push(const LoggingRoute());
             },
           ),
           SettingsCard(

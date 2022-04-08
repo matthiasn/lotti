@@ -5,7 +5,7 @@ import 'package:lotti/pages/settings/dashboards/dashboard_details_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
 import 'package:lotti/pages/settings/health_import_page.dart';
-import 'package:lotti/pages/settings/insights_page.dart';
+import 'package:lotti/pages/settings/logging_page.dart';
 import 'package:lotti/pages/settings/maintenance_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
@@ -76,7 +76,7 @@ const AutoRoute settingsRoutes = AutoRoute(
     ),
     AutoRoute(
       path: 'insights',
-      page: InsightsPage,
+      page: LoggingPage,
     ),
     AutoRoute(
       path: 'conflicts',

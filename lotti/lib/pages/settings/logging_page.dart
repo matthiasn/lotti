@@ -59,14 +59,20 @@ class LogLineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String timestamp = logEntry.createdAt.substring(0, 23);
+    String domain = logEntry.domain;
+    String message = logEntry.message;
+    Color color =
+        logEntry.level == 'ERROR' ? AppColors.error : AppColors.entryTextColor;
+
     return Padding(
       padding: const EdgeInsets.all(2.0),
       child: Text(
-        '${logEntry.createdAt.substring(0, 23)}: ${logEntry.message}',
+        '$timestamp: $domain $message',
         style: TextStyle(
-          color: AppColors.entryTextColor,
+          color: color,
           fontFamily: 'ShareTechMono',
-          fontSize: 16.0,
+          fontSize: 11.0,
         ),
       ),
     );
