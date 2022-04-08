@@ -31,10 +31,14 @@ Future<void> main() async {
   runZonedGuarded(() {
     registerSingletons();
 
-    // FlutterError.onError = (FlutterErrorDetails details) {
-    //   final InsightsDb _insightsDb = getIt<InsightsDb>();
-    //   _insightsDb.captureException(details);
-    // };
+    FlutterError.onError = (FlutterErrorDetails details) {
+      final InsightsDb _insightsDb = getIt<InsightsDb>();
+      _insightsDb.captureException(
+        details,
+        domain: 'MAIN',
+        subDomain: 'onError',
+      );
+    };
 
     initializeDateFormatting();
     registerScreenshotHotkey();
@@ -44,7 +48,8 @@ Future<void> main() async {
     final InsightsDb _insightsDb = getIt<InsightsDb>();
     _insightsDb.captureException(
       error,
-      domain: 'main',
+      domain: 'MAIN',
+      subDomain: 'runZonedGuarded',
       stackTrace: stackTrace,
     );
   });
