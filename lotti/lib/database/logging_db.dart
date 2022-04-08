@@ -23,8 +23,8 @@ enum InsightType {
 @DriftDatabase(
   include: {'logging_db.drift'},
 )
-class InsightsDb extends _$InsightsDb {
-  InsightsDb() : super(_openConnection());
+class LoggingDb extends _$LoggingDb {
+  LoggingDb() : super(_openConnection());
 
   @override
   int get schemaVersion => 1;

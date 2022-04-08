@@ -75,7 +75,7 @@ const AutoRoute settingsRoutes = AutoRoute(
       page: OutboxMonitorPage,
     ),
     AutoRoute(
-      path: 'insights',
+      path: 'logging',
       page: LoggingPage,
     ),
     AutoRoute(

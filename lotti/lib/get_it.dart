@@ -23,7 +23,7 @@ void registerSingletons() {
   getIt.registerSingleton<TagsService>(TagsService());
   getIt<JournalDb>().initConfigFlags();
   getIt.registerSingleton<SyncDatabase>(SyncDatabase());
-  getIt.registerSingleton<InsightsDb>(InsightsDb());
+  getIt.registerSingleton<LoggingDb>(LoggingDb());
   getIt.registerSingleton<VectorClockService>(VectorClockService());
   getIt.registerSingleton<SyncConfigService>(SyncConfigService());
   getIt.registerSingleton<TimeService>(TimeService());

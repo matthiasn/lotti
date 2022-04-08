@@ -11,7 +11,7 @@ class LoggingPage extends StatefulWidget {
 }
 
 class _LoggingPageState extends State<LoggingPage> {
-  final InsightsDb _db = getIt<InsightsDb>();
+  final LoggingDb _db = getIt<LoggingDb>();
   late Stream<List<LogEntry>> stream = _db.watchLogEntries();
 
   @override

@@ -28,7 +28,7 @@ import 'package:path_provider/path_provider.dart';
 class OutboxService {
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   ConnectivityResult? _connectivityResult;
-  final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final LoggingDb _loggingDb = getIt<LoggingDb>();
 
   final sendMutex = Mutex();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
@@ -44,7 +44,7 @@ class OutboxService {
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
       _connectivityResult = result;
       debugPrint('Connectivity onConnectivityChanged $result');
-      _insightsDb.captureEvent(
+      _loggingDb.captureEvent(
         'OUTBOX: Connectivity onConnectivityChanged $result',
         domain: 'OUTBOX_CUBIT',
       );
@@ -58,7 +58,7 @@ class OutboxService {
 
     if (isMobile) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
-        _insightsDb.captureEvent(event, domain: 'OUTBOX_CUBIT');
+        _loggingDb.captureEvent(event, domain: 'OUTBOX_CUBIT');
         if (event == FGBGType.foreground) {
           startPolling();
         }
@@ -79,7 +79,7 @@ class OutboxService {
   }
 
   void reportConnectivity() async {
-    _insightsDb.captureEvent(
+    _loggingDb.captureEvent(
       'reportConnectivity: $_connectivityResult',
       domain: 'OUTBOX_CUBIT',
     );
@@ -100,11 +100,11 @@ class OutboxService {
   }
 
   void sendNext({ImapClient? imapClient}) async {
-    _insightsDb.captureEvent('sendNext()', domain: 'OUTBOX_CUBIT');
+    _loggingDb.captureEvent('sendNext()', domain: 'OUTBOX_CUBIT');
 
     if (!enabled) return;
 
-    final transaction = _insightsDb.startTransaction('sendNext()', 'task');
+    final transaction = _loggingDb.startTransaction('sendNext()', 'task');
     try {
       _connectivityResult = await Connectivity().checkConnectivity();
       if (_connectivityResult == ConnectivityResult.none) {
@@ -184,7 +184,7 @@ class OutboxService {
         stopPolling();
       }
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(
+      await _loggingDb.captureException(
         exception,
         domain: 'OUTBOX',
         subDomain: 'sendNext',
@@ -198,7 +198,7 @@ class OutboxService {
   }
 
   void startPolling() async {
-    _insightsDb.captureEvent('startPolling()', domain: 'OUTBOX_CUBIT');
+    _loggingDb.captureEvent('startPolling()', domain: 'OUTBOX_CUBIT');
 
     if ((timer != null && timer!.isActive) || false) {
       return;
@@ -207,7 +207,7 @@ class OutboxService {
     sendNext();
     timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       _connectivityResult = await Connectivity().checkConnectivity();
-      _insightsDb.captureEvent('_connectivityResult: $_connectivityResult',
+      _loggingDb.captureEvent('_connectivityResult: $_connectivityResult',
           domain: 'OUTBOX_CUBIT');
 
       List<OutboxItem> unprocessed = await getNextItems();
@@ -215,7 +215,7 @@ class OutboxService {
       if (_connectivityResult == ConnectivityResult.none ||
           unprocessed.isEmpty) {
         timer.cancel();
-        _insightsDb.captureEvent('timer cancelled', domain: 'OUTBOX_CUBIT');
+        _loggingDb.captureEvent('timer cancelled', domain: 'OUTBOX_CUBIT');
       } else {
         sendNext();
       }
@@ -223,7 +223,7 @@ class OutboxService {
   }
 
   void stopPolling() async {
-    _insightsDb.captureEvent('stopPolling()', domain: 'OUTBOX_CUBIT');
+    _loggingDb.captureEvent('stopPolling()', domain: 'OUTBOX_CUBIT');
 
     if (timer != null) {
       timer?.cancel();
@@ -234,7 +234,7 @@ class OutboxService {
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     if (syncMessage is SyncJournalEntity) {
       final transaction =
-          _insightsDb.startTransaction('enqueueMessage()', 'task');
+          _loggingDb.startTransaction('enqueueMessage()', 'task');
       try {
         JournalEntity journalEntity = syncMessage.journalEntity;
         String jsonString = json.encode(syncMessage);
@@ -277,7 +277,7 @@ class OutboxService {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await _insightsDb.captureException(
+        await _loggingDb.captureException(
           exception,
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
@@ -288,7 +288,7 @@ class OutboxService {
 
     if (syncMessage is SyncEntityDefinition) {
       final transaction =
-          _insightsDb.startTransaction('enqueueMessage()', 'task');
+          _loggingDb.startTransaction('enqueueMessage()', 'task');
       try {
         String jsonString = json.encode(syncMessage);
         final VectorClockService vectorClockService =
@@ -311,7 +311,7 @@ class OutboxService {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await _insightsDb.captureException(
+        await _loggingDb.captureException(
           exception,
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
@@ -322,7 +322,7 @@ class OutboxService {
 
     if (syncMessage is SyncEntryLink) {
       final transaction =
-          _insightsDb.startTransaction('enqueueMessage()', 'link');
+          _loggingDb.startTransaction('enqueueMessage()', 'link');
       try {
         String jsonString = json.encode(syncMessage);
         final VectorClockService vectorClockService =
@@ -342,7 +342,7 @@ class OutboxService {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await _insightsDb.captureException(
+        await _loggingDb.captureException(
           exception,
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
@@ -353,7 +353,7 @@ class OutboxService {
 
     if (syncMessage is SyncTagEntity) {
       final transaction =
-          _insightsDb.startTransaction('enqueueMessage()', 'tag');
+          _loggingDb.startTransaction('enqueueMessage()', 'tag');
       try {
         String jsonString = json.encode(syncMessage);
         final VectorClockService vectorClockService =
@@ -373,7 +373,7 @@ class OutboxService {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await _insightsDb.captureException(
+        await _loggingDb.captureException(
           exception,
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
