@@ -35,7 +35,7 @@ Future<ImapClient?> createImapClient() async {
   } catch (e, stackTrace) {
     await _insightsDb.captureException(
       e,
-      domain: 'imap_client createImapClient',
+      domain: 'IMAP_CLIENT createImapClient',
       stackTrace: stackTrace,
     );
   }

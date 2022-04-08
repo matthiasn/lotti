@@ -43,7 +43,7 @@ Future<GenericImapResult> saveImapMessage(
   } catch (exception, stackTrace) {
     await _insightsDb.captureException(
       exception,
-      domain: 'outbox_imap saveImapMessage',
+      domain: 'OUTBOX_IMAP saveImapMessage',
       stackTrace: stackTrace,
     );
     rethrow;
@@ -86,7 +86,10 @@ Future<ImapClient?> persistImap({
     await transaction.finish();
 
     String? resDetails = res?.details;
-    _insightsDb.captureEvent(resDetails ?? 'no result details');
+    _insightsDb.captureEvent(
+      resDetails ?? 'no result details',
+      domain: 'OUTBOX_IMAP',
+    );
 
     if (resDetails != null && resDetails.contains('completed')) {
       return imapClient;
@@ -97,7 +100,7 @@ Future<ImapClient?> persistImap({
   } catch (exception, stackTrace) {
     await _insightsDb.captureException(
       exception,
-      domain: 'outbox_imap persistImap',
+      domain: 'OUTBOX_IMAP persistImap',
       stackTrace: stackTrace,
     );
     rethrow;

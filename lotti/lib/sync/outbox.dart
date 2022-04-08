@@ -44,8 +44,10 @@ class OutboxService {
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
       _connectivityResult = result;
       debugPrint('Connectivity onConnectivityChanged $result');
-      _insightsDb
-          .captureEvent('OUTBOX: Connectivity onConnectivityChanged $result');
+      _insightsDb.captureEvent(
+        'OUTBOX: Connectivity onConnectivityChanged $result',
+        domain: 'OUTBOX_CUBIT',
+      );
 
       if (result == ConnectivityResult.none) {
         stopPolling();
@@ -56,7 +58,7 @@ class OutboxService {
 
     if (isMobile) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
-        _insightsDb.captureEvent(event);
+        _insightsDb.captureEvent(event, domain: 'OUTBOX_CUBIT');
         if (event == FGBGType.foreground) {
           startPolling();
         }
@@ -77,7 +79,10 @@ class OutboxService {
   }
 
   void reportConnectivity() async {
-    _insightsDb.captureEvent('reportConnectivity: $_connectivityResult');
+    _insightsDb.captureEvent(
+      'reportConnectivity: $_connectivityResult',
+      domain: 'OUTBOX_CUBIT',
+    );
   }
 
   // Inserts a fault 25% of the time, where an exception would
@@ -181,7 +186,7 @@ class OutboxService {
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(
         exception,
-        domain: 'outbox sendNext',
+        domain: 'OUTBOX sendNext',
         stackTrace: stackTrace,
       );
       if (sendMutex.isLocked) {
@@ -273,7 +278,7 @@ class OutboxService {
       } catch (exception, stackTrace) {
         await _insightsDb.captureException(
           exception,
-          domain: 'outbox enqueueMessage',
+          domain: 'OUTBOX enqueueMessage',
           stackTrace: stackTrace,
         );
       }
@@ -306,7 +311,7 @@ class OutboxService {
       } catch (exception, stackTrace) {
         await _insightsDb.captureException(
           exception,
-          domain: 'outbox enqueueMessage',
+          domain: 'OUTBOX enqueueMessage',
           stackTrace: stackTrace,
         );
       }
@@ -336,7 +341,7 @@ class OutboxService {
       } catch (exception, stackTrace) {
         await _insightsDb.captureException(
           exception,
-          domain: 'outbox enqueueMessage',
+          domain: 'OUTBOX enqueueMessage',
           stackTrace: stackTrace,
         );
       }
@@ -366,7 +371,7 @@ class OutboxService {
       } catch (exception, stackTrace) {
         await _insightsDb.captureException(
           exception,
-          domain: 'outbox enqueueMessage',
+          domain: 'OUTBOX enqueueMessage',
           stackTrace: stackTrace,
         );
       }

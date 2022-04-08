@@ -58,8 +58,10 @@ class SyncInboxService {
     }
 
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      _insightsDb
-          .captureEvent('INBOX: Connectivity onConnectivityChanged $result');
+      _insightsDb.captureEvent(
+        'INBOX: Connectivity onConnectivityChanged $result',
+        domain: 'INBOX_SERVICE',
+      );
 
       if (result == ConnectivityResult.none) {
         _stopPeriodicFetching();
@@ -135,7 +137,7 @@ class SyncInboxService {
     } catch (e, stackTrace) {
       await _insightsDb.captureException(
         e,
-        domain: 'inbox_service processMessage',
+        domain: 'INBOX_SERVICE processMessage',
         stackTrace: stackTrace,
       );
     }
@@ -212,14 +214,14 @@ class SyncInboxService {
         debugPrint('High level API failed with $e');
         await _insightsDb.captureException(
           e,
-          domain: 'inbox_service _fetchInbox',
+          domain: 'INBOX_SERVICE _fetchInbox',
           stackTrace: stackTrace,
         );
       } catch (e, stackTrace) {
         debugPrint('Exception $e');
         await _insightsDb.captureException(
           e,
-          domain: 'inbox_service _fetchInbox',
+          domain: 'INBOX_SERVICE _fetchInbox',
           stackTrace: stackTrace,
         );
       } finally {
@@ -258,12 +260,12 @@ class SyncInboxService {
         debugPrint('High level API failed with $e');
         await _insightsDb.captureException(
           e,
-          domain: 'inbox_service _fetchByUid',
+          domain: 'INBOX_SERVICE _fetchByUid',
         );
       } catch (e, stackTrace) {
         await _insightsDb.captureException(
           e,
-          domain: 'inbox_service _fetchByUid',
+          domain: 'INBOX_SERVICE _fetchByUid',
           stackTrace: stackTrace,
         );
       } finally {}
@@ -304,7 +306,10 @@ class SyncInboxService {
         _observingClient?.eventBus
             .on<MailConnectionLostEvent>()
             .listen((MailConnectionLostEvent event) async {
-          _insightsDb.captureEvent(event);
+          _insightsDb.captureEvent(
+            event,
+            domain: 'INBOX_SERVICE',
+          );
 
           try {
             _observingClient?.disconnect();
@@ -312,7 +317,7 @@ class SyncInboxService {
           } catch (e, stackTrace) {
             _insightsDb.captureException(
               e,
-              domain: 'inbox_service _observeInbox',
+              domain: 'INBOX_SERVICE _observeInbox',
               stackTrace: stackTrace,
             );
           }
@@ -320,6 +325,7 @@ class SyncInboxService {
           _insightsDb.captureEvent(
             'isConnected: ${_observingClient?.isConnected} '
             'isPolling: ${_observingClient?.isPolling()}',
+            domain: 'INBOX_SERVICE',
           );
         });
 
@@ -329,12 +335,12 @@ class SyncInboxService {
       debugPrint('High level API failed with $e');
       await _insightsDb.captureException(
         e,
-        domain: 'inbox_service',
+        domain: 'INBOX_SERVICE',
       );
     } catch (e, stackTrace) {
       await _insightsDb.captureException(
         e,
-        domain: 'inbox_service _observeInbox',
+        domain: 'INBOX_SERVICE _observeInbox',
         stackTrace: stackTrace,
       );
     }
