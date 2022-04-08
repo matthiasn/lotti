@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -27,6 +28,8 @@ enum InsightType {
   include: {'logging_db.drift'},
 )
 class LoggingDb extends _$LoggingDb {
+  final JournalDb _journalDb = getIt<JournalDb>();
+
   LoggingDb() : super(_openConnection());
 
   @override
@@ -62,14 +65,6 @@ class LoggingDb extends _$LoggingDb {
     InsightLevel level = InsightLevel.error,
     InsightType type = InsightType.exception,
   }) async {
-    String title = 'Exception in $domain $subDomain';
-    getIt<NotificationService>().showNotification(
-      title: title,
-      body: exception.toString().substring(0, 195),
-      notificationId: title.hashCode,
-      deepLink: '/settings/logging',
-    );
-
     log(LogEntry(
       id: uuid.v1(),
       createdAt: DateTime.now().toIso8601String(),
@@ -80,6 +75,17 @@ class LoggingDb extends _$LoggingDb {
       level: level.name.toUpperCase(),
       type: type.name.toUpperCase(),
     ));
+
+    bool notifyEnabled = await _journalDb.getConfigFlag('notify_exceptions');
+    if (notifyEnabled) {
+      String title = 'Exception in $domain $subDomain';
+      getIt<NotificationService>().showNotification(
+        title: title,
+        body: exception.toString().substring(0, 195),
+        notificationId: title.hashCode,
+        deepLink: '/settings/logging',
+      );
+    }
   }
 
   Stream<List<LogEntry>> watchLogEntryById(String id) {

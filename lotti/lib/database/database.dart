@@ -410,6 +410,7 @@ class JournalDb extends _$JournalDb {
     if (flags.isNotEmpty) {
       return flags.first;
     }
+    return null;
   }
 
   Future<void> insertFlagIfNotExists(ConfigFlag configFlag) async {
@@ -426,6 +427,13 @@ class JournalDb extends _$JournalDb {
         name: 'private',
         description: 'Show private entries?',
         status: true,
+      ),
+    );
+    insertFlagIfNotExists(
+      ConfigFlag(
+        name: 'notify_exceptions',
+        description: 'Notify when exceptions occur?',
+        status: false,
       ),
     );
     insertFlagIfNotExists(
