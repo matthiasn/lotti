@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -69,6 +70,10 @@ class LoggingDb extends _$LoggingDb {
       level: level.name.toUpperCase(),
       type: type.name.toUpperCase(),
     ));
+  }
+
+  Stream<List<LogEntry>> watchLogEntryById(String id) {
+    return logEntryById(id).watch().where(makeDuplicateFilter());
   }
 
   InsightsSpan startTransaction(String name, String operation) {

@@ -29,8 +29,12 @@ SELECT * FROM log_entries
   ORDER BY created_at DESC
   LIMIT :limit;
 
-filteredInsights:
+filteredByLevel:
 SELECT * FROM log_entries
   WHERE level IN :levels
   ORDER BY created_at DESC
   LIMIT :limit;
+
+logEntryById:
+SELECT * FROM log_entries
+  WHERE id = :id;
