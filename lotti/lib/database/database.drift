@@ -206,6 +206,11 @@ listConfigFlags:
 SELECT *
   FROM config_flags;
 
+configFlagByName:
+SELECT *
+  FROM config_flags
+  WHERE name = :name;
+
 filteredJournal:
 SELECT * FROM journal
   WHERE type IN :types

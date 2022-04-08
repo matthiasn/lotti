@@ -388,39 +388,6 @@ class JournalDb extends _$JournalDb {
     return listConfigFlags().watch().where(makeDuplicateFilter());
   }
 
-  Future<void> initConfigFlags() async {
-    into(configFlags).insert(
-      ConfigFlag(
-        name: 'private',
-        description: 'Show private entries?',
-        status: true,
-      ),
-    );
-    into(configFlags).insert(
-      ConfigFlag(
-        name: 'hide_for_screenshot',
-        description: 'Hide Lotti when taking screenshots?',
-        status: true,
-      ),
-    );
-    if (Platform.isMacOS) {
-      into(configFlags).insert(
-        ConfigFlag(
-          name: 'listen_to_global_screenshot_hotkey',
-          description: 'Listen to global screenshot hotkey?',
-          status: true,
-        ),
-      );
-      into(configFlags).insert(
-        ConfigFlag(
-          name: 'enable_notifications',
-          description: 'Enable desktop notifications?',
-          status: false,
-        ),
-      );
-    }
-  }
-
   Future<List<ConfigFlag>> getConfigFlags() {
     return listConfigFlags().get();
   }
@@ -435,6 +402,55 @@ class JournalDb extends _$JournalDb {
     }
 
     return flag;
+  }
+
+  Future<ConfigFlag?> getConfigFlagByName(String flagName) async {
+    List<ConfigFlag> flags = await configFlagByName(flagName).get();
+
+    if (flags.isNotEmpty) {
+      return flags.first;
+    }
+  }
+
+  Future<void> insertFlagIfNotExists(ConfigFlag configFlag) async {
+    ConfigFlag? existing = await getConfigFlagByName(configFlag.name);
+
+    if (existing == null) {
+      into(configFlags).insert(configFlag);
+    }
+  }
+
+  Future<void> initConfigFlags() async {
+    insertFlagIfNotExists(
+      ConfigFlag(
+        name: 'private',
+        description: 'Show private entries?',
+        status: true,
+      ),
+    );
+    insertFlagIfNotExists(
+      ConfigFlag(
+        name: 'hide_for_screenshot',
+        description: 'Hide Lotti when taking screenshots?',
+        status: true,
+      ),
+    );
+    if (Platform.isMacOS) {
+      insertFlagIfNotExists(
+        ConfigFlag(
+          name: 'listen_to_global_screenshot_hotkey',
+          description: 'Listen to global screenshot hotkey?',
+          status: true,
+        ),
+      );
+      insertFlagIfNotExists(
+        ConfigFlag(
+          name: 'enable_notifications',
+          description: 'Enable desktop notifications?',
+          status: false,
+        ),
+      );
+    }
   }
 
   Future<int> upsertConfigFlag(ConfigFlag configFlag) async {
