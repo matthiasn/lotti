@@ -15,6 +15,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/screenshots.dart';
+import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
@@ -27,6 +28,7 @@ Future<void> main() async {
 
   getIt.registerSingleton<WindowService>(WindowService());
   await getIt<WindowService>().restore();
+  tz.initializeTimeZones();
 
   runZonedGuarded(() {
     registerSingletons();

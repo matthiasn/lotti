@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:lotti/database/stream_helpers.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -60,6 +62,14 @@ class LoggingDb extends _$LoggingDb {
     InsightLevel level = InsightLevel.error,
     InsightType type = InsightType.exception,
   }) async {
+    String title = 'Exception in $domain $subDomain';
+    getIt<NotificationService>().showNotification(
+      title: title,
+      body: exception.toString().substring(0, 195),
+      notificationId: title.hashCode,
+      deepLink: '/settings/logging',
+    );
+
     log(LogEntry(
       id: uuid.v1(),
       createdAt: DateTime.now().toIso8601String(),
