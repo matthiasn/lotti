@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 
-class InsightsPage extends StatefulWidget {
-  const InsightsPage({Key? key}) : super(key: key);
+class LoggingPage extends StatefulWidget {
+  const LoggingPage({Key? key}) : super(key: key);
 
   @override
-  State<InsightsPage> createState() => _InsightsPageState();
+  State<LoggingPage> createState() => _LoggingPageState();
 }
 
-class _InsightsPageState extends State<InsightsPage> {
+class _LoggingPageState extends State<LoggingPage> {
   final InsightsDb _db = getIt<InsightsDb>();
-  late Stream<List<Insight>> stream = _db.watchInsights();
+  late Stream<List<LogEntry>> stream = _db.watchLogEntries();
 
   @override
   void initState() {
@@ -21,22 +21,22 @@ class _InsightsPageState extends State<InsightsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Insight>>(
+    return StreamBuilder<List<LogEntry>>(
       stream: stream,
       builder: (
         BuildContext context,
-        AsyncSnapshot<List<Insight>> snapshot,
+        AsyncSnapshot<List<LogEntry>> snapshot,
       ) {
-        List<Insight> insights = snapshot.data ?? [];
+        List<LogEntry> logEntries = snapshot.data ?? [];
 
         return ListView(
           shrinkWrap: true,
           padding: const EdgeInsets.all(8.0),
           children: List.generate(
-            insights.length,
+            logEntries.length,
             (int index) {
-              return InsightCard(
-                insight: insights.elementAt(index),
+              return LogLineCard(
+                logEntry: logEntries.elementAt(index),
                 index: index,
               );
             },
@@ -47,13 +47,13 @@ class _InsightsPageState extends State<InsightsPage> {
   }
 }
 
-class InsightCard extends StatelessWidget {
-  final Insight insight;
+class LogLineCard extends StatelessWidget {
+  final LogEntry logEntry;
   final int index;
 
-  const InsightCard({
+  const LogLineCard({
     Key? key,
-    required this.insight,
+    required this.logEntry,
     required this.index,
   }) : super(key: key);
 
@@ -62,7 +62,7 @@ class InsightCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(2.0),
       child: Text(
-        '${insight.createdAt.substring(0, 23)}: ${insight.message}',
+        '${logEntry.createdAt.substring(0, 23)}: ${logEntry.message}',
         style: TextStyle(
           color: AppColors.entryTextColor,
           fontFamily: 'ShareTechMono',

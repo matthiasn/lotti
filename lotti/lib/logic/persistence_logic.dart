@@ -15,7 +15,7 @@ import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/services/notification_service.dart';

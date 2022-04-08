@@ -12,7 +12,7 @@ import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
@@ -186,7 +186,8 @@ class OutboxService {
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(
         exception,
-        domain: 'OUTBOX sendNext',
+        domain: 'OUTBOX',
+        subDomain: 'sendNext',
         stackTrace: stackTrace,
       );
       if (sendMutex.isLocked) {
@@ -278,7 +279,8 @@ class OutboxService {
       } catch (exception, stackTrace) {
         await _insightsDb.captureException(
           exception,
-          domain: 'OUTBOX enqueueMessage',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
           stackTrace: stackTrace,
         );
       }
@@ -311,7 +313,8 @@ class OutboxService {
       } catch (exception, stackTrace) {
         await _insightsDb.captureException(
           exception,
-          domain: 'OUTBOX enqueueMessage',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
           stackTrace: stackTrace,
         );
       }
@@ -341,7 +344,8 @@ class OutboxService {
       } catch (exception, stackTrace) {
         await _insightsDb.captureException(
           exception,
-          domain: 'OUTBOX enqueueMessage',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
           stackTrace: stackTrace,
         );
       }
@@ -371,7 +375,8 @@ class OutboxService {
       } catch (exception, stackTrace) {
         await _insightsDb.captureException(
           exception,
-          domain: 'OUTBOX enqueueMessage',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
           stackTrace: stackTrace,
         );
       }

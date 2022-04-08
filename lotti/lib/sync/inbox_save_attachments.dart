@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/utils/audio_utils.dart';

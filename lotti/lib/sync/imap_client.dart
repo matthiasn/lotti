@@ -1,6 +1,6 @@
 import 'package:enough_mail/enough_mail.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 
@@ -35,7 +35,8 @@ Future<ImapClient?> createImapClient() async {
   } catch (e, stackTrace) {
     await _insightsDb.captureException(
       e,
-      domain: 'IMAP_CLIENT createImapClient',
+      domain: 'IMAP_CLIENT',
+      subDomain: 'createImapClient',
       stackTrace: stackTrace,
     );
   }

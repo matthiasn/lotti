@@ -1,0 +1,36 @@
+CREATE TABLE log_entries (
+  id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  domain TEXT NOT NULL,
+  sub_domain TEXT,
+  type TEXT NOT NULL,
+  level TEXT NOT NULL,
+  message TEXT NOT NULL,
+  stacktrace TEXT,
+  data TEXT,
+  PRIMARY KEY (id)
+) as LogEntry;
+
+CREATE INDEX log_entries_created_at
+ON log_entries (created_at);
+
+CREATE INDEX log_entries_level
+ON log_entries (level);
+
+CREATE INDEX log_entries_domain
+ON log_entries (domain);
+
+CREATE INDEX log_entries_sub_domain
+ON log_entries (sub_domain);
+
+/* Queries ----------------------------------------------------- */
+allLogEntries:
+SELECT * FROM log_entries
+  ORDER BY created_at DESC
+  LIMIT :limit;
+
+filteredInsights:
+SELECT * FROM log_entries
+  WHERE level IN :levels
+  ORDER BY created_at DESC
+  LIMIT :limit;

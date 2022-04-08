@@ -2,7 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/audio_utils.dart';
 

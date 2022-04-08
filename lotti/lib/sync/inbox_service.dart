@@ -13,7 +13,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
@@ -137,7 +137,8 @@ class SyncInboxService {
     } catch (e, stackTrace) {
       await _insightsDb.captureException(
         e,
-        domain: 'INBOX_SERVICE processMessage',
+        domain: 'INBOX_SERVICE',
+        subDomain: 'processMessage',
         stackTrace: stackTrace,
       );
     }
@@ -194,13 +195,17 @@ class SyncInboxService {
             int? current = msg.uid;
             String subject = '${msg.decodeSubject()}';
             if (lastReadUid != current) {
-              debugPrint(
-                  '_fetchInbox lastReadUid $lastReadUid current $current');
+              _insightsDb.captureEvent(
+                '_fetchInbox lastReadUid $lastReadUid current $current',
+                domain: 'INBOX_CUBIT',
+                subDomain: '_fetchInbox',
+              );
               if (subject.contains(await _vectorClockService.getHostHash())) {
                 debugPrint('_fetchInbox ignoring from same host: $current');
                 _insightsDb.captureEvent(
-                    '_fetchInbox ignoring from same host: $current',
-                    domain: 'INBOX_CUBIT');
+                  '_fetchInbox ignoring from same host: $current',
+                  domain: 'INBOX_CUBIT',
+                );
 
                 await _setLastReadUid(current);
               } else {
@@ -214,14 +219,16 @@ class SyncInboxService {
         debugPrint('High level API failed with $e');
         await _insightsDb.captureException(
           e,
-          domain: 'INBOX_SERVICE _fetchInbox',
+          domain: 'INBOX_SERVICE',
+          subDomain: '_fetchInbox',
           stackTrace: stackTrace,
         );
       } catch (e, stackTrace) {
         debugPrint('Exception $e');
         await _insightsDb.captureException(
           e,
-          domain: 'INBOX_SERVICE _fetchInbox',
+          domain: 'INBOX_SERVICE',
+          subDomain: '_fetchInbox',
           stackTrace: stackTrace,
         );
       } finally {
@@ -260,12 +267,14 @@ class SyncInboxService {
         debugPrint('High level API failed with $e');
         await _insightsDb.captureException(
           e,
-          domain: 'INBOX_SERVICE _fetchByUid',
+          domain: 'INBOX_SERVICE',
+          subDomain: '_fetchByUid',
         );
       } catch (e, stackTrace) {
         await _insightsDb.captureException(
           e,
-          domain: 'INBOX_SERVICE _fetchByUid',
+          domain: 'INBOX_SERVICE',
+          subDomain: '_fetchByUid',
           stackTrace: stackTrace,
         );
       } finally {}
@@ -317,7 +326,8 @@ class SyncInboxService {
           } catch (e, stackTrace) {
             _insightsDb.captureException(
               e,
-              domain: 'INBOX_SERVICE _observeInbox',
+              domain: 'INBOX_SERVICE',
+              subDomain: '_observeInbox',
               stackTrace: stackTrace,
             );
           }
@@ -340,7 +350,8 @@ class SyncInboxService {
     } catch (e, stackTrace) {
       await _insightsDb.captureException(
         e,
-        domain: 'INBOX_SERVICE _observeInbox',
+        domain: 'INBOX_SERVICE',
+        subDomain: '_observeInbox',
         stackTrace: stackTrace,
       );
     }

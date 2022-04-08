@@ -10,7 +10,7 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';

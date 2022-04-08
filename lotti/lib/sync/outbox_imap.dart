@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/imap_client.dart';
 
@@ -43,7 +43,8 @@ Future<GenericImapResult> saveImapMessage(
   } catch (exception, stackTrace) {
     await _insightsDb.captureException(
       exception,
-      domain: 'OUTBOX_IMAP saveImapMessage',
+      domain: 'OUTBOX_IMAP',
+      subDomain: 'saveImapMessage',
       stackTrace: stackTrace,
     );
     rethrow;
