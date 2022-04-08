@@ -1,5 +1,5 @@
 import 'package:get_it/get_it.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -23,7 +23,7 @@ void registerSingletons() {
   getIt.registerSingleton<TagsService>(TagsService());
   getIt<JournalDb>().initConfigFlags();
   getIt.registerSingleton<SyncDatabase>(SyncDatabase());
-  getIt.registerSingleton<InsightsDb>(InsightsDb());
+  getIt.registerSingleton<LoggingDb>(LoggingDb());
   getIt.registerSingleton<VectorClockService>(VectorClockService());
   getIt.registerSingleton<SyncConfigService>(SyncConfigService());
   getIt.registerSingleton<TimeService>(TimeService());

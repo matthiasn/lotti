@@ -145,7 +145,6 @@ class NotificationService {
 
     await _requestPermissions();
     flutterLocalNotificationsPlugin.cancel(notificationId);
-
     DateTime now = DateTime.now();
 
     tz.TZDateTime scheduledDate = tz.TZDateTime(
@@ -176,6 +175,38 @@ class NotificationService {
           UILocalNotificationDateInterpretation.wallClockTime,
       androidAllowWhileIdle: true,
       matchDateTimeComponents: DateTimeComponents.time,
+      payload: deepLink,
+    );
+  }
+
+  Future<void> showNotification({
+    required String title,
+    required String body,
+    required notificationId,
+    String? deepLink,
+  }) async {
+    if (Platform.isWindows || Platform.isLinux) {
+      return;
+    }
+
+    await _requestPermissions();
+    flutterLocalNotificationsPlugin.cancel(notificationId);
+    DateTime now = DateTime.now();
+
+    flutterLocalNotificationsPlugin.show(
+      notificationId,
+      title,
+      body,
+      const NotificationDetails(
+        iOS: IOSNotificationDetails(
+          presentAlert: true,
+          presentSound: true,
+        ),
+        macOS: MacOSNotificationDetails(
+          presentAlert: true,
+          presentSound: true,
+        ),
+      ),
       payload: deepLink,
     );
   }

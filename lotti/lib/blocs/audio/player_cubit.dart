@@ -2,13 +2,13 @@ import 'package:bloc/bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/audio_utils.dart';
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   final AudioPlayer _audioPlayer = AudioPlayer();
-  final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final LoggingDb _loggingDb = getIt<LoggingDb>();
 
   AudioPlayerCubit()
       : super(AudioPlayerState(
@@ -50,7 +50,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         emit(newState.copyWith(totalDuration: totalDuration));
       }
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -61,7 +65,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       await _audioPlayer.seek(state.pausedAt);
       emit(state.copyWith(status: AudioPlayerStatus.playing));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -73,7 +81,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         progress: const Duration(minutes: 0),
       ));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -85,7 +97,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         pausedAt: newPosition,
       ));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -94,7 +110,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       await _audioPlayer.setSpeed(speed);
       emit(state.copyWith(speed: speed));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -106,7 +126,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         pausedAt: state.progress,
       ));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -120,7 +144,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         pausedAt: newPosition,
       ));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -134,7 +162,11 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         pausedAt: newPosition,
       ));
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 

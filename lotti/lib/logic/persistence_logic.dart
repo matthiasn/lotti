@@ -15,7 +15,7 @@ import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -30,7 +30,7 @@ import 'package:uuid/uuid.dart';
 class PersistenceLogic {
   final JournalDb _journalDb = getIt<JournalDb>();
   final VectorClockService _vectorClockService = getIt<VectorClockService>();
-  final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final LoggingDb _loggingDb = getIt<LoggingDb>();
   final OutboxService _outboxService = getIt<OutboxService>();
 
   final uuid = const Uuid();
@@ -48,7 +48,7 @@ class PersistenceLogic {
 
   Future<bool> createQuantitativeEntry(QuantitativeData data) async {
     final transaction =
-        _insightsDb.startTransaction('createQuantitativeEntry()', 'task');
+        _loggingDb.startTransaction('createQuantitativeEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -74,7 +74,11 @@ class PersistenceLogic {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -83,7 +87,7 @@ class PersistenceLogic {
 
   Future<bool> createWorkoutEntry(WorkoutData data) async {
     final transaction =
-        _insightsDb.startTransaction('createQuantitativeEntry()', 'task');
+        _loggingDb.startTransaction('createQuantitativeEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -106,7 +110,11 @@ class PersistenceLogic {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -118,7 +126,7 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     final transaction =
-        _insightsDb.startTransaction('createSurveyEntry()', 'task');
+        _loggingDb.startTransaction('createSurveyEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -151,7 +159,11 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -163,7 +175,7 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     final transaction =
-        _insightsDb.startTransaction('createMeasurementEntry()', 'task');
+        _loggingDb.startTransaction('createMeasurementEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -200,7 +212,11 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -213,7 +229,7 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     final transaction =
-        _insightsDb.startTransaction('createMeasurementEntry()', 'task');
+        _loggingDb.startTransaction('createMeasurementEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -251,7 +267,11 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -263,7 +283,7 @@ class PersistenceLogic {
     JournalEntity? linked,
   }) async {
     final transaction =
-        _insightsDb.startTransaction('createImageEntry()', 'task');
+        _loggingDb.startTransaction('createImageEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -295,7 +315,11 @@ class PersistenceLogic {
         linkedId: linked?.meta.id,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -307,7 +331,7 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     final transaction =
-        _insightsDb.startTransaction('createImageEntry()', 'task');
+        _loggingDb.startTransaction('createImageEntry()', 'task');
     try {
       AudioData audioData = AudioData(
         audioDirectory: audioNote.audioDirectory,
@@ -347,7 +371,11 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -360,7 +388,7 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     final transaction =
-        _insightsDb.startTransaction('createTextEntry()', 'task');
+        _loggingDb.startTransaction('createTextEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -391,7 +419,11 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -435,8 +467,7 @@ class PersistenceLogic {
       linked = await _journalDb.journalEntityById(linkedId);
     }
 
-    final transaction =
-        _insightsDb.startTransaction('createDbEntity()', 'task');
+    final transaction = _loggingDb.startTransaction('createDbEntity()', 'task');
     try {
       List<String>? linkedTagIds = linked?.meta.tagIds;
       List<String> storyTags = tagsService.getFilteredStoryTagIds(linkedTagIds);
@@ -475,7 +506,11 @@ class PersistenceLogic {
 
       return saved;
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
       debugPrint('Exception $exception');
     }
     return null;
@@ -486,7 +521,7 @@ class PersistenceLogic {
     EntryText entryText,
   ) async {
     final transaction =
-        _insightsDb.startTransaction('updateJournalEntity()', 'task');
+        _loggingDb.startTransaction('updateJournalEntity()', 'task');
     try {
       DateTime now = DateTime.now();
       JournalEntity? journalEntity =
@@ -549,7 +584,11 @@ class PersistenceLogic {
         await updateDbEntity(newEntry, enqueueSync: true);
       }
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -562,7 +601,7 @@ class PersistenceLogic {
     required TaskData taskData,
   }) async {
     final transaction =
-        _insightsDb.startTransaction('updateJournalEntity()', 'task');
+        _loggingDb.startTransaction('updateJournalEntity()', 'task');
     try {
       DateTime now = DateTime.now();
       JournalEntity? journalEntity =
@@ -591,10 +630,17 @@ class PersistenceLogic {
 
           await updateDbEntity(newJournalEntry, enqueueSync: true);
         },
-        orElse: () => _insightsDb.captureException('not a task'),
+        orElse: () => _loggingDb.captureException(
+          'not a task',
+          domain: 'persistence_logic',
+        ),
       );
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -607,7 +653,7 @@ class PersistenceLogic {
     required DateTime dateTo,
   }) async {
     final transaction =
-        _insightsDb.startTransaction('updateJournalEntityDate()', 'task');
+        _loggingDb.startTransaction('updateJournalEntityDate()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock(
@@ -626,7 +672,11 @@ class PersistenceLogic {
 
       await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -638,7 +688,7 @@ class PersistenceLogic {
     Metadata metadata,
   ) async {
     final transaction =
-        _insightsDb.startTransaction('updateJournalEntity()', 'task');
+        _loggingDb.startTransaction('updateJournalEntity()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock(
@@ -656,7 +706,11 @@ class PersistenceLogic {
       await updateDbEntity(newJournalEntity, enqueueSync: true);
       await _journalDb.addTagged(newJournalEntity);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -667,7 +721,7 @@ class PersistenceLogic {
     required String journalEntityId,
     required List<String> addedTagIds,
   }) async {
-    final transaction = _insightsDb.startTransaction('addTag()', 'task');
+    final transaction = _loggingDb.startTransaction('addTag()', 'task');
     try {
       JournalEntity? journalEntity =
           await _journalDb.journalEntityById(journalEntityId);
@@ -691,7 +745,11 @@ class PersistenceLogic {
 
       return await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -702,7 +760,7 @@ class PersistenceLogic {
     required String journalEntityId,
     required String tagId,
   }) async {
-    final transaction = _insightsDb.startTransaction('addTag()', 'task');
+    final transaction = _loggingDb.startTransaction('addTag()', 'task');
     try {
       JournalEntity? journalEntity =
           await _journalDb.journalEntityById(journalEntityId);
@@ -725,7 +783,11 @@ class PersistenceLogic {
 
       return await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -736,7 +798,7 @@ class PersistenceLogic {
     JournalEntity journalEntity,
   ) async {
     final transaction =
-        _insightsDb.startTransaction('updateJournalEntity()', 'task');
+        _loggingDb.startTransaction('updateJournalEntity()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock(
@@ -753,7 +815,11 @@ class PersistenceLogic {
 
       getIt<NotificationService>().updateBadge();
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -764,8 +830,7 @@ class PersistenceLogic {
     JournalEntity journalEntity, {
     bool enqueueSync = false,
   }) async {
-    final transaction =
-        _insightsDb.startTransaction('updateDbEntity()', 'task');
+    final transaction = _loggingDb.startTransaction('updateDbEntity()', 'task');
     try {
       int res = await _journalDb.updateJournalEntity(journalEntity);
       debugPrint('updateDbEntity res $res');
@@ -786,7 +851,11 @@ class PersistenceLogic {
 
       return true;
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        stackTrace: stackTrace,
+      );
       debugPrint('Exception $exception');
     }
     return null;

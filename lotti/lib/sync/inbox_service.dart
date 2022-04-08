@@ -13,7 +13,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
@@ -38,14 +38,14 @@ class SyncInboxService {
   final fetchMutex = Mutex();
   final _storage = const FlutterSecureStorage();
   final JournalDb _journalDb = getIt<JournalDb>();
-  final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final LoggingDb _loggingDb = getIt<LoggingDb>();
 
   SyncInboxService() {
     _vectorClockService = getIt<VectorClockService>();
 
     if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
-        _insightsDb.captureEvent(event, domain: 'INBOX_CUBIT');
+        _loggingDb.captureEvent(event, domain: 'INBOX_CUBIT');
 
         if (event == FGBGType.foreground) {
           _startPeriodicFetching();
@@ -58,8 +58,10 @@ class SyncInboxService {
     }
 
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      _insightsDb
-          .captureEvent('INBOX: Connectivity onConnectivityChanged $result');
+      _loggingDb.captureEvent(
+        'INBOX: Connectivity onConnectivityChanged $result',
+        domain: 'INBOX_SERVICE',
+      );
 
       if (result == ConnectivityResult.none) {
         _stopPeriodicFetching();
@@ -74,8 +76,7 @@ class SyncInboxService {
   }
 
   Future<void> processMessage(MimeMessage message) async {
-    final transaction =
-        _insightsDb.startTransaction('processMessage()', 'task');
+    final transaction = _loggingDb.startTransaction('processMessage()', 'task');
     try {
       String? encryptedMessage = readMessage(message);
       SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
@@ -133,7 +134,12 @@ class SyncInboxService {
         throw Exception('missing IMAP config');
       }
     } catch (e, stackTrace) {
-      await _insightsDb.captureException(e, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        e,
+        domain: 'INBOX_SERVICE',
+        subDomain: 'processMessage',
+        stackTrace: stackTrace,
+      );
     }
 
     await transaction.finish();
@@ -158,10 +164,10 @@ class SyncInboxService {
   }
 
   Future<void> _fetchInbox() async {
-    final transaction = _insightsDb.startTransaction('_fetchInbox()', 'task');
+    final transaction = _loggingDb.startTransaction('_fetchInbox()', 'task');
     ImapClient? imapClient;
 
-    _insightsDb.captureEvent('_fetchInbox()', domain: 'INBOX_CUBIT');
+    _loggingDb.captureEvent('_fetchInbox()', domain: 'INBOX_CUBIT');
 
     if (!fetchMutex.isLocked) {
       await fetchMutex.acquire();
@@ -188,13 +194,17 @@ class SyncInboxService {
             int? current = msg.uid;
             String subject = '${msg.decodeSubject()}';
             if (lastReadUid != current) {
-              debugPrint(
-                  '_fetchInbox lastReadUid $lastReadUid current $current');
+              _loggingDb.captureEvent(
+                '_fetchInbox lastReadUid $lastReadUid current $current',
+                domain: 'INBOX_CUBIT',
+                subDomain: '_fetchInbox',
+              );
               if (subject.contains(await _vectorClockService.getHostHash())) {
                 debugPrint('_fetchInbox ignoring from same host: $current');
-                _insightsDb.captureEvent(
-                    '_fetchInbox ignoring from same host: $current',
-                    domain: 'INBOX_CUBIT');
+                _loggingDb.captureEvent(
+                  '_fetchInbox ignoring from same host: $current',
+                  domain: 'INBOX_CUBIT',
+                );
 
                 await _setLastReadUid(current);
               } else {
@@ -206,10 +216,20 @@ class SyncInboxService {
         }
       } on MailException catch (e, stackTrace) {
         debugPrint('High level API failed with $e');
-        await _insightsDb.captureException(e, stackTrace: stackTrace);
+        await _loggingDb.captureException(
+          e,
+          domain: 'INBOX_SERVICE',
+          subDomain: '_fetchInbox',
+          stackTrace: stackTrace,
+        );
       } catch (e, stackTrace) {
         debugPrint('Exception $e');
-        await _insightsDb.captureException(e, stackTrace: stackTrace);
+        await _loggingDb.captureException(
+          e,
+          domain: 'INBOX_SERVICE',
+          subDomain: '_fetchInbox',
+          stackTrace: stackTrace,
+        );
       } finally {
         imapClient?.disconnect();
         if (fetchMutex.isLocked) {
@@ -228,7 +248,7 @@ class SyncInboxService {
     int? uid,
     ImapClient? imapClient,
   }) async {
-    final transaction = _insightsDb.startTransaction('_fetchByUid()', 'task');
+    final transaction = _loggingDb.startTransaction('_fetchByUid()', 'task');
     if (uid != null) {
       try {
         if (imapClient != null) {
@@ -244,9 +264,18 @@ class SyncInboxService {
         }
       } on MailException catch (e) {
         debugPrint('High level API failed with $e');
-        await _insightsDb.captureException(e);
+        await _loggingDb.captureException(
+          e,
+          domain: 'INBOX_SERVICE',
+          subDomain: '_fetchByUid',
+        );
       } catch (e, stackTrace) {
-        await _insightsDb.captureException(e, stackTrace: stackTrace);
+        await _loggingDb.captureException(
+          e,
+          domain: 'INBOX_SERVICE',
+          subDomain: '_fetchByUid',
+          stackTrace: stackTrace,
+        );
       } finally {}
     }
     await transaction.finish();
@@ -285,18 +314,27 @@ class SyncInboxService {
         _observingClient?.eventBus
             .on<MailConnectionLostEvent>()
             .listen((MailConnectionLostEvent event) async {
-          _insightsDb.captureEvent(event);
+          _loggingDb.captureEvent(
+            event,
+            domain: 'INBOX_SERVICE',
+          );
 
           try {
             _observingClient?.disconnect();
             _observingClient = null;
           } catch (e, stackTrace) {
-            _insightsDb.captureException(e, stackTrace: stackTrace);
+            _loggingDb.captureException(
+              e,
+              domain: 'INBOX_SERVICE',
+              subDomain: '_observeInbox',
+              stackTrace: stackTrace,
+            );
           }
 
-          _insightsDb.captureEvent(
-            'isConnected: ${_observingClient!.isConnected} '
-            'isPolling: ${_observingClient!.isPolling()}',
+          _loggingDb.captureEvent(
+            'isConnected: ${_observingClient?.isConnected} '
+            'isPolling: ${_observingClient?.isPolling()}',
+            domain: 'INBOX_SERVICE',
           );
         });
 
@@ -304,9 +342,17 @@ class SyncInboxService {
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
-      await _insightsDb.captureException(e);
+      await _loggingDb.captureException(
+        e,
+        domain: 'INBOX_SERVICE',
+      );
     } catch (e, stackTrace) {
-      await _insightsDb.captureException(e, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        e,
+        domain: 'INBOX_SERVICE',
+        subDomain: '_observeInbox',
+        stackTrace: stackTrace,
+      );
     }
   }
 

@@ -10,11 +10,12 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/screenshots.dart';
+import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
@@ -27,22 +28,32 @@ Future<void> main() async {
 
   getIt.registerSingleton<WindowService>(WindowService());
   await getIt<WindowService>().restore();
+  tz.initializeTimeZones();
 
   runZonedGuarded(() {
     registerSingletons();
 
-    // FlutterError.onError = (FlutterErrorDetails details) {
-    //   final InsightsDb _insightsDb = getIt<InsightsDb>();
-    //   _insightsDb.captureException(details);
-    // };
+    FlutterError.onError = (FlutterErrorDetails details) {
+      final LoggingDb _loggingDb = getIt<LoggingDb>();
+      _loggingDb.captureException(
+        details,
+        domain: 'MAIN',
+        subDomain: 'onError',
+      );
+    };
 
     initializeDateFormatting();
     registerScreenshotHotkey();
 
     runApp(LottiApp());
   }, (Object error, StackTrace stackTrace) {
-    final InsightsDb _insightsDb = getIt<InsightsDb>();
-    _insightsDb.captureException(error, stackTrace: stackTrace);
+    final LoggingDb _loggingDb = getIt<LoggingDb>();
+    _loggingDb.captureException(
+      error,
+      domain: 'MAIN',
+      subDomain: 'runZonedGuarded',
+      stackTrace: stackTrace,
+    );
   });
 }
 

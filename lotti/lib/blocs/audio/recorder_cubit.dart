@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/geolocation.dart';
-import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -22,7 +22,7 @@ AudioRecorderState initialState = AudioRecorderState(
 );
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
-  final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final LoggingDb _loggingDb = getIt<LoggingDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   String? _linkedId;
 
@@ -53,7 +53,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         updateProgress(event);
       });
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'recorder_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -79,7 +83,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         }
       });
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'recorder_cubit',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -124,7 +132,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           emit(state.copyWith(status: AudioRecorderStatus.recording));
         });
       } catch (exception, stackTrace) {
-        await _insightsDb.captureException(exception, stackTrace: stackTrace);
+        await _loggingDb.captureException(
+          exception,
+          domain: 'recorder_cubit',
+          stackTrace: stackTrace,
+        );
       }
     }
   }
@@ -145,7 +157,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         _linkedId = null;
       }
     } catch (exception, stackTrace) {
-      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      await _loggingDb.captureException(
+        exception,
+        domain: 'recorder_cubit',
+        stackTrace: stackTrace,
+      );
     }
     getIt<AppRouter>().pop();
   }
