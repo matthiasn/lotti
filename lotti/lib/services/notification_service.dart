@@ -191,7 +191,6 @@ class NotificationService {
 
     await _requestPermissions();
     flutterLocalNotificationsPlugin.cancel(notificationId);
-    DateTime now = DateTime.now();
 
     flutterLocalNotificationsPlugin.show(
       notificationId,
