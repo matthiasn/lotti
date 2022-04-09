@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -81,13 +82,21 @@ class LottiApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp.router(
+        localizationsDelegates: const [
+          FormBuilderLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en', 'GB'),
+          Locale('en', 'US'),
+          Locale('de', 'DE'),
+          Locale('fr', 'FR'),
+        ],
         theme: ThemeData(
           primarySwatch: Colors.grey,
         ),
-        supportedLocales: const [
-          Locale('en'),
-        ],
-        localizationsDelegates: const [FormBuilderLocalizations.delegate],
         debugShowCheckedModeBanner: true,
         routerDelegate: router.delegate(),
         routeInformationParser: router.defaultRouteParser(),
