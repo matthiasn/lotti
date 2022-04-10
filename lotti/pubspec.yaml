@@ -130,6 +130,7 @@ analyzer:
     - drift
 
 flutter:
+  generate: true
   uses-material-design: true
 
   assets:
