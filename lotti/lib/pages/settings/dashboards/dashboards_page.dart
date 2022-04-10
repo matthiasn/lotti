@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -35,7 +36,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
     return FloatingSearchBar(
       clearQueryOnClose: false,
       automaticallyImplyBackButton: false,
-      hint: 'Search dashboards...',
+      hint: AppLocalizations.of(context)!.settingsDashboardsSearchHint,
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
