@@ -3,5 +3,15 @@
   "navTabTitleFlagged": "Flagged",
   "navTabTitleTasks": "Tasks",
   "navTabTitleInsights": "Insights",
-  "navTabTitleSettings": "Settings"
+  "navTabTitleSettings": "Settings",
+  "settingsTagsTitle": "Tags",
+  "settingsDashboardsTitle": "Dashboards",
+  "settingsHealthImportTitle": "Health Import",
+  "settingsSyncCfgTitle": "Synchronization config",
+  "settingsMeasurablesTitle": "Measurables",
+  "settingsSyncOutboxTitle": "Sync Outbox",
+  "settingsLogsTitle": "Logs",
+  "settingsConflictsTitle": "Sync Conflicts",
+  "settingsFlagsTitle": "Flags",
+  "settingsMaintenanceTitle": "Maintenance"
 }

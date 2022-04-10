@@ -3,5 +3,15 @@
   "navTabTitleFlagged": "Markiert",
   "navTabTitleTasks": "Aufgaben",
   "navTabTitleInsights": "Einsichten",
-  "navTabTitleSettings": "Einstellungen"
+  "navTabTitleSettings": "Einstellungen",
+  "settingsTagsTitle": "Tags",
+  "settingsDashboardsTitle": "Dashboard Definitionen",
+  "settingsHealthImportTitle": "Import aus Health",
+  "settingsSyncCfgTitle": "Einstellungen Synchronisation",
+  "settingsMeasurablesTitle": "Messbare Datentypen",
+  "settingsSyncOutboxTitle": "Postausgang Synchronisation",
+  "settingsLogsTitle": "Aktivitäts- und Fehlerprotokoll",
+  "settingsConflictsTitle": "Konflikte aus Synchronisation",
+  "settingsFlagsTitle": "Konfigurations-Flags",
+  "settingsMaintenanceTitle": "Wartung"
 }
