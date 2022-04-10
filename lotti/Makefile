@@ -14,6 +14,10 @@ clean:
 deps:
 	flutter pub get
 
+.PHONY: l10n
+l10n:
+	flutter gen-l10n
+
 .PHONY: doctor
 doctor:
 	flutter doctor
@@ -32,7 +36,7 @@ build_runner:
 	flutter pub run build_runner build --delete-conflicting-outputs
 
 .PHONY: watch
-watch:
+watch: l10n
 	flutter pub run build_runner watch --delete-conflicting-outputs
 
 .PHONY: migrate_db
@@ -88,7 +92,7 @@ viz:
 	open classes.viz.png
 
 .PHONY: clean_test
-clean_test: clean deps build_runner test
+clean_test: clean deps l10n build_runner test
 
 .PHONY: clean_integration_test
 clean_integration_test: clean deps build_runner integration_test

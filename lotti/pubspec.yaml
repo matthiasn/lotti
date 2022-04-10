@@ -1,13 +1,15 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.6.35+615
+version: 0.6.36+616
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   delta_markdown:
@@ -128,6 +130,7 @@ analyzer:
     - drift
 
 flutter:
+  generate: true
   uses-material-design: true
 
   assets:

@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/outbox_badge.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
@@ -58,21 +59,22 @@ class HomePage extends StatelessWidget {
           currentIndex: tabsRouter.activeIndex,
           onTap: tabsRouter.setActiveIndex,
           items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              label: 'Journal',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home_outlined),
+              label: AppLocalizations.of(context)!.navTabTitleJournal,
             ),
             BottomNavigationBarItem(
               icon: FlaggedBadgeIcon(),
-              label: 'Flagged',
+              label: AppLocalizations.of(context)!.navTabTitleFlagged,
             ),
+
             BottomNavigationBarItem(
               icon: TasksBadgeIcon(),
-              label: 'Tasks',
+              label: AppLocalizations.of(context)!.navTabTitleTasks,
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.lightbulb_outline),
-              label: 'Insights',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.lightbulb_outline),
+              label: AppLocalizations.of(context)!.navTabTitleInsights,
             ),
             // TODO: bring back or remove
             // const BottomNavigationBarItem(
@@ -83,7 +85,7 @@ class HomePage extends StatelessWidget {
               icon: OutboxBadgeIcon(
                 icon: const Icon(Icons.settings_outlined),
               ),
-              label: 'Settings',
+              label: AppLocalizations.of(context)!.navTabTitleSettings,
             ),
           ],
         );

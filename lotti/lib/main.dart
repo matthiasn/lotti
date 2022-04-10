@@ -3,9 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
@@ -42,7 +43,6 @@ Future<void> main() async {
       );
     };
 
-    initializeDateFormatting();
     registerScreenshotHotkey();
 
     runApp(LottiApp());
@@ -81,13 +81,17 @@ class LottiApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp.router(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          FormBuilderLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData(
           primarySwatch: Colors.grey,
         ),
-        supportedLocales: const [
-          Locale('en'),
-        ],
-        localizationsDelegates: const [FormBuilderLocalizations.delegate],
         debugShowCheckedModeBanner: true,
         routerDelegate: router.delegate(),
         routeInformationParser: router.defaultRouteParser(),
