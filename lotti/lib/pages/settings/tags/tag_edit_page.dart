@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -47,7 +48,8 @@ class _TagEditPageState extends State<TagEditPage> {
                       children: <Widget>[
                         FormTextField(
                           initialValue: widget.tagEntity.tag,
-                          labelText: 'Tag',
+                          labelText:
+                              AppLocalizations.of(context)!.settingsTagsTagName,
                           name: 'tag',
                           key: const Key('tag_name_field'),
                         ),
@@ -55,7 +57,8 @@ class _TagEditPageState extends State<TagEditPage> {
                           name: 'private',
                           initialValue: widget.tagEntity.private,
                           title: Text(
-                            'Private: ',
+                            AppLocalizations.of(context)!
+                                .settingsTagsPrivateLabel,
                             style: formLabelStyle,
                           ),
                           activeColor: AppColors.private,
@@ -64,7 +67,7 @@ class _TagEditPageState extends State<TagEditPage> {
                           name: 'inactive',
                           initialValue: widget.tagEntity.inactive,
                           title: Text(
-                            'Hide from suggestions: ',
+                            AppLocalizations.of(context)!.settingsTagsHideLabel,
                             style: formLabelStyle,
                           ),
                           activeColor: AppColors.private,
@@ -72,12 +75,16 @@ class _TagEditPageState extends State<TagEditPage> {
                         FormBuilderChoiceChip(
                           name: 'type',
                           initialValue: widget.tagEntity.map(
-                            genericTag: (_) => 'TAG',
-                            personTag: (_) => 'PERSON',
-                            storyTag: (_) => 'STORY',
+                            genericTag: (_) => AppLocalizations.of(context)!
+                                .settingsTagsTypeTag,
+                            personTag: (_) => AppLocalizations.of(context)!
+                                .settingsTagsTypePerson,
+                            storyTag: (_) => AppLocalizations.of(context)!
+                                .settingsTagsTypeStory, // 'STORY',
                           ),
                           decoration: InputDecoration(
-                            labelText: 'Tag type:',
+                            labelText: AppLocalizations.of(context)!
+                                .settingsTagsTypeLabel,
                             labelStyle: labelStyle.copyWith(
                               height: 0.6,
                               fontFamily: 'Oswald',
@@ -95,26 +102,29 @@ class _TagEditPageState extends State<TagEditPage> {
                             fontWeight: FontWeight.w300,
                             fontFamily: 'Oswald',
                           ),
-                          options: const [
+                          options: [
                             FormBuilderFieldOption(
                               value: 'TAG',
                               child: Text(
-                                'TAG',
-                                style: TextStyle(color: Colors.black87),
+                                AppLocalizations.of(context)!
+                                    .settingsTagsTypeTag,
+                                style: const TextStyle(color: Colors.black87),
                               ),
                             ),
                             FormBuilderFieldOption(
                               value: 'PERSON',
                               child: Text(
-                                'PERSON',
-                                style: TextStyle(color: Colors.black87),
+                                AppLocalizations.of(context)!
+                                    .settingsTagsTypePerson,
+                                style: const TextStyle(color: Colors.black87),
                               ),
                             ),
                             FormBuilderFieldOption(
                               value: 'STORY',
                               child: Text(
-                                'STORY',
-                                style: TextStyle(color: Colors.black87),
+                                AppLocalizations.of(context)!
+                                    .settingsTagsTypeStory,
+                                style: const TextStyle(color: Colors.black87),
                               ),
                             ),
                           ],
@@ -183,11 +193,13 @@ class _TagEditPageState extends State<TagEditPage> {
                               context.router.pop();
                             }
                           },
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 24.0),
                             child: Text(
-                              'Save',
-                              style: TextStyle(
+                              AppLocalizations.of(context)!
+                                  .settingsTagsSaveLabel,
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontFamily: 'Oswald',
                                 fontWeight: FontWeight.bold,
@@ -198,7 +210,8 @@ class _TagEditPageState extends State<TagEditPage> {
                         IconButton(
                           icon: const Icon(MdiIcons.trashCanOutline),
                           iconSize: 24,
-                          tooltip: 'Delete',
+                          tooltip: AppLocalizations.of(context)!
+                              .settingsTagsDeleteTooltip,
                           color: AppColors.appBarFgColor,
                           onPressed: () {
                             persistenceLogic.upsertTagEntity(
