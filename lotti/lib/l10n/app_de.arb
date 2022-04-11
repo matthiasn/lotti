@@ -1,4 +1,9 @@
 {
+  "configFlagEnableNotifications": "Desktop Notifications erlauben?",
+  "configFlagGlobalScreenshotHotkey": "Screenshot beim Benutzen des globalen Hotkeys?",
+  "configFlagHideForScreenshot": "Lotti bei Screenshots minimieren?",
+  "configFlagNotifyExceptions": "Notification bei Fehler?",
+  "configFlagPrivate": "Private Einträge anzeigen?",
   "dashboardActiveLabel": "Aktiv:",
   "dashboardAddChartsTitle": "Charts hinzufügen:",
   "dashboardAddHealthButton": "Health Charts",
