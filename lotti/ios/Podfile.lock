@@ -7,7 +7,7 @@ PODS:
   - device_info_plus (0.0.1):
     - Flutter
   - Flutter (1.0.0)
-  - flutter_app_badger (0.0.1):
+  - flutter_app_badger (1.3.0):
     - Flutter
   - flutter_fgbg (0.0.1):
     - Flutter
@@ -49,7 +49,7 @@ PODS:
     - Flutter
   - hexcolor (0.0.1):
     - Flutter
-  - image_picker (0.0.1):
+  - image_picker_ios (0.0.1):
     - Flutter
   - integration_test (0.0.1):
     - Flutter
@@ -136,7 +136,7 @@ DEPENDENCIES:
   - gallery_saver (from `.symlinks/plugins/gallery_saver/ios`)
   - health (from `.symlinks/plugins/health/ios`)
   - hexcolor (from `.symlinks/plugins/hexcolor/ios`)
-  - image_picker (from `.symlinks/plugins/image_picker/ios`)
+  - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/ios`)
   - location (from `.symlinks/plugins/location/ios`)
@@ -201,8 +201,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/health/ios"
   hexcolor:
     :path: ".symlinks/plugins/hexcolor/ios"
-  image_picker:
-    :path: ".symlinks/plugins/image_picker/ios"
+  image_picker_ios:
+    :path: ".symlinks/plugins/image_picker_ios/ios"
   integration_test:
     :path: ".symlinks/plugins/integration_test/ios"
   just_audio:
@@ -233,7 +233,7 @@ SPEC CHECKSUMS:
   connectivity_plus: 413a8857dd5d9f1c399a39130850d02fe0feaf7e
   device_info_plus: e5c5da33f982a436e103237c0c85f9031142abed
   Flutter: 50d75fe2f02b26cc09d224853bb45737f8b3214a
-  flutter_app_badger: 65de4d6f0c34a891df49e6cfb8a1c0496426fa68
+  flutter_app_badger: b87fc231847b03b92ce1412aa351842e7e97932f
   flutter_fgbg: 31c0d1140a131daea2d342121808f6aa0dcd879d
   flutter_health_fit: af332b5d7512b9cc8a05e7282cfcee02b056d32e
   flutter_image_compress: fd2b476345226e1a10ea352fa306af95704642c1
@@ -249,7 +249,7 @@ SPEC CHECKSUMS:
   gallery_saver: 9fc173c9f4fcc48af53b2a9ebea1b643255be542
   health: e7a5807e45ec58fe6b89a730c97abc6caafe94a0
   hexcolor: fdfb9c4258ad96e949c2dbcdf790a62194b8aa89
-  image_picker: 541dcbb3b9cf32d87eacbd957845d8651d6c62c3
+  image_picker_ios: b786a5dcf033a8336a657191401bfdf12017dabb
   integration_test: a1e7d09bd98eca2fc37aefd79d4f41ad37bdbbe5
   just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
   libwebp: 98a37e597e40bfdb4c911fc98f2c53d0b12d05fc
