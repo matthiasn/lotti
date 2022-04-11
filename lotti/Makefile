@@ -17,6 +17,8 @@ deps:
 .PHONY: l10n
 l10n:
 	flutter gen-l10n
+	@echo "Missing translations:"
+	@cat missing_translations.txt
 
 .PHONY: doctor
 doctor:

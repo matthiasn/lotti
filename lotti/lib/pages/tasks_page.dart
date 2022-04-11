@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:glass/glass.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -102,7 +103,7 @@ class _TasksPageState extends State<TasksPage> {
     double portraitWidth = MediaQuery.of(context).size.width * 0.88;
 
     return FloatingSearchBar(
-      hint: 'Search...',
+      hint: AppLocalizations.of(context)!.tasksSearchHint,
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,

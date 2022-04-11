@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/outbox_badge.dart';
 import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/pages/settings/settings_icon.dart';
@@ -35,65 +36,65 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.tagOutline),
-            title: 'Tags',
+            title: AppLocalizations.of(context)!.settingsTagsTitle,
             onTap: () {
               context.router.push(const TagsRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(Icons.insights_outlined),
-            title: 'Dashboards',
+            title: AppLocalizations.of(context)!.settingsDashboardsTitle,
             onTap: () {
               context.router.push(const DashboardSettingsRoute());
             },
           ),
           SettingsCard(
+            icon: const SettingsIcon(MdiIcons.tapeMeasure),
+            title: AppLocalizations.of(context)!.settingsMeasurablesTitle,
+            onTap: () {
+              context.router.push(const MeasurablesRoute());
+            },
+          ),
+          SettingsCard(
             icon: const SettingsIcon(MdiIcons.heartOutline),
-            title: 'Health Import',
+            title: AppLocalizations.of(context)!.settingsHealthImportTitle,
             onTap: () {
               context.router.push(const HealthImportRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(Icons.sync),
-            title: 'Synchronization',
+            title: AppLocalizations.of(context)!.settingsSyncCfgTitle,
             onTap: () {
               context.router.push(const SyncSettingsRoute());
-            },
-          ),
-          SettingsCard(
-            icon: const SettingsIcon(MdiIcons.tapeMeasure),
-            title: 'Measurables',
-            onTap: () {
-              context.router.push(const MeasurablesRoute());
             },
           ),
           SettingsCard(
             icon: OutboxBadgeIcon(
               icon: const SettingsIcon(MdiIcons.mailboxOutline),
             ),
-            title: 'Sync Outbox',
+            title: AppLocalizations.of(context)!.settingsSyncOutboxTitle,
             onTap: () {
               context.router.push(const OutboxMonitorRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.informationOutline),
-            title: 'Logs',
+            title: AppLocalizations.of(context)!.settingsLogsTitle,
             onTap: () {
               context.router.push(const LoggingRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.emoticonConfusedOutline),
-            title: 'Conflicts',
+            title: AppLocalizations.of(context)!.settingsConflictsTitle,
             onTap: () {
               context.router.push(const ConflictsRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.flagOutline),
-            title: 'Flags',
+            title: AppLocalizations.of(context)!.settingsFlagsTitle,
             onTap: () {
               context.router.push(const FlagsRoute());
             },
