@@ -3,6 +3,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -184,6 +185,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
     return StreamBuilder<List<MeasurableDataType>>(
       stream: stream,
       builder: (
@@ -285,13 +287,14 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                             children: <Widget>[
                               FormTextField(
                                 initialValue: widget.dashboard.name,
-                                labelText: 'Name',
+                                labelText: localizations.dashboardNameLabel,
                                 name: 'name',
                                 key: const Key('dashboard_name_field'),
                               ),
                               FormTextField(
                                 initialValue: widget.dashboard.description,
-                                labelText: 'Description',
+                                labelText:
+                                    localizations.dashboardDescriptionLabel,
                                 name: 'description',
                                 key: const Key('dashboard_description_field'),
                               ),
@@ -299,7 +302,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                 name: 'private',
                                 initialValue: widget.dashboard.private,
                                 title: Text(
-                                  'Private: ',
+                                  localizations.dashboardPrivateLabel,
                                   style: formLabelStyle,
                                 ),
                                 activeColor: AppColors.private,
@@ -308,7 +311,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                 name: 'active',
                                 initialValue: widget.dashboard.active,
                                 title: Text(
-                                  'Active: ',
+                                  localizations.dashboardActiveLabel,
                                   style: formLabelStyle,
                                 ),
                                 activeColor: AppColors.starredGold,
@@ -326,7 +329,8 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                 ),
                                 initialValue: widget.dashboard.reviewAt,
                                 decoration: InputDecoration(
-                                  labelText: 'Daily Review Time:',
+                                  labelText:
+                                      localizations.dashboardReviewTimeLabel,
                                   labelStyle: labelStyle,
                                 ),
                                 theme: DatePickerTheme(
@@ -386,40 +390,45 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                             ),
                           ),
                         ),
+                        Text(
+                          localizations.dashboardAddChartsTitle,
+                          style: formLabelStyle,
+                        ),
                         if (measurableSelectItems.isNotEmpty)
                           ChartMultiSelect<MeasurableDataType>(
                             multiSelectItems: measurableSelectItems,
                             onConfirm: onConfirmAddMeasurement,
-                            title: 'Add Measurement Charts',
-                            buttonText: 'Add Measurement Charts',
+                            title: localizations.dashboardAddMeasurementTitle,
+                            buttonText:
+                                localizations.dashboardAddMeasurementButton,
                             iconData: MdiIcons.tapeMeasure,
                           ),
                         ChartMultiSelect<HealthTypeConfig>(
                           multiSelectItems: healthSelectItems,
                           onConfirm: onConfirmAddHealthType,
-                          title: 'Add Health Charts',
-                          buttonText: 'Add Health Charts',
+                          title: localizations.dashboardAddHealthTitle,
+                          buttonText: localizations.dashboardAddHealthButton,
                           iconData: MdiIcons.stethoscope,
                         ),
                         ChartMultiSelect<DashboardSurveyItem>(
                           multiSelectItems: surveySelectItems,
                           onConfirm: onConfirmAddSurveyType,
-                          title: 'Add Survey Charts',
-                          buttonText: 'Add Survey Charts',
+                          title: localizations.dashboardAddSurveyTitle,
+                          buttonText: localizations.dashboardAddSurveyButton,
                           iconData: MdiIcons.clipboardOutline,
                         ),
                         ChartMultiSelect<DashboardWorkoutItem>(
                           multiSelectItems: workoutSelectItems,
                           onConfirm: onConfirmAddWorkoutType,
-                          title: 'Add Workout Charts',
-                          buttonText: 'Add Workout Charts',
+                          title: localizations.dashboardAddWorkoutTitle,
+                          buttonText: localizations.dashboardAddWorkoutButton,
                           iconData: Icons.sports_gymnastics,
                         ),
                         ChartMultiSelect<DashboardStoryTimeItem>(
                           multiSelectItems: storySelectItems,
                           onConfirm: onConfirmAddStoryTimeType,
-                          title: 'Add Story/Time Charts',
-                          buttonText: 'Add Story/Time Charts',
+                          title: localizations.dashboardAddStoryTitle,
+                          buttonText: localizations.dashboardAddStoryButton,
                           iconData: MdiIcons.watch,
                         ),
                         Padding(
@@ -430,35 +439,27 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                               TextButton(
                                 key: const Key('dashboard_save'),
                                 onPressed: saveDashboardPress,
-                                child: const Text(
-                                  'Save & Close',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontFamily: 'Oswald',
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                child: Text(
+                                  localizations.dashboardSaveLabel,
+                                  style: saveButtonStyle,
                                 ),
                               ),
                               TextButton(
                                 key: const Key('dashboard_view'),
                                 onPressed: saveAndViewDashboard,
-                                child: const Padding(
-                                  padding:
-                                      EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8.0),
                                   child: Text(
-                                    'Save & View',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontFamily: 'Oswald',
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    localizations.dashboardSaveViewLabel,
+                                    style: saveButtonStyle,
                                   ),
                                 ),
                               ),
                               IconButton(
                                 icon: const Icon(MdiIcons.trashCanOutline),
                                 iconSize: 24,
-                                tooltip: 'Delete',
+                                tooltip: localizations.dashboardDeleteHint,
                                 color: AppColors.appBarFgColor,
                                 onPressed: () async {
                                   const deleteKey = 'deleteKey';
@@ -466,11 +467,12 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                       await showModalActionSheet<String>(
                                     context: context,
                                     title:
-                                        'Do you want to delete this dashboard?',
+                                        localizations.dashboardDeleteQuestion,
                                     actions: [
-                                      const SheetAction(
+                                      SheetAction(
                                         icon: Icons.warning,
-                                        label: 'Delete dashboard',
+                                        label: localizations
+                                            .dashboardDeleteConfirm,
                                         key: deleteKey,
                                       ),
                                     ],
