@@ -154,3 +154,5 @@ TextStyle chartTitleStyle = TextStyle(
   color: AppColors.bodyBgColor,
   fontWeight: FontWeight.w300,
 );
+
+const taskFormFieldStyle = TextStyle(color: Colors.black87);

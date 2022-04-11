@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/tasks/task_status.dart';
@@ -38,7 +39,7 @@ class DetailTaskStatusWidget extends StatelessWidget {
                   icon: const Icon(Icons.edit),
                   iconSize: 32,
                   color: AppColors.entryTextColor,
-                  tooltip: 'Edit Task',
+                  tooltip: AppLocalizations.of(context)!.taskEditHint,
                   onPressed: onPressed,
                 ),
               ],

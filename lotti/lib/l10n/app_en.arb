@@ -60,5 +60,16 @@
   "settingsTagsTypePerson": "PERSON",
   "settingsTagsTypeStory": "STORY",
   "settingsTagsTypeTag": "TAG",
-  "tasksSearchHint": "Search tasks..."
+  "taskDueLabel": "Task due:",
+  "taskEditHint": "Edit Task",
+  "taskEstimateLabel": "Estimated time:",
+  "taskNameLabel": "Task:",
+  "tasksSearchHint": "Search tasks...",
+  "taskStatusBlocked": "BLOCKED",
+  "taskStatusDone": "DONE",
+  "taskStatusInProgress": "IN PROGRESS",
+  "taskStatusLabel": "Task status:",
+  "taskStatusOnHold": "ON HOLD",
+  "taskStatusOpen": "OPEN",
+  "taskStatusRejected": "REJECTED"
 }
