@@ -4,6 +4,8 @@
   "configFlagHideForScreenshot": "Hide Lotti when taking screenshots?",
   "configFlagNotifyExceptions": "Notify when exceptions occur?",
   "configFlagPrivate": "Show private entries?",
+  "conflictsResolved": "resolved",
+  "conflictsUnresolved": "unresolved",
   "dashboardActiveLabel": "Active:",
   "dashboardAddChartsTitle": "Add Charts:",
   "dashboardAddHealthButton": "Health Charts",

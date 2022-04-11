@@ -4,6 +4,8 @@
   "configFlagHideForScreenshot": "Lotti bei Screenshots minimieren?",
   "configFlagNotifyExceptions": "Notification bei Fehler?",
   "configFlagPrivate": "Private Einträge anzeigen?",
+  "conflictsResolved": "gelöst",
+  "conflictsUnresolved": "offen",
   "dashboardActiveLabel": "Aktiv:",
   "dashboardAddChartsTitle": "Charts hinzufügen:",
   "dashboardAddHealthButton": "Health Charts",
