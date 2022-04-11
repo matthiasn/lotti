@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -52,24 +53,28 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                         children: <Widget>[
                           FormTextField(
                             initialValue: item.displayName,
-                            labelText: 'Display name',
+                            labelText: AppLocalizations.of(context)!
+                                .settingsMeasurableNameLabel,
                             name: 'displayName',
                           ),
                           FormTextField(
                             initialValue: item.description,
-                            labelText: 'Description',
+                            labelText: AppLocalizations.of(context)!
+                                .settingsMeasurableDescriptionLabel,
                             name: 'description',
                           ),
                           FormTextField(
                             initialValue: item.unitName,
-                            labelText: 'Unit abbreviation',
+                            labelText: AppLocalizations.of(context)!
+                                .settingsMeasurableUnitLabel,
                             name: 'unitName',
                           ),
                           FormBuilderSwitch(
                             name: 'private',
                             initialValue: item.private,
                             title: Text(
-                              'Private: ',
+                              AppLocalizations.of(context)!
+                                  .settingsMeasurablePrivateLabel,
                               style: formLabelStyle,
                             ),
                             activeColor: AppColors.private,
@@ -78,7 +83,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                             name: 'favorite',
                             initialValue: item.favorite,
                             title: Text(
-                              'Favorite: ',
+                              AppLocalizations.of(context)!
+                                  .settingsMeasurableFavoriteLabel,
                               style: formLabelStyle,
                             ),
                             activeColor: AppColors.starredGold,
@@ -87,14 +93,16 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                             name: 'aggregationType',
                             initialValue: item.aggregationType,
                             decoration: InputDecoration(
-                              labelText: 'Aggregation Type:',
+                              labelText: AppLocalizations.of(context)!
+                                  .settingsMeasurableAggregationLabel,
                               labelStyle: labelStyle,
                             ),
                             style: const TextStyle(fontSize: 48),
                             allowClear: true,
                             dropdownColor: AppColors.headerBgColor,
                             hint: Text(
-                              'Select aggregation type',
+                              AppLocalizations.of(context)!
+                                  .settingsMeasurableAggregationSelectLabel,
                               style: formLabelStyle.copyWith(
                                 fontSize: 12,
                               ),
@@ -146,11 +154,13 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                 context.router.pop();
                               }
                             },
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24.0),
                               child: Text(
-                                'Save',
-                                style: TextStyle(
+                                AppLocalizations.of(context)!
+                                    .settingsMeasurableSaveLabel,
+                                style: const TextStyle(
                                   fontSize: 20,
                                   fontFamily: 'Oswald',
                                   fontWeight: FontWeight.bold,
@@ -161,7 +171,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           IconButton(
                             icon: const Icon(MdiIcons.trashCanOutline),
                             iconSize: 24,
-                            tooltip: 'Delete',
+                            tooltip: AppLocalizations.of(context)!
+                                .settingsMeasurableDeleteTooltip,
                             color: AppColors.appBarFgColor,
                             onPressed: () {
                               persistenceLogic.upsertEntityDefinition(
