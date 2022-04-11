@@ -49,6 +49,13 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           SettingsCard(
+            icon: const SettingsIcon(MdiIcons.tapeMeasure),
+            title: AppLocalizations.of(context)!.settingsMeasurablesTitle,
+            onTap: () {
+              context.router.push(const MeasurablesRoute());
+            },
+          ),
+          SettingsCard(
             icon: const SettingsIcon(MdiIcons.heartOutline),
             title: AppLocalizations.of(context)!.settingsHealthImportTitle,
             onTap: () {
@@ -60,13 +67,6 @@ class _SettingsPageState extends State<SettingsPage> {
             title: AppLocalizations.of(context)!.settingsSyncCfgTitle,
             onTap: () {
               context.router.push(const SyncSettingsRoute());
-            },
-          ),
-          SettingsCard(
-            icon: const SettingsIcon(MdiIcons.tapeMeasure),
-            title: AppLocalizations.of(context)!.settingsMeasurablesTitle,
-            onTap: () {
-              context.router.push(const MeasurablesRoute());
             },
           ),
           SettingsCard(
