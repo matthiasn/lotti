@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart' as drift;
-import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -30,6 +30,8 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return BlocBuilder<OutboxCubit, OutboxState>(
       builder: (_, OutboxState state) {
         return StreamBuilder<List<OutboxItem>>(
@@ -68,39 +70,30 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                             }
                           });
                         },
-                        children: const {
+                        children: {
                           'pending': SizedBox(
                             width: 64,
                             height: 32,
                             child: Center(
                               child: Text(
-                                'pending',
-                                style: TextStyle(
-                                  fontFamily: 'Oswald',
-                                  fontSize: 14,
-                                ),
+                                localizations.outboxMonitorLabelPending,
+                                style: segmentItemStyle,
                               ),
                             ),
                           ),
                           'error': SizedBox(
                             child: Center(
                               child: Text(
-                                'error',
-                                style: TextStyle(
-                                  fontFamily: 'Oswald',
-                                  fontSize: 14,
-                                ),
+                                localizations.outboxMonitorLabelError,
+                                style: segmentItemStyle,
                               ),
                             ),
                           ),
                           'all': SizedBox(
                             child: Center(
                               child: Text(
-                                'all',
-                                style: TextStyle(
-                                  fontFamily: 'Oswald',
-                                  fontSize: 14,
-                                ),
+                                localizations.outboxMonitorLabelAll,
+                                style: segmentItemStyle,
                               ),
                             ),
                           ),
@@ -150,8 +143,21 @@ class OutboxItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
     OutboxStatus statusEnum = OutboxStatus.values[item.status];
-    String status = EnumToString.convertToString(statusEnum);
+
+    String getStringFromStatus(OutboxStatus x) {
+      switch (x) {
+        case OutboxStatus.pending:
+          return localizations.outboxMonitorLabelPending;
+        case OutboxStatus.sent:
+          return localizations.outboxMonitorLabelSent;
+        default:
+          return localizations.outboxMonitorLabelError;
+      }
+    }
+
+    String status = getStringFromStatus(statusEnum);
 
     Color cardColor(OutboxStatus status) {
       switch (statusEnum) {
@@ -184,7 +190,8 @@ class OutboxItemCard extends StatelessWidget {
               ),
             ),
             subtitle: Text(
-              '${item.retries} retries - ${item.filePath ?? 'no attachment'}',
+              '${item.retries} ${localizations.outboxMonitorRetries} - '
+              '${item.filePath ?? localizations.outboxMonitorNoAttachment}',
               style: TextStyle(
                 color: AppColors.entryTextColor,
                 fontFamily: 'Oswald',

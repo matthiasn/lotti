@@ -162,3 +162,8 @@ const saveButtonStyle = TextStyle(
   fontFamily: 'Oswald',
   fontWeight: FontWeight.bold,
 );
+
+const segmentItemStyle = TextStyle(
+  fontFamily: 'Oswald',
+  fontSize: 14,
+);
