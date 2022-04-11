@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/classes/config.dart';
@@ -24,6 +25,8 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     if (Platform.isIOS || Platform.isAndroid) {
       return BlocBuilder<SyncConfigCubit, SyncConfigState>(
           builder: (context, SyncConfigState state) {
@@ -51,34 +54,34 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                   FormBuilderTextField(
                     name: 'imap_host',
                     validator: FormBuilderValidators.required(context),
-                    decoration: const InputDecoration(
-                      labelText: 'Host',
+                    decoration: InputDecoration(
+                      labelText: localizations.settingsSyncHostLabel,
                     ),
                   ),
                   FormBuilderTextField(
                     name: 'imap_userName',
                     validator: FormBuilderValidators.required(context),
-                    decoration: const InputDecoration(
-                      labelText: 'Username',
+                    decoration: InputDecoration(
+                      labelText: localizations.settingsSyncUserLabel,
                     ),
                   ),
                   FormBuilderTextField(
                     name: 'imap_password',
                     validator: FormBuilderValidators.required(context),
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
+                    decoration: InputDecoration(
+                      labelText: localizations.settingsSyncPasswordLabel,
                     ),
                   ),
                   FormBuilderTextField(
                     name: 'imap_port',
                     initialValue: '993',
                     validator: FormBuilderValidators.integer(context),
-                    decoration: const InputDecoration(
-                      labelText: 'Port',
+                    decoration: InputDecoration(
+                      labelText: localizations.settingsSyncPortLabel,
                     ),
                   ),
                   Button(
-                    'Save IMAP Config',
+                    localizations.settingsSyncSaveButton,
                     padding: const EdgeInsets.all(24.0),
                     primaryColor: Colors.white,
                     textColor: AppColors.headerBgColor,
