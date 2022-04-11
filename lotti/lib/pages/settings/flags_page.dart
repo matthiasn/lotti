@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
@@ -64,6 +65,25 @@ class ConfigFlagCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
+    String getLocalizedDescription(ConfigFlag flag) {
+      switch (flag.name) {
+        case 'private':
+          return localizations.configFlagPrivate;
+        case 'notify_exceptions':
+          return localizations.configFlagNotifyExceptions;
+        case 'hide_for_screenshot':
+          return localizations.configFlagHideForScreenshot;
+        case 'enable_notifications':
+          return localizations.configFlagEnableNotifications;
+        case 'listen_to_global_screenshot_hotkey':
+          return localizations.configFlagGlobalScreenshotHotkey;
+        default:
+          return item.description;
+      }
+    }
+
     return Card(
       color: AppColors.headerBgColor,
       elevation: 8.0,
@@ -78,7 +98,7 @@ class ConfigFlagCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                item.description,
+                getLocalizedDescription(item),
                 style: TextStyle(
                   color: AppColors.entryTextColor,
                   fontFamily: 'Oswald',

@@ -1,6 +1,7 @@
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -32,6 +33,8 @@ class _ConflictsPageState extends State<ConflictsPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder<List<Conflict>>(
       stream: stream,
       builder: (
@@ -59,28 +62,22 @@ class _ConflictsPageState extends State<ConflictsPage> {
                     }
                   });
                 },
-                children: const {
+                children: {
                   'unresolved': SizedBox(
                     width: 64,
                     height: 32,
                     child: Center(
                       child: Text(
-                        'unresolved',
-                        style: TextStyle(
-                          fontFamily: 'Oswald',
-                          fontSize: 14,
-                        ),
+                        localizations.conflictsUnresolved,
+                        style: segmentItemStyle,
                       ),
                     ),
                   ),
                   'resolved': SizedBox(
                     child: Center(
                       child: Text(
-                        'resolved',
-                        style: TextStyle(
-                          fontFamily: 'Oswald',
-                          fontSize: 14,
-                        ),
+                        localizations.conflictsResolved,
+                        style: segmentItemStyle,
                       ),
                     ),
                   ),

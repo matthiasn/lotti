@@ -32,6 +32,8 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return Column(
       children: [
         StreamBuilder<List<JournalEntity>>(
@@ -49,7 +51,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                 child: Column(
                   children: [
                     Text(
-                      AppLocalizations.of(context)!.journalLinkedEntriesLabel,
+                      localizations.journalLinkedEntriesLabel,
                       style: TextStyle(
                         color: AppColors.entryTextColor,
                         fontFamily: 'Oswald',

@@ -16,6 +16,8 @@ class DetailTaskStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     if (task == null) {
       return const SizedBox.shrink();
     }
@@ -39,7 +41,7 @@ class DetailTaskStatusWidget extends StatelessWidget {
                   icon: const Icon(Icons.edit),
                   iconSize: 32,
                   color: AppColors.entryTextColor,
-                  tooltip: AppLocalizations.of(context)!.taskEditHint,
+                  tooltip: localizations.taskEditHint,
                   onPressed: onPressed,
                 ),
               ],

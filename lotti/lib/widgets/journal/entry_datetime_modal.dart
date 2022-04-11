@@ -66,6 +66,8 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     bool valid = dateTo.isAfter(dateFrom) || dateTo == dateFrom;
     bool changed = dateFrom != widget.item.meta.dateFrom ||
         dateTo != widget.item.meta.dateTo;
@@ -93,7 +95,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                     SizedBox(
                       width: 120,
                       child: Text(
-                        AppLocalizations.of(context)!.journalDateFromLabel,
+                        localizations.journalDateFromLabel,
                         textAlign: TextAlign.end,
                         style: labelStyleLarger,
                       ),
@@ -124,7 +126,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                     SizedBox(
                       width: 120,
                       child: Text(
-                        AppLocalizations.of(context)!.journalDateToLabel,
+                        localizations.journalDateToLabel,
                         textAlign: TextAlign.end,
                         style: labelStyleLarger,
                       ),
@@ -152,7 +154,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                         });
                       },
                       child: Text(
-                        AppLocalizations.of(context)!.journalDateNowButton,
+                        localizations.journalDateNowButton,
                         style: textStyleLarger,
                       ),
                     ),
@@ -177,7 +179,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                             context.router.pop();
                           },
                           child: Text(
-                            AppLocalizations.of(context)!.journalDateSaveButton,
+                            localizations.journalDateSaveButton,
                             style: textStyleLarger,
                           ),
                         ),
@@ -185,7 +187,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       Visibility(
                         visible: !valid,
                         child: Text(
-                          AppLocalizations.of(context)!.journalDateInvalid,
+                          localizations.journalDateInvalid,
                           style:
                               textStyleLarger.copyWith(color: AppColors.error),
                         ),

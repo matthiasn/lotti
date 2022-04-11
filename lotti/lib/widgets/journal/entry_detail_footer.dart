@@ -44,6 +44,8 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     Geolocation? loc = widget.item.geolocation;
 
     return StreamBuilder<JournalEntity?>(
@@ -124,8 +126,8 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                           : MdiIcons.chevronDoubleDown),
                       iconSize: 24,
                       tooltip: mapVisible
-                          ? AppLocalizations.of(context)!.journalHideMapHint
-                          : AppLocalizations.of(context)!.journalShowMapHint,
+                          ? localizations.journalHideMapHint
+                          : localizations.journalShowMapHint,
                       color: AppColors.appBarFgColor,
                       onPressed: () {
                         setState(() {
@@ -155,6 +157,8 @@ class EntryInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder<JournalEntity?>(
         stream: stream,
         builder: (
@@ -172,7 +176,7 @@ class EntryInfoRow extends StatelessWidget {
               Row(
                 children: [
                   SwitchRow(
-                    label: AppLocalizations.of(context)!.journalFavoriteLabel,
+                    label: localizations.journalFavoriteLabel,
                     activeColor: AppColors.starredGold,
                     onChanged: (bool value) {
                       Metadata newMeta = liveEntity.meta.copyWith(
@@ -183,7 +187,7 @@ class EntryInfoRow extends StatelessWidget {
                     value: liveEntity.meta.starred ?? false,
                   ),
                   SwitchRow(
-                    label: AppLocalizations.of(context)!.journalPrivateLabel,
+                    label: localizations.journalPrivateLabel,
                     activeColor: AppColors.error,
                     onChanged: (bool value) {
                       Metadata newMeta = liveEntity.meta.copyWith(
@@ -194,7 +198,7 @@ class EntryInfoRow extends StatelessWidget {
                     value: liveEntity.meta.private ?? false,
                   ),
                   SwitchRow(
-                    label: AppLocalizations.of(context)!.journalFlaggedLabel,
+                    label: localizations.journalFlaggedLabel,
                     activeColor: AppColors.error,
                     onChanged: (bool value) {
                       Metadata newMeta = liveEntity.meta.copyWith(
@@ -209,7 +213,7 @@ class EntryInfoRow extends StatelessWidget {
               IconButton(
                 icon: const Icon(MdiIcons.trashCanOutline),
                 iconSize: 24,
-                tooltip: AppLocalizations.of(context)!.journalDeleteHint,
+                tooltip: localizations.journalDeleteHint,
                 padding: const EdgeInsets.only(
                   left: 16,
                   top: 8,
@@ -221,12 +225,11 @@ class EntryInfoRow extends StatelessWidget {
                   const deleteKey = 'deleteKey';
                   final result = await showModalActionSheet<String>(
                     context: context,
-                    title: AppLocalizations.of(context)!.journalDeleteQuestion,
+                    title: localizations.journalDeleteQuestion,
                     actions: [
                       SheetAction(
                         icon: Icons.warning,
-                        label:
-                            AppLocalizations.of(context)!.journalDeleteConfirm,
+                        label: localizations.journalDeleteConfirm,
                         key: deleteKey,
                         isDestructiveAction: true,
                         isDefaultAction: true,

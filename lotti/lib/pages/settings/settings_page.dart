@@ -28,6 +28,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return Container(
       margin: const EdgeInsets.symmetric(
         vertical: 8.0,

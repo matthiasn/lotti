@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
@@ -24,6 +25,8 @@ class _MaintenancePageState extends State<MaintenancePage> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder<List<ConfigFlag>>(
       stream: stream,
       builder: (
@@ -43,15 +46,16 @@ class _MaintenancePageState extends State<MaintenancePage> {
               padding: const EdgeInsets.all(8.0),
               children: [
                 MaintenanceCard(
-                  title: 'Delete tagged, n = ${snapshot.data}',
+                  title:
+                      '${localizations.maintenanceDeleteTagged}, n = ${snapshot.data}',
                   onTap: () => _maintenance.deleteTaggedLinks(),
                 ),
                 MaintenanceCard(
-                  title: 'Recreate tagged',
+                  title: localizations.maintenanceRecreateTagged,
                   onTap: () => _maintenance.recreateTaggedLinks(),
                 ),
                 MaintenanceCard(
-                  title: 'Assign stories from parents',
+                  title: localizations.maintenanceStories,
                   onTap: () => _maintenance.recreateStoryAssignment(),
                 ),
               ],

@@ -29,6 +29,8 @@ class TagsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder<List<TagEntity>>(
       stream: db.watchTags(),
       builder: (
@@ -102,8 +104,7 @@ class TagsWidget extends StatelessWidget {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Text(
-                                  AppLocalizations.of(context)!
-                                      .journalTagsLabel,
+                                  localizations.journalTagsLabel,
                                   style: formLabelStyle,
                                 ),
                               ),
@@ -178,8 +179,7 @@ class TagsWidget extends StatelessWidget {
                                   MdiIcons.contentCopy,
                                   color: AppColors.entryTextColor,
                                 ),
-                                tooltip: AppLocalizations.of(context)!
-                                    .journalTagsCopyHint,
+                                tooltip: localizations.journalTagsCopyHint,
                               ),
                               IconButton(
                                 onPressed: pasteTags,
@@ -192,8 +192,7 @@ class TagsWidget extends StatelessWidget {
                                   MdiIcons.contentPaste,
                                   color: AppColors.entryTextColor,
                                 ),
-                                tooltip: AppLocalizations.of(context)!
-                                    .journalTagsPasteHint,
+                                tooltip: localizations.journalTagsPasteHint,
                               ),
                             ],
                           ),
@@ -218,7 +217,7 @@ class TagsWidget extends StatelessWidget {
                     size: 32,
                     color: AppColors.entryTextColor,
                   ),
-                  tooltip: AppLocalizations.of(context)!.journalTagPlusHint,
+                  tooltip: localizations.journalTagPlusHint,
                 ),
               ],
             );
@@ -318,6 +317,8 @@ class TagWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return GestureDetector(
       onDoubleTap: () {
         context.router.pushNamed('/settings/tags/${tagEntity.id}');
@@ -348,7 +349,7 @@ class TagWidget extends StatelessWidget {
                   size: 16,
                   color: AppColors.tagTextColor,
                 ),
-                tooltip: AppLocalizations.of(context)!.journalTagsRemoveHint,
+                tooltip: localizations.journalTagsRemoveHint,
               ),
             ],
           ),

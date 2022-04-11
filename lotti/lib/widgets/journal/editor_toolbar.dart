@@ -31,6 +31,8 @@ class ToolbarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return QuillToolbar(
       key: key,
       toolbarHeight: _toolbarIconSize * 2,
@@ -41,7 +43,7 @@ class ToolbarWidget extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.save),
           iconSize: _toolbarIconSize,
-          tooltip: AppLocalizations.of(context)!.journalToolbarSaveHint,
+          tooltip: localizations.journalToolbarSaveHint,
           onPressed: () => _saveFn(),
         ),
         ToggleStyleButton(
@@ -103,14 +105,14 @@ class ToolbarWidget extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.add_link),
             iconSize: _toolbarIconSize,
-            tooltip: AppLocalizations.of(context)!.journalLinkFromHint,
+            tooltip: localizations.journalLinkFromHint,
             onPressed: () => _linkService.linkFrom(_journalEntity!.meta.id),
           ),
         if (_journalEntity != null)
           IconButton(
             icon: const Icon(MdiIcons.target),
             iconSize: _toolbarIconSize,
-            tooltip: AppLocalizations.of(context)!.journalLinkToHint,
+            tooltip: localizations.journalLinkToHint,
             onPressed: () => _linkService.linkTo(_journalEntity!.meta.id),
           ),
         ClearFormatButton(
