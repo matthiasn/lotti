@@ -65,3 +65,4 @@ classes.viz.puml
 lib/routes/router.gr.dart
 
 *.lock
+missing_translations.txt
