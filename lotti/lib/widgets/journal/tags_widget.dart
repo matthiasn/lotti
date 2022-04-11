@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -55,6 +56,19 @@ class TagsWidget extends StatelessWidget {
               );
             }
 
+            void copyTags() {
+              if (liveEntity.meta.tagIds != null) {
+                HapticFeedback.heavyImpact();
+                tagsService.setClipboard(liveEntity.meta.id);
+              }
+            }
+
+            void pasteTags() async {
+              List<String> tagsFromClipboard = await tagsService.getClipboard();
+              addTagIds(tagsFromClipboard);
+              HapticFeedback.heavyImpact();
+            }
+
             TextEditingController controller = TextEditingController();
 
             void onTapAdd() {
@@ -83,11 +97,13 @@ class TagsWidget extends StatelessWidget {
                           TagsListWidget(item: item),
                           const SizedBox(height: 16),
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Text(
-                                  'Tags:',
+                                  AppLocalizations.of(context)!
+                                      .journalTagsLabel,
                                   style: formLabelStyle,
                                 ),
                               ),
@@ -151,50 +167,33 @@ class TagsWidget extends StatelessWidget {
                                   },
                                 ),
                               ),
-                              MouseRegion(
-                                cursor: SystemMouseCursors.click,
-                                child: GestureDetector(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(
-                                      left: 24.0,
-                                      top: 16.0,
-                                      bottom: 16.0,
-                                    ),
-                                    child: Icon(
-                                      MdiIcons.contentCopy,
-                                      color: AppColors.entryTextColor,
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    if (liveEntity.meta.tagIds != null) {
-                                      HapticFeedback.heavyImpact();
-                                      tagsService
-                                          .setClipboard(liveEntity.meta.id);
-                                    }
-                                  },
+                              IconButton(
+                                onPressed: copyTags,
+                                padding: const EdgeInsets.only(
+                                  left: 24.0,
+                                  top: 16.0,
+                                  bottom: 16.0,
                                 ),
+                                icon: Icon(
+                                  MdiIcons.contentCopy,
+                                  color: AppColors.entryTextColor,
+                                ),
+                                tooltip: AppLocalizations.of(context)!
+                                    .journalTagsCopyHint,
                               ),
-                              MouseRegion(
-                                cursor: SystemMouseCursors.click,
-                                child: GestureDetector(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(
-                                      left: 16.0,
-                                      top: 16.0,
-                                      bottom: 16.0,
-                                    ),
-                                    child: Icon(
-                                      MdiIcons.contentPaste,
-                                      color: AppColors.entryTextColor,
-                                    ),
-                                  ),
-                                  onTap: () async {
-                                    List<String> tagsFromClipboard =
-                                        await tagsService.getClipboard();
-                                    addTagIds(tagsFromClipboard);
-                                    HapticFeedback.heavyImpact();
-                                  },
+                              IconButton(
+                                onPressed: pasteTags,
+                                padding: const EdgeInsets.only(
+                                  left: 24.0,
+                                  top: 16.0,
+                                  bottom: 16.0,
                                 ),
+                                icon: Icon(
+                                  MdiIcons.contentPaste,
+                                  color: AppColors.entryTextColor,
+                                ),
+                                tooltip: AppLocalizations.of(context)!
+                                    .journalTagsPasteHint,
                               ),
                             ],
                           ),
@@ -211,19 +210,15 @@ class TagsWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 TagsListWidget(item: item),
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 24.0, right: 4),
-                      child: Icon(
-                        MdiIcons.tagPlusOutline,
-                        size: 32,
-                        color: AppColors.entryTextColor,
-                      ),
-                    ),
-                    onTap: onTapAdd,
+                IconButton(
+                  onPressed: onTapAdd,
+                  padding: const EdgeInsets.only(left: 24.0, right: 4),
+                  icon: Icon(
+                    MdiIcons.tagPlusOutline,
+                    size: 32,
+                    color: AppColors.entryTextColor,
                   ),
+                  tooltip: AppLocalizations.of(context)!.journalTagPlusHint,
                 ),
               ],
             );
@@ -334,6 +329,7 @@ class TagWidget extends StatelessWidget {
           color: getTagColor(tagEntity),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 tagEntity.tag,
@@ -343,19 +339,16 @@ class TagWidget extends StatelessWidget {
                   color: AppColors.tagTextColor,
                 ),
               ),
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4.0),
-                    child: Icon(
-                      MdiIcons.close,
-                      size: 16,
-                      color: AppColors.tagTextColor,
-                    ),
-                  ),
-                  onTap: onTapRemove,
+              IconButton(
+                onPressed: onTapRemove,
+                padding: const EdgeInsets.only(left: 4.0),
+                constraints: const BoxConstraints(maxHeight: 16, maxWidth: 20),
+                icon: Icon(
+                  MdiIcons.close,
+                  size: 16,
+                  color: AppColors.tagTextColor,
                 ),
+                tooltip: AppLocalizations.of(context)!.journalTagsRemoveHint,
               ),
             ],
           ),

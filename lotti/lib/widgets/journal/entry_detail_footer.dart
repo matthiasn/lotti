@@ -2,6 +2,7 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -119,10 +120,12 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                     ),
                     IconButton(
                       icon: Icon(mapVisible
-                          ? MdiIcons.chevronDoubleDown
-                          : MdiIcons.chevronDoubleUp),
+                          ? MdiIcons.chevronDoubleUp
+                          : MdiIcons.chevronDoubleDown),
                       iconSize: 24,
-                      tooltip: 'Details',
+                      tooltip: mapVisible
+                          ? AppLocalizations.of(context)!.journalHideMapHint
+                          : AppLocalizations.of(context)!.journalShowMapHint,
                       color: AppColors.appBarFgColor,
                       onPressed: () {
                         setState(() {
@@ -169,7 +172,7 @@ class EntryInfoRow extends StatelessWidget {
               Row(
                 children: [
                   SwitchRow(
-                    label: 'Starred:',
+                    label: AppLocalizations.of(context)!.journalFavoriteLabel,
                     activeColor: AppColors.starredGold,
                     onChanged: (bool value) {
                       Metadata newMeta = liveEntity.meta.copyWith(
@@ -180,7 +183,7 @@ class EntryInfoRow extends StatelessWidget {
                     value: liveEntity.meta.starred ?? false,
                   ),
                   SwitchRow(
-                    label: 'Private:',
+                    label: AppLocalizations.of(context)!.journalPrivateLabel,
                     activeColor: AppColors.error,
                     onChanged: (bool value) {
                       Metadata newMeta = liveEntity.meta.copyWith(
@@ -191,7 +194,7 @@ class EntryInfoRow extends StatelessWidget {
                     value: liveEntity.meta.private ?? false,
                   ),
                   SwitchRow(
-                    label: 'Flag:',
+                    label: AppLocalizations.of(context)!.journalFlaggedLabel,
                     activeColor: AppColors.error,
                     onChanged: (bool value) {
                       Metadata newMeta = liveEntity.meta.copyWith(
@@ -206,7 +209,7 @@ class EntryInfoRow extends StatelessWidget {
               IconButton(
                 icon: const Icon(MdiIcons.trashCanOutline),
                 iconSize: 24,
-                tooltip: 'Delete',
+                tooltip: AppLocalizations.of(context)!.journalDeleteHint,
                 padding: const EdgeInsets.only(
                   left: 16,
                   top: 8,
@@ -218,11 +221,12 @@ class EntryInfoRow extends StatelessWidget {
                   const deleteKey = 'deleteKey';
                   final result = await showModalActionSheet<String>(
                     context: context,
-                    title: 'Do you want to delete this journal entry?',
+                    title: AppLocalizations.of(context)!.journalDeleteQuestion,
                     actions: [
-                      const SheetAction(
+                      SheetAction(
                         icon: Icons.warning,
-                        label: 'Delete journal entry',
+                        label:
+                            AppLocalizations.of(context)!.journalDeleteConfirm,
                         key: deleteKey,
                         isDestructiveAction: true,
                         isDefaultAction: true,

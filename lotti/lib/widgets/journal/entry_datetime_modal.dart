@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -92,7 +93,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                     SizedBox(
                       width: 120,
                       child: Text(
-                        'Date from: ',
+                        AppLocalizations.of(context)!.journalDateFromLabel,
                         textAlign: TextAlign.end,
                         style: labelStyleLarger,
                       ),
@@ -123,7 +124,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                     SizedBox(
                       width: 120,
                       child: Text(
-                        'Date to:',
+                        AppLocalizations.of(context)!.journalDateToLabel,
                         textAlign: TextAlign.end,
                         style: labelStyleLarger,
                       ),
@@ -151,7 +152,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                         });
                       },
                       child: Text(
-                        'now',
+                        AppLocalizations.of(context)!.journalDateNowButton,
                         style: textStyleLarger,
                       ),
                     ),
@@ -176,7 +177,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                             context.router.pop();
                           },
                           child: Text(
-                            'SAVE',
+                            AppLocalizations.of(context)!.journalDateSaveButton,
                             style: textStyleLarger,
                           ),
                         ),
@@ -184,7 +185,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       Visibility(
                         visible: !valid,
                         child: Text(
-                          'Invalid Date Range',
+                          AppLocalizations.of(context)!.journalDateInvalid,
                           style:
                               textStyleLarger.copyWith(color: AppColors.error),
                         ),
