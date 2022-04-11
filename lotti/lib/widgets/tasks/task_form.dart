@@ -44,6 +44,8 @@ class _TaskFormState extends State<TaskForm> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     bool showDetails = widget.withOpenDetails || details;
 
     return Container(
@@ -64,7 +66,7 @@ class _TaskFormState extends State<TaskForm> {
                       autofocus: widget.focusOnTitle,
                       initialValue: widget.data?.title ?? '',
                       decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context)!.taskNameLabel,
+                        labelText: localizations.taskNameLabel,
                         labelStyle: labelStyle,
                       ),
                       maxLines: null,
@@ -86,7 +88,7 @@ class _TaskFormState extends State<TaskForm> {
                         fontFamily: 'Oswald',
                       ),
                       decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context)!.taskDueLabel,
+                        labelText: localizations.taskDueLabel,
                         labelStyle: labelStyle,
                       ),
                       initialValue: widget.data?.due ?? DateTime.now(),
@@ -116,8 +118,7 @@ class _TaskFormState extends State<TaskForm> {
                       ),
                       onChanged: (_) => widget.saveFn(),
                       decoration: InputDecoration(
-                        labelText:
-                            AppLocalizations.of(context)!.taskEstimateLabel,
+                        labelText: localizations.taskEstimateLabel,
                         labelStyle: labelStyle,
                       ),
                       initialValue: DateTime.fromMillisecondsSinceEpoch(
@@ -151,8 +152,7 @@ class _TaskFormState extends State<TaskForm> {
                           ) ??
                           'OPEN',
                       decoration: InputDecoration(
-                        labelText:
-                            AppLocalizations.of(context)!.taskStatusLabel,
+                        labelText: localizations.taskStatusLabel,
                         labelStyle: labelStyle.copyWith(
                           height: 0.6,
                           fontFamily: 'Oswald',
@@ -173,42 +173,42 @@ class _TaskFormState extends State<TaskForm> {
                         FormBuilderFieldOption(
                           value: 'OPEN',
                           child: Text(
-                            AppLocalizations.of(context)!.taskStatusOpen,
+                            localizations.taskStatusOpen,
                             style: taskFormFieldStyle,
                           ),
                         ),
                         FormBuilderFieldOption(
                           value: 'IN PROGRESS',
                           child: Text(
-                            AppLocalizations.of(context)!.taskStatusInProgress,
+                            localizations.taskStatusInProgress,
                             style: taskFormFieldStyle,
                           ),
                         ),
                         FormBuilderFieldOption(
                           value: 'BLOCKED',
                           child: Text(
-                            AppLocalizations.of(context)!.taskStatusBlocked,
+                            localizations.taskStatusBlocked,
                             style: taskFormFieldStyle,
                           ),
                         ),
                         FormBuilderFieldOption(
                           value: 'ON HOLD',
                           child: Text(
-                            AppLocalizations.of(context)!.taskStatusOnHold,
+                            localizations.taskStatusOnHold,
                             style: taskFormFieldStyle,
                           ),
                         ),
                         FormBuilderFieldOption(
                           value: 'DONE',
                           child: Text(
-                            AppLocalizations.of(context)!.taskStatusDone,
+                            localizations.taskStatusDone,
                             style: taskFormFieldStyle,
                           ),
                         ),
                         FormBuilderFieldOption(
                           value: 'REJECTED',
                           child: Text(
-                            AppLocalizations.of(context)!.taskStatusRejected,
+                            localizations.taskStatusRejected,
                             style: taskFormFieldStyle,
                           ),
                         ),

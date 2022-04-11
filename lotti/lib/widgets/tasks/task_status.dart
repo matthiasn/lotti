@@ -16,6 +16,8 @@ class TaskStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(chipBorderRadius),
       child: Container(
@@ -23,14 +25,13 @@ class TaskStatusWidget extends StatelessWidget {
         color: taskColor(task.data.status),
         child: Text(
           task.data.status.map(
-            open: (_) => AppLocalizations.of(context)!.taskStatusOpen,
+            open: (_) => localizations.taskStatusOpen,
             started: (_) => 'STARTED', // TODO: remove DEPRECATED status
-            inProgress: (_) =>
-                AppLocalizations.of(context)!.taskStatusInProgress,
-            blocked: (_) => AppLocalizations.of(context)!.taskStatusBlocked,
-            onHold: (_) => AppLocalizations.of(context)!.taskStatusOnHold,
-            done: (_) => AppLocalizations.of(context)!.taskStatusDone,
-            rejected: (_) => AppLocalizations.of(context)!.taskStatusRejected,
+            inProgress: (_) => localizations.taskStatusInProgress,
+            blocked: (_) => localizations.taskStatusBlocked,
+            onHold: (_) => localizations.taskStatusOnHold,
+            done: (_) => localizations.taskStatusDone,
+            rejected: (_) => localizations.taskStatusRejected,
           ),
           style: TextStyle(
             fontFamily: 'Oswald',
