@@ -27,6 +27,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.symmetric(
         vertical: 8.0,
@@ -36,35 +37,35 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.tagOutline),
-            title: AppLocalizations.of(context)!.settingsTagsTitle,
+            title: localizations.settingsTagsTitle,
             onTap: () {
               context.router.push(const TagsRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(Icons.insights_outlined),
-            title: AppLocalizations.of(context)!.settingsDashboardsTitle,
+            title: localizations.settingsDashboardsTitle,
             onTap: () {
               context.router.push(const DashboardSettingsRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.tapeMeasure),
-            title: AppLocalizations.of(context)!.settingsMeasurablesTitle,
+            title: localizations.settingsMeasurablesTitle,
             onTap: () {
               context.router.push(const MeasurablesRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.heartOutline),
-            title: AppLocalizations.of(context)!.settingsHealthImportTitle,
+            title: localizations.settingsHealthImportTitle,
             onTap: () {
               context.router.push(const HealthImportRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(Icons.sync),
-            title: AppLocalizations.of(context)!.settingsSyncCfgTitle,
+            title: localizations.settingsSyncCfgTitle,
             onTap: () {
               context.router.push(const SyncSettingsRoute());
             },
@@ -73,35 +74,35 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: OutboxBadgeIcon(
               icon: const SettingsIcon(MdiIcons.mailboxOutline),
             ),
-            title: AppLocalizations.of(context)!.settingsSyncOutboxTitle,
+            title: localizations.settingsSyncOutboxTitle,
             onTap: () {
               context.router.push(const OutboxMonitorRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.informationOutline),
-            title: AppLocalizations.of(context)!.settingsLogsTitle,
+            title: localizations.settingsLogsTitle,
             onTap: () {
               context.router.push(const LoggingRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.emoticonConfusedOutline),
-            title: AppLocalizations.of(context)!.settingsConflictsTitle,
+            title: localizations.settingsConflictsTitle,
             onTap: () {
               context.router.push(const ConflictsRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.flagOutline),
-            title: AppLocalizations.of(context)!.settingsFlagsTitle,
+            title: localizations.settingsFlagsTitle,
             onTap: () {
               context.router.push(const FlagsRoute());
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.broom),
-            title: 'Maintenance',
+            title: localizations.settingsMaintenanceTitle,
             onTap: () {
               context.router.push(const MaintenanceRoute());
             },

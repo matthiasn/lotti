@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
@@ -15,6 +16,8 @@ class EncryptionQrWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     if (Platform.isIOS || Platform.isAndroid) {
       return const EncryptionQrReaderWidget();
     }
@@ -25,7 +28,7 @@ class EncryptionQrWidget extends StatelessWidget {
         child: Column(
           children: [
             Button(
-              'Generate Shared Key',
+              localizations.settingsSyncGenKeyButton,
               onPressed: () =>
                   context.read<SyncConfigCubit>().generateSharedKey(),
               primaryColor: Colors.red,
@@ -54,26 +57,24 @@ class EncryptionQrWidget extends StatelessWidget {
                             showDialog<String>(
                               context: context,
                               builder: (BuildContext context) => AlertDialog(
-                                title: const Text(
-                                  'Copy SyncConfig to Clipboard?',
-                                  style: TextStyle(fontFamily: 'Oswald'),
+                                title: Text(
+                                  localizations.settingsSyncCopyCfg,
+                                  style: const TextStyle(fontFamily: 'Oswald'),
                                 ),
-                                content: const Text(
-                                  'With this data, anyone can read your journal. '
-                                  'Only copy when you know what you\'re doing. '
-                                  'Are you sure you want to proceed?',
-                                  style: TextStyle(fontFamily: 'Lato'),
+                                content: Text(
+                                  localizations.settingsSyncCopyCfgWarning,
+                                  style: const TextStyle(fontFamily: 'Lato'),
                                 ),
                                 actions: <Widget>[
                                   Button(
-                                    'Cancel',
+                                    localizations.settingsSyncCancelButton,
                                     onPressed: () {
                                       Navigator.pop(context, 'Cancel');
                                     },
                                     primaryColor: Colors.grey,
                                   ),
                                   Button(
-                                    'Copy',
+                                    localizations.settingsSyncCopyButton,
                                     onPressed: () {
                                       Clipboard.setData(
                                           ClipboardData(text: syncCfgJson));
@@ -93,47 +94,48 @@ class EncryptionQrWidget extends StatelessWidget {
                         ),
                       ),
                       StatusTextWidget('${sharedKey.substring(0, 20)}...'),
-                      Button('Delete Shared Key',
+                      Button(localizations.settingsSyncDeleteKeyButton,
                           onPressed: () =>
                               context.read<SyncConfigCubit>().deleteSharedKey(),
                           primaryColor: Colors.red),
                     ],
                   );
                 } else {
-                  return const StatusTextWidget('incomplete config');
+                  return StatusTextWidget(
+                      localizations.settingsSyncIncompleteConfig);
                 }
               },
-              loading: () => const StatusTextWidget('loading key'),
-              generating: () => const StatusTextWidget('generating key'),
+              loading: () =>
+                  StatusTextWidget(localizations.settingsSyncLoadingKey),
+              generating: () =>
+                  StatusTextWidget(localizations.settingsSyncGenKey),
               empty: () => Column(
                 children: [
-                  const StatusTextWidget('not initialized'),
+                  StatusTextWidget(localizations.settingsSyncNotInitialized),
                   Button(
-                    'Import SyncConfig from Clipboard',
+                    localizations.settingsSyncPasteCfg,
                     onPressed: () {
                       showDialog<String>(
                         context: context,
                         builder: (BuildContext context) => AlertDialog(
-                          title: const Text(
-                            'Import SyncConfig from Clipboard?',
-                            style: TextStyle(fontFamily: 'Oswald'),
+                          title: Text(
+                            localizations.settingsSyncPasteCfg,
+                            style: const TextStyle(fontFamily: 'Oswald'),
                           ),
-                          content: const Text(
-                            'Do you want to import the SyncConfig from the '
-                            'clipboard? Only proceed when you know what you\'re doing. '
-                            'Are you sure?',
-                            style: TextStyle(fontFamily: 'Lato'),
+                          content: Text(
+                            localizations.settingsSyncPasteCfgWarning,
+                            style: const TextStyle(fontFamily: 'Lato'),
                           ),
                           actions: <Widget>[
                             Button(
-                              'Cancel',
+                              localizations.settingsSyncCancelButton,
                               onPressed: () {
                                 Navigator.pop(context, 'Cancel');
                               },
                               primaryColor: Colors.grey,
                             ),
                             Button(
-                              'Import',
+                              localizations.settingsSyncImportButton,
                               onPressed: () async {
                                 ClipboardData? data =
                                     await Clipboard.getData('text/plain');

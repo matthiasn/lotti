@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/widgets/sync/qr_widget.dart';
@@ -30,6 +31,8 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
         builder: (context, SyncConfigState state) {
       void _onQRViewCreated(QRViewController controller) {
@@ -55,9 +58,9 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
                     backgroundColor: Colors.red),
                 onPressed: () =>
                     context.read<SyncConfigCubit>().deleteSharedKey(),
-                child: const Text(
-                  'Delete Shared Key',
-                  style: TextStyle(
+                child: Text(
+                  localizations.settingsSyncDeleteKeyButton,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
@@ -65,8 +68,8 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
               ),
             ],
           ),
-          loading: () => const StatusTextWidget('loading key'),
-          generating: () => const StatusTextWidget('generating key'),
+          loading: () => StatusTextWidget(localizations.settingsSyncLoadingKey),
+          generating: () => StatusTextWidget(localizations.settingsSyncGenKey),
           empty: () => Column(
             children: [
               SizedBox(
@@ -77,7 +80,7 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
                   onQRViewCreated: _onQRViewCreated,
                 ),
               ),
-              const StatusTextWidget('Scanning Shared Secret'),
+              StatusTextWidget(localizations.settingsSyncScanning),
             ],
           ),
         ),
