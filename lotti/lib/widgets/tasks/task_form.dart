@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -63,7 +64,7 @@ class _TaskFormState extends State<TaskForm> {
                       autofocus: widget.focusOnTitle,
                       initialValue: widget.data?.title ?? '',
                       decoration: InputDecoration(
-                        labelText: 'Task:',
+                        labelText: AppLocalizations.of(context)!.taskNameLabel,
                         labelStyle: labelStyle,
                       ),
                       maxLines: null,
@@ -85,7 +86,7 @@ class _TaskFormState extends State<TaskForm> {
                         fontFamily: 'Oswald',
                       ),
                       decoration: InputDecoration(
-                        labelText: 'Task due:',
+                        labelText: AppLocalizations.of(context)!.taskDueLabel,
                         labelStyle: labelStyle,
                       ),
                       initialValue: widget.data?.due ?? DateTime.now(),
@@ -115,7 +116,8 @@ class _TaskFormState extends State<TaskForm> {
                       ),
                       onChanged: (_) => widget.saveFn(),
                       decoration: InputDecoration(
-                        labelText: 'Estimate:',
+                        labelText:
+                            AppLocalizations.of(context)!.taskEstimateLabel,
                         labelStyle: labelStyle,
                       ),
                       initialValue: DateTime.fromMillisecondsSinceEpoch(
@@ -149,7 +151,8 @@ class _TaskFormState extends State<TaskForm> {
                           ) ??
                           'OPEN',
                       decoration: InputDecoration(
-                        labelText: 'Task Status:',
+                        labelText:
+                            AppLocalizations.of(context)!.taskStatusLabel,
                         labelStyle: labelStyle.copyWith(
                           height: 0.6,
                           fontFamily: 'Oswald',
@@ -166,47 +169,47 @@ class _TaskFormState extends State<TaskForm> {
                         fontWeight: FontWeight.w300,
                         fontFamily: 'Oswald',
                       ),
-                      options: const [
+                      options: [
                         FormBuilderFieldOption(
                           value: 'OPEN',
                           child: Text(
-                            'OPEN',
-                            style: TextStyle(color: Colors.black87),
+                            AppLocalizations.of(context)!.taskStatusOpen,
+                            style: taskFormFieldStyle,
                           ),
                         ),
                         FormBuilderFieldOption(
                           value: 'IN PROGRESS',
                           child: Text(
-                            'IN PROGRESS',
-                            style: TextStyle(color: Colors.black87),
+                            AppLocalizations.of(context)!.taskStatusInProgress,
+                            style: taskFormFieldStyle,
                           ),
                         ),
                         FormBuilderFieldOption(
                           value: 'BLOCKED',
                           child: Text(
-                            'BLOCKED',
-                            style: TextStyle(color: Colors.black87),
+                            AppLocalizations.of(context)!.taskStatusBlocked,
+                            style: taskFormFieldStyle,
                           ),
                         ),
                         FormBuilderFieldOption(
                           value: 'ON HOLD',
                           child: Text(
-                            'ON HOLD',
-                            style: TextStyle(color: Colors.black87),
+                            AppLocalizations.of(context)!.taskStatusOnHold,
+                            style: taskFormFieldStyle,
                           ),
                         ),
                         FormBuilderFieldOption(
                           value: 'DONE',
                           child: Text(
-                            'DONE',
-                            style: TextStyle(color: Colors.black87),
+                            AppLocalizations.of(context)!.taskStatusDone,
+                            style: taskFormFieldStyle,
                           ),
                         ),
                         FormBuilderFieldOption(
                           value: 'REJECTED',
                           child: Text(
-                            'REJECTED',
-                            style: TextStyle(color: Colors.black87),
+                            AppLocalizations.of(context)!.taskStatusRejected,
+                            style: taskFormFieldStyle,
                           ),
                         ),
                       ],
