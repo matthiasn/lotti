@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
@@ -40,7 +41,7 @@ class ToolbarWidget extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.save),
           iconSize: _toolbarIconSize,
-          tooltip: 'Save',
+          tooltip: AppLocalizations.of(context)!.journalToolbarSaveHint,
           onPressed: () => _saveFn(),
         ),
         ToggleStyleButton(
@@ -102,14 +103,14 @@ class ToolbarWidget extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.add_link),
             iconSize: _toolbarIconSize,
-            tooltip: 'Link from',
+            tooltip: AppLocalizations.of(context)!.journalLinkFromHint,
             onPressed: () => _linkService.linkFrom(_journalEntity!.meta.id),
           ),
         if (_journalEntity != null)
           IconButton(
             icon: const Icon(MdiIcons.target),
             iconSize: _toolbarIconSize,
-            tooltip: 'Link to',
+            tooltip: AppLocalizations.of(context)!.journalLinkToHint,
             onPressed: () => _linkService.linkTo(_journalEntity!.meta.id),
           ),
         ClearFormatButton(
