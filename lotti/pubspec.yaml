@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.6.43+633
+version: 0.6.44+634
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -107,6 +107,8 @@ dependencies:
   window_manager: ^0.2.0
   yaml: ^3.1.0
   timezone: ^0.8.0
+  flutter_sliding_tutorial: ^1.1.3+3
+  flutter_svg: ^1.0.3
 
 dev_dependencies:
   flutter_test:
@@ -140,6 +142,7 @@ flutter:
     - assets/images/map/299087_marker_map_icon.png
     # from https://www.iconfinder.com/recepkutuk
     - assets/images/map/728975_location_map_marker_pin_place_icon.png
+    - assets/images/tutorial/
 
   fonts:
     - family: Oswald

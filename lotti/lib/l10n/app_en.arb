@@ -85,6 +85,8 @@
   "settingsMeasurablesSearchHint": "Search...",
   "settingsMeasurablesTitle": "Measurables",
   "settingsMeasurableUnitLabel": "Unit abbreviation:",
+  "settingsPlaygroundTitle": "Developer Playground",
+  "settingsPlaygroundTutorialTitle": "Run Sliding Tutorial",
   "settingsSyncCancelButton": "Cancel",
   "settingsSyncCfgTitle": "Synchronization config",
   "settingsSyncCopyButton": "Copy",

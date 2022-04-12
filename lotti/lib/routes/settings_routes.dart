@@ -4,6 +4,7 @@ import 'package:lotti/pages/settings/conflicts.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_details_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
+import 'package:lotti/pages/settings/dev_playground_page.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
 import 'package:lotti/pages/settings/health_import_page.dart';
 import 'package:lotti/pages/settings/logging_page.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/pages/settings/sync_settings.dart';
 import 'package:lotti/pages/settings/tags/create_tag_page.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';
+import 'package:lotti/pages/tutorial/sliding_intro/intro_tutorial_page.dart';
 
 const AutoRoute settingsRoutes = AutoRoute(
   path: 'settings',
@@ -98,6 +100,14 @@ const AutoRoute settingsRoutes = AutoRoute(
     AutoRoute(
       path: 'advanced',
       page: AdvancedSettingsPage,
+    ),
+    AutoRoute(
+      path: 'playground',
+      page: DevPlaygroundPage,
+    ),
+    AutoRoute(
+      path: 'tutorial',
+      page: IntroTutorialPage,
     ),
   ],
 );
