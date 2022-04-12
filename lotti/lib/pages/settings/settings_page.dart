@@ -1,7 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/pages/settings/outbox_badge.dart';
 import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/pages/settings/settings_icon.dart';
 import 'package:lotti/routes/router.gr.dart';
@@ -65,36 +64,6 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           SettingsCard(
-            icon: const SettingsIcon(Icons.sync),
-            title: localizations.settingsSyncCfgTitle,
-            onTap: () {
-              context.router.push(const SyncSettingsRoute());
-            },
-          ),
-          SettingsCard(
-            icon: OutboxBadgeIcon(
-              icon: const SettingsIcon(MdiIcons.mailboxOutline),
-            ),
-            title: localizations.settingsSyncOutboxTitle,
-            onTap: () {
-              context.router.push(const OutboxMonitorRoute());
-            },
-          ),
-          SettingsCard(
-            icon: const SettingsIcon(MdiIcons.informationOutline),
-            title: localizations.settingsLogsTitle,
-            onTap: () {
-              context.router.push(const LoggingRoute());
-            },
-          ),
-          SettingsCard(
-            icon: const SettingsIcon(MdiIcons.emoticonConfusedOutline),
-            title: localizations.settingsConflictsTitle,
-            onTap: () {
-              context.router.push(const ConflictsRoute());
-            },
-          ),
-          SettingsCard(
             icon: const SettingsIcon(MdiIcons.flagOutline),
             title: localizations.settingsFlagsTitle,
             onTap: () {
@@ -102,10 +71,10 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           SettingsCard(
-            icon: const SettingsIcon(MdiIcons.broom),
-            title: localizations.settingsMaintenanceTitle,
+            icon: const SettingsIcon(MdiIcons.alertRhombusOutline),
+            title: localizations.settingsAdvancedTitle,
             onTap: () {
-              context.router.push(const MaintenanceRoute());
+              context.router.push(const AdvancedSettingsRoute());
             },
           ),
         ],
