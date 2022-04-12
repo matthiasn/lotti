@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:lotti/pages/settings/advanced_settings_page.dart';
 import 'package:lotti/pages/settings/conflicts.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_details_page.dart';
@@ -93,6 +94,10 @@ const AutoRoute settingsRoutes = AutoRoute(
     AutoRoute(
       path: 'maintenance',
       page: MaintenancePage,
+    ),
+    AutoRoute(
+      path: 'advanced',
+      page: AdvancedSettingsPage,
     ),
   ],
 );

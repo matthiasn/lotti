@@ -66,6 +66,7 @@
   "outboxMonitorLabelSent": "gesendet",
   "outboxMonitorNoAttachment": "kein Attachment",
   "outboxMonitorRetries": "Wiederholung(en)",
+  "settingsAdvancedTitle": "Erweiterte Einstellungen",
   "settingsConflictsTitle": "Konflikte aus Synchronisation",
   "settingsDashboardsSearchHint": "Suche...",
   "settingsDashboardsTitle": "Konfiguration Dashboards",

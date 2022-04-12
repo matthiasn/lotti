@@ -66,6 +66,7 @@
   "outboxMonitorLabelSent": "sent",
   "outboxMonitorNoAttachment": "no attachment",
   "outboxMonitorRetries": "retries",
+  "settingsAdvancedTitle": "Advanced Settings",
   "settingsConflictsTitle": "Sync Conflicts",
   "settingsDashboardsSearchHint": "Search...",
   "settingsDashboardsTitle": "Dashboards",
