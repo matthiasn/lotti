@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
-import 'package:lotti/pages/tutorial/sliding_intro/web_analytics_page.dart';
-import 'package:lotti/pages/tutorial/sliding_intro/web_developer_page.dart';
+import 'package:lotti/pages/tutorial/sliding_intro/tutorial_slide_1.dart';
+import 'package:lotti/pages/tutorial/sliding_intro/tutorial_slide_2.dart';
+import 'package:lotti/theme.dart';
 
-import 'e_commerce_page.dart';
+import 'tutorial_slide_3.dart';
 
 class SlidingTutorial extends StatefulWidget {
   const SlidingTutorial({
@@ -28,8 +29,6 @@ class _SlidingTutorial extends State<SlidingTutorial> {
   @override
   void initState() {
     _pageController = widget.controller;
-
-    /// Listen to [PageView] position updates.
     _pageController.addListener(_onScroll);
     super.initState();
   }
@@ -39,15 +38,13 @@ class _SlidingTutorial extends State<SlidingTutorial> {
     return AnimatedBackgroundColor(
       pageController: _pageController,
       pageCount: widget.pageCount,
-
-      /// You can use your own color list for page background
-      colors: const [
-        Color(0xFFAAAAAA),
-        Color(0xFF669900),
-        Color(0xFFCC0000),
-        Color(0xFF0099CC),
-        Color(0xFFAA66CC),
-        Color(0xFFFF8800),
+      colors: [
+        AppColors.bodyBgColor,
+        AppColors.bottomNavIconSelected,
+        AppColors.error,
+        AppColors.tagColor,
+        AppColors.outboxPendingColor,
+        AppColors.outboxSuccessColor,
       ],
       child: Stack(
         children: [
@@ -67,11 +64,11 @@ class _SlidingTutorial extends State<SlidingTutorial> {
   Widget _getPageByIndex(int index) {
     switch (index % 3) {
       case 0:
-        return WebAnalyticsPage(index, widget.notifier);
+        return TutorialSlide1(index, widget.notifier);
       case 1:
-        return WebDevelopersPage(index, widget.notifier);
+        return TutorialSlide2(index, widget.notifier);
       case 2:
-        return ECommercePage(index, widget.notifier);
+        return TutorialSlide3(index, widget.notifier);
       default:
         throw ArgumentError("Unknown position: $index");
     }

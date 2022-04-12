@@ -70,7 +70,6 @@ class _IntroTutorialPageState extends State<IntroTutorialPage> {
           ),
         ),
 
-        /// [SlidingIndicator] for [PageView] in [SlidingTutorial].
         Align(
           alignment: const Alignment(0, 0.94),
           child: SlidingIndicator(

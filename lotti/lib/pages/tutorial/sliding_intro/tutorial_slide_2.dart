@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
+import 'package:lotti/theme.dart';
 
-class WebDevelopersPage extends StatelessWidget {
+class TutorialSlide2 extends StatelessWidget {
   final int page;
   final ValueNotifier<double> notifier;
 
-  const WebDevelopersPage(
+  const TutorialSlide2(
     this.page,
     this.notifier, {
     Key? key,
@@ -13,6 +15,8 @@ class WebDevelopersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return SlidingPage(
       page: page,
       notifier: notifier,
@@ -115,15 +119,36 @@ class WebDevelopersPage extends StatelessWidget {
             ),
           ),
           Align(
-            alignment: const Alignment(0, 0.78),
+            alignment: Alignment.topCenter,
             child: SlidingContainer(
               offset: 250,
-              child: Text(
-                "Web \nDeveloper".toUpperCase(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 30,
-                  color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 48.0),
+                child: Text(
+                  localizations.tutorialSlide2Title,
+                  textAlign: TextAlign.center,
+                  style: titleStyle.copyWith(
+                    fontSize: 40,
+                    color: AppColors.bodyBgColor,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: SlidingContainer(
+              offset: 250,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 64),
+                width: 350,
+                child: Text(
+                  localizations.tutorialSlide2Body,
+                  textAlign: TextAlign.justify,
+                  style: titleStyle.copyWith(
+                    fontSize: 18,
+                    color: AppColors.bodyBgColor,
+                  ),
                 ),
               ),
             ),

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
+import 'package:lotti/theme.dart';
 
-class ECommercePage extends StatelessWidget {
+class TutorialSlide3 extends StatelessWidget {
   final int page;
   final ValueNotifier<double> notifier;
 
-  const ECommercePage(
+  const TutorialSlide3(
     this.page,
     this.notifier, {
     Key? key,
@@ -13,6 +15,8 @@ class ECommercePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return SlidingPage(
       notifier: notifier,
       page: page,
@@ -63,7 +67,7 @@ class ECommercePage extends StatelessWidget {
               heightFactor: 0.07,
               child: SlidingContainer(
                   child: Image.asset(
-                    "assets/images/tutorial/s_2_4.png",
+                    "assets/images/tutorial/s_1_8.png",
                   ),
                   offset: 50),
             ),
@@ -105,15 +109,36 @@ class ECommercePage extends StatelessWidget {
             ),
           ),
           Align(
-            alignment: const Alignment(0, 0.78),
+            alignment: Alignment.topCenter,
             child: SlidingContainer(
               offset: 250,
-              child: const Text(
-                "e-Commerce",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 30,
-                  color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 40.0),
+                child: Text(
+                  localizations.tutorialSlide3Title,
+                  textAlign: TextAlign.center,
+                  style: titleStyle.copyWith(
+                    fontSize: 40,
+                    color: AppColors.headerBgColor,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: SlidingContainer(
+              offset: 250,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 64),
+                width: 350,
+                child: Text(
+                  localizations.tutorialSlide3Body,
+                  textAlign: TextAlign.justify,
+                  style: titleStyle.copyWith(
+                    fontSize: 18,
+                    color: AppColors.bodyBgColor,
+                  ),
                 ),
               ),
             ),

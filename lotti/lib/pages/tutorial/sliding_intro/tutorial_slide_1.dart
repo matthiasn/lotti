@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
+import 'package:lotti/theme.dart';
 
-class WebAnalyticsPage extends StatelessWidget {
+class TutorialSlide1 extends StatelessWidget {
   final int page;
   final ValueNotifier<double> notifier;
 
-  const WebAnalyticsPage(
+  const TutorialSlide1(
     this.page,
     this.notifier, {
     Key? key,
@@ -13,16 +15,18 @@ class WebAnalyticsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return SlidingPage(
       page: page,
       notifier: notifier,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Center(
+          Align(
+            alignment: const Alignment(0, -0.1),
             child: FractionallySizedBox(
-              widthFactor: 0.5,
-              heightFactor: 0.35,
+              widthFactor: 0.6,
               child: SlidingContainer(
                   child: Image.asset(
                     "assets/images/tutorial/s_0_1.png",
@@ -31,7 +35,7 @@ class WebAnalyticsPage extends StatelessWidget {
             ),
           ),
           Align(
-            alignment: const Alignment(-0.7, 0.30),
+            alignment: const Alignment(-0.6, 0.1),
             child: FractionallySizedBox(
               widthFactor: 0.3,
               heightFactor: 0.25,
@@ -43,7 +47,7 @@ class WebAnalyticsPage extends StatelessWidget {
             ),
           ),
           Align(
-            alignment: const Alignment(-0.7, -0.08),
+            alignment: const Alignment(-0.7, -0.48),
             child: FractionallySizedBox(
               widthFactor: 0.20,
               heightFactor: 0.15,
@@ -55,7 +59,7 @@ class WebAnalyticsPage extends StatelessWidget {
             ),
           ),
           Align(
-            alignment: const Alignment(-0.92, -0.45),
+            alignment: const Alignment(-0.92, -0.75),
             child: FractionallySizedBox(
               widthFactor: 0.06,
               heightFactor: 0.06,
@@ -67,7 +71,7 @@ class WebAnalyticsPage extends StatelessWidget {
             ),
           ),
           Align(
-            alignment: const Alignment(-0.72, -0.46),
+            alignment: const Alignment(-0.72, -0.86),
             child: FractionallySizedBox(
               widthFactor: 0.09,
               heightFactor: 0.08,
@@ -79,7 +83,7 @@ class WebAnalyticsPage extends StatelessWidget {
             ),
           ),
           Align(
-            alignment: const Alignment(0, -0.50),
+            alignment: const Alignment(0, -0.8),
             child: FractionallySizedBox(
               widthFactor: 0.45,
               heightFactor: 0.15,
@@ -91,7 +95,7 @@ class WebAnalyticsPage extends StatelessWidget {
             ),
           ),
           Align(
-            alignment: const Alignment(0.7, -0.40),
+            alignment: const Alignment(0.7, -0.60),
             child: FractionallySizedBox(
               widthFactor: 0.12,
               heightFactor: 0.10,
@@ -103,27 +107,43 @@ class WebAnalyticsPage extends StatelessWidget {
             ),
           ),
           Align(
-            alignment: const Alignment(0.65, -0.2),
+            alignment: const Alignment(0.65, -0.8),
             child: FractionallySizedBox(
               widthFactor: 0.08,
               heightFactor: 0.06,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_0_8.png",
-                  ),
-                  offset: 140),
+                child: Image.asset(
+                  "assets/images/tutorial/s_0_8.png",
+                ),
+                offset: 140,
+              ),
             ),
           ),
           Align(
-            alignment: const Alignment(0, 0.78),
+            alignment: Alignment.topCenter,
             child: SlidingContainer(
               offset: 250,
-              child: Text(
-                "Web \nAnalytics".toUpperCase(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 30,
-                  color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: Text(
+                  localizations.tutorialSlide1Title,
+                  textAlign: TextAlign.center,
+                  style: titleStyle.copyWith(fontSize: 40),
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: SlidingContainer(
+              offset: 250,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 64),
+                width: 350,
+                child: Text(
+                  localizations.tutorialSlide1Body,
+                  textAlign: TextAlign.justify,
+                  style: titleStyle.copyWith(fontSize: 18),
                 ),
               ),
             ),
