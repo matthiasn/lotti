@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
+import 'package:lotti/pages/tutorial/sliding_intro/tutorial_utils.dart';
 import 'package:lotti/theme.dart';
 
 class TutorialSlide2 extends StatelessWidget {
@@ -140,8 +141,8 @@ class TutorialSlide2 extends StatelessWidget {
             child: SlidingContainer(
               offset: 250,
               child: Container(
-                padding: const EdgeInsets.only(bottom: 64),
-                width: 350,
+                padding: const EdgeInsets.only(bottom: 80),
+                width: textBodyWidth(context),
                 child: Text(
                   localizations.tutorialSlide2Body,
                   textAlign: TextAlign.justify,
