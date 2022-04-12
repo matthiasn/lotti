@@ -130,5 +130,11 @@
   "taskStatusLabel": "Aufgabenstatus:",
   "taskStatusOnHold": "AUF EIS",
   "taskStatusOpen": "OFFEN",
-  "taskStatusRejected": "VERWORFEN"
+  "taskStatusRejected": "VERWORFEN",
+  "tutorialSlide1Body": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+  "tutorialSlide1Title": "Lotti",
+  "tutorialSlide2Body": "Nori grape silver beet broccoli kombu beet greens fava bean potato quandong celery. Bunya nuts black-eyed pea prairie turnip leek lentil turnip greens parsnip Sea lettuce lettuce water chestnut eggplant winter purslane fennel azuki bean earthnut pea sierra leone bologi leek soko.",
+  "tutorialSlide2Title": "Implementiere Veränderungen",
+  "tutorialSlide3Body": "Sea lettuce lettuce water chestnut eggplant winter purslane fennel azuki bean earthnut pea sierra leone bologi leek soko chicory celtuce parsley jícama salsify Nori grape silver beet broccoli kombu beet greens fava bean potato quandong.",
+  "tutorialSlide3Title": "Deinen Daten bleiben deine Daten"
 }
