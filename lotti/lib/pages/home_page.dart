@@ -49,6 +49,7 @@ class HomePage extends StatelessWidget {
         // TODO: bring back or remove
         // MyDayRouter(),
         SettingsRouter(),
+        //TutorialRouter(),
       ],
       bottomNavigationBuilder: (_, tabsRouter) {
         return BottomNavigationBar(

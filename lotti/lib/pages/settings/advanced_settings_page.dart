@@ -60,6 +60,13 @@ class AdvancedSettingsPage extends StatelessWidget {
               context.router.push(const MaintenanceRoute());
             },
           ),
+          SettingsCard(
+            icon: const SettingsIcon(MdiIcons.broom),
+            title: localizations.settingsPlaygroundTitle,
+            onTap: () {
+              context.router.push(const DevPlaygroundRoute());
+            },
+          ),
         ],
       ),
     );
