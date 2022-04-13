@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:lotti/pages/tutorial/sliding_intro/tutorial_utils.dart';
 import 'package:lotti/theme.dart';
+import 'package:lottie/lottie.dart';
 
 class TutorialSlide2 extends StatelessWidget {
   final int page;
@@ -132,6 +133,38 @@ class TutorialSlide2 extends StatelessWidget {
                     fontSize: 40,
                     color: AppColors.bodyBgColor,
                   ),
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: const Alignment(-2, -0.6),
+            child: SlidingContainer(
+              offset: 250,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 80),
+                width: textBodyWidth(context),
+                child: Lottie.asset(
+                  'assets/lottiefiles/penguin.json',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: const Alignment(2.8, 0.6),
+            child: SlidingContainer(
+              offset: 250,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 80),
+                width: textBodyWidth(context),
+                child: Lottie.asset(
+                  'assets/lottiefiles/walking.json',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
                 ),
               ),
             ),

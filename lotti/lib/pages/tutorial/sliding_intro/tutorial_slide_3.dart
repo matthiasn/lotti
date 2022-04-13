@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:lotti/pages/tutorial/sliding_intro/tutorial_utils.dart';
 import 'package:lotti/theme.dart';
+import 'package:lottie/lottie.dart';
 
 class TutorialSlide3 extends StatelessWidget {
   final int page;
@@ -122,6 +123,70 @@ class TutorialSlide3 extends StatelessWidget {
                     fontSize: 40,
                     color: AppColors.headerBgColor,
                   ),
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: const Alignment(-2, -0.6),
+            child: SlidingContainer(
+              offset: 250,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 80),
+                width: textBodyWidth(context),
+                child: Lottie.asset(
+                  'assets/lottiefiles/pencil_write.json',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: const Alignment(0, 0.1),
+            child: SlidingContainer(
+              offset: 250,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 80),
+                width: textBodyWidth(context),
+                child: Lottie.asset(
+                  'assets/lottiefiles/gears.json',
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: const Alignment(3, -0.5),
+            child: SlidingContainer(
+              offset: 250,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 80),
+                width: textBodyWidth(context),
+                child: Lottie.asset(
+                  'assets/lottiefiles/a_mountain.json',
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: const Alignment(-3.6, 0.5),
+            child: SlidingContainer(
+              offset: 250,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 80),
+                width: textBodyWidth(context),
+                child: Lottie.asset(
+                  'assets/lottiefiles/animated_laptop_.json',
+                  width: 160,
+                  height: 160,
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
