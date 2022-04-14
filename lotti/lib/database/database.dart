@@ -326,6 +326,19 @@ class JournalDb extends _$JournalDb {
         .map(entityStreamMapper);
   }
 
+  Stream<List<JournalEntity>> watchJournalEntitiesByIds(List<String> ids) {
+    return journalEntitiesByIds(ids)
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(entityStreamMapper);
+  }
+
+  Stream<List<String>> watchLinkedEntityIds(String linkedFrom) {
+    return linkedJournalEntityIds(linkedFrom)
+        .watch()
+        .where(makeDuplicateFilter());
+  }
+
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
     var dbEntities = await linkedJournalEntities(linkedFrom).get();
     return dbEntities.map(fromDbEntity).toList();

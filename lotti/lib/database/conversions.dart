@@ -83,6 +83,13 @@ List<JournalEntity> entityStreamMapper(List<JournalDbEntity> dbEntities) {
   return dbEntities.map((e) => fromDbEntity(e)).toList();
 }
 
+List<JournalEntity> nullAwareEntityStreamMapper(
+    List<JournalDbEntity?> dbEntities) {
+  return entityStreamMapper(
+    dbEntities.whereType<JournalDbEntity>().toList(),
+  );
+}
+
 MeasurableDataType measurableDataType(MeasurableDbEntity dbEntity) {
   return MeasurableDataType.fromJson(json.decode(dbEntity.serialized));
 }

@@ -22,12 +22,12 @@ class LinkedEntriesWidget extends StatefulWidget {
 
 class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
   final JournalDb _db = getIt<JournalDb>();
-  late Stream<List<JournalEntity>> stream;
+  late Stream<List<String>> stream;
 
   @override
   void initState() {
     super.initState();
-    stream = _db.watchLinkedEntities(linkedFrom: widget.item.meta.id);
+    stream = _db.watchLinkedEntityIds(widget.item.meta.id);
   }
 
   @override
@@ -36,51 +36,63 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
 
     return Column(
       children: [
-        StreamBuilder<List<JournalEntity>>(
+        StreamBuilder<List<String>>(
           stream: stream,
           builder: (
             BuildContext context,
-            AsyncSnapshot<List<JournalEntity>> snapshot,
+            AsyncSnapshot<List<String>> snapshot,
           ) {
             if (snapshot.data == null || snapshot.data!.isEmpty) {
               return Container();
             } else {
-              List<JournalEntity> items = snapshot.data!;
-              return Container(
-                margin: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    Text(
-                      localizations.journalLinkedEntriesLabel,
-                      style: TextStyle(
-                        color: AppColors.entryTextColor,
-                        fontFamily: 'Oswald',
-                      ),
-                    ),
-                    ...List.generate(
-                      items.length,
-                      (int index) {
-                        JournalEntity item = items.elementAt(index);
+              List<String> itemIds = snapshot.data!;
+              return StreamBuilder<List<JournalEntity>>(
+                  stream: _db.watchJournalEntitiesByIds(itemIds),
+                  builder: (context, itemsSnapshot) {
+                    if (itemsSnapshot.data == null ||
+                        itemsSnapshot.data!.isEmpty) {
+                      return Container();
+                    } else {
+                      List<JournalEntity> items = itemsSnapshot.data!;
 
-                        void unlink(DismissDirection direction) {
-                          String fromId = widget.item.meta.id;
-                          String toId = item.meta.id;
-                          _db.removeLink(fromId: fromId, toId: toId);
-                        }
+                      return Container(
+                        margin: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              localizations.journalLinkedEntriesLabel,
+                              style: TextStyle(
+                                color: AppColors.entryTextColor,
+                                fontFamily: 'Oswald',
+                              ),
+                            ),
+                            ...List.generate(
+                              items.length,
+                              (int index) {
+                                JournalEntity item = items.elementAt(index);
 
-                        return Dismissible(
-                          key: Key('$index'),
-                          onDismissed: unlink,
-                          child: EntryDetailWidget(
-                            entryId: item.meta.id,
-                          ),
-                        );
-                      },
-                      growable: true,
-                    )
-                  ],
-                ),
-              );
+                                void unlink(DismissDirection direction) {
+                                  String fromId = widget.item.meta.id;
+                                  String toId = item.meta.id;
+                                  _db.removeLink(fromId: fromId, toId: toId);
+                                }
+
+                                return Dismissible(
+                                  key: Key(item.meta.id),
+                                  onDismissed: unlink,
+                                  child: EntryDetailWidget(
+                                    key: Key(item.meta.id),
+                                    entryId: item.meta.id,
+                                  ),
+                                );
+                              },
+                              growable: true,
+                            )
+                          ],
+                        ),
+                      );
+                    }
+                  });
             }
           },
         ),
