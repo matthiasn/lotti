@@ -4,7 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/journal/journal_card.dart';
+import 'package:lotti/widgets/journal/entry_details_widget.dart';
 
 class LinkedEntriesWidget extends StatefulWidget {
   const LinkedEntriesWidget({
@@ -68,27 +68,12 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                           _db.removeLink(fromId: fromId, toId: toId);
                         }
 
-                        return item.maybeMap(
-                          journalImage: (JournalImage image) {
-                            return Dismissible(
-                              key: Key('$index'),
-                              onDismissed: unlink,
-                              child: JournalImageCard(
-                                item: image,
-                                index: index,
-                              ),
-                            );
-                          },
-                          orElse: () {
-                            return Dismissible(
-                              key: Key('$index'),
-                              onDismissed: unlink,
-                              child: JournalCard(
-                                item: item,
-                                index: index,
-                              ),
-                            );
-                          },
+                        return Dismissible(
+                          key: Key('$index'),
+                          onDismissed: unlink,
+                          child: EntryDetailWidget(
+                            entryId: item.meta.id,
+                          ),
                         );
                       },
                       growable: true,
