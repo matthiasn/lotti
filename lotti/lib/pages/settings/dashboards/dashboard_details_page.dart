@@ -273,6 +273,29 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
           context.router.pushNamed('/dashboards/${widget.dashboard.id}');
         }
 
+        Future<void> copyDashboard() async {
+          DashboardDefinition dashboard = await saveDashboard();
+          List<EntityDefinition> entityDefinitions = [dashboard];
+
+          for (DashboardItem item in dashboard.items) {
+            await item.map(
+              measurement: (DashboardMeasurementItem measurementItem) async {
+                MeasurableDataType? dataType =
+                    await _db.getMeasurableDataTypeById(measurementItem.id);
+                if (dataType != null) {
+                  entityDefinitions.add(dataType);
+                }
+              },
+              healthChart: (_) {},
+              workoutChart: (_) {},
+              surveyChart: (_) {},
+              storyTimeChart: (_) {},
+            );
+          }
+          Clipboard.setData(
+              ClipboardData(text: json.encode(entityDefinitions)));
+        }
+
         return SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -468,12 +491,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                     iconSize: 24,
                                     tooltip: localizations.dashboardCopyHint,
                                     color: AppColors.appBarFgColor,
-                                    onPressed: () async {
-                                      DashboardDefinition dashboard =
-                                          await saveDashboard();
-                                      Clipboard.setData(ClipboardData(
-                                          text: json.encode(dashboard)));
-                                    },
+                                    onPressed: copyDashboard,
                                   ),
                                   IconButton(
                                     icon: const Icon(MdiIcons.trashCanOutline),
