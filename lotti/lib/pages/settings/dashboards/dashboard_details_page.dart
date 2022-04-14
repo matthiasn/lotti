@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -240,7 +243,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
           );
         }).toList();
 
-        Future<void> saveDashboard() async {
+        Future<DashboardDefinition> saveDashboard() async {
           _formKey.currentState!.save();
           if (_formKey.currentState!.validate()) {
             final formData = _formKey.currentState?.value;
@@ -254,8 +257,10 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
               items: dashboardItems ?? widget.dashboard.items,
             );
 
-            persistenceLogic.upsertDashboardDefinition(dashboard);
+            await persistenceLogic.upsertDashboardDefinition(dashboard);
+            return dashboard;
           }
+          return widget.dashboard;
         }
 
         Future<void> saveDashboardPress() async {
@@ -456,37 +461,54 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                   ),
                                 ),
                               ),
-                              IconButton(
-                                icon: const Icon(MdiIcons.trashCanOutline),
-                                iconSize: 24,
-                                tooltip: localizations.dashboardDeleteHint,
-                                color: AppColors.appBarFgColor,
-                                onPressed: () async {
-                                  const deleteKey = 'deleteKey';
-                                  final result =
-                                      await showModalActionSheet<String>(
-                                    context: context,
-                                    title:
-                                        localizations.dashboardDeleteQuestion,
-                                    actions: [
-                                      SheetAction(
-                                        icon: Icons.warning,
-                                        label: localizations
-                                            .dashboardDeleteConfirm,
-                                        key: deleteKey,
-                                      ),
-                                    ],
-                                  );
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.copy),
+                                    iconSize: 24,
+                                    tooltip: localizations.dashboardCopyHint,
+                                    color: AppColors.appBarFgColor,
+                                    onPressed: () async {
+                                      DashboardDefinition dashboard =
+                                          await saveDashboard();
+                                      Clipboard.setData(ClipboardData(
+                                          text: json.encode(dashboard)));
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(MdiIcons.trashCanOutline),
+                                    iconSize: 24,
+                                    tooltip: localizations.dashboardDeleteHint,
+                                    color: AppColors.appBarFgColor,
+                                    onPressed: () async {
+                                      const deleteKey = 'deleteKey';
+                                      final result =
+                                          await showModalActionSheet<String>(
+                                        context: context,
+                                        title: localizations
+                                            .dashboardDeleteQuestion,
+                                        actions: [
+                                          SheetAction(
+                                            icon: Icons.warning,
+                                            label: localizations
+                                                .dashboardDeleteConfirm,
+                                            key: deleteKey,
+                                          ),
+                                        ],
+                                      );
 
-                                  if (result == deleteKey) {
-                                    persistenceLogic.upsertDashboardDefinition(
-                                      widget.dashboard.copyWith(
-                                        deletedAt: DateTime.now(),
-                                      ),
-                                    );
-                                    context.router.pop();
-                                  }
-                                },
+                                      if (result == deleteKey) {
+                                        persistenceLogic
+                                            .upsertDashboardDefinition(
+                                          widget.dashboard.copyWith(
+                                            deletedAt: DateTime.now(),
+                                          ),
+                                        );
+                                        context.router.pop();
+                                      }
+                                    },
+                                  ),
+                                ],
                               ),
                             ],
                           ),

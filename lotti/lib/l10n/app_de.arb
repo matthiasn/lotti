@@ -18,6 +18,7 @@
   "dashboardAddSurveyTitle": "Survey Charts",
   "dashboardAddWorkoutButton": "Workout Charts",
   "dashboardAddWorkoutTitle": "Workout Charts",
+  "dashboardCopyHint": "Speichern & Dashboard Konfiguration kopieren",
   "dashboardDeleteConfirm": "JA, DASHBOARD LÖSCHEN",
   "dashboardDeleteHint": "Dashboard löschen",
   "dashboardDeleteQuestion": "Dashboard wirklich löschen?",
