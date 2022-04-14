@@ -492,6 +492,11 @@ class JournalDb extends _$JournalDb {
         .map((List<MeasurableDataType> res) => res.firstOrNull);
   }
 
+  Future<MeasurableDataType?> getMeasurableDataTypeById(String id) async {
+    var res = await measurableTypeById(id).get();
+    return res.map(measurableDataType).firstOrNull;
+  }
+
   Stream<List<JournalEntity>> watchMeasurementsByType({
     required String type,
     required DateTime rangeStart,
