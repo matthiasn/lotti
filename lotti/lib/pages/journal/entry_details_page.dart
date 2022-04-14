@@ -76,11 +76,11 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
-                  LinkedFromEntriesWidget(item: item),
                   EntryDetailWidget(
                     entryId: widget.entryId,
                   ),
                   LinkedEntriesWidget(item: item),
+                  LinkedFromEntriesWidget(item: item),
                 ],
               ),
             ),
