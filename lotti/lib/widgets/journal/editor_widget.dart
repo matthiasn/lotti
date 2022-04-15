@@ -6,56 +6,46 @@ import 'package:lotti/widgets/journal/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor_toolbar.dart';
 
 class EditorWidget extends StatelessWidget {
-  final JournalEntity? _journalEntity;
+  final JournalEntity? journalEntity;
+  final QuillController controller;
+  final double maxHeight;
+  final double minHeight;
+  final bool readOnly;
+  final bool autoFocus;
+  final double padding;
+  final Function saveFn;
+  final FocusNode focusNode;
 
   const EditorWidget({
     Key? key,
-    required QuillController controller,
-    JournalEntity? journalEntity,
-    double minHeight = 80,
-    double maxHeight = double.maxFinite,
-    double padding = 16.0,
-    bool readOnly = false,
-    bool autoFocus = true,
-    required Function saveFn,
-    required FocusNode focusNode,
-  })  : _controller = controller,
-        _maxHeight = maxHeight,
-        _minHeight = minHeight,
-        _readOnly = readOnly,
-        _journalEntity = journalEntity,
-        _padding = padding,
-        _saveFn = saveFn,
-        _focusNode = focusNode,
-        _autoFocus = autoFocus,
-        super(key: key);
-
-  final QuillController _controller;
-  final double _maxHeight;
-  final double _minHeight;
-  final bool _readOnly;
-  final bool _autoFocus;
-  final double _padding;
-  final Function _saveFn;
-  final FocusNode _focusNode;
+    required this.controller,
+    this.journalEntity,
+    this.minHeight = 80,
+    this.maxHeight = double.maxFinite,
+    this.padding = 16.0,
+    this.readOnly = false,
+    this.autoFocus = true,
+    required this.saveFn,
+    required this.focusNode,
+  }) : super(key: key);
 
   void keyFormatter(RawKeyEvent event, String char, Attribute attribute) {
     if (event.data.isMetaPressed && event.character == char) {
-      if (_controller
+      if (controller
           .getSelectionStyle()
           .attributes
           .keys
           .contains(attribute.key)) {
-        _controller.formatSelection(Attribute.clone(attribute, null));
+        controller.formatSelection(Attribute.clone(attribute, null));
       } else {
-        _controller.formatSelection(attribute);
+        controller.formatSelection(attribute);
       }
     }
   }
 
   void saveViaKeyboard(RawKeyEvent event) {
     if (event.data.isMetaPressed && event.character == 's') {
-      _saveFn();
+      saveFn();
     }
   }
 
@@ -72,28 +62,29 @@ class EditorWidget extends StatelessWidget {
         color: AppColors.editorBgColor,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: _maxHeight,
+            maxHeight: maxHeight,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ToolbarWidget(
-                controller: _controller,
-                saveFn: _saveFn,
-                journalEntity: _journalEntity,
+                id: journalEntity?.meta.id,
+                controller: controller,
+                saveFn: saveFn,
+                journalEntity: journalEntity,
               ),
               Flexible(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: _padding),
+                  padding: EdgeInsets.symmetric(horizontal: padding),
                   child: QuillEditor(
-                    controller: _controller,
-                    readOnly: _readOnly,
+                    controller: controller,
+                    readOnly: readOnly,
                     scrollController: ScrollController(),
                     scrollable: true,
-                    focusNode: _focusNode,
-                    autoFocus: _autoFocus,
+                    focusNode: focusNode,
+                    autoFocus: autoFocus,
                     expands: false,
-                    minHeight: _minHeight,
+                    minHeight: minHeight,
                     padding: const EdgeInsets.only(top: 8, bottom: 16),
                     keyboardAppearance: Brightness.dark,
                     customStyles: customEditorStyles(

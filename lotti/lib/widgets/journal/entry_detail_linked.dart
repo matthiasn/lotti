@@ -4,7 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/journal/journal_card.dart';
+import 'package:lotti/widgets/journal/entry_details_widget.dart';
 
 class LinkedEntriesWidget extends StatefulWidget {
   const LinkedEntriesWidget({
@@ -22,12 +22,12 @@ class LinkedEntriesWidget extends StatefulWidget {
 
 class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
   final JournalDb _db = getIt<JournalDb>();
-  late Stream<List<JournalEntity>> stream;
+  late Stream<List<String>> stream;
 
   @override
   void initState() {
     super.initState();
-    stream = _db.watchLinkedEntities(linkedFrom: widget.item.meta.id);
+    stream = _db.watchLinkedEntityIds(widget.item.meta.id);
   }
 
   @override
@@ -36,66 +36,64 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
 
     return Column(
       children: [
-        StreamBuilder<List<JournalEntity>>(
+        StreamBuilder<List<String>>(
           stream: stream,
           builder: (
             BuildContext context,
-            AsyncSnapshot<List<JournalEntity>> snapshot,
+            AsyncSnapshot<List<String>> snapshot,
           ) {
             if (snapshot.data == null || snapshot.data!.isEmpty) {
               return Container();
             } else {
-              List<JournalEntity> items = snapshot.data!;
-              return Container(
-                margin: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    Text(
-                      localizations.journalLinkedEntriesLabel,
-                      style: TextStyle(
-                        color: AppColors.entryTextColor,
-                        fontFamily: 'Oswald',
-                      ),
-                    ),
-                    ...List.generate(
-                      items.length,
-                      (int index) {
-                        JournalEntity item = items.elementAt(index);
+              List<String> itemIds = snapshot.data!;
+              return StreamBuilder<List<String>>(
+                  stream: _db.watchSortedLinkedEntityIds(itemIds),
+                  builder: (context, itemsSnapshot) {
+                    if (itemsSnapshot.data == null ||
+                        itemsSnapshot.data!.isEmpty) {
+                      return Container();
+                    } else {
+                      List<String> itemIds = itemsSnapshot.data!;
 
-                        void unlink(DismissDirection direction) {
-                          String fromId = widget.item.meta.id;
-                          String toId = item.meta.id;
-                          _db.removeLink(fromId: fromId, toId: toId);
-                        }
+                      return Container(
+                        margin: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              localizations.journalLinkedEntriesLabel,
+                              style: TextStyle(
+                                color: AppColors.entryTextColor,
+                                fontFamily: 'Oswald',
+                              ),
+                            ),
+                            ...List.generate(
+                              itemIds.length,
+                              (int index) {
+                                String itemId = itemIds.elementAt(index);
 
-                        return item.maybeMap(
-                          journalImage: (JournalImage image) {
-                            return Dismissible(
-                              key: Key('$index'),
-                              onDismissed: unlink,
-                              child: JournalImageCard(
-                                item: image,
-                                index: index,
-                              ),
-                            );
-                          },
-                          orElse: () {
-                            return Dismissible(
-                              key: Key('$index'),
-                              onDismissed: unlink,
-                              child: JournalCard(
-                                item: item,
-                                index: index,
-                              ),
-                            );
-                          },
-                        );
-                      },
-                      growable: true,
-                    )
-                  ],
-                ),
-              );
+                                void unlink(DismissDirection direction) {
+                                  String fromId = widget.item.meta.id;
+                                  String toId = itemId;
+                                  _db.removeLink(fromId: fromId, toId: toId);
+                                }
+
+                                return Dismissible(
+                                  key: Key(itemId),
+                                  onDismissed: unlink,
+                                  child: EntryDetailWidget(
+                                    key: Key(itemId),
+                                    entryId: itemId,
+                                    popOnDelete: false,
+                                  ),
+                                );
+                              },
+                              growable: true,
+                            )
+                          ],
+                        ),
+                      );
+                    }
+                  });
             }
           },
         ),

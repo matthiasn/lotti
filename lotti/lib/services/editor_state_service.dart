@@ -1,0 +1,69 @@
+import 'dart:async';
+
+import 'package:easy_debounce/easy_debounce.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/widgets/journal/editor_tools.dart';
+
+class EditorStateService {
+  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+
+  final editorStateById = <String, String>{};
+  final unsavedStreamById = <String, StreamController<bool>>{};
+
+  EditorStateService();
+
+  Stream<bool> getUnsavedStream(String? id) {
+    StreamController<bool> unsavedStreamController =
+        StreamController<bool>.broadcast();
+
+    if (id != null) {
+      StreamController<bool>? existing = unsavedStreamById[id];
+
+      if (existing != null) {
+        existing.close();
+      }
+
+      unsavedStreamById[id] = unsavedStreamController;
+    }
+
+    return unsavedStreamController.stream;
+  }
+
+  void saveTempState(String id, QuillController controller) {
+    Delta delta = deltaFromController(controller);
+    String json = quillJsonFromDelta(delta);
+    editorStateById[id] = json;
+
+    StreamController<bool>? unsavedStreamController = unsavedStreamById[id];
+    if (unsavedStreamController != null) {
+      unsavedStreamController.add(true);
+    }
+
+    EasyDebounce.debounce(
+      'tempSaveDelta-$id',
+      const Duration(seconds: 10),
+      () {
+        debugPrint('saveTempState debounced $id ${editorStateById[id]}');
+      },
+    );
+  }
+
+  void saveState(String id, QuillController controller) async {
+    EasyDebounce.cancel('tempSaveDelta-$id');
+    EntryText entryText = entryTextFromController(controller);
+    debugPrint('saveState $id ${entryText.toJson()}');
+    await _persistenceLogic.updateJournalEntityText(id, entryText);
+
+    StreamController<bool>? unsavedStreamController = unsavedStreamById[id];
+    if (unsavedStreamController != null) {
+      unsavedStreamController.add(false);
+    }
+
+    HapticFeedback.heavyImpact();
+  }
+}

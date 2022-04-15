@@ -19,11 +19,13 @@ import 'duration_widget.dart';
 class EntryDetailFooter extends StatefulWidget {
   final JournalEntity item;
   final Function saveFn;
+  final bool popOnDelete;
 
   const EntryDetailFooter({
     Key? key,
     required this.item,
     required this.saveFn,
+    required this.popOnDelete,
   }) : super(key: key);
 
   @override
@@ -149,10 +151,12 @@ class EntryInfoRow extends StatelessWidget {
   final JournalDb db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   late final Stream<JournalEntity?> stream = db.watchEntityById(entityId);
+  final bool popOnDelete;
 
   EntryInfoRow({
     Key? key,
     required this.entityId,
+    required this.popOnDelete,
   }) : super(key: key);
 
   @override
@@ -239,7 +243,10 @@ class EntryInfoRow extends StatelessWidget {
 
                   if (result == deleteKey) {
                     persistenceLogic.deleteJournalEntity(liveEntity);
-                    context.router.pop();
+
+                    if (popOnDelete) {
+                      context.router.pop();
+                    }
                   }
                 },
               ),

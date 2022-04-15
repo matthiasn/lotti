@@ -80,7 +80,18 @@ JournalEntity fromDbEntity(JournalDbEntity dbEntity) {
 }
 
 List<JournalEntity> entityStreamMapper(List<JournalDbEntity> dbEntities) {
-  return dbEntities.map((e) => fromDbEntity(e)).toList();
+  return dbEntities.map((dbEntity) => fromDbEntity(dbEntity)).toList();
+}
+
+List<String> entityIdStreamMapper(List<JournalDbEntity> dbEntities) {
+  return dbEntities.map((dbEntity) => dbEntity.id).toList();
+}
+
+List<JournalEntity> nullAwareEntityStreamMapper(
+    List<JournalDbEntity?> dbEntities) {
+  return entityStreamMapper(
+    dbEntities.whereType<JournalDbEntity>().toList(),
+  );
 }
 
 MeasurableDataType measurableDataType(MeasurableDbEntity dbEntity) {

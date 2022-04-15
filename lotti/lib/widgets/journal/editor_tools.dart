@@ -5,9 +5,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entry_text.dart';
 
+Delta deltaFromController(QuillController controller) {
+  return controller.document.toDelta();
+}
+
+String quillJsonFromDelta(Delta delta) {
+  return jsonEncode(delta.toJson());
+}
+
 EntryText entryTextFromController(QuillController controller) {
-  Delta delta = controller.document.toDelta();
-  String json = jsonEncode(delta.toJson());
+  Delta delta = deltaFromController(controller);
+  String json = quillJsonFromDelta(delta);
   String markdown = deltaToMarkdown(json);
 
   return EntryText(

@@ -1,0 +1,27 @@
+CREATE TABLE editor_state (
+  entry_id TEXT NOT NULL,
+  latest_vc_version INTEGER NOT NULL,
+  created_at DATETIME NOT NULL,
+  delta TEXT NOT NULL,
+  PRIMARY KEY (entry_id)
+);
+
+CREATE INDEX idx_composite_version
+ON editor_state (entry_id, latest_vc_version DESC, created_at DESC);
+
+CREATE INDEX idx_created_at
+ON editor_state (created_at DESC);
+
+CREATE INDEX idx_latest_vc_version
+ON editor_state (latest_vc_version DESC);
+
+CREATE INDEX idx_entry_id
+ON editor_state (entry_id);
+
+/* Queries ----------------------------------------------------- */
+latestEditorState:
+SELECT * FROM editor_state
+  WHERE entry_id = :entry_id
+  AND latest_vc_version = :latest_vc_version
+  ORDER BY created_at DESC
+  LIMIT :limit;
