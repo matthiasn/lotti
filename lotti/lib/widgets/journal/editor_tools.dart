@@ -9,9 +9,13 @@ Delta deltaFromController(QuillController controller) {
   return controller.document.toDelta();
 }
 
+String quillJsonFromDelta(Delta delta) {
+  return jsonEncode(delta.toJson());
+}
+
 EntryText entryTextFromController(QuillController controller) {
   Delta delta = deltaFromController(controller);
-  String json = jsonEncode(delta.toJson());
+  String json = quillJsonFromDelta(delta);
   String markdown = deltaToMarkdown(json);
 
   return EntryText(

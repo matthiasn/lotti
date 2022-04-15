@@ -13,6 +13,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
@@ -45,13 +46,13 @@ class EntryDetailWidget extends StatefulWidget {
 class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   final JournalDb _db = getIt<JournalDb>();
   final FocusNode _focusNode = FocusNode();
-  bool showDetails = false;
+  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+  final EditorStateService _editorStateService = getIt<EditorStateService>();
 
   late final Stream<JournalEntity?> _stream =
       _db.watchEntityById(widget.entryId);
 
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-
+  bool showDetails = false;
   Directory? docDir;
   double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
   double imageTextEditorHeight =
@@ -97,10 +98,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
             makeController(serializedQuill: entryText?.quill);
 
         void saveText() {
-          EntryText entryText = entryTextFromController(_controller);
-          HapticFeedback.heavyImpact();
-
-          persistenceLogic.updateJournalEntityText(item.meta.id, entryText);
+          _editorStateService.saveState(item.meta.id, _controller);
         }
 
         return Container(
@@ -216,7 +214,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         formKey.currentState?.save();
                         final formData = formKey.currentState?.value;
                         if (formData == null) {
-                          persistenceLogic.updateTask(
+                          _persistenceLogic.updateTask(
                             entryText: entryTextFromController(_controller),
                             journalEntityId: task.meta.id,
                             taskData: task.data,
@@ -244,7 +242,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           status: taskStatusFromString(status),
                         );
 
-                        persistenceLogic.updateTask(
+                        _persistenceLogic.updateTask(
                           entryText: entryTextFromController(_controller),
                           journalEntityId: task.meta.id,
                           taskData: updatedData,

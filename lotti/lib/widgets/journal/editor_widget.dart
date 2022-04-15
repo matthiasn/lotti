@@ -1,4 +1,3 @@
-import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/classes/journal_entities.dart';
@@ -7,7 +6,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor_toolbar.dart';
-import 'package:lotti/widgets/journal/editor_tools.dart';
 
 class EditorWidget extends StatelessWidget {
   final EditorStateService _editorStateService = getIt<EditorStateService>();
@@ -56,15 +54,7 @@ class EditorWidget extends StatelessWidget {
 
   void tempSaveDelta(RawKeyEvent event) {
     String id = journalEntity?.meta.id ?? 'none';
-
-    EasyDebounce.debounce(
-      'tempSaveDelta-$id',
-      const Duration(seconds: 2),
-      () {
-        Delta delta = deltaFromController(controller);
-        _editorStateService.saveTempState(id, delta);
-      },
-    );
+    _editorStateService.saveTempState(id, controller);
   }
 
   @override
