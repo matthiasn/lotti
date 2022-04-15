@@ -7,27 +7,22 @@ import 'package:lotti/services/link_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class ToolbarWidget extends StatelessWidget {
-  final LinkService _linkService = getIt<LinkService>();
-  final JournalEntity? _journalEntity;
+  final LinkService linkService = getIt<LinkService>();
+  final JournalEntity? journalEntity;
+  final QuillController controller;
+  final double toolbarIconSize;
+  final Function saveFn;
+  final WrapAlignment toolbarIconAlignment = WrapAlignment.start;
+  final QuillIconTheme? iconTheme;
 
   ToolbarWidget({
     Key? key,
-    required QuillController controller,
-    JournalEntity? journalEntity,
-    double toolbarIconSize = 24.0,
-    required Function saveFn,
+    required this.controller,
+    this.journalEntity,
+    required this.saveFn,
+    this.toolbarIconSize = 24.0,
     this.iconTheme,
-  })  : _controller = controller,
-        _saveFn = saveFn,
-        _journalEntity = journalEntity,
-        _toolbarIconSize = toolbarIconSize,
-        super(key: key);
-
-  final QuillController _controller;
-  final double _toolbarIconSize;
-  final Function _saveFn;
-  final WrapAlignment toolbarIconAlignment = WrapAlignment.start;
-  final QuillIconTheme? iconTheme;
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -35,90 +30,90 @@ class ToolbarWidget extends StatelessWidget {
 
     return QuillToolbar(
       key: key,
-      toolbarHeight: _toolbarIconSize * 2,
+      toolbarHeight: toolbarIconSize * 2,
       toolbarSectionSpacing: 4,
       toolbarIconAlignment: toolbarIconAlignment,
       multiRowsDisplay: true,
       children: [
         IconButton(
           icon: const Icon(Icons.save),
-          iconSize: _toolbarIconSize,
+          iconSize: toolbarIconSize,
           tooltip: localizations.journalToolbarSaveHint,
-          onPressed: () => _saveFn(),
+          onPressed: () => saveFn(),
         ),
         ToggleStyleButton(
           attribute: Attribute.bold,
           icon: Icons.format_bold,
-          iconSize: _toolbarIconSize,
-          controller: _controller,
+          iconSize: toolbarIconSize,
+          controller: controller,
           iconTheme: iconTheme,
         ),
         ToggleStyleButton(
           attribute: Attribute.italic,
           icon: Icons.format_italic,
-          iconSize: _toolbarIconSize,
-          controller: _controller,
+          iconSize: toolbarIconSize,
+          controller: controller,
           iconTheme: iconTheme,
         ),
         ToggleStyleButton(
           attribute: Attribute.underline,
           icon: Icons.format_underline,
-          iconSize: _toolbarIconSize,
-          controller: _controller,
+          iconSize: toolbarIconSize,
+          controller: controller,
           iconTheme: iconTheme,
         ),
         // TODO: bring back when supported by delta_markdown
         // ToggleStyleButton(
         //   attribute: Attribute.inlineCode,
         //   icon: Icons.code,
-        //   iconSize: _toolbarIconSize,
-        //   controller: _controller,
+        //   iconSize: toolbarIconSize,
+        //   controller: controller,
         //   iconTheme: iconTheme,
         // ),
         SelectHeaderStyleButton(
-          controller: _controller,
-          iconSize: _toolbarIconSize,
+          controller: controller,
+          iconSize: toolbarIconSize,
           iconTheme: iconTheme,
         ),
         ToggleStyleButton(
           attribute: Attribute.ul,
-          controller: _controller,
+          controller: controller,
           icon: Icons.format_list_bulleted,
-          iconSize: _toolbarIconSize,
+          iconSize: toolbarIconSize,
           iconTheme: iconTheme,
         ),
         ToggleStyleButton(
           attribute: Attribute.ol,
-          controller: _controller,
+          controller: controller,
           icon: Icons.format_list_numbered,
-          iconSize: _toolbarIconSize,
+          iconSize: toolbarIconSize,
           iconTheme: iconTheme,
         ),
         ToggleStyleButton(
           attribute: Attribute.codeBlock,
-          controller: _controller,
+          controller: controller,
           icon: Icons.code,
-          iconSize: _toolbarIconSize,
+          iconSize: toolbarIconSize,
           iconTheme: iconTheme,
         ),
-        if (_journalEntity != null)
+        if (journalEntity != null)
           IconButton(
             icon: const Icon(Icons.add_link),
-            iconSize: _toolbarIconSize,
+            iconSize: toolbarIconSize,
             tooltip: localizations.journalLinkFromHint,
-            onPressed: () => _linkService.linkFrom(_journalEntity!.meta.id),
+            onPressed: () => linkService.linkFrom(journalEntity!.meta.id),
           ),
-        if (_journalEntity != null)
+        if (journalEntity != null)
           IconButton(
             icon: const Icon(MdiIcons.target),
-            iconSize: _toolbarIconSize,
+            iconSize: toolbarIconSize,
             tooltip: localizations.journalLinkToHint,
-            onPressed: () => _linkService.linkTo(_journalEntity!.meta.id),
+            onPressed: () => linkService.linkTo(journalEntity!.meta.id),
           ),
         ClearFormatButton(
           icon: Icons.format_clear,
-          iconSize: _toolbarIconSize,
-          controller: _controller,
+          iconSize: toolbarIconSize,
+          controller: controller,
           iconTheme: iconTheme,
         ),
       ],
