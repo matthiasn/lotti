@@ -30,7 +30,6 @@ class EntryDetailPage extends StatefulWidget {
 
 class _EntryDetailPageState extends State<EntryDetailPage> {
   final JournalDb _db = getIt<JournalDb>();
-  final FocusNode _focusNode = FocusNode();
   bool showDetails = false;
 
   late final Stream<JournalEntity?> _stream =
