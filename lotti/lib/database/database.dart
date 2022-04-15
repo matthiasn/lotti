@@ -326,11 +326,11 @@ class JournalDb extends _$JournalDb {
         .map(entityStreamMapper);
   }
 
-  Stream<List<JournalEntity>> watchJournalEntitiesByIds(List<String> ids) {
-    return journalEntitiesByIds(ids)
+  Stream<List<String>> watchSortedLinkedEntityIds(List<String> linkedIds) {
+    return journalEntitiesByIds(linkedIds)
         .watch()
-        .where(makeDuplicateFilter())
-        .map(entityStreamMapper);
+        .map(entityIdStreamMapper)
+        .where(makeDuplicateFilter());
   }
 
   Stream<List<String>> watchLinkedEntityIds(String linkedFrom) {

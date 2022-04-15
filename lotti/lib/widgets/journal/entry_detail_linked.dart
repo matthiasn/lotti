@@ -46,14 +46,14 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
               return Container();
             } else {
               List<String> itemIds = snapshot.data!;
-              return StreamBuilder<List<JournalEntity>>(
-                  stream: _db.watchJournalEntitiesByIds(itemIds),
+              return StreamBuilder<List<String>>(
+                  stream: _db.watchSortedLinkedEntityIds(itemIds),
                   builder: (context, itemsSnapshot) {
                     if (itemsSnapshot.data == null ||
                         itemsSnapshot.data!.isEmpty) {
                       return Container();
                     } else {
-                      List<JournalEntity> items = itemsSnapshot.data!;
+                      List<String> itemIds = itemsSnapshot.data!;
 
                       return Container(
                         margin: const EdgeInsets.all(8.0),
@@ -67,22 +67,22 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                               ),
                             ),
                             ...List.generate(
-                              items.length,
+                              itemIds.length,
                               (int index) {
-                                JournalEntity item = items.elementAt(index);
+                                String itemId = itemIds.elementAt(index);
 
                                 void unlink(DismissDirection direction) {
                                   String fromId = widget.item.meta.id;
-                                  String toId = item.meta.id;
+                                  String toId = itemId;
                                   _db.removeLink(fromId: fromId, toId: toId);
                                 }
 
                                 return Dismissible(
-                                  key: Key(item.meta.id),
+                                  key: Key(itemId),
                                   onDismissed: unlink,
                                   child: EntryDetailWidget(
-                                    key: Key(item.meta.id),
-                                    entryId: item.meta.id,
+                                    key: Key(itemId),
+                                    entryId: itemId,
                                     popOnDelete: false,
                                   ),
                                 );
