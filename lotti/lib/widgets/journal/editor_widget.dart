@@ -1,14 +1,19 @@
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor_toolbar.dart';
+import 'package:lotti/widgets/journal/editor_tools.dart';
 
 class EditorWidget extends StatelessWidget {
+  final EditorStateService _editorStateService = getIt<EditorStateService>();
   final JournalEntity? _journalEntity;
 
-  const EditorWidget({
+  EditorWidget({
     Key? key,
     required QuillController controller,
     JournalEntity? journalEntity,
@@ -59,6 +64,19 @@ class EditorWidget extends StatelessWidget {
     }
   }
 
+  void tempSaveDelta(RawKeyEvent event) {
+    String id = _journalEntity?.meta.id ?? 'none';
+
+    EasyDebounce.debounce(
+      'tempSaveDelta-$id',
+      const Duration(seconds: 2),
+      () {
+        Delta delta = deltaFromController(_controller);
+        _editorStateService.saveTempState(id, delta);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return RawKeyboardListener(
@@ -67,6 +85,7 @@ class EditorWidget extends StatelessWidget {
         keyFormatter(event, 'b', Attribute.bold);
         keyFormatter(event, 'i', Attribute.italic);
         saveViaKeyboard(event);
+        tempSaveDelta(event);
       },
       child: Container(
         color: AppColors.editorBgColor,
