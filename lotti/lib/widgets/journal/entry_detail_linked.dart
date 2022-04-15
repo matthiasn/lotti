@@ -83,6 +83,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                                   child: EntryDetailWidget(
                                     key: Key(item.meta.id),
                                     entryId: item.meta.id,
+                                    popOnDelete: false,
                                   ),
                                 );
                               },

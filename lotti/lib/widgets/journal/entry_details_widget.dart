@@ -29,10 +29,12 @@ import 'package:path_provider/path_provider.dart';
 class EntryDetailWidget extends StatefulWidget {
   final String entryId;
   final bool readOnly;
+  final bool popOnDelete;
 
   const EntryDetailWidget({
     Key? key,
     @PathParam() required this.entryId,
+    required this.popOnDelete,
     this.readOnly = false,
   }) : super(key: key);
 
@@ -264,11 +266,15 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: EntryInfoRow(entityId: item.meta.id),
+                    child: EntryInfoRow(
+                      entityId: item.meta.id,
+                      popOnDelete: widget.popOnDelete,
+                    ),
                   ),
                   EntryDetailFooter(
                     item: item,
                     saveFn: saveText,
+                    popOnDelete: widget.popOnDelete,
                   ),
                 ],
               ),

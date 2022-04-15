@@ -78,6 +78,7 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
                 children: <Widget>[
                   EntryDetailWidget(
                     entryId: widget.entryId,
+                    popOnDelete: true,
                   ),
                   LinkedEntriesWidget(item: item),
                   LinkedFromEntriesWidget(item: item),
