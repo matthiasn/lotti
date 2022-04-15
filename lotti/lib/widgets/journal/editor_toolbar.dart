@@ -144,7 +144,7 @@ class SaveButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<bool>(
-        stream: editorStateService.getPeriodicRandomStream(id),
+        stream: editorStateService.getUnsavedStream(id),
         builder: (context, snapshot) {
           bool unsaved = snapshot.data ?? false;
           return IconButton(
