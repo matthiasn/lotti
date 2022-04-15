@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/foundation.dart';
@@ -22,6 +23,13 @@ class EditorStateService {
 
   Stream<JournalEntity?> getStream() {
     return _streamController.stream;
+  }
+
+  Stream<bool> getPeriodicRandomStream(String? id) async* {
+    final rng = Random();
+    yield* Stream.periodic(const Duration(seconds: 5), (_) {
+      return rng.nextBool();
+    });
   }
 
   void saveTempState(String id, QuillController controller) {

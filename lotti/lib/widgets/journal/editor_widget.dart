@@ -68,6 +68,7 @@ class EditorWidget extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ToolbarWidget(
+                id: journalEntity?.meta.id,
                 controller: controller,
                 saveFn: saveFn,
                 journalEntity: journalEntity,
