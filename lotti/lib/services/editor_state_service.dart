@@ -11,32 +11,35 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 
 class EditorStateService {
-  late final StreamController<JournalEntity?> _controller;
+  late final StreamController<JournalEntity?> _streamController;
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
 
+  final editorStateById = <String, String>{};
+
   EditorStateService() {
-    _controller = StreamController<JournalEntity?>.broadcast();
+    _streamController = StreamController<JournalEntity?>.broadcast();
   }
 
   Stream<JournalEntity?> getStream() {
-    return _controller.stream;
+    return _streamController.stream;
   }
 
   void saveTempState(String id, QuillController controller) {
     Delta delta = deltaFromController(controller);
     String json = quillJsonFromDelta(delta);
-    debugPrint('saveTempState not debounced $id');
+    editorStateById[id] = json;
 
     EasyDebounce.debounce(
       'tempSaveDelta-$id',
-      const Duration(seconds: 2),
+      const Duration(seconds: 10),
       () {
-        debugPrint('saveTempState debounced $id $json');
+        debugPrint('saveTempState debounced $id ${editorStateById[id]}');
       },
     );
   }
 
   void saveState(String id, QuillController controller) async {
+    EasyDebounce.cancel('tempSaveDelta-$id');
     EntryText entryText = entryTextFromController(controller);
     debugPrint('saveState $id ${entryText.toJson()}');
     await _persistenceLogic.updateJournalEntityText(id, entryText);

@@ -52,11 +52,6 @@ class EditorWidget extends StatelessWidget {
     }
   }
 
-  void tempSaveDelta(RawKeyEvent event) {
-    String id = journalEntity?.meta.id ?? 'none';
-    _editorStateService.saveTempState(id, controller);
-  }
-
   @override
   Widget build(BuildContext context) {
     return RawKeyboardListener(
@@ -65,7 +60,6 @@ class EditorWidget extends StatelessWidget {
         keyFormatter(event, 'b', Attribute.bold);
         keyFormatter(event, 'i', Attribute.italic);
         saveViaKeyboard(event);
-        tempSaveDelta(event);
       },
       child: Container(
         color: AppColors.editorBgColor,

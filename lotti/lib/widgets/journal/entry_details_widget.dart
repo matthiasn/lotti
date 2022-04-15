@@ -26,6 +26,7 @@ import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:tuple/tuple.dart';
 
 class EntryDetailWidget extends StatefulWidget {
   final String entryId;
@@ -96,6 +97,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
         QuillController _controller =
             makeController(serializedQuill: entryText?.quill);
+
+        _controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
+          _editorStateService.saveTempState(item.meta.id, _controller);
+        });
 
         void saveText() {
           _editorStateService.saveState(item.meta.id, _controller);
