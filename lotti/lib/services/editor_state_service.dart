@@ -18,8 +18,7 @@ class EditorStateService {
   EditorStateService();
 
   Stream<bool> getUnsavedStream(String? id) {
-    StreamController<bool> unsavedStreamController =
-        StreamController<bool>.broadcast();
+    StreamController<bool> unsavedStreamController = StreamController<bool>();
 
     if (id != null) {
       StreamController<bool>? existing = unsavedStreamById[id];
@@ -30,6 +29,8 @@ class EditorStateService {
 
       unsavedStreamById[id] = unsavedStreamController;
     }
+
+    unsavedStreamController.add(editorStateById[id] != null);
 
     return unsavedStreamController.stream;
   }
@@ -60,6 +61,8 @@ class EditorStateService {
     await _persistenceLogic.updateJournalEntityText(id, entryText);
 
     StreamController<bool>? unsavedStreamController = unsavedStreamById[id];
+    editorStateById.remove(id);
+
     if (unsavedStreamController != null) {
       unsavedStreamController.add(false);
     }
