@@ -95,8 +95,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           survey: (_) => null,
         );
 
-        QuillController _controller =
-            makeController(serializedQuill: entryText?.quill);
+        QuillController _controller = makeController(
+          serializedQuill:
+              _editorStateService.getDelta(item.meta.id) ?? entryText?.quill,
+        );
 
         _controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
           _editorStateService.saveTempState(item.meta.id, _controller);

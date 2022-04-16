@@ -35,6 +35,10 @@ class EditorStateService {
     return unsavedStreamController.stream;
   }
 
+  String? getDelta(String? id) {
+    return editorStateById[id];
+  }
+
   void saveTempState(String id, QuillController controller) {
     Delta delta = deltaFromController(controller);
     String json = quillJsonFromDelta(delta);
