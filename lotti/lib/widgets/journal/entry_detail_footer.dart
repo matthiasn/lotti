@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -11,7 +10,6 @@ import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-
 
 class EntryDetailFooter extends StatefulWidget {
   final JournalEntity item;

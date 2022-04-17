@@ -58,7 +58,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                     (int index) {
                       String itemId = itemIds.elementAt(index);
 
-                      void unlink(DismissDirection direction) {
+                      void onDismissed(DismissDirection _) {
                         String fromId = widget.item.meta.id;
                         String toId = itemId;
                         _db.removeLink(fromId: fromId, toId: toId);
@@ -66,7 +66,36 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
 
                       return Dismissible(
                         key: ValueKey('Dismissible-$itemId'),
-                        onDismissed: unlink,
+                        onDismissed: onDismissed,
+                        background: Container(
+                          color: AppColors.error,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 6.0),
+                                child: Text(
+                                  localizations.journalUnlinkText,
+                                  style: TextStyle(
+                                    color: AppColors.bodyBgColor,
+                                    fontFamily: 'Oswald',
+                                    fontWeight: FontWeight.w300,
+                                    fontSize: 24,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  Icons.link_off,
+                                  size: 32,
+                                  color: AppColors.bodyBgColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         child: EntryDetailWidget(
                           entryId: itemId,
                           popOnDelete: false,
