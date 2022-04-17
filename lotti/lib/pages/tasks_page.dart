@@ -190,21 +190,21 @@ class _TasksPageState extends State<TasksPage> {
                             child: MouseRegion(
                               cursor: SystemMouseCursors.click,
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(8),
                                 child: Container(
                                   color: selectedStatuses.contains(status)
                                       ? Colors.lightBlue
                                       : Colors.grey[600],
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 1,
-                                      horizontal: 8,
+                                      vertical: 4,
+                                      horizontal: 16,
                                     ),
                                     child: Text(
                                       status,
                                       style: TextStyle(
                                         fontFamily: 'Oswald',
-                                        fontSize: 14,
+                                        fontSize: 16,
                                         color: selectedStatuses.contains(status)
                                             ? Colors.grey[900]
                                             : Colors.grey[400],

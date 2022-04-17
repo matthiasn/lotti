@@ -17,7 +17,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
-import 'package:lotti/widgets/journal/entry_detail_footer.dart';
+import 'package:lotti/widgets/journal/entry_detail_header.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_info_row.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -118,9 +118,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
               color: AppColors.headerBgColor,
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TagsWidget(item: item),
+                  EntryDetailHeader(
+                    item: item,
+                    saveFn: saveText,
+                    popOnDelete: widget.popOnDelete,
                   ),
                   item.map(
                     journalAudio: (JournalAudio audio) {
@@ -274,10 +275,9 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       popOnDelete: widget.popOnDelete,
                     ),
                   ),
-                  EntryDetailFooter(
-                    item: item,
-                    saveFn: saveText,
-                    popOnDelete: widget.popOnDelete,
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TagsWidget(item: item),
                   ),
                 ],
               ),

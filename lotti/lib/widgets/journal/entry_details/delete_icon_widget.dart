@@ -58,7 +58,7 @@ class DeleteIconWidget extends StatelessWidget {
         bottom: 8,
         right: 0,
       ),
-      color: AppColors.appBarFgColor,
+      color: AppColors.entryTextColor,
       onPressed: onPressed,
     );
   }

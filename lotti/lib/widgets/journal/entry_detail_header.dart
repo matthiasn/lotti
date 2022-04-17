@@ -11,12 +11,12 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class EntryDetailFooter extends StatefulWidget {
+class EntryDetailHeader extends StatefulWidget {
   final JournalEntity item;
   final Function saveFn;
   final bool popOnDelete;
 
-  const EntryDetailFooter({
+  const EntryDetailHeader({
     Key? key,
     required this.item,
     required this.saveFn,
@@ -24,10 +24,10 @@ class EntryDetailFooter extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<EntryDetailFooter> createState() => _EntryDetailFooterState();
+  State<EntryDetailHeader> createState() => _EntryDetailHeaderState();
 }
 
-class _EntryDetailFooterState extends State<EntryDetailFooter> {
+class _EntryDetailHeaderState extends State<EntryDetailHeader> {
   bool mapVisible = false;
 
   final JournalDb db = getIt<JournalDb>();
@@ -58,14 +58,15 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
 
           return Container(
             color: AppColors.headerBgColor,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Column(
               children: [
                 Visibility(
                   visible: mapVisible,
                   child: ClipRRect(
                     borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(8),
-                      bottomRight: Radius.circular(8),
+                      topLeft: Radius.circular(8),
+                      topRight: Radius.circular(8),
                     ),
                     child: MapWidget(
                       geolocation: widget.item.geolocation,
@@ -125,7 +126,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                       tooltip: mapVisible
                           ? localizations.journalHideMapHint
                           : localizations.journalShowMapHint,
-                      color: AppColors.appBarFgColor,
+                      color: AppColors.entryTextColor,
                       onPressed: () {
                         setState(() {
                           mapVisible = !mapVisible;
