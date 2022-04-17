@@ -228,7 +228,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
                           return;
                         }
-                        final DateTime due = formData['due'];
+                        //final DateTime due = formData['due'];
                         final String title = formData['title'];
                         final DateTime dt = formData['estimate'];
                         final String status = formData['status'];
@@ -243,7 +243,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         TaskData updatedData = task.data.copyWith(
                           title: title,
                           estimate: estimate,
-                          due: due,
+                          // due: due,
                           status: taskStatusFromString(status),
                         );
 
