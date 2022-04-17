@@ -359,8 +359,10 @@ class JournalDb extends _$JournalDb {
     ) {
       Map<String, Duration> durations = {};
       for (JournalEntity journalEntity in items) {
-        Duration duration = entryDuration(journalEntity);
-        durations[journalEntity.meta.id] = duration;
+        if (journalEntity is! Task) {
+          Duration duration = entryDuration(journalEntity);
+          durations[journalEntity.meta.id] = duration;
+        }
       }
       return durations;
     });
