@@ -39,8 +39,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
       DateTime now = DateTime.now();
 
       final formData = formKey.currentState?.value;
-      final DateTime due = formData!['due'];
-      final String title = formData['title'];
+      // final DateTime due = formData!['due'];
+      final String title = formData!['title'];
       final DateTime dt = formData['estimate'];
       final Duration estimate = Duration(
         hours: dt.hour,
@@ -49,7 +49,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
       final String status = formData['status'];
 
       TaskData taskData = TaskData(
-        due: due,
+        // due: due,
         status: taskStatusFromString(status),
         title: title,
         statusHistory: [],

@@ -61,15 +61,9 @@ class _LinkedFromEntriesWidgetState extends State<LinkedFromEntriesWidget> {
                   (int index) {
                     JournalEntity item = items.elementAt(index);
                     return item.maybeMap(journalImage: (JournalImage image) {
-                      return JournalImageCard(
-                        item: image,
-                        index: index,
-                      );
+                      return JournalImageCard(item: image);
                     }, orElse: () {
-                      return JournalCard(
-                        item: item,
-                        index: index,
-                      );
+                      return JournalCard(item: item);
                     });
                   },
                   growable: true,

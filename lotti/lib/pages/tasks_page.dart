@@ -43,7 +43,6 @@ class _TasksPageState extends State<TasksPage> {
   ];
 
   Set<String> selectedStatuses = {
-    'OPEN',
     'IN PROGRESS',
   };
 
@@ -191,21 +190,21 @@ class _TasksPageState extends State<TasksPage> {
                             child: MouseRegion(
                               cursor: SystemMouseCursors.click,
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(8),
                                 child: Container(
                                   color: selectedStatuses.contains(status)
                                       ? Colors.lightBlue
                                       : Colors.grey[600],
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 1,
-                                      horizontal: 8,
+                                      vertical: 4,
+                                      horizontal: 16,
                                     ),
                                     child: Text(
                                       status,
                                       style: TextStyle(
                                         fontFamily: 'Oswald',
-                                        fontSize: 14,
+                                        fontSize: 16,
                                         color: selectedStatuses.contains(status)
                                             ? Colors.grey[900]
                                             : Colors.grey[400],
@@ -301,15 +300,9 @@ class _TasksPageState extends State<TasksPage> {
                                   JournalEntity item = items.elementAt(index);
                                   return item.maybeMap(
                                       journalImage: (JournalImage image) {
-                                    return JournalImageCard(
-                                      item: image,
-                                      index: index,
-                                    );
+                                    return JournalImageCard(item: image);
                                   }, orElse: () {
-                                    return JournalCard(
-                                      item: item,
-                                      index: index,
-                                    );
+                                    return JournalCard(item: item);
                                   });
                                 },
                                 growable: true,

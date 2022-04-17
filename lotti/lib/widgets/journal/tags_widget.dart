@@ -214,7 +214,7 @@ class TagsWidget extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 24.0, right: 4),
                   icon: Icon(
                     MdiIcons.tagPlusOutline,
-                    size: 32,
+                    size: 24,
                     color: AppColors.entryTextColor,
                   ),
                   tooltip: localizations.journalTagPlusHint,
@@ -283,7 +283,7 @@ class TagsListWidget extends StatelessWidget {
 
             return ConstrainedBox(
               constraints: BoxConstraints(
-                minHeight: 24,
+                minHeight: 20,
                 maxWidth: MediaQuery.of(context).size.width - 80,
               ),
               child: Wrap(
@@ -332,12 +332,15 @@ class TagWidget extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                tagEntity.tag,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Oswald',
-                  color: AppColors.tagTextColor,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2.0),
+                child: Text(
+                  tagEntity.tag,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Oswald',
+                    color: AppColors.tagTextColor,
+                  ),
                 ),
               ),
               IconButton(

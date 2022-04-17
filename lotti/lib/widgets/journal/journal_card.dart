@@ -124,7 +124,7 @@ class JournalCardTitle extends StatelessWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          data.title,
+                          'TASK: ${data.title}',
                           style: TextStyle(
                             fontFamily: 'Oswald',
                             color: AppColors.entryTextColor,
@@ -161,13 +161,8 @@ class JournalCardTitle extends StatelessWidget {
 
 class JournalCard extends StatelessWidget {
   final JournalEntity item;
-  final int index;
 
-  const JournalCard({
-    Key? key,
-    required this.item,
-    required this.index,
-  }) : super(key: key);
+  const JournalCard({Key? key, required this.item}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -228,12 +223,10 @@ class LeadingIcon extends StatelessWidget {
 
 class JournalImageCard extends StatelessWidget {
   final JournalImage item;
-  final int index;
 
   const JournalImageCard({
     Key? key,
     required this.item,
-    required this.index,
   }) : super(key: key);
 
   @override
