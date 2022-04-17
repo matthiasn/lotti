@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -326,17 +327,21 @@ class JournalDb extends _$JournalDb {
         .map(entityStreamMapper);
   }
 
-  Stream<List<String>> watchSortedLinkedEntityIds(List<String> linkedIds) {
-    return journalEntitiesByIds(linkedIds)
-        .watch()
-        .map(entityIdStreamMapper)
-        .where(makeDuplicateFilter());
+  FutureOr<List<String>> getSortedLinkedEntityIds(
+      List<String> linkedIds) async {
+    var dbEntities = await journalEntitiesByIds(linkedIds).get();
+    return dbEntities.map((dbEntity) => dbEntity.id).toList();
   }
 
+  // Returns stream with a sorted list of items IDs linked to from the
+  // provided item id.
   Stream<List<String>> watchLinkedEntityIds(String linkedFrom) {
     return linkedJournalEntityIds(linkedFrom)
         .watch()
-        .where(makeDuplicateFilter());
+        .where(makeDuplicateFilter())
+        .asyncMap((List<String> itemIds) {
+      return getSortedLinkedEntityIds(itemIds);
+    }).where(makeDuplicateFilter());
   }
 
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {

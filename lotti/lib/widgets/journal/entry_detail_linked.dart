@@ -34,70 +34,80 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
 
-    return Column(
-      children: [
-        StreamBuilder<List<String>>(
-          stream: stream,
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<List<String>> snapshot,
-          ) {
-            if (snapshot.data == null || snapshot.data!.isEmpty) {
-              return Container();
-            } else {
-              List<String> itemIds = snapshot.data!;
-              return StreamBuilder<List<String>>(
-                  stream: _db.watchSortedLinkedEntityIds(itemIds),
-                  builder: (context, itemsSnapshot) {
-                    if (itemsSnapshot.data == null ||
-                        itemsSnapshot.data!.isEmpty) {
-                      return Container();
-                    } else {
-                      List<String> itemIds = itemsSnapshot.data!;
+    return StreamBuilder<List<String>>(
+        stream: stream,
+        builder: (context, itemsSnapshot) {
+          if (itemsSnapshot.data == null || itemsSnapshot.data!.isEmpty) {
+            return Container();
+          } else {
+            List<String> itemIds = itemsSnapshot.data!;
 
-                      return Container(
-                        margin: const EdgeInsets.all(8.0),
-                        child: Column(
-                          children: [
-                            Text(
-                              localizations.journalLinkedEntriesLabel,
-                              style: TextStyle(
-                                color: AppColors.entryTextColor,
-                                fontFamily: 'Oswald',
-                              ),
-                            ),
-                            ...List.generate(
-                              itemIds.length,
-                              (int index) {
-                                String itemId = itemIds.elementAt(index);
+            return Container(
+              margin: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  Text(
+                    localizations.journalLinkedEntriesLabel,
+                    style: TextStyle(
+                      color: AppColors.entryTextColor,
+                      fontFamily: 'Oswald',
+                    ),
+                  ),
+                  ...List.generate(
+                    itemIds.length,
+                    (int index) {
+                      String itemId = itemIds.elementAt(index);
 
-                                void unlink(DismissDirection direction) {
-                                  String fromId = widget.item.meta.id;
-                                  String toId = itemId;
-                                  _db.removeLink(fromId: fromId, toId: toId);
-                                }
+                      void onDismissed(DismissDirection _) {
+                        String fromId = widget.item.meta.id;
+                        String toId = itemId;
+                        _db.removeLink(fromId: fromId, toId: toId);
+                      }
 
-                                return Dismissible(
-                                  key: Key(itemId),
-                                  onDismissed: unlink,
-                                  child: EntryDetailWidget(
-                                    key: Key(itemId),
-                                    entryId: itemId,
-                                    popOnDelete: false,
+                      return Dismissible(
+                        key: ValueKey('Dismissible-$itemId'),
+                        onDismissed: onDismissed,
+                        background: Container(
+                          color: AppColors.error,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 6.0),
+                                child: Text(
+                                  localizations.journalUnlinkText,
+                                  style: TextStyle(
+                                    color: AppColors.bodyBgColor,
+                                    fontFamily: 'Oswald',
+                                    fontWeight: FontWeight.w300,
+                                    fontSize: 24,
                                   ),
-                                );
-                              },
-                              growable: true,
-                            )
-                          ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  Icons.link_off,
+                                  size: 32,
+                                  color: AppColors.bodyBgColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        child: EntryDetailWidget(
+                          entryId: itemId,
+                          popOnDelete: false,
                         ),
                       );
-                    }
-                  });
-            }
-          },
-        ),
-      ],
-    );
+                    },
+                    growable: true,
+                  )
+                ],
+              ),
+            );
+          }
+        });
   }
 }

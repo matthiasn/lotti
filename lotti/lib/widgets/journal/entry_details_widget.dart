@@ -18,6 +18,7 @@ import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_footer.dart';
+import 'package:lotti/widgets/journal/entry_details/entry_info_row.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
@@ -77,7 +78,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         AsyncSnapshot<JournalEntity?> snapshot,
       ) {
         JournalEntity? item = snapshot.data;
-        if (item == null) {
+        if (item == null || item.meta.deletedAt != null) {
           return const SizedBox.shrink();
         }
 

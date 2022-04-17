@@ -53,6 +53,7 @@
   "journalTagsPasteHint": "Tags einfügen",
   "journalTagsRemoveHint": "Tag entfernen",
   "journalToolbarSaveHint": "Eintrag speichern",
+  "journalUnlinkText": "Verknüpfung entfernen",
   "maintenanceDeleteTagged": "Tag Links löschen",
   "maintenanceRecreateTagged": "Tag Links wiederherstellen",
   "maintenanceStories": "Stories von verlinkten Einträgen zuweisen",
