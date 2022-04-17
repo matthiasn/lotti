@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
@@ -18,8 +19,7 @@ class EditorStateService {
   EditorStateService();
 
   Stream<bool> getUnsavedStream(String? id) {
-    StreamController<bool> unsavedStreamController =
-        StreamController<bool>.broadcast();
+    StreamController<bool> unsavedStreamController = StreamController<bool>();
 
     if (id != null) {
       StreamController<bool>? existing = unsavedStreamById[id];
@@ -31,7 +31,13 @@ class EditorStateService {
       unsavedStreamById[id] = unsavedStreamController;
     }
 
+    unsavedStreamController.add(editorStateById[id] != null);
+
     return unsavedStreamController.stream;
+  }
+
+  String? getDelta(String? id) {
+    return editorStateById[id];
   }
 
   void saveTempState(String id, QuillController controller) {
@@ -56,10 +62,34 @@ class EditorStateService {
   void saveState(String id, QuillController controller) async {
     EasyDebounce.cancel('tempSaveDelta-$id');
     EntryText entryText = entryTextFromController(controller);
-    debugPrint('saveState $id ${entryText.toJson()}');
     await _persistenceLogic.updateJournalEntityText(id, entryText);
 
     StreamController<bool>? unsavedStreamController = unsavedStreamById[id];
+    editorStateById.remove(id);
+
+    if (unsavedStreamController != null) {
+      unsavedStreamController.add(false);
+    }
+
+    HapticFeedback.heavyImpact();
+  }
+
+  void saveTask({
+    required String id,
+    required QuillController controller,
+    required TaskData taskData,
+  }) async {
+    EasyDebounce.cancel('tempSaveDelta-$id');
+
+    _persistenceLogic.updateTask(
+      entryText: entryTextFromController(controller),
+      journalEntityId: id,
+      taskData: taskData,
+    );
+
+    StreamController<bool>? unsavedStreamController = unsavedStreamById[id];
+    editorStateById.remove(id);
+
     if (unsavedStreamController != null) {
       unsavedStreamController.add(false);
     }
