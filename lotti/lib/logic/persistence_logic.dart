@@ -795,11 +795,18 @@ class PersistenceLogic {
   }
 
   Future<bool> deleteJournalEntity(
-    JournalEntity journalEntity,
+    String journalEntityId,
   ) async {
     final transaction =
         _loggingDb.startTransaction('updateJournalEntity()', 'task');
     try {
+      JournalEntity? journalEntity =
+          await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock(
           previous: journalEntity.meta.vectorClock);

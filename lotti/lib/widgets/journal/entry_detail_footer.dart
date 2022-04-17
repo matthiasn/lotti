@@ -1,5 +1,3 @@
-import 'package:adaptive_dialog/adaptive_dialog.dart';
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -7,14 +5,13 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/journal/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-import 'duration_widget.dart';
 
 class EntryDetailFooter extends StatefulWidget {
   final JournalEntity item;
@@ -143,149 +140,5 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
             ),
           );
         });
-  }
-}
-
-class EntryInfoRow extends StatelessWidget {
-  final String entityId;
-  final JournalDb db = getIt<JournalDb>();
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-  late final Stream<JournalEntity?> stream = db.watchEntityById(entityId);
-  final bool popOnDelete;
-
-  EntryInfoRow({
-    Key? key,
-    required this.entityId,
-    required this.popOnDelete,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
-
-    return StreamBuilder<JournalEntity?>(
-        stream: stream,
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<JournalEntity?> snapshot,
-        ) {
-          JournalEntity? liveEntity = snapshot.data;
-          if (liveEntity == null) {
-            return const SizedBox.shrink();
-          }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  SwitchRow(
-                    label: localizations.journalFavoriteLabel,
-                    activeColor: AppColors.starredGold,
-                    onChanged: (bool value) {
-                      Metadata newMeta = liveEntity.meta.copyWith(
-                        starred: value,
-                      );
-                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-                    },
-                    value: liveEntity.meta.starred ?? false,
-                  ),
-                  SwitchRow(
-                    label: localizations.journalPrivateLabel,
-                    activeColor: AppColors.error,
-                    onChanged: (bool value) {
-                      Metadata newMeta = liveEntity.meta.copyWith(
-                        private: value,
-                      );
-                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-                    },
-                    value: liveEntity.meta.private ?? false,
-                  ),
-                  SwitchRow(
-                    label: localizations.journalFlaggedLabel,
-                    activeColor: AppColors.error,
-                    onChanged: (bool value) {
-                      Metadata newMeta = liveEntity.meta.copyWith(
-                        flag: value ? EntryFlag.import : EntryFlag.none,
-                      );
-                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-                    },
-                    value: liveEntity.meta.flag == EntryFlag.import,
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(MdiIcons.trashCanOutline),
-                iconSize: 24,
-                tooltip: localizations.journalDeleteHint,
-                padding: const EdgeInsets.only(
-                  left: 16,
-                  top: 8,
-                  bottom: 8,
-                  right: 0,
-                ),
-                color: AppColors.appBarFgColor,
-                onPressed: () async {
-                  const deleteKey = 'deleteKey';
-                  final result = await showModalActionSheet<String>(
-                    context: context,
-                    title: localizations.journalDeleteQuestion,
-                    actions: [
-                      SheetAction(
-                        icon: Icons.warning,
-                        label: localizations.journalDeleteConfirm,
-                        key: deleteKey,
-                        isDestructiveAction: true,
-                        isDefaultAction: true,
-                      ),
-                    ],
-                  );
-
-                  if (result == deleteKey) {
-                    persistenceLogic.deleteJournalEntity(liveEntity);
-
-                    if (popOnDelete) {
-                      context.router.pop();
-                    }
-                  }
-                },
-              ),
-            ],
-          );
-        });
-  }
-}
-
-class SwitchRow extends StatelessWidget {
-  const SwitchRow({
-    Key? key,
-    required this.label,
-    required this.onChanged,
-    required this.value,
-    required this.activeColor,
-  }) : super(key: key);
-
-  final String label;
-  final void Function(bool)? onChanged;
-  final bool value;
-  final Color activeColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Text(label, style: textStyle),
-          CupertinoSwitch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: activeColor,
-          ),
-        ],
-      ),
-    );
   }
 }
