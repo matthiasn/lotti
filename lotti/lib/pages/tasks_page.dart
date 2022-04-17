@@ -43,7 +43,6 @@ class _TasksPageState extends State<TasksPage> {
   ];
 
   Set<String> selectedStatuses = {
-    'OPEN',
     'IN PROGRESS',
   };
 
