@@ -22,6 +22,7 @@ import 'package:lotti/widgets/journal/entry_details/entry_info_row.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
+import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
@@ -32,12 +33,14 @@ class EntryDetailWidget extends StatefulWidget {
   final String entryId;
   final bool readOnly;
   final bool popOnDelete;
+  final bool showTaskDetails;
 
   const EntryDetailWidget({
     Key? key,
     @PathParam() required this.entryId,
     required this.popOnDelete,
     this.readOnly = false,
+    this.showTaskDetails = false,
   }) : super(key: key);
 
   @override
@@ -82,6 +85,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           return const SizedBox.shrink();
         }
 
+        if (item is Task && !widget.showTaskDetails) {
+          return JournalCard(item: item);
+        }
+
         EntryText? entryText = item.map(
           journalEntry: (item) => item.entryText,
           journalImage: (item) => item.entryText,
@@ -109,7 +116,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
         return Container(
           margin: const EdgeInsets.symmetric(
-            horizontal: 12.0,
+            horizontal: 4.0,
             vertical: 4.0,
           ),
           child: ClipRRect(
