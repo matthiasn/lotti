@@ -12,7 +12,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
@@ -47,7 +46,6 @@ class EntryDetailWidget extends StatefulWidget {
 class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   final JournalDb _db = getIt<JournalDb>();
   final FocusNode _focusNode = FocusNode();
-  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   final EditorStateService _editorStateService = getIt<EditorStateService>();
 
   late final Stream<JournalEntity?> _stream =
@@ -221,12 +219,11 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         formKey.currentState?.save();
                         final formData = formKey.currentState?.value;
                         if (formData == null) {
-                          _persistenceLogic.updateTask(
-                            entryText: entryTextFromController(_controller),
-                            journalEntityId: task.meta.id,
+                          _editorStateService.saveTask(
+                            id: item.meta.id,
+                            controller: _controller,
                             taskData: task.data,
                           );
-                          HapticFeedback.heavyImpact();
 
                           return;
                         }
@@ -249,9 +246,9 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           status: taskStatusFromString(status),
                         );
 
-                        _persistenceLogic.updateTask(
-                          entryText: entryTextFromController(_controller),
-                          journalEntityId: task.meta.id,
+                        _editorStateService.saveTask(
+                          id: item.meta.id,
+                          controller: _controller,
                           taskData: updatedData,
                         );
                       }
