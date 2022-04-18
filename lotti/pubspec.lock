@@ -43,6 +43,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.1"
+  arb_utils:
+    dependency: "direct main"
+    description:
+      name: arb_utils
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.0"
   archive:
     dependency: "direct dev"
     description:
@@ -742,7 +749,7 @@ packages:
       name: flutter_native_splash
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.5"
+    version: "2.1.6"
   flutter_native_timezone:
     dependency: "direct main"
     description:
@@ -1085,6 +1092,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.17.0"
+  intl_utils:
+    dependency: transitive
+    description:
+      name: intl_utils
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.6.1"
   io:
     dependency: transitive
     description:
@@ -1723,14 +1737,14 @@ packages:
       name: sqflite
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.2"
+    version: "2.0.2+1"
   sqflite_common:
     dependency: transitive
     description:
       name: sqflite_common
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.1"
+    version: "2.2.1+1"
   sqlite3:
     dependency: transitive
     description:

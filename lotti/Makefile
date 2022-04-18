@@ -14,8 +14,16 @@ clean:
 deps:
 	flutter pub get
 
+.PHONY: enable_arb_tools
+enable_arb_tools:
+	dart pub global activate arb_utils
+
+.PHONY: sort_arb_files
+sort_arb_files: enable_arb_tools
+	find lib/l10n/ -type f -exec dart pub global run arb_utils:sort -i {} \;
+
 .PHONY: l10n
-l10n:
+l10n: sort_arb_files
 	flutter gen-l10n
 	@echo "Missing translations:"
 	@cat missing_translations.txt

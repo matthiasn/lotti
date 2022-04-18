@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.6.52+664
+version: 0.6.53+667
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -111,6 +111,7 @@ dependencies:
   wechat_assets_picker: ^7.0.1
   window_manager: ^0.2.0
   yaml: ^3.1.0
+  arb_utils: ^0.2.0
 
 dev_dependencies:
   flutter_test:
