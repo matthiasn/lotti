@@ -43,6 +43,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.1"
+  arb_utils:
+    dependency: "direct main"
+    description:
+      name: arb_utils
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.0"
   archive:
     dependency: "direct dev"
     description:
@@ -1085,6 +1092,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.17.0"
+  intl_utils:
+    dependency: transitive
+    description:
+      name: intl_utils
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.6.1"
   io:
     dependency: transitive
     description:

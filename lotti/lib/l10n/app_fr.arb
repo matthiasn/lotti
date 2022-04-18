@@ -1,7 +1,7 @@
 {
-  "navTabTitleJournal": "Journal",
   "navTabTitleFlagged": "Signalé",
-  "navTabTitleTasks": "Tâches",
   "navTabTitleInsights": "Graphiques",
-  "navTabTitleSettings": "Paramètres"
+  "navTabTitleJournal": "Journal",
+  "navTabTitleSettings": "Paramètres",
+  "navTabTitleTasks": "Tâches"
 }
