@@ -35,6 +35,7 @@ class _TasksPageState extends State<TasksPage> {
 
   static final List<String> taskStatuses = [
     'OPEN',
+    'GROOMED',
     'IN PROGRESS',
     'BLOCKED',
     'ON HOLD',

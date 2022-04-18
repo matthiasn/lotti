@@ -36,6 +36,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
   final String taskStatus = entity.maybeMap(
     task: (task) => task.data.status.map(
       open: (_) => 'OPEN',
+      groomed: (_) => 'GROOMED',
       started: (_) => 'STARTED',
       inProgress: (_) => 'IN PROGRESS',
       blocked: (_) => 'BLOCKED',

@@ -139,6 +139,7 @@ class _TaskFormState extends State<TaskForm> {
                     name: 'status',
                     initialValue: widget.data?.status.map(
                           open: (_) => 'OPEN',
+                          groomed: (_) => 'GROOMED',
                           started: (_) => 'STARTED',
                           inProgress: (_) => 'IN PROGRESS',
                           blocked: (_) => 'BLOCKED',
@@ -170,6 +171,13 @@ class _TaskFormState extends State<TaskForm> {
                         value: 'OPEN',
                         child: Text(
                           localizations.taskStatusOpen,
+                          style: taskFormFieldStyle,
+                        ),
+                      ),
+                      FormBuilderFieldOption(
+                        value: 'GROOMED',
+                        child: Text(
+                          localizations.taskStatusGroomed,
                           style: taskFormFieldStyle,
                         ),
                       ),

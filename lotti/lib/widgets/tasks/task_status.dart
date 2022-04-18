@@ -26,6 +26,7 @@ class TaskStatusWidget extends StatelessWidget {
         child: Text(
           task.data.status.map(
             open: (_) => localizations.taskStatusOpen,
+            groomed: (_) => localizations.taskStatusGroomed,
             started: (_) => 'STARTED', // TODO: remove DEPRECATED status
             inProgress: (_) => localizations.taskStatusInProgress,
             blocked: (_) => localizations.taskStatusBlocked,
