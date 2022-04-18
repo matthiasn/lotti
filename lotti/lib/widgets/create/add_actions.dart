@@ -10,6 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -32,7 +33,8 @@ class RadialAddActionButtons extends StatefulWidget {
 }
 
 class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+  final TimeService _timeService = getIt<TimeService>();
 
   @override
   void initState() {
@@ -54,7 +56,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: AppColors.actionColor,
           onPressed: () async {
             ImageData imageData = await takeScreenshotMac();
-            await persistenceLogic.createImageEntry(
+            await _persistenceLogic.createImageEntry(
               imageData,
               linked: widget.linked,
             );
@@ -122,7 +124,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           if (widget.linked != null) {
-            persistenceLogic.createTextEntry(
+            _persistenceLogic.createTextEntry(
               EntryText(plainText: ''),
               linkedId: widget.linked!.meta.id,
               started: DateTime.now(),
@@ -134,6 +136,35 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         },
       ),
     );
+
+    if (widget.linked != null) {
+      items.add(
+        FloatingActionButton(
+          heroTag: 'timer',
+          child: const Icon(
+            MdiIcons.timerOutline,
+            size: 32,
+          ),
+          backgroundColor: AppColors.actionColor,
+          onPressed: () async {
+            if (widget.linked != null) {
+              JournalEntity? timerItem =
+                  await _persistenceLogic.createTextEntry(
+                EntryText(plainText: ''),
+                linkedId: widget.linked!.meta.id,
+                started: DateTime.now(),
+              );
+              if (timerItem != null) {
+                _timeService.start(timerItem);
+              }
+            } else {
+              String? linkedId = widget.linked?.meta.id;
+              context.router.pushNamed('/journal/create/$linkedId');
+            }
+          },
+        ),
+      );
+    }
 
     if (Platform.isIOS || Platform.isAndroid) {
       items.add(
