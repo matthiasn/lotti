@@ -1,10 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 
 class TimeService {
   late final StreamController<JournalEntity?> _controller;
+
   JournalEntity? _current;
   Stream<int>? _periodicStream;
 
@@ -13,10 +15,8 @@ class TimeService {
   }
 
   void start(JournalEntity journalEntity) async {
-    debugPrint('Start ${journalEntity.meta.id}');
-
     if (_current != null) {
-      return;
+      await stop();
     }
 
     _current = journalEntity;
@@ -43,8 +43,16 @@ class TimeService {
     }
   }
 
-  void stop(JournalEntity journalEntity) {
-    if (_current?.meta.id == journalEntity.meta.id) {
+  Future<void> stop() async {
+    final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+
+    if (_current != null) {
+      await _persistenceLogic.updateJournalEntityDate(
+        _current!.meta.id,
+        dateFrom: _current!.meta.dateFrom,
+        dateTo: DateTime.now(),
+      );
+
       _current = null;
       _controller.add(null);
     }

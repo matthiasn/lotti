@@ -98,13 +98,7 @@ class DurationWidget extends StatelessWidget {
                         tooltip: 'Stop',
                         color: labelColor,
                         onPressed: () async {
-                          _timeService.stop(item);
-
-                          await persistenceLogic.updateJournalEntityDate(
-                            item,
-                            dateFrom: item.meta.dateFrom,
-                            dateTo: DateTime.now(),
-                          );
+                          _timeService.stop();
 
                           if (saveFn != null) {
                             await saveFn!();
