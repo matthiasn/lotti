@@ -259,20 +259,27 @@ class JournalDb extends _$JournalDb {
     required List<String> types,
     required List<bool> starredStatuses,
     required List<bool> privateStatuses,
+    required List<int> flaggedStatuses,
     required List<String>? ids,
     int limit = 1000,
   }) {
     if (ids != null) {
       return filteredByTagJournal(
-              types, ids, starredStatuses, privateStatuses, limit)
-          .watch()
-          .where(makeDuplicateFilter())
-          .map(entityStreamMapper);
+        types,
+        ids,
+        starredStatuses,
+        privateStatuses,
+        flaggedStatuses,
+        limit,
+      ).watch().where(makeDuplicateFilter()).map(entityStreamMapper);
     } else {
-      return filteredJournal(types, starredStatuses, privateStatuses, limit)
-          .watch()
-          .where(makeDuplicateFilter())
-          .map(entityStreamMapper);
+      return filteredJournal(
+        types,
+        starredStatuses,
+        privateStatuses,
+        flaggedStatuses,
+        limit,
+      ).watch().where(makeDuplicateFilter()).map(entityStreamMapper);
     }
   }
 

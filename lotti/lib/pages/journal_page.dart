@@ -72,6 +72,7 @@ class _JournalPageState extends State<JournalPage> {
   StreamController<List<TagEntity>> matchingTagsController =
       StreamController<List<TagEntity>>();
   bool starredEntriesOnly = false;
+  bool flaggedEntriesOnly = false;
   bool privateEntriesOnly = false;
   bool showPrivateEntriesSwitch = false;
 
@@ -112,6 +113,7 @@ class _JournalPageState extends State<JournalPage> {
         ids: entryIds?.toList(),
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         privateStatuses: privateEntriesOnly ? [true] : [true, false],
+        flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
       );
     });
   }
@@ -172,6 +174,8 @@ class _JournalPageState extends State<JournalPage> {
         ),
       ],
       builder: (context, transition) {
+        AppLocalizations localizations = AppLocalizations.of(context)!;
+
         return Padding(
           padding: const EdgeInsets.only(
             top: 2.0,
@@ -191,7 +195,7 @@ class _JournalPageState extends State<JournalPage> {
                     child: Row(
                       children: [
                         Text(
-                          'Private: ',
+                          localizations.journalPrivateLabel,
                           style: TextStyle(color: AppColors.entryTextColor),
                         ),
                         CupertinoSwitch(
@@ -211,7 +215,7 @@ class _JournalPageState extends State<JournalPage> {
                     width: 16,
                   ),
                   Text(
-                    'Starred: ',
+                    localizations.journalFavoriteLabel,
                     style: TextStyle(color: AppColors.entryTextColor),
                   ),
                   CupertinoSwitch(
@@ -220,6 +224,23 @@ class _JournalPageState extends State<JournalPage> {
                     onChanged: (bool value) {
                       setState(() {
                         starredEntriesOnly = value;
+                        resetStream();
+                      });
+                    },
+                  ),
+                  const SizedBox(
+                    width: 16,
+                  ),
+                  Text(
+                    localizations.journalFlaggedLabel,
+                    style: TextStyle(color: AppColors.entryTextColor),
+                  ),
+                  CupertinoSwitch(
+                    value: flaggedEntriesOnly,
+                    activeColor: AppColors.starredGold,
+                    onChanged: (bool value) {
+                      setState(() {
+                        flaggedEntriesOnly = value;
                         resetStream();
                       });
                     },

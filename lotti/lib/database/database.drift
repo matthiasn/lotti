@@ -218,6 +218,7 @@ SELECT * FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
+  AND flag IN :flaggedStatuses
   ORDER BY date_from DESC
   LIMIT :limit;
 
@@ -229,6 +230,7 @@ SELECT * FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
+  AND flag IN :flaggedStatuses
   ORDER BY date_from DESC
   LIMIT :limit;
 
