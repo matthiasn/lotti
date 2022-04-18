@@ -649,13 +649,20 @@ class PersistenceLogic {
   }
 
   Future<bool> updateJournalEntityDate(
-    JournalEntity journalEntity, {
+    String journalEntityId, {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
     final transaction =
         _loggingDb.startTransaction('updateJournalEntityDate()', 'task');
     try {
+      JournalEntity? journalEntity =
+          await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock(
           previous: journalEntity.meta.vectorClock);

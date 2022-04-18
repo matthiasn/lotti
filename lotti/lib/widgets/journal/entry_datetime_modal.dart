@@ -172,7 +172,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                             setState(() {});
 
                             await persistenceLogic.updateJournalEntityDate(
-                              widget.item,
+                              widget.item.meta.id,
                               dateFrom: dateFrom,
                               dateTo: dateTo,
                             );
