@@ -28,6 +28,7 @@ class MyDayPage extends StatelessWidget {
         ],
         starredStatuses: [true, false],
         privateStatuses: [true, false],
+        flaggedStatuses: [0, 1],
         ids: null,
       ),
       builder: (

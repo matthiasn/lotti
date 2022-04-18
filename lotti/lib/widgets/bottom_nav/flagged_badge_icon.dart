@@ -1,9 +1,8 @@
 import 'package:badges/badges.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class FlaggedBadgeIcon extends StatelessWidget {
   final JournalDb _db = getIt<JournalDb>();
@@ -27,7 +26,7 @@ class FlaggedBadgeIcon extends StatelessWidget {
           toAnimate: false,
           elevation: 3,
           child: const Icon(
-            MdiIcons.flagOutline,
+            Icons.home_outlined,
             size: AppTheme.bottomNavIconSize,
           ),
         );

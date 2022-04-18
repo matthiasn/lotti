@@ -43,7 +43,6 @@ class HomePage extends StatelessWidget {
       backgroundColor: AppColors.bodyBgColor,
       routes: const [
         JournalRouter(),
-        FlaggedRouter(),
         TasksRouter(),
         DashboardsRouter(),
         // TODO: bring back or remove
@@ -61,14 +60,9 @@ class HomePage extends StatelessWidget {
           onTap: tabsRouter.setActiveIndex,
           items: [
             BottomNavigationBarItem(
-              icon: const Icon(Icons.home_outlined),
+              icon: FlaggedBadgeIcon(),
               label: AppLocalizations.of(context)!.navTabTitleJournal,
             ),
-            BottomNavigationBarItem(
-              icon: FlaggedBadgeIcon(),
-              label: AppLocalizations.of(context)!.navTabTitleFlagged,
-            ),
-
             BottomNavigationBarItem(
               icon: TasksBadgeIcon(),
               label: AppLocalizations.of(context)!.navTabTitleTasks,
