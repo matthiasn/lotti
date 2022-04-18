@@ -32,6 +32,14 @@ class TaskStatus with _$TaskStatus {
     Geolocation? geolocation,
   }) = _TaskInProgress;
 
+  factory TaskStatus.groomed({
+    required String id,
+    required DateTime createdAt,
+    required int utcOffset,
+    String? timezone,
+    Geolocation? geolocation,
+  }) = _TaskGroomed;
+
   factory TaskStatus.blocked({
     required String id,
     required DateTime createdAt,
@@ -93,6 +101,12 @@ TaskStatus taskStatusFromString(String status) {
 
   if (status == 'DONE') {
     newStatus = TaskStatus.done(
+      id: uuid.v1(),
+      createdAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  } else if (status == 'GROOMED') {
+    newStatus = TaskStatus.groomed(
       id: uuid.v1(),
       createdAt: now,
       utcOffset: now.timeZoneOffset.inMinutes,
