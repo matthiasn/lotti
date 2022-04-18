@@ -382,7 +382,7 @@ class PersistenceLogic {
     return true;
   }
 
-  Future<bool> createTextEntry(
+  Future<JournalEntity?> createTextEntry(
     EntryText entryText, {
     required DateTime started,
     String? linkedId,
@@ -418,16 +418,17 @@ class PersistenceLogic {
         enqueueSync: true,
         linkedId: linkedId,
       );
+      transaction.finish();
+      return journalEntity;
     } catch (exception, stackTrace) {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
         stackTrace: stackTrace,
       );
+      transaction.error();
+      return null;
     }
-
-    await transaction.finish();
-    return true;
   }
 
   Future<bool> createLink({

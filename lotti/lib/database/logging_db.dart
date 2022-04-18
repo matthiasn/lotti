@@ -105,6 +105,7 @@ class LoggingDb extends _$LoggingDb {
 
 class InsightsSpan {
   Future<void> finish() async {}
+  Future<void> error() async {}
 }
 
 LazyDatabase _openConnection() {
