@@ -17,8 +17,8 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
-import 'package:lotti/widgets/journal/entry_detail_footer.dart';
-import 'package:lotti/widgets/journal/entry_detail_header.dart';
+import 'package:lotti/widgets/journal/entry_details/entry_detail_footer.dart';
+import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_info_row.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -116,10 +116,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         }
 
         return Container(
-          margin: const EdgeInsets.symmetric(
-            horizontal: 4.0,
-            vertical: 4.0,
-          ),
+          margin: const EdgeInsets.all(4),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8.0),
             child: Container(
