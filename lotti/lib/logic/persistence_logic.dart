@@ -258,6 +258,7 @@ class PersistenceLogic {
           vectorClock: vc,
           timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
+          starred: true,
         ),
       );
 
