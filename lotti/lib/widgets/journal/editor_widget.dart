@@ -20,7 +20,7 @@ class EditorWidget extends StatelessWidget {
     Key? key,
     required this.controller,
     this.journalEntity,
-    this.minHeight = 80,
+    this.minHeight = 40,
     this.maxHeight = double.maxFinite,
     this.padding = 16.0,
     this.readOnly = false,

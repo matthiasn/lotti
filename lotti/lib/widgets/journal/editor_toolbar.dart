@@ -24,7 +24,7 @@ class ToolbarWidget extends StatelessWidget {
     required this.controller,
     required this.saveFn,
     this.journalEntity,
-    this.toolbarIconSize = 24.0,
+    this.toolbarIconSize = 20.0,
     this.iconTheme,
   }) : super(key: key);
 
@@ -35,9 +35,9 @@ class ToolbarWidget extends StatelessWidget {
     return QuillToolbar(
       key: key,
       toolbarHeight: toolbarIconSize * 2,
-      toolbarSectionSpacing: 4,
+      toolbarSectionSpacing: 0,
       toolbarIconAlignment: toolbarIconAlignment,
-      multiRowsDisplay: true,
+      multiRowsDisplay: false,
       children: [
         SaveButton(
           id: id,
@@ -100,6 +100,12 @@ class ToolbarWidget extends StatelessWidget {
           iconSize: toolbarIconSize,
           iconTheme: iconTheme,
         ),
+        ClearFormatButton(
+          icon: Icons.format_clear,
+          iconSize: toolbarIconSize,
+          controller: controller,
+          iconTheme: iconTheme,
+        ),
         if (journalEntity != null)
           IconButton(
             icon: const Icon(Icons.add_link),
@@ -114,12 +120,6 @@ class ToolbarWidget extends StatelessWidget {
             tooltip: localizations.journalLinkToHint,
             onPressed: () => linkService.linkTo(journalEntity!.meta.id),
           ),
-        ClearFormatButton(
-          icon: Icons.format_clear,
-          iconSize: toolbarIconSize,
-          controller: controller,
-          iconTheme: iconTheme,
-        ),
       ],
     );
   }

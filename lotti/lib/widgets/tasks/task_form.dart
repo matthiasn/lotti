@@ -51,7 +51,7 @@ class _TaskFormState extends State<TaskForm> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16),
+            padding: const EdgeInsets.only(left: 12, right: 12),
             child: FormBuilder(
               key: widget.formKey,
               autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -224,14 +224,14 @@ class _TaskFormState extends State<TaskForm> {
           ),
           if (widget.task != null)
             Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 4),
+              padding: const EdgeInsets.only(left: 8, bottom: 4, top: 2),
               child: LinkedDuration(task: widget.task!),
             ),
           EditorWidget(
             controller: widget.controller,
             focusNode: widget.focusNode,
             saveFn: widget.saveFn,
-            minHeight: 100,
+            minHeight: 40,
             journalEntity: widget.task,
             autoFocus: false,
           ),

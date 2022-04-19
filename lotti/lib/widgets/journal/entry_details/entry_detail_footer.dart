@@ -56,11 +56,11 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
             return const SizedBox.shrink();
           }
 
-          return Container(
-            color: AppColors.headerBgColor,
-            child: Column(
-              children: [
-                Row(
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     DurationWidget(
@@ -110,20 +110,20 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                     ),
                   ],
                 ),
-                Visibility(
-                  visible: mapVisible,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(8),
-                      bottomRight: Radius.circular(8),
-                    ),
-                    child: MapWidget(
-                      geolocation: widget.item.geolocation,
-                    ),
+              ),
+              Visibility(
+                visible: mapVisible,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
+                  ),
+                  child: MapWidget(
+                    geolocation: widget.item.geolocation,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         });
   }

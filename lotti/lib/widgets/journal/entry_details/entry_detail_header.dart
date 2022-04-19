@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -34,10 +32,6 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
-
-    Geolocation? loc = widget.item.geolocation;
-
     return StreamBuilder<JournalEntity?>(
         stream: stream,
         builder: (
