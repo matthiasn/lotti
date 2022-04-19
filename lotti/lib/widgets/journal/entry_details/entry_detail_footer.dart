@@ -58,7 +58,6 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
 
           return Container(
             color: AppColors.headerBgColor,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Column(
               children: [
                 Row(
@@ -72,34 +71,37 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                     ),
                     Visibility(
                       visible: loc != null && loc.longitude != 0,
-                      child: Row(
-                        children: [
-                          TextButton(
-                            onPressed: () => setState(() {
-                              mapVisible = !mapVisible;
-                            }),
-                            child: Text(
-                              '📍 ${formatLatLon(loc?.latitude)}, '
-                              '${formatLatLon(loc?.longitude)}',
-                              style: textStyle,
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(mapVisible
-                                ? MdiIcons.chevronDoubleUp
-                                : MdiIcons.chevronDoubleDown),
-                            iconSize: 24,
-                            tooltip: mapVisible
-                                ? localizations.journalHideMapHint
-                                : localizations.journalShowMapHint,
-                            color: AppColors.entryTextColor,
-                            onPressed: () {
-                              setState(() {
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          children: [
+                            TextButton(
+                              onPressed: () => setState(() {
                                 mapVisible = !mapVisible;
-                              });
-                            },
-                          ),
-                        ],
+                              }),
+                              child: Text(
+                                '📍 ${formatLatLon(loc?.latitude)}, '
+                                '${formatLatLon(loc?.longitude)}',
+                                style: textStyle,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(mapVisible
+                                  ? MdiIcons.chevronDoubleUp
+                                  : MdiIcons.chevronDoubleDown),
+                              iconSize: 20,
+                              tooltip: mapVisible
+                                  ? localizations.journalHideMapHint
+                                  : localizations.journalShowMapHint,
+                              color: AppColors.entryTextColor,
+                              onPressed: () {
+                                setState(() {
+                                  mapVisible = !mapVisible;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     DeleteIconWidget(
