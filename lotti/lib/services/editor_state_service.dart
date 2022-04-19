@@ -8,7 +8,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/widgets/journal/editor_tools.dart';
+import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 
 class EditorStateService {
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();

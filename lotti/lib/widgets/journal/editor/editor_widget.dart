@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/journal/editor_styles.dart';
-import 'package:lotti/widgets/journal/editor_toolbar.dart';
+import 'package:lotti/widgets/journal/editor/editor_styles.dart';
+import 'package:lotti/widgets/journal/editor/editor_toolbar.dart';
 
 class EditorWidget extends StatelessWidget {
   final JournalEntity? journalEntity;
