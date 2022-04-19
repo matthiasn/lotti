@@ -75,8 +75,8 @@ const chipPadding = EdgeInsets.symmetric(
 );
 
 const chipPaddingClosable = EdgeInsets.only(
-  top: 2,
-  bottom: 2,
+  top: 1,
+  bottom: 1,
   left: 8,
   right: 4,
 );

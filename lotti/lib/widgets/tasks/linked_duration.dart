@@ -49,7 +49,7 @@ class LinkedDuration extends StatelessWidget {
                 Duration total = liveTask.data.estimate ?? const Duration();
 
                 return Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
+                  padding: const EdgeInsets.only(top: 4.0),
                   child: SizedBox(
                     width: MediaQuery.of(context).size.width - 80,
                     child: ClipRRect(
@@ -61,8 +61,8 @@ class LinkedDuration extends StatelessWidget {
                           progressBarColor:
                               (progress > total) ? Colors.red : Colors.green,
                           thumbColor: Colors.white,
-                          barHeight: 8.0,
-                          thumbRadius: 8.0,
+                          barHeight: 4.0,
+                          thumbRadius: 6.0,
                           onSeek: (newPosition) {},
                           timeLabelTextStyle: TextStyle(
                             fontFamily: 'Oswald',

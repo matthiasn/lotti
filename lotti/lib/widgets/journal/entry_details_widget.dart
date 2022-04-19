@@ -17,8 +17,8 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
-import 'package:lotti/widgets/journal/entry_detail_header.dart';
-import 'package:lotti/widgets/journal/entry_details/entry_info_row.dart';
+import 'package:lotti/widgets/journal/entry_details/entry_detail_footer.dart';
+import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
@@ -115,20 +115,25 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         }
 
         return Container(
-          margin: const EdgeInsets.symmetric(
-            horizontal: 4.0,
-            vertical: 4.0,
-          ),
+          margin: const EdgeInsets.all(4),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8.0),
             child: Container(
               color: AppColors.headerBgColor,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   EntryDetailHeader(
                     item: item,
                     saveFn: saveText,
-                    popOnDelete: widget.popOnDelete,
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: 8,
+                      right: 8,
+                      bottom: item is Task ? 0 : 8,
+                    ),
+                    child: TagsListWidget(item: item),
                   ),
                   item.map(
                     journalAudio: (JournalAudio audio) {
@@ -275,16 +280,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       return const SizedBox.shrink();
                     },
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: EntryInfoRow(
-                      entityId: item.meta.id,
-                      popOnDelete: widget.popOnDelete,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TagsWidget(item: item),
+                  EntryDetailFooter(
+                    item: item,
+                    saveFn: saveText,
+                    popOnDelete: widget.popOnDelete,
                   ),
                 ],
               ),
