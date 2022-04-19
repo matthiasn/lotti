@@ -32,6 +32,10 @@ class DurationWidget extends StatelessWidget {
         BuildContext context,
         AsyncSnapshot<JournalEntity?> snapshot,
       ) {
+        if (item is JournalImage) {
+          return const SizedBox.shrink();
+        }
+
         bool isRecent =
             DateTime.now().difference(item.meta.dateFrom).inHours < 12;
 
