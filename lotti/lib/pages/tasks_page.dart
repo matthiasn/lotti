@@ -301,9 +301,15 @@ class _TasksPageState extends State<TasksPage> {
                                   JournalEntity item = items.elementAt(index);
                                   return item.maybeMap(
                                       journalImage: (JournalImage image) {
-                                    return JournalImageCard(item: image);
+                                    return JournalImageCard(
+                                      item: image,
+                                      key: ValueKey(item.meta.id),
+                                    );
                                   }, orElse: () {
-                                    return JournalCard(item: item);
+                                    return JournalCard(
+                                      item: item,
+                                      key: ValueKey(item.meta.id),
+                                    );
                                   });
                                 },
                                 growable: true,
