@@ -410,12 +410,10 @@ packages:
   delta_markdown:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "0497ebb"
-      resolved-ref: "0497ebb173f29eb40c53696782326b495b0b9304"
-      url: "https://github.com/matthiasn/delta_markdown"
-    source: git
-    version: "0.4.0"
+      name: delta_markdown
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.6.0"
   device_info_plus:
     dependency: "direct main"
     description:
@@ -681,7 +679,7 @@ packages:
       name: flutter_inappwebview
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.3.2"
+    version: "5.4.0+1"
   flutter_keyboard_visibility:
     dependency: transitive
     description:
@@ -770,7 +768,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.1.1"
+    version: "4.1.2"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -859,7 +857,7 @@ packages:
       name: flutter_typeahead
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.2.4"
+    version: "3.2.5"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -1814,21 +1812,21 @@ packages:
       name: syncfusion_flutter_calendar
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.1.48"
+    version: "20.1.50"
   syncfusion_flutter_core:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.1.48"
+    version: "20.1.50"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.1.48"
+    version: "20.1.50"
   synchronized:
     dependency: transitive
     description:
@@ -2017,7 +2015,7 @@ packages:
       name: video_player_avfoundation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   video_player_platform_interface:
     dependency: transitive
     description:
@@ -2031,7 +2029,7 @@ packages:
       name: video_player_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.7"
+    version: "2.0.8"
   vm_service:
     dependency: transitive
     description:
