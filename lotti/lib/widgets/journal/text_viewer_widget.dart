@@ -15,6 +15,10 @@ class TextViewerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (entryText == null || entryText?.plainText == '\n') {
+      return const SizedBox.shrink();
+    }
+
     QuillController _controller =
         makeController(serializedQuill: entryText?.quill);
 
