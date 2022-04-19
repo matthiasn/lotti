@@ -13,7 +13,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class TagsWidget extends StatelessWidget {
+class TagAddIconWidget extends StatelessWidget {
   final JournalEntity item;
   final JournalDb db = getIt<JournalDb>();
 
@@ -22,7 +22,7 @@ class TagsWidget extends StatelessWidget {
   final TagsService tagsService = getIt<TagsService>();
   late final Stream<JournalEntity?> stream = db.watchEntityById(item.meta.id);
 
-  TagsWidget({
+  TagAddIconWidget({
     required this.item,
     Key? key,
   }) : super(key: key);
@@ -204,22 +204,15 @@ class TagsWidget extends StatelessWidget {
               );
             }
 
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TagsListWidget(item: item),
-                IconButton(
-                  onPressed: onTapAdd,
-                  padding: const EdgeInsets.only(left: 24.0, right: 4),
-                  icon: Icon(
-                    MdiIcons.tagPlusOutline,
-                    size: 24,
-                    color: AppColors.entryTextColor,
-                  ),
-                  tooltip: localizations.journalTagPlusHint,
-                ),
-              ],
+            return IconButton(
+              onPressed: onTapAdd,
+              padding: const EdgeInsets.only(left: 24.0, right: 4),
+              icon: Icon(
+                MdiIcons.tagPlusOutline,
+                size: 24,
+                color: AppColors.entryTextColor,
+              ),
+              tooltip: localizations.journalTagPlusHint,
             );
           },
         );
@@ -283,8 +276,7 @@ class TagsListWidget extends StatelessWidget {
 
             return ConstrainedBox(
               constraints: BoxConstraints(
-                minHeight: 20,
-                maxWidth: MediaQuery.of(context).size.width - 80,
+                maxWidth: MediaQuery.of(context).size.width - 24,
               ),
               child: Wrap(
                   spacing: 4,

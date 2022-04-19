@@ -19,7 +19,6 @@ import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_footer.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
-import 'package:lotti/widgets/journal/entry_details/entry_info_row.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
@@ -122,6 +121,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
             child: Container(
               color: AppColors.headerBgColor,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   EntryDetailHeader(
                     item: item,
@@ -129,7 +129,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: TagsWidget(item: item),
+                    child: TagsListWidget(item: item),
                   ),
                   item.map(
                     journalAudio: (JournalAudio audio) {
@@ -275,13 +275,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     habitCompletion: (HabitCompletionEntry value) {
                       return const SizedBox.shrink();
                     },
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: EntryInfoRow(
-                      entityId: item.meta.id,
-                      popOnDelete: widget.popOnDelete,
-                    ),
                   ),
                   EntryDetailFooter(
                     item: item,
