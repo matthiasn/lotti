@@ -130,6 +130,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     saveFn: saveText,
                     popOnDelete: widget.popOnDelete,
                   ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: TagsWidget(item: item),
+                  ),
                   item.map(
                     journalAudio: (JournalAudio audio) {
                       return Column(
@@ -281,10 +285,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       entityId: item.meta.id,
                       popOnDelete: widget.popOnDelete,
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TagsWidget(item: item),
                   ),
                 ],
               ),
