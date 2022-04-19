@@ -128,7 +128,11 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     saveFn: saveText,
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    padding: EdgeInsets.only(
+                      left: 8,
+                      right: 8,
+                      bottom: item is Task ? 0 : 8,
+                    ),
                     child: TagsListWidget(item: item),
                   ),
                   item.map(

@@ -195,7 +195,7 @@ class _JournalPageState extends State<JournalPage> {
                     child: Row(
                       children: [
                         Text(
-                          localizations.journalPrivateLabel,
+                          localizations.journalPrivateTooltip,
                           style: TextStyle(color: AppColors.entryTextColor),
                         ),
                         CupertinoSwitch(
@@ -215,7 +215,7 @@ class _JournalPageState extends State<JournalPage> {
                     width: 16,
                   ),
                   Text(
-                    localizations.journalFavoriteLabel,
+                    localizations.journalFavoriteTooltip,
                     style: TextStyle(color: AppColors.entryTextColor),
                   ),
                   CupertinoSwitch(
@@ -232,7 +232,7 @@ class _JournalPageState extends State<JournalPage> {
                     width: 16,
                   ),
                   Text(
-                    localizations.journalFlaggedLabel,
+                    localizations.journalFlaggedTooltip,
                     style: TextStyle(color: AppColors.entryTextColor),
                   ),
                   CupertinoSwitch(

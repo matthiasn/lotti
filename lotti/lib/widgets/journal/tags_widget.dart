@@ -206,7 +206,7 @@ class TagAddIconWidget extends StatelessWidget {
 
             return IconButton(
               onPressed: onTapAdd,
-              padding: const EdgeInsets.only(left: 24.0, right: 4),
+              padding: const EdgeInsets.all(8),
               icon: Icon(
                 MdiIcons.tagPlusOutline,
                 size: 24,

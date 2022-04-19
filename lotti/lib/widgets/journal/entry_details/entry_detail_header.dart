@@ -6,9 +6,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
-import 'package:lotti/widgets/journal/entry_details/switch_row_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class EntryDetailHeader extends StatefulWidget {
   final JournalEntity item;
@@ -77,42 +77,81 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                   style: textStyle,
                 ),
               ),
-              SwitchRowWidget(
-                label: localizations.journalFavoriteLabel,
-                activeColor: AppColors.starredGold,
-                onChanged: (bool value) {
-                  Metadata newMeta = liveEntity.meta.copyWith(
-                    starred: value,
-                  );
-                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-                },
-                value: liveEntity.meta.starred ?? false,
+              Row(
+                children: [
+                  SwitchIconWidget(
+                    tooltip: localizations.journalFavoriteTooltip,
+                    activeColor: AppColors.starredGold,
+                    onPressed: () {
+                      bool prev = liveEntity.meta.starred ?? false;
+                      Metadata newMeta = liveEntity.meta.copyWith(
+                        starred: !prev,
+                      );
+                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
+                    },
+                    value: liveEntity.meta.starred ?? false,
+                    iconData: MdiIcons.star,
+                  ),
+                  SwitchIconWidget(
+                    tooltip: localizations.journalPrivateTooltip,
+                    activeColor: AppColors.error,
+                    onPressed: () {
+                      bool prev = liveEntity.meta.private ?? false;
+                      Metadata newMeta = liveEntity.meta.copyWith(
+                        private: !prev,
+                      );
+                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
+                    },
+                    value: liveEntity.meta.private ?? false,
+                    iconData: MdiIcons.security,
+                  ),
+                  SwitchIconWidget(
+                    tooltip: localizations.journalFlaggedTooltip,
+                    activeColor: AppColors.error,
+                    onPressed: () {
+                      bool prev = liveEntity.meta.flag == EntryFlag.import;
+                      Metadata newMeta = liveEntity.meta.copyWith(
+                        flag: prev ? EntryFlag.none : EntryFlag.import,
+                      );
+                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
+                    },
+                    value: liveEntity.meta.flag == EntryFlag.import,
+                    iconData: MdiIcons.flag,
+                  ),
+                  TagAddIconWidget(item: widget.item),
+                ],
               ),
-              SwitchRowWidget(
-                label: localizations.journalPrivateLabel,
-                activeColor: AppColors.error,
-                onChanged: (bool value) {
-                  Metadata newMeta = liveEntity.meta.copyWith(
-                    private: value,
-                  );
-                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-                },
-                value: liveEntity.meta.private ?? false,
-              ),
-              SwitchRowWidget(
-                label: localizations.journalFlaggedLabel,
-                activeColor: AppColors.error,
-                onChanged: (bool value) {
-                  Metadata newMeta = liveEntity.meta.copyWith(
-                    flag: value ? EntryFlag.import : EntryFlag.none,
-                  );
-                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-                },
-                value: liveEntity.meta.flag == EntryFlag.import,
-              ),
-              TagAddIconWidget(item: widget.item),
             ],
           );
         });
+  }
+}
+
+class SwitchIconWidget extends StatelessWidget {
+  const SwitchIconWidget({
+    Key? key,
+    required this.tooltip,
+    required this.onPressed,
+    required this.value,
+    required this.activeColor,
+    required this.iconData,
+  }) : super(key: key);
+
+  final String tooltip;
+  final void Function() onPressed;
+  final bool value;
+  final Color activeColor;
+  final IconData iconData;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      icon: Icon(
+        iconData,
+        color: value ? activeColor : AppColors.entryTextColor,
+      ),
+    );
   }
 }
