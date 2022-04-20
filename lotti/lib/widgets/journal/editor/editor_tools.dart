@@ -25,14 +25,17 @@ EntryText entryTextFromController(QuillController controller) {
   );
 }
 
-QuillController makeController({String? serializedQuill}) {
+QuillController makeController({
+  String? serializedQuill,
+  TextSelection? selection,
+}) {
   QuillController controller = QuillController.basic();
 
   if (serializedQuill != null) {
     var editorJson = json.decode(serializedQuill);
     controller = QuillController(
         document: Document.fromJson(editorJson),
-        selection: const TextSelection.collapsed(offset: 0));
+        selection: selection ?? const TextSelection.collapsed(offset: 0));
   }
   return controller;
 }
