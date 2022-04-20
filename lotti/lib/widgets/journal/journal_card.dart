@@ -120,17 +120,23 @@ class JournalCardTitle extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(
-                          'TASK: ${data.title}',
-                          style: TextStyle(
-                            fontFamily: 'Oswald',
-                            color: AppColors.entryTextColor,
-                            fontWeight: FontWeight.normal,
-                            fontSize: 24.0,
-                          ),
+                      Icon(
+                        data.status.maybeMap(
+                            done: (_) => MdiIcons.checkboxMarkedOutline,
+                            orElse: () => MdiIcons.checkboxBlankOutline),
+                        size: 32,
+                        color: AppColors.entryTextColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        data.title,
+                        style: TextStyle(
+                          fontFamily: 'Oswald',
+                          color: AppColors.entryTextColor,
+                          fontWeight: FontWeight.normal,
+                          fontSize: 24.0,
                         ),
                       ),
                     ],
