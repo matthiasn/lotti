@@ -13,7 +13,7 @@ const AutoRoute taskRoutes = AutoRoute(
       page: TasksPage,
     ),
     AutoRoute(
-      path: ':entryId',
+      path: ':itemId',
       page: EntryDetailPage,
     ),
     AutoRoute(

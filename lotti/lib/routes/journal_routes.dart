@@ -16,7 +16,7 @@ const AutoRoute journalRoutes = AutoRoute(
       page: JournalPage,
     ),
     AutoRoute(
-      path: ':entryId',
+      path: ':itemId',
       page: EntryDetailPage,
     ),
     AutoRoute(
