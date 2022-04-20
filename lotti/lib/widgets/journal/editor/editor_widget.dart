@@ -10,7 +10,6 @@ class EditorWidget extends StatelessWidget {
   final QuillController controller;
   final double maxHeight;
   final double minHeight;
-  final bool readOnly;
   final bool autoFocus;
   final double padding;
   final Function saveFn;
@@ -23,7 +22,6 @@ class EditorWidget extends StatelessWidget {
     this.minHeight = 40,
     this.maxHeight = double.maxFinite,
     this.padding = 16.0,
-    this.readOnly = false,
     this.autoFocus = true,
     required this.saveFn,
     required this.focusNode,
@@ -77,7 +75,7 @@ class EditorWidget extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: padding),
                   child: QuillEditor(
                     controller: controller,
-                    readOnly: readOnly,
+                    readOnly: false,
                     scrollController: ScrollController(),
                     scrollable: true,
                     focusNode: focusNode,

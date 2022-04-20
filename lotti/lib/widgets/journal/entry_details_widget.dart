@@ -30,7 +30,6 @@ import 'package:tuple/tuple.dart';
 
 class EntryDetailWidget extends StatefulWidget {
   final String itemId;
-  final bool readOnly;
   final bool popOnDelete;
   final bool showTaskDetails;
 
@@ -38,7 +37,6 @@ class EntryDetailWidget extends StatefulWidget {
     Key? key,
     @PathParam() required this.itemId,
     required this.popOnDelete,
-    this.readOnly = false,
     this.showTaskDetails = false,
   }) : super(key: key);
 
@@ -152,7 +150,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           EditorWidget(
                             controller: _controller,
                             focusNode: _focusNode,
-                            readOnly: widget.readOnly,
                             journalEntity: item,
                             saveFn: saveText,
                           ),
@@ -163,7 +160,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       return EditorWidget(
                         controller: _controller,
                         focusNode: _focusNode,
-                        readOnly: widget.readOnly,
                         saveFn: saveText,
                         journalEntity: item,
                       );
@@ -172,7 +168,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       return EditorWidget(
                         controller: _controller,
                         focusNode: _focusNode,
-                        readOnly: widget.readOnly,
                         saveFn: saveText,
                         journalEntity: item,
                       );
@@ -188,7 +183,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           EditorWidget(
                             controller: _controller,
                             focusNode: _focusNode,
-                            readOnly: widget.readOnly,
                             saveFn: saveText,
                             journalEntity: item,
                           ),
