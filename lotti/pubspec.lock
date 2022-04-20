@@ -7,7 +7,7 @@ packages:
       name: _fe_analyzer_shared
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "31.0.0"
+    version: "36.0.0"
   adaptive_dialog:
     dependency: "direct main"
     description:
@@ -21,14 +21,14 @@ packages:
       name: analyzer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.8.0"
+    version: "3.3.1"
   analyzer_plugin:
     dependency: transitive
     description:
       name: analyzer_plugin
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.0"
+    version: "0.9.0"
   animations:
     dependency: transitive
     description:
@@ -502,9 +502,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "0c261a7"
-      resolved-ref: "0c261a7eaa9a97d2ca01bb5370c3034e3d7aa3a1"
-      url: "https://github.com/matthiasn/enough_mail"
+      ref: "80c8900"
+      resolved-ref: "80c89005e2544df622dc5da5c1222e080a90d3bd"
+      url: "https://github.com/Enough-Software/enough_mail"
     source: git
     version: "1.3.6"
   enough_serialization:
@@ -679,7 +679,7 @@ packages:
       name: flutter_inappwebview
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.4.0+1"
+    version: "5.4.0+2"
   flutter_keyboard_visibility:
     dependency: transitive
     description:
@@ -876,7 +876,7 @@ packages:
       name: freezed
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.0"
+    version: "1.1.1"
   freezed_annotation:
     dependency: "direct main"
     description:
@@ -930,7 +930,7 @@ packages:
       name: glados
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.2"
+    version: "1.1.3"
   glass:
     dependency: "direct main"
     description:
@@ -1035,7 +1035,7 @@ packages:
       name: i18n_extension
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.2.0"
+    version: "4.2.1"
   image:
     dependency: transitive
     description:
@@ -1847,21 +1847,21 @@ packages:
       name: test
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.19.5"
+    version: "1.21.0"
   test_api:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: test_api
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.8"
+    version: "0.4.9"
   test_core:
     dependency: transitive
     description:
       name: test_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.9"
+    version: "0.4.13"
   timezone:
     dependency: "direct main"
     description:
