@@ -128,7 +128,7 @@
   "tasksSearchHint": "Suche nach Tasks...",
   "taskStatusBlocked": "BLOCKIERT",
   "taskStatusDone": "FERTIG",
-  "taskStatusGroomed": "VORBEREITED",
+  "taskStatusGroomed": "VORBEREITET",
   "taskStatusInProgress": "IN ARBEIT",
   "taskStatusLabel": "Aufgabenstatus:",
   "taskStatusOnHold": "AUF EIS",

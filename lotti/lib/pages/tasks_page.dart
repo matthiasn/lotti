@@ -33,7 +33,7 @@ class _TasksPageState extends State<TasksPage> {
   late Stream<List<JournalEntity>> stream;
   late Stream<List<ConfigFlag>> configFlagsStream;
 
-  static final List<String> taskStatuses = [
+  final List<String> taskStatuses = [
     'OPEN',
     'GROOMED',
     'IN PROGRESS',
@@ -138,6 +138,17 @@ class _TasksPageState extends State<TasksPage> {
         ),
       ],
       builder: (context, transition) {
+        AppLocalizations localizations = AppLocalizations.of(context)!;
+
+        final Map<String, String> localizationLookup = {
+          'OPEN': localizations.taskStatusOpen,
+          'GROOMED': localizations.taskStatusGroomed,
+          'IN PROGRESS': localizations.taskStatusInProgress,
+          'BLOCKED': localizations.taskStatusBlocked,
+          'ON HOLD': localizations.taskStatusOnHold,
+          'DONE': localizations.taskStatusDone,
+          'REJECTED': localizations.taskStatusRejected,
+        };
         return Padding(
           padding: const EdgeInsets.only(
             top: 2.0,
@@ -202,7 +213,7 @@ class _TasksPageState extends State<TasksPage> {
                                       horizontal: 16,
                                     ),
                                     child: Text(
-                                      status,
+                                      '${localizationLookup[status]}',
                                       style: TextStyle(
                                         fontFamily: 'Oswald',
                                         fontSize: 16,
