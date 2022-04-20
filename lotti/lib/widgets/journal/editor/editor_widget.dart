@@ -71,7 +71,6 @@ class EditorWidget extends StatelessWidget {
                 id: journalEntity?.meta.id,
                 controller: controller,
                 saveFn: saveFn,
-                journalEntity: journalEntity,
               ),
               Flexible(
                 child: Padding(

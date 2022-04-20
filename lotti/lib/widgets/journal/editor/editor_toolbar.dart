@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
@@ -10,7 +9,6 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class ToolbarWidget extends StatelessWidget {
   final LinkService linkService = getIt<LinkService>();
-  final JournalEntity? journalEntity;
   final QuillController controller;
   final double toolbarIconSize;
   final String? id;
@@ -23,7 +21,6 @@ class ToolbarWidget extends StatelessWidget {
     required this.id,
     required this.controller,
     required this.saveFn,
-    this.journalEntity,
     this.toolbarIconSize = 20.0,
     this.iconTheme,
   }) : super(key: key);
@@ -106,19 +103,19 @@ class ToolbarWidget extends StatelessWidget {
           controller: controller,
           iconTheme: iconTheme,
         ),
-        if (journalEntity != null)
+        if (id != null)
           IconButton(
             icon: const Icon(Icons.add_link),
             iconSize: toolbarIconSize,
             tooltip: localizations.journalLinkFromHint,
-            onPressed: () => linkService.linkFrom(journalEntity!.meta.id),
+            onPressed: () => linkService.linkFrom(id!),
           ),
-        if (journalEntity != null)
+        if (id != null)
           IconButton(
             icon: const Icon(MdiIcons.target),
             iconSize: toolbarIconSize,
             tooltip: localizations.journalLinkToHint,
-            onPressed: () => linkService.linkTo(journalEntity!.meta.id),
+            onPressed: () => linkService.linkTo(id!),
           ),
       ],
     );
