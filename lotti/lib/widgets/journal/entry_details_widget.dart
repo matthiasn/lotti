@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -91,21 +90,9 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           return JournalCard(item: item);
         }
 
-        EntryText? entryText = item.map(
-          journalEntry: (item) => item.entryText,
-          journalImage: (item) => item.entryText,
-          journalAudio: (item) => item.entryText,
-          task: (item) => item.entryText,
-          quantitative: (_) => null,
-          measurement: (item) => item.entryText,
-          workout: (item) => item.entryText,
-          habitCompletion: (item) => item.entryText,
-          survey: (_) => null,
-        );
-
         QuillController _controller = makeController(
-          serializedQuill:
-              _editorStateService.getDelta(widget.itemId) ?? entryText?.quill,
+          serializedQuill: _editorStateService.getDelta(widget.itemId) ??
+              item.entryText?.quill,
         );
 
         _controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
