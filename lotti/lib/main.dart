@@ -13,6 +13,7 @@ import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/routes/observer.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/screenshots.dart';
@@ -93,7 +94,9 @@ class LottiApp extends StatelessWidget {
           primarySwatch: Colors.grey,
         ),
         debugShowCheckedModeBanner: true,
-        routerDelegate: router.delegate(),
+        routerDelegate: router.delegate(
+          navigatorObservers: () => [NavObserver()],
+        ),
         routeInformationParser: router.defaultRouteParser(),
       ),
     );
