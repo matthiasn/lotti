@@ -32,8 +32,8 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
 
         return GestureDetector(
           onTap: () {
-            String entryId = current.meta.id;
-            context.router.pushNamed('/journal/$entryId');
+            String itemId = current.meta.id;
+            context.router.pushNamed('/journal/$itemId');
           },
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
