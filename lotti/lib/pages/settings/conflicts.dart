@@ -232,7 +232,7 @@ class DetailRoute extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: const BorderRadius.all(Radius.circular(8.0)),
                   child: EntryDetailPage(
-                    entryId: withResolvedVectorClock.meta.id,
+                    itemId: withResolvedVectorClock.meta.id,
                   ),
                 ),
               ),
@@ -251,7 +251,7 @@ class DetailRoute extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: const BorderRadius.all(Radius.circular(8.0)),
                   child: EntryDetailPage(
-                    entryId: fromSync.meta.id,
+                    itemId: fromSync.meta.id,
                     readOnly: true,
                   ),
                 ),

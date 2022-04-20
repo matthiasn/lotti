@@ -11,12 +11,12 @@ import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class EntryDetailHeader extends StatefulWidget {
-  final JournalEntity item;
+  final String itemId;
   final Function saveFn;
 
   const EntryDetailHeader({
     Key? key,
-    required this.item,
+    required this.itemId,
     required this.saveFn,
   }) : super(key: key);
 
@@ -28,8 +28,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
   final JournalDb db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
-  late final Stream<JournalEntity?> stream =
-      db.watchEntityById(widget.item.meta.id);
+  late final Stream<JournalEntity?> stream = db.watchEntityById(widget.itemId);
 
   @override
   void initState() {
@@ -46,8 +45,8 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
           BuildContext context,
           AsyncSnapshot<JournalEntity?> snapshot,
         ) {
-          JournalEntity? liveEntity = snapshot.data;
-          if (liveEntity == null) {
+          JournalEntity? item = snapshot.data;
+          if (item == null) {
             return const SizedBox.shrink();
           }
 
@@ -67,13 +66,13 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                     clipBehavior: Clip.antiAliasWithSaveLayer,
                     builder: (BuildContext context) {
                       return EntryDateTimeModal(
-                        item: liveEntity,
+                        item: item,
                       );
                     },
                   );
                 },
                 child: Text(
-                  df.format(liveEntity.meta.dateFrom),
+                  df.format(item.meta.dateFrom),
                   style: textStyle,
                 ),
               ),
@@ -83,42 +82,42 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                     tooltip: localizations.journalFavoriteTooltip,
                     activeColor: AppColors.starredGold,
                     onPressed: () {
-                      bool prev = liveEntity.meta.starred ?? false;
-                      Metadata newMeta = liveEntity.meta.copyWith(
+                      bool prev = item.meta.starred ?? false;
+                      Metadata newMeta = item.meta.copyWith(
                         starred: !prev,
                       );
-                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
+                      persistenceLogic.updateJournalEntity(item, newMeta);
                     },
-                    value: liveEntity.meta.starred ?? false,
+                    value: item.meta.starred ?? false,
                     iconData: MdiIcons.star,
                   ),
                   SwitchIconWidget(
                     tooltip: localizations.journalPrivateTooltip,
                     activeColor: AppColors.error,
                     onPressed: () {
-                      bool prev = liveEntity.meta.private ?? false;
-                      Metadata newMeta = liveEntity.meta.copyWith(
+                      bool prev = item.meta.private ?? false;
+                      Metadata newMeta = item.meta.copyWith(
                         private: !prev,
                       );
-                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
+                      persistenceLogic.updateJournalEntity(item, newMeta);
                     },
-                    value: liveEntity.meta.private ?? false,
+                    value: item.meta.private ?? false,
                     iconData: MdiIcons.security,
                   ),
                   SwitchIconWidget(
                     tooltip: localizations.journalFlaggedTooltip,
                     activeColor: AppColors.error,
                     onPressed: () {
-                      bool prev = liveEntity.meta.flag == EntryFlag.import;
-                      Metadata newMeta = liveEntity.meta.copyWith(
+                      bool prev = item.meta.flag == EntryFlag.import;
+                      Metadata newMeta = item.meta.copyWith(
                         flag: prev ? EntryFlag.none : EntryFlag.import,
                       );
-                      persistenceLogic.updateJournalEntity(liveEntity, newMeta);
+                      persistenceLogic.updateJournalEntity(item, newMeta);
                     },
-                    value: liveEntity.meta.flag == EntryFlag.import,
+                    value: item.meta.flag == EntryFlag.import,
                     iconData: MdiIcons.flag,
                   ),
-                  TagAddIconWidget(item: widget.item),
+                  TagAddIconWidget(itemId: widget.itemId),
                 ],
               ),
             ],

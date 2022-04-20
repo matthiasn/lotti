@@ -189,7 +189,7 @@ class JournalCard extends StatelessWidget {
               context.read<AudioPlayerCubit>().setAudioNote(audioNote);
             });
 
-            context.router.push(EntryDetailRoute(entryId: item.meta.id));
+            context.router.push(EntryDetailRoute(itemId: item.meta.id));
           },
         ),
       );
@@ -261,7 +261,7 @@ class JournalImageCard extends StatelessWidget {
                 context.read<AudioPlayerCubit>().setAudioNote(audioNote);
               });
               String entryId = item.meta.id;
-              context.router.push(EntryDetailRoute(entryId: entryId));
+              context.router.push(EntryDetailRoute(itemId: entryId));
             },
           ),
         ),

@@ -30,14 +30,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:tuple/tuple.dart';
 
 class EntryDetailWidget extends StatefulWidget {
-  final String entryId;
+  final String itemId;
   final bool readOnly;
   final bool popOnDelete;
   final bool showTaskDetails;
 
   const EntryDetailWidget({
     Key? key,
-    @PathParam() required this.entryId,
+    @PathParam() required this.itemId,
     required this.popOnDelete,
     this.readOnly = false,
     this.showTaskDetails = false,
@@ -53,7 +53,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   final EditorStateService _editorStateService = getIt<EditorStateService>();
 
   late final Stream<JournalEntity?> _stream =
-      _db.watchEntityById(widget.entryId);
+      _db.watchEntityById(widget.itemId);
 
   bool showDetails = false;
   Directory? docDir;
@@ -85,7 +85,9 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           return const SizedBox.shrink();
         }
 
-        if (item is Task && !widget.showTaskDetails) {
+        bool isTask = item is Task;
+
+        if (isTask && !widget.showTaskDetails) {
           return JournalCard(item: item);
         }
 
@@ -103,15 +105,15 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
         QuillController _controller = makeController(
           serializedQuill:
-              _editorStateService.getDelta(item.meta.id) ?? entryText?.quill,
+              _editorStateService.getDelta(widget.itemId) ?? entryText?.quill,
         );
 
         _controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
-          _editorStateService.saveTempState(item.meta.id, _controller);
+          _editorStateService.saveTempState(widget.itemId, _controller);
         });
 
         void saveText() {
-          _editorStateService.saveState(item.meta.id, _controller);
+          _editorStateService.saveState(widget.itemId, _controller);
         }
 
         return Container(
@@ -124,16 +126,16 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   EntryDetailHeader(
-                    item: item,
+                    itemId: widget.itemId,
                     saveFn: saveText,
                   ),
                   Padding(
                     padding: EdgeInsets.only(
                       left: 8,
                       right: 8,
-                      bottom: item is Task ? 0 : 8,
+                      bottom: isTask ? 0 : 8,
                     ),
-                    child: TagsListWidget(item: item),
+                    child: TagsListWidget(widget.itemId),
                   ),
                   item.map(
                     journalAudio: (JournalAudio audio) {
@@ -234,7 +236,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         final formData = formKey.currentState?.value;
                         if (formData == null) {
                           _editorStateService.saveTask(
-                            id: item.meta.id,
+                            id: widget.itemId,
                             controller: _controller,
                             taskData: task.data,
                           );
@@ -261,7 +263,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         );
 
                         _editorStateService.saveTask(
-                          id: item.meta.id,
+                          id: widget.itemId,
                           controller: _controller,
                           taskData: updatedData,
                         );
@@ -281,7 +283,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     },
                   ),
                   EntryDetailFooter(
-                    item: item,
+                    itemId: widget.itemId,
                     saveFn: saveText,
                     popOnDelete: widget.popOnDelete,
                   ),
