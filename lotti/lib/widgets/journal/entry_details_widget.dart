@@ -91,11 +91,16 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         QuillController _controller = makeController(
           serializedQuill: _editorStateService.getDelta(widget.itemId) ??
               item.entryText?.quill,
+          selection: _editorStateService.getSelection(widget.itemId),
         );
 
         _controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
           _editorStateService.saveTempState(widget.itemId, _controller);
         });
+
+        _controller.onSelectionChanged = (TextSelection selection) {
+          _editorStateService.saveSelection(widget.itemId, selection);
+        };
 
         void saveText() {
           _editorStateService.saveState(widget.itemId, _controller);

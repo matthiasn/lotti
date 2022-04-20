@@ -14,6 +14,7 @@ class EditorStateService {
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
 
   final editorStateById = <String, String>{};
+  final selectionById = <String, TextSelection>{};
   final unsavedStreamById = <String, StreamController<bool>>{};
 
   EditorStateService();
@@ -38,6 +39,15 @@ class EditorStateService {
 
   String? getDelta(String? id) {
     return editorStateById[id];
+  }
+
+  TextSelection? getSelection(String? id) {
+    return selectionById[id];
+  }
+
+  void saveSelection(String id, TextSelection selection) {
+    debugPrint(selection.toString());
+    selectionById[id] = selection;
   }
 
   void saveTempState(String id, QuillController controller) {
