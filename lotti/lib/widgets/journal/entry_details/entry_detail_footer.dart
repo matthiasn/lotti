@@ -12,13 +12,13 @@ import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class EntryDetailFooter extends StatefulWidget {
-  final JournalEntity item;
+  final String itemId;
   final Function saveFn;
   final bool popOnDelete;
 
   const EntryDetailFooter({
     Key? key,
-    required this.item,
+    required this.itemId,
     required this.saveFn,
     required this.popOnDelete,
   }) : super(key: key);
@@ -31,8 +31,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
   bool mapVisible = false;
 
   final JournalDb db = getIt<JournalDb>();
-  late final Stream<JournalEntity?> stream =
-      db.watchEntityById(widget.item.meta.id);
+  late final Stream<JournalEntity?> stream = db.watchEntityById(widget.itemId);
 
   @override
   void initState() {
@@ -43,16 +42,16 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
 
-    Geolocation? loc = widget.item.geolocation;
-
     return StreamBuilder<JournalEntity?>(
         stream: stream,
         builder: (
           BuildContext context,
           AsyncSnapshot<JournalEntity?> snapshot,
         ) {
-          JournalEntity? liveEntity = snapshot.data;
-          if (liveEntity == null) {
+          JournalEntity? item = snapshot.data;
+          Geolocation? loc = item?.geolocation;
+
+          if (item == null) {
             return const SizedBox.shrink();
           }
 
@@ -64,7 +63,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     DurationWidget(
-                      item: liveEntity,
+                      item: item,
                       style: textStyle,
                       showControls: true,
                       saveFn: widget.saveFn,
@@ -105,7 +104,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                       ),
                     ),
                     DeleteIconWidget(
-                      entityId: widget.item.meta.id,
+                      entityId: widget.itemId,
                       popOnDelete: widget.popOnDelete,
                     ),
                   ],
@@ -119,7 +118,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                     bottomRight: Radius.circular(8),
                   ),
                   child: MapWidget(
-                    geolocation: widget.item.geolocation,
+                    geolocation: item.geolocation,
                   ),
                 ),
               ),

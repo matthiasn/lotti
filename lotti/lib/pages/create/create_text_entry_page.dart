@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/widgets/journal/editor_tools.dart';
-import 'package:lotti/widgets/journal/editor_widget.dart';
+import 'package:lotti/widgets/journal/editor/editor_tools.dart';
+import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 
 class CreateTextEntryPage extends StatefulWidget {
   const CreateTextEntryPage({

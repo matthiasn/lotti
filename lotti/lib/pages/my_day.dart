@@ -44,7 +44,8 @@ class MyDayPage extends StatelessWidget {
           Duration dur = entryDuration(journalEntity);
           if (dur > const Duration()) {
             String eventName = journalEntity.map(
-              journalEntry: (journalEntry) => journalEntry.entryText.plainText,
+              journalEntry: (journalEntry) =>
+                  '${journalEntry.entryText?.plainText}',
               journalImage: (journalImage) => '',
               journalAudio: (journalAudio) => '',
               task: (task) => task.data.title,

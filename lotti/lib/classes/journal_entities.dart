@@ -84,7 +84,7 @@ class SurveyData with _$SurveyData {
 class JournalEntity with _$JournalEntity {
   factory JournalEntity.journalEntry({
     required Metadata meta,
-    required EntryText entryText,
+    EntryText? entryText,
     Geolocation? geolocation,
   }) = JournalEntry;
 
@@ -112,6 +112,7 @@ class JournalEntity with _$JournalEntity {
   const factory JournalEntity.quantitative({
     required Metadata meta,
     required QuantitativeData data,
+    EntryText? entryText,
     Geolocation? geolocation,
   }) = QuantitativeEntry;
 
@@ -139,6 +140,7 @@ class JournalEntity with _$JournalEntity {
   const factory JournalEntity.survey({
     required Metadata meta,
     required SurveyData data,
+    EntryText? entryText,
     Geolocation? geolocation,
   }) = SurveyEntry;
 

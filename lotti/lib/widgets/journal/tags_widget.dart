@@ -14,16 +14,16 @@ import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TagAddIconWidget extends StatelessWidget {
-  final JournalEntity item;
+  final String itemId;
   final JournalDb db = getIt<JournalDb>();
 
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
   final TagsService tagsService = getIt<TagsService>();
-  late final Stream<JournalEntity?> stream = db.watchEntityById(item.meta.id);
+  late final Stream<JournalEntity?> stream = db.watchEntityById(itemId);
 
   TagAddIconWidget({
-    required this.item,
+    required this.itemId,
     Key? key,
   }) : super(key: key);
 
@@ -46,22 +46,22 @@ class TagAddIconWidget extends StatelessWidget {
             BuildContext context,
             AsyncSnapshot<JournalEntity?> snapshot,
           ) {
-            JournalEntity? liveEntity = snapshot.data;
-            if (liveEntity == null) {
+            JournalEntity? item = snapshot.data;
+            if (item == null) {
               return const SizedBox.shrink();
             }
 
             void addTagIds(List<String> addedTagIds) {
               persistenceLogic.addTags(
-                journalEntityId: item.meta.id,
+                journalEntityId: itemId,
                 addedTagIds: addedTagIds,
               );
             }
 
             void copyTags() {
-              if (liveEntity.meta.tagIds != null) {
+              if (item.meta.tagIds != null) {
                 HapticFeedback.heavyImpact();
-                tagsService.setClipboard(liveEntity.meta.id);
+                tagsService.setClipboard(item.meta.id);
               }
             }
 
@@ -96,7 +96,7 @@ class TagAddIconWidget extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          TagsListWidget(item: item),
+                          TagsListWidget(itemId),
                           const SizedBox(height: 16),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
@@ -222,18 +222,15 @@ class TagAddIconWidget extends StatelessWidget {
 }
 
 class TagsListWidget extends StatelessWidget {
-  final JournalEntity item;
+  final String itemId;
   final JournalDb db = getIt<JournalDb>();
 
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
   final TagsService tagsService = getIt<TagsService>();
-  late final Stream<JournalEntity?> stream = db.watchEntityById(item.meta.id);
+  late final Stream<JournalEntity?> stream = db.watchEntityById(itemId);
 
-  TagsListWidget({
-    required this.item,
-    Key? key,
-  }) : super(key: key);
+  TagsListWidget(this.itemId, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -252,12 +249,12 @@ class TagsListWidget extends StatelessWidget {
             BuildContext context,
             AsyncSnapshot<JournalEntity?> snapshot,
           ) {
-            JournalEntity? liveEntity = snapshot.data;
-            if (liveEntity == null) {
+            JournalEntity? item = snapshot.data;
+            if (item == null) {
               return const SizedBox.shrink();
             }
 
-            List<String> tagIds = liveEntity.meta.tagIds ?? [];
+            List<String> tagIds = item.meta.tagIds ?? [];
             List<TagEntity> tagsFromTagIds = [];
 
             for (String tagId in tagIds) {
@@ -269,7 +266,7 @@ class TagsListWidget extends StatelessWidget {
 
             void removeTagId(String tagId) {
               persistenceLogic.removeTag(
-                journalEntityId: item.meta.id,
+                journalEntityId: itemId,
                 tagId: tagId,
               );
             }

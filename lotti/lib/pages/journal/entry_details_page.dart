@@ -15,12 +15,12 @@ import 'package:lotti/widgets/journal/entry_details_widget.dart';
 import 'package:path_provider/path_provider.dart';
 
 class EntryDetailPage extends StatefulWidget {
-  final String entryId;
+  final String itemId;
   final bool readOnly;
 
   const EntryDetailPage({
     Key? key,
-    @PathParam() required this.entryId,
+    @PathParam() required this.itemId,
     this.readOnly = false,
   }) : super(key: key);
 
@@ -33,7 +33,7 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
   bool showDetails = false;
 
   late final Stream<JournalEntity?> _stream =
-      _db.watchEntityById(widget.entryId);
+      _db.watchEntityById(widget.itemId);
 
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
@@ -76,11 +76,11 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
                   EntryDetailWidget(
-                    entryId: widget.entryId,
+                    itemId: widget.itemId,
                     popOnDelete: true,
                     showTaskDetails: true,
                   ),
-                  LinkedEntriesWidget(item: item),
+                  LinkedEntriesWidget(itemId: widget.itemId),
                   LinkedFromEntriesWidget(item: item),
                 ],
               ),

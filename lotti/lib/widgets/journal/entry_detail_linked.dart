@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
@@ -10,11 +9,11 @@ class LinkedEntriesWidget extends StatefulWidget {
   const LinkedEntriesWidget({
     Key? key,
     this.navigatorKey,
-    required this.item,
+    required this.itemId,
   }) : super(key: key);
 
   final GlobalKey? navigatorKey;
-  final JournalEntity item;
+  final String itemId;
 
   @override
   _LinkedEntriesWidgetState createState() => _LinkedEntriesWidgetState();
@@ -27,7 +26,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
   @override
   void initState() {
     super.initState();
-    stream = _db.watchLinkedEntityIds(widget.item.meta.id);
+    stream = _db.watchLinkedEntityIds(widget.itemId);
   }
 
   @override
@@ -57,7 +56,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                     String itemId = itemIds.elementAt(index);
 
                     void onDismissed(DismissDirection _) {
-                      String fromId = widget.item.meta.id;
+                      String fromId = widget.itemId;
                       String toId = itemId;
                       _db.removeLink(fromId: fromId, toId: toId);
                     }
@@ -95,7 +94,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                         ),
                       ),
                       child: EntryDetailWidget(
-                        entryId: itemId,
+                        itemId: itemId,
                         popOnDelete: false,
                       ),
                     );

@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -15,8 +14,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
-import 'package:lotti/widgets/journal/editor_tools.dart';
-import 'package:lotti/widgets/journal/editor_widget.dart';
+import 'package:lotti/widgets/journal/editor/editor_tools.dart';
+import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_footer.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
@@ -30,16 +29,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:tuple/tuple.dart';
 
 class EntryDetailWidget extends StatefulWidget {
-  final String entryId;
-  final bool readOnly;
+  final String itemId;
   final bool popOnDelete;
   final bool showTaskDetails;
 
   const EntryDetailWidget({
     Key? key,
-    @PathParam() required this.entryId,
+    @PathParam() required this.itemId,
     required this.popOnDelete,
-    this.readOnly = false,
     this.showTaskDetails = false,
   }) : super(key: key);
 
@@ -53,7 +50,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   final EditorStateService _editorStateService = getIt<EditorStateService>();
 
   late final Stream<JournalEntity?> _stream =
-      _db.watchEntityById(widget.entryId);
+      _db.watchEntityById(widget.itemId);
 
   bool showDetails = false;
   Directory? docDir;
@@ -85,33 +82,23 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           return const SizedBox.shrink();
         }
 
-        if (item is Task && !widget.showTaskDetails) {
+        bool isTask = item is Task;
+
+        if (isTask && !widget.showTaskDetails) {
           return JournalCard(item: item);
         }
 
-        EntryText? entryText = item.map(
-          journalEntry: (item) => item.entryText,
-          journalImage: (item) => item.entryText,
-          journalAudio: (item) => item.entryText,
-          task: (item) => item.entryText,
-          quantitative: (_) => null,
-          measurement: (item) => item.entryText,
-          workout: (item) => item.entryText,
-          habitCompletion: (item) => item.entryText,
-          survey: (_) => null,
-        );
-
         QuillController _controller = makeController(
-          serializedQuill:
-              _editorStateService.getDelta(item.meta.id) ?? entryText?.quill,
+          serializedQuill: _editorStateService.getDelta(widget.itemId) ??
+              item.entryText?.quill,
         );
 
         _controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
-          _editorStateService.saveTempState(item.meta.id, _controller);
+          _editorStateService.saveTempState(widget.itemId, _controller);
         });
 
         void saveText() {
-          _editorStateService.saveState(item.meta.id, _controller);
+          _editorStateService.saveState(widget.itemId, _controller);
         }
 
         return Container(
@@ -124,16 +111,16 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   EntryDetailHeader(
-                    item: item,
+                    itemId: widget.itemId,
                     saveFn: saveText,
                   ),
                   Padding(
                     padding: EdgeInsets.only(
                       left: 8,
                       right: 8,
-                      bottom: item is Task ? 0 : 8,
+                      bottom: isTask ? 0 : 8,
                     ),
-                    child: TagsListWidget(item: item),
+                    child: TagsListWidget(widget.itemId),
                   ),
                   item.map(
                     journalAudio: (JournalAudio audio) {
@@ -163,7 +150,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           EditorWidget(
                             controller: _controller,
                             focusNode: _focusNode,
-                            readOnly: widget.readOnly,
                             journalEntity: item,
                             saveFn: saveText,
                           ),
@@ -174,7 +160,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       return EditorWidget(
                         controller: _controller,
                         focusNode: _focusNode,
-                        readOnly: widget.readOnly,
                         saveFn: saveText,
                         journalEntity: item,
                       );
@@ -183,7 +168,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       return EditorWidget(
                         controller: _controller,
                         focusNode: _focusNode,
-                        readOnly: widget.readOnly,
                         saveFn: saveText,
                         journalEntity: item,
                       );
@@ -199,7 +183,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           EditorWidget(
                             controller: _controller,
                             focusNode: _focusNode,
-                            readOnly: widget.readOnly,
                             saveFn: saveText,
                             journalEntity: item,
                           ),
@@ -234,7 +217,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         final formData = formKey.currentState?.value;
                         if (formData == null) {
                           _editorStateService.saveTask(
-                            id: item.meta.id,
+                            id: widget.itemId,
                             controller: _controller,
                             taskData: task.data,
                           );
@@ -261,7 +244,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         );
 
                         _editorStateService.saveTask(
-                          id: item.meta.id,
+                          id: widget.itemId,
                           controller: _controller,
                           taskData: updatedData,
                         );
@@ -281,7 +264,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     },
                   ),
                   EntryDetailFooter(
-                    item: item,
+                    itemId: widget.itemId,
                     saveFn: saveText,
                     popOnDelete: widget.popOnDelete,
                   ),
