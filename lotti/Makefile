@@ -67,9 +67,20 @@ ipa: clean_test
 	flutter build ipa
 	open ./build/ios/archive/Runner.xcarchive
 
-.PHONY: macos
-macos: clean_test
+.PHONY: macos_build
+macos_build: clean_test
 	flutter build macos
+
+.PHONY: macos_archive
+macos_archive:
+	xcodebuild -workspace ./macos/Runner.xcworkspace -config Release -scheme Release -archivePath ./build/macos/archive/Runner.xcarchive archive
+
+.PHONY: macos
+macos: macos_build macos_archive
+	open ./build/macos/archive/Runner.xcarchive
+
+.PHONY: macos_local
+macos_local: macos_build
 	open ./build/macos/Build/Products/Release/
 
 .PHONY: linux
