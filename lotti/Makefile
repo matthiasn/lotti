@@ -2,6 +2,7 @@ IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
 IOS_EXPORT_PATH = ./build/ios/export
 MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
 MACOS_EXPORT_PATH = ./build/macos/export
+CHANGELOG = $(shell cat CHANGELOG.md)
 
 .PHONY: test
 test:
@@ -73,6 +74,11 @@ bundle:
 ios_build: clean_test
 	flutter build ipa
 
+.PHONY: ios_fastlane_beta
+ios_fastlane_beta: ios_build
+	echo "$(CHANGELOG)"
+	cd ios && fastlane beta && cd ..
+
 .PHONY: ios_open
 ios_open:
 	open $(IOS_ARCHIVE_PATH)
@@ -90,7 +96,7 @@ ios_upload:
                   -u $(APPLEID) -p $(LOTTI_APPSTORE_CONNECT)
 
 .PHONY: ios
-ios: ipa ios_upload
+ios: ios_fastlane_beta
 
 .PHONY: macos_build
 macos_build: clean_test
@@ -118,8 +124,16 @@ macos_upload:
 macos_open: macos_build macos_archive
 	open $(MACOS_ARCHIVE_PATH)
 
+.PHONY: macos_fastlane_beta
+macos_fastlane_beta: macos_build
+	echo "$(CHANGELOG)"
+	cd macos && fastlane beta && cd ..
+
 .PHONY: macos
-macos: macos_build macos_archive macos_pkg macos_upload
+macos: macos_fastlane_beta
+
+.PHONY: macos_cli
+macos_cli: macos_build macos_archive macos_pkg macos_upload
 
 .PHONY: macos_local
 macos_local: macos_build
