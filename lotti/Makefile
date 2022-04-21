@@ -66,10 +66,20 @@ migrate_db:
 bundle:
 	flutter build bundle
 
-.PHONY: ipa
-ipa: clean_test
+.PHONY: ios_build
+ios_build: clean_test
 	flutter build ipa
+
+.PHONY: ios_open
+ios_open:
 	open $(IOS_ARCHIVE_PATH)
+
+.PHONY: ipa
+ipa: ios_build
+	xcodebuild -exportArchive -archivePath $(IOS_ARCHIVE_PATH) \
+               -exportOptionsPlist ./ios/Runner/exportOptions.plist \
+               -exportPath $(IOS_EXPORT_PATH) \
+               -allowProvisioningUpdates
 
 .PHONY: macos_build
 macos_build: clean_test
