@@ -83,11 +83,6 @@ ipa: ios_build
                -exportPath $(IOS_EXPORT_PATH) \
                -allowProvisioningUpdates
 
-.PHONY: ios_transporter_upload
-ios_transporter_upload:
-	nohup /Applications/Transporter.app/Contents/MacOS/Transporter \
-          $(IOS_EXPORT_PATH)/Lotti.ipa 2>&1 &
-
 .PHONY: ios_upload
 ios_upload:
 	xcrun altool --upload-app --type ios \
