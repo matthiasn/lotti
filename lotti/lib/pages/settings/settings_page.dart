@@ -1,9 +1,8 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/pages/settings/settings_icon.dart';
-import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -39,42 +38,42 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: const SettingsIcon(MdiIcons.tagOutline),
             title: localizations.settingsTagsTitle,
             onTap: () {
-              context.router.push(const TagsRoute());
+              pushNamedRoute('/settings/tags');
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(Icons.insights_outlined),
             title: localizations.settingsDashboardsTitle,
             onTap: () {
-              context.router.push(const DashboardSettingsRoute());
+              pushNamedRoute('/settings/dashboards');
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.tapeMeasure),
             title: localizations.settingsMeasurablesTitle,
             onTap: () {
-              context.router.push(const MeasurablesRoute());
+              pushNamedRoute('/settings/measurables');
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.heartOutline),
             title: localizations.settingsHealthImportTitle,
             onTap: () {
-              context.router.push(const HealthImportRoute());
+              pushNamedRoute('/settings/health_import');
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.flagOutline),
             title: localizations.settingsFlagsTitle,
             onTap: () {
-              context.router.push(const FlagsRoute());
+              pushNamedRoute('/settings/flags');
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.alertRhombusOutline),
             title: localizations.settingsAdvancedTitle,
             onTap: () {
-              context.router.push(const AdvancedSettingsRoute());
+              pushNamedRoute('/settings/advanced');
             },
           ),
         ],

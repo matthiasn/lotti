@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -71,11 +71,7 @@ class LogLineCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        context.router.push(
-          LogDetailRoute(
-            logEntryId: logEntry.id,
-          ),
-        );
+        pushNamedRoute('/settings/logging/${logEntry.id}');
       },
       child: Padding(
         padding: const EdgeInsets.all(2.0),

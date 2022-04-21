@@ -1,10 +1,9 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/outbox_badge.dart';
 import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/pages/settings/settings_icon.dart';
-import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AdvancedSettingsPage extends StatelessWidget {
@@ -27,7 +26,7 @@ class AdvancedSettingsPage extends StatelessWidget {
             icon: const SettingsIcon(Icons.sync),
             title: localizations.settingsSyncCfgTitle,
             onTap: () {
-              context.router.push(const SyncSettingsRoute());
+              pushNamedRoute('/settings/sync_settings');
             },
           ),
           SettingsCard(
@@ -36,35 +35,35 @@ class AdvancedSettingsPage extends StatelessWidget {
             ),
             title: localizations.settingsSyncOutboxTitle,
             onTap: () {
-              context.router.push(const OutboxMonitorRoute());
+              pushNamedRoute('/settings/outbox_monitor');
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.emoticonConfusedOutline),
             title: localizations.settingsConflictsTitle,
             onTap: () {
-              context.router.push(const ConflictsRoute());
+              pushNamedRoute('/settings/conflicts');
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.informationOutline),
             title: localizations.settingsLogsTitle,
             onTap: () {
-              context.router.push(const LoggingRoute());
+              pushNamedRoute('/settings/logging');
             },
           ),
           SettingsCard(
             icon: const SettingsIcon(MdiIcons.broom),
             title: localizations.settingsMaintenanceTitle,
             onTap: () {
-              context.router.push(const MaintenanceRoute());
+              pushNamedRoute('/settings/maintenance');
             },
           ),
           SettingsCard(
-            icon: const SettingsIcon(MdiIcons.broom),
+            icon: const SettingsIcon(MdiIcons.slide),
             title: localizations.settingsPlaygroundTitle,
             onTap: () {
-              context.router.push(const DevPlaygroundRoute());
+              pushNamedRoute('/settings/playground');
             },
           ),
         ],

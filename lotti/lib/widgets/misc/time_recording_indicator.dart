@@ -1,7 +1,7 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -33,7 +33,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
         return GestureDetector(
           onTap: () {
             String itemId = current.meta.id;
-            context.router.pushNamed('/journal/$itemId');
+            pushNamedRoute('/journal/$itemId');
           },
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
