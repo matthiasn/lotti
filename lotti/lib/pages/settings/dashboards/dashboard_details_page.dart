@@ -16,6 +16,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/dashboards/chart_multi_select.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_item_card.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
@@ -270,7 +271,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
         Future<void> saveAndViewDashboard() async {
           await saveDashboard();
-          context.router.pushNamed('/dashboards/${widget.dashboard.id}');
+          pushNamedRoute('/dashboards/${widget.dashboard.id}');
         }
 
         Future<void> copyDashboard() async {

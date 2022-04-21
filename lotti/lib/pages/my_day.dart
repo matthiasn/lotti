@@ -1,8 +1,8 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
@@ -91,7 +91,7 @@ class MyDayPage extends StatelessWidget {
             cal.appointments?.forEach((element) {
               Meeting meeting = element as Meeting;
               String entryId = meeting.journalEntity.meta.id;
-              context.router.pushNamed('/journal/$entryId');
+              pushNamedRoute('/journal/$entryId');
             });
           },
         );

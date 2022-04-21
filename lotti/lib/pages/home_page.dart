@@ -13,6 +13,10 @@ import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
+  void onNavigateCallback(RouteMatch route, bool initial) {
+    debugPrint('onNavigateCallback $route $initial');
+  }
+
   @override
   Widget build(BuildContext context) {
     return AutoTabsScaffold(
@@ -50,7 +54,7 @@ class HomePage extends StatelessWidget {
         SettingsRouter(),
         //TutorialRouter(),
       ],
-      bottomNavigationBuilder: (_, tabsRouter) {
+      bottomNavigationBuilder: (_, TabsRouter tabsRouter) {
         return BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           backgroundColor: AppColors.headerBgColor,

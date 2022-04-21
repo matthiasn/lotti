@@ -93,7 +93,9 @@ class LottiApp extends StatelessWidget {
           primarySwatch: Colors.grey,
         ),
         debugShowCheckedModeBanner: true,
-        routerDelegate: router.delegate(),
+        routerDelegate: router.delegate(
+          navigatorObservers: () => [],
+        ),
         routeInformationParser: router.defaultRouteParser(),
       ),
     );

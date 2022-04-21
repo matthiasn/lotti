@@ -82,7 +82,7 @@ const AutoRoute settingsRoutes = AutoRoute(
       page: LoggingPage,
     ),
     AutoRoute(
-      path: 'logging/:dashboardId',
+      path: 'logging/:logEntryId',
       page: LogDetailPage,
     ),
     AutoRoute(

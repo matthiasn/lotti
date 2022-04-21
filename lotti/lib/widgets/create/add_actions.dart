@@ -10,6 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
@@ -92,7 +93,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           String? linkedId = widget.linked?.meta.id;
-          context.router.pushNamed('/journal/create_survey/$linkedId');
+          pushNamedRoute('/journal/create_survey/$linkedId');
         },
       ),
     );
@@ -131,7 +132,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             );
           } else {
             String? linkedId = widget.linked?.meta.id;
-            context.router.pushNamed('/journal/create/$linkedId');
+            pushNamedRoute('/journal/create/$linkedId');
           }
         },
       ),
@@ -159,7 +160,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
               }
             } else {
               String? linkedId = widget.linked?.meta.id;
-              context.router.pushNamed('/journal/create/$linkedId');
+              pushNamedRoute('/journal/create/$linkedId');
             }
           },
         ),
@@ -177,7 +178,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: AppColors.actionColor,
           onPressed: () {
             String? linkedId = widget.linked?.meta.id;
-            context.router.pushNamed('/journal/record_audio/$linkedId');
+            pushNamedRoute('/journal/record_audio/$linkedId');
 
             context.read<AudioRecorderCubit>().record(
                   linkedId: widget.linked?.meta.id,
@@ -197,7 +198,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           String? linkedId = widget.linked?.meta.id;
-          context.router.pushNamed('/tasks/create/$linkedId');
+          pushNamedRoute('/tasks/create/$linkedId');
         },
       ),
     );

@@ -1,4 +1,3 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:getwidget/components/list_tile/gf_list_tile.dart';
@@ -6,7 +5,7 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -195,7 +194,7 @@ class JournalCard extends StatelessWidget {
               context.read<AudioPlayerCubit>().setAudioNote(audioNote);
             });
 
-            context.router.push(EntryDetailRoute(itemId: item.meta.id));
+            pushNamedRoute('/journal/${item.meta.id}');
           },
         ),
       );
@@ -266,8 +265,7 @@ class JournalImageCard extends StatelessWidget {
               item.mapOrNull(journalAudio: (JournalAudio audioNote) {
                 context.read<AudioPlayerCubit>().setAudioNote(audioNote);
               });
-              String entryId = item.meta.id;
-              context.router.push(EntryDetailRoute(itemId: entryId));
+              pushNamedRoute('/journal/${item.meta.id}');
             },
           ),
         ),

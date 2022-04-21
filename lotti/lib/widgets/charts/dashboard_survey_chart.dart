@@ -1,12 +1,12 @@
 import 'dart:core';
 
-import 'package:auto_route/auto_route.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -46,7 +46,7 @@ class DashboardSurveyChart extends StatelessWidget {
         List<JournalEntity?>? items = snapshot.data ?? [];
 
         void onDoubleTap() async {
-          context.router.pushNamed('/journal/create_survey/${null}');
+          pushNamedRoute('/journal/create_survey/${null}');
         }
 
         return GestureDetector(
