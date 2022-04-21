@@ -1,3 +1,7 @@
+IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
+IOS_EXPORT_PATH = ./build/ios/export
+MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
+
 .PHONY: test
 test:
 	flutter test --coverage
@@ -65,7 +69,7 @@ bundle:
 .PHONY: ipa
 ipa: clean_test
 	flutter build ipa
-	open ./build/ios/archive/Runner.xcarchive
+	open $(IOS_ARCHIVE_PATH)
 
 .PHONY: macos_build
 macos_build: clean_test
@@ -73,11 +77,13 @@ macos_build: clean_test
 
 .PHONY: macos_archive
 macos_archive:
-	xcodebuild -workspace ./macos/Runner.xcworkspace -config Release -scheme Runner -archivePath ./build/macos/archive/Runner.xcarchive archive
+	xcodebuild -workspace ./macos/Runner.xcworkspace \
+               -config Release -scheme Runner \
+               -archivePath $(MACOS_ARCHIVE_PATH) archive
 
 .PHONY: macos
 macos: macos_build macos_archive
-	open ./build/macos/archive/Runner.xcarchive
+	open $(MACOS_ARCHIVE_PATH)
 
 .PHONY: macos_local
 macos_local: macos_build
