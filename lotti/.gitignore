@@ -66,3 +66,5 @@ lib/routes/router.gr.dart
 
 *.lock
 missing_translations.txt
+
+nohup.out

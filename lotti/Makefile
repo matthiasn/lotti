@@ -1,3 +1,8 @@
+IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
+IOS_EXPORT_PATH = ./build/ios/export
+MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
+MACOS_EXPORT_PATH = ./build/macos/export
+
 .PHONY: test
 test:
 	flutter test --coverage
@@ -62,10 +67,30 @@ migrate_db:
 bundle:
 	flutter build bundle
 
-.PHONY: ipa
-ipa: clean_test
+#######################################
+
+.PHONY: ios_build
+ios_build: clean_test
 	flutter build ipa
-	open ./build/ios/archive/Runner.xcarchive
+
+.PHONY: ios_open
+ios_open:
+	open $(IOS_ARCHIVE_PATH)
+
+.PHONY: ipa
+ipa: ios_build
+	xcodebuild -exportArchive -archivePath $(IOS_ARCHIVE_PATH) \
+               -exportOptionsPlist ./ios/Runner/exportOptions.plist \
+               -exportPath $(IOS_EXPORT_PATH) \
+               -allowProvisioningUpdates
+
+.PHONY: ios_upload
+ios_upload:
+	@xcrun altool --upload-app --type ios -f $(IOS_EXPORT_PATH)/Lotti.ipa \
+                  -u $(APPLEID) -p $(LOTTI_APPSTORE_CONNECT)
+
+.PHONY: ios
+ios: ipa ios_upload
 
 .PHONY: macos_build
 macos_build: clean_test
@@ -73,11 +98,28 @@ macos_build: clean_test
 
 .PHONY: macos_archive
 macos_archive:
-	xcodebuild -workspace ./macos/Runner.xcworkspace -config Release -scheme Runner -archivePath ./build/macos/archive/Runner.xcarchive archive
+	xcodebuild -workspace ./macos/Runner.xcworkspace \
+               -config Release -scheme Runner \
+               -archivePath $(MACOS_ARCHIVE_PATH) archive
+
+.PHONY: macos_pkg
+macos_pkg:
+	xcodebuild -exportArchive -archivePath $(MACOS_ARCHIVE_PATH) \
+               -exportOptionsPlist ./ios/Runner/exportOptions.plist \
+               -exportPath $(MACOS_EXPORT_PATH) \
+               -allowProvisioningUpdates
+
+.PHONY: macos_upload
+macos_upload:
+	@xcrun altool --upload-app --type macos -f $(MACOS_EXPORT_PATH)/Lotti.pkg \
+                  -u $(APPLEID) -p $(LOTTI_APPSTORE_CONNECT)
+
+.PHONY: macos_open
+macos_open: macos_build macos_archive
+	open $(MACOS_ARCHIVE_PATH)
 
 .PHONY: macos
-macos: macos_build macos_archive
-	open ./build/macos/archive/Runner.xcarchive
+macos: macos_build macos_archive macos_pkg macos_upload
 
 .PHONY: macos_local
 macos_local: macos_build
@@ -92,7 +134,7 @@ windows: clean_test
 	flutter build windows
 
 .PHONY: all
-all: ipa macos
+all: ios macos
 
 .PHONY: find_unused
 find_unused:
