@@ -129,13 +129,15 @@ class JournalCardTitle extends StatelessWidget {
                         color: AppColors.entryTextColor,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        data.title,
-                        style: TextStyle(
-                          fontFamily: 'Oswald',
-                          color: AppColors.entryTextColor,
-                          fontWeight: FontWeight.normal,
-                          fontSize: 24.0,
+                      Flexible(
+                        child: Text(
+                          data.title,
+                          style: TextStyle(
+                            fontFamily: 'Oswald',
+                            color: AppColors.entryTextColor,
+                            fontWeight: FontWeight.normal,
+                            fontSize: 24.0,
+                          ),
                         ),
                       ),
                     ],
