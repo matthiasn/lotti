@@ -4,3 +4,9 @@
 
 # Xcode-related
 **/xcuserdata/
+
+fastlane/README.md
+fastlane/report.xml
+Lotti.app.dSYM.zip
+Lotti.app/
+Lotti.pkg

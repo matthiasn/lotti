@@ -1,4 +1,4 @@
-## 0.7.6 Build 705 (2022-04-21)
+## 0.7.6 Build 708 (2022-04-21)
 - Populating release notes/what to test from CHANGELOG
 
 ## 0.7.6 Build 704 (2022-04-21)
