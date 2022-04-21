@@ -1,6 +1,7 @@
 IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
 IOS_EXPORT_PATH = ./build/ios/export
 MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
+MACOS_EXPORT_PATH = ./build/macos/export
 
 .PHONY: test
 test:
@@ -85,10 +86,8 @@ ipa: ios_build
 
 .PHONY: ios_upload
 ios_upload:
-	xcrun altool --upload-app --type ios \
-                -f $(IOS_EXPORT_PATH)/Lotti.ipa \
-                -u $(APPLEID) \
-                -p $(LOTTI_APPSTORE_CONNECT)
+	@xcrun altool --upload-app --type ios -f $(IOS_EXPORT_PATH)/Lotti.ipa \
+                  -u $(APPLEID) -p $(LOTTI_APPSTORE_CONNECT)
 
 .PHONY: ios
 ios: ipa ios_upload
@@ -103,9 +102,24 @@ macos_archive:
                -config Release -scheme Runner \
                -archivePath $(MACOS_ARCHIVE_PATH) archive
 
-.PHONY: macos
-macos: macos_build macos_archive
+.PHONY: macos_pkg
+macos_pkg:
+	xcodebuild -exportArchive -archivePath $(MACOS_ARCHIVE_PATH) \
+               -exportOptionsPlist ./ios/Runner/exportOptions.plist \
+               -exportPath $(MACOS_EXPORT_PATH) \
+               -allowProvisioningUpdates
+
+.PHONY: macos_upload
+macos_upload:
+	@xcrun altool --upload-app --type macos -f $(MACOS_EXPORT_PATH)/Lotti.pkg \
+                  -u $(APPLEID) -p $(LOTTI_APPSTORE_CONNECT)
+
+.PHONY: macos_open
+macos_open: macos_build macos_archive
 	open $(MACOS_ARCHIVE_PATH)
+
+.PHONY: macos
+macos: macos_build macos_archive macos_pkg macos_upload
 
 .PHONY: macos_local
 macos_local: macos_build
