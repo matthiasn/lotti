@@ -81,6 +81,11 @@ ipa: ios_build
                -exportPath $(IOS_EXPORT_PATH) \
                -allowProvisioningUpdates
 
+.PHONY: ios_upload
+ios_upload:
+	nohup /Applications/Transporter.app/Contents/MacOS/Transporter \
+          $(IOS_EXPORT_PATH)/Lotti.ipa 2>&1 &
+
 .PHONY: macos_build
 macos_build: clean_test
 	flutter build macos
@@ -108,7 +113,7 @@ windows: clean_test
 	flutter build windows
 
 .PHONY: all
-all: ipa macos
+all: ipa ios_upload macos
 
 .PHONY: find_unused
 find_unused:
