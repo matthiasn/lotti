@@ -73,7 +73,7 @@ macos_build: clean_test
 
 .PHONY: macos_archive
 macos_archive:
-	xcodebuild -workspace ./macos/Runner.xcworkspace -config Release -scheme Release -archivePath ./build/macos/archive/Runner.xcarchive archive
+	xcodebuild -workspace ./macos/Runner.xcworkspace -config Release -scheme Runner -archivePath ./build/macos/archive/Runner.xcarchive archive
 
 .PHONY: macos
 macos: macos_build macos_archive
