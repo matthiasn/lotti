@@ -124,11 +124,11 @@ macos_open: macos_build macos_archive
 	open $(MACOS_ARCHIVE_PATH)
 
 .PHONY: macos_fastlane_beta
-macos_fastlane_beta: macos_build
+macos_fastlane_beta:
 	CHANGELOG="$(CHANGELOG)" cd macos && fastlane beta && cd ..
 
 .PHONY: macos
-macos: macos_fastlane_beta
+macos: macos_build macos_fastlane_beta
 
 .PHONY: macos_cli
 macos_cli: macos_build macos_archive macos_pkg macos_upload
