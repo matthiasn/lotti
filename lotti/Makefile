@@ -2,7 +2,7 @@ IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
 IOS_EXPORT_PATH = ./build/ios/export
 MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
 MACOS_EXPORT_PATH = ./build/macos/export
-CHANGELOG = $(shell cat CHANGELOG.md)
+CHANGELOG = $(shell cat CHANGELOG.latest)
 
 .PHONY: test
 test:
@@ -75,9 +75,8 @@ ios_build: clean_test
 	flutter build ipa
 
 .PHONY: ios_fastlane_beta
-ios_fastlane_beta: ios_build
-	echo "$(CHANGELOG)"
-	cd ios && fastlane beta && cd ..
+ios_fastlane_beta:
+	CHANGELOG="$(CHANGELOG)" cd ios && fastlane beta && cd ..
 
 .PHONY: ios_open
 ios_open:
@@ -96,7 +95,7 @@ ios_upload:
                   -u $(APPLEID) -p $(LOTTI_APPSTORE_CONNECT)
 
 .PHONY: ios
-ios: ios_fastlane_beta
+ios: ios_build ios_fastlane_beta
 
 .PHONY: macos_build
 macos_build: clean_test
@@ -126,8 +125,7 @@ macos_open: macos_build macos_archive
 
 .PHONY: macos_fastlane_beta
 macos_fastlane_beta: macos_build
-	echo "$(CHANGELOG)"
-	cd macos && fastlane beta && cd ..
+	CHANGELOG="$(CHANGELOG)" cd macos && fastlane beta && cd ..
 
 .PHONY: macos
 macos: macos_fastlane_beta
