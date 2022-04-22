@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release to TestFlight via fastlane
 - Added fastlane-plugin-changelog
 - Populating release notes/what to test from CHANGELOG
+- Added fastlane match
+- Added GitHub Actions setup
 
 ## [0.7.5] - 2022-04-21
 ### Added:
