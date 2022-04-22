@@ -1,6 +1,6 @@
-default_platform(:macos)
+default_platform(:mac)
 
-platform :macos do
+platform :mac do
   desc "Push a new beta build to TestFlight"
   lane :beta do
     changelog = read_changelog(changelog_path: '../CHANGELOG.md')
