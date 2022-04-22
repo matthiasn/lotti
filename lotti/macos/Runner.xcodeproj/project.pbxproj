@@ -584,7 +584,7 @@
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasnehlsen.lotti;
-				PROVISIONING_PROFILE_SPECIFIER = "Lotti Universal mac App Store Provisioning Profile";
+				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.matthiasnehlsen.lotti macos";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

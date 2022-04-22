@@ -77,6 +77,10 @@ ios_build: clean_test
 ios_fastlane_beta:
 	cd ios && fastlane beta && cd ..
 
+.PHONY: ios_fastlane_match
+ios_fastlane_match:
+	cd ios && fastlane match --generate_apple_certs false && cd ..
+
 .PHONY: ios_open
 ios_open:
 	open $(IOS_ARCHIVE_PATH)
@@ -125,6 +129,10 @@ macos_open: macos_build macos_archive
 .PHONY: macos_fastlane_beta
 macos_fastlane_beta:
 	cd macos && fastlane beta && cd ..
+
+.PHONY: macos_fastlane_match
+macos_fastlane_match:
+	cd macos && fastlane match --generate_apple_certs false && cd ..
 
 .PHONY: macos
 macos: macos_build macos_fastlane_beta

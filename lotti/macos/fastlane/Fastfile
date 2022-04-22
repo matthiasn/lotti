@@ -3,6 +3,8 @@ default_platform(:mac)
 platform :mac do
   desc "Push a new beta build to TestFlight"
   lane :beta do
+    match(type: "appstore", readonly: is_ci)
+
     changelog = read_changelog(changelog_path: '../CHANGELOG.md')
     build_app(workspace: "Runner.xcworkspace", scheme: "Runner")
     upload_to_testflight(
