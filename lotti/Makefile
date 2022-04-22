@@ -2,7 +2,6 @@ IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
 IOS_EXPORT_PATH = ./build/ios/export
 MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
 MACOS_EXPORT_PATH = ./build/macos/export
-CHANGELOG = $(shell cat CHANGELOG.latest)
 
 .PHONY: test
 test:
@@ -76,7 +75,7 @@ ios_build: clean_test
 
 .PHONY: ios_fastlane_beta
 ios_fastlane_beta:
-	CHANGELOG="$(CHANGELOG)" cd ios && fastlane beta && cd ..
+	cd ios && fastlane beta && cd ..
 
 .PHONY: ios_open
 ios_open:
@@ -125,7 +124,7 @@ macos_open: macos_build macos_archive
 
 .PHONY: macos_fastlane_beta
 macos_fastlane_beta:
-	CHANGELOG="$(CHANGELOG)" cd macos && fastlane beta && cd ..
+	cd macos && fastlane beta && cd ..
 
 .PHONY: macos
 macos: macos_build macos_fastlane_beta

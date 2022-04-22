@@ -1,5 +1,15 @@
-## 0.7.6 Build 714 (2022-04-22)
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+### Added:
+- Release to TestFlight via fastlane
+- Added fastlane-plugin-changelog
 - Populating release notes/what to test from CHANGELOG
 
-## 0.7.6 Build 704 (2022-04-21)
-- Added FastLane config for iOS
+## [0.7.5] - 2022-04-21
+### Added:
+- Added `make` tasks for TestFlight upload
