@@ -1,0 +1,23 @@
+name: Flutter Test
+
+on:
+  push:
+    branches:
+      - 'testflight-release'
+
+jobs:
+  test:
+    name: Flutter Test on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: subosito/flutter-action@v1
+        with:
+          flutter-version: '2.10'
+          channel: 'stable'
+      - name: Run Flutter build and publish
+        working-directory: ./lotti
+        run: make all
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          KEYCHAIN_PW: ${{ secrets.KEYCHAIN_PW }}

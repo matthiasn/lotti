@@ -3,6 +3,8 @@ default_platform(:ios)
 platform :ios do
   desc "Push a new beta build to TestFlight"
   lane :beta do
+    match(type: "appstore", readonly: is_ci)
+
     changelog = read_changelog(changelog_path: '../CHANGELOG.md')
     build_app(
       skip_build_archive: true,
