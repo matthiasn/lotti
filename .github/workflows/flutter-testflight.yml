@@ -1,4 +1,4 @@
-name: Flutter Test
+name: Flutter TestFlight
 
 on:
   push:
@@ -7,17 +7,33 @@ on:
 
 jobs:
   test:
-    name: Flutter Test on Linux
-    runs-on: ubuntu-latest
+    name: Flutter TestFlight release on iOS and macOS
+    runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v2
       - uses: subosito/flutter-action@v1
         with:
           flutter-version: '2.10'
           channel: 'stable'
-      - name: Run Flutter build and publish
-        working-directory: ./lotti
-        run: make all
+      - name: Fastlane match iOS
+        working-directory: lotti/ios
+        run: >
+          fastlane match --generate_apple_certs false 
+          --git_basic_authorization $MATCH_GIT_BASIC_AUTHORIZATION
+          --readonly true
         env:
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          KEYCHAIN_PW: ${{ secrets.KEYCHAIN_PW }}
+      - name: Fastlane match macOS
+        working-directory: lotti/macos
+        run: > 
+          fastlane match --platform macos   
+          --generate_apple_certs false 
+          --git_basic_authorization $MATCH_GIT_BASIC_AUTHORIZATION
+          --readonly true
+        env:
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+#      - name: Run Flutter build and publish
+#        working-directory: ./lotti
+#        run: make all
