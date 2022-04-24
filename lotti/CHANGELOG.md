@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Added flutter_image_slideshow
+
+## [0.7.6] - 2022-04-22
+### Added:
 - Release to TestFlight via fastlane
 - Added fastlane-plugin-changelog
 - Populating release notes/what to test from CHANGELOG
