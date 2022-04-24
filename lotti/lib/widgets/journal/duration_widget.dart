@@ -63,7 +63,7 @@ class DurationWidget extends StatelessWidget {
                 ),
               ),
               SizedBox(
-                width: 50,
+                width: 60,
                 child: Text(
                   formatDuration(entryDuration(displayed)),
                   style: style?.copyWith(

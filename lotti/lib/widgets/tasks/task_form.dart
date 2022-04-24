@@ -150,7 +150,7 @@ class _TaskFormState extends State<TaskForm> {
                   decoration: InputDecoration(
                     labelText: localizations.taskStatusLabel,
                     labelStyle: labelStyle.copyWith(
-                      height: 0.6,
+                      height: 1,
                       fontFamily: 'Oswald',
                     ),
                   ),
@@ -162,7 +162,7 @@ class _TaskFormState extends State<TaskForm> {
                   spacing: 4,
                   labelStyle: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w300,
+                    fontWeight: FontWeight.w500,
                     fontFamily: 'Oswald',
                   ),
                   options: [

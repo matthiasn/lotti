@@ -326,7 +326,7 @@ class TagWidget extends StatelessWidget {
                 child: Text(
                   tagEntity.tag,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     fontFamily: 'Oswald',
                     color: AppColors.tagTextColor,
                   ),

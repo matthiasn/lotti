@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.7.7+724
+version: 0.7.8+726
 
 environment:
   sdk: ">=2.16.0 <3.0.0"
@@ -170,4 +170,4 @@ flutter:
         - asset: assets/fonts/ShareTechMono-Regular.ttf
 
 flutter_native_splash:
-  color: "#444455"
+  color: "#283c5c"
