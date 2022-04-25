@@ -108,7 +108,17 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         }
 
         return Container(
-          margin: const EdgeInsets.all(4),
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                spreadRadius: 3,
+                blurRadius: 5,
+                offset: const Offset(0, 3), // changes position of shadow
+              ),
+            ],
+          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8.0),
             child: Container(
@@ -116,6 +126,19 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  item.maybeMap(
+                    journalImage: (image) {
+                      return Container(
+                        width: MediaQuery.of(context).size.width,
+                        color: Colors.black,
+                        child: EntryImageWidget(
+                          focusNode: _focusNode,
+                          journalImage: image,
+                        ),
+                      );
+                    },
+                    orElse: () => const SizedBox.shrink(),
+                  ),
                   EntryDetailHeader(
                     itemId: widget.itemId,
                     saveFn: saveText,
@@ -128,71 +151,26 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     ),
                     child: TagsListWidget(widget.itemId),
                   ),
-                  item.map(
+                  item.maybeMap(
+                    task: (_) => const SizedBox.shrink(),
+                    orElse: () {
+                      return EditorWidget(
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        journalEntity: item,
+                        saveFn: saveText,
+                      );
+                    },
+                  ),
+                  item.maybeMap(
                     journalAudio: (JournalAudio audio) {
-                      return Column(
-                        children: [
-                          const AudioPlayerWidget(),
-                          EditorWidget(
-                            controller: _controller,
-                            journalEntity: item,
-                            focusNode: _focusNode,
-                            saveFn: saveText,
-                          ),
-                        ],
-                      );
-                    },
-                    journalImage: (JournalImage image) {
-                      return Column(
-                        children: [
-                          Container(
-                            width: MediaQuery.of(context).size.width,
-                            color: Colors.black,
-                            child: EntryImageWidget(
-                              focusNode: _focusNode,
-                              journalImage: image,
-                            ),
-                          ),
-                          EditorWidget(
-                            controller: _controller,
-                            focusNode: _focusNode,
-                            journalEntity: item,
-                            saveFn: saveText,
-                          ),
-                        ],
-                      );
-                    },
-                    journalEntry: (JournalEntry journalEntry) {
-                      return EditorWidget(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        saveFn: saveText,
-                        journalEntity: item,
-                      );
-                    },
-                    measurement: (MeasurementEntry entry) {
-                      return EditorWidget(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        saveFn: saveText,
-                        journalEntity: item,
-                      );
+                      return const AudioPlayerWidget();
                     },
                     workout: (WorkoutEntry workout) {
                       WorkoutData data = workout.data;
-                      return Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: EntryTextWidget(data.toString()),
-                          ),
-                          EditorWidget(
-                            controller: _controller,
-                            focusNode: _focusNode,
-                            saveFn: saveText,
-                            journalEntity: item,
-                          ),
-                        ],
+                      return Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: EntryTextWidget(data.toString()),
                       );
                     },
                     survey: (SurveyEntry surveyEntry) =>
@@ -265,7 +243,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         task: task,
                       );
                     },
-                    habitCompletion: (HabitCompletionEntry value) {
+                    orElse: () {
                       return const SizedBox.shrink();
                     },
                   ),

@@ -62,7 +62,7 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
               file,
               height: 400,
               width: MediaQuery.of(context).size.width,
-              fit: BoxFit.scaleDown,
+              fit: BoxFit.contain,
             ),
           ),
         ),
