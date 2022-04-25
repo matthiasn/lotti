@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/widgets/journal/editor/editor_wrapper_widget.dart';
 import 'package:path_provider/path_provider.dart';
@@ -19,14 +20,13 @@ class SlideShowWidget extends StatelessWidget {
     List<JournalImage> imageItems = items.whereType<JournalImage>().toList();
 
     return Container(
-      padding: const EdgeInsets.only(top: 60.0),
       color: Colors.black,
       child: ImageSlideshow(
         width: double.infinity,
         height: double.infinity,
         initialPage: 0,
-        indicatorColor: Colors.blue,
-        indicatorBackgroundColor: Colors.grey,
+        indicatorColor: AppColors.bottomNavIconSelected,
+        indicatorBackgroundColor: AppColors.bottomNavIconUnselected,
         onPageChanged: (value) {
           debugPrint('Page changed: $value');
         },

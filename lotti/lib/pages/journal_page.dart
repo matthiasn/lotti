@@ -424,7 +424,23 @@ class _JournalPageState extends State<JournalPage> {
                         ),
                       ),
                       if (showSlideshow) SlideShowWidget(items),
-                      buildFloatingSearchBar(),
+                      if (!showSlideshow) buildFloatingSearchBar(),
+                      if (showSlideshow)
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                showSlideshow = !showSlideshow;
+                                resetStream();
+                              });
+                            },
+                            icon: Icon(
+                              Icons.close,
+                              color: AppColors.bottomNavIconUnselected,
+                            ),
+                          ),
+                        ),
                     ],
                   );
                 }
