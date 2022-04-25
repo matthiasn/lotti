@@ -5,10 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.7.10] - 2022-04-26
 ### Added:
 - Sync settings: hide sensitive info
 - Sync settings: select IMAP folder
 - Styling: shadow on navigation bar
+- Sync assistant
 
 ### Changed:  
 - Task form styling
@@ -16,7 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync IMAP messages marked seen
 - Sync IMAP messages in lotti_sync folder
 - Styling: entry card color
-- Sync assistant
 
 ## [0.7.9] - 2022-04-25
 ### Changed:
