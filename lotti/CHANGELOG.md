@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - text color in sync settings
+- unfocus on save
 
 ## [0.7.8] - 2022-04-24
 ### Added:

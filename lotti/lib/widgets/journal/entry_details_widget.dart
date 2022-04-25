@@ -104,6 +104,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
         void saveText() {
           _editorStateService.saveState(widget.itemId, _controller);
+          _focusNode.unfocus();
         }
 
         return Container(
