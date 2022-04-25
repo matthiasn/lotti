@@ -54,30 +54,38 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                   FormBuilderTextField(
                     name: 'imap_host',
                     validator: FormBuilderValidators.required(context),
+                    style: inputStyle,
                     decoration: InputDecoration(
                       labelText: localizations.settingsSyncHostLabel,
+                      labelStyle: settingsLabelStyle,
                     ),
                   ),
                   FormBuilderTextField(
                     name: 'imap_userName',
                     validator: FormBuilderValidators.required(context),
+                    style: inputStyle,
                     decoration: InputDecoration(
                       labelText: localizations.settingsSyncUserLabel,
+                      labelStyle: settingsLabelStyle,
                     ),
                   ),
                   FormBuilderTextField(
                     name: 'imap_password',
                     validator: FormBuilderValidators.required(context),
+                    style: inputStyle,
                     decoration: InputDecoration(
                       labelText: localizations.settingsSyncPasswordLabel,
+                      labelStyle: settingsLabelStyle,
                     ),
                   ),
                   FormBuilderTextField(
                     name: 'imap_port',
                     initialValue: '993',
                     validator: FormBuilderValidators.integer(context),
+                    style: inputStyle,
                     decoration: InputDecoration(
                       labelText: localizations.settingsSyncPortLabel,
+                      labelStyle: settingsLabelStyle,
                     ),
                   ),
                   Button(

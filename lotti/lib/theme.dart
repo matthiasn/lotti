@@ -30,7 +30,7 @@ class AppColors {
   static Color recordingTextColor = const Color.fromRGBO(224, 224, 224, 0.8);
   static Color editorBgColor = Colors.white;
 
-  static Color bodyBgColor = const Color.fromRGBO(25, 38, 58, 1);
+  static Color bodyBgColor = const Color.fromRGBO(29, 45, 69, 1);
   static Color headerBgColor = const Color.fromRGBO(40, 60, 92, 1);
   static Color entryTextColor = const Color.fromRGBO(200, 190, 180, 1);
 
@@ -161,6 +161,12 @@ TextStyle formLabelStyle = TextStyle(
   height: 1.6,
   fontFamily: 'Oswald',
   fontSize: 20,
+);
+
+TextStyle settingsLabelStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  fontFamily: 'Oswald',
+  fontSize: 16,
 );
 
 TextStyle logDetailStyle = TextStyle(
