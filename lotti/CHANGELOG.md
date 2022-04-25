@@ -6,18 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
-- sync settings improvements
+- Sync settings improvements
+
+### Changed:  
+- Task form styling
 
 ## [0.7.9] - 2022-04-25
-### Added:
-- text color in sync settings
-- unfocus on save
-- entry styling
+### Changed:
+- Text color in sync settings
+- Unfocus on save
+- Entry styling
 
 ## [0.7.8] - 2022-04-24
 ### Added:
-- new color scheme
-- text editor in slideshow for faster import
+- New color scheme
+- Text editor in slideshow for faster import
 
 ## [0.7.7] - 2022-04-24
 ### Added:
