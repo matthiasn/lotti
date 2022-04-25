@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:lotti/pages/tutorial/sliding_intro/tutorial_utils.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/sync/qr_widget.dart';
 import 'package:lottie/lottie.dart';
 
@@ -58,9 +59,12 @@ class SyncAssistantSlide3 extends StatelessWidget {
           ),
           Align(
             alignment: const Alignment(0, -0.4),
-            child: SlidingContainer(
-              offset: 100,
-              child: const EncryptionQrWidget(),
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isMobile ? 250 : 0),
+              child: SlidingContainer(
+                offset: 100,
+                child: const EncryptionQrWidget(),
+              ),
             ),
           ),
           Align(

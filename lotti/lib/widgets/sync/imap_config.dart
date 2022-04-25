@@ -33,8 +33,9 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
           child: state.maybeWhen(
             (sharedKey, imapConfig) {
               return Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.only(bottom: 88.0),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
