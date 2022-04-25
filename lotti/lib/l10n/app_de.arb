@@ -98,6 +98,7 @@
   "settingsSyncGenKey": "Schlüssel für Sync wird generiert...",
   "settingsSyncGenKeyButton": "Schlüssel generieren",
   "settingsSyncHostLabel": "Servername",
+  "settingsSyncFolderLabel": "IMAP Ordner",
   "settingsSyncImportButton": "SyncConfig importieren",
   "settingsSyncIncompleteConfig": "Die Sync Konfiguration ist unvollständig",
   "settingsSyncLoadingKey": "Schlüssel wird geladen...",

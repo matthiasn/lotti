@@ -46,6 +46,10 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                       style: labelStyleLarger,
                     ),
                     Text(
+                      'IMAP Folder: ${imapConfig?.folder}',
+                      style: labelStyleLarger,
+                    ),
+                    Text(
                       'User: ${imapConfig?.userName}',
                       style: labelStyleLarger,
                     ),
@@ -86,6 +90,20 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                     ),
                   ),
                   FormBuilderTextField(
+                    name: 'imap_folder',
+                    initialValue: state.maybeWhen(
+                          (sharedKey, imapConfig) => imapConfig?.folder,
+                          orElse: () => null,
+                        ) ??
+                        'INBOX',
+                    validator: FormBuilderValidators.required(context),
+                    style: inputStyle,
+                    decoration: InputDecoration(
+                      labelText: localizations.settingsSyncFolderLabel,
+                      labelStyle: settingsLabelStyle,
+                    ),
+                  ),
+                  FormBuilderTextField(
                     name: 'imap_userName',
                     initialValue: state.maybeWhen(
                       (sharedKey, imapConfig) => imapConfig?.userName,
@@ -115,9 +133,11 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                   FormBuilderTextField(
                     name: 'imap_port',
                     initialValue: state.maybeWhen(
-                      (sharedKey, imapConfig) => imapConfig?.port.toString(),
-                      orElse: () => null,
-                    ),
+                          (sharedKey, imapConfig) =>
+                              imapConfig?.port.toString(),
+                          orElse: () => null,
+                        ) ??
+                        '993',
                     validator: FormBuilderValidators.integer(context),
                     style: inputStyle,
                     decoration: InputDecoration(
@@ -136,6 +156,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                         final formData = _formKey.currentState?.value;
                         ImapConfig cfg = ImapConfig(
                           host: formData!['imap_host'],
+                          folder: formData['imap_folder'],
                           userName: formData['imap_userName'],
                           password: formData['imap_password'],
                           port: int.parse(formData['imap_port']),

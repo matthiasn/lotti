@@ -98,6 +98,7 @@
   "settingsSyncGenKey": "Generating shared key...",
   "settingsSyncGenKeyButton": "Generate Shared Key",
   "settingsSyncHostLabel": "Host",
+  "settingsSyncFolderLabel": "IMAP Folder",
   "settingsSyncImportButton": "Import SyncConfig",
   "settingsSyncIncompleteConfig": "Sync config is incomplete",
   "settingsSyncLoadingKey": "Loading shared key...",

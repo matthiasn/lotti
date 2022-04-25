@@ -21,7 +21,7 @@ Future<ImapClient?> createImapClient() async {
         isSecure: true,
       );
       await imapClient.login(imapConfig.userName, imapConfig.password);
-      await imapClient.selectInbox();
+      await imapClient.selectMailboxByPath(imapConfig.folder ?? 'INBOX');
 
       imapClient.eventBus.on<ImapEvent>().listen((ImapEvent imapEvent) async {
         _loggingDb.captureEvent(imapEvent, domain: 'IMAP_CLIENT');
