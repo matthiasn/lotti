@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:  
 - Task form styling
 - Unfocus on save only on mobile
+- Sync IMAP messages not marked unseen
 
 ## [0.7.9] - 2022-04-25
 ### Changed:

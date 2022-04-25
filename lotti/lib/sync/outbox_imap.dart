@@ -34,8 +34,11 @@ Future<GenericImapResult> saveImapMessage(
     }
 
     final MimeMessage message = builder.buildMimeMessage();
-    GenericImapResult res =
-        await imapClient.appendMessage(message, targetMailbox: inbox);
+    GenericImapResult res = await imapClient.appendMessage(
+      message,
+      targetMailbox: inbox,
+      flags: ['\\Seen'],
+    );
     debugPrint(
         'saveImapMessage responseCode ${res.responseCode} details ${res.details}');
     await transaction.finish();
