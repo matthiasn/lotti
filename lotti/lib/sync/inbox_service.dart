@@ -301,8 +301,7 @@ class SyncInboxService {
         _observingClient = MailClient(account, isLogEnabled: false);
 
         await _observingClient!.connect();
-        await _observingClient!
-            .selectMailboxByPath(imapConfig.folder ?? 'INBOX');
+        await _observingClient!.selectMailboxByPath(imapConfig.folder);
 
         _observingClient!.eventBus
             .on<MailLoadEvent>()

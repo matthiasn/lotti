@@ -7,7 +7,7 @@ part 'config.g.dart';
 class ImapConfig with _$ImapConfig {
   factory ImapConfig({
     required String host,
-    String? folder,
+    required String folder,
     required String userName,
     required String password,
     required int port,
