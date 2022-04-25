@@ -4,7 +4,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:glass/glass.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -13,8 +12,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
-import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
+import 'package:lotti/widgets/journal/slideshow.dart';
 import 'package:lotti/widgets/journal/tags_search_widget.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
@@ -425,7 +424,23 @@ class _JournalPageState extends State<JournalPage> {
                         ),
                       ),
                       if (showSlideshow) SlideShowWidget(items),
-                      buildFloatingSearchBar(),
+                      if (!showSlideshow) buildFloatingSearchBar(),
+                      if (showSlideshow)
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                showSlideshow = !showSlideshow;
+                                resetStream();
+                              });
+                            },
+                            icon: Icon(
+                              Icons.close,
+                              color: AppColors.bottomNavIconUnselected,
+                            ),
+                          ),
+                        ),
                     ],
                   );
                 }
@@ -434,49 +449,6 @@ class _JournalPageState extends State<JournalPage> {
           },
         );
       },
-    );
-  }
-}
-
-class SlideShowWidget extends StatelessWidget {
-  final List<JournalEntity> items;
-  const SlideShowWidget(
-    this.items, {
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    List<JournalImage> imageItems = items.whereType<JournalImage>().toList();
-
-    return Container(
-      padding: const EdgeInsets.only(top: 60.0),
-      color: Colors.black,
-      child: ImageSlideshow(
-        width: double.infinity,
-        height: double.infinity,
-        initialPage: 0,
-        indicatorColor: Colors.blue,
-        indicatorBackgroundColor: Colors.grey,
-        onPageChanged: (value) {
-          debugPrint('Page changed: $value');
-        },
-//        autoPlayInterval: 1000,
-        isLoop: true,
-        children: [
-          ...List.generate(
-            imageItems.length,
-            (int index) {
-              JournalImage item = imageItems.elementAt(index);
-              return CardImageWidget(
-                height: 1200,
-                journalImage: item,
-              );
-            },
-            growable: true,
-          ),
-        ],
-      ),
     );
   }
 }

@@ -62,6 +62,8 @@ class HomePage extends StatelessWidget {
           selectedItemColor: AppColors.bottomNavIconSelected,
           currentIndex: tabsRouter.activeIndex,
           onTap: tabsRouter.setActiveIndex,
+          selectedFontSize: 18,
+          unselectedFontSize: 14,
           items: [
             BottomNavigationBarItem(
               icon: FlaggedBadgeIcon(),

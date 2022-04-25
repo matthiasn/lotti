@@ -30,7 +30,7 @@ class SettingsCard extends StatelessWidget {
           style: TextStyle(
             color: AppColors.entryTextColor,
             fontFamily: 'Oswald',
-            fontSize: 20.0,
+            fontSize: 22.0,
             fontWeight: FontWeight.w300,
           ),
         ),
