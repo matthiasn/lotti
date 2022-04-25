@@ -43,7 +43,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
         builder: (context, SyncConfigState state) {
       return SizedBox(
-        width: 300,
+        width: 360,
         child: Column(
           children: [
             FormBuilder(
@@ -53,6 +53,10 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                 children: <Widget>[
                   FormBuilderTextField(
                     name: 'imap_host',
+                    initialValue: state.maybeWhen(
+                      (sharedKey, imapConfig) => imapConfig?.host,
+                      orElse: () => null,
+                    ),
                     validator: FormBuilderValidators.required(context),
                     style: inputStyle,
                     decoration: InputDecoration(
@@ -62,6 +66,10 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                   ),
                   FormBuilderTextField(
                     name: 'imap_userName',
+                    initialValue: state.maybeWhen(
+                      (sharedKey, imapConfig) => imapConfig?.userName,
+                      orElse: () => null,
+                    ),
                     validator: FormBuilderValidators.required(context),
                     style: inputStyle,
                     decoration: InputDecoration(
@@ -71,6 +79,11 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                   ),
                   FormBuilderTextField(
                     name: 'imap_password',
+                    initialValue: state.maybeWhen(
+                      (sharedKey, imapConfig) => imapConfig?.password,
+                      orElse: () => null,
+                    ),
+                    obscureText: true,
                     validator: FormBuilderValidators.required(context),
                     style: inputStyle,
                     decoration: InputDecoration(
@@ -80,7 +93,10 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                   ),
                   FormBuilderTextField(
                     name: 'imap_port',
-                    initialValue: '993',
+                    initialValue: state.maybeWhen(
+                      (sharedKey, imapConfig) => imapConfig?.port.toString(),
+                      orElse: () => null,
+                    ),
                     validator: FormBuilderValidators.integer(context),
                     style: inputStyle,
                     decoration: InputDecoration(
@@ -106,14 +122,6 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                         context.read<SyncConfigCubit>().setImapConfig(cfg);
                       }
                     },
-                  ),
-                  Center(
-                    child: state.maybeWhen(
-                        (sharedKey, imapConfig) =>
-                            StatusTextWidget(imapConfig.toString()),
-                        orElse: () {
-                      return null;
-                    }),
                   ),
                 ],
               ),

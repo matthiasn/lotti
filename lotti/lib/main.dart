@@ -101,5 +101,3 @@ class LottiApp extends StatelessWidget {
     );
   }
 }
-
-//void main() => runApp(AutoRouteAppWidget());

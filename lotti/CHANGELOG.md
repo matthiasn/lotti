@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- sync settings improvements
+
+## [0.7.9] - 2022-04-25
+### Added:
 - text color in sync settings
 - unfocus on save
 - entry styling
