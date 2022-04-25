@@ -163,6 +163,12 @@ TextStyle formLabelStyle = TextStyle(
   fontSize: 20,
 );
 
+TextStyle settingsLabelStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  fontFamily: 'Oswald',
+  fontSize: 16,
+);
+
 TextStyle logDetailStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'ShareTechMono',
