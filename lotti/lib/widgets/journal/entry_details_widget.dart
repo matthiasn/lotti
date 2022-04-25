@@ -13,6 +13,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
@@ -104,7 +105,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
         void saveText() {
           _editorStateService.saveState(widget.itemId, _controller);
-          _focusNode.unfocus();
+
+          if (isMobile) {
+            _focusNode.unfocus();
+          }
         }
 
         return Container(
