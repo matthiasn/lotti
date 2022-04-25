@@ -8,12 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Sync settings: hide sensitive info
 - Sync settings: select IMAP folder
+- Styling: shadow on navigation bar
 
 ### Changed:  
 - Task form styling
 - Unfocus on save only on mobile
 - Sync IMAP messages marked seen
 - Sync IMAP messages in lotti_sync folder
+- Styling: entry card color
 
 ## [0.7.9] - 2022-04-25
 ### Changed:

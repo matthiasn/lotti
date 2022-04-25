@@ -37,7 +37,7 @@ class _TagEditPageState extends State<TagEditPage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              color: AppColors.headerBgColor,
+              color: AppColors.entryCardColor,
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 children: [

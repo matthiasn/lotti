@@ -55,40 +55,50 @@ class HomePage extends StatelessWidget {
         //TutorialRouter(),
       ],
       bottomNavigationBuilder: (_, TabsRouter tabsRouter) {
-        return BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: AppColors.headerBgColor,
-          unselectedItemColor: AppColors.bottomNavIconUnselected,
-          selectedItemColor: AppColors.bottomNavIconSelected,
-          currentIndex: tabsRouter.activeIndex,
-          onTap: tabsRouter.setActiveIndex,
-          selectedFontSize: 18,
-          unselectedFontSize: 14,
-          items: [
-            BottomNavigationBarItem(
-              icon: FlaggedBadgeIcon(),
-              label: AppLocalizations.of(context)!.navTabTitleJournal,
-            ),
-            BottomNavigationBarItem(
-              icon: TasksBadgeIcon(),
-              label: AppLocalizations.of(context)!.navTabTitleTasks,
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.lightbulb_outline),
-              label: AppLocalizations.of(context)!.navTabTitleInsights,
-            ),
-            // TODO: bring back or remove
-            // const BottomNavigationBarItem(
-            //   icon: Icon(Icons.calendar_today),
-            //   label: 'My Day',
-            // ),
-            BottomNavigationBarItem(
-              icon: OutboxBadgeIcon(
-                icon: const Icon(Icons.settings_outlined),
+        return Container(
+          decoration: const BoxDecoration(
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                  color: Colors.black54,
+                  blurRadius: 8,
+                  offset: Offset(0.0, 0.75))
+            ],
+          ),
+          child: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: AppColors.headerBgColor,
+            unselectedItemColor: AppColors.bottomNavIconUnselected,
+            selectedItemColor: AppColors.bottomNavIconSelected,
+            currentIndex: tabsRouter.activeIndex,
+            onTap: tabsRouter.setActiveIndex,
+            selectedFontSize: 18,
+            unselectedFontSize: 14,
+            items: [
+              BottomNavigationBarItem(
+                icon: FlaggedBadgeIcon(),
+                label: AppLocalizations.of(context)!.navTabTitleJournal,
               ),
-              label: AppLocalizations.of(context)!.navTabTitleSettings,
-            ),
-          ],
+              BottomNavigationBarItem(
+                icon: TasksBadgeIcon(),
+                label: AppLocalizations.of(context)!.navTabTitleTasks,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.lightbulb_outline),
+                label: AppLocalizations.of(context)!.navTabTitleInsights,
+              ),
+              // TODO: bring back or remove
+              // const BottomNavigationBarItem(
+              //   icon: Icon(Icons.calendar_today),
+              //   label: 'My Day',
+              // ),
+              BottomNavigationBarItem(
+                icon: OutboxBadgeIcon(
+                  icon: const Icon(Icons.settings_outlined),
+                ),
+                label: AppLocalizations.of(context)!.navTabTitleSettings,
+              ),
+            ],
+          ),
         );
       },
     );

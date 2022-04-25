@@ -392,10 +392,10 @@ class _JournalPageState extends State<JournalPage> {
                       Scaffold(
                         backgroundColor: AppColors.bodyBgColor,
                         body: Container(
-                          margin: const EdgeInsets.all(8.0),
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
                           child: ListView(
                             children: [
-                              const SizedBox(height: 56),
+                              const SizedBox(height: 60),
                               ...List.generate(
                                 items.length,
                                 (int index) {

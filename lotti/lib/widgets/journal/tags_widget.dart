@@ -85,7 +85,7 @@ class TagAddIconWidget extends StatelessWidget {
                 clipBehavior: Clip.antiAliasWithSaveLayer,
                 builder: (BuildContext context) {
                   return Container(
-                    color: AppColors.headerBgColor,
+                    color: AppColors.entryCardColor,
                     child: Padding(
                       padding: const EdgeInsets.only(
                         left: 16,
@@ -144,7 +144,7 @@ class TagAddIconWidget extends StatelessWidget {
                                   },
                                   suggestionsBoxDecoration:
                                       SuggestionsBoxDecoration(
-                                    color: AppColors.headerBgColor,
+                                    color: AppColors.entryCardColor,
                                     borderRadius: BorderRadius.circular(8.0),
                                   ),
                                   itemBuilder: (context, TagEntity tagEntity) {
