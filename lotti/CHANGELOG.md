@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync IMAP messages marked seen
 - Sync IMAP messages in lotti_sync folder
 - Styling: entry card color
+- Sync assistant
 
 ## [0.7.9] - 2022-04-25
 ### Changed:

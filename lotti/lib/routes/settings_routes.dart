@@ -14,7 +14,7 @@ import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
 import 'package:lotti/pages/settings/measurables/measurables_page.dart';
 import 'package:lotti/pages/settings/outbox_monitor.dart';
 import 'package:lotti/pages/settings/settings_page.dart';
-import 'package:lotti/pages/settings/sync_settings.dart';
+import 'package:lotti/pages/settings/sync/sync_assistant_page.dart';
 import 'package:lotti/pages/settings/tags/create_tag_page.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';
@@ -59,7 +59,8 @@ const AutoRoute settingsRoutes = AutoRoute(
     ),
     AutoRoute(
       path: 'sync_settings',
-      page: SyncSettingsPage,
+      //page: SyncSettingsPage,
+      page: SyncAssistantPage,
     ),
     AutoRoute(
       path: 'measurables',

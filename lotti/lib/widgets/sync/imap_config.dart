@@ -68,8 +68,9 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
         builder: (context, SyncConfigState state) {
       return SizedBox(
-        width: 360,
+        width: 320,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             FormBuilder(
               key: _formKey,
