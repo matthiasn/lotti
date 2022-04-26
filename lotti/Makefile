@@ -113,7 +113,7 @@ macos_archive:
 .PHONY: macos_pkg
 macos_pkg:
 	xcodebuild -exportArchive -archivePath $(MACOS_ARCHIVE_PATH) \
-               -exportOptionsPlist ./ios/Runner/exportOptions.plist \
+               -exportOptionsPlist ./macos/Runner/exportOptions.plist \
                -exportPath $(MACOS_EXPORT_PATH) \
                -allowProvisioningUpdates
 
@@ -136,6 +136,9 @@ macos_fastlane_match:
 
 .PHONY: macos
 macos: macos_build macos_fastlane_beta
+
+.PHONY: macos_testflight_cli
+macos_testflight_cli: macos_build macos_archive macos_pkg macos_upload
 
 .PHONY: macos_cli
 macos_cli: macos_build macos_archive macos_pkg macos_upload

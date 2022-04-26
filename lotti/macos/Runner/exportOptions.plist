@@ -8,10 +8,5 @@
     <string>7DN35ABWYL</string>
     <key>teamName</key>
     <string>Matthias Nehlsen</string>
-    <key>provisioningProfiles</key>
-    <dict>
-    <key>com.matthiasnehlsen.lotti</key>
-    <string>14087e9a-97a9-4bbf-a99d-9bd34ac4a9ce</string>
-    </dict>
 </dict>
 </plist>
