@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
@@ -303,7 +302,7 @@ class PersistenceLogic {
           dateTo: dateTo,
           id: id,
           vectorClock: vc,
-          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
           flag: EntryFlag.import,
         ),
@@ -359,7 +358,7 @@ class PersistenceLogic {
           dateTo: dateTo,
           id: id,
           vectorClock: vc,
-          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
           flag: EntryFlag.import,
         ),
@@ -409,7 +408,7 @@ class PersistenceLogic {
           dateTo: now,
           id: id,
           vectorClock: vc,
-          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
         geolocation: geolocation,
