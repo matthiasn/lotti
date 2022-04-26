@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dart_geohash/dart_geohash.dart';
+import 'package:geoclue/geoclue.dart';
 import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 
@@ -45,12 +46,36 @@ class DeviceLocation {
   }
 
   Future<Geolocation?> getCurrentGeoLocation() async {
-    if (Platform.isLinux || Platform.isWindows) {
+    DateTime now = DateTime.now();
+
+    if (Platform.isWindows) {
       return null;
     }
 
-    LocationData locationData = await location.getLocation();
-    DateTime now = DateTime.now();
+    if (Platform.isLinux) {
+      final GeoClueLocation locationData =
+          await GeoClue.getLocation(desktopId: '<desktop-id>');
+      double? longitude = locationData.longitude;
+      double? latitude = locationData.latitude;
+
+      return Geolocation(
+        createdAt: now,
+        timezone: now.timeZoneName,
+        utcOffset: now.timeZoneOffset.inMinutes,
+        latitude: latitude,
+        longitude: longitude,
+        altitude: locationData.altitude,
+        speed: locationData.speed,
+        accuracy: locationData.accuracy,
+        heading: locationData.heading,
+        geohashString: getGeoHash(
+          latitude: latitude,
+          longitude: longitude,
+        ),
+      );
+    }
+
+    final LocationData locationData = await location.getLocation();
     double? longitude = locationData.longitude;
     double? latitude = locationData.latitude;
     if (longitude != null && latitude != null) {

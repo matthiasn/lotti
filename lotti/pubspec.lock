@@ -910,6 +910,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.3.2"
+  geoclue:
+    dependency: "direct main"
+    description:
+      name: geoclue
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.0"
   get_it:
     dependency: "direct main"
     description:
