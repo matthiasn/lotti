@@ -46,7 +46,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
       context,
       showTitleActions: true,
       theme: DatePickerTheme(
-        headerColor: AppColors.headerBgColor,
+        headerColor: AppColors.entryCardColor,
         backgroundColor: AppColors.bodyBgColor,
         itemStyle: const TextStyle(
           color: Colors.white,

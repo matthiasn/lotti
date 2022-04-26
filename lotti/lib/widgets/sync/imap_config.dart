@@ -9,7 +9,6 @@ import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
-import 'package:lotti/widgets/sync/qr_widget.dart';
 
 class EmailConfigForm extends StatefulWidget {
   const EmailConfigForm({Key? key}) : super(key: key);
@@ -32,10 +31,37 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
           builder: (context, SyncConfigState state) {
         return Center(
           child: state.maybeWhen(
-              (sharedKey, imapConfig) =>
-                  StatusTextWidget(imapConfig.toString()), orElse: () {
-            return null;
-          }),
+            (sharedKey, imapConfig) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 88.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Host: ${imapConfig?.host}',
+                      style: labelStyleLarger,
+                    ),
+                    Text(
+                      'Port: ${imapConfig?.port}',
+                      style: labelStyleLarger,
+                    ),
+                    Text(
+                      'IMAP Folder: ${imapConfig?.folder}',
+                      style: labelStyleLarger,
+                    ),
+                    Text(
+                      'User: ${imapConfig?.userName}',
+                      style: labelStyleLarger,
+                    ),
+                  ],
+                ),
+              );
+            },
+            orElse: () {
+              return null;
+            },
+          ),
         );
       });
     }
@@ -43,8 +69,9 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
         builder: (context, SyncConfigState state) {
       return SizedBox(
-        width: 300,
+        width: 320,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             FormBuilder(
               key: _formKey,
@@ -53,6 +80,10 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                 children: <Widget>[
                   FormBuilderTextField(
                     name: 'imap_host',
+                    initialValue: state.maybeWhen(
+                      (sharedKey, imapConfig) => imapConfig?.host,
+                      orElse: () => null,
+                    ),
                     validator: FormBuilderValidators.required(context),
                     style: inputStyle,
                     decoration: InputDecoration(
@@ -61,7 +92,25 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                     ),
                   ),
                   FormBuilderTextField(
+                    name: 'imap_folder',
+                    initialValue: state.maybeWhen(
+                          (sharedKey, imapConfig) => imapConfig?.folder,
+                          orElse: () => null,
+                        ) ??
+                        'INBOX',
+                    validator: FormBuilderValidators.required(context),
+                    style: inputStyle,
+                    decoration: InputDecoration(
+                      labelText: localizations.settingsSyncFolderLabel,
+                      labelStyle: settingsLabelStyle,
+                    ),
+                  ),
+                  FormBuilderTextField(
                     name: 'imap_userName',
+                    initialValue: state.maybeWhen(
+                      (sharedKey, imapConfig) => imapConfig?.userName,
+                      orElse: () => null,
+                    ),
                     validator: FormBuilderValidators.required(context),
                     style: inputStyle,
                     decoration: InputDecoration(
@@ -71,6 +120,11 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                   ),
                   FormBuilderTextField(
                     name: 'imap_password',
+                    initialValue: state.maybeWhen(
+                      (sharedKey, imapConfig) => imapConfig?.password,
+                      orElse: () => null,
+                    ),
+                    obscureText: true,
                     validator: FormBuilderValidators.required(context),
                     style: inputStyle,
                     decoration: InputDecoration(
@@ -80,7 +134,12 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                   ),
                   FormBuilderTextField(
                     name: 'imap_port',
-                    initialValue: '993',
+                    initialValue: state.maybeWhen(
+                          (sharedKey, imapConfig) =>
+                              imapConfig?.port.toString(),
+                          orElse: () => null,
+                        ) ??
+                        '993',
                     validator: FormBuilderValidators.integer(context),
                     style: inputStyle,
                     decoration: InputDecoration(
@@ -99,6 +158,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                         final formData = _formKey.currentState?.value;
                         ImapConfig cfg = ImapConfig(
                           host: formData!['imap_host'],
+                          folder: formData['imap_folder'],
                           userName: formData['imap_userName'],
                           password: formData['imap_password'],
                           port: int.parse(formData['imap_port']),
@@ -106,14 +166,6 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                         context.read<SyncConfigCubit>().setImapConfig(cfg);
                       }
                     },
-                  ),
-                  Center(
-                    child: state.maybeWhen(
-                        (sharedKey, imapConfig) =>
-                            StatusTextWidget(imapConfig.toString()),
-                        orElse: () {
-                      return null;
-                    }),
                   ),
                 ],
               ),

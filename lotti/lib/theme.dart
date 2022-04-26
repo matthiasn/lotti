@@ -32,7 +32,8 @@ class AppColors {
 
   static Color bodyBgColor = const Color.fromRGBO(29, 45, 69, 1);
   static Color headerBgColor = const Color.fromRGBO(40, 60, 92, 1);
-  static Color entryTextColor = const Color.fromRGBO(200, 190, 180, 1);
+  static Color entryCardColor = const Color.fromRGBO(51, 77, 118, 1);
+  static Color entryTextColor = const Color.fromRGBO(200, 195, 190, 1);
 
   static Color vuBgColor = headerBgColor;
   static Color searchBgColor = const Color.fromRGBO(68, 68, 85, 0.3);

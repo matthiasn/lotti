@@ -46,27 +46,21 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
 
       return Center(
         child: state.when(
-          (String? sharedKey, ImapConfig? imapConfig) => Column(
-            children: [
-              StatusTextWidget(sharedKey!),
-              TextButton(
-                style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16.0,
-                      horizontal: 32.0,
-                    ),
-                    backgroundColor: Colors.red),
-                onPressed: () =>
-                    context.read<SyncConfigCubit>().deleteSharedKey(),
-                child: Text(
-                  localizations.settingsSyncDeleteKeyButton,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+          (String? sharedKey, ImapConfig? imapConfig) => TextButton(
+            style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16.0,
+                  horizontal: 32.0,
                 ),
+                backgroundColor: Colors.red),
+            onPressed: () => context.read<SyncConfigCubit>().deleteSharedKey(),
+            child: Text(
+              localizations.settingsSyncDeleteKeyButton,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
-            ],
+            ),
           ),
           loading: () => StatusTextWidget(localizations.settingsSyncLoadingKey),
           generating: () => StatusTextWidget(localizations.settingsSyncGenKey),

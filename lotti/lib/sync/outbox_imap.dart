@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/imap_client.dart';
 
 Future<GenericImapResult> saveImapMessage(
@@ -14,11 +16,16 @@ Future<GenericImapResult> saveImapMessage(
   File? file,
 }) async {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
+  final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
+  final SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
 
   try {
     final transaction =
         _loggingDb.startTransaction('saveImapMessage()', 'task');
-    Mailbox inbox = await imapClient.selectInbox();
+
+    Mailbox inbox = await imapClient
+        .selectMailboxByPath(syncConfig?.imapConfig.folder ?? 'INBOX');
+
     final builder = MessageBuilder.prepareMultipartAlternativeMessage();
     builder.from = [MailAddress('Sync', 'sender@domain.com')];
     builder.to = [MailAddress('Sync', 'recipient@domain.com')];
@@ -34,8 +41,11 @@ Future<GenericImapResult> saveImapMessage(
     }
 
     final MimeMessage message = builder.buildMimeMessage();
-    GenericImapResult res =
-        await imapClient.appendMessage(message, targetMailbox: inbox);
+    GenericImapResult res = await imapClient.appendMessage(
+      message,
+      targetMailbox: inbox,
+      flags: ['\\Seen'],
+    );
     debugPrint(
         'saveImapMessage responseCode ${res.responseCode} details ${res.details}');
     await transaction.finish();
@@ -77,11 +87,19 @@ Future<ImapClient?> persistImap({
         File encryptedFile = File(encryptedFilePath);
         int fileLength = encryptedFile.lengthSync();
         if (fileLength > 0) {
-          res = await saveImapMessage(imapClient, subject, encryptedMessage,
-              file: encryptedFile);
+          res = await saveImapMessage(
+            imapClient,
+            subject,
+            encryptedMessage,
+            file: encryptedFile,
+          );
         }
       } else {
-        res = await saveImapMessage(imapClient, subject, encryptedMessage);
+        res = await saveImapMessage(
+          imapClient,
+          subject,
+          encryptedMessage,
+        );
       }
     }
     await transaction.finish();

@@ -300,11 +300,11 @@ class _TasksPageState extends State<TasksPage> {
                       Scaffold(
                         backgroundColor: AppColors.bodyBgColor,
                         body: Container(
-                          margin: const EdgeInsets.all(8.0),
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
                           child: ListView(
                             children: [
                               const SizedBox(
-                                height: 56,
+                                height: 60,
                               ),
                               ...List.generate(
                                 items.length,

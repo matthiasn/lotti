@@ -27,6 +27,7 @@ class EncryptionQrWidget extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Button(
               localizations.settingsSyncGenKeyButton,
@@ -94,7 +95,6 @@ class EncryptionQrWidget extends StatelessWidget {
                           ),
                         ),
                       ),
-                      StatusTextWidget('${sharedKey.substring(0, 20)}...'),
                       Button(localizations.settingsSyncDeleteKeyButton,
                           onPressed: () =>
                               context.read<SyncConfigCubit>().deleteSharedKey(),

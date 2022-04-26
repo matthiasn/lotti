@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
-import 'package:lotti/pages/tutorial/sliding_intro/tutorial_slide_1.dart';
+import 'package:lotti/pages/tutorial/sliding_intro/sync_assistant_slide_1.dart';
 import 'package:lotti/pages/tutorial/sliding_intro/tutorial_slide_2.dart';
 import 'package:lotti/theme.dart';
 

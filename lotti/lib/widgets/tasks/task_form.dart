@@ -135,7 +135,11 @@ class _TaskFormState extends State<TaskForm> {
                 ),
                 FormBuilderChoiceChip(
                   name: 'status',
-                  padding: null,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  backgroundColor: AppColors.entryTextColor,
                   initialValue: widget.data?.status.map(
                         open: (_) => 'OPEN',
                         groomed: (_) => 'GROOMED',
@@ -150,7 +154,7 @@ class _TaskFormState extends State<TaskForm> {
                   decoration: InputDecoration(
                     labelText: localizations.taskStatusLabel,
                     labelStyle: labelStyle.copyWith(
-                      height: 1,
+                      height: 0.6,
                       fontFamily: 'Oswald',
                     ),
                   ),

@@ -176,7 +176,7 @@ class JournalCard extends StatelessWidget {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
         builder: (BuildContext context, AudioPlayerState state) {
       return Card(
-        color: AppColors.headerBgColor,
+        color: AppColors.entryCardColor,
         elevation: 8.0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8.0),
@@ -241,7 +241,7 @@ class JournalImageCard extends StatelessWidget {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
         builder: (BuildContext context, AudioPlayerState state) {
       return Card(
-        color: AppColors.headerBgColor,
+        color: AppColors.entryCardColor,
         elevation: 8.0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8.0),

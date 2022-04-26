@@ -70,7 +70,7 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
           children: [
             SingleChildScrollView(
               physics: const ClampingScrollPhysics(),
-              padding: const EdgeInsets.only(top: 16.0, bottom: 64),
+              padding: const EdgeInsets.only(top: 8, bottom: 96),
               reverse: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,

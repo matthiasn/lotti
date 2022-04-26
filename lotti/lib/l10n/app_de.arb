@@ -95,6 +95,7 @@
   "settingsSyncCopyCfg": "SyncConfig in die Zwischenablage kopieren?",
   "settingsSyncCopyCfgWarning": "Mit diesen Daten kann jeder dein Journal lesen. Nicht in unbefugte Hände geben. BIST DU SICHER, dass du fortfahren willst?",
   "settingsSyncDeleteKeyButton": "Schlüssel löschen",
+  "settingsSyncFolderLabel": "IMAP Ordner",
   "settingsSyncGenKey": "Schlüssel für Sync wird generiert...",
   "settingsSyncGenKeyButton": "Schlüssel generieren",
   "settingsSyncHostLabel": "Servername",
