@@ -7,12 +7,7 @@ platform :mac do
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
-      export_method: "app-store",
-      export_options: {
-        provisioningProfiles: {
-          "com.matthiasnehlsen.lotti" => "match AppStore com.matthiasnehlsen.lotti macos"
-        }
-      }
+      export_method: "app-store"
     )
     upload_to_testflight(
       skip_waiting_for_build_processing: true,
