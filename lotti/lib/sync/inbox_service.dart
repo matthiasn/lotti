@@ -146,14 +146,23 @@ class SyncInboxService {
   }
 
   void _startPeriodicFetching() async {
-    timer?.cancel();
-    _fetchInbox();
-    timer = Timer.periodic(
-      const Duration(seconds: 15),
-      (timer) async {
-        _fetchInbox();
-      },
-    );
+    SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
+
+    if (syncConfig == null) {
+      _loggingDb.captureEvent(
+          'Sync config missing -> periodic fetching not started',
+          domain: 'OUTBOX_CUBIT');
+      return;
+    } else {
+      timer?.cancel();
+      _fetchInbox();
+      timer = Timer.periodic(
+        const Duration(seconds: 15),
+        (timer) async {
+          _fetchInbox();
+        },
+      );
+    }
   }
 
   void _stopPeriodicFetching() async {
