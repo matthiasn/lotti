@@ -32,7 +32,7 @@ class OutboxService {
 
   final sendMutex = Mutex();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
-  late String? _b64Secret;
+  String? _b64Secret;
   bool enabled = true;
 
   late final StreamSubscription<FGBGType> fgBgSubscription;
@@ -74,8 +74,8 @@ class OutboxService {
 
     if (syncConfig != null) {
       _b64Secret = syncConfig.sharedSecret;
+      startPolling();
     }
-    startPolling();
   }
 
   void reportConnectivity() async {
@@ -198,6 +198,14 @@ class OutboxService {
   }
 
   void startPolling() async {
+    SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
+
+    if (syncConfig == null) {
+      _loggingDb.captureEvent('Sync config missing -> polling not started',
+          domain: 'OUTBOX_CUBIT');
+      return;
+    }
+
     _loggingDb.captureEvent('startPolling()', domain: 'OUTBOX_CUBIT');
 
     if ((timer != null && timer!.isActive) || false) {
@@ -223,9 +231,9 @@ class OutboxService {
   }
 
   void stopPolling() async {
-    _loggingDb.captureEvent('stopPolling()', domain: 'OUTBOX_CUBIT');
-
     if (timer != null) {
+      _loggingDb.captureEvent('stopPolling()', domain: 'OUTBOX_CUBIT');
+
       timer?.cancel();
       timer = null;
     }
