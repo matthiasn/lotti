@@ -22,7 +22,7 @@ class EditorWidget extends StatelessWidget {
     this.minHeight = 40,
     this.maxHeight = double.maxFinite,
     this.padding = 16.0,
-    this.autoFocus = true,
+    this.autoFocus = false,
     required this.saveFn,
     required this.focusNode,
   }) : super(key: key);

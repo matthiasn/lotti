@@ -162,7 +162,8 @@ class _TaskFormState extends State<TaskForm> {
                   selectedColor: widget.data?.status != null
                       ? taskColor(widget.data!.status)
                       : AppColors.entryBgColor,
-                  runSpacing: 0,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  runSpacing: 6,
                   spacing: 4,
                   labelStyle: const TextStyle(
                     fontSize: 12,

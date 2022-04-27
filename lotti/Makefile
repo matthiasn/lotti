@@ -139,7 +139,7 @@ macos_fastlane_export:
 	cd macos && fastlane package && cd ..
 
 .PHONY: macos
-macos: macos_build macos_fastlane_beta macos_export
+macos: macos_build macos_fastlane_beta macos_fastlane_export
 
 .PHONY: macos_export
 macos_export: macos_build macos_fastlane_export
