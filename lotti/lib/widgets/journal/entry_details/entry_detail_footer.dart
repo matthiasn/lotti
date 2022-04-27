@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
+import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -103,9 +104,14 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                         ),
                       ),
                     ),
-                    DeleteIconWidget(
-                      entityId: widget.itemId,
-                      popOnDelete: widget.popOnDelete,
+                    Row(
+                      children: [
+                        DeleteIconWidget(
+                          entityId: widget.itemId,
+                          popOnDelete: widget.popOnDelete,
+                        ),
+                        ShareButtonWidget(entityId: widget.itemId),
+                      ],
                     ),
                   ],
                 ),

@@ -5,8 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Share image and audio files from share button in entry footer
+
 ### Changed:
-- Share image files and audio recordings
+- Removed audio file sharing from audio player
+
+## [0.7.17] - 2022-04-27
+### Added:
+- Share audio recordings
 
 ## [0.7.16] - 2022-04-27
 ### Added:

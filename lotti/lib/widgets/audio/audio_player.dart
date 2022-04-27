@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/theme.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AudioPlayerWidget extends StatelessWidget {
   const AudioPlayerWidget({Key? key}) : super(key: key);
@@ -57,13 +56,6 @@ class AudioPlayerWidget extends StatelessWidget {
                   tooltip: 'Stop',
                   color: AppColors.inactiveAudioControl,
                   onPressed: () => context.read<AudioPlayerCubit>().stopPlay(),
-                ),
-                IconButton(
-                  icon: const Icon(MdiIcons.shareOutline),
-                  iconSize: 32.0,
-                  tooltip: 'Share',
-                  color: AppColors.inactiveAudioControl,
-                  onPressed: () => context.read<AudioPlayerCubit>().share(),
                 ),
                 IconButton(
                   icon: Text(

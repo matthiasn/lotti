@@ -46,6 +46,8 @@
   "journalLinkToHint": "Zu diesem Eintrag verlinken",
   "journalPrivateTooltip": "Privat",
   "journalSearchHint": "Suche nach Einträgen...",
+  "journalShareAudioHint": "Tonaufnahme teilen",
+  "journalSharePhotoHint": "Foto teilen",
   "journalShowMapHint": "Karte zeigen",
   "journalTagPlusHint": "Tags verwalten",
   "journalTagsCopyHint": "Tags kopieren",
