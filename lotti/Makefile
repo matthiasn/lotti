@@ -134,8 +134,15 @@ macos_fastlane_beta:
 macos_fastlane_match:
 	cd macos && fastlane match --generate_apple_certs false && cd ..
 
+.PHONY: macos_fastlane_export
+macos_fastlane_export:
+	cd macos && fastlane package && cd ..
+
 .PHONY: macos
 macos: macos_build macos_fastlane_beta
+
+.PHONY: macos_export
+macos_export: macos_build macos_fastlane_export
 
 .PHONY: macos_testflight_cli
 macos_testflight_cli: macos_build macos_archive macos_pkg macos_upload
