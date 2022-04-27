@@ -46,6 +46,8 @@
   "journalLinkToHint": "Link to",
   "journalPrivateTooltip": "Private",
   "journalSearchHint": "Search journal...",
+  "journalShareAudioHint": "Share audio",
+  "journalSharePhotoHint": "Share photo",
   "journalShowMapHint": "Show map",
   "journalTagPlusHint": "Manage entry tags",
   "journalTagsCopyHint": "Copy tags",
