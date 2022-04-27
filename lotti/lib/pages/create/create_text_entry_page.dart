@@ -54,6 +54,7 @@ class _CreateTextEntryPageState extends State<CreateTextEntryPage> {
             focusNode: _focusNode,
             saveFn: _save,
             minHeight: 200,
+            autoFocus: true,
           ),
         ),
       ),
