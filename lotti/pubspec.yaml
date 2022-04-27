@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.7.16+752
+version: 0.7.17+753
 
 environment:
   sdk: ">=2.16.0 <3.0.0"
@@ -98,6 +98,7 @@ dependencies:
   photo_view: ^0.13.0
   qr_code_scanner: ^0.7.0
   qr_flutter: ^4.0.0
+  share_plus: ^4.0.4
   sqflite: ^2.0.1
   sqlite3_flutter_libs: ^0.5.2
   syncfusion_flutter_calendar: ^20.1.47
