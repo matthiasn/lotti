@@ -58,7 +58,7 @@ class ShareButtonWidget extends StatelessWidget {
             iconSize: 24,
             tooltip: tooltip,
             padding: const EdgeInsets.only(
-              left: 16,
+              left: 12,
               top: 8,
               bottom: 8,
               right: 0,
