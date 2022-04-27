@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
@@ -58,11 +59,15 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
           color: Colors.black,
           child: Hero(
             tag: 'entry_img',
-            child: Image.file(
-              file,
-              height: 400,
-              width: MediaQuery.of(context).size.width,
-              fit: BoxFit.contain,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: isMobile ? 400 : MediaQuery.of(context).size.width,
+              ),
+              child: Image.file(
+                file,
+                width: MediaQuery.of(context).size.width,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
         ),
