@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Share image files and audio recordings
+
+## [0.7.16] - 2022-04-27
+### Added:
 - No autofocus on task text
 
 ## [0.7.15] - 2022-04-27

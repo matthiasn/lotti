@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:share_plus/share_plus.dart';
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -80,6 +81,21 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         status: AudioPlayerStatus.stopped,
         progress: const Duration(minutes: 0),
       ));
+    } catch (exception, stackTrace) {
+      await _loggingDb.captureException(
+        exception,
+        domain: 'player_cubit',
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void share() async {
+    try {
+      if (state.audioNote != null) {
+        String filePath = await AudioUtils.getFullAudioPath(state.audioNote!);
+        Share.shareFiles([filePath]);
+      }
     } catch (exception, stackTrace) {
       await _loggingDb.captureException(
         exception,
