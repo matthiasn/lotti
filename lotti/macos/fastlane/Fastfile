@@ -4,19 +4,29 @@ platform :mac do
   desc "Push a new beta build to TestFlight"
   lane :beta do
     changelog = read_changelog(changelog_path: '../CHANGELOG.md')
-    build_app(
+    build_mac_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
-      export_method: "app-store",
-      export_options: {
-        provisioningProfiles: {
-          "com.matthiasnehlsen.lotti" => "match AppStore com.matthiasnehlsen.lotti macos"
-        }
-      }
+      export_method: "app-store"
     )
     upload_to_testflight(
       skip_waiting_for_build_processing: true,
       changelog: changelog,
+    )
+  end
+
+  lane :package do
+    changelog = read_changelog(changelog_path: '../CHANGELOG.md')
+    build_mac_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "developer-id",
+      output_directory: "../build/export",
+      export_options: {
+        provisioningProfiles: {
+          "com.matthiasnehlsen.lotti" => "Lotti Developer ID Application"
+        }
+      }
     )
   end
 end
