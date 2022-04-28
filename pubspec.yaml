@@ -78,7 +78,7 @@ dependencies:
 
   flutter_secure_storage: ^5.0.0
   flutter_sliding_tutorial: ^1.1.3+3
-  flutter_sound: ^8.3.12
+  flutter_sound: ^9.2.10
   flutter_svg: ^1.0.3
   flutter_typeahead: ^3.2.4
   form_builder_validators: ^7.2.0

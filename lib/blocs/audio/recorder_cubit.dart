@@ -46,7 +46,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         }
       }
       _myRecorder = FlutterSoundRecorder();
-      await _myRecorder?.openAudioSession();
+      await _myRecorder?.openRecorder();
       emit(state.copyWith(status: AudioRecorderStatus.initialized));
       _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
       _myRecorder?.onProgress?.listen((event) {
