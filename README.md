@@ -1,37 +1,67 @@
-# Meins/Lotti
+# Lotti
 
-This repository contains two related projects,
-**[Meins](https://github.com/matthiasn/meins/tree/main/meins/README.md)** and
-**[Lotti](https://github.com/matthiasn/meins/tree/main/lotti/README.md)**.
+A smart journal and a tool for living a better life by defining and monitoring
+interventions. Please check out **[HISTORY.md](https://github.
+com/matthiasn/lotti/tree/main/HISTORY.md)** for information on the project's
+history. You can find the previous version in the **[meins subdirectory]
+(https://github.
+com/matthiasn/lotti/tree/main/meins)**.
 
-**[Meins](https://github.com/matthiasn/meins/tree/main/meins/README.md)**
-started out as a journaling application, with a focus on recording
-arbitrary measurable data (such as exercise repetitions, intake of water,
-alcohol, medications) in combination with mood and imported health data. The
-desktop application is written in **Clojure** and **ClojureScript** using
-**Electron** to target all the relevant desktop platforms **Linux**, **Mac**,
-and **Windows**. There used to be a mobile companion app for importing 
-health data, photos, and audio recordings on the phone. 
-This was also written in ClojureScript, using **React Native** to target both **iOS** and **Android**. 
-This companion mobile app has been deprecated for a while in favor of a rewrite
-in **Flutter**, since there were too many issues with the approach.
+## Getting Started
 
-**[Lotti](https://github.com/matthiasn/meins/tree/main/lotti/README.md)** is 
-more or less an ongoing rewrite of the aforementioned
-**Clojure** and **ClojureScript** project, using **Flutter**.
-The main reason behind this migration, at least at the beginning, was Flutter's promise to allow building for all screens with a single codebase.
-This project is however not a one-for-one migration, since the project aims
-have evolved since. It is more and more becoming a toolkit for designing interventions, and thus proactively
-creating a better life to look back on, as opposed to just recording what is.
-Such interventions could for example be losing weight, improve blood pressure to
-prevent cardiovascular disease, and anything else you would want to change, and
-then monitor success.
+1. Install Flutter manually,
+   see [instructions](https://docs.flutter.dev/get-started/install).
+2. Download and install [Android Studio](https://developer.android.com/studio)
+3. Clone repository and go to `./lotti`
+4. Run `flutter pub get`
+5. Run `flutter create`
+6. Open `./lotti` in **Android Studio**
 
-Both applications share one important goal: keep private data private. 
-Therefore, sync between devices is encrypted and takes place entirely within 
-user-provided infrastructure in the form of an IMAP folder. Thus, it is not 
-required to share sensitive information (e.g. medical) with anyone.
+## Platform-specific setup
 
-Come back soon for links to blog posts detailing the reasoning behind the
-ongoing migration, and about creating a better, healthier life for yourself by 
-creating and monitoring interventions.
+These purpose of these instructions is mainly to reproduce the dev environment
+quickly, for the distribution or operating system versions named below. Please
+feel free to amend missing steps or add a section for your favorite distribution
+and raise PRs for those.
+
+Please make sure your Flutter environment generally works with a fresh starter
+app however before raising issues that are related to your Flutter installation.
+Thanks!
+
+### Mac
+
+Tested on `macOS 12.3`: no additional steps necessary. You only need to have 
+Xcode installed.
+
+### Linux
+
+Tested on `Ubuntu 20.04.3 LTS` inside a virtual machine on VMWare Fusion:
+
+1. In addition to the common steps above, install missing dependencies:
+
+```
+$ sudo apt-get install libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev
+$ flutter packages get
+$ make build_runner
+``` 
+
+In case the network in virtual machine not connecting after
+resuming: `$ sudo dhclient ens33`
+
+### Windows
+
+Please create a PR with instructions for Windows if you find anything that is
+required.
+
+## Contributions
+
+Contributions to this project are very welcome. How can you help?
+
+1. Please check under issues if there is anything specific that needs helping
+   hands, or features to be discussed or implemented.
+2. Now that the project is coming out of the initial prototyping stage, the test
+   coverage needs to become much better. Any additional tests are welcome,
+   including code changes to make the code easier to test.
+3. For new feature ideas, please create an issue first and pitch the idea and
+   we'll discuss.
+   

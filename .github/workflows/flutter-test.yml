@@ -16,8 +16,6 @@ jobs:
           flutter-version: '2.10'
           channel: 'stable'
       - name: Run Flutter tests
-        working-directory: ./lotti
         run: make clean_test
       - name: Run Flutter bundle
-        working-directory: ./lotti
         run: make bundle
