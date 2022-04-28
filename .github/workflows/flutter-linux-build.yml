@@ -20,13 +20,10 @@ jobs:
       - name: Install libraries
         run: sudo apt-get install libgtk-3-dev cmake cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0
       - name: Enable Linux Desktop
-        working-directory: ./lotti
         run: flutter config --enable-linux-desktop
       - name: Flutter Doctor
-        working-directory: ./lotti
         run: make doctor
       - name: Test and build
-        working-directory: ./lotti
         run: make linux
       - uses: actions/upload-artifact@v2
         with:

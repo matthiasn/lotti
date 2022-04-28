@@ -9,6 +9,7 @@
 .history
 .svn/
 *.env
+*.lock
 
 !Podfile.lock
 !pubspec.lock
@@ -64,7 +65,6 @@ classes.viz.puml
 
 lib/routes/router.gr.dart
 
-*.lock
 missing_translations.txt
 
 nohup.out

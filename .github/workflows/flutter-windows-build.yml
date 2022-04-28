@@ -16,17 +16,12 @@ jobs:
           flutter-version: '2.10'
           channel: 'stable'
       - name: Flutter Doctor
-        working-directory: ./lotti
         run: make doctor
       - name: Flutter get dependencies
-        working-directory: ./lotti
         run: flutter pub get
       - name: Flutter build_runner
-        working-directory: ./lotti
         run: flutter pub run build_runner build --delete-conflicting-outputs
       - name: Flutter test
-        working-directory: ./lotti
         run: flutter test
       - name: Flutter build
-        working-directory: ./lotti
         run: flutter build windows
