@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_sound/flutter_sound.dart';
+import 'package:flutter_sound_platform_interface/flutter_sound_recorder_platform_interface.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart' show Level, Logger;
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -45,11 +48,21 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
               'Microphone permission not granted');
         }
       }
-      _myRecorder = FlutterSoundRecorder();
+
+      PermissionStatus permissionStatus = await Permission.microphone.status;
+      debugPrint('permissionStatus: $permissionStatus');
+
+      _myRecorder = FlutterSoundRecorder(logLevel: Level.verbose);
       await _myRecorder?.openRecorder();
       emit(state.copyWith(status: AudioRecorderStatus.initialized));
       _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
+      debugPrint(_myRecorder.toString());
+      _myRecorder?.dispositionStream()?.listen((event) {
+        debugPrint('dispositionStream $event');
+      });
       _myRecorder?.onProgress?.listen((event) {
+        debugPrint('onProgress $event');
+
         updateProgress(event);
       });
     } catch (exception, stackTrace) {
@@ -124,9 +137,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         _myRecorder
             ?.startRecorder(
           toFile: filePath,
-          codec: Codec.aacADTS,
+          codec: Codec.defaultCodec,
           sampleRate: 48000,
           bitRate: 128000,
+          audioSource: AudioSource.microphone,
         )
             .then((value) {
           emit(state.copyWith(status: AudioRecorderStatus.recording));
@@ -144,6 +158,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   void stop() async {
     try {
       await _myRecorder?.stopRecorder();
+      await _myRecorder?.closeRecorder();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
       _saveAudioNoteJson();
       emit(initialState);
