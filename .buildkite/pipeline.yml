@@ -1,0 +1,5 @@
+steps:
+  - command: "make ios"
+    label: ":iOS:"
+  - command: "make macos"
+    label: ":macOS:"
