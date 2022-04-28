@@ -1,5 +1,8 @@
 steps:
   - command: "make ios"
     label: ":iOS:"
-  - command: "make macos"
+  - command:
+    - "make macos_build"
+    - "make macos_fastlane_build"
+    - "make macos_fastlane_upload"
     label: ":macOS:"

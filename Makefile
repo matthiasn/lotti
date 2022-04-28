@@ -126,9 +126,13 @@ macos_upload:
 macos_open: macos_build macos_archive
 	open $(MACOS_ARCHIVE_PATH)
 
-.PHONY: macos_fastlane_beta
-macos_fastlane_beta:
-	cd macos && fastlane beta && cd ..
+.PHONY: macos_fastlane_build
+macos_fastlane_build:
+	cd macos && fastlane do_build && cd ..
+
+.PHONY: macos_fastlane_upload
+macos_fastlane_upload:
+	cd macos && fastlane do_upload && cd ..
 
 .PHONY: macos_fastlane_match
 macos_fastlane_match:
@@ -136,10 +140,10 @@ macos_fastlane_match:
 
 .PHONY: macos_fastlane_export
 macos_fastlane_export:
-	cd macos && fastlane package && cd ..
+	cd macos && fastlane do_package && cd ..
 
 .PHONY: macos
-macos: macos_build macos_fastlane_beta macos_fastlane_export
+macos: macos_build macos_fastlane_build macos_fastlane_upload macos_fastlane_export
 
 .PHONY: macos_export
 macos_export: macos_build macos_fastlane_export
