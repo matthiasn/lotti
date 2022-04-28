@@ -63,7 +63,7 @@ class DurationWidget extends StatelessWidget {
                 ),
               ),
               SizedBox(
-                width: 60,
+                width: 56,
                 child: Text(
                   formatDuration(entryDuration(displayed)),
                   style: style?.copyWith(
@@ -79,7 +79,7 @@ class DurationWidget extends StatelessWidget {
                     Visibility(
                       visible: !isRecording,
                       child: IconButton(
-                        padding: const EdgeInsets.only(right: 16),
+                        padding: const EdgeInsets.only(right: 8),
                         icon: const Icon(Icons.play_arrow),
                         iconSize: 20,
                         tooltip: 'Record',
@@ -92,7 +92,7 @@ class DurationWidget extends StatelessWidget {
                     Visibility(
                       visible: isRecording,
                       child: IconButton(
-                        padding: const EdgeInsets.only(right: 16),
+                        padding: const EdgeInsets.only(right: 8),
                         icon: const Icon(Icons.stop),
                         iconSize: 20,
                         tooltip: 'Stop',

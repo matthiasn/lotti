@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -10,7 +9,6 @@ import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class EntryDetailFooter extends StatefulWidget {
   final String itemId;
@@ -41,8 +39,6 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<JournalEntity?>(
         stream: stream,
         builder: (
@@ -59,7 +55,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding: const EdgeInsets.only(left: 8, right: 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -72,7 +68,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                     Visibility(
                       visible: loc != null && loc.longitude != 0,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Row(
                           children: [
                             TextButton(
@@ -85,26 +81,12 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                                 style: textStyle,
                               ),
                             ),
-                            IconButton(
-                              icon: Icon(mapVisible
-                                  ? MdiIcons.chevronDoubleUp
-                                  : MdiIcons.chevronDoubleDown),
-                              iconSize: 20,
-                              tooltip: mapVisible
-                                  ? localizations.journalHideMapHint
-                                  : localizations.journalShowMapHint,
-                              color: AppColors.entryTextColor,
-                              onPressed: () {
-                                setState(() {
-                                  mapVisible = !mapVisible;
-                                });
-                              },
-                            ),
                           ],
                         ),
                       ),
                     ),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         DeleteIconWidget(
                           entityId: widget.itemId,
