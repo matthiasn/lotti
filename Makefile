@@ -77,6 +77,14 @@ ios_build: clean_test
 ios_fastlane_beta:
 	cd ios && fastlane beta && cd ..
 
+.PHONY: ios_fastlane_build
+ios_fastlane_build:
+	cd ios && fastlane do_build && cd ..
+
+.PHONY: ios_fastlane_upload
+ios_fastlane_upload:
+	cd ios && fastlane do_upload && cd ..
+
 .PHONY: ios_fastlane_match
 ios_fastlane_match:
 	cd ios && fastlane match --generate_apple_certs false && cd ..
@@ -98,7 +106,7 @@ ios_upload:
                   -u $(APPLEID) -p $(LOTTI_APPSTORE_CONNECT)
 
 .PHONY: ios
-ios: ios_build ios_fastlane_beta
+ios: ios_build ios_fastlane_build ios_fastlane_upload
 
 .PHONY: macos_build
 macos_build: clean_test

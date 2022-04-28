@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+-
+
+## [0.7.22] - 2022-04-28
+### Added:
 - Haptic feedback for setting/unsetting starred/private/flagged statuses
 
 ## [0.7.19] - 2022-04-28
