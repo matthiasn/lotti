@@ -69,9 +69,12 @@ bundle:
 
 #######################################
 
-.PHONY: ios_build
-ios_build: clean_test
+.PHONY: ios_build_ipa
+ios_build_ipa:
 	flutter build ipa
+
+.PHONY: ios_build
+ios_build: clean_test ios_build_ipa
 
 .PHONY: ios_fastlane_beta
 ios_fastlane_beta:
@@ -108,9 +111,12 @@ ios_upload:
 .PHONY: ios
 ios: ios_build ios_fastlane_build ios_fastlane_upload
 
-.PHONY: macos_build
-macos_build: clean_test
+.PHONY: macos_build_flutter
+macos_build_flutter:
 	flutter build macos
+
+.PHONY: macos_build
+macos_build: clean_test macos_build_flutter
 
 .PHONY: macos_archive
 macos_archive:
