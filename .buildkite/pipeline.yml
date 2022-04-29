@@ -78,4 +78,5 @@ steps:
       - "macos_fastlane_export"
     command:
       - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
-      - "gh release create -p -d --generate-notes --target $$BUILDKITE_COMMIT $$BUILDKITE_BRANCH build/export/Lotti.app"
+      - "zip -r -q build/export/Lotti.zip build/export/Lotti.app"
+      - "gh release create -p -d --generate-notes --target $$BUILDKITE_COMMIT $$BUILDKITE_BRANCH build/export/Lotti.zip"
