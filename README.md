@@ -53,6 +53,22 @@ resuming: `$ sudo dhclient ens33`
 Please create a PR with instructions for Windows if you find anything that is
 required.
 
+
+## Continuous Integration
+
+This project uses Buildkite for releasing to TestFlight on iOS and macOS, 
+plus publishing to GitHub releases. The following steps are necessary for 
+setting up a new runner:
+
+1) Install [Buildkite agent for macOS](https://buildkite.
+   com/docs/agent/v3/macos)
+2) Install [create-dmg](https://github.com/create-dmg/create-dmg) for 
+   bundling the DMG file for GitHub releases
+
+HELP WANTED: Linux and Windows versions are not yet published on HitHub 
+releases. Please consider helping out with the pipelines if you can.
+
+
 ## Contributions
 
 Contributions to this project are very welcome. How can you help?
