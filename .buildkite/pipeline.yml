@@ -64,7 +64,7 @@ steps:
   - label: "💻 macOS fastlane Export 🚀 "
     key: "macos_fastlane_export"
     depends_on:
-      - "macos_fastlane_build"
+      - "macos_build"
     command:
       - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "make macos_fastlane_export"
