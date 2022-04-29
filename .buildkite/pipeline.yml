@@ -3,8 +3,8 @@ steps:
     key: "ios_build"
     command:
     - "make ios_build"
-    - "mkdir -p /tmp/buildkite/$$BUILDKITE_COMMIT"
-    - "rsync -ar build /tmp/buildkite/$$BUILDKITE_COMMIT/"
+    - "mkdir -p /tmp/buildkite/$$BUILDKITE_COMMIT/build"
+    - "rsync -ar build/ios /tmp/buildkite/$$BUILDKITE_COMMIT/build"
     artifact_paths:
       - "missing_translations.txt"
 
@@ -26,10 +26,29 @@ steps:
     - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ios/Runner.ipa ios/"
     - "make ios_fastlane_upload"
 
-#  - label: "💻 macOS TestFlight 💻"
-#    command:
-#    - "make macos_build"
-#    - "make macos_fastlane_build"
-#    - "make macos_fastlane_upload"
-#    artifact_paths:
-#      - "build/macos/Build/Products/**/*"
+  - label: "💻 macOS Build 🏭 "
+    key: "macos_build"
+    command:
+      - "make macos_build"
+      - "mkdir -p /tmp/buildkite/$$BUILDKITE_COMMIT/build"
+      - "rsync -ar build/macos /tmp/buildkite/$$BUILDKITE_COMMIT/build"
+    artifact_paths:
+      - "missing_translations.txt"
+
+  - label: "💻 macOS fastlane build 👟 "
+    key: "macos_fastlane_build"
+    depends_on:
+      - "macos_build"
+    command:
+      - "mkdir -p build"
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/build/macos build/"
+      - "make macos_fastlane_build"
+      - "rsync -ar macos /tmp/buildkite/$$BUILDKITE_COMMIT/"
+
+  - label: "💻 macOS fastlane TestFlight upload 🚀 "
+    key: "macos_fastlane_testflight"
+    depends_on:
+      - "macos_fastlane_build"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/macos/ macos/"
+      - "make macos_fastlane_upload"
