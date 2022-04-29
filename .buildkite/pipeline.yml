@@ -68,5 +68,14 @@ steps:
     command:
       - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "make macos_fastlane_export"
+      - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
     artifact_paths:
       - "build/export/Lotti.app"
+
+  - label: "💻 macOS publish GitHub prerelease 🚀 "
+    key: "macos_github_prerelease"
+    depends_on:
+      - "macos_fastlane_export"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "gh release create -p -d --generate-notes --target $$BUILDKITE_COMMIT $$BUILDKITE_BRANCH build/export/Lotti.app"
