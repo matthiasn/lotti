@@ -3,8 +3,8 @@ steps:
     key: "ios_build"
     command:
     - "make ios_build"
-    artifact_paths:
-      - "build/ios/archive/**/*"
+    - "mkdir -p /tmp/buildkite/$$BUILDKITE_COMMIT"
+    - "rsync -ar build/ /tmp/buildkite/$$BUILDKITE_COMMIT"
 
   - label: "📱 iOS fastlane build 👟 "
     key: "ios_fastlane_build"
@@ -12,10 +12,8 @@ steps:
       - "ios_build"
     command:
     - "mkdir -p build/ios/archive"
-    - "buildkite-agent artifact download build/ios/archive/* build/ios/archive/"
+    - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT build/"
     - "make ios_fastlane_build"
-    artifact_paths:
-      - "ios/Runner.ipa"
 
   - label: "📱 iOS fastlane TestFlight upload 🚀 "
     key: "ios_fastlane_testflight"
