@@ -1,12 +1,26 @@
 steps:
-  - label: "📱 iOS TestFlight 📱"
-    command: "make ios"
+  - label: "📱 iOS Build 🏭"
+    key: "ios_build"
+    command:
+    - "make ios_build"
     artifact_paths:
       - "build/ios/archive/**/*"
-  - label: "💻 macOS TestFlight 💻"
+
+  - label: "📱 iOS TestFlight 🚀"
+    key: "ios_fastlane"
+    depends_on:
+      - "ios_build"
     command:
-    - "make macos_build"
-    - "make macos_fastlane_build"
-    - "make macos_fastlane_upload"
+    - "buildkite-agent artifact download build/ios/archive/* build/ios/archive/"
+    - "make ios_fastlane_build"
+    - "make ios_fastlane_upload"
     artifact_paths:
-      - "build/macos/Build/**/*"
+      - "build/ios/archive/**/*"
+
+#  - label: "💻 macOS TestFlight 💻"
+#    command:
+#    - "make macos_build"
+#    - "make macos_fastlane_build"
+#    - "make macos_fastlane_upload"
+#    artifact_paths:
+#      - "build/macos/Build/Products/**/*"
