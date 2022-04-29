@@ -62,7 +62,7 @@ setting up a new runner:
 
 1) Install [Buildkite agent for macOS](https://buildkite.
    com/docs/agent/v3/macos)
-2) Install [create-dmg](https://github.com/create-dmg/create-dmg) for 
+2) Install [create-dmg](https://github.com/sindresorhus/create-dmg) for 
    bundling the DMG file for GitHub releases
 
 HELP WANTED: Linux and Windows versions are not yet published on HitHub 

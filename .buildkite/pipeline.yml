@@ -79,6 +79,5 @@ steps:
     command:
       - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "mkdir build/export/macOS"
-      - "cp -r build/export/Lotti.app build/export/macOS/"
-      - "create-dmg build/export/Lotti.dmg build/export/macOS"
-      - "gh release create -p -d --generate-notes --target $$BUILDKITE_COMMIT $$BUILDKITE_BRANCH build/export/Lotti.dmg"
+      - "npx create-dmg build/export/Lotti.app build/export/macOS/"
+      - "gh release create -p -d --generate-notes --target $$BUILDKITE_COMMIT $$BUILDKITE_BRANCH build/export/macOS/*.dmg"
