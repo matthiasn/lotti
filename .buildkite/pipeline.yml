@@ -1,8 +1,12 @@
 steps:
-  - command: "make ios"
-    label: ":iOS:"
-  - command:
+  - label: "📱 iOS TestFlight 📱"
+    command: "make ios"
+    artifact_paths:
+      - "build/ios/archive/**/*"
+  - label: "💻 macOS TestFlight 💻"
+    command:
     - "make macos_build"
     - "make macos_fastlane_build"
     - "make macos_fastlane_upload"
-    label: ":macOS:"
+    artifact_paths:
+      - "build/macos/Build/**/*"
