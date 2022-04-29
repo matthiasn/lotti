@@ -3,6 +3,7 @@ $upload_retry=0
 
 platform :ios do
   desc "Push a new beta build to TestFlight"
+
   lane :do_build do
     build_app(
       skip_build_archive: true,
