@@ -1,3 +1,6 @@
+agents:
+  os: "macOS"
+
 steps:
   - label: "🧽 Clean 🧽, 🛠 build 🛠, 🔬 test 🔬 "
     key: "clean_test"
