@@ -172,9 +172,12 @@ macos_cli: macos_build macos_archive macos_pkg macos_upload
 macos_local: macos_build
 	open ./build/macos/Build/Products/Release/
 
-.PHONY: linux
-linux: clean_test
+.PHONY: linux_build
+linux_build:
 	flutter build linux
+
+.PHONY: linux
+linux: clean_test linux_build
 
 .PHONY: windows
 windows: clean_test

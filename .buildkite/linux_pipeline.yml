@@ -1,0 +1,20 @@
+agents:
+  os: "linux"
+
+steps:
+  - label: "🧽 Clean 🧽, 🛠 build 🛠, 🔬 test 🔬 "
+    key: "linux_clean_test"
+    command:
+    - "make clean_test"
+    - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
+
+  - label: "🐧 Linux Build 🏭 "
+    key: "linux_build"
+    depends_on:
+      - "linux_clean_test"
+    command:
+    - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+    - "make linux_build"
+    - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
+    artifact_paths:
+      - "missing_translations.txt"
