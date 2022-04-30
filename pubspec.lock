@@ -14,7 +14,7 @@ packages:
       name: adaptive_dialog
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.5.0+1"
+    version: "1.6.1"
   analyzer:
     dependency: transitive
     description:
@@ -196,7 +196,7 @@ packages:
       name: built_value
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "8.2.2"
+    version: "8.2.3"
   cached_network_image:
     dependency: "direct main"
     description:
@@ -686,7 +686,7 @@ packages:
       name: flutter_inappwebview
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.4.3"
+    version: "5.4.3+4"
   flutter_keyboard_visibility:
     dependency: transitive
     description:
@@ -993,7 +993,7 @@ packages:
       name: hotkey_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.6"
+    version: "0.1.7"
   html:
     dependency: transitive
     description:
@@ -1090,6 +1090,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  intersperse:
+    dependency: transitive
+    description:
+      name: intersperse
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.0"
   intl:
     dependency: "direct main"
     description:
@@ -1124,14 +1131,14 @@ packages:
       name: json_annotation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.4.0"
+    version: "4.5.0"
   json_serializable:
     dependency: "direct dev"
     description:
       name: json_serializable
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.6"
+    version: "6.2.0"
   just_audio:
     dependency: "direct main"
     description:
@@ -1230,6 +1237,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.3.0"
+  macos_ui:
+    dependency: transitive
+    description:
+      name: macos_ui
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.13.1"
   matcher:
     dependency: transitive
     description:
@@ -2064,7 +2078,7 @@ packages:
       name: video_player_avfoundation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.2"
+    version: "2.3.3"
   video_player_platform_interface:
     dependency: transitive
     description:
