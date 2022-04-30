@@ -2,7 +2,7 @@ agents:
   os: "linux"
 
 steps:
-  - label: "🧽 Clean 🧽, 🛠 build 🛠, 🔬 test 🔬 "
+  - label: "🐧 Clean 🧽, 🛠 build 🛠, 🔬 test 🔬 "
     key: "linux_clean_test"
     command:
     - "make clean_test"
@@ -16,6 +16,15 @@ steps:
     command:
     - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
     - "make linux_build"
+    - "tar cfvz build/linux.x64.tar.gz build/linux"
     - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
     artifact_paths:
       - "missing_translations.txt"
+
+  - label: "🐧 Linux publish GitHub prerelease 🚀 "
+    key: "linux_github_prerelease"
+    depends_on:
+      - "linux_build"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "gh release create -p -d --generate-notes --target $$BUILDKITE_COMMIT $$BUILDKITE_BRANCH build/linux.x64.tar.gz"
