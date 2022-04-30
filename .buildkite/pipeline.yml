@@ -64,9 +64,35 @@ steps:
   - label: "💻 macOS fastlane Export 🚀 "
     key: "macos_fastlane_export"
     depends_on:
-      - "macos_fastlane_build"
+      - "macos_build"
     command:
       - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "make macos_fastlane_export"
+      - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
     artifact_paths:
       - "build/export/Lotti.app"
+
+  - label: "💻 macOS create DMG file 💾 "
+    key: "macos_dmg"
+    depends_on:
+      - "macos_fastlane_export"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "npx create-dmg build/export/Lotti.app build/export/"
+      - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
+
+  - label: "💻 macOS notarize DMG file ⚖️ "
+    key: "macos_notarize"
+    depends_on:
+      - "macos_dmg"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "xcrun altool --notarize-app -f build/export/*.dmg --primary-bundle-id com.matthiasnehlsen.lotti -u $$APPLEID -p $$APPLEIDPASS"
+
+  - label: "💻 macOS publish GitHub prerelease 🚀 "
+    key: "macos_github_prerelease"
+    depends_on:
+      - "macos_notarize"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "gh release create -p -d --generate-notes --target $$BUILDKITE_COMMIT $$BUILDKITE_BRANCH build/export/*.dmg"
