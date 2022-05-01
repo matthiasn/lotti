@@ -155,13 +155,23 @@ steps:
     agents:
       os: "linux"
 
-  - label: "🐧📱🛠 Android Build "
-    key: "android_build"
+  - label: "🐧📱🛠 Android Bundle "
+    key: "android_bundle"
     depends_on:
       - "clean_test"
     command:
       - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "flutter build appbundle"
+      - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
+    agents:
+      os: "macOS"
+
+  - label: "🐧📱🛠 Android create APKs "
+    key: "android_apks"
+    depends_on:
+      - "android_bundle"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "bundletool build-apks --bundle build/app/outputs/bundle/release/app-release.aab --output build/android/lotti.apks --overwrite"
       - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
     agents:
@@ -171,6 +181,7 @@ steps:
     key: "android_github_prerelease"
     depends_on:
       - "create_github_prerelease"
+      - "android_apks"
     command:
       - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "gh release upload $$BUILDKITE_BRANCH build/app/outputs/bundle/release/app-release.aab"
