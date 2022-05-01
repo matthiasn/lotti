@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -39,7 +40,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         status: AudioPlayerStatus.stopped,
         progress: const Duration(minutes: 0),
         pausedAt: const Duration(minutes: 0),
-        totalDuration: const Duration(minutes: 0),
+        totalDuration: entryDuration(audioNote),
         speed: 1.0,
         audioNote: audioNote,
       );
