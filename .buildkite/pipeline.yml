@@ -6,6 +6,8 @@ steps:
     - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
     agents:
       os: "macOS"
+    artifact_paths:
+      - "missing_translations.txt"
 
   - label: "📱 iOS Build 🏭 "
     key: "ios_build"
@@ -15,8 +17,6 @@ steps:
     - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
     - "make ios_build_ipa"
     - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
-    artifact_paths:
-      - "missing_translations.txt"
     agents:
       os: "macOS"
 
@@ -49,8 +49,6 @@ steps:
       - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "make macos_build_flutter"
       - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
-    artifact_paths:
-      - "missing_translations.txt"
     agents:
       os: "macOS"
 
@@ -144,8 +142,6 @@ steps:
       - "make linux_build"
       - "tar cfvz build/linux.x64.tar.gz build/linux"
       - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
-    artifact_paths:
-      - "missing_translations.txt"
     agents:
       os: "linux"
 
@@ -159,3 +155,15 @@ steps:
       - "gh release upload $$BUILDKITE_BRANCH build/linux.x64.tar.gz"
     agents:
       os: "linux"
+
+  - label: "📱 Android Build 🏭 "
+    key: "android_build"
+    depends_on:
+      - "clean_test"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "flutter build appbundle"
+      - "bundletool build-apks --bundle build/app/outputs/bundle/release/app-release.aab --output build/android/lotti.apks --overwrite"
+      - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
+    agents:
+      os: "macOS"
