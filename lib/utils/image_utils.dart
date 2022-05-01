@@ -114,6 +114,9 @@ Future<String> getFullAssetPath(String relativePath) async {
 }
 
 String? getRelativeAssetPath(String? absolutePath) {
+  if (Platform.isAndroid) {
+    return absolutePath?.split('app_flutter').last;
+  }
   return absolutePath?.split('Documents').last;
 }
 
