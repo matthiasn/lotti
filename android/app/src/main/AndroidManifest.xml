@@ -9,8 +9,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
    <application
         android:label="Lotti"
-        android:icon="@mipmap/ic_launcher">
-        <activity
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true">
+       <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"
