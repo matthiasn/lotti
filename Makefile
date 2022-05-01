@@ -198,6 +198,10 @@ sentry_symbols:
 splash:
 	flutter pub run flutter_native_splash:create
 
+.PHONY: icons
+icons:
+	flutter pub run flutter_launcher_icons:main
+
 .PHONY: viz
 viz:
 	dart pub global run dcdg -o classes.viz.puml -s lib/classes/

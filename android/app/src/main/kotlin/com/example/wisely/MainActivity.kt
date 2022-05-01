@@ -1,4 +1,4 @@
-package com.example.wisely
+package com.matthiasnehlsen.lotti
 
 import io.flutter.embedding.android.FlutterActivity
 

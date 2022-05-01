@@ -1,13 +1,15 @@
 steps:
-  - label: "💻 Clean 🧽, 🛠 build 🛠, 🔬 test 🔬 "
+  - label: "🍏💻🧽🛠🔬 Clean, build, test"
     key: "clean_test"
     command:
     - "make clean_test"
     - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
     agents:
       os: "macOS"
+    artifact_paths:
+      - "missing_translations.txt"
 
-  - label: "📱 iOS Build 🏭 "
+  - label: "🍏📱🛠 iOS Build "
     key: "ios_build"
     depends_on:
       - "clean_test"
@@ -15,12 +17,10 @@ steps:
     - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
     - "make ios_build_ipa"
     - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
-    artifact_paths:
-      - "missing_translations.txt"
     agents:
       os: "macOS"
 
-  - label: "📱 iOS fastlane build 👟 "
+  - label: "🍏📱👟 iOS fastlane build "
     key: "ios_fastlane_build"
     depends_on:
       - "ios_build"
@@ -31,7 +31,7 @@ steps:
     agents:
       os: "macOS"
 
-  - label: "📱 iOS fastlane TestFlight upload 🚀 "
+  - label: "🍏📱🚀 iOS fastlane TestFlight upload "
     key: "ios_fastlane_testflight"
     depends_on:
       - "ios_fastlane_build"
@@ -41,7 +41,7 @@ steps:
     agents:
       os: "macOS"
 
-  - label: "💻 macOS Build 🏭 "
+  - label: "🍏💻🛠 macOS Build "
     key: "macos_build"
     depends_on:
       - "clean_test"
@@ -49,12 +49,10 @@ steps:
       - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "make macos_build_flutter"
       - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
-    artifact_paths:
-      - "missing_translations.txt"
     agents:
       os: "macOS"
 
-  - label: "💻 macOS fastlane build 👟 "
+  - label: "🍏💻👟 macOS fastlane build "
     key: "macos_fastlane_build"
     depends_on:
       - "macos_build"
@@ -65,7 +63,7 @@ steps:
     agents:
       os: "macOS"
 
-  - label: "💻 macOS fastlane TestFlight upload 🚀 "
+  - label: "🍏💻🚀 macOS fastlane TestFlight upload "
     key: "macos_fastlane_testflight"
     depends_on:
       - "macos_fastlane_build"
@@ -75,7 +73,7 @@ steps:
     agents:
       os: "macOS"
 
-  - label: "💻 macOS fastlane Export 🚀 "
+  - label: "🍏💻🚀 macOS fastlane Export "
     key: "macos_fastlane_export"
     depends_on:
       - "macos_build"
@@ -88,7 +86,7 @@ steps:
     agents:
       os: "macOS"
 
-  - label: "💻 macOS create DMG file 💾 "
+  - label: "🍏💻💾 macOS create DMG file "
     key: "macos_dmg"
     depends_on:
       - "macos_fastlane_export"
@@ -99,7 +97,7 @@ steps:
     agents:
       os: "macOS"
 
-  - label: "💻 macOS notarize DMG file ⚖️ "
+  - label: "🍏💻⚖️ macOS notarize DMG file "
     key: "macos_notarize"
     depends_on:
       - "macos_dmg"
@@ -109,12 +107,12 @@ steps:
     agents:
       os: "macOS"
 
-  - label: "💻🐧 Create GitHub Prerelease 🚀 "
+  - label: "🍏💻🐧🚀 Create GitHub Prerelease "
     key: "create_github_prerelease"
     command:
       - "gh release create -p -d --generate-notes --target $$BUILDKITE_COMMIT $$BUILDKITE_BRANCH"
 
-  - label: "💻 macOS publish GitHub Prerelease 🚀 "
+  - label: "🍏💻🚀 macOS publish GitHub Prerelease "
     key: "macos_github_prerelease"
     depends_on:
       - "create_github_prerelease"
@@ -125,8 +123,7 @@ steps:
     agents:
       os: "macOS"
 
-
-  - label: "🐧 Clean 🧽, 🛠 build 🛠, 🔬 test 🔬 "
+  - label: "🐧🧽🛠🔬 Clean, build, test "
     key: "linux_clean_test"
     command:
       - "make clean_test"
@@ -135,7 +132,7 @@ steps:
     agents:
       os: "linux"
 
-  - label: "🐧 Linux Build 🏭 "
+  - label: "🐧💻🛠 Linux Build "
     key: "linux_build"
     depends_on:
       - "linux_clean_test"
@@ -144,12 +141,10 @@ steps:
       - "make linux_build"
       - "tar cfvz build/linux.x64.tar.gz build/linux"
       - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
-    artifact_paths:
-      - "missing_translations.txt"
     agents:
       os: "linux"
 
-  - label: "🐧 Linux publish GitHub prerelease 🚀 "
+  - label: "🐧💻🚀 Linux publish GitHub prerelease "
     key: "linux_github_prerelease"
     depends_on:
       - "create_github_prerelease"
@@ -159,3 +154,39 @@ steps:
       - "gh release upload $$BUILDKITE_BRANCH build/linux.x64.tar.gz"
     agents:
       os: "linux"
+
+  - label: "🐧📱🛠 Android Bundle "
+    key: "android_bundle"
+    depends_on:
+      - "clean_test"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "flutter build appbundle"
+      - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
+    agents:
+      os: "macOS"
+
+  - label: "🐧📱🛠 Android create APKs "
+    key: "android_apks"
+    depends_on:
+      - "android_bundle"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "bundletool build-apks --mode universal --bundle build/app/outputs/bundle/release/app-release.aab --output build/android/lotti.apks --overwrite"
+      - "cp build/android/lotti.apks build/android/lotti.zip"
+      - "cd build/android && unzip lotti.zip && cd -"
+      - "rsync -ar --exclude 'build/ios' --exclude 'build/macos' ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
+    agents:
+      os: "macOS"
+
+  - label: "🐧💻🚀 Android publish GitHub Prerelease "
+    key: "android_github_prerelease"
+    depends_on:
+      - "create_github_prerelease"
+      - "android_apks"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "gh release upload $$BUILDKITE_BRANCH build/android/universal.apk"
+      - "gh release upload $$BUILDKITE_BRANCH build/app/outputs/bundle/release/app-release.aab"
+    agents:
+      os: "macOS"
