@@ -172,7 +172,9 @@ steps:
       - "android_bundle"
     command:
       - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
-      - "bundletool build-apks --bundle build/app/outputs/bundle/release/app-release.aab --output build/android/lotti.apks --overwrite"
+      - "bundletool build-apks --mode universal --bundle build/app/outputs/bundle/release/app-release.aab --output build/android/lotti.apks --overwrite"
+      - "cp build/android/lotti.apks build/android/lotti.zip"
+      - "cd build/android && unzip lotti.zip && cd -"
       - "rsync -ar --exclude 'build/ios' --exclude 'build/macos' ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
     agents:
       os: "macOS"
@@ -184,6 +186,7 @@ steps:
       - "android_apks"
     command:
       - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "gh release upload $$BUILDKITE_BRANCH build/android/universal.apk"
       - "gh release upload $$BUILDKITE_BRANCH build/app/outputs/bundle/release/app-release.aab"
     agents:
       os: "macOS"
