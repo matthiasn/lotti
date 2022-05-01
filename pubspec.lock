@@ -1816,9 +1816,11 @@ packages:
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
-      name: sqlite3_flutter_libs
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: sqlite3_flutter_libs
+      ref: "71c25a8"
+      resolved-ref: "71c25a8e508eefe218579a9da734b8d3af77d3e1"
+      url: "https://github.com/matthiasn/sqlite3.dart"
+    source: git
     version: "0.5.5"
   sqlparser:
     dependency: transitive

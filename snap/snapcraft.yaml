@@ -26,3 +26,8 @@ parts:
     source: .
     plugin: flutter
     flutter-target: lib/main.dart
+    build-packages:
+    - libsecret-1-0
+    - libsecret-1-dev
+    - libjsoncpp-dev
+    - libkeybinder-3.0-dev
