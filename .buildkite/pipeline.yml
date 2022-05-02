@@ -196,8 +196,7 @@ steps:
   - label: "🪟🛠 Windows Bundle "
     key: "windows_bundle"
     commands:
-      - "flutter pub get"
-      - "flutter gen-l10n"
+      - "echo foo"
       - "flutter pub run build_runner build --delete-conflicting-outputs"
       - "flutter test"
       - "flutter build windows"
