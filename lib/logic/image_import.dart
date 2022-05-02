@@ -29,7 +29,10 @@ Future<void> importImageAssets(
   if (assets != null) {
     for (final AssetEntity asset in assets) {
       Geolocation? geolocation;
-      if (asset.latitude != 0.0 && asset.longitude != 0.0) {
+      if (asset.latitude != null &&
+          asset.longitude != null &&
+          asset.latitude != 0.0 &&
+          asset.longitude != 0.0) {
         geolocation = Geolocation(
           createdAt: asset.createDateTime,
           latitude: asset.latitude!,
