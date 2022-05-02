@@ -29,14 +29,21 @@ Future<void> importImageAssets(
   if (assets != null) {
     for (final AssetEntity asset in assets) {
       Geolocation? geolocation;
-      if (asset.latitude != 0.0 && asset.longitude != 0.0) {
+      LatLng latLng = await asset.latlngAsync();
+      double? latitude = latLng.latitude ?? asset.latitude;
+      double? longitude = latLng.longitude ?? asset.longitude;
+
+      if (latitude != null &&
+          longitude != null &&
+          latitude != 0.0 &&
+          longitude != 0.0) {
         geolocation = Geolocation(
           createdAt: asset.createDateTime,
-          latitude: asset.latitude!,
-          longitude: asset.longitude!,
+          latitude: latitude,
+          longitude: longitude,
           geohashString: DeviceLocation.getGeoHash(
-            latitude: asset.latitude!,
-            longitude: asset.longitude!,
+            latitude: latitude,
+            longitude: longitude,
           ),
         );
       }
