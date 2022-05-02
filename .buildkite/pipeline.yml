@@ -193,11 +193,12 @@ steps:
 
   - label: "🪟🛠 Windows Bundle "
     key: "windows_bundle"
-    command:
+    commands:
       - "flutter pub get"
       - "flutter gen-l10n"
       - "flutter build_runner"
       - "flutter test"
+      - "flutter build windows"
       - "flutter pub run msix:create"
     agents:
       os: "windows"
