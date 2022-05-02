@@ -197,6 +197,8 @@ steps:
     key: "windows_bundle"
     commands:
       - "echo foo"
+      - "flutter clean"
+      - "flutter pub get"
       - "flutter pub run build_runner build --delete-conflicting-outputs"
       - "flutter test"
       - "flutter build windows"
