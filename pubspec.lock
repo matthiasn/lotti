@@ -1322,7 +1322,7 @@ packages:
     source: hosted
     version: "0.3.0"
   msix:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: msix
       url: "https://pub.dartlang.org"

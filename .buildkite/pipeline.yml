@@ -5,17 +5,17 @@ soft_fail:
   - exit_status: 24
 
 steps:
-  - group: "🍏 Codegen & Test"
+  - group: "Codegen & Test"
     key: "codegen_test"
     steps:
-      - label: "🍏🧽 Clean "
+      - label: "🧽 Clean "
         key: "apple_clean"
         commands:
           - "flutter clean"
         agents:
           os: "macOS"
 
-      - label: "🍏🛠 Dependencies "
+      - label: "🛠 Dependencies "
         key: "apple_deps"
         depends_on:
           - "apple_clean"
@@ -26,7 +26,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏🛠 Codegen "
+      - label: "🛠 Codegen "
         key: "apple_codegen"
         depends_on:
           - "apple_deps"
@@ -39,7 +39,7 @@ steps:
         artifact_paths:
           - "missing_translations.txt"
 
-      - label: "🍏🔬 Test "
+      - label: "🔬 Test "
         key: "apple_test"
         depends_on:
           - "apple_codegen"
@@ -49,23 +49,27 @@ steps:
         agents:
           os: "macOS"
 
-#################
+  #################
 
-  - group: "🍏💻 iOS TestFlight"
-    key: "ios_testflight"
+  - label: "📱 iOS Build 📦"
+    key: "ios_build"
     depends_on:
       - "codegen_test"
-    steps:
-      - label: "🍏📱🛠 iOS Build "
-        key: "ios_build"
-        commands:
-          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "make ios_build_ipa"
-          - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-        agents:
-          os: "macOS"
+    commands:
+      - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
+      - "make ios_build_ipa"
+      - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+    agents:
+      os: "macOS"
 
-      - label: "🍏📱👟 iOS fastlane build "
+  #################
+
+  - group: "📱 iOS TestFlight"
+    key: "ios_testflight"
+    depends_on:
+      - "ios_build"
+    steps:
+      - label: "📱👟 iOS fastlane build "
         key: "ios_fastlane_build"
         depends_on:
           - "ios_build"
@@ -76,7 +80,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏📱🚀 iOS fastlane TestFlight upload "
+      - label: "📱🚀 iOS fastlane TestFlight "
         key: "ios_fastlane_testflight"
         depends_on:
           - "ios_fastlane_build"
@@ -86,23 +90,27 @@ steps:
         agents:
           os: "macOS"
 
-#################
+  #################
 
-  - group: "🍏💻 macOS TestFlight"
-    key: "macos_testflight"
+  - label: ":mac: Build 📦 "
+    key: "macos_build"
     depends_on:
       - "codegen_test"
-    steps:
-      - label: "🍏💻🛠 macOS Build "
-        key: "macos_build"
-        commands:
-          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "make macos_build_flutter"
-          - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-        agents:
-          os: "macOS"
+    commands:
+      - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
+      - "make macos_build_flutter"
+      - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+    agents:
+      os: "macOS"
 
-      - label: "🍏💻👟 macOS fastlane build "
+  #################
+
+  - group: ":mac: TestFlight"
+    key: "macos_testflight"
+    depends_on:
+      - "macos_build"
+    steps:
+      - label: ":mac: 👟 fastlane build "
         key: "macos_fastlane_build"
         depends_on:
           - "macos_build"
@@ -113,7 +121,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏💻🚀 macOS fastlane TestFlight upload "
+      - label: ":mac: 🚀 fastlane TestFlight "
         key: "macos_fastlane_testflight"
         depends_on:
           - "macos_fastlane_build"
@@ -123,23 +131,23 @@ steps:
         agents:
           os: "macOS"
 
-#################
+  #################
 
-  - label: "🍏💻🐧🚀 Create GitHub Prerelease "
+  - label: "Create :github: Release "
     key: "create_github_prerelease"
     command:
       - "gh release create -p -d --generate-notes --target ${BUILDKITE_COMMIT} ${BUILDKITE_BRANCH}"
     agents:
       os: "macOS"
 
-#################
+  #################
 
-  - group: "🍏💻 GitHub Release"
+  - group: ":mac: :github: Release"
     key: "macos_github_release"
     depends_on:
       - "macos_build"
     steps:
-      - label: "🍏💻🚀 macOS fastlane Export "
+      - label: "🚀 macOS fastlane Export "
         key: "macos_fastlane_export"
         commands:
           - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
@@ -150,7 +158,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏💻💾 macOS create DMG file "
+      - label: ":mac: 💾 create DMG "
         key: "macos_dmg"
         depends_on:
           - "macos_fastlane_export"
@@ -161,7 +169,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏💻⚖️ macOS notarize DMG file "
+      - label: "⚖️ :mac: notarize DMG file "
         key: "macos_notarize"
         depends_on:
           - "macos_dmg"
@@ -171,7 +179,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏💻🚀 macOS publish GitHub Prerelease "
+      - label: ":mac: publish :github: Prerelease 🚀 "
         key: "macos_github_prerelease"
         depends_on:
           - "create_github_prerelease"
@@ -182,23 +190,27 @@ steps:
         agents:
           os: "macOS"
 
-#################
+  #################
 
-  - group: "🐧📱 GitHub Release"
+  - label: ":android: Bundle "
+    key: "android_bundle"
+    depends_on:
+      - "codegen_test"
+    command:
+      - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
+      - "flutter build appbundle"
+      - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+    agents:
+      os: "macOS"
+
+  #################
+
+  - group: ":android: :github: Release"
     key: "android_github_release"
     depends_on:
-      - "clean_test"
+      - "android_bundle"
     steps:
-      - label: "🐧📱🛠 Android Bundle "
-        key: "android_bundle"
-        command:
-          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "flutter build appbundle"
-          - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-        agents:
-          os: "macOS"
-
-      - label: "🐧📱🛠 Android create APKs "
+      - label: ":android: Android create APKs "
         key: "android_apks"
         depends_on:
           - "android_bundle"
@@ -211,7 +223,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🐧💻🚀 Android publish GitHub Prerelease "
+      - label: ":android: 🚀 publish :github: Prerelease "
         key: "android_github_prerelease"
         depends_on:
           - "create_github_prerelease"

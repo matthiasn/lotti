@@ -8,14 +8,14 @@ steps:
   - group: "Windows codegen & test"
     key: "windows_codegen_test"
     steps:
-      - label: "🪟🛠 Clean "
+      - label: ":windows: 🛠 Clean "
         key: "windows_clean"
         commands:
           - "flutter clean"
         agents:
           os: "windows"
 
-      - label: "🪟🛠 Dependencies "
+      - label: ":windows: 🛠 Dependencies "
         key: "windows_deps"
         depends_on:
           - "windows_clean"
@@ -26,7 +26,7 @@ steps:
         agents:
           os: "windows"
 
-      - label: "🪟🛠 Codegen "
+      - label: ":windows: 🛠 Codegen "
         key: "windows_build_runner"
         depends_on:
           - "windows_deps"
@@ -37,7 +37,7 @@ steps:
         agents:
           os: "windows"
 
-      - label: "🪟🛠 Test "
+      - label: ":windows: 🔬 Test "
         key: "windows_test"
         depends_on:
           - "windows_build_runner"
@@ -47,9 +47,9 @@ steps:
         agents:
           os: "windows"
 
-#################
+  #################
 
-  - label: "🪟🛠 Build "
+  - label: ":windows: 🛠 Build "
     key: "windows_build"
     depends_on:
       - "windows_codegen_test"
@@ -60,7 +60,7 @@ steps:
     agents:
       os: "windows"
 
-  - label: "🪟🛠 MSIX "
+  - label: ":github: MSIX 📦"
     key: "windows_msix"
     depends_on:
       - "windows_build"
