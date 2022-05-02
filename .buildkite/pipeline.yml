@@ -111,6 +111,8 @@ steps:
     key: "create_github_prerelease"
     command:
       - "gh release create -p -d --generate-notes --target $$BUILDKITE_COMMIT $$BUILDKITE_BRANCH"
+    agents:
+      os: "macOS"
 
   - label: "🍏💻🚀 macOS publish GitHub Prerelease "
     key: "macos_github_prerelease"
@@ -194,8 +196,8 @@ steps:
   - label: "🪟🛠 Windows Bundle "
     key: "windows_bundle"
     commands:
+      - "flutter clean"
       - "flutter pub get"
-      - "flutter gen-l10n"
       - "flutter pub run build_runner build --delete-conflicting-outputs"
       - "flutter test"
       - "flutter build windows"
