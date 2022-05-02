@@ -5,49 +5,54 @@ soft_fail:
   - exit_status: 24
 
 steps:
-  - label: "🪟🛠 Flutter clean "
-    key: "windows_clean"
-    commands:
-      - "flutter clean"
-    agents:
-      os: "windows"
+  - group: "Windows codegen & test"
+    key: "windows_codegen_test"
+    steps:
+      - label: "🪟🛠 Clean "
+        key: "windows_clean"
+        commands:
+          - "flutter clean"
+        agents:
+          os: "windows"
 
-  - label: "🪟🛠 Windows Dependencies "
-    key: "windows_deps"
-    depends_on:
-      - "windows_clean"
-    commands:
-      - "flutter pub get"
-      - "wsl mkdir -p /tmp/buildkite/${BUILDKITE_COMMIT}/"
-      - "wsl rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-    agents:
-      os: "windows"
+      - label: "🪟🛠 Dependencies "
+        key: "windows_deps"
+        depends_on:
+          - "windows_clean"
+        commands:
+          - "flutter pub get"
+          - "wsl mkdir -p /tmp/buildkite/${BUILDKITE_COMMIT}/"
+          - "wsl rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+        agents:
+          os: "windows"
 
-  - label: "🪟🛠 Windows Build Runner "
-    key: "windows_build_runner"
-    depends_on:
-      - "windows_deps"
-    commands:
-      - "wsl rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-      - "flutter pub run build_runner build --delete-conflicting-outputs"
-      - "wsl rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-    agents:
-      os: "windows"
+      - label: "🪟🛠 Codegen "
+        key: "windows_build_runner"
+        depends_on:
+          - "windows_deps"
+        commands:
+          - "wsl rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
+          - "flutter pub run build_runner build --delete-conflicting-outputs"
+          - "wsl rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+        agents:
+          os: "windows"
 
-  - label: "🪟🛠 Windows Test "
-    key: "windows_test"
-    depends_on:
-      - "windows_build_runner"
-    commands:
-      - "wsl rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-      - "flutter test"
-    agents:
-      os: "windows"
+      - label: "🪟🛠 Test "
+        key: "windows_test"
+        depends_on:
+          - "windows_build_runner"
+        commands:
+          - "wsl rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
+          - "flutter test"
+        agents:
+          os: "windows"
 
-  - label: "🪟🛠 Windows Build "
+#################
+
+  - label: "🪟🛠 Build "
     key: "windows_build"
     depends_on:
-      - "windows_build_runner"
+      - "windows_codegen_test"
     commands:
       - "wsl rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
       - "flutter build windows -v"
@@ -55,7 +60,7 @@ steps:
     agents:
       os: "windows"
 
-  - label: "🪟🛠 Windows MSIX "
+  - label: "🪟🛠 MSIX "
     key: "windows_msix"
     depends_on:
       - "windows_build"
