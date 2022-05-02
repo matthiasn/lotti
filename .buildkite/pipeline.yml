@@ -1,3 +1,9 @@
+# Workaround for rsync warning about vanished files,
+# which is inconsequential here but returns exit code
+# 24 and is therefore interpreted as a failure
+soft_fail:
+  - exit_status: 24
+
 steps:
   - label: "🍏💻🧽🛠🔬 Clean, build, test"
     key: "clean_test"
