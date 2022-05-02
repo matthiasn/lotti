@@ -190,3 +190,15 @@ steps:
       - "gh release upload $$BUILDKITE_BRANCH build/app/outputs/bundle/release/app-release.aab"
     agents:
       os: "macOS"
+
+  - label: "🪟🛠 Windows Bundle "
+    key: "windows_bundle"
+    commands:
+      - "flutter pub get"
+      - "flutter gen-l10n"
+      - "flutter pub run build_runner build --delete-conflicting-outputs"
+      - "flutter test"
+      - "flutter build windows"
+      - "flutter pub run msix:create"
+    agents:
+      os: "windows"

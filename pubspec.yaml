@@ -1,7 +1,14 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.7.24+812
+version: 0.7.26+815
+
+msix_config:
+  display_name: Lotti
+  publisher_display_name: Matthias Nehlsen
+  identity_name: com.matthiasnehlsen.lotti
+  msix_version: 0.7.25.0
+  capabilities: internetClient, location, microphone, webcam
 
 environment:
   sdk: ">=2.16.0 <3.0.0"
@@ -127,6 +134,7 @@ dev_dependencies:
   glados: ^1.1.1
   json_serializable: ^6.0.0
   mocktail: ^0.3.0
+  msix: ^3.5.1
 
 flutter_icons:
   android: true
