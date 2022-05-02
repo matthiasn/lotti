@@ -5,17 +5,17 @@ soft_fail:
   - exit_status: 24
 
 steps:
-  - group: "🐧💻 Codegen & Test"
+  - group: ":linux: Codegen & Test"
     key: "linux_codegen_test"
     steps:
-      - label: "🐧🛠 Clean "
+      - label: ":linux: 🛠 Clean "
         key: "linux_clean"
         commands:
           - "flutter clean"
         agents:
           os: "linux"
 
-      - label: "🐧🛠 Dependencies "
+      - label: ":linux: 🛠 Dependencies "
         key: "linux_deps"
         depends_on:
           - "linux_clean"
@@ -26,7 +26,7 @@ steps:
         agents:
           os: "linux"
 
-      - label: "🐧🛠 Codegen "
+      - label: ":linux: 🛠 Codegen "
         key: "linux_build_runner"
         depends_on:
           - "linux_deps"
@@ -37,7 +37,7 @@ steps:
         agents:
           os: "linux"
 
-      - label: "🐧🔬 Test "
+      - label: ":linux: 🔬 Test "
         key: "linux_test"
         depends_on:
           - "linux_build_runner"
@@ -49,7 +49,7 @@ steps:
 
   #################
 
-  - label: "💻🐧🚀 Create GitHub Prerelease "
+  - label: ":linux: 🚀 Create GitHub Prerelease "
     key: "create_github_prerelease"
     command:
       - "gh release create -p -d --generate-notes --target ${BUILDKITE_COMMIT} ${BUILDKITE_BRANCH}"
@@ -58,7 +58,7 @@ steps:
 
   #################
 
-  - label: "🐧💻🛠 Build "
+  - label: ":linux: 🛠 Build "
     key: "linux_build"
     depends_on:
       - "linux_codegen_test"
@@ -70,7 +70,7 @@ steps:
     agents:
       os: "linux"
 
-  - label: "🐧💻🚀 GitHub Prerelease "
+  - label: ":linux: :github: Prerelease 🚀 "
     key: "linux_github_prerelease"
     depends_on:
       - "create_github_prerelease"

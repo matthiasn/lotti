@@ -51,7 +51,7 @@ steps:
 
   #################
 
-  - label: "📱🛠 iOS Build "
+  - label: "📱 iOS Build 📦"
     key: "ios_build"
     depends_on:
       - "codegen_test"
@@ -80,7 +80,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "📱🚀 iOS fastlane TestFlight upload "
+      - label: "📱🚀 iOS fastlane TestFlight "
         key: "ios_fastlane_testflight"
         depends_on:
           - "ios_fastlane_build"
@@ -92,7 +92,7 @@ steps:
 
   #################
 
-  - label: "💻🛠 macOS Build "
+  - label: ":mac: Build 📦 "
     key: "macos_build"
     depends_on:
       - "codegen_test"
@@ -105,12 +105,12 @@ steps:
 
   #################
 
-  - group: "💻 macOS TestFlight"
+  - group: ":mac: TestFlight"
     key: "macos_testflight"
     depends_on:
       - "macos_build"
     steps:
-      - label: "💻👟 macOS fastlane build "
+      - label: ":mac: 👟 fastlane build "
         key: "macos_fastlane_build"
         depends_on:
           - "macos_build"
@@ -121,7 +121,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "💻🚀 macOS fastlane TestFlight upload "
+      - label: ":mac: 🚀 fastlane TestFlight "
         key: "macos_fastlane_testflight"
         depends_on:
           - "macos_fastlane_build"
@@ -133,7 +133,7 @@ steps:
 
   #################
 
-  - label: "🚀 Create GH Release "
+  - label: "Create :github: Release "
     key: "create_github_prerelease"
     command:
       - "gh release create -p -d --generate-notes --target ${BUILDKITE_COMMIT} ${BUILDKITE_BRANCH}"
@@ -142,7 +142,7 @@ steps:
 
   #################
 
-  - group: "💻 macOS GH Release"
+  - group: ":mac: :github: Release"
     key: "macos_github_release"
     depends_on:
       - "macos_build"
@@ -158,7 +158,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "💾 macOS create DMG file "
+      - label: ":mac: 💾 create DMG "
         key: "macos_dmg"
         depends_on:
           - "macos_fastlane_export"
@@ -169,7 +169,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "⚖️ macOS notarize DMG file "
+      - label: "⚖️ :mac: notarize DMG file "
         key: "macos_notarize"
         depends_on:
           - "macos_dmg"
@@ -179,7 +179,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🚀 macOS publish GitHub Prerelease "
+      - label: ":mac: publish :github: Prerelease 🚀 "
         key: "macos_github_prerelease"
         depends_on:
           - "create_github_prerelease"
@@ -192,7 +192,7 @@ steps:
 
   #################
 
-  - label: ":android: 🐧📱🛠 Android Bundle "
+  - label: ":android: Bundle "
     key: "android_bundle"
     depends_on:
       - "clean_test"
@@ -205,12 +205,12 @@ steps:
 
   #################
 
-  - group: "🐧📱 Android GH Release"
+  - group: ":android: :github: Release"
     key: "android_github_release"
     depends_on:
       - "android_bundle"
     steps:
-      - label: "🐧📱🛠 Android create APKs "
+      - label: ":android: Android create APKs "
         key: "android_apks"
         depends_on:
           - "android_bundle"
@@ -223,7 +223,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🐧💻🚀 Android publish GitHub Prerelease "
+      - label: ":android: 🚀 publish :github: Prerelease "
         key: "android_github_prerelease"
         depends_on:
           - "create_github_prerelease"
