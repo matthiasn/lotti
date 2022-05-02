@@ -1,12 +1,44 @@
 steps:
-  - label: "🪟🛠 Windows Bundle "
-    key: "windows_bundle"
+  - label: "🪟🛠 Windows Dependencies "
+    key: "windows_deps"
     commands:
-      - "flutter clean"
       - "flutter pub get"
+    agents:
+      os: "windows"
+
+  - label: "🪟🛠 Windows Bundle "
+    key: "windows_build_runner"
+    depends_on:
+      - "windows_deps"
+    commands:
       - "flutter pub run build_runner build --delete-conflicting-outputs"
+    agents:
+      os: "windows"
+
+  - label: "🪟🛠 Windows Test "
+    key: "windows_test"
+    depends_on:
+      - "windows_build_runner"
+    commands:
       - "flutter test"
+    agents:
+      os: "windows"
+
+  - label: "🪟🛠 Windows Build "
+    key: "windows_build"
+    depends_on:
+      - "windows_test"
+    commands:
       - "flutter build windows"
+      - "flutter pub run msix:create"
+    agents:
+      os: "windows"
+
+  - label: "🪟🛠 Windows MSIX "
+    key: "windows_msix"
+    depends_on:
+      - "windows_build"
+    commands:
       - "flutter pub run msix:create"
     agents:
       os: "windows"
