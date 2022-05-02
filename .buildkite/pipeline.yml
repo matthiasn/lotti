@@ -5,17 +5,17 @@ soft_fail:
   - exit_status: 24
 
 steps:
-  - group: "🍏 Codegen & Test"
+  - group: "Codegen & Test"
     key: "codegen_test"
     steps:
-      - label: "🍏🧽 Clean "
+      - label: "🧽 Clean "
         key: "apple_clean"
         commands:
           - "flutter clean"
         agents:
           os: "macOS"
 
-      - label: "🍏🛠 Dependencies "
+      - label: "🛠 Dependencies "
         key: "apple_deps"
         depends_on:
           - "apple_clean"
@@ -26,7 +26,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏🛠 Codegen "
+      - label: "🛠 Codegen "
         key: "apple_codegen"
         depends_on:
           - "apple_deps"
@@ -39,7 +39,7 @@ steps:
         artifact_paths:
           - "missing_translations.txt"
 
-      - label: "🍏🔬 Test "
+      - label: "🔬 Test "
         key: "apple_test"
         depends_on:
           - "apple_codegen"
@@ -51,7 +51,7 @@ steps:
 
   #################
 
-  - label: "🍏📱🛠 iOS Build "
+  - label: "📱🛠 iOS Build "
     key: "ios_build"
     depends_on:
       - "codegen_test"
@@ -64,12 +64,12 @@ steps:
 
   #################
 
-  - group: "🍏💻 iOS TestFlight"
+  - group: "📱 iOS TestFlight"
     key: "ios_testflight"
     depends_on:
       - "ios_build"
     steps:
-      - label: "🍏📱👟 iOS fastlane build "
+      - label: "📱👟 iOS fastlane build "
         key: "ios_fastlane_build"
         depends_on:
           - "ios_build"
@@ -80,7 +80,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏📱🚀 iOS fastlane TestFlight upload "
+      - label: "📱🚀 iOS fastlane TestFlight upload "
         key: "ios_fastlane_testflight"
         depends_on:
           - "ios_fastlane_build"
@@ -92,7 +92,7 @@ steps:
 
   #################
 
-  - label: "🍏💻🛠 macOS Build "
+  - label: "💻🛠 macOS Build "
     key: "macos_build"
     depends_on:
       - "codegen_test"
@@ -105,12 +105,12 @@ steps:
 
   #################
 
-  - group: "🍏💻 macOS TestFlight"
+  - group: "💻 macOS TestFlight"
     key: "macos_testflight"
     depends_on:
       - "macos_build"
     steps:
-      - label: "🍏💻👟 macOS fastlane build "
+      - label: "💻👟 macOS fastlane build "
         key: "macos_fastlane_build"
         depends_on:
           - "macos_build"
@@ -121,7 +121,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏💻🚀 macOS fastlane TestFlight upload "
+      - label: "💻🚀 macOS fastlane TestFlight upload "
         key: "macos_fastlane_testflight"
         depends_on:
           - "macos_fastlane_build"
@@ -133,7 +133,7 @@ steps:
 
   #################
 
-  - label: "🍏💻🐧🚀 Create GH Release "
+  - label: "🚀 Create GH Release "
     key: "create_github_prerelease"
     command:
       - "gh release create -p -d --generate-notes --target ${BUILDKITE_COMMIT} ${BUILDKITE_BRANCH}"
@@ -142,12 +142,12 @@ steps:
 
   #################
 
-  - group: "🍏💻 macOS GH Release"
+  - group: "💻 macOS GH Release"
     key: "macos_github_release"
     depends_on:
       - "macos_build"
     steps:
-      - label: "🍏💻🚀 macOS fastlane Export "
+      - label: "🚀 macOS fastlane Export "
         key: "macos_fastlane_export"
         commands:
           - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
@@ -158,7 +158,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏💻💾 macOS create DMG file "
+      - label: "💾 macOS create DMG file "
         key: "macos_dmg"
         depends_on:
           - "macos_fastlane_export"
@@ -169,7 +169,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏💻⚖️ macOS notarize DMG file "
+      - label: "⚖️ macOS notarize DMG file "
         key: "macos_notarize"
         depends_on:
           - "macos_dmg"
@@ -179,7 +179,7 @@ steps:
         agents:
           os: "macOS"
 
-      - label: "🍏💻🚀 macOS publish GitHub Prerelease "
+      - label: "🚀 macOS publish GitHub Prerelease "
         key: "macos_github_prerelease"
         depends_on:
           - "create_github_prerelease"
@@ -192,7 +192,7 @@ steps:
 
   #################
 
-  - label: "🐧📱🛠 Android Bundle "
+  - label: ":android: 🐧📱🛠 Android Bundle "
     key: "android_bundle"
     depends_on:
       - "clean_test"
