@@ -47,7 +47,7 @@ steps:
         agents:
           os: "windows"
 
-#################
+  #################
 
   - label: "🪟🛠 Build "
     key: "windows_build"

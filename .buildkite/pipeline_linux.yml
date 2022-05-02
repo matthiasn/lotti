@@ -47,7 +47,7 @@ steps:
         agents:
           os: "linux"
 
-#################
+  #################
 
   - label: "💻🐧🚀 Create GitHub Prerelease "
     key: "create_github_prerelease"
@@ -56,7 +56,7 @@ steps:
     agents:
       os: "linux"
 
-#################
+  #################
 
   - label: "🐧💻🛠 Build "
     key: "linux_build"
