@@ -3,15 +3,19 @@ steps:
     key: "windows_deps"
     commands:
       - "flutter pub get"
+      - "wsl mkdir -p /tmp/buildkite/$$BUILDKITE_COMMIT/"
+      - "wsl rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
     agents:
       os: "windows"
 
-  - label: "🪟🛠 Windows Bundle "
+  - label: "🪟🛠 Windows Build Runner "
     key: "windows_build_runner"
     depends_on:
       - "windows_deps"
     commands:
+      - "wsl rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "flutter pub run build_runner build --delete-conflicting-outputs"
+      - "wsl rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
     agents:
       os: "windows"
 
@@ -20,6 +24,7 @@ steps:
     depends_on:
       - "windows_build_runner"
     commands:
+      - "wsl rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "flutter test"
     agents:
       os: "windows"
@@ -27,10 +32,11 @@ steps:
   - label: "🪟🛠 Windows Build "
     key: "windows_build"
     depends_on:
-      - "windows_test"
+      - "windows_build_runner"
     commands:
+      - "wsl rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "flutter build windows"
-      - "flutter pub run msix:create"
+      - "wsl rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
     agents:
       os: "windows"
 
@@ -39,6 +45,7 @@ steps:
     depends_on:
       - "windows_build"
     commands:
+      - "wsl rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
       - "flutter pub run msix:create"
     agents:
       os: "windows"
