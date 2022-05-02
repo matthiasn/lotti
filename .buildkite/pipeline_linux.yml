@@ -5,26 +5,63 @@ soft_fail:
   - exit_status: 24
 
 steps:
-  - label: "🍏💻🐧🚀 Create GitHub Prerelease "
+  - group: ":linux: Codegen & Test"
+    key: "linux_codegen_test"
+    steps:
+      - label: ":linux: 🛠 Clean "
+        key: "linux_clean"
+        commands:
+          - "flutter clean"
+        agents:
+          os: "linux"
+
+      - label: ":linux: 🛠 Dependencies "
+        key: "linux_deps"
+        depends_on:
+          - "linux_clean"
+        commands:
+          - "flutter pub get"
+          - "mkdir -p /tmp/buildkite/${BUILDKITE_COMMIT}/"
+          - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+        agents:
+          os: "linux"
+
+      - label: ":linux: 🛠 Codegen "
+        key: "linux_build_runner"
+        depends_on:
+          - "linux_deps"
+        commands:
+          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
+          - "flutter pub run build_runner build --delete-conflicting-outputs"
+          - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+        agents:
+          os: "linux"
+
+      - label: ":linux: 🔬 Test "
+        key: "linux_test"
+        depends_on:
+          - "linux_build_runner"
+        commands:
+          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
+          - "flutter test"
+        agents:
+          os: "linux"
+
+  #################
+
+  - label: ":linux: 🚀 Create GitHub Prerelease "
     key: "create_github_prerelease"
     command:
       - "gh release create -p -d --generate-notes --target ${BUILDKITE_COMMIT} ${BUILDKITE_BRANCH}"
     agents:
       os: "linux"
 
-  - label: "🐧🧽🛠🔬 Clean, build, test "
-    key: "linux_clean_test"
-    command:
-      - "make clean_test"
-      - "mkdir -p /tmp/buildkite/${BUILDKITE_COMMIT}/"
-      - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-    agents:
-      os: "linux"
+  #################
 
-  - label: "🐧💻🛠 Linux Build "
+  - label: ":linux: 🛠 Build "
     key: "linux_build"
     depends_on:
-      - "linux_clean_test"
+      - "linux_codegen_test"
     command:
       - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
       - "make linux_build"
@@ -33,7 +70,7 @@ steps:
     agents:
       os: "linux"
 
-  - label: "🐧💻🚀 Linux publish GitHub prerelease "
+  - label: ":linux: :github: Prerelease 🚀 "
     key: "linux_github_prerelease"
     depends_on:
       - "create_github_prerelease"
