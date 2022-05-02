@@ -111,6 +111,8 @@ steps:
     key: "create_github_prerelease"
     command:
       - "gh release create -p -d --generate-notes --target $$BUILDKITE_COMMIT $$BUILDKITE_BRANCH"
+    agents:
+      os: "macOS"
 
   - label: "🍏💻🚀 macOS publish GitHub Prerelease "
     key: "macos_github_prerelease"
