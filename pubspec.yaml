@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.7.26+822
+version: 0.7.26+823
 
 msix_config:
   display_name: Lotti
@@ -9,6 +9,7 @@ msix_config:
   identity_name: com.matthiasnehlsen.lotti
   msix_version: 0.7.26.0
   capabilities: internetClient, location, microphone, webcam
+  install_certificate: false
 
 environment:
   sdk: ">=2.16.0 <3.0.0"

@@ -1,0 +1,39 @@
+steps:
+  - label: "🍏💻🐧🚀 Create GitHub Prerelease "
+    key: "create_github_prerelease"
+    command:
+      - "gh release create -p -d --generate-notes --target $$BUILDKITE_COMMIT $$BUILDKITE_BRANCH"
+    agents:
+      os: "linux"
+
+  - label: "🐧🧽🛠🔬 Clean, build, test "
+    key: "linux_clean_test"
+    command:
+      - "make clean_test"
+      - "mkdir -p /tmp/buildkite/$$BUILDKITE_COMMIT/"
+      - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
+    agents:
+      os: "linux"
+
+  - label: "🐧💻🛠 Linux Build "
+    key: "linux_build"
+    depends_on:
+      - "linux_clean_test"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "make linux_build"
+      - "tar cfvz build/linux.x64.tar.gz build/linux"
+      - "rsync -ar ./ /tmp/buildkite/$$BUILDKITE_COMMIT/"
+    agents:
+      os: "linux"
+
+  - label: "🐧💻🚀 Linux publish GitHub prerelease "
+    key: "linux_github_prerelease"
+    depends_on:
+      - "create_github_prerelease"
+      - "linux_build"
+    command:
+      - "rsync -ar /tmp/buildkite/$$BUILDKITE_COMMIT/ ./"
+      - "gh release upload $$BUILDKITE_BRANCH build/linux.x64.tar.gz"
+    agents:
+      os: "linux"
