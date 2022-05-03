@@ -1,7 +1,9 @@
 {
+  "dashboardActiveLabel": "Activé:",
   "navTabTitleFlagged": "Signalé",
   "navTabTitleInsights": "Graphiques",
   "navTabTitleJournal": "Journal",
   "navTabTitleSettings": "Paramètres",
   "navTabTitleTasks": "Tâches"
+  "settingsSyncCancelButton": "Annuler"
 }
