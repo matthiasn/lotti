@@ -15,7 +15,7 @@ steps:
           - "windows_clean"
         commands:
           - "flutter pub get"
-          - "robocopy . c:\buildkite\tmp\${BUILDKITE_COMMIT}\"
+          - "robocopy . c:\\buildkite\\tmp\\${BUILDKITE_COMMIT}\\"
         agents:
           os: "windows"
 
@@ -24,9 +24,9 @@ steps:
         depends_on:
           - "windows_deps"
         commands:
-          - "robocopy c:\buildkite\tmp\${BUILDKITE_COMMIT}\ ."
+          - "robocopy c:\\buildkite\\tmp\\${BUILDKITE_COMMIT}\\ ."
           - "flutter pub run build_runner build --delete-conflicting-outputs"
-          - "robocopy . c:\buildkite\tmp\${BUILDKITE_COMMIT}\"
+          - "robocopy . c:\\buildkite\\tmp\\${BUILDKITE_COMMIT}\\"
         agents:
           os: "windows"
 
@@ -35,7 +35,7 @@ steps:
         depends_on:
           - "windows_build_runner"
         commands:
-          - "robocopy c:\buildkite\tmp\${BUILDKITE_COMMIT}\ ."
+          - "robocopy c:\\buildkite\\tmp\\${BUILDKITE_COMMIT}\\ ."
           - "flutter test"
         agents:
           os: "windows"
@@ -47,9 +47,9 @@ steps:
     depends_on:
       - "windows_codegen_test"
     commands:
-      - "robocopy c:\buildkite\tmp\${BUILDKITE_COMMIT}\ ."
+      - "robocopy c:\\buildkite\\tmp\\${BUILDKITE_COMMIT}\\ ."
       - "flutter build windows -v"
-      - "robocopy . c:\buildkite\tmp\${BUILDKITE_COMMIT}\"
+      - "robocopy . c:\\buildkite\\tmp\\${BUILDKITE_COMMIT}\\"
     agents:
       os: "windows"
 
@@ -58,7 +58,7 @@ steps:
     depends_on:
       - "windows_build"
     commands:
-      - "robocopy c:\buildkite\tmp\${BUILDKITE_COMMIT}\ ."
+      - "robocopy c:\\buildkite\\tmp\\${BUILDKITE_COMMIT}\\ ."
       - "flutter pub run msix:create"
     agents:
       os: "windows"
