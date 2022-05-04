@@ -15,9 +15,7 @@ steps:
           - "windows_clean"
         commands:
           - "flutter pub get"
-          - "robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir"
-        soft_fail:
-          - exit_status: 1
+          - "(robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
         agents:
           os: "windows"
 
@@ -26,11 +24,9 @@ steps:
         depends_on:
           - "windows_deps"
         commands:
-          - "robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir"
+          - "(robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
           - "flutter pub run build_runner build --delete-conflicting-outputs"
-          - "robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir"
-        soft_fail:
-          - exit_status: 1
+          - "(robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
         agents:
           os: "windows"
 
@@ -39,10 +35,8 @@ steps:
         depends_on:
           - "windows_build_runner"
         commands:
-          - "robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir"
+          - "(robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
           - "flutter test"
-        soft_fail:
-          - exit_status: 1
         agents:
           os: "windows"
 
@@ -53,11 +47,9 @@ steps:
     depends_on:
       - "windows_codegen_test"
     commands:
-      - "robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir"
+      - "(robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
       - "flutter build windows -v"
-      - "robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir"
-    soft_fail:
-      - exit_status: 1
+      - "(robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
     agents:
       os: "windows"
 
@@ -66,9 +58,7 @@ steps:
     depends_on:
       - "windows_build"
     commands:
-      - "robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir"
+      - "(robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
       - "flutter pub run msix:create"
-    soft_fail:
-      - exit_status: 1
     agents:
       os: "windows"
