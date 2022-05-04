@@ -16,6 +16,8 @@ steps:
         commands:
           - "flutter pub get"
           - "robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir"
+        soft_fail:
+          - exit_status: 1
         agents:
           os: "windows"
 
@@ -27,6 +29,8 @@ steps:
           - "robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir"
           - "flutter pub run build_runner build --delete-conflicting-outputs"
           - "robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir"
+        soft_fail:
+          - exit_status: 1
         agents:
           os: "windows"
 
@@ -37,6 +41,8 @@ steps:
         commands:
           - "robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir"
           - "flutter test"
+        soft_fail:
+          - exit_status: 1
         agents:
           os: "windows"
 
@@ -50,6 +56,8 @@ steps:
       - "robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir"
       - "flutter build windows -v"
       - "robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir"
+    soft_fail:
+      - exit_status: 1
     agents:
       os: "windows"
 
@@ -60,5 +68,7 @@ steps:
     commands:
       - "robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir"
       - "flutter pub run msix:create"
+    soft_fail:
+      - exit_status: 1
     agents:
       os: "windows"
