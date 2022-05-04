@@ -1,64 +1,12 @@
 steps:
-  - group: "Windows codegen & test"
-    key: "windows_codegen_test"
-    steps:
-      - label: ":windows: 🛠 Clean "
-        key: "windows_clean"
-        commands:
-          - "flutter clean"
-        agents:
-          os: "windows"
-
-      - label: ":windows: 🛠 Dependencies "
-        key: "windows_deps"
-        depends_on:
-          - "windows_clean"
-        commands:
-          - "flutter pub get"
-          - "(robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
-        agents:
-          os: "windows"
-
-      - label: ":windows: 🛠 Codegen "
-        key: "windows_build_runner"
-        depends_on:
-          - "windows_deps"
-        commands:
-          - "(robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
-          - "flutter pub run build_runner build --delete-conflicting-outputs"
-          - "(robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
-        agents:
-          os: "windows"
-
-      - label: ":windows: 🔬 Test "
-        key: "windows_test"
-        depends_on:
-          - "windows_build_runner"
-        commands:
-          - "(robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
-          - "flutter test"
-        agents:
-          os: "windows"
-
-  #################
-
-  - label: ":windows: 🛠 Build "
+  - label: ":windows: :github: MISX 📦"
     key: "windows_build"
-    depends_on:
-      - "windows_codegen_test"
     commands:
-      - "(robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
+      - "flutter clean"
+      - "flutter pub get"
+      - "flutter pub run build_runner build --delete-conflicting-outputs"
+      - "flutter test"
       - "flutter build windows -v"
-      - "(robocopy . c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
-    agents:
-      os: "windows"
-
-  - label: ":github: MSIX 📦"
-    key: "windows_msix"
-    depends_on:
-      - "windows_build"
-    commands:
-      - "(robocopy c:\\buildkite-agent\\tmp\\${BUILDKITE_COMMIT}\\ . /mir) ^& IF %ERRORLEVEL% LEQ 1 exit 0"
       - "flutter pub run msix:create"
     agents:
       os: "windows"
