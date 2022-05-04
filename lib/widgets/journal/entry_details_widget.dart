@@ -84,8 +84,9 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         }
 
         bool isTask = item is Task;
+        bool isAudio = item is JournalAudio;
 
-        if (isTask && !widget.showTaskDetails) {
+        if ((isTask || isAudio) && !widget.showTaskDetails) {
           return JournalCard(item: item);
         }
 
