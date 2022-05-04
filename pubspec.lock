@@ -14,7 +14,7 @@ packages:
       name: adaptive_dialog
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.6.1"
+    version: "1.6.2+1"
   analyzer:
     dependency: transitive
     description:
@@ -392,7 +392,7 @@ packages:
       name: dart_code_metrics
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.14.0"
+    version: "4.15.0"
   dart_console:
     dependency: transitive
     description:
@@ -742,7 +742,7 @@ packages:
       name: flutter_local_notifications
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "9.4.1"
+    version: "9.5.0"
   flutter_local_notifications_linux:
     dependency: transitive
     description:
@@ -1166,7 +1166,7 @@ packages:
       name: just_audio
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.20"
+    version: "0.9.21"
   just_audio_platform_interface:
     dependency: transitive
     description:
@@ -1264,7 +1264,7 @@ packages:
       name: macos_ui
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.13.1"
+    version: "0.16.0"
   matcher:
     dependency: transitive
     description:
@@ -1313,7 +1313,7 @@ packages:
       name: mime
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.1"
+    version: "1.0.2"
   mocktail:
     dependency: "direct dev"
     description:
@@ -1656,7 +1656,7 @@ packages:
       name: quiver
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.1+1"
+    version: "3.1.0"
   radial_button:
     dependency: "direct main"
     description:
@@ -1903,21 +1903,21 @@ packages:
       name: syncfusion_flutter_calendar
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.1.51"
+    version: "20.1.52"
   syncfusion_flutter_core:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.1.51"
+    version: "20.1.52"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.1.51"
+    version: "20.1.52"
   synchronized:
     dependency: transitive
     description:
