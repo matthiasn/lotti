@@ -4,7 +4,7 @@ A smart journal and a tool for living a better life by defining and monitoring
 interventions. Please check out **[HISTORY.md](https://github.com/matthiasn/lotti/tree/main/HISTORY.md)** for information on the project's
 history. You can find the previous version in the **[meins subdirectory](https://github.com/matthiasn/lotti/tree/main/meins)**.
 
-See [blog post](https://matthiasnehlsen.com/blog/2022/05/05/introducing-lotti/) for more info.
+See **[blog post](https://matthiasnehlsen.com/blog/2022/05/05/introducing-lotti/)** for more info.
 
 ## Getting Started
 
