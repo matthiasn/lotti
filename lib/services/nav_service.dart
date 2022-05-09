@@ -23,8 +23,13 @@ class NavService {
   }
 }
 
+void persistNamedRoute(String route) {
+  debugPrint('persistNamedRoute: $route');
+  SecureStorage.writeValue(lastRouteKey, route);
+}
+
 void pushNamedRoute(String route) {
   debugPrint('pushNamedRoute: $route');
-  SecureStorage.writeValue(lastRouteKey, route);
+  persistNamedRoute(route);
   getIt<AppRouter>().pushNamed(route);
 }

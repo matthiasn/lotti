@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/widgets.dart';
+import 'package:lotti/services/nav_service.dart';
 
 class NavObserver extends AutoRouterObserver {
   @override
@@ -16,6 +17,6 @@ class NavObserver extends AutoRouterObserver {
 
   @override
   void didChangeTabRoute(TabPageRoute route, TabPageRoute previousRoute) {
-    debugPrint('Tab route re-visited: ${route.name}');
+    persistNamedRoute('/${route.path}');
   }
 }
