@@ -76,6 +76,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createQuantitativeEntry',
         stackTrace: stackTrace,
       );
     }
@@ -112,6 +113,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createWorkoutEntry',
         stackTrace: stackTrace,
       );
     }
@@ -131,15 +133,8 @@ class PersistenceLogic {
       VectorClock vc = await _vectorClockService.getNextVectorClock();
       String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
 
-      Geolocation? geolocation =
-          await location?.getCurrentGeoLocation().timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => null, // TODO: report timeout in Insights
-              );
-
       JournalEntity journalEntity = JournalEntity.survey(
         data: data,
-        geolocation: geolocation,
         meta: Metadata(
           createdAt: now,
           updatedAt: now,
@@ -157,10 +152,12 @@ class PersistenceLogic {
         enqueueSync: true,
         linkedId: linkedId,
       );
+      addGeolocation(journalEntity.meta.id);
     } catch (exception, stackTrace) {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createSurveyEntry',
         stackTrace: stackTrace,
       );
     }
@@ -180,19 +177,8 @@ class PersistenceLogic {
       VectorClock vc = await _vectorClockService.getNextVectorClock();
       String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
 
-      Geolocation? geolocation;
-
-      if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
-          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
-        geolocation = await location?.getCurrentGeoLocation().timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => null, // TODO: report timeout in Insights
-            );
-      }
-
       JournalEntity journalEntity = JournalEntity.measurement(
         data: data,
-        geolocation: geolocation,
         meta: Metadata(
           createdAt: now,
           updatedAt: now,
@@ -210,10 +196,16 @@ class PersistenceLogic {
         enqueueSync: true,
         linkedId: linkedId,
       );
+
+      if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
+          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
+        addGeolocation(journalEntity.meta.id);
+      }
     } catch (exception, stackTrace) {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createMeasurementEntry',
         stackTrace: stackTrace,
       );
     }
@@ -234,19 +226,8 @@ class PersistenceLogic {
       VectorClock vc = await _vectorClockService.getNextVectorClock();
       String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
 
-      Geolocation? geolocation;
-
-      if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
-          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
-        geolocation = await location?.getCurrentGeoLocation().timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => null, // TODO: report timeout in Insights
-            );
-      }
-
       JournalEntity journalEntity = JournalEntity.task(
         data: data,
-        geolocation: geolocation,
         entryText: entryText,
         meta: Metadata(
           createdAt: now,
@@ -266,10 +247,12 @@ class PersistenceLogic {
         enqueueSync: true,
         linkedId: linkedId,
       );
+      addGeolocation(journalEntity.meta.id);
     } catch (exception, stackTrace) {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createTaskEntry',
         stackTrace: stackTrace,
       );
     }
@@ -318,6 +301,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createImageEntry',
         stackTrace: stackTrace,
       );
     }
@@ -374,6 +358,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createAudioEntry',
         stackTrace: stackTrace,
       );
     }
@@ -393,11 +378,6 @@ class PersistenceLogic {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
       String id = uuid.v1();
-      Geolocation? geolocation =
-          await location?.getCurrentGeoLocation().timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => null,
-              );
 
       JournalEntity journalEntity = JournalEntity.journalEntry(
         entryText: entryText,
@@ -411,19 +391,20 @@ class PersistenceLogic {
           timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
-        geolocation: geolocation,
       );
       await createDbEntity(
         journalEntity,
         enqueueSync: true,
         linkedId: linkedId,
       );
+      addGeolocation(journalEntity.meta.id);
       transaction.finish();
       return journalEntity;
     } catch (exception, stackTrace) {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createTextEntry',
         stackTrace: stackTrace,
       );
       transaction.error();
@@ -510,6 +491,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createDbEntity',
         stackTrace: stackTrace,
       );
       debugPrint('Exception $exception');
@@ -588,6 +570,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'updateJournalEntityText',
         stackTrace: stackTrace,
       );
     }
@@ -634,18 +617,62 @@ class PersistenceLogic {
         orElse: () => _loggingDb.captureException(
           'not a task',
           domain: 'persistence_logic',
+          subDomain: 'updateTask',
         ),
       );
     } catch (exception, stackTrace) {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'updateTask',
         stackTrace: stackTrace,
       );
     }
 
     await transaction.finish();
     return true;
+  }
+
+  Future<void> addGeolocation(String journalEntityId) async {
+    final transaction =
+        _loggingDb.startTransaction('createTextEntry()', 'task');
+    try {
+      JournalEntity? journalEntity =
+          await _journalDb.journalEntityById(journalEntityId);
+
+      Geolocation? geolocation =
+          await location?.getCurrentGeoLocation().timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => null,
+              );
+
+      if (journalEntity != null && geolocation != null) {
+        Metadata metadata = journalEntity.meta;
+        DateTime now = DateTime.now();
+        VectorClock vc = await _vectorClockService.getNextVectorClock(
+            previous: metadata.vectorClock);
+
+        Metadata newMeta = metadata.copyWith(
+          updatedAt: now,
+          vectorClock: vc,
+        );
+
+        JournalEntity newJournalEntity = journalEntity.copyWith(
+          meta: newMeta,
+          geolocation: geolocation,
+        );
+
+        await updateDbEntity(newJournalEntity, enqueueSync: true);
+      }
+    } catch (exception, stackTrace) {
+      await _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'addGeolocation',
+        stackTrace: stackTrace,
+      );
+      transaction.error();
+    }
   }
 
   Future<bool> updateJournalEntityDate(
@@ -683,6 +710,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'updateJournalEntityDate',
         stackTrace: stackTrace,
       );
     }
@@ -717,6 +745,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'updateJournalEntity',
         stackTrace: stackTrace,
       );
     }
@@ -756,6 +785,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'addTags',
         stackTrace: stackTrace,
       );
     }
@@ -794,6 +824,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'removeTag',
         stackTrace: stackTrace,
       );
     }
@@ -833,6 +864,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'deleteJournalEntity',
         stackTrace: stackTrace,
       );
     }
@@ -869,6 +901,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'updateDbEntity',
         stackTrace: stackTrace,
       );
       debugPrint('Exception $exception');
