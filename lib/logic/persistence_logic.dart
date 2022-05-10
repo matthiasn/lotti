@@ -76,6 +76,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createQuantitativeEntry',
         stackTrace: stackTrace,
       );
     }
@@ -112,6 +113,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createWorkoutEntry',
         stackTrace: stackTrace,
       );
     }
@@ -161,6 +163,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createSurveyEntry',
         stackTrace: stackTrace,
       );
     }
@@ -214,6 +217,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createMeasurementEntry',
         stackTrace: stackTrace,
       );
     }
@@ -270,6 +274,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createTaskEntry',
         stackTrace: stackTrace,
       );
     }
@@ -318,6 +323,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createImageEntry',
         stackTrace: stackTrace,
       );
     }
@@ -374,6 +380,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createAudioEntry',
         stackTrace: stackTrace,
       );
     }
@@ -424,6 +431,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createTextEntry',
         stackTrace: stackTrace,
       );
       transaction.error();
@@ -510,6 +518,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'createDbEntity',
         stackTrace: stackTrace,
       );
       debugPrint('Exception $exception');
@@ -588,6 +597,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'updateJournalEntityText',
         stackTrace: stackTrace,
       );
     }
@@ -634,12 +644,14 @@ class PersistenceLogic {
         orElse: () => _loggingDb.captureException(
           'not a task',
           domain: 'persistence_logic',
+          subDomain: 'updateTask',
         ),
       );
     } catch (exception, stackTrace) {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'updateTask',
         stackTrace: stackTrace,
       );
     }
@@ -683,6 +695,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'updateJournalEntityDate',
         stackTrace: stackTrace,
       );
     }
@@ -717,6 +730,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'updateJournalEntity',
         stackTrace: stackTrace,
       );
     }
@@ -756,6 +770,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'addTags',
         stackTrace: stackTrace,
       );
     }
@@ -794,6 +809,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'removeTag',
         stackTrace: stackTrace,
       );
     }
@@ -833,6 +849,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'deleteJournalEntity',
         stackTrace: stackTrace,
       );
     }
@@ -869,6 +886,7 @@ class PersistenceLogic {
       await _loggingDb.captureException(
         exception,
         domain: 'persistence_logic',
+        subDomain: 'updateDbEntity',
         stackTrace: stackTrace,
       );
       debugPrint('Exception $exception');
