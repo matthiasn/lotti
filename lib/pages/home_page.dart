@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/outbox_badge.dart';
+import 'package:lotti/routes/observer.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
@@ -101,6 +102,7 @@ class HomePage extends StatelessWidget {
           ),
         );
       },
+      navigatorObservers: () => [NavObserver()],
     );
   }
 }
