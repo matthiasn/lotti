@@ -52,7 +52,7 @@ steps:
   - label: ":linux: 🚀 Create GitHub Prerelease "
     key: "create_github_prerelease"
     command:
-      - "gh release create -p -d --generate-notes --target ${BUILDKITE_COMMIT} ${BUILDKITE_BRANCH}"
+      - "gh release create -p --generate-notes --target ${BUILDKITE_COMMIT} ${BUILDKITE_BRANCH}"
     agents:
       os: "linux"
 
