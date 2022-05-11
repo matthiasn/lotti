@@ -3,19 +3,19 @@ import 'package:flutter/foundation.dart';
 
 class MyBlocObserver extends BlocObserver {
   @override
-  void onCreate(BlocBase bloc) {
+  void onCreate(BlocBase<dynamic> bloc) {
     super.onCreate(bloc);
     debugPrint('onCreate -- ${bloc.runtimeType}');
   }
 
   @override
-  void onChange(BlocBase bloc, Change change) {
+  void onChange(BlocBase<dynamic> bloc, Change<dynamic> change) {
     super.onChange(bloc, change);
     debugPrint('onChange -- ${bloc.runtimeType}, $change');
   }
 
   @override
-  void onError(BlocBase bloc, Object error, StackTrace stackTrace) {
+  void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
     debugPrint('onError -- ${bloc.runtimeType}, $error');
     super.onError(bloc, error, stackTrace);
   }
