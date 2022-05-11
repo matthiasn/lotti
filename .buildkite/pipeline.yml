@@ -151,7 +151,7 @@ steps:
   - label: "Create :github: Release "
     key: "create_github_prerelease"
     command:
-      - "gh release create -p --generate-notes --target ${BUILDKITE_COMMIT} ${BUILDKITE_BRANCH}"
+      - "gh release create -p --generate-notes --target ${BUILDKITE_COMMIT} ${BUILDKITE_BRANCH} || true"
     agents:
       os: "macOS"
 
