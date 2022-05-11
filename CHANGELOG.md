@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Dark keyboard on iOS
+
+## [0.7.30] - 2022-05-11
+### Fixed:
+- Zero wait for location on entry create, will be added later when available
+
+## [0.7.29] - 2022-05-10
+### Fixed:
+- Tabs routes are now restored on application restart
+
+## [0.7.28] - 2022-05-05
+
 ### Fixed:
 - Audio playback for multiple recordings in list of linked entries was not 
   working previously

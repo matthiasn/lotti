@@ -90,6 +90,7 @@ class LottiApp extends StatelessWidget {
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData(
+          brightness: Brightness.dark,
           primarySwatch: Colors.grey,
         ),
         debugShowCheckedModeBanner: true,
