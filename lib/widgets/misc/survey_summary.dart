@@ -54,7 +54,7 @@ class SurveySummaryWidget extends StatelessWidget {
             .toList(),
         DashboardSurveyChart(
           chartConfig: chartConfig!,
-          rangeStart: getRangeStart(context),
+          rangeStart: getRangeStart(context: context),
           rangeEnd: getRangeEnd(),
         ),
       ],

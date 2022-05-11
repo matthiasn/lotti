@@ -193,7 +193,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
               if (selected != null)
                 DashboardMeasurablesChart(
                   measurableDataTypeId: selected!.id,
-                  rangeStart: getRangeStart(context),
+                  rangeStart: getRangeStart(context: context),
                   rangeEnd: getRangeEnd(),
                 ),
             ],

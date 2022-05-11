@@ -96,17 +96,23 @@ const timeSeriesAxis = charts.DateTimeAxisSpec(
       ),
     ));
 
-DateTime getRangeStart(BuildContext context) {
-  int durationDays = (MediaQuery.of(context).size.width / 10).ceil();
+DateTime getRangeStart({
+  required BuildContext context,
+  double scale = 10,
+  int daysBack = 0,
+}) {
+  int durationDays = (MediaQuery.of(context).size.width / scale).ceil();
   final Duration duration = Duration(days: durationDays);
   final DateTime now = DateTime.now();
   final DateTime from = now.subtract(duration);
-  return DateTime(from.year, from.month, from.day);
+  return DateTime(from.year, from.month, from.day)
+      .subtract(Duration(days: daysBack));
 }
 
-DateTime getRangeEnd() {
+DateTime getRangeEnd({int daysBack = 0}) {
   final DateTime now = DateTime.now();
-  return DateTime(now.year, now.month, now.day, 23, 59, 59);
+  return DateTime(now.year, now.month, now.day, 23, 59, 59)
+      .subtract(Duration(days: daysBack));
 }
 
 String padLeft(num value) {
