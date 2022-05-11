@@ -119,7 +119,7 @@ packages:
       name: basic_utils
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.9.4"
+    version: "4.2.1"
   bloc:
     dependency: "direct main"
     description:
@@ -289,12 +289,12 @@ packages:
     source: hosted
     version: "4.1.0"
   collection:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: collection
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.15.0"
+    version: "1.16.0"
   connectivity_plus:
     dependency: "direct main"
     description:
@@ -364,7 +364,7 @@ packages:
       name: crypto
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.2"
   cryptography:
     dependency: "direct main"
     description:
@@ -515,12 +515,10 @@ packages:
   enough_mail:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "80c8900"
-      resolved-ref: "80c89005e2544df622dc5da5c1222e080a90d3bd"
-      url: "https://github.com/Enough-Software/enough_mail"
-    source: git
-    version: "1.3.6"
+      name: enough_mail
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.0"
   enough_serialization:
     dependency: transitive
     description:
@@ -562,14 +560,14 @@ packages:
       name: extended_image
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.3"
+    version: "6.1.0"
   extended_image_library:
     dependency: transitive
     description:
       name: extended_image_library
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.1.4"
+    version: "3.2.0"
   fake_async:
     dependency: transitive
     description:
@@ -1544,7 +1542,7 @@ packages:
       name: photo_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.8"
+    version: "2.0.9"
   photo_view:
     dependency: "direct main"
     description:
@@ -2192,7 +2190,7 @@ packages:
     source: hosted
     version: "0.2.0+1"
   xml:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: xml
       url: "https://pub.dartlang.org"
