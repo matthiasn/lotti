@@ -14,7 +14,7 @@ import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
-  void onNavigateCallback(RouteMatch route, bool initial) {
+  void onNavigateCallback(RouteMatch<dynamic> route, bool initial) {
     debugPrint('onNavigateCallback $route $initial');
   }
 
@@ -27,7 +27,7 @@ class HomePage extends StatelessWidget {
         backgroundColor: AppColors.headerBgColor,
         title: const VersionAppBar(title: 'Lotti'),
         centerTitle: true,
-        leading: AutoBackButton(
+        leading: AutoLeadingButton(
           color: AppColors.entryTextColor,
         ),
       ),

@@ -1,5 +1,7 @@
 # Lotti
 
+[![CodeFactor](https://www.codefactor.io/repository/github/matthiasn/lotti/badge)](https://www.codefactor.io/repository/github/matthiasn/lotti)
+
 A smart journal and a tool for living a better life by defining and monitoring
 interventions. Please check out **[HISTORY.md](https://github.com/matthiasn/lotti/tree/main/HISTORY.md)** for information on the project's
 history. You can find the previous version in the **[meins subdirectory](https://github.com/matthiasn/lotti/tree/main/meins)**.

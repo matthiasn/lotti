@@ -18,7 +18,7 @@ jobs:
       - name: Fastlane match iOS
         working-directory: lotti/ios
         run: >
-          fastlane match --generate_apple_certs false 
+          fastlane match --generate_apple_certs false
           --git_basic_authorization $MATCH_GIT_BASIC_AUTHORIZATION
           --readonly true
         env:
@@ -26,9 +26,9 @@ jobs:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
       - name: Fastlane match macOS
         working-directory: lotti/macos
-        run: > 
-          fastlane match --platform macos   
-          --generate_apple_certs false 
+        run: >
+          fastlane match --platform macos
+          --generate_apple_certs false
           --git_basic_authorization $MATCH_GIT_BASIC_AUTHORIZATION
           --readonly true
         env:

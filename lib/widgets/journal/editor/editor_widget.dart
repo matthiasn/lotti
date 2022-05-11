@@ -27,7 +27,8 @@ class EditorWidget extends StatelessWidget {
     required this.focusNode,
   }) : super(key: key);
 
-  void keyFormatter(RawKeyEvent event, String char, Attribute attribute) {
+  void keyFormatter(
+      RawKeyEvent event, String char, Attribute<dynamic> attribute) {
     if (event.data.isMetaPressed && event.character == char) {
       if (controller
           .getSelectionStyle()

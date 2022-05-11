@@ -45,7 +45,7 @@ class HealthImport {
     }
   }
 
-  Future getActivityHealthData({
+  Future<void> getActivityHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
@@ -102,7 +102,7 @@ class HealthImport {
     return await _healthFactory.requestAuthorization(types);
   }
 
-  Future fetchHealthData({
+  Future<void> fetchHealthData({
     required List<HealthDataType> types,
     required DateTime dateFrom,
     required DateTime dateTo,
@@ -149,7 +149,7 @@ class HealthImport {
     await transaction.finish();
   }
 
-  Future fetchHealthDataDelta(String type) async {
+  Future<void> fetchHealthDataDelta(String type) async {
     List<String> actualTypes = [type];
 
     if (type == 'BLOOD_PRESSURE') {
@@ -197,7 +197,7 @@ class HealthImport {
     }
   }
 
-  Future getWorkoutsHealthData({
+  Future<void> getWorkoutsHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
@@ -236,7 +236,7 @@ class HealthImport {
     await transaction.finish();
   }
 
-  Future getWorkoutsHealthDataDelta() async {
+  Future<void> getWorkoutsHealthDataDelta() async {
     WorkoutEntry? latest = await _db.latestWorkout();
     DateTime now = DateTime.now();
 
