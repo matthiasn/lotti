@@ -28,14 +28,26 @@ class _DashboardPageState extends State<DashboardPage> {
 
   double zoomStartScale = 10.0;
   double scale = 10.0;
+  double horizontalPan = 0.0;
 
   @override
   Widget build(BuildContext context) {
-    final DateTime rangeStart = getRangeStart(context, scale);
-    final DateTime rangeEnd = getRangeEnd();
+    int daysBack = (horizontalPan / scale).floor();
+
+    final DateTime rangeStart = getRangeStart(
+      context: context,
+      scale: scale,
+      daysBack: daysBack,
+    );
+    final DateTime rangeEnd = getRangeEnd(daysBack: daysBack);
     return GestureDetector(
       onScaleStart: (_) {
         zoomStartScale = scale;
+      },
+      onHorizontalDragUpdate: (DragUpdateDetails details) {
+        setState(() {
+          horizontalPan += details.delta.dx;
+        });
       },
       onScaleUpdate: (ScaleUpdateDetails details) {
         double horizontalScale = details.horizontalScale;
@@ -115,8 +127,10 @@ class _DashboardPageState extends State<DashboardPage> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(left: 8.0),
-                        child:
-                            Text(dashboard.description, style: formLabelStyle),
+                        child: Text(
+                          dashboard.description,
+                          style: formLabelStyle,
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.settings),

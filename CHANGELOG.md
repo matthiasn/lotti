@@ -6,7 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
-- inherit private status
+- Horizontal Chart Zoom
+- Horizontal Chart Panning
+
+## [0.7.33] - 2022-05-11
+### Added:
+- Hide inactive dashboards
+
+## [0.7.32] - 2022-05-11
+### Added:
+- Inherit private status from linked
 
 ## [0.7.31] - 2022-05-11
 ### Added:
