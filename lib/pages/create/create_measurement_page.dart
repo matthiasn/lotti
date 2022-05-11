@@ -162,6 +162,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                               labelText: selected!.description,
                               labelStyle: labelStyle,
                             ),
+                            keyboardAppearance: Brightness.dark,
                             style: inputStyle,
                             name: 'value',
                             keyboardType: const TextInputType.numberWithOptions(

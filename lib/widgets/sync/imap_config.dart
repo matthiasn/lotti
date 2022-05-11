@@ -86,6 +86,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                     ),
                     validator: FormBuilderValidators.required(context),
                     style: inputStyle,
+                    keyboardAppearance: Brightness.dark,
                     decoration: InputDecoration(
                       labelText: localizations.settingsSyncHostLabel,
                       labelStyle: settingsLabelStyle,
@@ -99,6 +100,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                         ) ??
                         'INBOX',
                     validator: FormBuilderValidators.required(context),
+                    keyboardAppearance: Brightness.dark,
                     style: inputStyle,
                     decoration: InputDecoration(
                       labelText: localizations.settingsSyncFolderLabel,
@@ -113,6 +115,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                     ),
                     validator: FormBuilderValidators.required(context),
                     style: inputStyle,
+                    keyboardAppearance: Brightness.dark,
                     decoration: InputDecoration(
                       labelText: localizations.settingsSyncUserLabel,
                       labelStyle: settingsLabelStyle,
@@ -127,6 +130,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                     obscureText: true,
                     validator: FormBuilderValidators.required(context),
                     style: inputStyle,
+                    keyboardAppearance: Brightness.dark,
                     decoration: InputDecoration(
                       labelText: localizations.settingsSyncPasswordLabel,
                       labelStyle: settingsLabelStyle,
@@ -142,6 +146,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                         '993',
                     validator: FormBuilderValidators.integer(context),
                     style: inputStyle,
+                    keyboardAppearance: Brightness.dark,
                     decoration: InputDecoration(
                       labelText: localizations.settingsSyncPortLabel,
                       labelStyle: settingsLabelStyle,

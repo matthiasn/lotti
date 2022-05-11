@@ -62,6 +62,8 @@ class _TaskFormState extends State<TaskForm> {
                     labelText: localizations.taskNameLabel,
                     labelStyle: labelStyle,
                   ),
+                  textCapitalization: TextCapitalization.sentences,
+                  keyboardAppearance: Brightness.dark,
                   maxLines: null,
                   style: inputStyle.copyWith(
                     fontFamily: 'Oswald',
