@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.7.31+841
+version: 0.7.32+842
 
 msix_config:
   display_name: Lotti
@@ -43,7 +43,7 @@ dependencies:
   adaptive_dialog: ^1.3.0
   arb_utils: ^0.2.0
   audio_video_progress_bar: ^0.10.0
-  auto_route: ^3.2.4
+  auto_route: ^4.0.0
   badges: ^2.0.2
   bloc: ^8.0.1
   bloc_test: ^9.0.1
@@ -72,7 +72,7 @@ dependencies:
   flutter_local_notifications: ^9.2.0
   flutter_map: ^0.14.0
   flutter_native_timezone: ^2.0.0
-  flutter_quill: ^4.0.1
+  flutter_quill: ^4.0.8
   flutter_secure_storage: ^5.0.0
   flutter_sliding_tutorial: ^1.1.3+3
   flutter_sound: ^8.3.12
@@ -124,7 +124,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   archive: ^3.1.6
-  auto_route_generator: ^3.2.3
+  auto_route_generator: ^4.0.0
   build_runner: ^2.1.4
   dart_code_metrics: ^4.8.1
   drift_dev: ^1.1.0
