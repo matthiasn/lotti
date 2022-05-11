@@ -33,7 +33,8 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         List<DashboardDefinition> items = snapshot.data ?? [];
         List<DashboardDefinition> filtered = items
             .where((DashboardDefinition dashboard) =>
-                dashboard.name.toLowerCase().contains(match))
+                dashboard.name.toLowerCase().contains(match) &&
+                dashboard.active)
             .toList();
 
         return ListView(
