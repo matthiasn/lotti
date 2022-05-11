@@ -96,8 +96,8 @@ const timeSeriesAxis = charts.DateTimeAxisSpec(
       ),
     ));
 
-DateTime getRangeStart(BuildContext context) {
-  int durationDays = (MediaQuery.of(context).size.width / 10).ceil();
+DateTime getRangeStart(BuildContext context, double n) {
+  int durationDays = (MediaQuery.of(context).size.width / n).ceil();
   final Duration duration = Duration(days: durationDays);
   final DateTime now = DateTime.now();
   final DateTime from = now.subtract(duration);
