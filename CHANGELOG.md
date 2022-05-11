@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- inherit private status
+
+## [0.7.31] - 2022-05-11
+### Added:
 - Dark keyboard on iOS
 
 ## [0.7.30] - 2022-05-11

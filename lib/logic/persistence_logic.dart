@@ -456,6 +456,7 @@ class PersistenceLogic {
 
       JournalEntity withTags = journalEntity.copyWith(
         meta: journalEntity.meta.copyWith(
+          private: linked?.meta.private,
           tagIds: <String>{
             ...?journalEntity.meta.tagIds,
             ...storyTags,
