@@ -1,15 +1,16 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.7.38+850
+version: 0.7.39+851
 
 msix_config:
   display_name: Lotti
   publisher_display_name: Matthias Nehlsen
   identity_name: com.matthiasnehlsen.lotti
-  msix_version: 0.7.38.0
   capabilities: internetClient, location, microphone, webcam
+  languages: en-us, de-de
   install_certificate: false
+  sign_msix: false
 
 environment:
   sdk: ">=2.16.0 <3.0.0"
