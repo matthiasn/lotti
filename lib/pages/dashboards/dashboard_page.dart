@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -33,15 +35,15 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final int daysBack = (horizontalPan / scale).floor();
+    final int shiftDays = max((horizontalPan / scale).floor(), 0);
 
     final DateTime rangeStart = getRangeStart(
       context: context,
       scale: scale,
-      daysBack: daysBack,
+      shiftDays: shiftDays,
     );
 
-    final DateTime rangeEnd = getRangeEnd(daysBack: daysBack);
+    final DateTime rangeEnd = getRangeEnd(shiftDays: shiftDays);
 
     return GestureDetector(
       onScaleStart: (_) {
