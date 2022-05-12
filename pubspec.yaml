@@ -12,7 +12,7 @@ msix_config:
   languages: en-us, de-de
   install_certificate: false
   sign_msix: false
-  logo_path: .\assets\icon\logo_1024_android.png
+  logo_path: C:\lotti\logo.png
 
 environment:
   sdk: ">=2.16.0 <3.0.0"
