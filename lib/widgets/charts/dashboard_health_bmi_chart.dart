@@ -110,6 +110,9 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
               List<JournalEntity?>? items = snapshot.data ?? [];
               List<Observation> weightData = aggregateNone(items, weightType);
 
+              num minInRange = findMin(weightData);
+              num maxInRange = findMax(weightData);
+
               List<charts.RangeAnnotationSegment<num>> rangeAnnotationSegments =
                   makeRangeAnnotationSegments(weightData, height);
 
@@ -170,6 +173,8 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                         BmiChartInfoWidget(
                           widget.chartConfig,
                           height: height,
+                          minInRange: minInRange,
+                          maxInRange: maxInRange,
                         ),
                         const BmiRangeLegend(),
                       ],
@@ -254,11 +259,15 @@ class BmiChartInfoWidget extends StatelessWidget {
   const BmiChartInfoWidget(
     this.chartConfig, {
     required this.height,
+    required this.minInRange,
+    required this.maxInRange,
     Key? key,
   }) : super(key: key);
 
   final DashboardHealthItem chartConfig;
   final num? height;
+  final num minInRange;
+  final num maxInRange;
 
   @override
   Widget build(BuildContext context) {
@@ -308,7 +317,22 @@ class BmiChartInfoWidget extends StatelessWidget {
                     ),
                   ),
                 ],
-                const Spacer(),
+                if (selected == null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    'Min: ${NumberFormat('#,###.#').format(minInRange)} kg ',
+                    style: chartTitleStyle.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Max: ${NumberFormat('#,###.#').format(maxInRange)} kg ',
+                    style: chartTitleStyle.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
