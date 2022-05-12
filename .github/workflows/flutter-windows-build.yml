@@ -25,3 +25,5 @@ jobs:
         run: flutter test
       - name: Flutter build
         run: flutter build windows
+      - name: Flutter create MSIX
+        run: flutter pub run msix:create
