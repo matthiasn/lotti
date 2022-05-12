@@ -99,20 +99,20 @@ const timeSeriesAxis = charts.DateTimeAxisSpec(
 DateTime getRangeStart({
   required BuildContext context,
   double scale = 10,
-  int daysBack = 0,
+  int shiftDays = 0,
 }) {
   int durationDays = (MediaQuery.of(context).size.width / scale).ceil();
   final Duration duration = Duration(days: durationDays);
   final DateTime now = DateTime.now();
   final DateTime from = now.subtract(duration);
   return DateTime(from.year, from.month, from.day)
-      .subtract(Duration(days: daysBack));
+      .subtract(Duration(days: shiftDays));
 }
 
-DateTime getRangeEnd({int daysBack = 0}) {
+DateTime getRangeEnd({int shiftDays = 0}) {
   final DateTime now = DateTime.now();
   return DateTime(now.year, now.month, now.day, 23, 59, 59)
-      .subtract(Duration(days: daysBack));
+      .subtract(Duration(days: shiftDays));
 }
 
 String padLeft(num value) {
