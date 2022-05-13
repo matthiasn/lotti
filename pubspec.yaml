@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.7.39+853
+version: 0.7.40+854
 
 msix_config:
   display_name: Lotti
@@ -12,7 +12,7 @@ msix_config:
   languages: en-us, de-de
   install_certificate: false
   sign_msix: false
-  logo_path: C:\lotti\logo.png
+  #logo_path: C:\lotti\logo.png
 
 environment:
   sdk: ">=2.16.0 <3.0.0"
