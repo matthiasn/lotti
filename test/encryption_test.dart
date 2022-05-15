@@ -1,8 +1,8 @@
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/sync/encryption.dart';
 
 Function eq = const ListEquality().equals;
