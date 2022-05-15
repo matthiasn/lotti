@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: subosito/flutter-action@v1
         with:
-          flutter-version: '2.10'
+          flutter-version: '3.0.0'
           channel: 'stable'
       - name: Run Flutter tests
         run: make clean_test
