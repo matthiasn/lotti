@@ -278,61 +278,61 @@ class BmiChartInfoWidget extends StatelessWidget {
 
       return Positioned(
         top: -1,
-        left: MediaQuery.of(context).size.width / 4,
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width / 2,
-          child: IgnorePointer(
+        left: 0,
+        child: IgnorePointer(
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width,
             child: Row(
-              mainAxisSize: MainAxisSize.max,
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Spacer(),
-                if (selected == null)
-                  Text(
-                    healthTypes[chartConfig.healthType]?.displayName ??
-                        chartConfig.healthType,
-                    style: chartTitleStyle,
-                  ),
-                if (selected != null) ...[
-                  Padding(
-                    padding: AppTheme.chartDateHorizontalPadding,
-                    child: Text(
-                      ' ${ymd(selected.dateTime)}',
-                      style: chartTitleStyle,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    ' ${NumberFormat('#,###.##').format(selected.value)} kg ',
-                    style: chartTitleStyle.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    ' BMI: ${NumberFormat('#.#').format(calculateBMI(height!, weight!))}',
-                    style: chartTitleStyle.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-                if (selected == null) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    'Min: ${NumberFormat('#,###.#').format(minInRange)} kg ',
-                    style: chartTitleStyle.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Max: ${NumberFormat('#,###.#').format(maxInRange)} kg ',
-                    style: chartTitleStyle.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+                Row(
+                  children: [
+                    if (selected == null)
+                      Text(
+                        healthTypes[chartConfig.healthType]?.displayName ??
+                            chartConfig.healthType,
+                        style: chartTitleStyle,
+                      ),
+                    if (selected != null) ...[
+                      Padding(
+                        padding: AppTheme.chartDateHorizontalPadding,
+                        child: Text(
+                          ' ${ymd(selected.dateTime)}',
+                          style: chartTitleStyle,
+                        ),
+                      ),
+                      Text(
+                        ' ${NumberFormat('#,###.##').format(selected.value)} kg ',
+                        style: chartTitleStyle.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        ' BMI: ${NumberFormat('#.#').format(calculateBMI(height!, weight!))}',
+                        style: chartTitleStyle.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                    if (selected == null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        'Min: ${NumberFormat('#,###.#').format(minInRange)} kg ',
+                        style: chartTitleStyle.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Max: ${NumberFormat('#,###.#').format(maxInRange)} kg ',
+                        style: chartTitleStyle.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
