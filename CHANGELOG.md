@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Faster screenshots when no location in cache
+
+## [0.8.3] - 2022-05-16
+### Changed:
 - Bottom Navigation Bar hidden in entry details
 - Bottom Navigation Bar hidden in sync assistant
 - Bottom Navigation Bar hidden in logging

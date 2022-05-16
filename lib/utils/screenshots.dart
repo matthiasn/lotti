@@ -2,11 +2,9 @@ import 'dart:io';
 
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/location.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:window_manager/window_manager.dart';
@@ -39,18 +37,11 @@ Future<ImageData> takeScreenshotMac() async {
 
   await process.exitCode;
 
-  DeviceLocation location = DeviceLocation();
-  Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
-        const Duration(seconds: 3),
-        onTimeout: () => null,
-      );
-
   ImageData imageData = ImageData(
     imageId: id,
     imageFile: filename,
     imageDirectory: relativePath,
     capturedAt: created,
-    geolocation: geolocation,
   );
 
   if (hide) {
@@ -79,9 +70,13 @@ Future<void> registerScreenshotHotkey() async {
 
         if (enabled) {
           ImageData imageData = await takeScreenshotMac();
-          await persistenceLogic.createImageEntry(
+          JournalEntity? journalEntity =
+              await persistenceLogic.createImageEntry(
             imageData,
           );
+          if (journalEntity != null) {
+            persistenceLogic.addGeolocation(journalEntity.meta.id);
+          }
         }
       },
     );
