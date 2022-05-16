@@ -56,6 +56,13 @@ class HomePage extends StatelessWidget {
         //TutorialRouter(),
       ],
       bottomNavigationBuilder: (_, TabsRouter tabsRouter) {
+        final topRoute = tabsRouter.topRoute.name;
+        final hideBottomNav = topRoute == DashboardRoute.name;
+
+        if (hideBottomNav) {
+          return const SizedBox.shrink();
+        }
+
         return Container(
           decoration: const BoxDecoration(
             boxShadow: <BoxShadow>[
