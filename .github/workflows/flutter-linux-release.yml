@@ -25,6 +25,8 @@ jobs:
         run: make doctor
       - name: Create GitHub Release
         run: gh release create -p --generate-notes --target $GITHUB_SHA $GITHUB_REF_NAME || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Test
         run: make clean_test
       - name: Build
@@ -33,3 +35,5 @@ jobs:
         run: tar cfvz build/linux.x64.tar.gz build/linux
       - name: Upload to GitHub Releases
         run: gh release upload $GITHUB_REF_NAME build/linux.x64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
