@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Bottom Navigation Bar hidden in entry details
+- Bottom Navigation Bar hidden in sync assistant
+- Bottom Navigation Bar hidden in logging
 
 ## [0.8.2] - 2022-05-16
 ### Changed:
