@@ -13,7 +13,7 @@ class NavService {
   }
 
   void restoreRoute() async {
-    String? route = await SecureStorage.readValue(lastRouteKey);
+    String? route = await getSavedRoute();
     if (route != null) {
       Timer(const Duration(milliseconds: 100), () {
         getIt<AppRouter>().pushNamed(route);
@@ -21,6 +21,20 @@ class NavService {
       });
     }
   }
+}
+
+Future<String?> getSavedRoute() async {
+  return await SecureStorage.readValue(lastRouteKey);
+}
+
+Future<String?> getIdFromSavedRoute() async {
+  RegExp regExp = RegExp(
+    r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
+    caseSensitive: false,
+    multiLine: false,
+  );
+  String? route = await getSavedRoute();
+  return regExp.firstMatch('$route')?.group(0);
 }
 
 void persistNamedRoute(String route) {

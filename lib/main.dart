@@ -16,6 +16,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/screenshots.dart';
+import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
@@ -80,23 +81,25 @@ class LottiApp extends StatelessWidget {
           create: (BuildContext context) => AudioPlayerCubit(),
         ),
       ],
-      child: MaterialApp.router(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          FormBuilderLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: ThemeData(
-          primarySwatch: Colors.grey,
+      child: DesktopMenuWrapper(
+        MaterialApp.router(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            FormBuilderLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: ThemeData(
+            primarySwatch: Colors.grey,
+          ),
+          debugShowCheckedModeBanner: true,
+          routerDelegate: router.delegate(
+            navigatorObservers: () => [],
+          ),
+          routeInformationParser: router.defaultRouteParser(),
         ),
-        debugShowCheckedModeBanner: true,
-        routerDelegate: router.delegate(
-          navigatorObservers: () => [],
-        ),
-        routeInformationParser: router.defaultRouteParser(),
       ),
     );
   }
