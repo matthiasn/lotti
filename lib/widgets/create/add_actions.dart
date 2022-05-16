@@ -57,10 +57,16 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: AppColors.actionColor,
           onPressed: () async {
             ImageData imageData = await takeScreenshotMac();
-            await _persistenceLogic.createImageEntry(
+
+            JournalEntity? journalEntity =
+                await _persistenceLogic.createImageEntry(
               imageData,
               linked: widget.linked,
             );
+
+            if (journalEntity != null) {
+              _persistenceLogic.addGeolocation(journalEntity.meta.id);
+            }
           },
         ),
       );

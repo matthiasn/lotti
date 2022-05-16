@@ -261,7 +261,7 @@ class PersistenceLogic {
     return true;
   }
 
-  Future<bool> createImageEntry(
+  Future<JournalEntity?> createImageEntry(
     ImageData imageData, {
     JournalEntity? linked,
   }) async {
@@ -297,6 +297,7 @@ class PersistenceLogic {
         enqueueSync: true,
         linkedId: linked?.meta.id,
       );
+      return journalEntity;
     } catch (exception, stackTrace) {
       await _loggingDb.captureException(
         exception,
@@ -307,7 +308,7 @@ class PersistenceLogic {
     }
 
     await transaction.finish();
-    return true;
+    return null;
   }
 
   Future<bool> createAudioEntry(
