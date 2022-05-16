@@ -9,6 +9,7 @@ import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
+import 'package:lotti/widgets/misc/dashboard_app_bar.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 
 class HomePage extends StatelessWidget {
@@ -23,14 +24,19 @@ class HomePage extends StatelessWidget {
     return AutoTabsScaffold(
       lazyLoad: false,
       animationDuration: const Duration(milliseconds: 500),
-      appBarBuilder: (context, tabsRouter) => AppBar(
-        backgroundColor: AppColors.headerBgColor,
-        title: const VersionAppBar(title: 'Lotti'),
-        centerTitle: true,
-        leading: AutoBackButton(
-          color: AppColors.entryTextColor,
-        ),
-      ),
+      appBarBuilder: (context, TabsRouter tabsRouter) {
+        final String topRouteName = tabsRouter.topRoute.name;
+        final bool dashboardAppBar = topRouteName == DashboardRoute.name;
+
+        if (dashboardAppBar) {
+          return DashboardAppBar(
+            dashboardId:
+                tabsRouter.topRoute.pathParams.getString('dashboardId'),
+          );
+        }
+
+        return const VersionAppBar(title: 'Lotti');
+      },
       builder: (context, child, _) {
         return Container(
           color: AppColors.bodyBgColor,
@@ -56,6 +62,13 @@ class HomePage extends StatelessWidget {
         //TutorialRouter(),
       ],
       bottomNavigationBuilder: (_, TabsRouter tabsRouter) {
+        final topRoute = tabsRouter.topRoute.name;
+        final hideBottomNav = topRoute == DashboardRoute.name;
+
+        if (hideBottomNav) {
+          return const SizedBox.shrink();
+        }
+
         return Container(
           decoration: const BoxDecoration(
             boxShadow: <BoxShadow>[

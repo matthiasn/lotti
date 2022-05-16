@@ -93,10 +93,6 @@ class _DashboardPageState extends State<DashboardPage> {
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Text(dashboard.name, style: formLabelStyle),
-                  ),
                   ...dashboard.items.map((DashboardItem dashboardItem) {
                     return dashboardItem.map(
                       measurement: (DashboardMeasurementItem measurement) {

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Bottom Navigation Bar hidden in dashboards
+- Dashboard title moved to app bar
+
+## [0.8.1] - 2022-05-15
+### Changed: 
 - Upgrade to Flutter 3.0.0
 
 ## [0.7.38] - 2022-05-12
