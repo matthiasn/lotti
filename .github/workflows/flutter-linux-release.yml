@@ -1,0 +1,35 @@
+name: Flutter Linux GitHub Release
+
+on:
+  push:
+    tags:
+      - '**'
+
+jobs:
+  build:
+    name: Flutter Build on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: subosito/flutter-action@v1
+        with:
+          flutter-version: '3.0.0'
+          channel: 'stable'
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install libgtk-3-dev cmake cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0
+      - name: Enable Linux Desktop
+        run: flutter config --enable-linux-desktop
+      - name: Flutter Doctor
+        run: make doctor
+      - name: Create GitHub Release
+        run: gh release create -p --generate-notes --target $GITHUB_SHA $GITHUB_REF_NAME || true
+      - name: Test
+        run: make clean_test
+      - name: Build
+        run: make linux_build
+      - name: Tar
+        run: tar cfvz build/linux.x64.tar.gz build/linux
+      - name: Upload to GitHub Releases
+        run: gh release upload $GITHUB_REF_NAME build/linux.x64.tar.gz
