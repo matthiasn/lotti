@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -52,22 +53,29 @@ class _VersionAppBarState extends State<VersionAppBar> {
           if (snapshot.data == null) {
             return const SizedBox.shrink();
           } else {
-            return Column(
-              children: [
-                Text(
-                  widget.title,
-                  style: appBarTextStyle,
-                ),
-                Text(
-                  'v$version ($buildNumber), n = ${snapshot.data}',
-                  style: TextStyle(
-                    color: AppColors.headerFontColor2,
-                    fontFamily: 'Oswald',
-                    fontSize: 10.0,
-                    fontWeight: FontWeight.w300,
+            return AppBar(
+              backgroundColor: AppColors.headerBgColor,
+              title: Column(
+                children: [
+                  Text(
+                    widget.title,
+                    style: appBarTextStyle,
                   ),
-                ),
-              ],
+                  Text(
+                    'v$version ($buildNumber), n = ${snapshot.data}',
+                    style: TextStyle(
+                      color: AppColors.headerFontColor2,
+                      fontFamily: 'Oswald',
+                      fontSize: 10.0,
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
+                ],
+              ),
+              centerTitle: true,
+              leading: AutoBackButton(
+                color: AppColors.entryTextColor,
+              ),
             );
           }
         });
