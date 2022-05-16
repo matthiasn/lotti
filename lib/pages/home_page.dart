@@ -62,10 +62,15 @@ class HomePage extends StatelessWidget {
         //TutorialRouter(),
       ],
       bottomNavigationBuilder: (_, TabsRouter tabsRouter) {
-        final topRoute = tabsRouter.topRoute.name;
-        final hideBottomNav = topRoute == DashboardRoute.name;
+        final hideBottomNavRoutes = <String>{
+          DashboardRoute.name,
+          EntryDetailRoute.name,
+          LoggingRoute.name,
+          LogDetailRoute.name,
+          SyncAssistantRoute.name,
+        };
 
-        if (hideBottomNav) {
+        if (hideBottomNavRoutes.contains(tabsRouter.topRoute.name)) {
           return const SizedBox.shrink();
         }
 
