@@ -2,12 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 
 class DesktopMenuWrapper extends StatelessWidget {
+  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   final Widget body;
 
-  const DesktopMenuWrapper(
+  DesktopMenuWrapper(
     this.body, {
     Key? key,
   }) : super(key: key);
@@ -51,8 +55,17 @@ class DesktopMenuWrapper extends StatelessWidget {
           menus: [
             PlatformMenuItem(
               label: 'New Entry',
-              onSelected: () {
-                pushNamedRoute('/journal/create/${null}');
+              onSelected: () async {
+                String? linkedId = await getIdFromSavedRoute();
+                if (linkedId != null) {
+                  _persistenceLogic.createTextEntry(
+                    EntryText(plainText: ''),
+                    linkedId: linkedId,
+                    started: DateTime.now(),
+                  );
+                } else {
+                  pushNamedRoute('/journal/create/$linkedId');
+                }
               },
               shortcut: const SingleActivator(
                 LogicalKeyboardKey.keyN,
@@ -68,38 +81,18 @@ class DesktopMenuWrapper extends StatelessWidget {
                     LogicalKeyboardKey.keyT,
                     meta: true,
                   ),
-                  onSelected: () {
-                    pushNamedRoute('/tasks/create/${null}');
+                  onSelected: () async {
+                    String? linkedId = await getIdFromSavedRoute();
+                    pushNamedRoute('/tasks/create/$linkedId');
                   },
                 ),
               ],
             ),
           ],
         ),
-        PlatformMenu(
+        const PlatformMenu(
           label: 'Edit',
-          menus: [
-            PlatformMenuItem(
-              label: 'Cut',
-              shortcut: const SingleActivator(
-                LogicalKeyboardKey.keyX,
-                meta: true,
-              ),
-              onSelected: () {
-                debugPrint('Cut');
-              },
-            ),
-            PlatformMenuItem(
-              label: 'Copy',
-              shortcut: const SingleActivator(
-                LogicalKeyboardKey.keyC,
-                meta: true,
-              ),
-              onSelected: () {
-                debugPrint('Copy');
-              },
-            ),
-          ],
+          menus: [],
         ),
         const PlatformMenu(
           label: 'View',
