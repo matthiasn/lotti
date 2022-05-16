@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Bottom Navigation Bar hidden in entry details
+
+## [0.8.2] - 2022-05-16
+### Changed:
 - Bottom Navigation Bar hidden in dashboards
 - Dashboard title moved to app bar
 
