@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
@@ -12,26 +13,41 @@ class TasksAppBar extends StatelessWidget with PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
-  final JournalDb _db = getIt<JournalDb>();
-
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return AppBar(
       backgroundColor: AppColors.headerBgColor,
       title: Column(
         children: [
           Text(
             'Tasks',
-            style: appBarTextStyle,
+            style: appBarTextStyle.copyWith(fontWeight: FontWeight.w300),
           ),
           Wrap(
             alignment: WrapAlignment.center,
             children: [
-              TasksCountWidget('OPEN'),
-              TasksCountWidget('IN PROGRESS'),
-              TasksCountWidget('ON HOLD'),
-              TasksCountWidget('BLOCKED'),
-              TasksCountWidget('DONE'),
+              TasksCountWidget(
+                status: 'OPEN',
+                label: localizations.taskStatusOpen,
+              ),
+              TasksCountWidget(
+                status: 'IN PROGRESS',
+                label: localizations.taskStatusInProgress,
+              ),
+              TasksCountWidget(
+                status: 'ON HOLD',
+                label: localizations.taskStatusOnHold,
+              ),
+              TasksCountWidget(
+                status: 'BLOCKED',
+                label: localizations.taskStatusBlocked,
+              ),
+              TasksCountWidget(
+                status: 'DONE',
+                label: localizations.taskStatusDone,
+              ),
             ],
           ),
         ],
@@ -45,12 +61,14 @@ class TasksAppBar extends StatelessWidget with PreferredSizeWidget {
 }
 
 class TasksCountWidget extends StatelessWidget {
-  TasksCountWidget(
-    this.status, {
+  TasksCountWidget({
+    required this.status,
+    required this.label,
     Key? key,
   }) : super(key: key);
 
   final String status;
+  final String label;
   final JournalDb _db = getIt<JournalDb>();
 
   @override
@@ -67,12 +85,12 @@ class TasksCountWidget extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: Text(
-                '$status: ${snapshot.data}',
+                '$label: ${snapshot.data}',
                 style: TextStyle(
                   color: AppColors.headerFontColor2,
                   fontFamily: 'Oswald',
-                  fontSize: 10.0,
-                  fontWeight: FontWeight.w300,
+                  fontSize: 12.0,
+                  fontWeight: FontWeight.w100,
                 ),
               ),
             );
