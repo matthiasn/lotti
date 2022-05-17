@@ -400,6 +400,13 @@ class JournalDb extends _$JournalDb {
         .map((List<int> res) => res.first);
   }
 
+  Stream<int> watchTaskCount(String status) {
+    return filteredTasks(['Task'], [true, false], [status], 10000)
+        .watch()
+        .where(makeDuplicateFilter())
+        .map((res) => res.length);
+  }
+
   Stream<int> watchTaggedCount() {
     return countTagged()
         .watch()

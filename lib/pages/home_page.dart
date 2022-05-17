@@ -5,11 +5,12 @@ import 'package:lotti/pages/settings/outbox_badge.dart';
 import 'package:lotti/routes/observer.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/app_bar_version.dart';
+import 'package:lotti/widgets/app_bar/dashboard_app_bar.dart';
+import 'package:lotti/widgets/app_bar/tasks_app_bar.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
-import 'package:lotti/widgets/misc/app_bar_version.dart';
-import 'package:lotti/widgets/misc/dashboard_app_bar.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 
 class HomePage extends StatelessWidget {
@@ -26,13 +27,16 @@ class HomePage extends StatelessWidget {
       animationDuration: const Duration(milliseconds: 500),
       appBarBuilder: (context, TabsRouter tabsRouter) {
         final String topRouteName = tabsRouter.topRoute.name;
-        final bool dashboardAppBar = topRouteName == DashboardRoute.name;
 
-        if (dashboardAppBar) {
+        if (topRouteName == DashboardRoute.name) {
           return DashboardAppBar(
             dashboardId:
                 tabsRouter.topRoute.pathParams.getString('dashboardId'),
           );
+        }
+
+        if (topRouteName == TasksRoute.name) {
+          return TasksAppBar();
         }
 
         return const VersionAppBar(title: 'Lotti');
