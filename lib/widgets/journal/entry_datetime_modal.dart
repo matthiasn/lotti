@@ -19,7 +19,7 @@ class EntryDateTimeModal extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _EntryDateTimeModalState createState() => _EntryDateTimeModalState();
+  State<EntryDateTimeModal> createState() => _EntryDateTimeModalState();
 }
 
 class _EntryDateTimeModalState extends State<EntryDateTimeModal> {

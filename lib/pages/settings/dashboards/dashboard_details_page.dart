@@ -35,9 +35,7 @@ class DashboardDetailPage extends StatefulWidget {
   final DashboardDefinition dashboard;
 
   @override
-  _DashboardDetailPageState createState() {
-    return _DashboardDetailPageState();
-  }
+  State<DashboardDetailPage> createState() => _DashboardDetailPageState();
 }
 
 class _DashboardDetailPageState extends State<DashboardDetailPage> {

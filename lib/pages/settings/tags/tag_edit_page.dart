@@ -19,7 +19,7 @@ class TagEditPage extends StatefulWidget {
   final TagEntity tagEntity;
 
   @override
-  _TagEditPageState createState() {
+  State<TagEditPage> createState() {
     return _TagEditPageState();
   }
 }

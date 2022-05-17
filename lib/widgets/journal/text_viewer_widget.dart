@@ -19,13 +19,13 @@ class TextViewerWidget extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    QuillController _controller =
+    QuillController controller =
         makeController(serializedQuill: entryText?.quill);
 
     return IgnorePointer(
       child: SingleChildScrollView(
         child: QuillEditor(
-          controller: _controller,
+          controller: controller,
           readOnly: true,
           scrollController: ScrollController(),
           scrollable: true,

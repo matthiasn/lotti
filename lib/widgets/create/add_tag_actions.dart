@@ -26,15 +26,11 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
   }
 
   @override
-  Widget build(BuildContext _context) {
+  Widget build(BuildContext context) {
     List<Widget> items = [
       FloatingActionButton(
         heroTag: 'tag',
         key: const Key('add_tag_action'),
-        child: const Icon(
-          MdiIcons.tagPlusOutline,
-          size: 32,
-        ),
         backgroundColor: AppColors.entryBgColor,
         onPressed: () {
           context.router.push(
@@ -43,13 +39,13 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
             ),
           );
         },
+        child: const Icon(
+          MdiIcons.tagPlusOutline,
+          size: 32,
+        ),
       ),
       FloatingActionButton(
         heroTag: 'person',
-        child: const Icon(
-          MdiIcons.tagFaces,
-          size: 32,
-        ),
         backgroundColor: AppColors.entryBgColor,
         onPressed: () {
           context.router.push(
@@ -58,13 +54,13 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
             ),
           );
         },
+        child: const Icon(
+          MdiIcons.tagFaces,
+          size: 32,
+        ),
       ),
       FloatingActionButton(
         heroTag: 'story',
-        child: const Icon(
-          MdiIcons.book,
-          size: 32,
-        ),
         backgroundColor: AppColors.entryBgColor,
         onPressed: () {
           context.router.push(
@@ -73,6 +69,10 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
             ),
           );
         },
+        child: const Icon(
+          MdiIcons.book,
+          size: 32,
+        ),
       ),
     ];
 

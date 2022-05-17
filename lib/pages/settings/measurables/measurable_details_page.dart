@@ -21,7 +21,7 @@ class MeasurableDetailsPage extends StatefulWidget {
   final MeasurableDataType dataType;
 
   @override
-  _MeasurableDetailsPageState createState() {
+  State<MeasurableDetailsPage> createState() {
     return _MeasurableDetailsPageState();
   }
 }

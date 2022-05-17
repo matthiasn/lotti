@@ -30,10 +30,11 @@ class TutorialSlide1 extends StatelessWidget {
             child: FractionallySizedBox(
               widthFactor: 0.6,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_0_1.png",
-                  ),
-                  offset: 300),
+                offset: 300,
+                child: Image.asset(
+                  "assets/images/tutorial/s_0_1.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -42,10 +43,11 @@ class TutorialSlide1 extends StatelessWidget {
               widthFactor: 0.3,
               heightFactor: 0.25,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_0_3.png",
-                  ),
-                  offset: 100),
+                offset: 100,
+                child: Image.asset(
+                  "assets/images/tutorial/s_0_3.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -54,10 +56,11 @@ class TutorialSlide1 extends StatelessWidget {
               widthFactor: 0.20,
               heightFactor: 0.15,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_0_4.png",
-                  ),
-                  offset: 100),
+                offset: 100,
+                child: Image.asset(
+                  "assets/images/tutorial/s_0_4.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -66,10 +69,11 @@ class TutorialSlide1 extends StatelessWidget {
               widthFactor: 0.06,
               heightFactor: 0.06,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_0_6.png",
-                  ),
-                  offset: 150),
+                offset: 150,
+                child: Image.asset(
+                  "assets/images/tutorial/s_0_6.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -78,10 +82,11 @@ class TutorialSlide1 extends StatelessWidget {
               widthFactor: 0.09,
               heightFactor: 0.08,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_0_7.png",
-                  ),
-                  offset: 50),
+                offset: 50,
+                child: Image.asset(
+                  "assets/images/tutorial/s_0_7.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -90,10 +95,11 @@ class TutorialSlide1 extends StatelessWidget {
               widthFactor: 0.45,
               heightFactor: 0.15,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_0_5.png",
-                  ),
-                  offset: 140),
+                offset: 140,
+                child: Image.asset(
+                  "assets/images/tutorial/s_0_5.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -102,10 +108,11 @@ class TutorialSlide1 extends StatelessWidget {
               widthFactor: 0.12,
               heightFactor: 0.10,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_0_2.png",
-                  ),
-                  offset: 140),
+                offset: 140,
+                child: Image.asset(
+                  "assets/images/tutorial/s_0_2.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -114,10 +121,10 @@ class TutorialSlide1 extends StatelessWidget {
               widthFactor: 0.08,
               heightFactor: 0.06,
               child: SlidingContainer(
+                offset: 140,
                 child: Image.asset(
                   "assets/images/tutorial/s_0_8.png",
                 ),
-                offset: 140,
               ),
             ),
           ),

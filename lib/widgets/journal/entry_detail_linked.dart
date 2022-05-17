@@ -16,7 +16,7 @@ class LinkedEntriesWidget extends StatefulWidget {
   final String itemId;
 
   @override
-  _LinkedEntriesWidgetState createState() => _LinkedEntriesWidgetState();
+  State<LinkedEntriesWidget> createState() => _LinkedEntriesWidgetState();
 }
 
 class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {

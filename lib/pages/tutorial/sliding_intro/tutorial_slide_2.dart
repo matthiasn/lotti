@@ -30,10 +30,11 @@ class TutorialSlide2 extends StatelessWidget {
               widthFactor: 0.45,
               heightFactor: 0.25,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_1_1.png",
-                  ),
-                  offset: 300),
+                offset: 300,
+                child: Image.asset(
+                  "assets/images/tutorial/s_1_1.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -42,10 +43,11 @@ class TutorialSlide2 extends StatelessWidget {
               widthFactor: 0.25,
               heightFactor: 0.10,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_1_8.png",
-                  ),
-                  offset: 170),
+                offset: 170,
+                child: Image.asset(
+                  "assets/images/tutorial/s_1_8.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -54,10 +56,11 @@ class TutorialSlide2 extends StatelessWidget {
               widthFactor: 0.15,
               heightFactor: 0.1,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_1_5.png",
-                  ),
-                  offset: 50),
+                offset: 50,
+                child: Image.asset(
+                  "assets/images/tutorial/s_1_5.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -66,10 +69,11 @@ class TutorialSlide2 extends StatelessWidget {
               widthFactor: 0.15,
               heightFactor: 0.8,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_1_3.png",
-                  ),
-                  offset: 150),
+                offset: 150,
+                child: Image.asset(
+                  "assets/images/tutorial/s_1_3.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -78,10 +82,11 @@ class TutorialSlide2 extends StatelessWidget {
               widthFactor: 0.13,
               heightFactor: 0.1,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_1_4.png",
-                  ),
-                  offset: 50),
+                offset: 50,
+                child: Image.asset(
+                  "assets/images/tutorial/s_1_4.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -90,10 +95,11 @@ class TutorialSlide2 extends StatelessWidget {
               widthFactor: 0.20,
               heightFactor: 0.07,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_1_6.png",
-                  ),
-                  offset: 100),
+                offset: 100,
+                child: Image.asset(
+                  "assets/images/tutorial/s_1_6.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -102,10 +108,11 @@ class TutorialSlide2 extends StatelessWidget {
               widthFactor: 0.17,
               heightFactor: 0.08,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_1_7.png",
-                  ),
-                  offset: 240),
+                offset: 240,
+                child: Image.asset(
+                  "assets/images/tutorial/s_1_7.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -114,10 +121,11 @@ class TutorialSlide2 extends StatelessWidget {
               widthFactor: 0.19,
               heightFactor: 0.06,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_1_2.png",
-                  ),
-                  offset: 850),
+                offset: 850,
+                child: Image.asset(
+                  "assets/images/tutorial/s_1_2.png",
+                ),
+              ),
             ),
           ),
           Align(

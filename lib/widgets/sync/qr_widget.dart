@@ -138,15 +138,17 @@ class EncryptionQrWidget extends StatelessWidget {
                             Button(
                               localizations.settingsSyncImportButton,
                               onPressed: () async {
+                                final navigator = Navigator.of(context);
+                                final syncConfigCubit =
+                                    context.read<SyncConfigCubit>();
+
                                 ClipboardData? data =
                                     await Clipboard.getData('text/plain');
                                 String? syncCfg = data?.text;
                                 if (syncCfg != null) {
-                                  context
-                                      .read<SyncConfigCubit>()
-                                      .setSyncConfig(syncCfg);
+                                  syncConfigCubit.setSyncConfig(syncCfg);
                                 }
-                                Navigator.pop(context, 'Import SyncConfig');
+                                navigator.pop('Import SyncConfig');
                               },
                               primaryColor: Colors.red,
                             ),

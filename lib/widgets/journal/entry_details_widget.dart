@@ -90,22 +90,22 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           return JournalCard(item: item);
         }
 
-        QuillController _controller = makeController(
+        QuillController controller = makeController(
           serializedQuill: _editorStateService.getDelta(widget.itemId) ??
               item.entryText?.quill,
           selection: _editorStateService.getSelection(widget.itemId),
         );
 
-        _controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
-          _editorStateService.saveTempState(widget.itemId, _controller);
+        controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
+          _editorStateService.saveTempState(widget.itemId, controller);
         });
 
-        _controller.onSelectionChanged = (TextSelection selection) {
+        controller.onSelectionChanged = (TextSelection selection) {
           _editorStateService.saveSelection(widget.itemId, selection);
         };
 
         void saveText() {
-          _editorStateService.saveState(widget.itemId, _controller);
+          _editorStateService.saveState(widget.itemId, controller);
 
           if (isMobile) {
             _focusNode.unfocus();
@@ -160,7 +160,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     task: (_) => const SizedBox.shrink(),
                     orElse: () {
                       return EditorWidget(
-                        controller: _controller,
+                        controller: controller,
                         focusNode: _focusNode,
                         journalEntity: item,
                         saveFn: saveText,
@@ -207,7 +207,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         if (formData == null) {
                           _editorStateService.saveTask(
                             id: widget.itemId,
-                            controller: _controller,
+                            controller: controller,
                             taskData: task.data,
                           );
 
@@ -234,13 +234,13 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
                         _editorStateService.saveTask(
                           id: widget.itemId,
-                          controller: _controller,
+                          controller: controller,
                           taskData: updatedData,
                         );
                       }
 
                       return TaskForm(
-                        controller: _controller,
+                        controller: controller,
                         focusNode: _focusNode,
                         saveFn: saveText,
                         formKey: formKey,

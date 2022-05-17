@@ -9,7 +9,7 @@ class IntroTutorialPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _IntroTutorialPageState createState() => _IntroTutorialPageState();
+  State<IntroTutorialPage> createState() => _IntroTutorialPageState();
 }
 
 class _IntroTutorialPageState extends State<IntroTutorialPage> {

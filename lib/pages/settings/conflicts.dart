@@ -150,10 +150,11 @@ class ConflictCard extends StatelessWidget {
           ),
           enabled: true,
           onTap: () async {
+            final navigator = Navigator.of(context);
             JournalEntity? entity = await _db.journalEntityById(conflict.id);
             if (entity == null) return;
 
-            Navigator.of(context).push(
+            navigator.push(
               MaterialPageRoute(
                 builder: (BuildContext context) {
                   return DetailRoute(

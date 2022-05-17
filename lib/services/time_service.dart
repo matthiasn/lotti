@@ -29,7 +29,7 @@ class TimeService {
 
     _periodicStream = Stream<int>.periodic(interval, callback);
     if (_periodicStream != null) {
-      await for (int _ in _periodicStream!) {
+      await for (int i in _periodicStream!) {
         if (_current != null) {
           _controller.add(
             _current!.copyWith(
@@ -44,10 +44,10 @@ class TimeService {
   }
 
   Future<void> stop() async {
-    final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+    final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
     if (_current != null) {
-      await _persistenceLogic.updateJournalEntityDate(
+      await persistenceLogic.updateJournalEntityDate(
         _current!.meta.id,
         dateFrom: _current!.meta.dateFrom,
         dateTo: DateTime.now(),

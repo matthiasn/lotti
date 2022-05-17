@@ -17,7 +17,7 @@ class LinkedFromEntriesWidget extends StatefulWidget {
   final JournalEntity item;
 
   @override
-  _LinkedFromEntriesWidgetState createState() =>
+  State<LinkedFromEntriesWidget> createState() =>
       _LinkedFromEntriesWidgetState();
 }
 

@@ -36,8 +36,8 @@ Future<void> main() async {
     registerSingletons();
 
     FlutterError.onError = (FlutterErrorDetails details) {
-      final LoggingDb _loggingDb = getIt<LoggingDb>();
-      _loggingDb.captureException(
+      final LoggingDb loggingDb = getIt<LoggingDb>();
+      loggingDb.captureException(
         details,
         domain: 'MAIN',
         subDomain: 'onError',
@@ -48,8 +48,8 @@ Future<void> main() async {
 
     runApp(LottiApp());
   }, (Object error, StackTrace stackTrace) {
-    final LoggingDb _loggingDb = getIt<LoggingDb>();
-    _loggingDb.captureException(
+    final LoggingDb loggingDb = getIt<LoggingDb>();
+    loggingDb.captureException(
       error,
       domain: 'MAIN',
       subDomain: 'runZonedGuarded',

@@ -31,10 +31,10 @@ class SyncAssistantSlide1 extends StatelessWidget {
               widthFactor: 0.1,
               heightFactor: 0.1,
               child: SlidingContainer(
+                  offset: 150,
                   child: Image.asset(
                     "assets/images/tutorial/s_0_6.png",
-                  ),
-                  offset: 150),
+                  )),
             ),
           ),
           Align(
@@ -43,10 +43,10 @@ class SyncAssistantSlide1 extends StatelessWidget {
               widthFactor: 0.1,
               heightFactor: 0.1,
               child: SlidingContainer(
+                offset: 50,
                 child: Image.asset(
                   "assets/images/tutorial/s_0_7.png",
                 ),
-                offset: 50,
               ),
             ),
           ),
