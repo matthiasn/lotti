@@ -30,10 +30,11 @@ class TutorialSlide3 extends StatelessWidget {
               widthFactor: 1,
               heightFactor: 0.4,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_2_3.png",
-                  ),
-                  offset: 300),
+                offset: 300,
+                child: Image.asset(
+                  "assets/images/tutorial/s_2_3.png",
+                ),
+              ),
             ),
           ),
           Center(
@@ -41,10 +42,11 @@ class TutorialSlide3 extends StatelessWidget {
               widthFactor: 0.55,
               heightFactor: 0.18,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_2_1.png",
-                  ),
-                  offset: 100),
+                offset: 100,
+                child: Image.asset(
+                  "assets/images/tutorial/s_2_1.png",
+                ),
+              ),
             ),
           ),
           Opacity(
@@ -55,10 +57,11 @@ class TutorialSlide3 extends StatelessWidget {
                 widthFactor: 0.75,
                 heightFactor: 0.20,
                 child: SlidingContainer(
-                    child: Image.asset(
-                      "assets/images/tutorial/s_2_2.png",
-                    ),
-                    offset: 170),
+                  offset: 170,
+                  child: Image.asset(
+                    "assets/images/tutorial/s_2_2.png",
+                  ),
+                ),
               ),
             ),
           ),
@@ -68,10 +71,11 @@ class TutorialSlide3 extends StatelessWidget {
               widthFactor: 0.16,
               heightFactor: 0.07,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_1_8.png",
-                  ),
-                  offset: 50),
+                offset: 50,
+                child: Image.asset(
+                  "assets/images/tutorial/s_1_8.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -80,10 +84,11 @@ class TutorialSlide3 extends StatelessWidget {
               widthFactor: 0.14,
               heightFactor: 0.07,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_2_6.png",
-                  ),
-                  offset: 150),
+                offset: 150,
+                child: Image.asset(
+                  "assets/images/tutorial/s_2_6.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -92,10 +97,11 @@ class TutorialSlide3 extends StatelessWidget {
               widthFactor: 0.15,
               heightFactor: 0.10,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_2_5.png",
-                  ),
-                  offset: 50),
+                offset: 50,
+                child: Image.asset(
+                  "assets/images/tutorial/s_2_5.png",
+                ),
+              ),
             ),
           ),
           Align(
@@ -104,10 +110,11 @@ class TutorialSlide3 extends StatelessWidget {
               widthFactor: 0.25,
               heightFactor: 0.15,
               child: SlidingContainer(
-                  child: Image.asset(
-                    "assets/images/tutorial/s_2_7.png",
-                  ),
-                  offset: 200),
+                offset: 200,
+                child: Image.asset(
+                  "assets/images/tutorial/s_2_7.png",
+                ),
+              ),
             ),
           ),
           Align(

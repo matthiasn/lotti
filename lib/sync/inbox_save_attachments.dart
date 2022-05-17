@@ -15,10 +15,10 @@ Future<void> saveAudioAttachment(
   JournalAudio? journalAudio,
   String? b64Secret,
 ) async {
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
+  final LoggingDb loggingDb = getIt<LoggingDb>();
 
   final transaction =
-      _loggingDb.startTransaction('saveAudioAttachment()', 'task');
+      loggingDb.startTransaction('saveAudioAttachment()', 'task');
   final attachments =
       message.findContentInfo(disposition: ContentDisposition.attachment);
 
@@ -44,9 +44,9 @@ Future<void> saveImageAttachment(
   JournalImage? journalImage,
   String? b64Secret,
 ) async {
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
+  final LoggingDb loggingDb = getIt<LoggingDb>();
   final transaction =
-      _loggingDb.startTransaction('saveImageAttachment()', 'task');
+      loggingDb.startTransaction('saveImageAttachment()', 'task');
   final attachments =
       message.findContentInfo(disposition: ContentDisposition.attachment);
 

@@ -14,7 +14,7 @@ class EmailConfigForm extends StatefulWidget {
   const EmailConfigForm({Key? key}) : super(key: key);
 
   @override
-  _EmailConfigFormState createState() {
+  State<EmailConfigForm> createState() {
     return _EmailConfigFormState();
   }
 }

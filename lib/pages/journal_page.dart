@@ -27,7 +27,7 @@ class JournalPage extends StatefulWidget {
   final GlobalKey? navigatorKey;
 
   @override
-  _JournalPageState createState() => _JournalPageState();
+  State<JournalPage> createState() => _JournalPageState();
 }
 
 class FilterBy {

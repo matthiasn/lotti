@@ -15,13 +15,12 @@ Future<GenericImapResult> saveImapMessage(
   String encryptedMessage, {
   File? file,
 }) async {
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
-  final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
-  final SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
+  final LoggingDb loggingDb = getIt<LoggingDb>();
+  final SyncConfigService syncConfigService = getIt<SyncConfigService>();
+  final SyncConfig? syncConfig = await syncConfigService.getSyncConfig();
 
   try {
-    final transaction =
-        _loggingDb.startTransaction('saveImapMessage()', 'task');
+    final transaction = loggingDb.startTransaction('saveImapMessage()', 'task');
 
     Mailbox inbox = await imapClient
         .selectMailboxByPath(syncConfig?.imapConfig.folder ?? 'INBOX');
@@ -51,7 +50,7 @@ Future<GenericImapResult> saveImapMessage(
     await transaction.finish();
     return res;
   } catch (exception, stackTrace) {
-    await _loggingDb.captureException(
+    await loggingDb.captureException(
       exception,
       domain: 'OUTBOX_IMAP',
       subDomain: 'saveImapMessage',

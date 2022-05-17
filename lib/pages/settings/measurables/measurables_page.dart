@@ -144,11 +144,11 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: FloatingActionButton(
-                  child: const Icon(MdiIcons.plus, size: 32),
                   backgroundColor: AppColors.entryBgColor,
                   onPressed: () {
                     context.router.push(const CreateMeasurableRoute());
                   },
+                  child: const Icon(MdiIcons.plus, size: 32),
                 ),
               ),
             )

@@ -12,7 +12,7 @@ class SyncAssistantPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _SyncAssistantPageState createState() => _SyncAssistantPageState();
+  State<SyncAssistantPage> createState() => _SyncAssistantPageState();
 }
 
 class _SyncAssistantPageState extends State<SyncAssistantPage> {

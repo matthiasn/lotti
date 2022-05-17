@@ -25,7 +25,7 @@ class TasksPage extends StatefulWidget {
   final GlobalKey? navigatorKey;
 
   @override
-  _TasksPageState createState() => _TasksPageState();
+  State<TasksPage> createState() => _TasksPageState();
 }
 
 class _TasksPageState extends State<TasksPage> {
@@ -354,15 +354,15 @@ class AddTask extends StatelessWidget {
       padding: const EdgeInsets.all(4.0),
       child: FloatingActionButton(
         heroTag: 'addTask',
-        child: const Icon(
-          Icons.add,
-          size: 24,
-        ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           String? linkedId;
           pushNamedRoute('/tasks/create/$linkedId');
         },
+        child: const Icon(
+          Icons.add,
+          size: 24,
+        ),
       ),
     );
   }

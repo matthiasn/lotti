@@ -15,7 +15,7 @@ String formatDuration(Duration? duration) {
   String durationString = duration?.toString().split('.').first ?? '';
 
   if (durationString.substring(0, 2) == '0:') {
-    durationString = '0' + durationString;
+    durationString = '0$durationString';
   }
 
   return durationString;

@@ -14,7 +14,7 @@ class VersionAppBar extends StatefulWidget with PreferredSizeWidget {
   final String title;
 
   @override
-  _VersionAppBarState createState() => _VersionAppBarState();
+  State<VersionAppBar> createState() => _VersionAppBarState();
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);

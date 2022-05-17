@@ -43,17 +43,13 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
   }
 
   @override
-  Widget build(BuildContext _context) {
+  Widget build(BuildContext context) {
     List<Widget> items = [];
 
     if (Platform.isMacOS) {
       items.add(
         FloatingActionButton(
           heroTag: 'screenshot',
-          child: const Icon(
-            MdiIcons.monitorScreenshot,
-            size: 32,
-          ),
           backgroundColor: AppColors.actionColor,
           onPressed: () async {
             ImageData imageData = await takeScreenshotMac();
@@ -68,6 +64,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
               _persistenceLogic.addGeolocation(journalEntity.meta.id);
             }
           },
+          child: const Icon(
+            MdiIcons.monitorScreenshot,
+            size: 32,
+          ),
         ),
       );
     }
@@ -75,10 +75,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
     items.add(
       FloatingActionButton(
         heroTag: 'measurement',
-        child: const Icon(
-          MdiIcons.tapeMeasure,
-          size: 32,
-        ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           String? linkedId = widget.linked?.meta.id;
@@ -86,31 +82,31 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             linkedId: linkedId,
           ));
         },
+        child: const Icon(
+          MdiIcons.tapeMeasure,
+          size: 32,
+        ),
       ),
     );
 
     items.add(
       FloatingActionButton(
         heroTag: 'survey',
-        child: const Icon(
-          MdiIcons.clipboardOutline,
-          size: 32,
-        ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           String? linkedId = widget.linked?.meta.id;
           pushNamedRoute('/journal/create_survey/$linkedId');
         },
+        child: const Icon(
+          MdiIcons.clipboardOutline,
+          size: 32,
+        ),
       ),
     );
 
     items.add(
       FloatingActionButton(
         heroTag: 'photo',
-        child: const Icon(
-          Icons.camera_roll_outlined,
-          size: 32,
-        ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           importImageAssets(
@@ -118,16 +114,16 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             linked: widget.linked,
           );
         },
+        child: const Icon(
+          Icons.camera_roll_outlined,
+          size: 32,
+        ),
       ),
     );
 
     items.add(
       FloatingActionButton(
         heroTag: 'text',
-        child: const Icon(
-          MdiIcons.textLong,
-          size: 32,
-        ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           if (widget.linked != null) {
@@ -141,6 +137,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             pushNamedRoute('/journal/create/$linkedId');
           }
         },
+        child: const Icon(
+          MdiIcons.textLong,
+          size: 32,
+        ),
       ),
     );
 
@@ -148,10 +148,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       items.add(
         FloatingActionButton(
           heroTag: 'timer',
-          child: const Icon(
-            MdiIcons.timerOutline,
-            size: 32,
-          ),
           backgroundColor: AppColors.actionColor,
           onPressed: () async {
             if (widget.linked != null) {
@@ -169,6 +165,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
               pushNamedRoute('/journal/create/$linkedId');
             }
           },
+          child: const Icon(
+            MdiIcons.timerOutline,
+            size: 32,
+          ),
         ),
       );
     }
@@ -177,10 +177,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       items.add(
         FloatingActionButton(
           heroTag: 'audio',
-          child: const Icon(
-            MdiIcons.microphone,
-            size: 32,
-          ),
           backgroundColor: AppColors.actionColor,
           onPressed: () {
             String? linkedId = widget.linked?.meta.id;
@@ -190,6 +186,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
                   linkedId: widget.linked?.meta.id,
                 );
           },
+          child: const Icon(
+            MdiIcons.microphone,
+            size: 32,
+          ),
         ),
       );
     }
@@ -197,15 +197,15 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
     items.add(
       FloatingActionButton(
         heroTag: 'task',
-        child: const Icon(
-          Icons.task_outlined,
-          size: 32,
-        ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           String? linkedId = widget.linked?.meta.id;
           pushNamedRoute('/tasks/create/$linkedId');
         },
+        child: const Icon(
+          Icons.task_outlined,
+          size: 32,
+        ),
       ),
     );
 

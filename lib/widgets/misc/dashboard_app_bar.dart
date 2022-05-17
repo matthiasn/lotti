@@ -14,7 +14,7 @@ class DashboardAppBar extends StatefulWidget with PreferredSizeWidget {
   }) : super(key: key);
 
   @override
-  _DashboardAppBarState createState() => _DashboardAppBarState();
+  State<DashboardAppBar> createState() => _DashboardAppBarState();
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);

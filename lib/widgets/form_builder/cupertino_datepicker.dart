@@ -174,8 +174,8 @@ class FormBuilderCupertinoDateTimePicker extends FormBuilderField<DateTime> {
         );
 
   @override
-  _FormBuilderCupertinoDateTimePickerState createState() =>
-      _FormBuilderCupertinoDateTimePickerState();
+  FormBuilderFieldState<FormBuilderCupertinoDateTimePicker, DateTime>
+      createState() => _FormBuilderCupertinoDateTimePickerState();
 }
 
 class _FormBuilderCupertinoDateTimePickerState extends FormBuilderFieldState<

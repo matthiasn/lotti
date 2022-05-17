@@ -26,7 +26,7 @@ class SurveyWidget extends StatelessWidget {
 
   void cancelCallBack(RPTaskResult result) {
     // Do anything with the result at the moment of the cancellation
-    debugPrint("The result so far:\n" + _encode(result));
+    debugPrint('The result so far:\n${_encode(result)}');
   }
 
   @override

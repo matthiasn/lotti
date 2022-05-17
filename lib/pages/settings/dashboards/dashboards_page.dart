@@ -113,11 +113,11 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: FloatingActionButton(
-                  child: const Icon(MdiIcons.plus, size: 32),
                   backgroundColor: AppColors.entryBgColor,
                   onPressed: () {
                     context.router.push(const CreateDashboardRoute());
                   },
+                  child: const Icon(MdiIcons.plus, size: 32),
                 ),
               ),
             ),

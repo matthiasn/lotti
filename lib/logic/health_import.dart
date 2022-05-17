@@ -53,9 +53,9 @@ class HealthImport {
     DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
     debugPrint('getActivityHealthData $dateFrom $dateToOrNow');
 
-    final LoggingDb _loggingDb = getIt<LoggingDb>();
+    final LoggingDb loggingDb = getIt<LoggingDb>();
     final transaction =
-        _loggingDb.startTransaction('getActivityHealthData()', 'task');
+        loggingDb.startTransaction('getActivityHealthData()', 'task');
 
     final flutterHealthFit = FlutterHealthFit();
     final bool isAuthorized = await FlutterHealthFit().authorize();
@@ -107,11 +107,10 @@ class HealthImport {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
-    final LoggingDb _loggingDb = getIt<LoggingDb>();
+    final LoggingDb loggingDb = getIt<LoggingDb>();
     debugPrint('fetchHealthData $types $dateFrom $dateTo');
 
-    final transaction =
-        _loggingDb.startTransaction('fetchHealthData()', 'task');
+    final transaction = loggingDb.startTransaction('fetchHealthData()', 'task');
     bool accessWasGranted = await authorizeHealth(types);
 
     if (accessWasGranted) {
@@ -204,9 +203,9 @@ class HealthImport {
     DateTime now = DateTime.now();
     DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
 
-    final LoggingDb _loggingDb = getIt<LoggingDb>();
+    final LoggingDb loggingDb = getIt<LoggingDb>();
     final transaction =
-        _loggingDb.startTransaction('getActivityHealthData()', 'task');
+        loggingDb.startTransaction('getActivityHealthData()', 'task');
     debugPrint('getWorkoutsHealthData $dateFrom - $dateTo');
     final flutterHealthFit = FlutterHealthFit();
     final bool isAuthorized = await FlutterHealthFit().authorize();

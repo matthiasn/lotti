@@ -31,7 +31,7 @@ class _CreateTextEntryPageState extends State<CreateTextEntryPage> {
   }
 
   @override
-  Widget build(BuildContext _context) {
+  Widget build(BuildContext context) {
     void _save() async {
       persistenceLogic.createTextEntry(
         entryTextFromController(_controller),
