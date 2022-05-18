@@ -10,7 +10,6 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/utils/task_utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
-import 'package:lotti/widgets/tasks/linked_duration.dart';
 
 class TaskForm extends StatefulWidget {
   const TaskForm({
@@ -228,11 +227,6 @@ class _TaskFormState extends State<TaskForm> {
             ),
           ),
         ),
-        if (widget.task != null)
-          Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 4, top: 2),
-            child: LinkedDuration(task: widget.task!),
-          ),
         EditorWidget(
           controller: widget.controller,
           focusNode: widget.focusNode,

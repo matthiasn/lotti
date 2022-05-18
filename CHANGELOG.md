@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Add task header
+
+## [0.8.7] - 2022-05-16
+### Changed:
 - Add task stats header for task list
 
 ## [0.8.5] - 2022-05-16
