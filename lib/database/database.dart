@@ -728,6 +728,8 @@ Future<void> createDbBackup() async {
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final File file = await getDatabaseFile();
+    debugPrint('DB LazyDatabase ${file.path}');
+
     return NativeDatabase(file);
   });
 }

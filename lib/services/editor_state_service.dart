@@ -6,12 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 
 class EditorStateService {
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+  final EditorDb _editorDb = getIt<EditorDb>();
 
   final editorStateById = <String, String>{};
   final selectionById = <String, TextSelection>{};
@@ -65,6 +67,10 @@ class EditorStateService {
       const Duration(seconds: 10),
       () {
         debugPrint('saveTempState debounced $id ${editorStateById[id]}');
+        _editorDb.insertDraftState(
+          entryId: id,
+          draftDeltaJson: json,
+        );
       },
     );
   }
