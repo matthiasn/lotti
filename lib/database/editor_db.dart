@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/foundation.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -21,6 +20,12 @@ class EditorDb extends _$EditorDb {
     required String entryId,
     required String draftDeltaJson,
   }) async {
+    await (update(editorDrafts)
+          ..where(
+            (EditorDrafts draft) => draft.status.equals('DRAFT'),
+          ))
+        .write(const EditorDraftsCompanion(status: Value('ARCHIVED')));
+
     final draftState = EditorDraftState(
       id: uuid.v1(),
       status: 'DRAFT',
@@ -43,7 +48,6 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'editor_drafts.sqlite'));
-    debugPrint('EditorDb LazyDatabase ${file.path}');
     return NativeDatabase(file);
   });
 }

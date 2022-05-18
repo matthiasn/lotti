@@ -64,7 +64,7 @@ class EditorStateService {
 
     EasyDebounce.debounce(
       'tempSaveDelta-$id',
-      const Duration(seconds: 10),
+      const Duration(seconds: 5),
       () {
         debugPrint('saveTempState debounced $id ${editorStateById[id]}');
         _editorDb.insertDraftState(
