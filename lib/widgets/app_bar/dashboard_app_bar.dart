@@ -54,7 +54,7 @@ class _DashboardAppBarState extends State<DashboardAppBar> {
                 style: appBarTextStyle,
               ),
               centerTitle: true,
-              leading: AutoBackButton(
+              leading: AutoLeadingButton(
                 color: AppColors.entryTextColor,
               ),
             );
