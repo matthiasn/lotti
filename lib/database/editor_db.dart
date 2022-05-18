@@ -23,6 +23,7 @@ class EditorDb extends _$EditorDb {
   }) async {
     final draftState = EditorDraftState(
       id: uuid.v1(),
+      status: 'DRAFT',
       entryId: entryId,
       createdAt: DateTime.now(),
       delta: draftDeltaJson,
@@ -41,7 +42,7 @@ class EditorDb extends _$EditorDb {
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'editor_db.sqlite'));
+    final file = File(p.join(dbFolder.path, 'editor_drafts.sqlite'));
     debugPrint('EditorDb LazyDatabase ${file.path}');
     return NativeDatabase(file);
   });

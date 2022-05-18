@@ -1,7 +1,20 @@
 CREATE TABLE editor_drafts (
   id TEXT NOT NULL,
   entry_id TEXT NOT NULL,
+  status TEXT NOT NULL,
   created_at DATETIME NOT NULL,
   delta TEXT NOT NULL,
   PRIMARY KEY (id)
 ) as EditorDraftState;
+
+CREATE INDEX editor_drafts_id
+ON editor_drafts (id);
+
+CREATE INDEX editor_drafts_entry_id
+ON editor_drafts (entry_id);
+
+CREATE INDEX editor_drafts_status
+ON editor_drafts (status);
+
+CREATE INDEX editor_drafts_created_at
+ON editor_drafts (created_at);
