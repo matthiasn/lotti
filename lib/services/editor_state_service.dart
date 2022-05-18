@@ -52,7 +52,11 @@ class EditorStateService {
     selectionById[id] = selection;
   }
 
-  void saveTempState(String id, QuillController controller) {
+  void saveTempState({
+    required String id,
+    required DateTime lastSaved,
+    required QuillController controller,
+  }) {
     Delta delta = deltaFromController(controller);
     String json = quillJsonFromDelta(delta);
     editorStateById[id] = json;
@@ -69,6 +73,7 @@ class EditorStateService {
         debugPrint('saveTempState debounced $id ${editorStateById[id]}');
         _editorDb.insertDraftState(
           entryId: id,
+          lastSaved: lastSaved,
           draftDeltaJson: json,
         );
       },

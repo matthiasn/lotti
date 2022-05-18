@@ -3,6 +3,7 @@ CREATE TABLE editor_drafts (
   entry_id TEXT NOT NULL,
   status TEXT NOT NULL,
   created_at DATETIME NOT NULL,
+  last_saved DATETIME NOT NULL,
   delta TEXT NOT NULL,
   PRIMARY KEY (id)
 ) as EditorDraftState;

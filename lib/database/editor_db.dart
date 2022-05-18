@@ -18,6 +18,7 @@ class EditorDb extends _$EditorDb {
 
   Future<int> insertDraftState({
     required String entryId,
+    required DateTime lastSaved,
     required String draftDeltaJson,
   }) async {
     await (update(editorDrafts)
@@ -31,6 +32,7 @@ class EditorDb extends _$EditorDb {
       status: 'DRAFT',
       entryId: entryId,
       createdAt: DateTime.now(),
+      lastSaved: lastSaved,
       delta: draftDeltaJson,
     );
     return into(editorDrafts).insert(draftState);
@@ -47,7 +49,7 @@ class EditorDb extends _$EditorDb {
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'editor_drafts.sqlite'));
+    final file = File(p.join(dbFolder.path, 'editor_drafts_db.sqlite'));
     return NativeDatabase(file);
   });
 }

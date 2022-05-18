@@ -97,7 +97,11 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         );
 
         controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
-          _editorStateService.saveTempState(widget.itemId, controller);
+          _editorStateService.saveTempState(
+            id: widget.itemId,
+            controller: controller,
+            lastSaved: item.meta.updatedAt,
+          );
         });
 
         controller.onSelectionChanged = (TextSelection selection) {
