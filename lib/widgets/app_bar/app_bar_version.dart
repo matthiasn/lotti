@@ -73,7 +73,7 @@ class _VersionAppBarState extends State<VersionAppBar> {
                 ],
               ),
               centerTitle: true,
-              leading: AutoBackButton(
+              leading: AutoLeadingButton(
                 color: AppColors.entryTextColor,
               ),
             );

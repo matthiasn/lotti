@@ -60,7 +60,7 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
                 ],
               ),
               centerTitle: true,
-              leading: AutoBackButton(
+              leading: AutoLeadingButton(
                 color: AppColors.entryTextColor,
               ),
             );
