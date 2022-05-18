@@ -38,11 +38,18 @@ class EditorDb extends _$EditorDb {
     return into(editorDrafts).insert(draftState);
   }
 
-  Future<List<EditorDraftState>> getSortedLinkedEntityIds(
-      String entryId) async {
-    List<EditorDraftState> dbEntities = [];
-//        await latestEditorState(entryId, 0, 1).get();
-    return dbEntities;
+  Future<EditorDraftState?> getLatestDraft(String? entryId) async {
+    if (entryId == null) {
+      return null;
+    }
+
+    List<EditorDraftState> res = await latestDraft(entryId).get();
+
+    if (res.isNotEmpty) {
+      return res.first;
+    } else {
+      return null;
+    }
   }
 }
 

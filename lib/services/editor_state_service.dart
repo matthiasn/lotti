@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:easy_debounce/easy_debounce.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -32,6 +31,13 @@ class EditorStateService {
       }
 
       unsavedStreamById[id] = unsavedStreamController;
+
+      _editorDb.getLatestDraft(id).then((EditorDraftState? value) {
+        if (value != null) {
+          editorStateById[id] = value.delta;
+          unsavedStreamController.add(editorStateById[id] != null);
+        }
+      });
     }
 
     unsavedStreamController.add(editorStateById[id] != null);
@@ -48,7 +54,6 @@ class EditorStateService {
   }
 
   void saveSelection(String id, TextSelection selection) {
-    debugPrint(selection.toString());
     selectionById[id] = selection;
   }
 
@@ -70,7 +75,6 @@ class EditorStateService {
       'tempSaveDelta-$id',
       const Duration(seconds: 5),
       () {
-        debugPrint('saveTempState debounced $id ${editorStateById[id]}');
         _editorDb.insertDraftState(
           entryId: id,
           lastSaved: lastSaved,
