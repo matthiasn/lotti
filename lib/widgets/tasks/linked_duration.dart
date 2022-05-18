@@ -48,28 +48,25 @@ class LinkedDuration extends StatelessWidget {
 
                 Duration total = liveTask.data.estimate ?? const Duration();
 
-                return Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width - 80,
-                    child: ClipRRect(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 4.0),
-                        child: ProgressBar(
-                          progress: progress,
-                          total: total,
-                          progressBarColor:
-                              (progress > total) ? Colors.red : Colors.green,
-                          thumbColor: Colors.white,
-                          barHeight: 4.0,
-                          thumbRadius: 6.0,
-                          onSeek: (newPosition) {},
-                          timeLabelTextStyle: TextStyle(
-                            fontFamily: 'Oswald',
-                            color: AppColors.entryTextColor,
-                            fontWeight: FontWeight.normal,
-                            fontSize: 14.0,
-                          ),
+                return SizedBox(
+                  width: MediaQuery.of(context).size.width - 80,
+                  child: ClipRRect(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4.0),
+                      child: ProgressBar(
+                        progress: progress,
+                        total: total,
+                        progressBarColor:
+                            (progress > total) ? Colors.red : Colors.green,
+                        thumbColor: Colors.white,
+                        barHeight: 4.0,
+                        thumbRadius: 6.0,
+                        onSeek: (newPosition) {},
+                        timeLabelTextStyle: TextStyle(
+                          fontFamily: 'Oswald',
+                          color: AppColors.entryTextColor,
+                          fontWeight: FontWeight.normal,
+                          fontSize: 14.0,
                         ),
                       ),
                     ),
