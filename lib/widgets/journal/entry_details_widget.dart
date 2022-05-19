@@ -109,7 +109,11 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         };
 
         void saveText() {
-          _editorStateService.saveState(widget.itemId, controller);
+          _editorStateService.saveState(
+            id: widget.itemId,
+            lastSaved: item.meta.updatedAt,
+            controller: controller,
+          );
 
           if (isMobile) {
             _focusNode.unfocus();

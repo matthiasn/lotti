@@ -22,9 +22,8 @@ class EditorDb extends _$EditorDb {
     required String draftDeltaJson,
   }) async {
     await (update(editorDrafts)
-          ..where(
-            (EditorDrafts draft) => draft.status.equals('DRAFT'),
-          ))
+          ..where((EditorDrafts draft) =>
+              draft.entryId.equals(entryId) & draft.status.equals('DRAFT')))
         .write(const EditorDraftsCompanion(status: Value('ARCHIVED')));
 
     final draftState = EditorDraftState(
@@ -36,6 +35,20 @@ class EditorDb extends _$EditorDb {
       delta: draftDeltaJson,
     );
     return into(editorDrafts).insert(draftState);
+  }
+
+  Future<int> setDraftSaved({
+    required String entryId,
+    required DateTime lastSaved,
+  }) async {
+    return await (update(editorDrafts)
+          ..where(
+            (EditorDrafts draft) =>
+                draft.entryId.equals(entryId) &
+                draft.status.equals('DRAFT') &
+                draft.lastSaved.equals(lastSaved),
+          ))
+        .write(const EditorDraftsCompanion(status: Value('SAVED')));
   }
 
   Future<EditorDraftState?> getLatestDraft(String? entryId) async {

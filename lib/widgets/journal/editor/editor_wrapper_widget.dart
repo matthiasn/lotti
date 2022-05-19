@@ -87,7 +87,11 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
         };
 
         void saveText() {
-          _editorStateService.saveState(widget.itemId, controller);
+          _editorStateService.saveState(
+            id: widget.itemId,
+            controller: controller,
+            lastSaved: item.meta.updatedAt,
+          );
 
           if (isMobile) {
             _focusNode.unfocus();

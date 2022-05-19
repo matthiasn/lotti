@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:easy_debounce/easy_debounce.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -34,6 +35,7 @@ class EditorStateService {
 
       _editorDb.getLatestDraft(id).then((EditorDraftState? value) {
         if (value != null) {
+          debugPrint(value.delta);
           editorStateById[id] = value.delta;
           unsavedStreamController.add(editorStateById[id] != null);
         }
@@ -41,7 +43,6 @@ class EditorStateService {
     }
 
     unsavedStreamController.add(editorStateById[id] != null);
-
     return unsavedStreamController.stream;
   }
 
@@ -84,10 +85,15 @@ class EditorStateService {
     );
   }
 
-  void saveState(String id, QuillController controller) async {
+  void saveState({
+    required String id,
+    required DateTime lastSaved,
+    required QuillController controller,
+  }) async {
     EasyDebounce.cancel('tempSaveDelta-$id');
     EntryText entryText = entryTextFromController(controller);
     await _persistenceLogic.updateJournalEntityText(id, entryText);
+    await _editorDb.setDraftSaved(entryId: id, lastSaved: lastSaved);
 
     StreamController<bool>? unsavedStreamController = unsavedStreamById[id];
     editorStateById.remove(id);
