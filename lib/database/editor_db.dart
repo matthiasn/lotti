@@ -44,9 +44,7 @@ class EditorDb extends _$EditorDb {
     return await (update(editorDrafts)
           ..where(
             (EditorDrafts draft) =>
-                draft.entryId.equals(entryId) &
-                draft.status.equals('DRAFT') &
-                draft.lastSaved.equals(lastSaved),
+                draft.entryId.equals(entryId) & draft.status.equals('DRAFT'),
           ))
         .write(const EditorDraftsCompanion(status: Value('SAVED')));
   }
