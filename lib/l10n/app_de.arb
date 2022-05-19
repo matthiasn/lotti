@@ -57,6 +57,7 @@
   "journalToolbarSaveHint": "Eintrag speichern",
   "journalUnlinkText": "Verknüpfung entfernen",
   "maintenanceDeleteEditorDb": "Textentwürfedatenbank löschen",
+  "maintenanceDeleteLoggingDb": "Loggingdatenbank löschen",
   "maintenanceDeleteTagged": "Tag Links löschen",
   "maintenanceRecreateTagged": "Tag Links wiederherstellen",
   "maintenanceStories": "Stories von verlinkten Einträgen zuweisen",

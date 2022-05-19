@@ -106,10 +106,14 @@ class InsightsSpan {
   Future<void> error() async {}
 }
 
+Future<File> getLoggingDbFile() async {
+  final dbFolder = await getApplicationDocumentsDirectory();
+  return File(p.join(dbFolder.path, 'logging_db.sqlite.sqlite'));
+}
+
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'logging_db.sqlite'));
+    final file = await getLoggingDbFile();
     return NativeDatabase(file);
   });
 }
