@@ -213,53 +213,53 @@ steps:
         soft_fail:
           - exit_status: 24
 
-  #################
-
-  - label: ":android: Bundle "
-    key: "android_bundle"
-    depends_on:
-      - "codegen_test"
-    command:
-      - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-      - "flutter build appbundle"
-      - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-    agents:
-      os: "macOS"
-    soft_fail:
-      - exit_status: 24
-
-  #################
-
-  - group: ":android: :github: Release"
-    key: "android_github_release"
-    depends_on:
-      - "android_bundle"
-    steps:
-      - label: ":android: Android create APKs "
-        key: "android_apks"
-        depends_on:
-          - "android_bundle"
-        command:
-          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "bundletool build-apks --mode universal --bundle build/app/outputs/bundle/release/app-release.aab --output build/android/lotti.apks --overwrite"
-          - "cp build/android/lotti.apks build/android/lotti.zip"
-          - "cd build/android && unzip lotti.zip && cd -"
-          - "rsync -ar --exclude 'build/ios' --exclude 'build/macos' ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-        agents:
-          os: "macOS"
-        soft_fail:
-          - exit_status: 24
-
-      - label: ":android: 🚀 publish :github: Prerelease "
-        key: "android_github_prerelease"
-        depends_on:
-          - "create_github_prerelease"
-          - "android_apks"
-        command:
-          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "gh release upload ${BUILDKITE_BRANCH} build/android/universal.apk"
-          - "gh release upload ${BUILDKITE_BRANCH} build/app/outputs/bundle/release/app-release.aab"
-        agents:
-          os: "macOS"
-        soft_fail:
-          - exit_status: 24
+#  #################
+#
+#  - label: ":android: Bundle "
+#    key: "android_bundle"
+#    depends_on:
+#      - "codegen_test"
+#    command:
+#      - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
+#      - "flutter build appbundle"
+#      - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+#    agents:
+#      os: "macOS"
+#    soft_fail:
+#      - exit_status: 24
+#
+#  #################
+#
+#  - group: ":android: :github: Release"
+#    key: "android_github_release"
+#    depends_on:
+#      - "android_bundle"
+#    steps:
+#      - label: ":android: Android create APKs "
+#        key: "android_apks"
+#        depends_on:
+#          - "android_bundle"
+#        command:
+#          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
+#          - "bundletool build-apks --mode universal --bundle build/app/outputs/bundle/release/app-release.aab --output build/android/lotti.apks --overwrite"
+#          - "cp build/android/lotti.apks build/android/lotti.zip"
+#          - "cd build/android && unzip lotti.zip && cd -"
+#          - "rsync -ar --exclude 'build/ios' --exclude 'build/macos' ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+#        agents:
+#          os: "macOS"
+#        soft_fail:
+#          - exit_status: 24
+#
+#      - label: ":android: 🚀 publish :github: Prerelease "
+#        key: "android_github_prerelease"
+#        depends_on:
+#          - "create_github_prerelease"
+#          - "android_apks"
+#        command:
+#          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
+#          - "gh release upload ${BUILDKITE_BRANCH} build/android/universal.apk"
+#          - "gh release upload ${BUILDKITE_BRANCH} build/app/outputs/bundle/release/app-release.aab"
+#        agents:
+#          os: "macOS"
+#        soft_fail:
+#          - exit_status: 24
