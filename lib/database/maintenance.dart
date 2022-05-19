@@ -1,5 +1,7 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -63,5 +65,15 @@ class Maintenance {
   Future<void> deleteTaggedLinks() async {
     await createDbBackup();
     await _db.deleteTagged();
+  }
+
+  Future<void> deleteEditorDb() async {
+    final file = await getEditorDbFile();
+    file.deleteSync();
+  }
+
+  Future<void> deleteLoggingDb() async {
+    final file = await getLoggingDbFile();
+    file.deleteSync();
   }
 }

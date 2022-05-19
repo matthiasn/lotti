@@ -29,6 +29,7 @@ class TimeService {
 
     _periodicStream = Stream<int>.periodic(interval, callback);
     if (_periodicStream != null) {
+      // ignore: unused_local_variable
       await for (int i in _periodicStream!) {
         if (_current != null) {
           _controller.add(

@@ -56,6 +56,8 @@
   "journalTagsRemoveHint": "Remove tag",
   "journalToolbarSaveHint": "Save entry",
   "journalUnlinkText": "Unlink entry",
+  "maintenanceDeleteEditorDb": "Delete editor drafts database",
+  "maintenanceDeleteLoggingDb": "Delete logging database",
   "maintenanceDeleteTagged": "Delete tagged",
   "maintenanceRecreateTagged": "Recreate tagged",
   "maintenanceStories": "Assign stories from parent entries",

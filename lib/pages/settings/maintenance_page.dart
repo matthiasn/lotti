@@ -51,6 +51,14 @@ class _MaintenancePageState extends State<MaintenancePage> {
                   onTap: () => _maintenance.deleteTaggedLinks(),
                 ),
                 MaintenanceCard(
+                  title: localizations.maintenanceDeleteEditorDb,
+                  onTap: () => _maintenance.deleteEditorDb(),
+                ),
+                MaintenanceCard(
+                  title: localizations.maintenanceDeleteLoggingDb,
+                  onTap: () => _maintenance.deleteLoggingDb(),
+                ),
+                MaintenanceCard(
                   title: localizations.maintenanceRecreateTagged,
                   onTap: () => _maintenance.recreateTaggedLinks(),
                 ),
