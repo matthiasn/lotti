@@ -64,10 +64,14 @@ class EditorDb extends _$EditorDb {
   }
 }
 
+Future<File> getEditorDbFile() async {
+  final dbFolder = await getApplicationDocumentsDirectory();
+  return File(p.join(dbFolder.path, 'editor_drafts_db.sqlite'));
+}
+
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'editor_drafts_db.sqlite'));
+    final file = await getEditorDbFile();
     return NativeDatabase(file);
   });
 }
