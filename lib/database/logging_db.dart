@@ -108,7 +108,7 @@ class InsightsSpan {
 
 Future<File> getLoggingDbFile() async {
   final dbFolder = await getApplicationDocumentsDirectory();
-  return File(p.join(dbFolder.path, 'logging_db.sqlite.sqlite'));
+  return File(p.join(dbFolder.path, 'logging_db.sqlite'));
 }
 
 LazyDatabase _openConnection() {
