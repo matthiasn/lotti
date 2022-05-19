@@ -33,11 +33,11 @@ void registerSingletons() {
   getIt.registerSingleton<TimeService>(TimeService());
   getIt.registerSingleton<OutboxService>(OutboxService());
   getIt.registerSingleton<PersistenceLogic>(PersistenceLogic());
+  getIt.registerSingleton<EditorStateService>(EditorStateService());
   getIt.registerSingleton<HealthImport>(HealthImport());
   getIt.registerSingleton<SyncInboxService>(SyncInboxService());
   getIt.registerSingleton<LinkService>(LinkService());
   getIt.registerSingleton<NotificationService>(NotificationService());
-  getIt.registerSingleton<EditorStateService>(EditorStateService());
   getIt.registerSingleton<Maintenance>(Maintenance());
   getIt.registerSingleton<AppRouter>(AppRouter());
   getIt.registerSingleton<NavService>(NavService());

@@ -20,6 +20,11 @@ ON editor_drafts (status);
 CREATE INDEX editor_drafts_created_at
 ON editor_drafts (created_at);
 
+allDrafts:
+SELECT * from editor_drafts
+  WHERE status = 'DRAFT'
+  ORDER BY created_at DESC;
+
 latestDraft:
 SELECT * from editor_drafts
   WHERE entry_id = :entry_id
