@@ -1,0 +1,8 @@
+  [Desktop Entry]
+  Name=Lotti
+  Comment=A smart journal
+  Exec=lotti
+  Icon=${SNAP}/meta/gui/lotti.png
+  Terminal=false
+  Type=Application
+  Categories=Productivity;
