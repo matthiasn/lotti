@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -22,6 +23,7 @@ final getIt = GetIt.instance;
 
 void registerSingletons() {
   getIt.registerSingleton<JournalDb>(JournalDb());
+  getIt.registerSingleton<EditorDb>(EditorDb());
   getIt.registerSingleton<TagsService>(TagsService());
   getIt<JournalDb>().initConfigFlags();
   getIt.registerSingleton<SyncDatabase>(SyncDatabase());
@@ -31,11 +33,11 @@ void registerSingletons() {
   getIt.registerSingleton<TimeService>(TimeService());
   getIt.registerSingleton<OutboxService>(OutboxService());
   getIt.registerSingleton<PersistenceLogic>(PersistenceLogic());
+  getIt.registerSingleton<EditorStateService>(EditorStateService());
   getIt.registerSingleton<HealthImport>(HealthImport());
   getIt.registerSingleton<SyncInboxService>(SyncInboxService());
   getIt.registerSingleton<LinkService>(LinkService());
   getIt.registerSingleton<NotificationService>(NotificationService());
-  getIt.registerSingleton<EditorStateService>(EditorStateService());
   getIt.registerSingleton<Maintenance>(Maintenance());
   getIt.registerSingleton<AppRouter>(AppRouter());
   getIt.registerSingleton<NavService>(NavService());

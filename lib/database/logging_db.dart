@@ -24,9 +24,7 @@ enum InsightType {
   exception,
 }
 
-@DriftDatabase(
-  include: {'logging_db.drift'},
-)
+@DriftDatabase(include: {'logging_db.drift'})
 class LoggingDb extends _$LoggingDb {
   final JournalDb _journalDb = getIt<JournalDb>();
 

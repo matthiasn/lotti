@@ -75,7 +75,11 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
         );
 
         controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
-          _editorStateService.saveTempState(widget.itemId, controller);
+          _editorStateService.saveTempState(
+            id: widget.itemId,
+            controller: controller,
+            lastSaved: item.meta.updatedAt,
+          );
         });
 
         controller.onSelectionChanged = (TextSelection selection) {
@@ -83,7 +87,11 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
         };
 
         void saveText() {
-          _editorStateService.saveState(widget.itemId, controller);
+          _editorStateService.saveState(
+            id: widget.itemId,
+            controller: controller,
+            lastSaved: item.meta.updatedAt,
+          );
 
           if (isMobile) {
             _focusNode.unfocus();
