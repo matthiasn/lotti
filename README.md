@@ -13,6 +13,11 @@ Lotti is a smart journal that allows you to track relevant data about your life,
 
 Through the collection and monitoring of such data, Lotti allows you to monitor many different kinds of interventions, such as (but not limited to) health, weight, fitness etc. Ultimately, these aim at living a better life. Please share your success stories and ideas what can be improved.
 
+Example from [blog](https://matthiasnehlsen.com/blog/2022/05/15/switched-to-flutter-lost-10-kilos/):
+
+![screenshot of dashboard](https://matthiasnehlsen.com/static/37e205eaf8dd59b7d040395a051204b7/a911b/2022-05-14_charts.jpg "user configured dashboard")
+
+
 
 ## Planned improvements:
 
