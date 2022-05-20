@@ -44,13 +44,12 @@ class HealthImport {
     }
   }
 
+  // TODO: remove duplication
   Future<void> getActivityHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
     DateTime now = DateTime.now();
-    DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
-    debugPrint('getActivityHealthData $dateFrom $dateToOrNow');
 
     final LoggingDb loggingDb = getIt<LoggingDb>();
     final transaction =
@@ -81,6 +80,7 @@ class HealthImport {
     }
 
     Map<DateTime, num> stepsByDay = {};
+    Map<DateTime, num> flightsByDay = {};
     Duration range = dateTo.difference(dateFrom);
     List<DateTime> days = List<DateTime>.generate(range.inDays, (days) {
       DateTime day = dateFrom.add(Duration(days: days));
@@ -92,25 +92,33 @@ class HealthImport {
     });
 
     for (DateTime dateFrom in days) {
+      DateTime dateTo = DateTime(
+          dateFrom.year, dateFrom.month, dateFrom.day, 23, 59, 59, 999);
+      DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
       int? steps = await _healthFactory.getTotalStepsInInterval(
-          dateFrom,
-          DateTime(
-            dateFrom.year,
-            dateFrom.month,
-            dateFrom.day,
-            23,
-            59,
-            59,
-            999,
-          ));
+        dateFrom,
+        dateToOrNow,
+      );
       stepsByDay[dateFrom] = steps ?? 0;
     }
-
     addEntries(stepsByDay, 'cumulative_step_count');
-    debugPrint('getActivityHealthData $stepsByDay');
 
-    // TODO: bring back import of cumulative_flights_climbed
-    // addEntries(flights, 'cumulative_flights_climbed');
+    for (DateTime dateFrom in days) {
+      DateTime dateTo = DateTime(
+          dateFrom.year, dateFrom.month, dateFrom.day, 23, 59, 59, 999);
+      DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
+
+      int? flightsClimbed =
+          await _healthFactory.getTotalFlightsClimbedInInterval(
+        dateFrom,
+        dateToOrNow,
+      );
+      flightsByDay[dateFrom] = flightsClimbed ?? 0;
+    }
+    addEntries(flightsByDay, 'cumulative_flights_climbed');
+
+    debugPrint('getActivityHealthData flightsByDay $flightsByDay');
+
     await transaction.finish();
   }
 
