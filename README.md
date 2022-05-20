@@ -36,6 +36,7 @@ history. You can find the previous version in the **[meins subdirectory](https:/
 - Lotti is open-source and everyone is encouraged to contribute, be it via contributing to code, providing feedback etc.
 - Lotti is inclusive and any request for improved accessibility will be addressed.
 - Lotti is supposed to become a friendly and welcoming community of people who are interested in data, improving their lives, and not or only very selectively sharing their data in the process. Please head over to [Discussions](https://github.com/matthiasn/lotti/discussions) and say hi.
+- Localization. Lotti aims at being polyglot and being available in as many different languages as possible. Currently, that is English and German, with [French](https://github.com/matthiasn/lotti/issues/936) in progress. Please create [issues](https://github.com/matthiasn/lotti/issues) for languages you would like to see.
 
 
 ## Beta testing
