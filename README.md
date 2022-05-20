@@ -6,7 +6,26 @@ A smart journal and a tool for living a better life by defining and monitoring
 interventions. Please check out **[HISTORY.md](https://github.com/matthiasn/lotti/tree/main/HISTORY.md)** for information on the project's
 history. You can find the previous version in the **[meins subdirectory](https://github.com/matthiasn/lotti/tree/main/meins)**.
 
-See **[blog post](https://matthiasnehlsen.com/blog/2022/05/05/introducing-lotti/)** for more info.
+
+## Principles
+
+- Lotti is private and does not share any information with anyone - see the [Privacy Policy](./PRIVACY.md).
+- Lotti is open-source and everyone is encouraged to contribute, be it via contributing to code, providing feedback etc.
+- Lotti is inclusive and any request for improved accessibility will be addressed.
+
+
+## Beta testing
+
+Lotti is currently available for beta testing. The aim is to have pre-release versions available on [GitHub Releases](https://github.com/matthiasn/lotti/releases), specifically for Android, macOS, Linux and Windows. Currently, there are [build issues](https://github.com/matthiasn/lotti/labels/prerelease%20blocker) blocking the pre-release on some of the aforementioned platforms, please help!
+
+Development is primarily done on macOS and both the **iOS** and **macOS** versions are available for beta testing via Apple's TestFlight. Please get in touch with the [author](https://github.com/matthiasn) if you are interesting in participating in the tests, the email address can be found in the profile. The aim is to get Lotti out on all app stores ASAP. More feedback will mean sooner general availability.
+
+
+## Blog posts
+
+- [Introducing Lotti or how I learned to love Flutter and Buildkite](https://matthiasnehlsen.com/blog/2022/05/05/introducing-lotti/)
+- [How I switched to Flutter and lost 10 kilos](https://matthiasnehlsen.com/blog/2022/05/15/switched-to-flutter-lost-10-kilos/)
+
 
 ## Getting Started
 
