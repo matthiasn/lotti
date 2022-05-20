@@ -2,11 +2,49 @@
 
 [![CodeFactor](https://www.codefactor.io/repository/github/matthiasn/lotti/badge)](https://www.codefactor.io/repository/github/matthiasn/lotti) [![Flutter Test](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml/badge.svg)](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml)
 
-A smart journal and a tool for living a better life by defining and monitoring
-interventions. Please check out **[HISTORY.md](https://github.com/matthiasn/lotti/tree/main/HISTORY.md)** for information on the project's
+Lotti is a smart journal that allows you to track relevant data about your life, entirely in private. What you deem relevant is up to you. Some ideas:
+
+- Health-related data which can be imported automatically, such as steps, weight, sleep etc.
+- Custom data types, such as the intake of water, food, alcohol, coffee, but also exercises such as pull-ups, you name (and define) it
+- Time, as in defining tasks and then recording time spent on these tasks in the process
+- Stories
+- Tags
+- People
+
+Through the collection and monitoring of such data, Lotti allows you to monitor many different kinds of interventions, such as (but not limited to) health, weight, fitness etc. Ultimately, these aim at living a better life. Please share your success stories and ideas what can be improved.
+
+
+## Planned improvements:
+
+- Habit tracking. The previous Clojure-based version had simple habit tracking where habits could be checked off and monitored, such as daily flossing or whatever else you can imagine.
+- Intervention lifecycle. The app is already useful for monitoring interventions but the interventions themselves currently remain implicit. In future versions, the lifecycle of interventions shall be made explicit, by defining them in the first place, and then reviewing and refining them.
+- Reporting how time is spent
+- Upfront planning of time budgets
+
+Please check out **[HISTORY.md](./docs/HISTORY.md)** for information on the project's
 history. You can find the previous version in the **[meins subdirectory](https://github.com/matthiasn/lotti/tree/main/meins)**.
 
-See **[blog post](https://matthiasnehlsen.com/blog/2022/05/05/introducing-lotti/)** for more info.
+
+## Principles
+
+- Lotti is private and does not share any information with anyone - see the [Privacy Policy](./PRIVACY.md).
+- Lotti is open-source and everyone is encouraged to contribute, be it via contributing to code, providing feedback etc.
+- Lotti is inclusive and any request for improved accessibility will be addressed.
+- Lotti is supposed to become a friendly and welcoming community of people who are interested in data, improving their lives, and not or only very selectively sharing their data in the process. Please head over to [Discussions](https://github.com/matthiasn/lotti/discussions) and say hi.
+
+
+## Beta testing
+
+Lotti is currently available for beta testing. The aim is to have pre-release versions available on [GitHub Releases](https://github.com/matthiasn/lotti/releases), specifically for Android, macOS, Linux and Windows. Currently, there are [build issues](https://github.com/matthiasn/lotti/labels/prerelease%20blocker) blocking the pre-release on some of the aforementioned platforms, please help!
+
+Development is primarily done on macOS and both the **iOS** and **macOS** versions are available for beta testing via Apple's TestFlight. Please get in touch with the [author](https://github.com/matthiasn) if you are interesting in participating in the tests, the email address can be found in the profile. The aim is to get Lotti out on all app stores ASAP. More feedback will mean sooner general availability.
+
+
+## Blog posts
+
+- [Introducing Lotti or how I learned to love Flutter and Buildkite](https://matthiasnehlsen.com/blog/2022/05/05/introducing-lotti/)
+- [How I switched to Flutter and lost 10 kilos](https://matthiasnehlsen.com/blog/2022/05/15/switched-to-flutter-lost-10-kilos/)
+
 
 ## Getting Started
 
@@ -17,6 +55,7 @@ See **[blog post](https://matthiasnehlsen.com/blog/2022/05/05/introducing-lotti/
 4. Run `flutter pub get`
 5. Run `flutter create`
 6. Open `./lotti` in **Android Studio**
+
 
 ## Platform-specific setup
 
@@ -29,10 +68,12 @@ Please make sure your Flutter environment generally works with a fresh starter
 app however before raising issues that are related to your Flutter installation.
 Thanks!
 
+
 ### Mac
 
 Tested on `macOS 12.3`: no additional steps necessary. You only need to have 
 Xcode installed.
+
 
 ### Linux
 
@@ -48,6 +89,7 @@ $ make build_runner
 
 In case the network in virtual machine not connecting after
 resuming: `$ sudo dhclient ens33`
+
 
 ### Windows
 
