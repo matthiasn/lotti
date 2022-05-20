@@ -669,15 +669,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "7.1.1"
-  flutter_health_fit:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: "30102b6"
-      resolved-ref: "30102b653cdd2af64509edb4643e809e40139e7c"
-      url: "https://github.com/metaflowltd/flutter_health_fit.git"
-    source: git
-    version: "0.1.0"
   flutter_image_compress:
     dependency: "direct main"
     description:
@@ -997,9 +988,11 @@ packages:
   health:
     dependency: "direct main"
     description:
-      name: health
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: "packages/health"
+      ref: bfa66d6
+      resolved-ref: bfa66d6027a355eb8b93bfc3dbe9d0c77cd62fb5
+      url: "https://github.com/matthiasn/flutter-plugins"
+    source: git
     version: "3.4.4"
   hexcolor:
     dependency: "direct main"

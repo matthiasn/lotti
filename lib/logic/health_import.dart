@@ -4,10 +4,9 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_health_fit/flutter_health_fit.dart';
-import 'package:flutter_health_fit/workout_sample.dart';
+// import 'package:flutter_health_fit/flutter_health_fit.dart';
+// import 'package:flutter_health_fit/workout_sample.dart';
 import 'package:health/health.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -45,29 +44,23 @@ class HealthImport {
     }
   }
 
+  // TODO: remove duplication
   Future<void> getActivityHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
     DateTime now = DateTime.now();
-    DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
-    debugPrint('getActivityHealthData $dateFrom $dateToOrNow');
 
     final LoggingDb loggingDb = getIt<LoggingDb>();
     final transaction =
         loggingDb.startTransaction('getActivityHealthData()', 'task');
+    await authorizeHealth(activityTypes);
 
-    final flutterHealthFit = FlutterHealthFit();
-    final bool isAuthorized = await FlutterHealthFit().authorize();
-    final bool isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
-    debugPrint(
-        'flutterHealthFit isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
-
-    Future<void> addEntries(Map<DateTime, int> data, String type) async {
-      List<MapEntry<DateTime, int>> entries = List.from(data.entries);
+    Future<void> addEntries(Map<DateTime, num> data, String type) async {
+      List<MapEntry<DateTime, num>> entries = List.from(data.entries);
       entries.sort((a, b) => a.key.compareTo(b.key));
 
-      for (MapEntry<DateTime, int> dailyStepsEntry in entries) {
+      for (MapEntry<DateTime, num> dailyStepsEntry in entries) {
         DateTime dateFrom = dailyStepsEntry.key;
         DateTime dateTo = dateFrom
             .add(const Duration(days: 1))
@@ -86,15 +79,46 @@ class HealthImport {
       }
     }
 
-    final Map<DateTime, int> stepCounts = await FlutterHealthFit()
-        .getStepsBySegment(dateFrom.millisecondsSinceEpoch,
-            dateToOrNow.millisecondsSinceEpoch, 1, TimeUnit.days);
-    addEntries(stepCounts, 'cumulative_step_count');
+    Map<DateTime, num> stepsByDay = {};
+    Map<DateTime, num> flightsByDay = {};
+    Duration range = dateTo.difference(dateFrom);
+    List<DateTime> days = List<DateTime>.generate(range.inDays, (days) {
+      DateTime day = dateFrom.add(Duration(days: days));
+      return DateTime(
+        day.year,
+        day.month,
+        day.day,
+      );
+    });
 
-    final Map<DateTime, int> flights = await FlutterHealthFit()
-        .getFlightsBySegment(dateFrom.millisecondsSinceEpoch,
-            dateToOrNow.millisecondsSinceEpoch, 1, TimeUnit.days);
-    addEntries(flights, 'cumulative_flights_climbed');
+    for (DateTime dateFrom in days) {
+      DateTime dateTo = DateTime(
+          dateFrom.year, dateFrom.month, dateFrom.day, 23, 59, 59, 999);
+      DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
+      int? steps = await _healthFactory.getTotalStepsInInterval(
+        dateFrom,
+        dateToOrNow,
+      );
+      stepsByDay[dateFrom] = steps ?? 0;
+    }
+    addEntries(stepsByDay, 'cumulative_step_count');
+
+    for (DateTime dateFrom in days) {
+      DateTime dateTo = DateTime(
+          dateFrom.year, dateFrom.month, dateFrom.day, 23, 59, 59, 999);
+      DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
+
+      int? flightsClimbed =
+          await _healthFactory.getTotalFlightsClimbedInInterval(
+        dateFrom,
+        dateToOrNow,
+      );
+      flightsByDay[dateFrom] = flightsClimbed ?? 0;
+    }
+    addEntries(flightsByDay, 'cumulative_flights_climbed');
+
+    debugPrint('getActivityHealthData flightsByDay $flightsByDay');
+
     await transaction.finish();
   }
 
@@ -207,30 +231,25 @@ class HealthImport {
     final transaction =
         loggingDb.startTransaction('getActivityHealthData()', 'task');
     debugPrint('getWorkoutsHealthData $dateFrom - $dateTo');
-    final flutterHealthFit = FlutterHealthFit();
-    final bool isAuthorized = await FlutterHealthFit().authorize();
-    final bool isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
-    debugPrint(
-        'getWorkoutsHealthData isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
 
-    List<WorkoutSample>? workouts =
-        await FlutterHealthFit().getWorkoutsBySegment(
-      dateFrom.millisecondsSinceEpoch,
-      dateToOrNow.millisecondsSinceEpoch,
-    );
-
-    workouts?.forEach((WorkoutSample workoutSample) async {
-      WorkoutData workoutData = WorkoutData(
-        dateFrom: workoutSample.start,
-        dateTo: workoutSample.end,
-        distance: workoutSample.distance,
-        energy: workoutSample.energy,
-        source: workoutSample.source,
-        workoutType: workoutSample.type.name,
-        id: workoutSample.id,
-      );
-      await persistenceLogic.createWorkoutEntry(workoutData);
-    });
+    // List<WorkoutSample>? workouts =
+    //     await FlutterHealthFit().getWorkoutsBySegment(
+    //   dateFrom.millisecondsSinceEpoch,
+    //   dateToOrNow.millisecondsSinceEpoch,
+    // );
+    //
+    // workouts?.forEach((WorkoutSample workoutSample) async {
+    //   WorkoutData workoutData = WorkoutData(
+    //     dateFrom: workoutSample.start,
+    //     dateTo: workoutSample.end,
+    //     distance: workoutSample.distance,
+    //     energy: workoutSample.energy,
+    //     source: workoutSample.source,
+    //     workoutType: workoutSample.type.name,
+    //     id: workoutSample.id,
+    //   );
+    //   await persistenceLogic.createWorkoutEntry(workoutData);
+    // });
 
     await transaction.finish();
   }
@@ -268,4 +287,14 @@ List<HealthDataType> bodyMeasurementTypes = [
   HealthDataType.BODY_FAT_PERCENTAGE,
   HealthDataType.BODY_MASS_INDEX,
   HealthDataType.HEIGHT,
+];
+
+List<HealthDataType> workoutTypes = [
+  HealthDataType.EXERCISE_TIME,
+  HealthDataType.WORKOUT,
+];
+
+List<HealthDataType> activityTypes = [
+  HealthDataType.STEPS,
+  HealthDataType.FLIGHTS_CLIMBED,
 ];
