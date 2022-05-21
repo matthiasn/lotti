@@ -18,7 +18,7 @@ class HealthImport {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final JournalDb _db = getIt<JournalDb>();
   final HealthFactory _healthFactory = HealthFactory();
-  Duration defaultFetchDuration = const Duration(days: 30);
+  Duration defaultFetchDuration = const Duration(days: 90);
 
   late final String platform;
   String? deviceType;
