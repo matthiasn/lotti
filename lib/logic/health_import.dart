@@ -50,6 +50,7 @@ class HealthImport {
     required DateTime dateTo,
   }) async {
     DateTime now = DateTime.now();
+    DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
 
     final LoggingDb loggingDb = getIt<LoggingDb>();
     final transaction =
@@ -61,13 +62,13 @@ class HealthImport {
       entries.sort((a, b) => a.key.compareTo(b.key));
 
       for (MapEntry<DateTime, num> dailyStepsEntry in entries) {
-        DateTime dateFrom = dailyStepsEntry.key;
-        DateTime dateTo = dateFrom
+        DateTime dayStart = dailyStepsEntry.key;
+        DateTime dayEnd = dayStart
             .add(const Duration(days: 1))
             .subtract(const Duration(milliseconds: 1));
-        DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
+        DateTime dateToOrNow = dayEnd.isAfter(now) ? now : dayEnd;
         CumulativeQuantityData activityForDay = CumulativeQuantityData(
-          dateFrom: dateFrom,
+          dateFrom: dayStart,
           dateTo: dateToOrNow,
           value: dailyStepsEntry.value,
           dataType: type,
@@ -81,7 +82,7 @@ class HealthImport {
 
     Map<DateTime, num> stepsByDay = {};
     Map<DateTime, num> flightsByDay = {};
-    Duration range = dateTo.difference(dateFrom);
+    Duration range = dateToOrNow.difference(dateFrom);
     List<DateTime> days = List<DateTime>.generate(range.inDays, (days) {
       DateTime day = dateFrom.add(Duration(days: days));
       return DateTime(
