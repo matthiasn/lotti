@@ -93,33 +93,23 @@ class HealthImport {
     });
 
     for (DateTime dateFrom in days) {
-      DateTime dateTo = DateTime(
-          dateFrom.year, dateFrom.month, dateFrom.day, 23, 59, 59, 999);
-      DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
-      int? steps = await _healthFactory.getTotalStepsInInterval(
-        dateFrom,
-        dateToOrNow,
-      );
-      stepsByDay[dateFrom] = steps ?? 0;
+      if (dateFrom.isBefore(now)) {
+        DateTime dateTo = DateTime(
+            dateFrom.year, dateFrom.month, dateFrom.day, 23, 59, 59, 999);
+        DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
+
+        int? steps =
+            await _healthFactory.getTotalStepsInInterval(dateFrom, dateToOrNow);
+        int? flightsClimbed = await _healthFactory
+            .getTotalFlightsClimbedInInterval(dateFrom, dateToOrNow);
+
+        flightsByDay[dateFrom] = flightsClimbed ?? 0;
+        stepsByDay[dateFrom] = steps ?? 0;
+      }
     }
+
     addEntries(stepsByDay, 'cumulative_step_count');
-
-    for (DateTime dateFrom in days) {
-      DateTime dateTo = DateTime(
-          dateFrom.year, dateFrom.month, dateFrom.day, 23, 59, 59, 999);
-      DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
-
-      int? flightsClimbed =
-          await _healthFactory.getTotalFlightsClimbedInInterval(
-        dateFrom,
-        dateToOrNow,
-      );
-      flightsByDay[dateFrom] = flightsClimbed ?? 0;
-    }
     addEntries(flightsByDay, 'cumulative_flights_climbed');
-
-    debugPrint('getActivityHealthData flightsByDay $flightsByDay');
-
     await transaction.finish();
   }
 
@@ -133,8 +123,6 @@ class HealthImport {
     required DateTime dateTo,
   }) async {
     final LoggingDb loggingDb = getIt<LoggingDb>();
-    debugPrint('fetchHealthData $types $dateFrom $dateTo');
-
     final transaction = loggingDb.startTransaction('fetchHealthData()', 'task');
     bool accessWasGranted = await authorizeHealth(types);
 
