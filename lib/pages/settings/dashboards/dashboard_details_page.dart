@@ -47,14 +47,18 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   late final Stream<List<MeasurableDataType>> stream =
       _db.watchMeasurableDataTypes();
 
-  List<DashboardItem>? dashboardItems;
+  late List<DashboardItem> dashboardItems;
+
+  @override
+  void initState() {
+    super.initState();
+    dashboardItems = [...widget.dashboard.items];
+  }
 
   void onConfirmAddMeasurement(List<MeasurableDataType?> selection) {
-    dashboardItems = dashboardItems ?? widget.dashboard.items;
-
     for (MeasurableDataType? selected in selection) {
       if (selected != null) {
-        bool exists = dashboardItems!.where(
+        bool exists = dashboardItems.where(
           (DashboardItem item) {
             return item.maybeMap(
               measurement: (m) => m.id == selected.id,
@@ -65,7 +69,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
         if (!exists) {
           setState(() {
-            dashboardItems?.add(DashboardItem.measurement(id: selected.id));
+            dashboardItems.add(DashboardItem.measurement(id: selected.id));
           });
         }
       }
@@ -73,14 +77,13 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   }
 
   void onConfirmAddHealthType(List<HealthTypeConfig?> selection) {
-    dashboardItems = dashboardItems ?? widget.dashboard.items;
-
+    dashboardItems = dashboardItems;
     for (HealthTypeConfig? selected in selection) {
       if (selected != null) {
-        bool exists = dashboardItems!.where(
+        bool exists = dashboardItems.where(
           (DashboardItem item) {
             return item.maybeMap(
-              healthChart: (m) => m.healthType == selected.healthType,
+              healthChart: (h) => h.healthType == selected.healthType,
               orElse: () => false,
             );
           },
@@ -88,12 +91,10 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
         if (!exists) {
           setState(() {
-            dashboardItems?.add(
-              DashboardItem.healthChart(
-                color: 'color',
-                healthType: selected.healthType,
-              ),
-            );
+            dashboardItems.add(DashboardItem.healthChart(
+              color: 'color',
+              healthType: selected.healthType,
+            ));
           });
         }
       }
@@ -101,11 +102,9 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   }
 
   void onConfirmAddSurveyType(List<DashboardSurveyItem?> selection) {
-    dashboardItems = dashboardItems ?? widget.dashboard.items;
-
     for (DashboardSurveyItem? selected in selection) {
       if (selected != null) {
-        bool exists = dashboardItems!.where(
+        bool exists = dashboardItems.where(
           (DashboardItem item) {
             return item.maybeMap(
               surveyChart: (survey) => survey.surveyType == selected.surveyType,
@@ -116,9 +115,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
         if (!exists) {
           setState(() {
-            dashboardItems?.add(
-              selected,
-            );
+            dashboardItems.add(selected);
           });
         }
       }
@@ -126,11 +123,9 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   }
 
   void onConfirmAddWorkoutType(List<DashboardWorkoutItem?> selection) {
-    dashboardItems = dashboardItems ?? widget.dashboard.items;
-
     for (DashboardWorkoutItem? selected in selection) {
       if (selected != null) {
-        bool exists = dashboardItems!.where(
+        bool exists = dashboardItems.where(
           (DashboardItem item) {
             return item.maybeMap(
               workoutChart: (workout) =>
@@ -143,9 +138,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
         if (!exists) {
           setState(() {
-            dashboardItems?.add(
-              selected,
-            );
+            dashboardItems.add(selected);
           });
         }
       }
@@ -153,11 +146,9 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   }
 
   void onConfirmAddStoryTimeType(List<DashboardStoryTimeItem?> selection) {
-    dashboardItems = dashboardItems ?? widget.dashboard.items;
-
     for (DashboardStoryTimeItem? selected in selection) {
       if (selected != null) {
-        bool exists = dashboardItems!.where(
+        bool exists = dashboardItems.where(
           (DashboardItem item) {
             return item.maybeMap(
               storyTimeChart: (storyTime) =>
@@ -169,9 +160,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
         if (!exists) {
           setState(() {
-            dashboardItems?.add(
-              selected,
-            );
+            dashboardItems.add(selected);
           });
         }
       }
@@ -180,8 +169,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
   void dismissItem(int index) {
     setState(() {
-      dashboardItems = dashboardItems ?? widget.dashboard.items;
-      dashboardItems!.removeAt(index);
+      dashboardItems.removeAt(index);
     });
   }
 
