@@ -241,7 +241,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
               active: formData['active'],
               reviewAt: formData['review_at'],
               updatedAt: DateTime.now(),
-              items: dashboardItems ?? widget.dashboard.items,
+              items: dashboardItems,
             );
 
             await persistenceLogic.upsertDashboardDefinition(dashboard);
@@ -373,22 +373,20 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                             physics: const NeverScrollableScrollPhysics(),
                             onReorder: (int oldIndex, int newIndex) {
                               setState(() {
-                                dashboardItems =
-                                    dashboardItems ?? widget.dashboard.items;
+                                dashboardItems = dashboardItems;
                                 final movedItem =
-                                    dashboardItems!.removeAt(oldIndex);
+                                    dashboardItems.removeAt(oldIndex);
                                 final insertionIndex = newIndex > oldIndex
                                     ? newIndex - 1
                                     : newIndex;
-                                dashboardItems!
-                                    .insert(insertionIndex, movedItem);
+                                dashboardItems.insert(
+                                    insertionIndex, movedItem);
                               });
                             },
                             children: List.generate(
-                              (dashboardItems ?? widget.dashboard.items).length,
+                              (dashboardItems).length,
                               (int index) {
-                                List<DashboardItem> items =
-                                    dashboardItems ?? widget.dashboard.items;
+                                List<DashboardItem> items = dashboardItems;
                                 DashboardItem item = items.elementAt(index);
 
                                 return Dismissible(
