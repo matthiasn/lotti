@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -22,6 +23,8 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder<JournalEntity?>(
         stream: _db.watchEntityById(itemId),
         builder: (
@@ -30,7 +33,17 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
         ) {
           JournalEntity? item = snapshot.data;
           if (item == null || item.meta.deletedAt != null) {
-            return const SizedBox.shrink();
+            return AppBar(
+              backgroundColor: AppColors.headerBgColor,
+              title: Text(
+                localizations.taskNotFound,
+                style: appBarTextStyle,
+              ),
+              centerTitle: true,
+              leading: AutoLeadingButton(
+                color: AppColors.entryTextColor,
+              ),
+            );
           }
 
           bool isTask = item is Task;
