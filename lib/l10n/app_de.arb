@@ -24,6 +24,7 @@
   "dashboardDeleteQuestion": "Dashboard wirklich löschen?",
   "dashboardDescriptionLabel": "Beschreibung:",
   "dashboardNameLabel": "Name des Dashboards:",
+  "dashboardNotFound": "Dashboard nicht gefunden",
   "dashboardPrivateLabel": "Privat:",
   "dashboardReviewTimeLabel": "Täglich erinnern um:",
   "dashboardSaveLabel": "Speichern",
