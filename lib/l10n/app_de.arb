@@ -131,6 +131,7 @@
   "taskEditHint": "Aufgabe bearbeiten",
   "taskEstimateLabel": "Geschätzter Zeitbedarf:",
   "taskNameLabel": "Aufgabe:",
+  "taskNotFound": "Aufgabe nicht gefunden",
   "tasksSearchHint": "Suche nach Tasks...",
   "taskStatusBlocked": "BLOCKIERT",
   "taskStatusDone": "FERTIG",

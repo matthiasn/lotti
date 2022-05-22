@@ -137,6 +137,7 @@
   "taskEditHint": "Edit Task",
   "taskEstimateLabel": "Estimated time:",
   "taskNameLabel": "Task:",
+  "taskNotFound": "Task not found",
   "tasksSearchHint": "Search tasks...",
   "taskStatusBlocked": "BLOCKED",
   "taskStatusDone": "DONE",
