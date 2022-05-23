@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.17+900
+version: 0.8.18+901
 
 msix_config:
   display_name: Lotti
@@ -15,7 +15,7 @@ msix_config:
   #logo_path: C:\lotti\logo.png
 
 environment:
-  sdk: ">=2.16.0 <3.0.0"
+  sdk: ">=2.17.0 <3.0.0"
 
 dependencies:
   flutter:
