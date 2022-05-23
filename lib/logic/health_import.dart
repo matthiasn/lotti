@@ -44,13 +44,11 @@ class HealthImport {
     }
   }
 
-  // TODO: remove duplication
   Future<void> getActivityHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
     DateTime now = DateTime.now();
-    DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
 
     final LoggingDb loggingDb = getIt<LoggingDb>();
     final transaction =
@@ -82,8 +80,9 @@ class HealthImport {
 
     Map<DateTime, num> stepsByDay = {};
     Map<DateTime, num> flightsByDay = {};
-    Duration range = dateToOrNow.difference(dateFrom);
-    List<DateTime> days = List<DateTime>.generate(range.inDays, (days) {
+    Duration range = dateTo.difference(dateFrom);
+
+    List<DateTime> days = List<DateTime>.generate(range.inDays + 1, (days) {
       DateTime day = dateFrom.add(Duration(days: days));
       return DateTime(
         day.year,
@@ -96,12 +95,11 @@ class HealthImport {
       if (dateFrom.isBefore(now)) {
         DateTime dateTo = DateTime(
             dateFrom.year, dateFrom.month, dateFrom.day, 23, 59, 59, 999);
-        DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
 
         int? steps =
-            await _healthFactory.getTotalStepsInInterval(dateFrom, dateToOrNow);
+            await _healthFactory.getTotalStepsInInterval(dateFrom, dateTo);
         int? flightsClimbed = await _healthFactory
-            .getTotalFlightsClimbedInInterval(dateFrom, dateToOrNow);
+            .getTotalFlightsClimbedInInterval(dateFrom, dateTo);
 
         flightsByDay[dateFrom] = flightsClimbed ?? 0;
         stepsByDay[dateFrom] = steps ?? 0;
