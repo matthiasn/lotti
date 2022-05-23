@@ -518,7 +518,7 @@ packages:
       name: enough_mail
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.0"
+    version: "2.0.1"
   enough_serialization:
     dependency: transitive
     description:
@@ -668,7 +668,7 @@ packages:
       name: flutter_form_builder
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.1.1"
+    version: "7.2.1"
   flutter_image_compress:
     dependency: "direct main"
     description:
@@ -764,7 +764,7 @@ packages:
       name: flutter_native_splash
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0+1"
+    version: "2.2.1"
   flutter_native_timezone:
     dependency: "direct main"
     description:
@@ -782,12 +782,10 @@ packages:
   flutter_quill:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: c651b31846235fbbce16aa969bd662ab6b4a6bd4
-      url: "https://github.com/myfknoll/flutter-quill.git"
-    source: git
-    version: "4.1.9"
+      name: flutter_quill
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "5.0.1"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1091,7 +1089,7 @@ packages:
       name: image_picker_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.5+4"
+    version: "0.8.5+5"
   image_picker_platform_interface:
     dependency: transitive
     description:
@@ -1607,7 +1605,7 @@ packages:
       name: provider
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.2"
+    version: "6.0.3"
   pub_semver:
     dependency: transitive
     description:
@@ -2031,7 +2029,7 @@ packages:
       name: url_launcher_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.16"
+    version: "6.0.17"
   url_launcher_linux:
     dependency: transitive
     description:
@@ -2150,7 +2148,7 @@ packages:
       name: webkit_inspection_protocol
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.1"
+    version: "1.1.0"
   wechat_assets_picker:
     dependency: "direct main"
     description:
