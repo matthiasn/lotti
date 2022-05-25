@@ -111,12 +111,10 @@ class _TasksPageState extends State<TasksPage> {
       queryStyle: const TextStyle(
         fontFamily: 'Lato',
         fontSize: 24,
-        fontWeight: FontWeight.w300,
       ),
       hintStyle: const TextStyle(
         fontFamily: 'Lato',
         fontSize: 24,
-        fontWeight: FontWeight.w300,
       ),
       physics: const BouncingScrollPhysics(),
       borderRadius: BorderRadius.circular(8.0),
