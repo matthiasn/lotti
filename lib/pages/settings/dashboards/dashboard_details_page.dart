@@ -446,8 +446,8 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                         ),
                         Padding(
                           padding: const EdgeInsets.only(top: 16.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Wrap(
+                            alignment: WrapAlignment.spaceBetween,
                             children: [
                               TextButton(
                                 key: const Key('dashboard_save'),
@@ -457,16 +457,13 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                   style: saveButtonStyle,
                                 ),
                               ),
+                              const SizedBox(width: 8),
                               TextButton(
                                 key: const Key('dashboard_view'),
                                 onPressed: saveAndViewDashboard,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8.0),
-                                  child: Text(
-                                    localizations.dashboardSaveViewLabel,
-                                    style: saveButtonStyle,
-                                  ),
+                                child: Text(
+                                  localizations.dashboardSaveViewLabel,
+                                  style: saveButtonStyle,
                                 ),
                               ),
                               Row(
