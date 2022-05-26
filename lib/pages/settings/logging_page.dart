@@ -156,13 +156,13 @@ class LogDetailPage extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 16.0),
                 child: Text('Message:', style: formLabelStyle),
               ),
-              Text(message, style: logDetailStyle),
+              SelectableText(message, style: logDetailStyle),
               if (stacktrace != null) ...[
                 Padding(
                   padding: const EdgeInsets.only(top: 16.0),
                   child: Text('Stack Trace:', style: formLabelStyle),
                 ),
-                Text(stacktrace, style: logDetailStyle),
+                SelectableText(stacktrace, style: logDetailStyle),
               ],
               IconButton(
                 icon: const Icon(MdiIcons.clipboardOutline),
