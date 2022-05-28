@@ -67,21 +67,6 @@ class EditorStateService {
     selectionById[id] = selection;
   }
 
-  void persistTempState(
-    String id,
-    DateTime lastSaved,
-  ) {
-    String? latest = editorStateById[id];
-
-    if (latest != null) {
-      _editorDb.insertDraftState(
-        entryId: id,
-        lastSaved: lastSaved,
-        draftDeltaJson: latest,
-      );
-    }
-  }
-
   void saveTempState({
     required String id,
     required DateTime lastSaved,
@@ -90,6 +75,7 @@ class EditorStateService {
     Delta delta = deltaFromController(controller);
     String json = quillJsonFromDelta(delta);
     editorStateById[id] = json;
+    selectionById.remove(id);
 
     StreamController<bool>? unsavedStreamController = unsavedStreamById[id];
     if (unsavedStreamController != null) {
