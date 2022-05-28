@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:easy_debounce/easy_debounce.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -66,6 +67,21 @@ class EditorStateService {
     selectionById[id] = selection;
   }
 
+  void persistTempState(
+    String id,
+    DateTime lastSaved,
+  ) {
+    String? latest = editorStateById[id];
+
+    if (latest != null) {
+      _editorDb.insertDraftState(
+        entryId: id,
+        lastSaved: lastSaved,
+        draftDeltaJson: latest,
+      );
+    }
+  }
+
   void saveTempState({
     required String id,
     required DateTime lastSaved,
@@ -80,16 +96,22 @@ class EditorStateService {
       unsavedStreamController.add(true);
     }
 
-    EasyDebounce.debounce(
-      'tempSaveDelta-$id',
-      const Duration(seconds: 2),
-      () {
+    void persistDraftState() {
+      String? latest = editorStateById[id];
+
+      if (latest != null) {
         _editorDb.insertDraftState(
           entryId: id,
           lastSaved: lastSaved,
-          draftDeltaJson: json,
+          draftDeltaJson: latest,
         );
-      },
+      }
+    }
+
+    EasyDebounce.debounce(
+      'persistDraftState-$id',
+      const Duration(seconds: 2),
+      persistDraftState,
     );
   }
 
@@ -98,8 +120,8 @@ class EditorStateService {
     required DateTime lastSaved,
     required QuillController controller,
   }) async {
-    selectionById.remove(id);
-    EasyDebounce.cancel('tempSaveDelta-$id');
+    saveSelection(id, controller.selection);
+    EasyDebounce.cancel('persistDraftState-$id');
     EntryText entryText = entryTextFromController(controller);
     await _persistenceLogic.updateJournalEntityText(id, entryText);
     await _editorDb.setDraftSaved(entryId: id, lastSaved: lastSaved);
@@ -119,7 +141,8 @@ class EditorStateService {
     required QuillController controller,
     required TaskData taskData,
   }) async {
-    EasyDebounce.cancel('tempSaveDelta-$id');
+    saveSelection(id, controller.selection);
+    EasyDebounce.cancel('persistDraftState-$id');
 
     _persistenceLogic.updateTask(
       entryText: entryTextFromController(controller),

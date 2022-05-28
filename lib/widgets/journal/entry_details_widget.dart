@@ -104,10 +104,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           );
         });
 
-        controller.onSelectionChanged = (TextSelection selection) {
-          _editorStateService.saveSelection(widget.itemId, selection);
-        };
-
         void saveText() {
           _editorStateService.saveState(
             id: widget.itemId,
