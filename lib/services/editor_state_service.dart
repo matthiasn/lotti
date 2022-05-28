@@ -6,12 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 
 class EditorStateService {
+  final JournalDb _journalDb = getIt<JournalDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   final EditorDb _editorDb = getIt<EditorDb>();
 
@@ -27,11 +29,15 @@ class EditorStateService {
     List<EditorDraftState> drafts = await _editorDb.allDrafts().get();
 
     for (EditorDraftState draft in drafts) {
-      editorStateById[draft.entryId] = draft.delta;
+      JournalDbEntity? entity = await _journalDb.entityById(draft.entryId);
+
+      if (entity?.updatedAt == draft.lastSaved) {
+        editorStateById[draft.entryId] = draft.delta;
+      }
     }
   }
 
-  Stream<bool> getUnsavedStream(String? id) {
+  Stream<bool> getUnsavedStream(String? id, DateTime lastSaved) {
     StreamController<bool> unsavedStreamController = StreamController<bool>();
 
     if (id != null) {
@@ -43,7 +49,9 @@ class EditorStateService {
 
       unsavedStreamById[id] = unsavedStreamController;
 
-      _editorDb.getLatestDraft(id).then((EditorDraftState? value) {
+      _editorDb
+          .getLatestDraft(id, lastSaved: lastSaved)
+          .then((EditorDraftState? value) {
         if (value != null) {
           editorStateById[id] = value.delta;
           unsavedStreamController.add(editorStateById[id] != null);
