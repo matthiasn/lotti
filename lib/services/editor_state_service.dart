@@ -98,6 +98,7 @@ class EditorStateService {
     required DateTime lastSaved,
     required QuillController controller,
   }) async {
+    selectionById.remove(id);
     EasyDebounce.cancel('tempSaveDelta-$id');
     EntryText entryText = entryTextFromController(controller);
     await _persistenceLogic.updateJournalEntityText(id, entryText);

@@ -173,7 +173,7 @@ TextStyle settingsLabelStyle = TextStyle(
 TextStyle logDetailStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'ShareTechMono',
-  fontSize: 13,
+  fontSize: 10,
 );
 
 TextStyle appBarTextStyle = TextStyle(
