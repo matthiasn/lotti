@@ -28,5 +28,6 @@ SELECT * from editor_drafts
 latestDraft:
 SELECT * from editor_drafts
   WHERE entry_id = :entry_id
+  AND last_saved = :last_saved
   AND status = 'DRAFT'
   ORDER BY created_at DESC;

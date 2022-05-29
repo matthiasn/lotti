@@ -68,6 +68,8 @@ class EditorWidget extends StatelessWidget {
             children: [
               ToolbarWidget(
                 id: journalEntity?.meta.id,
+                lastSaved: journalEntity?.meta.updatedAt ??
+                    DateTime.fromMillisecondsSinceEpoch(0),
                 controller: controller,
                 saveFn: saveFn,
               ),

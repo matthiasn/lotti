@@ -22,8 +22,9 @@ steps:
         # Workaround for rsync warning about vanished files,
         # which is inconsequential here but returns exit code
         # 24 and is therefore interpreted as a failure
-        soft_fail:
-          - exit_status: 24
+        retry:
+          automatic:
+            - exit_status: 24
 
       - label: "🛠 Codegen "
         key: "apple_codegen"
@@ -37,8 +38,9 @@ steps:
           os: "macOS"
         artifact_paths:
           - "missing_translations.txt"
-        soft_fail:
-          - exit_status: 24
+        retry:
+          automatic:
+            - exit_status: 24
 
       - label: "🔬 Test "
         key: "apple_test"
@@ -49,8 +51,9 @@ steps:
           - "flutter test"
         agents:
           os: "macOS"
-        soft_fail:
-          - exit_status: 24
+        retry:
+          automatic:
+            - exit_status: 24
 
   #################
 
@@ -64,8 +67,9 @@ steps:
       - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
     agents:
       os: "macOS"
-    soft_fail:
-      - exit_status: 24
+    retry:
+      automatic:
+        - exit_status: 24
 
   #################
 
@@ -84,8 +88,9 @@ steps:
           - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
         agents:
           os: "macOS"
-        soft_fail:
-          - exit_status: 24
+        retry:
+          automatic:
+            - exit_status: 24
 
       - label: "📱🚀 iOS fastlane TestFlight "
         key: "ios_fastlane_testflight"
@@ -96,8 +101,9 @@ steps:
           - "make ios_fastlane_upload"
         agents:
           os: "macOS"
-        soft_fail:
-          - exit_status: 24
+        retry:
+          automatic:
+            - exit_status: 24
 
   #################
 
@@ -111,8 +117,9 @@ steps:
       - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
     agents:
       os: "macOS"
-    soft_fail:
-      - exit_status: 24
+    retry:
+      automatic:
+        - exit_status: 24
 
   #################
 
@@ -131,8 +138,9 @@ steps:
           - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
         agents:
           os: "macOS"
-        soft_fail:
-          - exit_status: 24
+        retry:
+          automatic:
+            - exit_status: 24
 
       - label: ":mac: 🚀 fastlane TestFlight "
         key: "macos_fastlane_testflight"
@@ -143,8 +151,9 @@ steps:
           - "make macos_fastlane_upload"
         agents:
           os: "macOS"
-        soft_fail:
-          - exit_status: 24
+        retry:
+          automatic:
+            - exit_status: 24
 
   #################
 
@@ -210,8 +219,9 @@ steps:
           - "gh release upload ${BUILDKITE_BRANCH} build/export/*.dmg"
         agents:
           os: "macOS"
-        soft_fail:
-          - exit_status: 24
+        retry:
+          automatic:
+            - exit_status: 24
 
   #################
 
@@ -225,8 +235,9 @@ steps:
       - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
     agents:
       os: "macOS"
-    soft_fail:
-      - exit_status: 24
+    retry:
+      automatic:
+        - exit_status: 24
 
   #################
 
@@ -247,8 +258,9 @@ steps:
           - "rsync -ar --exclude 'build/ios' --exclude 'build/macos' ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
         agents:
           os: "macOS"
-        soft_fail:
-          - exit_status: 24
+        retry:
+          automatic:
+            - exit_status: 24
 
       - label: ":android: 🚀 publish :github: Prerelease "
         key: "android_github_prerelease"
@@ -261,5 +273,6 @@ steps:
           - "gh release upload ${BUILDKITE_BRANCH} build/app/outputs/bundle/release/app-release.aab"
         agents:
           os: "macOS"
-        soft_fail:
-          - exit_status: 24
+        retry:
+          automatic:
+            - exit_status: 24

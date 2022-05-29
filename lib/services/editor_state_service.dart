@@ -1,16 +1,19 @@
 import 'dart:async';
 
 import 'package:easy_debounce/easy_debounce.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 
 class EditorStateService {
+  final JournalDb _journalDb = getIt<JournalDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   final EditorDb _editorDb = getIt<EditorDb>();
 
@@ -26,11 +29,15 @@ class EditorStateService {
     List<EditorDraftState> drafts = await _editorDb.allDrafts().get();
 
     for (EditorDraftState draft in drafts) {
-      editorStateById[draft.entryId] = draft.delta;
+      JournalDbEntity? entity = await _journalDb.entityById(draft.entryId);
+
+      if (entity?.updatedAt == draft.lastSaved) {
+        editorStateById[draft.entryId] = draft.delta;
+      }
     }
   }
 
-  Stream<bool> getUnsavedStream(String? id) {
+  Stream<bool> getUnsavedStream(String? id, DateTime lastSaved) {
     StreamController<bool> unsavedStreamController = StreamController<bool>();
 
     if (id != null) {
@@ -42,7 +49,9 @@ class EditorStateService {
 
       unsavedStreamById[id] = unsavedStreamController;
 
-      _editorDb.getLatestDraft(id).then((EditorDraftState? value) {
+      _editorDb
+          .getLatestDraft(id, lastSaved: lastSaved)
+          .then((EditorDraftState? value) {
         if (value != null) {
           editorStateById[id] = value.delta;
           unsavedStreamController.add(editorStateById[id] != null);
@@ -74,22 +83,29 @@ class EditorStateService {
     Delta delta = deltaFromController(controller);
     String json = quillJsonFromDelta(delta);
     editorStateById[id] = json;
+    selectionById.remove(id);
 
     StreamController<bool>? unsavedStreamController = unsavedStreamById[id];
     if (unsavedStreamController != null) {
       unsavedStreamController.add(true);
     }
 
-    EasyDebounce.debounce(
-      'tempSaveDelta-$id',
-      const Duration(seconds: 2),
-      () {
+    void persistDraftState() {
+      String? latest = editorStateById[id];
+
+      if (latest != null) {
         _editorDb.insertDraftState(
           entryId: id,
           lastSaved: lastSaved,
-          draftDeltaJson: json,
+          draftDeltaJson: latest,
         );
-      },
+      }
+    }
+
+    EasyDebounce.debounce(
+      'persistDraftState-$id',
+      const Duration(seconds: 2),
+      persistDraftState,
     );
   }
 
@@ -98,8 +114,8 @@ class EditorStateService {
     required DateTime lastSaved,
     required QuillController controller,
   }) async {
-    selectionById.remove(id);
-    EasyDebounce.cancel('tempSaveDelta-$id');
+    saveSelection(id, controller.selection);
+    EasyDebounce.cancel('persistDraftState-$id');
     EntryText entryText = entryTextFromController(controller);
     await _persistenceLogic.updateJournalEntityText(id, entryText);
     await _editorDb.setDraftSaved(entryId: id, lastSaved: lastSaved);
@@ -119,7 +135,8 @@ class EditorStateService {
     required QuillController controller,
     required TaskData taskData,
   }) async {
-    EasyDebounce.cancel('tempSaveDelta-$id');
+    saveSelection(id, controller.selection);
+    EasyDebounce.cancel('persistDraftState-$id');
 
     _persistenceLogic.updateTask(
       entryText: entryTextFromController(controller),

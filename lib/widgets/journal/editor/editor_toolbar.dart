@@ -11,6 +11,7 @@ class ToolbarWidget extends StatelessWidget {
   final LinkService linkService = getIt<LinkService>();
   final QuillController controller;
   final double toolbarIconSize;
+  final DateTime lastSaved;
   final String? id;
   final Function saveFn;
   final WrapAlignment toolbarIconAlignment = WrapAlignment.start;
@@ -19,6 +20,7 @@ class ToolbarWidget extends StatelessWidget {
   ToolbarWidget({
     Key? key,
     required this.id,
+    required this.lastSaved,
     required this.controller,
     required this.saveFn,
     this.toolbarIconSize = 20.0,
@@ -38,6 +40,7 @@ class ToolbarWidget extends StatelessWidget {
       children: [
         SaveButton(
           id: id,
+          lastSaved: lastSaved,
           toolbarIconSize: toolbarIconSize,
           localizations: localizations,
           saveFn: saveFn,
@@ -128,12 +131,14 @@ class SaveButton extends StatelessWidget {
   SaveButton({
     Key? key,
     required this.id,
+    required this.lastSaved,
     required this.toolbarIconSize,
     required this.localizations,
     required this.saveFn,
   }) : super(key: key);
 
   final String? id;
+  final DateTime lastSaved;
   final double toolbarIconSize;
   final AppLocalizations localizations;
   final Function saveFn;
@@ -141,7 +146,7 @@ class SaveButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<bool>(
-        stream: editorStateService.getUnsavedStream(id),
+        stream: editorStateService.getUnsavedStream(id, lastSaved),
         builder: (context, snapshot) {
           bool unsaved = snapshot.data ?? false;
           return IconButton(

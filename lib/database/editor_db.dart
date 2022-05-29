@@ -49,12 +49,15 @@ class EditorDb extends _$EditorDb {
         .write(const EditorDraftsCompanion(status: Value('SAVED')));
   }
 
-  Future<EditorDraftState?> getLatestDraft(String? entryId) async {
+  Future<EditorDraftState?> getLatestDraft(
+    String? entryId, {
+    required DateTime lastSaved,
+  }) async {
     if (entryId == null) {
       return null;
     }
 
-    List<EditorDraftState> res = await latestDraft(entryId).get();
+    List<EditorDraftState> res = await latestDraft(entryId, lastSaved).get();
 
     if (res.isNotEmpty) {
       return res.first;
