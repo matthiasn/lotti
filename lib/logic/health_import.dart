@@ -4,9 +4,10 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/widgets.dart';
-// import 'package:flutter_health_fit/flutter_health_fit.dart';
-// import 'package:flutter_health_fit/workout_sample.dart';
+import 'package:flutter_health_fit/flutter_health_fit.dart';
+import 'package:flutter_health_fit/workout_sample.dart';
 import 'package:health/health.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -219,24 +220,24 @@ class HealthImport {
         loggingDb.startTransaction('getActivityHealthData()', 'task');
     debugPrint('getWorkoutsHealthData $dateFrom - $dateTo');
 
-    // List<WorkoutSample>? workouts =
-    //     await FlutterHealthFit().getWorkoutsBySegment(
-    //   dateFrom.millisecondsSinceEpoch,
-    //   dateToOrNow.millisecondsSinceEpoch,
-    // );
-    //
-    // workouts?.forEach((WorkoutSample workoutSample) async {
-    //   WorkoutData workoutData = WorkoutData(
-    //     dateFrom: workoutSample.start,
-    //     dateTo: workoutSample.end,
-    //     distance: workoutSample.distance,
-    //     energy: workoutSample.energy,
-    //     source: workoutSample.source,
-    //     workoutType: workoutSample.type.name,
-    //     id: workoutSample.id,
-    //   );
-    //   await persistenceLogic.createWorkoutEntry(workoutData);
-    // });
+    List<WorkoutSample>? workouts =
+        await FlutterHealthFit().getWorkoutsBySegment(
+      dateFrom.millisecondsSinceEpoch,
+      dateToOrNow.millisecondsSinceEpoch,
+    );
+
+    workouts?.forEach((WorkoutSample workoutSample) async {
+      WorkoutData workoutData = WorkoutData(
+        dateFrom: workoutSample.start,
+        dateTo: workoutSample.end,
+        distance: workoutSample.distance,
+        energy: workoutSample.energy,
+        source: workoutSample.source,
+        workoutType: workoutSample.type.name,
+        id: workoutSample.id,
+      );
+      await persistenceLogic.createWorkoutEntry(workoutData);
+    });
 
     await transaction.finish();
   }

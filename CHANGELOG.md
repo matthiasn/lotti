@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Bring back workout import
+
+## [0.8.20] - 2022-05-28
+### Fixed:
 - Editor crashes
 
 ## [0.8.19] - 2022-05-25
