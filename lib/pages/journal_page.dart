@@ -138,9 +138,10 @@ class _JournalPageState extends State<JournalPage> {
   }
 
   Widget buildFloatingSearchBar() {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     final isPortrait =
         MediaQuery.of(context).orientation == Orientation.portrait;
-
     double portraitWidth = MediaQuery.of(context).size.width * 0.88;
 
     return FloatingSearchBar(
@@ -176,101 +177,13 @@ class _JournalPageState extends State<JournalPage> {
           showIfClosed: false,
         ),
       ],
-      builder: (context, transition) {
-        AppLocalizations localizations = AppLocalizations.of(context)!;
-
-        return Padding(
-          padding: const EdgeInsets.only(
-            top: 2.0,
-            bottom: 8.0,
-            left: 0.0,
-            right: 4.0,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Visibility(
-                    visible: showPrivateEntriesSwitch,
-                    child: Row(
-                      children: [
-                        Text(
-                          localizations.journalPrivateTooltip,
-                          style: TextStyle(color: AppColors.entryTextColor),
-                        ),
-                        CupertinoSwitch(
-                          value: privateEntriesOnly,
-                          activeColor: AppColors.private,
-                          onChanged: (bool value) {
-                            setState(() {
-                              privateEntriesOnly = value;
-                              resetStream();
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(
-                    width: 16,
-                  ),
-                  Text(
-                    localizations.journalFavoriteTooltip,
-                    style: TextStyle(color: AppColors.entryTextColor),
-                  ),
-                  CupertinoSwitch(
-                    value: starredEntriesOnly,
-                    activeColor: AppColors.starredGold,
-                    onChanged: (bool value) {
-                      setState(() {
-                        starredEntriesOnly = value;
-                        resetStream();
-                      });
-                    },
-                  ),
-                  const SizedBox(
-                    width: 16,
-                  ),
-                  Text(
-                    localizations.journalFlaggedTooltip,
-                    style: TextStyle(color: AppColors.entryTextColor),
-                  ),
-                  CupertinoSwitch(
-                    value: flaggedEntriesOnly,
-                    activeColor: AppColors.starredGold,
-                    onChanged: (bool value) {
-                      setState(() {
-                        flaggedEntriesOnly = value;
-                        resetStream();
-                      });
-                    },
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    '_slideshow',
-                    style: TextStyle(color: AppColors.entryTextColor),
-                  ),
-                  CupertinoSwitch(
-                    value: showSlideshow,
-                    activeColor: AppColors.starredGold,
-                    onChanged: (bool value) {
-                      setState(() {
-                        showSlideshow = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              SelectedTagsWidget(
-                removeTag: removeTag,
-                tagIds: tagIds.toList(),
+              const SizedBox(
+                height: 60,
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
@@ -329,6 +242,106 @@ class _JournalPageState extends State<JournalPage> {
                   ],
                 ),
               ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Visibility(
+                    visible: showPrivateEntriesSwitch,
+                    child: Row(
+                      children: [
+                        Text(
+                          localizations.journalPrivateTooltip,
+                          style: TextStyle(color: AppColors.entryTextColor),
+                        ),
+                        CupertinoSwitch(
+                          value: privateEntriesOnly,
+                          activeColor: AppColors.private,
+                          onChanged: (bool value) {
+                            setState(() {
+                              privateEntriesOnly = value;
+                              resetStream();
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 16,
+                  ),
+                  Text(
+                    localizations.journalFavoriteTooltip,
+                    style: TextStyle(color: AppColors.entryTextColor),
+                  ),
+                  CupertinoSwitch(
+                    value: starredEntriesOnly,
+                    activeColor: AppColors.starredGold,
+                    onChanged: (bool value) {
+                      setState(() {
+                        starredEntriesOnly = value;
+                        resetStream();
+                      });
+                    },
+                  ),
+                  const SizedBox(
+                    width: 16,
+                  ),
+                  Text(
+                    localizations.journalFlaggedTooltip,
+                    style: TextStyle(color: AppColors.entryTextColor),
+                  ),
+                  CupertinoSwitch(
+                    value: flaggedEntriesOnly,
+                    activeColor: AppColors.starredGold,
+                    onChanged: (bool value) {
+                      setState(() {
+                        flaggedEntriesOnly = value;
+                        resetStream();
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+              SelectedTagsWidget(
+                removeTag: removeTag,
+                tagIds: tagIds.toList(),
+              ),
+            ],
+          ).asGlass(),
+        ],
+      ),
+      builder: (context, transition) {
+        return Padding(
+          padding: const EdgeInsets.only(
+            top: 2.0,
+            bottom: 8.0,
+            left: 0.0,
+            right: 4.0,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // TODO: fix or remove
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.end,
+              //   children: [
+              //     Text(
+              //       '_slideshow',
+              //       style: TextStyle(color: AppColors.entryTextColor),
+              //     ),
+              //     CupertinoSwitch(
+              //       value: showSlideshow,
+              //       activeColor: AppColors.starredGold,
+              //       onChanged: (bool value) {
+              //         setState(() {
+              //           showSlideshow = value;
+              //         });
+              //       },
+              //     ),
+              //   ],
+              // ),
               StreamBuilder<List<TagEntity>>(
                 stream: matchingTagsController.stream,
                 builder: (
@@ -396,7 +409,7 @@ class _JournalPageState extends State<JournalPage> {
                           margin: const EdgeInsets.symmetric(horizontal: 8),
                           child: ListView(
                             children: [
-                              const SizedBox(height: 60),
+                              const SizedBox(height: 160),
                               ...List.generate(
                                 items.length,
                                 (int index) {

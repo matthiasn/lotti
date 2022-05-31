@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Improve Search Header in Journal
+
+## [0.8.22] - 2022-05-31
+### Changed:
 - Show open, groomed & in-progress tasks by default
 - Remove AppBar in Journal
 - Show all types in Journal by default
