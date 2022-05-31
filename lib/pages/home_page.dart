@@ -27,20 +27,13 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<ConfigFlag>>(
-        stream: _db.watchConfigFlags(),
+    return StreamBuilder<bool>(
+        stream: _db.watchConfigFlag('show_tasks_tab'),
         builder: (context, snapshot) {
-          bool showTasks = false;
-          List<ConfigFlag>? flags = snapshot.data;
+          bool? showTasks = snapshot.data;
 
-          if (flags == null) {
+          if (showTasks == null) {
             return const CircularProgressIndicator();
-          }
-
-          for (ConfigFlag configFlag in flags) {
-            if (configFlag.name == 'show_tasks_tab') {
-              showTasks = configFlag.status;
-            }
           }
 
           return AutoTabsScaffold(
