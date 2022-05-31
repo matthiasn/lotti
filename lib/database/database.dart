@@ -477,6 +477,13 @@ class JournalDb extends _$JournalDb {
         status: true,
       ),
     );
+    insertFlagIfNotExists(
+      ConfigFlag(
+        name: 'show_tasks_tab',
+        description: 'Show Tasks tab?',
+        status: false,
+      ),
+    );
     if (Platform.isMacOS) {
       insertFlagIfNotExists(
         ConfigFlag(
