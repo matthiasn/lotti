@@ -1,60 +1,45 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 
-class TasksAppBar extends StatelessWidget with PreferredSizeWidget {
-  TasksAppBar({
+class TaskCounts extends StatelessWidget {
+  const TaskCounts({
     Key? key,
   }) : super(key: key);
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
 
-    return AppBar(
-      backgroundColor: AppColors.headerBgColor,
-      title: Column(
+    return Container(
+      padding: const EdgeInsets.only(bottom: 4),
+      width: MediaQuery.of(context).size.width,
+      child: Wrap(
+        alignment: WrapAlignment.center,
         children: [
-          Text(
-            'Tasks',
-            style: appBarTextStyle.copyWith(fontWeight: FontWeight.w300),
+          TasksCountWidget(
+            status: 'OPEN',
+            label: localizations.taskStatusOpen,
           ),
-          Wrap(
-            alignment: WrapAlignment.center,
-            children: [
-              TasksCountWidget(
-                status: 'OPEN',
-                label: localizations.taskStatusOpen,
-              ),
-              TasksCountWidget(
-                status: 'IN PROGRESS',
-                label: localizations.taskStatusInProgress,
-              ),
-              TasksCountWidget(
-                status: 'ON HOLD',
-                label: localizations.taskStatusOnHold,
-              ),
-              TasksCountWidget(
-                status: 'BLOCKED',
-                label: localizations.taskStatusBlocked,
-              ),
-              TasksCountWidget(
-                status: 'DONE',
-                label: localizations.taskStatusDone,
-              ),
-            ],
+          TasksCountWidget(
+            status: 'IN PROGRESS',
+            label: localizations.taskStatusInProgress,
+          ),
+          TasksCountWidget(
+            status: 'ON HOLD',
+            label: localizations.taskStatusOnHold,
+          ),
+          TasksCountWidget(
+            status: 'BLOCKED',
+            label: localizations.taskStatusBlocked,
+          ),
+          TasksCountWidget(
+            status: 'DONE',
+            label: localizations.taskStatusDone,
           ),
         ],
-      ),
-      centerTitle: true,
-      leading: AutoLeadingButton(
-        color: AppColors.entryTextColor,
       ),
     );
   }

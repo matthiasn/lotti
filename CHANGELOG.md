@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Improve Search Header in Tasks
+
+## [0.8.23] - 2022-05-31
+### Changed:
 - Improve Search Header in Journal
 
 ## [0.8.22] - 2022-05-31
