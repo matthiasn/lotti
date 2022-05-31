@@ -31,8 +31,12 @@ class HomePage extends StatelessWidget {
         stream: _db.watchConfigFlags(),
         builder: (context, snapshot) {
           bool showTasks = false;
+          List<ConfigFlag>? flags = snapshot.data;
 
-          List<ConfigFlag> flags = snapshot.data ?? [];
+          if (flags == null) {
+            return const CircularProgressIndicator();
+          }
+
           for (ConfigFlag configFlag in flags) {
             if (configFlag.name == 'show_tasks_tab') {
               showTasks = configFlag.status;
