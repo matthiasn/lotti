@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Show open, groomed & in-progress tasks by default
 - Remove AppBar in Journal
+- Show all types in Journal by default
 
 ## [0.8.20] - 2022-05-28
 ### Fixed:

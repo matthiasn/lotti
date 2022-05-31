@@ -67,6 +67,9 @@ class _JournalPageState extends State<JournalPage> {
     'JournalImage',
     'SurveyEntry',
     'Task',
+    'QuantitativeEntry',
+    'MeasurementEntry',
+    'WorkoutEntry',
   ];
   late Set<String> types;
   Set<String> tagIds = {};
