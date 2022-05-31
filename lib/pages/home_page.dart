@@ -7,6 +7,7 @@ import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/app_bar_version.dart';
 import 'package:lotti/widgets/app_bar/dashboard_app_bar.dart';
+import 'package:lotti/widgets/app_bar/empty_app_bar.dart';
 import 'package:lotti/widgets/app_bar/task_app_bar.dart';
 import 'package:lotti/widgets/app_bar/tasks_app_bar.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
@@ -44,6 +45,10 @@ class HomePage extends StatelessWidget {
 
         if (topRouteName == TasksRoute.name) {
           return TasksAppBar();
+        }
+
+        if (topRouteName == JournalRoute.name) {
+          return EmptyAppBar();
         }
 
         return const VersionAppBar(title: 'Lotti');

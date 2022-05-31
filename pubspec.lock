@@ -301,14 +301,14 @@ packages:
       name: connectivity_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.0"
+    version: "2.3.1"
   connectivity_plus_linux:
     dependency: transitive
     description:
       name: connectivity_plus_linux
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.3.0"
+    version: "1.3.1"
   connectivity_plus_macos:
     dependency: transitive
     description:
@@ -322,14 +322,14 @@ packages:
       name: connectivity_plus_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.0"
+    version: "1.2.1"
   connectivity_plus_web:
     dependency: transitive
     description:
       name: connectivity_plus_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.0"
+    version: "1.2.1"
   connectivity_plus_windows:
     dependency: transitive
     description:
@@ -343,7 +343,7 @@ packages:
       name: convert
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.2"
   coverage:
     dependency: transitive
     description:
@@ -773,7 +773,7 @@ packages:
       name: flutter_native_splash
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.1"
+    version: "2.2.2"
   flutter_native_timezone:
     dependency: "direct main"
     description:
@@ -794,7 +794,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.2"
+    version: "5.0.3"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -956,7 +956,7 @@ packages:
       name: getwidget
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.5"
+    version: "2.1.0"
   glados:
     dependency: "direct dev"
     description:
@@ -1544,14 +1544,14 @@ packages:
       name: photo_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.1"
+    version: "2.1.2"
   photo_view:
     dependency: "direct main"
     description:
       name: photo_view
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.13.0"
+    version: "0.14.0"
   pigment:
     dependency: transitive
     description:
@@ -1690,14 +1690,14 @@ packages:
       name: rxdart
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.27.3"
+    version: "0.27.4"
   share_plus:
     dependency: "direct main"
     description:
       name: share_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.4"
+    version: "4.0.5"
   share_plus_linux:
     dependency: transitive
     description:
@@ -1711,28 +1711,28 @@ packages:
       name: share_plus_macos
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.0"
+    version: "3.0.1"
   share_plus_platform_interface:
     dependency: transitive
     description:
       name: share_plus_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.2"
+    version: "3.0.3"
   share_plus_web:
     dependency: transitive
     description:
       name: share_plus_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.0"
+    version: "3.0.1"
   share_plus_windows:
     dependency: transitive
     description:
       name: share_plus_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.0"
+    version: "3.0.1"
   shelf:
     dependency: transitive
     description:
@@ -1905,21 +1905,21 @@ packages:
       name: syncfusion_flutter_calendar
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.1.57"
+    version: "20.1.58"
   syncfusion_flutter_core:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.1.57"
+    version: "20.1.58"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.1.57"
+    version: "20.1.58"
   synchronized:
     dependency: transitive
     description:

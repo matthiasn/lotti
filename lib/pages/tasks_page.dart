@@ -44,6 +44,8 @@ class _TasksPageState extends State<TasksPage> {
   ];
 
   Set<String> selectedStatuses = {
+    'OPEN',
+    'GROOMED',
     'IN PROGRESS',
   };
 
