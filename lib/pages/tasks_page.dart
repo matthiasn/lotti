@@ -197,7 +197,12 @@ class _TasksPageState extends State<TasksPage> {
                 tagIds: tagIds.toList(),
               ),
             ],
-          ).asGlass(),
+          ).asGlass(
+            clipBorderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(8),
+              bottomRight: Radius.circular(8),
+            ),
+          ),
         ],
       ),
       physics: const BouncingScrollPhysics(),
@@ -290,14 +295,14 @@ class _TasksPageState extends State<TasksPage> {
                 } else {
                   List<JournalEntity> items = snapshot.data!;
                   double screenWidth = MediaQuery.of(context).size.width;
-                  double searchHeaderHeight = 120;
+                  double searchHeaderHeight = 136;
 
                   if (tagIds.toList().isNotEmpty) {
-                    searchHeaderHeight += 40;
+                    searchHeaderHeight += 24;
                   }
 
                   if (screenWidth < 640) {
-                    searchHeaderHeight += 48;
+                    searchHeaderHeight += 32;
                   }
 
                   return Stack(

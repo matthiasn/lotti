@@ -243,7 +243,7 @@ class _JournalPageState extends State<JournalPage> {
                 ),
               ),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   Visibility(
                     visible: showPrivateEntriesSwitch,
@@ -266,9 +266,6 @@ class _JournalPageState extends State<JournalPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(
-                    width: 16,
-                  ),
                   Text(
                     localizations.journalFavoriteTooltip,
                     style: TextStyle(color: AppColors.entryTextColor),
@@ -282,9 +279,6 @@ class _JournalPageState extends State<JournalPage> {
                         resetStream();
                       });
                     },
-                  ),
-                  const SizedBox(
-                    width: 16,
                   ),
                   Text(
                     localizations.journalFlaggedTooltip,
@@ -300,7 +294,6 @@ class _JournalPageState extends State<JournalPage> {
                       });
                     },
                   ),
-                  const SizedBox(width: 8),
                 ],
               ),
               SelectedTagsWidget(
@@ -308,7 +301,12 @@ class _JournalPageState extends State<JournalPage> {
                 tagIds: tagIds.toList(),
               ),
             ],
-          ).asGlass(),
+          ).asGlass(
+            clipBorderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(8),
+              bottomRight: Radius.circular(8),
+            ),
+          ),
         ],
       ),
       builder: (context, transition) {
