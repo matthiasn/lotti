@@ -2,6 +2,7 @@ IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
 IOS_EXPORT_PATH = ./build/ios/export
 MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
 MACOS_EXPORT_PATH = ./build/macos/export
+LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 
 .PHONY: test
 test:
@@ -182,6 +183,11 @@ linux: clean_test linux_build
 .PHONY: windows
 windows: clean_test
 	flutter build windows
+
+.PHONY: tag_push
+tag_push:
+	git tag ${LOTTI_VERSION}
+	git push origin ${LOTTI_VERSION}
 
 .PHONY: all
 all: ios macos
