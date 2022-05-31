@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags_search_widget.dart';
+import 'package:lotti/widgets/misc/tasks_counts.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 class TasksPage extends StatefulWidget {
@@ -104,6 +104,18 @@ class _TasksPageState extends State<TasksPage> {
 
     double portraitWidth = MediaQuery.of(context).size.width * 0.88;
 
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
+    final Map<String, String> localizationLookup = {
+      'OPEN': localizations.taskStatusOpen,
+      'GROOMED': localizations.taskStatusGroomed,
+      'IN PROGRESS': localizations.taskStatusInProgress,
+      'BLOCKED': localizations.taskStatusBlocked,
+      'ON HOLD': localizations.taskStatusOnHold,
+      'DONE': localizations.taskStatusDone,
+      'REJECTED': localizations.taskStatusRejected,
+    };
+
     return FloatingSearchBar(
       hint: AppLocalizations.of(context)!.tasksSearchHint,
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
@@ -118,69 +130,17 @@ class _TasksPageState extends State<TasksPage> {
         fontFamily: 'Lato',
         fontSize: 24,
       ),
-      physics: const BouncingScrollPhysics(),
-      borderRadius: BorderRadius.circular(8.0),
-      axisAlignment: isPortrait ? 0.0 : -1.0,
-      openAxisAlignment: 0.0,
-      margins: EdgeInsets.only(top: 8.0, left: isDesktop ? 12.0 : 0.0),
-      width: isPortrait ? portraitWidth : 500,
-      onQueryChanged: (query) async {
-        List<TagEntity> res = await _db.getMatchingTags(
-          query.trim(),
-          inactive: true,
-        );
-        matchingTagsController.add(res);
-      },
-      transition: SlideFadeFloatingSearchBarTransition(),
-      actions: [
-        FloatingSearchBarAction.searchToClear(
-          showIfClosed: false,
-        ),
-      ],
-      builder: (context, transition) {
-        AppLocalizations localizations = AppLocalizations.of(context)!;
-
-        final Map<String, String> localizationLookup = {
-          'OPEN': localizations.taskStatusOpen,
-          'GROOMED': localizations.taskStatusGroomed,
-          'IN PROGRESS': localizations.taskStatusInProgress,
-          'BLOCKED': localizations.taskStatusBlocked,
-          'ON HOLD': localizations.taskStatusOnHold,
-          'DONE': localizations.taskStatusDone,
-          'REJECTED': localizations.taskStatusRejected,
-        };
-        return Padding(
-          padding: const EdgeInsets.only(
-            top: 2.0,
-            bottom: 8.0,
-            left: 0.0,
-            right: 4.0,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'Starred: ',
-                    style: TextStyle(color: AppColors.entryTextColor),
-                  ),
-                  CupertinoSwitch(
-                    value: starredEntriesOnly,
-                    activeColor: AppColors.starredGold,
-                    onChanged: (bool value) {
-                      setState(() {
-                        starredEntriesOnly = value;
-                        resetStream();
-                      });
-                    },
-                  ),
-                ],
+              const TaskCounts(),
+              const SizedBox(
+                height: 54,
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 16, bottom: 16),
+                padding: const EdgeInsets.only(left: 16, bottom: 8),
                 child: Wrap(
                   spacing: 4,
                   runSpacing: 4,
@@ -236,6 +196,41 @@ class _TasksPageState extends State<TasksPage> {
                 removeTag: removeTag,
                 tagIds: tagIds.toList(),
               ),
+            ],
+          ).asGlass(),
+        ],
+      ),
+      physics: const BouncingScrollPhysics(),
+      borderRadius: BorderRadius.circular(8.0),
+      axisAlignment: isPortrait ? 0.0 : -1.0,
+      openAxisAlignment: 0.0,
+      margins: EdgeInsets.only(top: 20.0, left: isDesktop ? 12.0 : 0.0),
+      width: isPortrait ? portraitWidth : 500,
+      onQueryChanged: (query) async {
+        List<TagEntity> res = await _db.getMatchingTags(
+          query.trim(),
+          inactive: true,
+        );
+        matchingTagsController.add(res);
+      },
+      transition: SlideFadeFloatingSearchBarTransition(),
+      actions: [
+        FloatingSearchBarAction.searchToClear(
+          showIfClosed: false,
+        ),
+      ],
+      builder: (context, transition) {
+        return Padding(
+          padding: const EdgeInsets.only(
+            top: 2.0,
+            bottom: 8.0,
+            left: 0.0,
+            right: 4.0,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               StreamBuilder<List<TagEntity>>(
                 stream: matchingTagsController.stream,
                 builder: (
@@ -294,6 +289,16 @@ class _TasksPageState extends State<TasksPage> {
                   return Container();
                 } else {
                   List<JournalEntity> items = snapshot.data!;
+                  double screenWidth = MediaQuery.of(context).size.width;
+                  double searchHeaderHeight = 120;
+
+                  if (tagIds.toList().isNotEmpty) {
+                    searchHeaderHeight += 40;
+                  }
+
+                  if (screenWidth < 640) {
+                    searchHeaderHeight += 48;
+                  }
 
                   return Stack(
                     children: [
@@ -303,9 +308,7 @@ class _TasksPageState extends State<TasksPage> {
                           margin: const EdgeInsets.symmetric(horizontal: 8),
                           child: ListView(
                             children: [
-                              const SizedBox(
-                                height: 60,
-                              ),
+                              SizedBox(height: searchHeaderHeight),
                               ...List.generate(
                                 items.length,
                                 (int index) {
