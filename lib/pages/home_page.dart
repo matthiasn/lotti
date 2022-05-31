@@ -1,6 +1,8 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox_badge.dart';
 import 'package:lotti/routes/observer.dart';
 import 'package:lotti/routes/router.gr.dart';
@@ -15,7 +17,9 @@ import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+  final JournalDb _db = getIt<JournalDb>();
+
+  HomePage({Key? key}) : super(key: key);
 
   void onNavigateCallback(RouteMatch<dynamic> route, bool initial) {
     debugPrint('onNavigateCallback $route $initial');
@@ -23,115 +27,126 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AutoTabsScaffold(
-      lazyLoad: false,
-      animationDuration: const Duration(milliseconds: 500),
-      appBarBuilder: (context, TabsRouter tabsRouter) {
-        final String topRouteName = tabsRouter.topRoute.name;
+    return StreamBuilder<bool>(
+        stream: _db.watchConfigFlag('show_tasks_tab'),
+        builder: (context, snapshot) {
+          bool? showTasks = snapshot.data;
 
-        if (topRouteName == DashboardRoute.name) {
-          return DashboardAppBar(
-            dashboardId:
-                tabsRouter.topRoute.pathParams.getString('dashboardId'),
-          );
-        }
+          if (showTasks == null) {
+            return const CircularProgressIndicator();
+          }
 
-        if (topRouteName == EntryDetailRoute.name) {
-          return TaskAppBar(
-            itemId: tabsRouter.topRoute.pathParams.getString('itemId'),
-          );
-        }
+          return AutoTabsScaffold(
+            lazyLoad: false,
+            animationDuration: const Duration(milliseconds: 500),
+            appBarBuilder: (context, TabsRouter tabsRouter) {
+              final String topRouteName = tabsRouter.topRoute.name;
 
-        if ({TasksRoute.name, JournalRoute.name}.contains(topRouteName)) {
-          return EmptyAppBar();
-        }
+              if (topRouteName == DashboardRoute.name) {
+                return DashboardAppBar(
+                  dashboardId:
+                      tabsRouter.topRoute.pathParams.getString('dashboardId'),
+                );
+              }
 
-        return const VersionAppBar(title: 'Lotti');
-      },
-      builder: (context, child, _) {
-        return Container(
-          color: AppColors.bodyBgColor,
-          height: double.maxFinite,
-          width: double.maxFinite,
-          child: Stack(
-            children: [
-              child,
-              const TimeRecordingIndicator(),
-              const AudioRecordingIndicator(),
-            ],
-          ),
-        );
-      },
-      backgroundColor: AppColors.bodyBgColor,
-      routes: const [
-        JournalRouter(),
-        TasksRouter(),
-        DashboardsRouter(),
-        // TODO: bring back or remove
-        // MyDayRouter(),
-        SettingsRouter(),
-        //TutorialRouter(),
-      ],
-      bottomNavigationBuilder: (_, TabsRouter tabsRouter) {
-        final hideBottomNavRoutes = <String>{
-          DashboardRoute.name,
-          EntryDetailRoute.name,
-          LoggingRoute.name,
-          LogDetailRoute.name,
-          SyncAssistantRoute.name,
-        };
+              if (topRouteName == EntryDetailRoute.name) {
+                return TaskAppBar(
+                  itemId: tabsRouter.topRoute.pathParams.getString('itemId'),
+                );
+              }
 
-        if (hideBottomNavRoutes.contains(tabsRouter.topRoute.name)) {
-          return const SizedBox.shrink();
-        }
+              if ({TasksRoute.name, JournalRoute.name}.contains(topRouteName)) {
+                return EmptyAppBar();
+              }
 
-        return Container(
-          decoration: const BoxDecoration(
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                  color: Colors.black54,
-                  blurRadius: 8,
-                  offset: Offset(0.0, 0.75))
-            ],
-          ),
-          child: BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: AppColors.headerBgColor,
-            unselectedItemColor: AppColors.bottomNavIconUnselected,
-            selectedItemColor: AppColors.bottomNavIconSelected,
-            currentIndex: tabsRouter.activeIndex,
-            onTap: tabsRouter.setActiveIndex,
-            selectedFontSize: 18,
-            unselectedFontSize: 14,
-            items: [
-              BottomNavigationBarItem(
-                icon: FlaggedBadgeIcon(),
-                label: AppLocalizations.of(context)!.navTabTitleJournal,
-              ),
-              BottomNavigationBarItem(
-                icon: TasksBadgeIcon(),
-                label: AppLocalizations.of(context)!.navTabTitleTasks,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.lightbulb_outline),
-                label: AppLocalizations.of(context)!.navTabTitleInsights,
-              ),
-              // TODO: bring back or remove
-              // const BottomNavigationBarItem(
-              //   icon: Icon(Icons.calendar_today),
-              //   label: 'My Day',
-              // ),
-              BottomNavigationBarItem(
-                icon: OutboxBadgeIcon(
-                  icon: const Icon(Icons.settings_outlined),
+              return const VersionAppBar(title: 'Lotti');
+            },
+            builder: (context, child, _) {
+              return Container(
+                color: AppColors.bodyBgColor,
+                height: double.maxFinite,
+                width: double.maxFinite,
+                child: Stack(
+                  children: [
+                    child,
+                    const TimeRecordingIndicator(),
+                    const AudioRecordingIndicator(),
+                  ],
                 ),
-                label: AppLocalizations.of(context)!.navTabTitleSettings,
-              ),
+              );
+            },
+            backgroundColor: AppColors.bodyBgColor,
+            routes: [
+              const JournalRouter(),
+              if (showTasks) const TasksRouter(),
+              const DashboardsRouter(),
+              // TODO: bring back or remove
+              // MyDayRouter(),
+              const SettingsRouter(),
+              //TutorialRouter(),
             ],
-          ),
-        );
-      },
-      navigatorObservers: () => [NavObserver()],
-    );
+            bottomNavigationBuilder: (_, TabsRouter tabsRouter) {
+              final hideBottomNavRoutes = <String>{
+                DashboardRoute.name,
+                EntryDetailRoute.name,
+                LoggingRoute.name,
+                LogDetailRoute.name,
+                SyncAssistantRoute.name,
+              };
+
+              if (hideBottomNavRoutes.contains(tabsRouter.topRoute.name)) {
+                return const SizedBox.shrink();
+              }
+
+              return Container(
+                decoration: const BoxDecoration(
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                        color: Colors.black54,
+                        blurRadius: 8,
+                        offset: Offset(0.0, 0.75))
+                  ],
+                ),
+                child: BottomNavigationBar(
+                  type: BottomNavigationBarType.fixed,
+                  backgroundColor: AppColors.headerBgColor,
+                  unselectedItemColor: AppColors.bottomNavIconUnselected,
+                  selectedItemColor: AppColors.bottomNavIconSelected,
+                  currentIndex: tabsRouter.activeIndex,
+                  onTap: tabsRouter.setActiveIndex,
+                  selectedFontSize: 18,
+                  unselectedFontSize: 14,
+                  items: [
+                    BottomNavigationBarItem(
+                      icon: FlaggedBadgeIcon(),
+                      label: AppLocalizations.of(context)!.navTabTitleJournal,
+                    ),
+                    if (showTasks)
+                      BottomNavigationBarItem(
+                        icon: TasksBadgeIcon(),
+                        label: AppLocalizations.of(context)!.navTabTitleTasks,
+                      ),
+                    BottomNavigationBarItem(
+                      icon: const Icon(Icons.lightbulb_outline),
+                      label: AppLocalizations.of(context)!.navTabTitleInsights,
+                    ),
+                    // TODO: bring back or remove
+                    // const BottomNavigationBarItem(
+                    //   icon: Icon(Icons.calendar_today),
+                    //   label: 'My Day',
+                    // ),
+                    BottomNavigationBarItem(
+                      icon: OutboxBadgeIcon(
+                        icon: const Icon(Icons.settings_outlined),
+                      ),
+                      label: AppLocalizations.of(context)!.navTabTitleSettings,
+                    ),
+                  ],
+                ),
+              );
+            },
+            navigatorObservers: () => [NavObserver()],
+          );
+        });
   }
 }

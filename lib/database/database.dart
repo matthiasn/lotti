@@ -426,9 +426,9 @@ class JournalDb extends _$JournalDb {
     return listConfigFlags().get();
   }
 
-  Future<bool> getConfigFlag(String flagName) async {
+  bool findConfigFlag(String flagName, List<ConfigFlag> flags) {
     bool flag = false;
-    List<ConfigFlag> flags = await listConfigFlags().get();
+
     for (ConfigFlag configFlag in flags) {
       if (configFlag.name == flagName) {
         flag = configFlag.status;
@@ -436,6 +436,20 @@ class JournalDb extends _$JournalDb {
     }
 
     return flag;
+  }
+
+  Future<bool> getConfigFlag(String flagName) async {
+    List<ConfigFlag> flags = await listConfigFlags().get();
+    return findConfigFlag(flagName, flags);
+  }
+
+  Stream<bool> watchConfigFlag(String flagName) {
+    return listConfigFlags()
+        .watch()
+        .where(makeDuplicateFilter())
+        .map((List<ConfigFlag> flags) {
+      return findConfigFlag(flagName, flags);
+    });
   }
 
   Future<ConfigFlag?> getConfigFlagByName(String flagName) async {
@@ -475,6 +489,13 @@ class JournalDb extends _$JournalDb {
         name: 'hide_for_screenshot',
         description: 'Hide Lotti when taking screenshots?',
         status: true,
+      ),
+    );
+    insertFlagIfNotExists(
+      ConfigFlag(
+        name: 'show_tasks_tab',
+        description: 'Show Tasks tab?',
+        status: false,
       ),
     );
     if (Platform.isMacOS) {
