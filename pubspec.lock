@@ -669,6 +669,15 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "7.2.1"
+  flutter_health_fit:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "37afbc9"
+      resolved-ref: "37afbc9557d02aa22cd6398d53bcf735709fba28"
+      url: "https://github.com/matthiasn/flutter_health_fit.git"
+    source: git
+    version: "0.1.0"
   flutter_image_compress:
     dependency: "direct main"
     description:
@@ -1157,7 +1166,7 @@ packages:
       name: just_audio
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.21"
+    version: "0.9.24"
   just_audio_platform_interface:
     dependency: transitive
     description:
@@ -1458,7 +1467,7 @@ packages:
       name: path_provider_linux
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.6"
+    version: "2.1.7"
   path_provider_macos:
     dependency: transitive
     description:
@@ -1479,7 +1488,7 @@ packages:
       name: path_provider_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.6"
+    version: "2.0.7"
   pedantic:
     dependency: transitive
     description:
