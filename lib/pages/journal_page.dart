@@ -246,71 +246,69 @@ class _JournalPageState extends State<JournalPage> {
                   ],
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Visibility(
-                    visible: showPrivateEntriesSwitch,
-                    child: Row(
-                      children: [
-                        Text(
-                          localizations.journalPrivateTooltip,
-                          style: TextStyle(color: AppColors.entryTextColor),
-                        ),
-                        CupertinoSwitch(
-                          value: privateEntriesOnly,
-                          activeColor: AppColors.private,
-                          onChanged: (bool value) {
-                            setState(() {
-                              privateEntriesOnly = value;
-                              resetStream();
-                            });
-                          },
-                        ),
-                      ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Visibility(
+                      visible: showPrivateEntriesSwitch,
+                      child: Row(
+                        children: [
+                          Text(
+                            localizations.journalPrivateTooltip,
+                            style: TextStyle(color: AppColors.entryTextColor),
+                          ),
+                          CupertinoSwitch(
+                            value: privateEntriesOnly,
+                            activeColor: AppColors.private,
+                            onChanged: (bool value) {
+                              setState(() {
+                                privateEntriesOnly = value;
+                                resetStream();
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Text(
-                    localizations.journalFavoriteTooltip,
-                    style: TextStyle(color: AppColors.entryTextColor),
-                  ),
-                  CupertinoSwitch(
-                    value: starredEntriesOnly,
-                    activeColor: AppColors.starredGold,
-                    onChanged: (bool value) {
-                      setState(() {
-                        starredEntriesOnly = value;
-                        resetStream();
-                      });
-                    },
-                  ),
-                  Text(
-                    localizations.journalFlaggedTooltip,
-                    style: TextStyle(color: AppColors.entryTextColor),
-                  ),
-                  CupertinoSwitch(
-                    value: flaggedEntriesOnly,
-                    activeColor: AppColors.starredGold,
-                    onChanged: (bool value) {
-                      setState(() {
-                        flaggedEntriesOnly = value;
-                        resetStream();
-                      });
-                    },
-                  ),
-                ],
+                    Text(
+                      localizations.journalFavoriteTooltip,
+                      style: TextStyle(color: AppColors.entryTextColor),
+                    ),
+                    CupertinoSwitch(
+                      value: starredEntriesOnly,
+                      activeColor: AppColors.starredGold,
+                      onChanged: (bool value) {
+                        setState(() {
+                          starredEntriesOnly = value;
+                          resetStream();
+                        });
+                      },
+                    ),
+                    Text(
+                      localizations.journalFlaggedTooltip,
+                      style: TextStyle(color: AppColors.entryTextColor),
+                    ),
+                    CupertinoSwitch(
+                      value: flaggedEntriesOnly,
+                      activeColor: AppColors.starredGold,
+                      onChanged: (bool value) {
+                        setState(() {
+                          flaggedEntriesOnly = value;
+                          resetStream();
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
               SelectedTagsWidget(
                 removeTag: removeTag,
                 tagIds: tagIds.toList(),
               ),
             ],
-          ).asGlass(
-            clipBorderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(8),
-              bottomRight: Radius.circular(8),
-            ),
-          ),
+          ).asGlass(tintColor: Colors.black),
         ],
       ),
       builder: (context, transition) {
