@@ -84,18 +84,13 @@ class DashboardItemCard extends StatelessWidget {
             color: AppColors.entryTextColor,
           ),
         ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              itemName,
-              style: TextStyle(
-                color: AppColors.entryTextColor,
-                fontFamily: 'Oswald',
-                fontSize: 20.0,
-              ),
-            ),
-          ],
+        title: Text(
+          itemName,
+          style: TextStyle(
+            color: AppColors.entryTextColor,
+            fontFamily: 'Oswald',
+            fontSize: 20.0,
+          ),
         ),
         enabled: true,
       ),

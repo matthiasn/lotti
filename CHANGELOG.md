@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Beginnings of a Manual
+
+### Removed:
+- Default measurable types
+
+### Added:
 - AppBars with matching titles for dashboard and measurable data type management
 
 ## [0.8.27] - 2022-06-01
