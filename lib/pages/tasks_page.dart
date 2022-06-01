@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -135,6 +136,7 @@ class _TasksPageState extends State<TasksPage> {
         children: [
           Column(
             children: [
+              SizedBox(height: Platform.isIOS ? 40 : 0),
               const TaskCounts(),
               const SizedBox(
                 height: 54,
@@ -197,14 +199,22 @@ class _TasksPageState extends State<TasksPage> {
                 tagIds: tagIds.toList(),
               ),
             ],
-          ).asGlass(),
+          ).asGlass(
+            clipBorderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(8),
+              bottomRight: Radius.circular(8),
+            ),
+          ),
         ],
       ),
       physics: const BouncingScrollPhysics(),
       borderRadius: BorderRadius.circular(8.0),
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
-      margins: EdgeInsets.only(top: 20.0, left: isDesktop ? 12.0 : 0.0),
+      margins: EdgeInsets.only(
+        top: Platform.isIOS ? 60 : 20.0,
+        left: isDesktop ? 12.0 : 0.0,
+      ),
       width: isPortrait ? portraitWidth : 500,
       onQueryChanged: (query) async {
         List<TagEntity> res = await _db.getMatchingTags(
@@ -290,14 +300,18 @@ class _TasksPageState extends State<TasksPage> {
                 } else {
                   List<JournalEntity> items = snapshot.data!;
                   double screenWidth = MediaQuery.of(context).size.width;
-                  double searchHeaderHeight = 120;
+                  double searchHeaderHeight = 136;
 
                   if (tagIds.toList().isNotEmpty) {
-                    searchHeaderHeight += 40;
+                    searchHeaderHeight += 24;
                   }
 
                   if (screenWidth < 640) {
-                    searchHeaderHeight += 48;
+                    searchHeaderHeight += 32;
+                  }
+
+                  if (Platform.isIOS) {
+                    searchHeaderHeight += 40;
                   }
 
                   return Stack(
