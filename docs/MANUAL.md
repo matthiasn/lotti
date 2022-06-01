@@ -20,7 +20,8 @@ Name, description and unit type need to be filled out. There are different aggre
 - **Daily Max:** will result in a bar chart with the maximum value for a day, one per day (not currently implemented).
 - **Daily Average:** will result in a bar chart with the maximum value for a day, one per day (not currently implemented).
 
-Don
+Don't forget to save a new measurable data type. You won't be warned about losing unsaved work when navigating away. Of course users should be warned when navigating away. **Want to help?** See [#1009](https://github.com/matthiasn/lotti/issues/1009).
+
 
 ## Creating Dashboards
 
