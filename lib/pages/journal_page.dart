@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -162,7 +163,10 @@ class _JournalPageState extends State<JournalPage> {
       borderRadius: BorderRadius.circular(8.0),
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
-      margins: EdgeInsets.only(top: 8.0, left: isDesktop ? 12.0 : 0.0),
+      margins: EdgeInsets.only(
+        top: Platform.isIOS ? 48 : 8.0,
+        left: isDesktop ? 12.0 : 0.0,
+      ),
       width: isPortrait ? portraitWidth : 500,
       onQueryChanged: (query) async {
         List<TagEntity> res = await _db.getMatchingTags(
@@ -182,8 +186,8 @@ class _JournalPageState extends State<JournalPage> {
         children: [
           Column(
             children: [
-              const SizedBox(
-                height: 60,
+              SizedBox(
+                height: Platform.isIOS ? 100 : 60,
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
@@ -399,6 +403,21 @@ class _JournalPageState extends State<JournalPage> {
                 } else {
                   List<JournalEntity> items = snapshot.data!;
 
+                  double screenWidth = MediaQuery.of(context).size.width;
+                  double searchHeaderHeight = 136;
+
+                  if (tagIds.toList().isNotEmpty) {
+                    searchHeaderHeight += 24;
+                  }
+
+                  if (screenWidth < 640) {
+                    searchHeaderHeight += 32;
+                  }
+
+                  if (Platform.isIOS) {
+                    searchHeaderHeight += 40;
+                  }
+
                   return Stack(
                     children: [
                       Scaffold(
@@ -407,7 +426,7 @@ class _JournalPageState extends State<JournalPage> {
                           margin: const EdgeInsets.symmetric(horizontal: 8),
                           child: ListView(
                             children: [
-                              const SizedBox(height: 160),
+                              SizedBox(height: searchHeaderHeight),
                               ...List.generate(
                                 items.length,
                                 (int index) {
