@@ -301,7 +301,7 @@ packages:
       name: connectivity_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   connectivity_plus_linux:
     dependency: transitive
     description:
@@ -336,7 +336,7 @@ packages:
       name: connectivity_plus_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.0"
+    version: "1.2.1"
   convert:
     dependency: transitive
     description:
@@ -1912,7 +1912,7 @@ packages:
       name: syncfusion_flutter_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.1.58"
+    version: "20.1.58+1"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
@@ -2101,7 +2101,7 @@ packages:
       name: video_player_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.4"
+    version: "2.3.5"
   video_player_avfoundation:
     dependency: transitive
     description:
