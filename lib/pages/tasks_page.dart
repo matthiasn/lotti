@@ -199,12 +199,7 @@ class _TasksPageState extends State<TasksPage> {
                 tagIds: tagIds.toList(),
               ),
             ],
-          ).asGlass(
-            clipBorderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(8),
-              bottomRight: Radius.circular(8),
-            ),
-          ),
+          ).asGlass(tintColor: Colors.black),
         ],
       ),
       physics: const BouncingScrollPhysics(),

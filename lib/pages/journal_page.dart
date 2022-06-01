@@ -305,12 +305,7 @@ class _JournalPageState extends State<JournalPage> {
                 tagIds: tagIds.toList(),
               ),
             ],
-          ).asGlass(
-            clipBorderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(8),
-              bottomRight: Radius.circular(8),
-            ),
-          ),
+          ).asGlass(tintColor: Colors.black),
         ],
       ),
       builder: (context, transition) {
