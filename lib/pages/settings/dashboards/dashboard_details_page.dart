@@ -446,8 +446,8 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                         ),
                         Padding(
                           padding: const EdgeInsets.only(top: 16.0),
-                          child: Wrap(
-                            alignment: WrapAlignment.spaceBetween,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               TextButton(
                                 key: const Key('dashboard_save'),
@@ -458,14 +458,6 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              TextButton(
-                                key: const Key('dashboard_view'),
-                                onPressed: saveAndViewDashboard,
-                                child: Text(
-                                  localizations.dashboardSaveViewLabel,
-                                  style: saveButtonStyle,
-                                ),
-                              ),
                               Row(
                                 children: [
                                   IconButton(
@@ -493,6 +485,8 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                             label: localizations
                                                 .dashboardDeleteConfirm,
                                             key: deleteKey,
+                                            isDestructiveAction: true,
+                                            isDefaultAction: true,
                                           ),
                                         ],
                                       );

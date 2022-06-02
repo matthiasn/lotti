@@ -17,16 +17,18 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
 
     return AppBar(
       backgroundColor: AppColors.headerBgColor,
+      automaticallyImplyLeading: false,
       title: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          const SizedBox(width: 40),
           Text(
             localizations.navTabTitleInsights,
             style: appBarTextStyle,
           ),
           IconButton(
             padding: const EdgeInsets.all(4),
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings_outlined),
             color: AppColors.entryTextColor,
             onPressed: () {
               context.router.pushNamed('/settings/dashboards/');

@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Empty Dashboards instructions
+
+### Changed:
+- Delete dashboards confirmation in red
+- Save and View button in dashboard definition removed
+
+## [0.8.29] - 2022-06-01
+### Added:
 - Beginnings of a Manual
 
 ### Removed:
