@@ -94,7 +94,7 @@ class LottiApp extends StatelessWidget {
           theme: ThemeData(
             primarySwatch: Colors.grey,
           ),
-          debugShowCheckedModeBanner: true,
+          debugShowCheckedModeBanner: false,
           routerDelegate: router.delegate(
             navigatorObservers: () => [],
           ),

@@ -37,6 +37,20 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
                 dashboard.active)
             .toList();
 
+        if (items.isEmpty) {
+          return Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 64.0),
+              child: Container(
+                width: 100,
+                height: 100,
+                color: Colors.pink,
+              ),
+            ),
+          );
+        }
+
         return ListView(
           shrinkWrap: true,
           padding: const EdgeInsets.all(8.0),

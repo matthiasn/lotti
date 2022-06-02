@@ -17,9 +17,11 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
 
     return AppBar(
       backgroundColor: AppColors.headerBgColor,
+      automaticallyImplyLeading: false,
       title: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          const SizedBox(width: 40),
           Text(
             localizations.navTabTitleInsights,
             style: appBarTextStyle,
