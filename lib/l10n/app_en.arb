@@ -28,7 +28,6 @@
   "dashboardPrivateLabel": "Private:",
   "dashboardReviewTimeLabel": "Daily Review Time:",
   "dashboardSaveLabel": "Save & Close",
-  "dashboardSaveViewLabel": "Save & View",
   "dashboardsEmptyHint": "Nothing to see here yet, please create a new Dashboard in Settings, Dashboard Management. \n\nThe cogs button above will take you there directly.",
   "manualLinkText": "Check out the manual for more information",
   "journalDateFromLabel": "Date from:",
