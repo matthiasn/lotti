@@ -485,6 +485,8 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                             label: localizations
                                                 .dashboardDeleteConfirm,
                                             key: deleteKey,
+                                            isDestructiveAction: true,
+                                            isDefaultAction: true,
                                           ),
                                         ],
                                       );
