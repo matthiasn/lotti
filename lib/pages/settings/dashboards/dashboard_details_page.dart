@@ -16,7 +16,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/dashboards/chart_multi_select.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_item_card.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
@@ -58,20 +57,9 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   void onConfirmAddMeasurement(List<MeasurableDataType?> selection) {
     for (MeasurableDataType? selected in selection) {
       if (selected != null) {
-        bool exists = dashboardItems.where(
-          (DashboardItem item) {
-            return item.maybeMap(
-              measurement: (m) => m.id == selected.id,
-              orElse: () => false,
-            );
-          },
-        ).isNotEmpty;
-
-        if (!exists) {
-          setState(() {
-            dashboardItems.add(DashboardItem.measurement(id: selected.id));
-          });
-        }
+        setState(() {
+          dashboardItems.add(DashboardItem.measurement(id: selected.id));
+        });
       }
     }
   }
@@ -80,23 +68,12 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
     dashboardItems = dashboardItems;
     for (HealthTypeConfig? selected in selection) {
       if (selected != null) {
-        bool exists = dashboardItems.where(
-          (DashboardItem item) {
-            return item.maybeMap(
-              healthChart: (h) => h.healthType == selected.healthType,
-              orElse: () => false,
-            );
-          },
-        ).isNotEmpty;
-
-        if (!exists) {
-          setState(() {
-            dashboardItems.add(DashboardItem.healthChart(
-              color: 'color',
-              healthType: selected.healthType,
-            ));
-          });
-        }
+        setState(() {
+          dashboardItems.add(DashboardItem.healthChart(
+            color: 'color',
+            healthType: selected.healthType,
+          ));
+        });
       }
     }
   }
@@ -104,20 +81,9 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   void onConfirmAddSurveyType(List<DashboardSurveyItem?> selection) {
     for (DashboardSurveyItem? selected in selection) {
       if (selected != null) {
-        bool exists = dashboardItems.where(
-          (DashboardItem item) {
-            return item.maybeMap(
-              surveyChart: (survey) => survey.surveyType == selected.surveyType,
-              orElse: () => false,
-            );
-          },
-        ).isNotEmpty;
-
-        if (!exists) {
-          setState(() {
-            dashboardItems.add(selected);
-          });
-        }
+        setState(() {
+          dashboardItems.add(selected);
+        });
       }
     }
   }
@@ -125,22 +91,9 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   void onConfirmAddWorkoutType(List<DashboardWorkoutItem?> selection) {
     for (DashboardWorkoutItem? selected in selection) {
       if (selected != null) {
-        bool exists = dashboardItems.where(
-          (DashboardItem item) {
-            return item.maybeMap(
-              workoutChart: (workout) =>
-                  workout.workoutType == selected.workoutType &&
-                  workout.valueType == selected.valueType,
-              orElse: () => false,
-            );
-          },
-        ).isNotEmpty;
-
-        if (!exists) {
-          setState(() {
-            dashboardItems.add(selected);
-          });
-        }
+        setState(() {
+          dashboardItems.add(selected);
+        });
       }
     }
   }
@@ -148,21 +101,9 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   void onConfirmAddStoryTimeType(List<DashboardStoryTimeItem?> selection) {
     for (DashboardStoryTimeItem? selected in selection) {
       if (selected != null) {
-        bool exists = dashboardItems.where(
-          (DashboardItem item) {
-            return item.maybeMap(
-              storyTimeChart: (storyTime) =>
-                  storyTime.storyTagId == selected.storyTagId,
-              orElse: () => false,
-            );
-          },
-        ).isNotEmpty;
-
-        if (!exists) {
-          setState(() {
-            dashboardItems.add(selected);
-          });
-        }
+        setState(() {
+          dashboardItems.add(selected);
+        });
       }
     }
   }
@@ -253,11 +194,6 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
         Future<void> saveDashboardPress() async {
           await saveDashboard();
           context.router.pop();
-        }
-
-        Future<void> saveAndViewDashboard() async {
-          await saveDashboard();
-          pushNamedRoute('/dashboards/${widget.dashboard.id}');
         }
 
         Future<void> copyDashboard() async {
@@ -393,7 +329,8 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                   onDismissed: (_) {
                                     dismissItem(index);
                                   },
-                                  key: Key('dashboard-item-${item.hashCode}'),
+                                  key: Key(
+                                      'dashboard-item-${item.hashCode}-$index'),
                                   child: DashboardItemCard(
                                     item: item,
                                     measurableTypes: measurableDataTypes,
