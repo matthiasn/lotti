@@ -28,7 +28,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
           ),
           IconButton(
             padding: const EdgeInsets.all(4),
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings_outlined),
             color: AppColors.entryTextColor,
             onPressed: () {
               context.router.pushNamed('/settings/dashboards/');

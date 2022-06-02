@@ -4,6 +4,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
 
 class DashboardsListPage extends StatefulWidget {
   const DashboardsListPage({Key? key}) : super(key: key);
@@ -38,17 +39,7 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
             .toList();
 
         if (items.isEmpty) {
-          return Align(
-            alignment: Alignment.topCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 64.0),
-              child: Container(
-                width: 100,
-                height: 100,
-                color: Colors.pink,
-              ),
-            ),
-          );
+          return const EmptyDashboards();
         }
 
         return ListView(
