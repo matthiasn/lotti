@@ -1691,6 +1691,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.27.4"
+  screen_retriever:
+    dependency: transitive
+    description:
+      name: screen_retriever
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.2"
   share_plus:
     dependency: "direct main"
     description:
@@ -2178,7 +2185,7 @@ packages:
       name: window_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.3"
+    version: "0.2.5"
   wkt_parser:
     dependency: transitive
     description:

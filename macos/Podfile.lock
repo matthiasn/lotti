@@ -36,6 +36,8 @@ PODS:
     - Flutter
     - FlutterMacOS
   - ReachabilitySwift (5.0.0)
+  - screen_retriever (0.0.1):
+    - FlutterMacOS
   - share_plus_macos (0.0.1):
     - FlutterMacOS
   - sqflite (0.0.2):
@@ -80,6 +82,7 @@ DEPENDENCIES:
   - package_info_plus_macos (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus_macos/macos`)
   - path_provider_macos (from `Flutter/ephemeral/.symlinks/plugins/path_provider_macos/macos`)
   - photo_manager (from `Flutter/ephemeral/.symlinks/plugins/photo_manager/macos`)
+  - screen_retriever (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever/macos`)
   - share_plus_macos (from `Flutter/ephemeral/.symlinks/plugins/share_plus_macos/macos`)
   - sqflite (from `Flutter/ephemeral/.symlinks/plugins/sqflite/macos`)
   - sqlite3_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/macos`)
@@ -124,6 +127,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/path_provider_macos/macos
   photo_manager:
     :path: Flutter/ephemeral/.symlinks/plugins/photo_manager/macos
+  screen_retriever:
+    :path: Flutter/ephemeral/.symlinks/plugins/screen_retriever/macos
   share_plus_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/share_plus_macos/macos
   sqflite:
@@ -154,6 +159,7 @@ SPEC CHECKSUMS:
   path_provider_macos: 3c0c3b4b0d4a76d2bf989a913c2de869c5641a19
   photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
+  screen_retriever: 59634572a57080243dd1bf715e55b6c54f241a38
   share_plus_macos: 853ee48e7dce06b633998ca0735d482dd671ade4
   sqflite: a5789cceda41d54d23f31d6de539d65bb14100ea
   sqlite3: 93442daab2ab1825bc9c05faa85814a1996f5b65
