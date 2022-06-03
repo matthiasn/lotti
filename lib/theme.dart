@@ -170,6 +170,12 @@ TextStyle settingsLabelStyle = TextStyle(
   fontSize: 16,
 );
 
+TextStyle choiceLabelStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  fontFamily: 'Oswald',
+  fontSize: 16,
+);
+
 TextStyle logDetailStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'ShareTechMono',

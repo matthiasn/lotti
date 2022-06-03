@@ -112,6 +112,12 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
     }
   }
 
+  void updateItem(DashboardItem item, int index) {
+    setState(() {
+      dashboardItems[index] = item;
+    });
+  }
+
   void dismissItem(int index) {
     setState(() {
       dashboardItems.removeAt(index);
@@ -337,6 +343,8 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                       'dashboard-item-${item.hashCode}-$index'),
                                   child: DashboardItemCard(
                                     item: item,
+                                    index: index,
+                                    updateItemFn: updateItem,
                                     measurableTypes: measurableDataTypes,
                                   ),
                                 );

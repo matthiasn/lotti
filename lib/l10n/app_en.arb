@@ -18,6 +18,7 @@
   "dashboardAddSurveyTitle": "Survey Charts",
   "dashboardAddWorkoutButton": "Workout Charts",
   "dashboardAddWorkoutTitle": "Workout Charts",
+  "dashboardAggregationLabel": "Aggregation Type:",
   "dashboardCopyHint": "Save & Copy dashboard config",
   "dashboardDeleteConfirm": "YES, DELETE THIS DASHBOARD",
   "dashboardDeleteHint": "Delete dashboard",

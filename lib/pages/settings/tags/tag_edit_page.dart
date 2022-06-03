@@ -30,6 +30,8 @@ class _TagEditPageState extends State<TagEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -48,8 +50,7 @@ class _TagEditPageState extends State<TagEditPage> {
                       children: <Widget>[
                         FormTextField(
                           initialValue: widget.tagEntity.tag,
-                          labelText:
-                              AppLocalizations.of(context)!.settingsTagsTagName,
+                          labelText: localizations.settingsTagsTagName,
                           name: 'tag',
                           key: const Key('tag_name_field'),
                         ),
@@ -57,8 +58,7 @@ class _TagEditPageState extends State<TagEditPage> {
                           name: 'private',
                           initialValue: widget.tagEntity.private,
                           title: Text(
-                            AppLocalizations.of(context)!
-                                .settingsTagsPrivateLabel,
+                            localizations.settingsTagsPrivateLabel,
                             style: formLabelStyle,
                           ),
                           activeColor: AppColors.private,
@@ -67,7 +67,7 @@ class _TagEditPageState extends State<TagEditPage> {
                           name: 'inactive',
                           initialValue: widget.tagEntity.inactive,
                           title: Text(
-                            AppLocalizations.of(context)!.settingsTagsHideLabel,
+                            localizations.settingsTagsHideLabel,
                             style: formLabelStyle,
                           ),
                           activeColor: AppColors.private,
@@ -75,16 +75,15 @@ class _TagEditPageState extends State<TagEditPage> {
                         FormBuilderChoiceChip(
                           name: 'type',
                           initialValue: widget.tagEntity.map(
-                            genericTag: (_) => AppLocalizations.of(context)!
-                                .settingsTagsTypeTag,
-                            personTag: (_) => AppLocalizations.of(context)!
-                                .settingsTagsTypePerson,
-                            storyTag: (_) => AppLocalizations.of(context)!
-                                .settingsTagsTypeStory, // 'STORY',
+                            genericTag: (_) =>
+                                localizations.settingsTagsTypeTag,
+                            personTag: (_) =>
+                                localizations.settingsTagsTypePerson,
+                            storyTag: (_) =>
+                                localizations.settingsTagsTypeStory, // 'STORY',
                           ),
                           decoration: InputDecoration(
-                            labelText: AppLocalizations.of(context)!
-                                .settingsTagsTypeLabel,
+                            labelText: localizations.settingsTagsTypeLabel,
                             labelStyle: labelStyle.copyWith(
                               height: 0.6,
                               fontFamily: 'Oswald',
@@ -106,24 +105,21 @@ class _TagEditPageState extends State<TagEditPage> {
                             FormBuilderFieldOption(
                               value: 'TAG',
                               child: Text(
-                                AppLocalizations.of(context)!
-                                    .settingsTagsTypeTag,
+                                localizations.settingsTagsTypeTag,
                                 style: const TextStyle(color: Colors.black87),
                               ),
                             ),
                             FormBuilderFieldOption(
                               value: 'PERSON',
                               child: Text(
-                                AppLocalizations.of(context)!
-                                    .settingsTagsTypePerson,
+                                localizations.settingsTagsTypePerson,
                                 style: const TextStyle(color: Colors.black87),
                               ),
                             ),
                             FormBuilderFieldOption(
                               value: 'STORY',
                               child: Text(
-                                AppLocalizations.of(context)!
-                                    .settingsTagsTypeStory,
+                                localizations.settingsTagsTypeStory,
                                 style: const TextStyle(color: Colors.black87),
                               ),
                             ),
@@ -197,8 +193,7 @@ class _TagEditPageState extends State<TagEditPage> {
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 24.0),
                             child: Text(
-                              AppLocalizations.of(context)!
-                                  .settingsTagsSaveLabel,
+                              localizations.settingsTagsSaveLabel,
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontFamily: 'Oswald',
@@ -210,8 +205,7 @@ class _TagEditPageState extends State<TagEditPage> {
                         IconButton(
                           icon: const Icon(MdiIcons.trashCanOutline),
                           iconSize: 24,
-                          tooltip: AppLocalizations.of(context)!
-                              .settingsTagsDeleteTooltip,
+                          tooltip: localizations.settingsTagsDeleteTooltip,
                           color: AppColors.appBarFgColor,
                           onPressed: () {
                             persistenceLogic.upsertTagEntity(

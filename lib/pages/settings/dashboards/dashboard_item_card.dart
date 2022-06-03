@@ -6,17 +6,22 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
+import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class DashboardItemCard extends StatelessWidget {
   final TagsService tagsService = getIt<TagsService>();
   final DashboardItem item;
+  final int index;
   final List<MeasurableDataType> measurableTypes;
+  final void Function(DashboardItem item, int index) updateItemFn;
 
   DashboardItemCard({
     Key? key,
+    required this.index,
     required this.item,
     required this.measurableTypes,
+    required this.updateItemFn,
   }) : super(key: key);
 
   @override
@@ -60,7 +65,25 @@ class DashboardItemCard extends StatelessWidget {
       child: ListTile(
         onTap: () {
           if (item is DashboardMeasurementItem) {
-            debugPrint('$item');
+            showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+              ),
+              clipBehavior: Clip.antiAliasWithSaveLayer,
+              builder: (BuildContext context) {
+                return DashboardItemModal(
+                  item: item as DashboardMeasurementItem,
+                  updateItemFn: updateItemFn,
+                  title: itemName,
+                  index: index,
+                );
+              },
+            );
+            updateItemFn(item, index);
           }
         },
         contentPadding: const EdgeInsets.symmetric(
