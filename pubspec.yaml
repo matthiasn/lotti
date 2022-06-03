@@ -134,6 +134,7 @@ dependencies:
 
 dependency_overrides:
   collection: ^1.16.0
+  connectivity_plus_windows: 1.2.0
   crypto: ^3.0.2
   flutter_quill: ^5.0.3
   xml: ^5.3.1
