@@ -23,48 +23,44 @@ class DashboardItemModal extends StatelessWidget {
     AppLocalizations localizations = AppLocalizations.of(context)!;
 
     return Container(
-      height: 160,
       color: AppColors.bodyBgColor,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(title, style: titleStyle),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Text(
-                  localizations.dashboardAggregationLabel,
-                  textAlign: TextAlign.end,
-                  style: labelStyleLarger,
-                ),
-                const SizedBox(width: 16),
-                Wrap(
-                  children: AggregationType.values.map((aggregationType) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: ChoiceChip(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          onSelected: (_) {
-                            updateItemFn(
-                                item.copyWith(aggregationType: aggregationType),
-                                index);
-                            Navigator.pop(context);
-                          },
-                          label: Text(
-                            EnumToString.convertToString(aggregationType),
-                            style: choiceLabelStyle,
-                          ),
-                          selectedColor: AppColors.outboxSuccessColor,
-                          selected: aggregationType == item.aggregationType),
-                    );
-                  }).toList(),
-                )
-              ],
+            Text(
+              localizations.dashboardAggregationLabel,
+              textAlign: TextAlign.end,
+              style: labelStyleLarger.copyWith(fontSize: 14),
             ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: AggregationType.values.map((aggregationType) {
+                return ChoiceChip(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    onSelected: (_) {
+                      updateItemFn(
+                          item.copyWith(aggregationType: aggregationType),
+                          index);
+                      Navigator.pop(context);
+                    },
+                    label: Text(
+                      EnumToString.convertToString(aggregationType),
+                      style: choiceLabelStyle,
+                    ),
+                    selectedColor: AppColors.outboxSuccessColor,
+                    selected: aggregationType == item.aggregationType);
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
