@@ -98,6 +98,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       measurement: (DashboardMeasurementItem measurement) {
                         return DashboardMeasurablesChart(
                           measurableDataTypeId: measurement.id,
+                          aggregationType: measurement.aggregationType,
                           rangeStart: rangeStart,
                           rangeEnd: rangeEnd,
                           enableCreate: true,
