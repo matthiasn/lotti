@@ -1,3 +1,4 @@
+import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -25,7 +26,11 @@ class DashboardItemCard extends StatelessWidget {
         Iterable<MeasurableDataType> matches =
             measurableTypes.where((m) => measurement.id == m.id);
         if (matches.isNotEmpty) {
-          return matches.first.displayName;
+          AggregationType? aggregationType = measurement.aggregationType;
+          String aggregationTypeLabel = aggregationType != null
+              ? '[${EnumToString.convertToString(measurement.aggregationType)}]'
+              : '';
+          return '${matches.first.displayName} $aggregationTypeLabel';
         }
         return '';
       },
@@ -53,6 +58,11 @@ class DashboardItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.0),
       ),
       child: ListTile(
+        onTap: () {
+          if (item is DashboardMeasurementItem) {
+            debugPrint('$item');
+          }
+        },
         contentPadding: const EdgeInsets.symmetric(
           vertical: 8,
           horizontal: 16,

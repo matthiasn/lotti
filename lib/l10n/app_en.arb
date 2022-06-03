@@ -82,7 +82,7 @@
   "settingsHealthImportTitle": "Health Import",
   "settingsLogsTitle": "Logs",
   "settingsMaintenanceTitle": "Maintenance",
-  "settingsMeasurableAggregationLabel": "Aggregation Type:",
+  "settingsMeasurableAggregationLabel": "Default Aggregation Type:",
   "settingsMeasurableAggregationSelectLabel": "Select aggregation type:",
   "settingsMeasurableDeleteTooltip": "Delete measurable type",
   "settingsMeasurableDescriptionLabel": "Description:",

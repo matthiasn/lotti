@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -114,7 +115,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Text(
-                                    '$aggregationType',
+                                    EnumToString.convertToString(
+                                        aggregationType),
                                     style: TextStyle(
                                       fontSize: 16,
                                       color: AppColors.entryTextColor,

@@ -58,7 +58,11 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
     for (MeasurableDataType? selected in selection) {
       if (selected != null) {
         setState(() {
-          dashboardItems.add(DashboardItem.measurement(id: selected.id));
+          dashboardItems.add(DashboardItem.measurement(
+            id: selected.id,
+            aggregationType:
+                selected.aggregationType ?? AggregationType.dailySum,
+          ));
         });
       }
     }
