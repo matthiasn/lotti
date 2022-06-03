@@ -2,6 +2,7 @@ import 'dart:core';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
+import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/charts/measurables_chart_info_cubit.dart';
@@ -18,12 +19,14 @@ class DashboardMeasurablesChart extends StatefulWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final bool enableCreate;
+  final AggregationType? aggregationType;
 
   const DashboardMeasurablesChart({
     Key? key,
     required this.measurableDataTypeId,
     required this.rangeStart,
     required this.rangeEnd,
+    this.aggregationType,
     this.enableCreate = false,
   }) : super(key: key);
 
@@ -68,8 +71,12 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
               charts.SeriesRendererConfig<DateTime>? defaultRenderer;
 
+              AggregationType aggregationType = widget.aggregationType ??
+                  measurableDataType.aggregationType ??
+                  AggregationType.dailySum;
+
               final bool aggregationNone =
-                  measurableDataType.aggregationType == AggregationType.none;
+                  aggregationType == AggregationType.none;
 
               if (aggregationNone) {
                 defaultRenderer = charts.LineRendererConfig<DateTime>(
@@ -88,8 +95,14 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
 
               List<MeasuredObservation> data;
-              if (measurableDataType.aggregationType == AggregationType.none) {
+              if (aggregationType == AggregationType.none) {
                 data = aggregateMeasurementNone(measurements);
+              } else if (aggregationType == AggregationType.dailyMax) {
+                data = aggregateMaxByDay(
+                  measurements,
+                  rangeStart: widget.rangeStart,
+                  rangeEnd: widget.rangeEnd,
+                );
               } else {
                 data = aggregateSumByDay(
                   measurements,
@@ -166,7 +179,10 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                               ),
                             ),
                           ),
-                          MeasurablesChartInfoWidget(measurableDataType),
+                          MeasurablesChartInfoWidget(
+                            measurableDataType,
+                            aggregationType: aggregationType,
+                          ),
                         ],
                       ),
                     ),
@@ -184,10 +200,12 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 class MeasurablesChartInfoWidget extends StatelessWidget {
   const MeasurablesChartInfoWidget(
     this.measurableDataType, {
+    required this.aggregationType,
     Key? key,
   }) : super(key: key);
 
   final MeasurableDataType measurableDataType;
+  final AggregationType aggregationType;
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +226,8 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
               children: [
                 const Spacer(),
                 Text(
-                  measurableDataType.displayName,
+                  '${measurableDataType.displayName}'
+                  ' [${EnumToString.convertToString(aggregationType)}]',
                   style: chartTitleStyle,
                 ),
                 if (selected != null) ...[

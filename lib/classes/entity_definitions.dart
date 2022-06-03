@@ -130,6 +130,7 @@ enum WorkoutValueType {
 class DashboardItem with _$DashboardItem {
   factory DashboardItem.measurement({
     required String id,
+    AggregationType? aggregationType,
   }) = DashboardMeasurementItem;
 
   factory DashboardItem.healthChart({

@@ -331,12 +331,12 @@ packages:
     source: hosted
     version: "1.2.1"
   connectivity_plus_windows:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: connectivity_plus_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.1"
+    version: "1.2.0"
   convert:
     dependency: transitive
     description:
