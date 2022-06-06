@@ -51,12 +51,17 @@ class EmptyDashboards extends StatelessWidget {
           alignment: Alignment.topRight,
           child: Padding(
             padding: const EdgeInsets.only(right: 32.0),
-            // from https://lottiefiles.com/7834-seta-arrow
-            child: Lottie.asset(
-              'assets/lottiefiles/7834-seta-arrow.json',
-              width: 100,
-              height: 100,
-              fit: BoxFit.contain,
+            child: Opacity(
+              opacity: 0.5,
+              child: Lottie.asset(
+                // from https://lottiefiles.com/7834-seta-arrow
+                'assets/lottiefiles/7834-seta-arrow.json',
+                width: 60,
+                height: 60,
+                fit: BoxFit.contain,
+                frameRate: FrameRate(12),
+                reverse: true,
+              ),
             ),
           ),
         ),
