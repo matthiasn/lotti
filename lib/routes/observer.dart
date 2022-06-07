@@ -17,6 +17,7 @@ class NavObserver extends AutoRouterObserver {
 
   @override
   void didChangeTabRoute(TabPageRoute route, TabPageRoute previousRoute) {
+    debugPrint('didChangeTabRoute ${route.path} ${route.index}');
     persistNamedRoute('/${route.path}');
   }
 }

@@ -1,6 +1,7 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 
 class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
@@ -31,7 +32,13 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
             icon: const Icon(Icons.settings_outlined),
             color: AppColors.entryTextColor,
             onPressed: () {
-              context.router.pushNamed('/settings/dashboards/');
+              NavService navService = getIt<NavService>();
+
+              navService.tabsRouter
+                  ?.setActiveIndex(navService.routesByIndex.length - 1);
+
+              Future.delayed(const Duration(milliseconds: 50))
+                  .then((value) => pushNamedRoute('/settings/dashboards/'));
             },
           ),
         ],

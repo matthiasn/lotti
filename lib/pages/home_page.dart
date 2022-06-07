@@ -6,6 +6,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox_badge.dart';
 import 'package:lotti/routes/observer.dart';
 import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/app_bar_version.dart';
 import 'package:lotti/widgets/app_bar/dashboard_app_bar.dart';
@@ -116,6 +117,24 @@ class HomePage extends StatelessWidget {
                 SyncAssistantRoute.name,
               };
 
+              NavService navService = getIt<NavService>();
+
+              List<String> routesByIndex = [
+                '/journal',
+                if (showTasks) '/tasks',
+                '/dashboards',
+                '/settings',
+              ];
+
+              navService.routesByIndex = routesByIndex;
+              navService.tabsRouter = tabsRouter;
+
+              void onTap(int index) {
+                debugPrint('onTap: $index');
+                tabsRouter.setActiveIndex(index);
+                navService.bottomNavRouteTap(index);
+              }
+
               if (hideBottomNavRoutes.contains(tabsRouter.topRoute.name)) {
                 return const SizedBox.shrink();
               }
@@ -135,7 +154,8 @@ class HomePage extends StatelessWidget {
                   unselectedItemColor: AppColors.bottomNavIconUnselected,
                   selectedItemColor: AppColors.bottomNavIconSelected,
                   currentIndex: tabsRouter.activeIndex,
-                  onTap: tabsRouter.setActiveIndex,
+                  onTap: onTap,
+                  enableFeedback: true,
                   selectedFontSize: 18,
                   unselectedFontSize: 14,
                   items: [
