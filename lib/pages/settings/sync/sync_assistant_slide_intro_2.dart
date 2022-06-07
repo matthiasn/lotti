@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:lotti/pages/settings/sync/tutorial_utils.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lottie/lottie.dart';
 
 class SyncAssistantIntroSlide2 extends StatelessWidget {
@@ -54,9 +55,11 @@ class SyncAssistantIntroSlide2 extends StatelessWidget {
               child: SizedBox(
                 width: textBodyWidth(context),
                 child: Text(
-                  localizations.syncAssistantPage2,
+                  isMobile
+                      ? localizations.syncAssistantPage2mobile
+                      : localizations.syncAssistantPage2,
                   textAlign: TextAlign.justify,
-                  style: titleStyle.copyWith(fontSize: 24),
+                  style: titleStyle.copyWith(fontSize: isMobile ? 32 : 24),
                 ),
               ),
             ),
