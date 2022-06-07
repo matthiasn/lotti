@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus_windows
+  dynamic_color
   flutter_secure_storage_windows
   hotkey_manager
   permission_handler_windows
