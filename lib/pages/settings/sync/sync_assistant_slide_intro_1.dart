@@ -6,10 +6,12 @@ import 'package:lotti/theme.dart';
 
 class SyncAssistantIntroSlide1 extends StatelessWidget {
   final int page;
+  final int pageCount;
   final ValueNotifier<double> notifier;
 
   const SyncAssistantIntroSlide1(
     this.page,
+    this.pageCount,
     this.notifier, {
     Key? key,
   }) : super(key: key);
@@ -25,7 +27,9 @@ class SyncAssistantIntroSlide1 extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           SyncAssistantHeaderWidget(
-              title: localizations.syncAssistantHeadline1),
+            index: page,
+            pageCount: pageCount,
+          ),
           Align(
             alignment: Alignment.center,
             child: SlidingContainer(

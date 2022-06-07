@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -22,6 +24,14 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
   final ValueNotifier<double> notifier = ValueNotifier(0);
   final _pageCtrl = PageController();
   int pageCount = 6;
+
+  @override
+  initState() {
+    super.initState();
+    if (Platform.isIOS || Platform.isAndroid) {
+      pageCount = 3;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,17 +161,23 @@ class _SlidingTutorial extends State<SlidingTutorial> {
   Widget _getPageByIndex(int index) {
     switch (index) {
       case 0:
-        return SyncAssistantIntroSlide1(index, widget.notifier);
+        return SyncAssistantIntroSlide1(
+            index, widget.pageCount, widget.notifier);
       case 1:
-        return SyncAssistantIntroSlide2(index, widget.notifier);
+        return SyncAssistantIntroSlide2(
+            index, widget.pageCount, widget.notifier);
       case 2:
-        return SyncAssistantConfigSlide(index, widget.notifier);
+        return SyncAssistantConfigSlide(
+            index, widget.pageCount, widget.notifier);
       case 3:
-        return SyncAssistantIntroSlide3(index, widget.notifier);
+        return SyncAssistantIntroSlide3(
+            index, widget.pageCount, widget.notifier);
       case 4:
-        return SyncAssistantQrCodeSlide(index, widget.notifier);
+        return SyncAssistantQrCodeSlide(
+            index, widget.pageCount, widget.notifier);
       case 5:
-        return SyncAssistantSuccessSlide(index, widget.notifier);
+        return SyncAssistantSuccessSlide(
+            index, widget.pageCount, widget.notifier);
       default:
         throw ArgumentError("Unknown position: $index");
     }

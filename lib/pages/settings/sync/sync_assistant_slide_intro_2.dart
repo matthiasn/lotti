@@ -7,10 +7,12 @@ import 'package:lottie/lottie.dart';
 
 class SyncAssistantIntroSlide2 extends StatelessWidget {
   final int page;
+  final int pageCount;
   final ValueNotifier<double> notifier;
 
   const SyncAssistantIntroSlide2(
     this.page,
+    this.pageCount,
     this.notifier, {
     Key? key,
   }) : super(key: key);
@@ -26,13 +28,15 @@ class SyncAssistantIntroSlide2 extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           SyncAssistantHeaderWidget(
-              title: localizations.syncAssistantHeadline2),
+            index: page,
+            pageCount: pageCount,
+          ),
           Align(
             alignment: Alignment.bottomRight,
             child: SlidingContainer(
               offset: 50,
               child: Container(
-                padding: const EdgeInsets.only(bottom: 100),
+                padding: const EdgeInsets.only(bottom: 80),
                 width: textBodyWidth(context),
                 child: Lottie.asset(
                   'assets/lottiefiles/gears.json',
@@ -52,7 +56,7 @@ class SyncAssistantIntroSlide2 extends StatelessWidget {
                 child: Text(
                   localizations.syncAssistantPage2,
                   textAlign: TextAlign.justify,
-                  style: titleStyle.copyWith(fontSize: 20),
+                  style: titleStyle.copyWith(fontSize: 24),
                 ),
               ),
             ),
