@@ -1,4 +1,11 @@
 {
+  "addActionAddAudioRecording": "Tonaufzeichnung starten",
+  "addActionAddMeasurable": "Messbaren Dateneintrag hinzufügen",
+  "addActionAddPhotos": "Foto(s) hinzufügen",
+  "addActionAddScreenshot": "Bildschirmfoto hinzufügen",
+  "addActionAddSurvey": "Fragebogen ausfüllen",
+  "addActionAddTask": "Aufgabe hinzufügen",
+  "addActionAddText": "Texteintrag hinzufügen",
   "configFlagEnableNotifications": "Desktop Notifications erlauben?",
   "configFlagGlobalScreenshotHotkey": "Screenshot beim Benutzen des globalen Hotkeys?",
   "configFlagHideForScreenshot": "Lotti bei Screenshots minimieren?",

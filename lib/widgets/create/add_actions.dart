@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -44,12 +45,15 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     List<Widget> items = [];
 
     if (Platform.isMacOS) {
       items.add(
         FloatingActionButton(
           heroTag: 'screenshot',
+          tooltip: localizations.addActionAddScreenshot,
           backgroundColor: AppColors.actionColor,
           onPressed: () async {
             ImageData imageData = await takeScreenshotMac();
@@ -76,6 +80,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       FloatingActionButton(
         heroTag: 'measurement',
         backgroundColor: AppColors.actionColor,
+        tooltip: localizations.addActionAddMeasurable,
         onPressed: () {
           String? linkedId = widget.linked?.meta.id;
           context.router.push(CreateMeasurementWithLinkedRoute(
@@ -92,6 +97,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
     items.add(
       FloatingActionButton(
         heroTag: 'survey',
+        tooltip: localizations.addActionAddSurvey,
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           String? linkedId = widget.linked?.meta.id;
@@ -107,6 +113,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
     items.add(
       FloatingActionButton(
         heroTag: 'photo',
+        tooltip: localizations.addActionAddPhotos,
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           importImageAssets(
@@ -124,6 +131,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
     items.add(
       FloatingActionButton(
         heroTag: 'text',
+        tooltip: localizations.addActionAddText,
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           if (widget.linked != null) {
@@ -148,6 +156,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       items.add(
         FloatingActionButton(
           heroTag: 'timer',
+          tooltip: localizations.addActionAddTimeRecording,
           backgroundColor: AppColors.actionColor,
           onPressed: () async {
             if (widget.linked != null) {
@@ -177,6 +186,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       items.add(
         FloatingActionButton(
           heroTag: 'audio',
+          tooltip: localizations.addActionAddAudioRecording,
           backgroundColor: AppColors.actionColor,
           onPressed: () {
             String? linkedId = widget.linked?.meta.id;
@@ -197,6 +207,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
     items.add(
       FloatingActionButton(
         heroTag: 'task',
+        tooltip: localizations.addActionAddTask,
         backgroundColor: AppColors.actionColor,
         onPressed: () {
           String? linkedId = widget.linked?.meta.id;
