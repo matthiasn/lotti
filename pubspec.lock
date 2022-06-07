@@ -1670,9 +1670,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "3137f03"
-      resolved-ref: "3137f03fef0637913976c13c931a6aa14d7ca489"
-      url: "https://github.com/matthiasn/radial_button"
+      ref: "8140fcf"
+      resolved-ref: "8140fcf2933f928a30cc3e77fa64e61a516f4be0"
+      url: "https://github.com/redinterface/radial_button"
     source: git
     version: "0.1.5"
   recase:
@@ -1692,7 +1692,7 @@ packages:
     source: git
     version: "0.6.6-1"
   rxdart:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: rxdart
       url: "https://pub.dartlang.org"
