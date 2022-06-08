@@ -165,12 +165,17 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                       _formKey.currentState!.save();
                       if (_formKey.currentState!.validate()) {
                         final formData = _formKey.currentState?.value;
+
+                        String getTrimmed(String k) {
+                          return formData![k].toString().trim();
+                        }
+
                         ImapConfig cfg = ImapConfig(
-                          host: formData!['imap_host'],
-                          folder: formData['imap_folder'],
-                          userName: formData['imap_userName'],
-                          password: formData['imap_password'],
-                          port: int.parse(formData['imap_port']),
+                          host: getTrimmed('imap_host'),
+                          folder: getTrimmed('imap_folder'),
+                          userName: getTrimmed('imap_userName'),
+                          password: getTrimmed('imap_password'),
+                          port: int.parse(formData!['imap_port']),
                         );
                         context.read<SyncConfigCubit>().setImapConfig(cfg);
                       }
