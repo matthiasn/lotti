@@ -95,7 +95,7 @@ class EncryptionQrWidget extends StatelessWidget {
                           ),
                         ),
                       ),
-                      DeleteSyncConfigButton(),
+                      const DeleteSyncConfigButton(),
                     ],
                   );
                 } else {

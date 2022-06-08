@@ -263,7 +263,7 @@ class PersistenceLogic {
 
   Future<JournalEntity?> createImageEntry(
     ImageData imageData, {
-    JournalEntity? linked,
+    String? linkedId,
   }) async {
     final transaction =
         _loggingDb.startTransaction('createImageEntry()', 'task');
@@ -295,7 +295,7 @@ class PersistenceLogic {
       await createDbEntity(
         journalEntity,
         enqueueSync: true,
-        linkedId: linked?.meta.id,
+        linkedId: linkedId,
       );
       return journalEntity;
     } catch (exception, stackTrace) {
