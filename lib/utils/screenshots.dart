@@ -15,7 +15,7 @@ Future<ImageData> takeScreenshotMac() async {
   bool hide = await db.getConfigFlag('hide_for_screenshot');
 
   String id = uuid.v1();
-  String filename = '$id.screenshot.png';
+  String filename = '$id.screenshot.jpg';
   DateTime created = DateTime.now();
   String day = DateFormat('yyyy-MM-dd').format(created);
   String relativePath = '/images/$day/';
@@ -27,7 +27,7 @@ Future<ImageData> takeScreenshotMac() async {
 
   Process process = await Process.start(
     'screencapture',
-    [filename],
+    ['-tjpg', filename],
     runInShell: true,
     workingDirectory: directory,
   );
