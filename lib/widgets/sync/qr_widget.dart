@@ -95,10 +95,7 @@ class EncryptionQrWidget extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Button(localizations.settingsSyncDeleteKeyButton,
-                          onPressed: () =>
-                              context.read<SyncConfigCubit>().deleteSharedKey(),
-                          primaryColor: Colors.red),
+                      DeleteSyncConfigButton(),
                     ],
                   );
                 } else {
@@ -165,6 +162,21 @@ class EncryptionQrWidget extends StatelessWidget {
         ),
       );
     });
+  }
+}
+
+class DeleteSyncConfigButton extends StatelessWidget {
+  const DeleteSyncConfigButton({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
+    return Button(localizations.settingsSyncDeleteKeyButton,
+        onPressed: () => context.read<SyncConfigCubit>().deleteSharedKey(),
+        primaryColor: Colors.red);
   }
 }
 

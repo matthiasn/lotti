@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- French translation
+
+### Changed:
+- Improved Sync Assistant
+- Trim fields in email config
+- Label for Sync enable/disable
+
+## [0.8.32] - 2022-06-07
+### Added:
 - Tooltips for circular add actions
 - Fix hover UX
 
