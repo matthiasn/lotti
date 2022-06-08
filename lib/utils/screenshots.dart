@@ -6,10 +6,12 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:window_manager/window_manager.dart';
 
 final JournalDb db = getIt<JournalDb>();
+final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
 Future<ImageData> takeScreenshotMac() async {
   bool hide = await db.getConfigFlag('hide_for_screenshot');
@@ -51,9 +53,19 @@ Future<ImageData> takeScreenshotMac() async {
   return imageData;
 }
 
-Future<void> registerScreenshotHotkey() async {
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+Future<void> takeScreenshotWithLinked() async {
+  String? linkedId = await getIdFromSavedRoute();
+  ImageData imageData = await takeScreenshotMac();
+  JournalEntity? journalEntity = await persistenceLogic.createImageEntry(
+    imageData,
+    linkedId: linkedId,
+  );
+  if (journalEntity != null) {
+    persistenceLogic.addGeolocation(journalEntity.meta.id);
+  }
+}
 
+Future<void> registerScreenshotHotkey() async {
   if (Platform.isMacOS) {
     HotKey screenshotKey = HotKey(
       KeyCode.digit3,
@@ -69,14 +81,7 @@ Future<void> registerScreenshotHotkey() async {
             await db.getConfigFlag('listen_to_global_screenshot_hotkey');
 
         if (enabled) {
-          ImageData imageData = await takeScreenshotMac();
-          JournalEntity? journalEntity =
-              await persistenceLogic.createImageEntry(
-            imageData,
-          );
-          if (journalEntity != null) {
-            persistenceLogic.addGeolocation(journalEntity.meta.id);
-          }
+          takeScreenshotWithLinked();
         }
       },
     );

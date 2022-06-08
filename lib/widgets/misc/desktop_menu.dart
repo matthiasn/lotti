@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/screenshots.dart';
 
 class DesktopMenuWrapper extends StatelessWidget {
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
@@ -84,6 +85,17 @@ class DesktopMenuWrapper extends StatelessWidget {
                   onSelected: () async {
                     String? linkedId = await getIdFromSavedRoute();
                     pushNamedRoute('/tasks/create/$linkedId');
+                  },
+                ),
+                PlatformMenuItem(
+                  label: 'Screenshot',
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyS,
+                    meta: true,
+                    alt: true,
+                  ),
+                  onSelected: () async {
+                    takeScreenshotWithLinked();
                   },
                 ),
               ],

@@ -80,7 +80,7 @@ Future<void> importImageAssets(
 
         persistenceLogic.createImageEntry(
           imageData,
-          linked: linked,
+          linkedId: linked?.meta.id,
         );
       }
     }
