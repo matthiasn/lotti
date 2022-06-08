@@ -49,7 +49,7 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           SettingsCard(
-            icon: const SettingsIcon(MdiIcons.tapeMeasure),
+            icon: const SettingsIcon(Icons.insights),
             title: localizations.settingsMeasurablesTitle,
             onTap: () {
               pushNamedRoute('/settings/measurables');

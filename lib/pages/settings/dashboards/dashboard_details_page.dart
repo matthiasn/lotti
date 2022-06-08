@@ -363,7 +363,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                             title: localizations.dashboardAddMeasurementTitle,
                             buttonText:
                                 localizations.dashboardAddMeasurementButton,
-                            iconData: MdiIcons.tapeMeasure,
+                            iconData: Icons.insights,
                           ),
                         ChartMultiSelect<HealthTypeConfig>(
                           multiSelectItems: healthSelectItems,

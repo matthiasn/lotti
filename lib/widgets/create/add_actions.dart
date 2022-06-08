@@ -99,7 +99,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           ));
         },
         child: const Icon(
-          MdiIcons.tapeMeasure,
+          Icons.insights,
           size: 32,
         ),
       ),
@@ -137,7 +137,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           );
         },
         child: const Icon(
-          Icons.camera_roll_outlined,
+          Icons.add_a_photo,
           size: 32,
         ),
       ),
