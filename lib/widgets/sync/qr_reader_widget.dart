@@ -65,6 +65,7 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
           loading: () => StatusTextWidget(localizations.settingsSyncLoadingKey),
           generating: () => StatusTextWidget(localizations.settingsSyncGenKey),
           empty: () => Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
                 height: 300.0,
