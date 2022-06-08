@@ -108,7 +108,7 @@
   "settingsSyncDeleteKeyButton": "Schlüssel löschen",
   "settingsSyncFolderLabel": "IMAP Ordner",
   "settingsSyncGenKey": "Schlüssel für Sync wird generiert...",
-  "settingsSyncGenKeyButton": "Schlüssel generieren",
+  "settingsSyncGenKeyButton": "Schlüssel neu generieren",
   "settingsSyncHostLabel": "Servername",
   "settingsSyncImportButton": "SyncConfig importieren",
   "settingsSyncIncompleteConfig": "Die Sync Konfiguration ist unvollständig",

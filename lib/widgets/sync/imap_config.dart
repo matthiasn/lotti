@@ -9,6 +9,7 @@ import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
+import 'package:lotti/widgets/sync/qr_reader_widget.dart';
 import 'package:lotti/widgets/sync/qr_widget.dart';
 
 class EmailConfigForm extends StatefulWidget {
@@ -62,7 +63,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
               );
             },
             orElse: () {
-              return null;
+              return const EncryptionQrReaderWidget();
             },
           ),
         );
