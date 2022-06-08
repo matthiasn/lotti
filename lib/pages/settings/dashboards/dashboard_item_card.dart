@@ -92,7 +92,7 @@ class DashboardItemCard extends StatelessWidget {
         ),
         leading: item.map(
           measurement: (_) => Icon(
-            MdiIcons.insights,
+            Icons.insights,
             size: 32,
             color: AppColors.entryTextColor,
           ),

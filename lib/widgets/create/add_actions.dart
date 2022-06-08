@@ -99,7 +99,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           ));
         },
         child: const Icon(
-          MdiIcons.insights,
+          Icons.insights,
           size: 32,
         ),
       ),
