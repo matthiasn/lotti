@@ -70,7 +70,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             JournalEntity? journalEntity =
                 await _persistenceLogic.createImageEntry(
               imageData,
-              linked: widget.linked,
+              linkedId: widget.linked?.meta.id,
             );
 
             if (journalEntity != null) {
