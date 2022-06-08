@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Save screenshots on desktop as JPG
+- Improved icons
 
 ## [0.8.34] - 2022-06-08
 ### Added:
