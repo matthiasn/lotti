@@ -46,6 +46,22 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             return SingleChildScrollView(
               child: Column(
                 children: [
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(localizations.outboxMonitorSwitchLabel,
+                        style: labelStyleLarger
+                      ),
+                      CupertinoSwitch(
+                        value: onlineStatus,
+                        onChanged: (_) {
+                          context.read<OutboxCubit>().toggleStatus();
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -97,12 +113,6 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                               ),
                             ),
                           ),
-                        },
-                      ),
-                      CupertinoSwitch(
-                        value: onlineStatus,
-                        onChanged: (_) {
-                          context.read<OutboxCubit>().toggleStatus();
                         },
                       ),
                     ],

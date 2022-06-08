@@ -83,6 +83,7 @@
   "outboxMonitorLabelSent": "sent",
   "outboxMonitorNoAttachment": "no attachment",
   "outboxMonitorRetries": "retries",
+  "outboxMonitorSwitchLabel": "Sync enabled",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsConflictsTitle": "Sync Conflicts",
   "settingsDashboardsSearchHint": "Search...",
