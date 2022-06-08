@@ -186,7 +186,7 @@ class JournalCard extends StatelessWidget {
             journalAudio: (_) => const LeadingIcon(Icons.mic),
             journalEntry: (_) => const LeadingIcon(Icons.article),
             quantitative: (_) => const LeadingIcon(MdiIcons.heart),
-            measurement: (_) => const LeadingIcon(MdiIcons.tapeMeasure),
+            measurement: (_) => const LeadingIcon(MdiIcons.insights),
             orElse: () => null,
           ),
           title: JournalCardTitle(item: item),
