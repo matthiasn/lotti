@@ -9,6 +9,7 @@ import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
+import 'package:lotti/widgets/sync/qr_widget.dart';
 
 class EmailConfigForm extends StatefulWidget {
   const EmailConfigForm({Key? key}) : super(key: key);
@@ -54,6 +55,8 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                       'User: ${imapConfig?.userName}',
                       style: labelStyleLarger,
                     ),
+                    const SizedBox(height: 32),
+                    const DeleteSyncConfigButton(),
                   ],
                 ),
               );
@@ -172,6 +175,8 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                       }
                     },
                   ),
+                  const SizedBox(height: 16),
+                  const DeleteSyncConfigButton(),
                 ],
               ),
             ),
