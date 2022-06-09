@@ -172,6 +172,11 @@ class SyncInboxService {
     }
   }
 
+  bool validSubject(String subject) {
+    RegExp validSubject = RegExp(r'[a-z0-9]{40}:[0-9]+');
+    return validSubject.hasMatch(subject);
+  }
+
   Future<void> _fetchInbox() async {
     final transaction = _loggingDb.startTransaction('_fetchInbox()', 'task');
     ImapClient? imapClient;
@@ -208,13 +213,20 @@ class SyncInboxService {
                 domain: 'INBOX_CUBIT',
                 subDomain: '_fetchInbox',
               );
-              if (subject.contains(await _vectorClockService.getHostHash())) {
+              if (!validSubject(subject)) {
+                debugPrint('_fetchInbox ignoring invalid email: $current');
+                _loggingDb.captureEvent(
+                  '_fetchInbox ignoring invalid email: $current',
+                  domain: 'INBOX_CUBIT',
+                );
+                await _setLastReadUid(current);
+              } else if (subject
+                  .contains(await _vectorClockService.getHostHash())) {
                 debugPrint('_fetchInbox ignoring from same host: $current');
                 _loggingDb.captureEvent(
                   '_fetchInbox ignoring from same host: $current',
                   domain: 'INBOX_CUBIT',
                 );
-
                 await _setLastReadUid(current);
               } else {
                 await _fetchByUid(uid: current, imapClient: imapClient);
