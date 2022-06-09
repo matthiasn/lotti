@@ -137,7 +137,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           );
         },
         child: const Icon(
-          Icons.add_a_photo,
+          Icons.add_a_photo_outlined,
           size: 32,
         ),
       ),

@@ -169,7 +169,7 @@ class HomePage extends StatelessWidget {
                         label: AppLocalizations.of(context)!.navTabTitleTasks,
                       ),
                     BottomNavigationBarItem(
-                      icon: const Icon(Icons.dashboard),
+                      icon: const Icon(Icons.dashboard_outlined),
                       label: AppLocalizations.of(context)!.navTabTitleInsights,
                     ),
                     // TODO: bring back or remove
