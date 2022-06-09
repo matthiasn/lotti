@@ -145,7 +145,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.settings),
+                        icon: const Icon(Icons.dashboard_customize_outlined),
                         color: AppColors.entryTextColor,
                         onPressed: () {
                           context.router.pushNamed(
