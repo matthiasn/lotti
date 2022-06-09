@@ -42,7 +42,7 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           SettingsCard(
-            icon: const SettingsIcon(Icons.insights_outlined),
+            icon: const SettingsIcon(Icons.dashboard),
             title: localizations.settingsDashboardsTitle,
             onTap: () {
               pushNamedRoute('/settings/dashboards');
