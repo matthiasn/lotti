@@ -167,7 +167,7 @@ class _JournalPageState extends State<JournalPage> {
         top: Platform.isIOS ? 48 : 8.0,
         left: isDesktop ? 12.0 : 0.0,
       ),
-      width: isPortrait ? portraitWidth : 500,
+      width: isPortrait ? portraitWidth : MediaQuery.of(context).size.width,
       onQueryChanged: (query) async {
         List<TagEntity> res = await _db.getMatchingTags(
           query.trim(),
