@@ -116,7 +116,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                               });
                             },
                             validator: FormBuilderValidators.compose(
-                                [FormBuilderValidators.required(context)]),
+                                [FormBuilderValidators.required()]),
                             items: items
                                 .map((MeasurableDataType item) =>
                                     DropdownMenuItem(

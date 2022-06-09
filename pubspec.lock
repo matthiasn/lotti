@@ -902,7 +902,7 @@ packages:
       name: form_builder_validators
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.9.0"
+    version: "8.1.1"
   freezed:
     dependency: "direct dev"
     description:

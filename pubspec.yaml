@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.37+960
+version: 0.8.38+961
 
 msix_config:
   display_name: Lotti
@@ -70,7 +70,7 @@ dependencies:
   flutter_datetime_picker: ^1.5.1
   flutter_dotenv: ^5.0.2
   flutter_fgbg: ^0.2.0
-  flutter_form_builder: ^7.0.0
+  flutter_form_builder: ^7.2.1
   flutter_image_compress: ^1.1.0
   flutter_image_slideshow: ^0.1.2
   flutter_local_notifications: ^9.2.0
@@ -82,7 +82,7 @@ dependencies:
   flutter_sound: ^8.3.12
   flutter_svg: ^1.0.3
   flutter_typeahead: ^4.0.0
-  form_builder_validators: ^7.2.0
+  form_builder_validators: ^8.1.1
   freezed_annotation: ^2.0.3
   geoclue: ^0.1.0
   get_it: ^7.2.0
