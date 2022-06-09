@@ -14,6 +14,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/utils/platform.dart';
 
 class HealthImport {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
@@ -54,7 +55,11 @@ class HealthImport {
     final LoggingDb loggingDb = getIt<LoggingDb>();
     final transaction =
         loggingDb.startTransaction('getActivityHealthData()', 'task');
-    await authorizeHealth(activityTypes);
+    bool accessGranted = await authorizeHealth(activityTypes);
+
+    if (!accessGranted) {
+      return;
+    }
 
     Future<void> addEntries(Map<DateTime, num> data, String type) async {
       List<MapEntry<DateTime, num>> entries = List.from(data.entries);
@@ -113,6 +118,10 @@ class HealthImport {
   }
 
   Future<bool> authorizeHealth(List<HealthDataType> types) async {
+    if (isDesktop) {
+      return false;
+    }
+
     return await _healthFactory.requestAuthorization(types);
   }
 
@@ -154,8 +163,6 @@ class HealthImport {
       } catch (e) {
         debugPrint('Caught exception in fetchHealthData: $e');
       }
-    } else {
-      debugPrint('Authorization not granted');
     }
     await transaction.finish();
   }
