@@ -88,7 +88,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                       (sharedKey, imapConfig) => imapConfig?.host,
                       orElse: () => null,
                     ),
-                    validator: FormBuilderValidators.required(context),
+                    validator: FormBuilderValidators.required(),
                     style: inputStyle,
                     keyboardAppearance: Brightness.dark,
                     decoration: InputDecoration(
@@ -103,7 +103,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                           orElse: () => null,
                         ) ??
                         'INBOX',
-                    validator: FormBuilderValidators.required(context),
+                    validator: FormBuilderValidators.required(),
                     keyboardAppearance: Brightness.dark,
                     style: inputStyle,
                     decoration: InputDecoration(
@@ -117,7 +117,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                       (sharedKey, imapConfig) => imapConfig?.userName,
                       orElse: () => null,
                     ),
-                    validator: FormBuilderValidators.required(context),
+                    validator: FormBuilderValidators.required(),
                     style: inputStyle,
                     keyboardAppearance: Brightness.dark,
                     decoration: InputDecoration(
@@ -132,7 +132,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                       orElse: () => null,
                     ),
                     obscureText: true,
-                    validator: FormBuilderValidators.required(context),
+                    validator: FormBuilderValidators.required(),
                     style: inputStyle,
                     keyboardAppearance: Brightness.dark,
                     decoration: InputDecoration(
@@ -148,7 +148,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                           orElse: () => null,
                         ) ??
                         '993',
-                    validator: FormBuilderValidators.integer(context),
+                    validator: FormBuilderValidators.integer(),
                     style: inputStyle,
                     keyboardAppearance: Brightness.dark,
                     decoration: InputDecoration(
