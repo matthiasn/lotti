@@ -42,7 +42,10 @@ class SyncInboxService {
 
   SyncInboxService() {
     _vectorClockService = getIt<VectorClockService>();
+    init();
+  }
 
+  Future<void> init() async {
     if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
         _loggingDb.captureEvent(event, domain: 'INBOX_CUBIT');

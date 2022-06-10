@@ -1,4 +1,5 @@
 import 'package:enough_mail/enough_mail.dart';
+import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
@@ -21,7 +22,17 @@ Future<ImapClient?> createImapClient() async {
         isSecure: true,
       );
       await imapClient.login(imapConfig.userName, imapConfig.password);
-      await imapClient.selectMailboxByPath(imapConfig.folder);
+
+      // Create folder if it doesn't exist yet
+      try {
+        await imapClient.selectMailboxByPath(imapConfig.folder);
+      } catch (ex) {
+        debugPrint('Attempting to create folder ${imapConfig.folder}');
+        Mailbox syncFolder = await imapClient.createMailbox(imapConfig.folder);
+        loggingDb.captureEvent('Folder created: $syncFolder',
+            domain: 'IMAP_CLIENT');
+        await imapClient.selectMailboxByPath(imapConfig.folder);
+      }
 
       imapClient.eventBus.on<ImapEvent>().listen((ImapEvent imapEvent) async {
         loggingDb.captureEvent(imapEvent, domain: 'IMAP_CLIENT');

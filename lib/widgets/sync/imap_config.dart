@@ -96,21 +96,21 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                       labelStyle: settingsLabelStyle,
                     ),
                   ),
-                  FormBuilderTextField(
-                    name: 'imap_folder',
-                    initialValue: state.maybeWhen(
-                          (sharedKey, imapConfig) => imapConfig?.folder,
-                          orElse: () => null,
-                        ) ??
-                        'INBOX',
-                    validator: FormBuilderValidators.required(),
-                    keyboardAppearance: Brightness.dark,
-                    style: inputStyle,
-                    decoration: InputDecoration(
-                      labelText: localizations.settingsSyncFolderLabel,
-                      labelStyle: settingsLabelStyle,
-                    ),
-                  ),
+                  // FormBuilderTextField(
+                  //   name: 'imap_folder',
+                  //   initialValue: state.maybeWhen(
+                  //         (sharedKey, imapConfig) => imapConfig?.folder,
+                  //         orElse: () => null,
+                  //       ) ??
+                  //       'INBOX.lotti-sync',
+                  //   validator: FormBuilderValidators.required(),
+                  //   keyboardAppearance: Brightness.dark,
+                  //   style: inputStyle,
+                  //   decoration: InputDecoration(
+                  //     labelText: localizations.settingsSyncFolderLabel,
+                  //     labelStyle: settingsLabelStyle,
+                  //   ),
+                  // ),
                   FormBuilderTextField(
                     name: 'imap_userName',
                     initialValue: state.maybeWhen(
@@ -172,7 +172,8 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
 
                         ImapConfig cfg = ImapConfig(
                           host: getTrimmed('imap_host'),
-                          folder: getTrimmed('imap_folder'),
+                          // folder: getTrimmed('imap_folder'),
+                          folder: 'INBOX.lotti-sync',
                           userName: getTrimmed('imap_userName'),
                           password: getTrimmed('imap_password'),
                           port: int.parse(formData!['imap_port']),

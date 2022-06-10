@@ -126,6 +126,7 @@
   "settingsSyncPortLabel": "Port",
   "settingsSyncSaveButton": "Save IMAP Config",
   "settingsSyncScanning": "Scanning Shared Secret...",
+  "settingsSyncSuccessCloseButton": "Close",
   "settingsSyncUserLabel": "Username",
   "settingsTagsDeleteTooltip": "Delete tag",
   "settingsTagsHideLabel": "Hide from suggestions:",

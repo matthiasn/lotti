@@ -62,7 +62,13 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
               ),
             ),
           ),
-          loading: () => StatusTextWidget(localizations.settingsSyncLoadingKey),
+          loading: () => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              StatusTextWidget(localizations.settingsSyncLoadingKey),
+              const DeleteSyncConfigButton(),
+            ],
+          ),
           generating: () => StatusTextWidget(localizations.settingsSyncGenKey),
           empty: () => Column(
             mainAxisSize: MainAxisSize.min,

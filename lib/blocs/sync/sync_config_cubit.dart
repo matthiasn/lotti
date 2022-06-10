@@ -3,6 +3,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
+import 'package:lotti/sync/inbox_service.dart';
+import 'package:lotti/sync/outbox.dart';
 
 part 'sync_config_cubit.freezed.dart';
 part 'sync_config_state.dart';
@@ -23,6 +25,9 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     if (sharedSecret == null) {
       emit(Empty());
     } else {
+      await getIt<SyncInboxService>().init();
+      await getIt<OutboxService>().init();
+
       emit(SyncConfigState(
         sharedSecret: sharedSecret,
         imapConfig: imapConfig,
