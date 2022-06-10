@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
@@ -174,9 +176,15 @@ class DeleteSyncConfigButton extends StatelessWidget {
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
 
-    return Button(localizations.settingsSyncDeleteKeyButton,
-        onPressed: () => context.read<SyncConfigCubit>().deleteSharedKey(),
-        primaryColor: Colors.red);
+    return Button(
+      localizations.settingsSyncDeleteKeyButton,
+      onPressed: () {
+        context.read<SyncConfigCubit>().deleteSharedKey();
+        persistNamedRoute('/settings/advanced');
+        context.router.pop();
+      },
+      primaryColor: Colors.red,
+    );
   }
 }
 
