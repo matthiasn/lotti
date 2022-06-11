@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Auto-sizing text in Sync Assistant
+
+## [0.8.41] - 2022-06-10
+### Changed:
 - Default IMAP folder for sync
 
 ## [0.8.40] - 2022-06-09
