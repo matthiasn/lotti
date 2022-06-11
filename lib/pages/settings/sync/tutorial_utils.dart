@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
@@ -31,11 +32,42 @@ class SyncAssistantHeaderWidget extends StatelessWidget {
       child: SlidingContainer(
         offset: 250,
         child: Padding(
-          padding: const EdgeInsets.only(top: 32.0),
+          padding: const EdgeInsets.only(top: 12.0),
           child: Text(
             title,
             textAlign: TextAlign.center,
-            style: titleStyle.copyWith(fontSize: 40),
+            style: titleStyle.copyWith(fontSize: 24),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AlignedText extends StatelessWidget {
+  const AlignedText(
+    this.text, {
+    Key? key,
+  }) : super(key: key);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.center,
+      child: SlidingContainer(
+        offset: 250,
+        child: SizedBox(
+          width: textBodyWidth(context),
+          height: MediaQuery.of(context).size.height - 240,
+          child: Center(
+            child: AutoSizeText(
+              text,
+              textAlign: TextAlign.start,
+              style: titleStyle,
+              maxFontSize: 32,
+            ),
           ),
         ),
       ),

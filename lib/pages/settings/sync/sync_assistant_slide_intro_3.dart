@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:lotti/pages/settings/sync/tutorial_utils.dart';
-import 'package:lotti/theme.dart';
 import 'package:lottie/lottie.dart';
 
 class SyncAssistantIntroSlide3 extends StatelessWidget {
@@ -38,29 +37,19 @@ class SyncAssistantIntroSlide3 extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.only(bottom: 60),
                 width: textBodyWidth(context),
-                child: Lottie.asset(
-                  'assets/lottiefiles/gears.json',
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.contain,
+                child: Opacity(
+                  opacity: 0.4,
+                  child: Lottie.asset(
+                    'assets/lottiefiles/gears.json',
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
           ),
-          Align(
-            alignment: Alignment.center,
-            child: SlidingContainer(
-              offset: 250,
-              child: SizedBox(
-                width: textBodyWidth(context),
-                child: Text(
-                  localizations.syncAssistantPage3,
-                  textAlign: TextAlign.justify,
-                  style: titleStyle.copyWith(fontSize: 20),
-                ),
-              ),
-            ),
-          ),
+          AlignedText(localizations.syncAssistantPage3),
         ],
       ),
     );
