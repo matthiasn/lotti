@@ -166,7 +166,7 @@ DashboardDefinitionDbEntity dashboardDefinitionDbEntity(
     private: dashboard.private,
     deleted: dashboard.deletedAt != null,
     active: dashboard.active,
-    name: dashboard.name,
+    name: dashboard.id,
   );
 }
 
