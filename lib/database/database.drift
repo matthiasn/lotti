@@ -110,7 +110,7 @@ ON habit_definitions (private);
 
 CREATE TABLE dashboard_definitions (
   id TEXT NOT NULL,
-  name TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   last_reviewed DATETIME NOT NULL,
