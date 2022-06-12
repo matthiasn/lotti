@@ -75,6 +75,14 @@ String entryTextForQuant(QuantitativeEntry qe) {
   );
 }
 
+String entryTextForWorkout(WorkoutData data) {
+  Duration duration = data.dateTo.difference(data.dateFrom);
+
+  return '${data.workoutType}\n'
+      'energy: ${nf.format(data.energy)} kcal\n'
+      'duration: ${duration.inMinutes} minutes';
+}
+
 String entryTextForMeasurable(
     MeasurementData data, MeasurableDataType dataType) {
   return '${dataType.displayName}: '

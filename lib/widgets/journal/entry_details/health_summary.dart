@@ -7,9 +7,11 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class HealthSummary extends StatelessWidget {
   final QuantitativeEntry qe;
+  final bool showChart;
 
   const HealthSummary(
     this.qe, {
+    this.showChart = true,
     Key? key,
   }) : super(key: key);
 
@@ -19,14 +21,15 @@ class HealthSummary extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: Column(
         children: [
-          DashboardHealthChart(
-            chartConfig: DashboardHealthItem(
-              color: '#0000FF',
-              healthType: qe.data.dataType,
+          if (showChart)
+            DashboardHealthChart(
+              chartConfig: DashboardHealthItem(
+                color: '#0000FF',
+                healthType: qe.data.dataType,
+              ),
+              rangeStart: getRangeStart(context: context),
+              rangeEnd: getRangeEnd(),
             ),
-            rangeStart: getRangeStart(context: context),
-            rangeEnd: getRangeEnd(),
-          ),
           const SizedBox(height: 8),
           InfoText(entryTextForQuant(qe)),
         ],

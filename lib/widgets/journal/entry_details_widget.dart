@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -22,8 +21,8 @@ import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
+import 'package:lotti/widgets/journal/entry_details/workout_summary.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
-import 'package:lotti/widgets/journal/helpers.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
@@ -180,13 +179,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     journalAudio: (JournalAudio audio) {
                       return const AudioPlayerWidget();
                     },
-                    workout: (WorkoutEntry workout) {
-                      WorkoutData data = workout.data;
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: EntryTextWidget(data.toString()),
-                      );
-                    },
+                    workout: (WorkoutEntry workout) => WorkoutSummary(workout),
                     survey: (SurveyEntry surveyEntry) =>
                         SurveySummary(surveyEntry),
                     quantitative: (QuantitativeEntry qe) => HealthSummary(qe),

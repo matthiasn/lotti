@@ -227,6 +227,8 @@ class HealthImport {
         loggingDb.startTransaction('getActivityHealthData()', 'task');
     debugPrint('getWorkoutsHealthData $dateFrom - $dateTo');
 
+    await FlutterHealthFit().authorize();
+
     List<WorkoutSample>? workouts =
         await FlutterHealthFit().getWorkoutsBySegment(
       dateFrom.millisecondsSinceEpoch,

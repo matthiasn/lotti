@@ -11,6 +11,7 @@ import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
+import 'package:lotti/widgets/journal/entry_details/workout_summary.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
 import 'package:lotti/widgets/journal/tags_view_widget.dart';
@@ -87,7 +88,7 @@ class JournalCardTitle extends StatelessWidget {
           TagsViewWidget(item: item),
           item.map(
             quantitative: (QuantitativeEntry qe) =>
-                HealthSummary(qe),
+                HealthSummary(qe, showChart: false),
             journalAudio: (JournalAudio journalAudio) =>
                 journalAudio.entryText?.plainText != null
                     ? TextViewerWidget(entryText: journalAudio.entryText)
@@ -136,8 +137,7 @@ class JournalCardTitle extends StatelessWidget {
                 ],
               );
             },
-            workout: (WorkoutEntry workout) =>
-                EntryTextWidget(workout.data.toString()),
+            workout: (WorkoutEntry workout) => WorkoutSummary(workout),
             habitCompletion: (_) => const SizedBox.shrink(),
           ),
           DurationWidget(
