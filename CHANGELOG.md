@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Layout improvements in empty dashboards page
+
+## [0.8.43] - 2022-06-12
+### Changed:
 - Allow dashboards with the same name
 - Add maintenance task for purging deleted items
 
