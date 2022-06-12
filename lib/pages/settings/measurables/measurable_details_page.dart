@@ -62,12 +62,14 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                             initialValue: item.description,
                             labelText: AppLocalizations.of(context)!
                                 .settingsMeasurableDescriptionLabel,
+                            fieldRequired: false,
                             name: 'description',
                           ),
                           FormTextField(
                             initialValue: item.unitName,
                             labelText: AppLocalizations.of(context)!
                                 .settingsMeasurableUnitLabel,
+                            fieldRequired: false,
                             name: 'unitName',
                           ),
                           FormBuilderSwitch(

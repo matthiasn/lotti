@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboards sorted alphabetically
 
 ### Changed:
-- Optional comment field in dashboard definitions
+- Optional description field in dashboard definitions
+- Optional description and unit fields in measurable definitions
 
 ### Added:
 - Maintenance task for reprocessing messages
