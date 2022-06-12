@@ -23,6 +23,7 @@ import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
+import 'package:lotti/widgets/journal/measurement_summary.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
@@ -162,6 +163,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                   ),
                   item.maybeMap(
                     task: (_) => const SizedBox.shrink(),
+                    quantitative: (_) => const SizedBox.shrink(),
+                    measurement: (_) => const SizedBox.shrink(),
+                    workout: (_) => const SizedBox.shrink(),
+                    survey: (_) => const SizedBox.shrink(),
                     orElse: () {
                       return EditorWidget(
                         controller: controller,
@@ -171,7 +176,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       );
                     },
                   ),
-                  item.maybeMap(
+                  item.map(
                     journalAudio: (JournalAudio audio) {
                       return const AudioPlayerWidget();
                     },
@@ -184,23 +189,13 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     },
                     survey: (SurveyEntry surveyEntry) =>
                         SurveySummaryWidget(surveyEntry),
-                    quantitative: (qe) => qe.data.map(
-                      cumulativeQuantityData: (qd) => Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: InfoText(
-                          'End: ${df.format(qe.meta.dateTo)}'
-                          '\n${formatType(qd.dataType)}: '
-                          '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-                        ),
-                      ),
-                      discreteQuantityData: (qd) => Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: InfoText(
-                          'End: ${df.format(qe.meta.dateTo)}'
-                          '\n${formatType(qd.dataType)}: '
-                          '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-                        ),
-                      ),
+                    quantitative: (qe) => Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: InfoText(entryTextForQuant(qe)),
+                    ),
+                    measurement: (measurementEntry) => Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: MeasurementSummary(measurementEntry),
                     ),
                     task: (Task task) {
                       final formKey = GlobalKey<FormBuilderState>();
@@ -252,9 +247,9 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         task: task,
                       );
                     },
-                    orElse: () {
-                      return const SizedBox.shrink();
-                    },
+                    habitCompletion: (_) => const SizedBox.shrink(),
+                    journalEntry: (_) => const SizedBox.shrink(),
+                    journalImage: (_) => const SizedBox.shrink(),
                   ),
                   EntryDetailFooter(
                     itemId: widget.itemId,

@@ -85,19 +85,8 @@ class JournalCardTitle extends StatelessWidget {
           ),
           TagsViewWidget(item: item),
           item.map(
-            quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(
-              cumulativeQuantityData: (qd) => EntryTextWidget(
-                'End: ${df.format(qd.dateTo)}'
-                '\n${formatType(qd.dataType)}: '
-                '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-              ),
-              discreteQuantityData: (qd) => EntryTextWidget(
-                'End: ${df.format(item.meta.dateTo)}'
-                '\n${formatType(qd.dataType)}: '
-                '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-              ),
-              orElse: () => Container(),
-            ),
+            quantitative: (QuantitativeEntry qe) =>
+                EntryTextWidget(entryTextForQuant(qe)),
             journalAudio: (JournalAudio journalAudio) =>
                 journalAudio.entryText?.plainText != null
                     ? TextViewerWidget(entryText: journalAudio.entryText)

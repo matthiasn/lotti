@@ -9,7 +9,7 @@ class EntryTextWidget extends StatelessWidget {
     this.text, {
     Key? key,
     this.maxLines = 5,
-    this.padding = const EdgeInsets.only(top: 4.0),
+    this.padding = const EdgeInsets.symmetric(vertical: 8.0),
   }) : super(key: key);
 
   @override
