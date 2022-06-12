@@ -7,9 +7,9 @@ import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-class SurveySummaryWidget extends StatelessWidget {
+class SurveySummary extends StatelessWidget {
   final SurveyEntry surveyEntry;
-  const SurveySummaryWidget(
+  const SurveySummary(
     this.surveyEntry, {
     Key? key,
   }) : super(key: key);

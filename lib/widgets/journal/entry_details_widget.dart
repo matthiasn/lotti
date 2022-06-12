@@ -19,13 +19,13 @@ import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_footer.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
+import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
+import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
+import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
-import 'package:lotti/widgets/journal/measurement_summary.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
-import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tuple/tuple.dart';
@@ -188,15 +188,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       );
                     },
                     survey: (SurveyEntry surveyEntry) =>
-                        SurveySummaryWidget(surveyEntry),
-                    quantitative: (qe) => Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: InfoText(entryTextForQuant(qe)),
-                    ),
-                    measurement: (measurementEntry) => Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: MeasurementSummary(measurementEntry),
-                    ),
+                        SurveySummary(surveyEntry),
+                    quantitative: (QuantitativeEntry qe) => HealthSummary(qe),
+                    measurement: (measurementEntry) =>
+                        MeasurementSummary(measurementEntry),
                     task: (Task task) {
                       final formKey = GlobalKey<FormBuilderState>();
 

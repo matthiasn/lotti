@@ -8,12 +8,12 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
+import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
+import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
-import 'package:lotti/widgets/journal/measurement_summary.dart';
 import 'package:lotti/widgets/journal/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
-import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:lotti/widgets/tasks/linked_duration.dart';
 import 'package:lotti/widgets/tasks/task_status.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -97,8 +97,7 @@ class JournalCardTitle extends StatelessWidget {
             journalImage: (JournalImage journalImage) => Expanded(
               child: TextViewerWidget(entryText: journalImage.entryText),
             ),
-            survey: (SurveyEntry surveyEntry) =>
-                SurveySummaryWidget(surveyEntry),
+            survey: (SurveyEntry surveyEntry) => SurveySummary(surveyEntry),
             measurement: (MeasurementEntry measurementEntry) =>
                 MeasurementSummary(measurementEntry),
             task: (Task task) {
