@@ -176,7 +176,7 @@ class SyncInboxService {
   }
 
   bool validSubject(String subject) {
-    RegExp validSubject = RegExp(r'[a-z0-9]{40}:[0-9]+');
+    RegExp validSubject = RegExp(r'[a-z0-9]{40}:[a-z0-9]+');
     return validSubject.hasMatch(subject);
   }
 
