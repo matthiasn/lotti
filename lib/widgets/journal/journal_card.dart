@@ -8,12 +8,14 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
+import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
+import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
+import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
+import 'package:lotti/widgets/journal/entry_details/workout_summary.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
-import 'package:lotti/widgets/journal/measurement_summary.dart';
 import 'package:lotti/widgets/journal/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
-import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:lotti/widgets/tasks/linked_duration.dart';
 import 'package:lotti/widgets/tasks/task_status.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -86,7 +88,7 @@ class JournalCardTitle extends StatelessWidget {
           TagsViewWidget(item: item),
           item.map(
             quantitative: (QuantitativeEntry qe) =>
-                EntryTextWidget(entryTextForQuant(qe)),
+                HealthSummary(qe, showChart: false),
             journalAudio: (JournalAudio journalAudio) =>
                 journalAudio.entryText?.plainText != null
                     ? TextViewerWidget(entryText: journalAudio.entryText)
@@ -97,8 +99,7 @@ class JournalCardTitle extends StatelessWidget {
             journalImage: (JournalImage journalImage) => Expanded(
               child: TextViewerWidget(entryText: journalImage.entryText),
             ),
-            survey: (SurveyEntry surveyEntry) =>
-                SurveySummaryWidget(surveyEntry),
+            survey: (SurveyEntry surveyEntry) => SurveySummary(surveyEntry),
             measurement: (MeasurementEntry measurementEntry) =>
                 MeasurementSummary(measurementEntry),
             task: (Task task) {
@@ -136,8 +137,7 @@ class JournalCardTitle extends StatelessWidget {
                 ],
               );
             },
-            workout: (WorkoutEntry workout) =>
-                EntryTextWidget(workout.data.toString()),
+            workout: (WorkoutEntry workout) => WorkoutSummary(workout),
             habitCompletion: (_) => const SizedBox.shrink(),
           ),
           DurationWidget(
