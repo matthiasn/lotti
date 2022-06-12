@@ -40,8 +40,7 @@ class MeasurementSummary extends StatelessWidget {
               if (measurementEntry.entryText?.plainText != null)
                 TextViewerWidget(entryText: measurementEntry.entryText),
               EntryTextWidget(
-                '${dataType.displayName}: '
-                '${nf.format(data.value)}',
+                entryTextForMeasurable(data, dataType),
                 padding: EdgeInsets.zero,
               ),
             ],
