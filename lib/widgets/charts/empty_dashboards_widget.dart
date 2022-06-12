@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/theme.dart';
@@ -18,14 +21,17 @@ class EmptyDashboards extends StatelessWidget {
         Align(
           alignment: Alignment.center,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.6,
+            width: min(MediaQuery.of(context).size.width * 0.8 - 64, 640),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                AutoSizeText(
                   localizations.dashboardsEmptyHint,
                   style: titleStyle,
+                  maxLines: 7,
                 ),
+                const SizedBox(height: 32),
                 MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
@@ -34,12 +40,13 @@ class EmptyDashboards extends StatelessWidget {
                           'https://github.com/matthiasn/lotti/blob/main/docs/MANUAL.md');
                       launchUrl(uri);
                     },
-                    child: Text(
-                      '\n${localizations.manualLinkText}',
+                    child: AutoSizeText(
+                      localizations.manualLinkText,
                       style: titleStyle.copyWith(
                         decoration: TextDecoration.underline,
                         color: AppColors.tagColor,
                       ),
+                      maxLines: 2,
                     ),
                   ),
                 ),
