@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 
@@ -65,9 +66,18 @@ class InfoText extends StatelessWidget {
   }
 }
 
-String entryTextForQuant(QuantitativeEntry qe) => qe.data.map(
-      cumulativeQuantityData: (qd) => '${formatType(qd.dataType)}: '
-          '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-      discreteQuantityData: (qd) => '${formatType(qd.dataType)}: '
-          '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-    );
+String entryTextForQuant(QuantitativeEntry qe) {
+  return qe.data.map(
+    cumulativeQuantityData: (qd) => '${formatType(qd.dataType)}: '
+        '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+    discreteQuantityData: (qd) => '${formatType(qd.dataType)}: '
+        '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+  );
+}
+
+String entryTextForMeasurable(
+    MeasurementData data, MeasurableDataType dataType) {
+  return '${dataType.displayName}: '
+      '${nf.format(data.value)} '
+      '${dataType.unitName}';
+}
