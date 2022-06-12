@@ -30,8 +30,6 @@ class WorkoutSummary extends StatelessWidget {
       }
     });
 
-    debugPrint(items.toString());
-
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(

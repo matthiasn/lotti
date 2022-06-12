@@ -7,6 +7,8 @@
   "addActionAddTask": "Add Task",
   "addActionAddText": "Add Text Entry",
   "addActionAddTimeRecording": "Start Time Recording",
+  "addMeasurementNoneDefined": "Add Measurable Data Type",
+  "addMeasurementTitle": "Add Measurement",
   "configFlagEnableNotifications": "Enable desktop notifications?",
   "configFlagGlobalScreenshotHotkey": "Listen to global screenshot hotkey?",
   "configFlagHideForScreenshot": "Hide Lotti when taking screenshots?",

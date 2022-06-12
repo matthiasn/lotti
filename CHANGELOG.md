@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Improve first-time user experience for measurables
+
+## [0.8.46] - 2022-06-12
+### Changed:
 - Improve layout of health data entry
 - Improve layout of measurable data entry
 

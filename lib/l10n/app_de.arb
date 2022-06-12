@@ -6,6 +6,8 @@
   "addActionAddSurvey": "Fragebogen ausfüllen",
   "addActionAddTask": "Aufgabe hinzufügen",
   "addActionAddText": "Texteintrag hinzufügen",
+  "addMeasurementNoneDefined": "Messbaren Datentyp hinzufügen",
+  "addMeasurementTitle": "Messbare Daten erfassen",
   "configFlagEnableNotifications": "Desktop Notifications erlauben?",
   "configFlagGlobalScreenshotHotkey": "Screenshot beim Benutzen des globalen Hotkeys?",
   "configFlagHideForScreenshot": "Lotti bei Screenshots minimieren?",
