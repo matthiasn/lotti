@@ -43,15 +43,15 @@ class MeasurementSummary extends StatelessWidget {
               children: [
                 if (measurementEntry.entryText?.plainText != null)
                   TextViewerWidget(entryText: measurementEntry.entryText),
-                EntryTextWidget(
-                  entryTextForMeasurable(data, dataType),
-                  padding: EdgeInsets.zero,
-                ),
-                const SizedBox(height: 16),
                 DashboardMeasurablesChart(
                   rangeStart: getRangeStart(context: context),
                   rangeEnd: getRangeEnd(),
                   measurableDataTypeId: measurementEntry.data.dataTypeId,
+                ),
+                const SizedBox(height: 8),
+                EntryTextWidget(
+                  entryTextForMeasurable(data, dataType),
+                  padding: EdgeInsets.zero,
                 ),
               ],
             ),

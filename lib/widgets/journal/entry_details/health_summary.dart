@@ -19,8 +19,6 @@ class HealthSummary extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: Column(
         children: [
-          InfoText(entryTextForQuant(qe)),
-          const SizedBox(height: 16),
           DashboardHealthChart(
             chartConfig: DashboardHealthItem(
               color: '#0000FF',
@@ -29,6 +27,8 @@ class HealthSummary extends StatelessWidget {
             rangeStart: getRangeStart(context: context),
             rangeEnd: getRangeEnd(),
           ),
+          const SizedBox(height: 8),
+          InfoText(entryTextForQuant(qe)),
         ],
       ),
     );

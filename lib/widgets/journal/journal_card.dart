@@ -8,6 +8,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
+import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -86,7 +87,7 @@ class JournalCardTitle extends StatelessWidget {
           TagsViewWidget(item: item),
           item.map(
             quantitative: (QuantitativeEntry qe) =>
-                EntryTextWidget(entryTextForQuant(qe)),
+                HealthSummary(qe),
             journalAudio: (JournalAudio journalAudio) =>
                 journalAudio.entryText?.plainText != null
                     ? TextViewerWidget(entryText: journalAudio.entryText)
