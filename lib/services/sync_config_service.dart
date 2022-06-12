@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:encrypt/encrypt.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/sync/inbox_service.dart';
 
 class SyncConfigService {
   final _storage = const FlutterSecureStorage();
@@ -52,5 +55,10 @@ class SyncConfigService {
   Future<void> setImapConfig(ImapConfig imapConfig) async {
     String json = jsonEncode(imapConfig);
     await _storage.write(key: imapConfigKey, value: json);
+  }
+
+  Future<void> resetOffset() async {
+    await _storage.delete(key: lastReadUidKey);
+    await getIt<VectorClockService>().setNewHost();
   }
 }

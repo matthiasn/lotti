@@ -71,6 +71,7 @@
   "maintenanceDeleteTagged": "Delete tagged",
   "maintenancePurgeDeleted": "Purge deleted items",
   "maintenanceRecreateTagged": "Recreate tagged",
+  "maintenanceReprocessSync": "Reprocess sync messages",
   "maintenanceStories": "Assign stories from parent entries",
   "manualLinkText": "Check out the manual for more information",
   "navTabTitleFlagged": "Flagged",
