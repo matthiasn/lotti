@@ -184,23 +184,9 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     },
                     survey: (SurveyEntry surveyEntry) =>
                         SurveySummaryWidget(surveyEntry),
-                    quantitative: (qe) => qe.data.map(
-                      cumulativeQuantityData: (qd) => Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: InfoText(
-                          'End: ${df.format(qe.meta.dateTo)}'
-                          '\n${formatType(qd.dataType)}: '
-                          '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-                        ),
-                      ),
-                      discreteQuantityData: (qd) => Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: InfoText(
-                          'End: ${df.format(qe.meta.dateTo)}'
-                          '\n${formatType(qd.dataType)}: '
-                          '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-                        ),
-                      ),
+                    quantitative: (qe) => Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: InfoText(entryTextForQuant(qe)),
                     ),
                     task: (Task task) {
                       final formKey = GlobalKey<FormBuilderState>();

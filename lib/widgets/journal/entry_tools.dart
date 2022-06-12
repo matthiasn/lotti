@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/theme.dart';
 
 NumberFormat nf = NumberFormat('###.##');
 
@@ -57,9 +58,16 @@ class InfoText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(text,
         maxLines: maxLines,
-        style: const TextStyle(
-          fontFamily: 'ShareTechMono',
-          fontSize: 14.0,
-        ));
+        style: TextStyle(
+            fontFamily: 'ShareTechMono',
+            fontSize: 14.0,
+            color: AppColors.entryTextColor));
   }
 }
+
+String entryTextForQuant(QuantitativeEntry qe) => qe.data.map(
+      cumulativeQuantityData: (qd) => '${formatType(qd.dataType)}: '
+          '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+      discreteQuantityData: (qd) => '${formatType(qd.dataType)}: '
+          '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+    );
