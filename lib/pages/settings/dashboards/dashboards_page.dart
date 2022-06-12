@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/sort.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
@@ -79,11 +80,8 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
         BuildContext context,
         AsyncSnapshot<List<DashboardDefinition>> snapshot,
       ) {
-        List<DashboardDefinition> items = snapshot.data ?? [];
-        List<DashboardDefinition> filtered = items
-            .where((DashboardDefinition dashboard) =>
-                dashboard.name.toLowerCase().contains(match))
-            .toList();
+        List<DashboardDefinition> dashboards =
+            filteredSortedDashboards(snapshot.data ?? [], match);
 
         return Stack(
           children: [
@@ -96,10 +94,10 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
                 top: 64,
               ),
               children: List.generate(
-                filtered.length,
+                dashboards.length,
                 (int index) {
                   return DashboardCard(
-                    dashboard: filtered.elementAt(index),
+                    dashboard: dashboards.elementAt(index),
                     index: index,
                   );
                 },
