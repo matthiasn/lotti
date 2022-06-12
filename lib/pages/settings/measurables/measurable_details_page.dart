@@ -98,18 +98,19 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                             decoration: InputDecoration(
                               labelText: AppLocalizations.of(context)!
                                   .settingsMeasurableAggregationLabel,
-                              labelStyle: labelStyle,
+                              labelStyle: formLabelStyle,
                             ),
-                            style: const TextStyle(fontSize: 48),
-                            allowClear: true,
-                            dropdownColor: AppColors.headerBgColor,
-                            hint: Text(
-                              AppLocalizations.of(context)!
-                                  .settingsMeasurableAggregationSelectLabel,
-                              style: formLabelStyle.copyWith(
-                                fontSize: 12,
+                            iconEnabledColor: AppColors.entryTextColor,
+                            clearIcon: Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: Icon(
+                                Icons.close,
+                                color: AppColors.entryTextColor,
                               ),
                             ),
+                            style: const TextStyle(fontSize: 40),
+                            allowClear: true,
+                            dropdownColor: AppColors.headerBgColor,
                             items:
                                 AggregationType.values.map((aggregationType) {
                               return DropdownMenuItem(

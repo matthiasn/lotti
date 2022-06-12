@@ -30,7 +30,7 @@ class FormTextField extends StatelessWidget {
       style: labelStyle,
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: TextStyle(color: AppColors.entryTextColor, fontSize: 16),
+        labelStyle: formLabelStyle,
       ),
     );
   }
