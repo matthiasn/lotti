@@ -438,6 +438,14 @@ class JournalDb extends _$JournalDb {
     return flag;
   }
 
+  Future<void> purgeDeleted() async {
+    await createDbBackup();
+    await purgeDeletedDashboards();
+    await purgeDeletedMeasurables();
+    await purgeDeletedTagEntities();
+    await purgeDeletedJournalEntities();
+  }
+
   Future<bool> getConfigFlag(String flagName) async {
     List<ConfigFlag> flags = await listConfigFlags().get();
     return findConfigFlag(flagName, flags);

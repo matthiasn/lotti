@@ -398,6 +398,22 @@ deleteTaggedForId:
 DELETE FROM tagged
   WHERE journal_id = :id;
 
+purgeDeletedDashboards:
+DELETE FROM dashboard_definitions
+  WHERE deleted = TRUE;
+
+purgeDeletedMeasurables:
+DELETE FROM measurable_types
+  WHERE deleted = TRUE;
+
+purgeDeletedTagEntities:
+DELETE FROM tag_entities
+  WHERE deleted = TRUE;
+
+purgeDeletedJournalEntities:
+DELETE FROM journal
+  WHERE deleted = TRUE;
+
 deleteTagged:
 DELETE FROM tagged;
 

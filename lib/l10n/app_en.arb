@@ -69,6 +69,7 @@
   "maintenanceDeleteEditorDb": "Delete editor drafts database",
   "maintenanceDeleteLoggingDb": "Delete logging database",
   "maintenanceDeleteTagged": "Delete tagged",
+  "maintenancePurgeDeleted": "Purge deleted items",
   "maintenanceRecreateTagged": "Recreate tagged",
   "maintenanceStories": "Assign stories from parent entries",
   "manualLinkText": "Check out the manual for more information",
