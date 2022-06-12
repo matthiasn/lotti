@@ -66,6 +66,7 @@
   "maintenanceDeleteEditorDb": "Textentwürfedatenbank löschen",
   "maintenanceDeleteLoggingDb": "Loggingdatenbank löschen",
   "maintenanceDeleteTagged": "Tag Links löschen",
+  "maintenancePurgeDeleted": "Papierkorb leeren",
   "maintenanceRecreateTagged": "Tag Links wiederherstellen",
   "maintenanceStories": "Stories von verlinkten Einträgen zuweisen",
   "navTabTitleFlagged": "Markiert",

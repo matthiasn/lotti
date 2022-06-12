@@ -66,6 +66,10 @@ class _MaintenancePageState extends State<MaintenancePage> {
                   title: localizations.maintenanceStories,
                   onTap: () => _maintenance.recreateStoryAssignment(),
                 ),
+                MaintenanceCard(
+                  title: localizations.maintenancePurgeDeleted,
+                  onTap: () => _db.purgeDeleted(),
+                ),
               ],
             );
           },
