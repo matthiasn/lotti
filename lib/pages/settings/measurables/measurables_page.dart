@@ -1,11 +1,10 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/measurables/measurable_type_card.dart';
-import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
@@ -117,7 +116,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
                 child: FloatingActionButton(
                   backgroundColor: AppColors.entryBgColor,
                   onPressed: () {
-                    context.router.push(const CreateMeasurableRoute());
+                    pushNamedRoute('/settings/create_measurable');
                   },
                   child: const Icon(MdiIcons.plus, size: 32),
                 ),

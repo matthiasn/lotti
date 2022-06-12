@@ -1,13 +1,18 @@
+import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -42,6 +47,8 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder<List<MeasurableDataType>>(
       stream: _db.watchMeasurableDataTypes(),
       builder: (
@@ -49,6 +56,10 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
         AsyncSnapshot<List<MeasurableDataType>> snapshot,
       ) {
         List<MeasurableDataType> items = snapshot.data ?? [];
+
+        if (items.length == 1) {
+          selected = items.first;
+        }
 
         for (MeasurableDataType dataType in items) {
           if (dataType.id == widget.selectedId) {
@@ -85,105 +96,153 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   color: AppColors.headerBgColor,
+                  width: MediaQuery.of(context).size.width,
                   padding: const EdgeInsets.all(32.0),
                   child: FormBuilder(
                     key: _formKey,
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     child: Column(
                       children: <Widget>[
-                        Text(
-                          selected?.displayName ?? 'New Measurement',
-                          style: TextStyle(
-                            color: AppColors.entryTextColor,
-                            fontFamily: 'Oswald',
-                          ),
-                        ),
-                        if (selected == null)
-                          FormBuilderDropdown(
-                            dropdownColor: AppColors.headerBgColor,
-                            name: 'type',
-                            decoration: InputDecoration(
-                              labelText: 'Type',
-                              labelStyle: labelStyle,
-                            ),
-                            hint: Text(
-                              'Select Measurement Type',
-                              style: inputStyle,
-                            ),
-                            onChanged: (MeasurableDataType? value) {
-                              setState(() {
-                                selected = value;
-                              });
-                            },
-                            validator: FormBuilderValidators.compose(
-                                [FormBuilderValidators.required()]),
-                            items: items
-                                .map((MeasurableDataType item) =>
-                                    DropdownMenuItem(
-                                      value: item,
-                                      child: Text(
-                                        item.displayName,
-                                        style: inputStyle,
+                        if (items.isEmpty)
+                          Row(
+                            children: [
+                              MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    pushNamedRoute(
+                                        '/settings/create_measurable');
+                                  },
+                                  child: SizedBox(
+                                    width:
+                                        MediaQuery.of(context).size.width - 100,
+                                    child: AutoSizeText(
+                                      localizations.addMeasurementNoneDefined,
+                                      style: titleStyle.copyWith(
+                                        decoration: TextDecoration.underline,
+                                        color: AppColors.tagColor,
                                       ),
-                                    ))
-                                .toList(),
-                          ),
-                        if (selected != null)
-                          FormBuilderCupertinoDateTimePicker(
-                            name: 'date',
-                            alwaysUse24HourFormat: true,
-                            format:
-                                DateFormat('EEEE, MMMM d, yyyy \'at\' HH:mm'),
-                            inputType: CupertinoDateTimePickerInputType.both,
-                            style: inputStyle,
-                            decoration: InputDecoration(
-                              labelText: 'Measurement taken',
-                              labelStyle: labelStyle,
-                            ),
-                            initialValue: DateTime.now(),
-                            theme: DatePickerTheme(
-                              headerColor: AppColors.headerBgColor,
-                              backgroundColor: AppColors.bodyBgColor,
-                              itemStyle: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                                      wrapWords: false,
+                                      maxLines: 3,
+                                    ),
+                                  ),
+                                ),
                               ),
-                              doneStyle: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
+                            ],
+                          ),
+                        if (items.isNotEmpty)
+                          Column(
+                            children: [
+                              Text(
+                                selected?.displayName ??
+                                    localizations.addMeasurementTitle,
+                                style: TextStyle(
+                                  color: AppColors.entryTextColor,
+                                  fontFamily: 'Oswald',
+                                  fontSize: 24,
+                                ),
                               ),
-                            ),
-                          ),
-                        if (selected != null)
-                          FormBuilderTextField(
-                            initialValue: '',
-                            decoration: InputDecoration(
-                              labelText: selected!.description,
-                              labelStyle: labelStyle,
-                            ),
-                            keyboardAppearance: Brightness.dark,
-                            style: inputStyle,
-                            name: 'value',
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                          ),
-                        TextButton(
-                          onPressed: onSave,
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 24.0),
-                            child: Text(
-                              'Save',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontFamily: 'Oswald',
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.appBarFgColor,
+                              if (selected?.description != null)
+                                Text(
+                                  selected!.description,
+                                  style: TextStyle(
+                                    color: AppColors.entryTextColor,
+                                    fontFamily: 'Oswald',
+                                    fontWeight: FontWeight.w300,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              if (selected == null)
+                                FormBuilderDropdown(
+                                  dropdownColor: AppColors.headerBgColor,
+                                  name: 'type',
+                                  decoration: InputDecoration(
+                                    labelText: 'Type',
+                                    labelStyle: labelStyle,
+                                  ),
+                                  hint: Text(
+                                    'Select Measurement Type',
+                                    style: inputStyle,
+                                  ),
+                                  onChanged: (MeasurableDataType? value) {
+                                    setState(() {
+                                      selected = value;
+                                    });
+                                  },
+                                  validator: FormBuilderValidators.compose(
+                                      [FormBuilderValidators.required()]),
+                                  items: items
+                                      .map((MeasurableDataType item) =>
+                                          DropdownMenuItem(
+                                            value: item,
+                                            child: Text(
+                                              item.displayName,
+                                              style: inputStyle,
+                                            ),
+                                          ))
+                                      .toList(),
+                                ),
+                              if (selected != null)
+                                FormBuilderCupertinoDateTimePicker(
+                                  name: 'date',
+                                  alwaysUse24HourFormat: true,
+                                  format: DateFormat(
+                                      'EEEE, MMMM d, yyyy \'at\' HH:mm'),
+                                  inputType:
+                                      CupertinoDateTimePickerInputType.both,
+                                  style: inputStyle,
+                                  decoration: InputDecoration(
+                                    labelText: 'Measurement taken',
+                                    labelStyle: labelStyle,
+                                  ),
+                                  initialValue: DateTime.now(),
+                                  theme: DatePickerTheme(
+                                    headerColor: AppColors.headerBgColor,
+                                    backgroundColor: AppColors.bodyBgColor,
+                                    itemStyle: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                    doneStyle: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              if (selected != null)
+                                FormBuilderTextField(
+                                  initialValue: '',
+                                  decoration: InputDecoration(
+                                    labelText: '${selected?.displayName} '
+                                        '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
+                                    labelStyle: labelStyle,
+                                  ),
+                                  keyboardAppearance: Brightness.dark,
+                                  style: inputStyle,
+                                  name: 'value',
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                ),
+                              TextButton(
+                                onPressed: onSave,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24.0),
+                                  child: Text(
+                                    'Save',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontFamily: 'Oswald',
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.appBarFgColor,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        ),
                       ],
                     ),
                   ),

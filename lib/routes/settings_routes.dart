@@ -67,12 +67,12 @@ const AutoRoute settingsRoutes = AutoRoute(
       page: MeasurablesPage,
     ),
     AutoRoute(
-      path: 'measurables/:measurableId',
-      page: EditMeasurablePage,
+      path: 'create_measurable',
+      page: CreateMeasurablePage,
     ),
     AutoRoute(
-      path: 'measurables/create',
-      page: CreateMeasurablePage,
+      path: 'measurables/:measurableId',
+      page: EditMeasurablePage,
     ),
     AutoRoute(
       path: 'outbox_monitor',
