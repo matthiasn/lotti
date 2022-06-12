@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync of entities without vector clock
 - Dashboards sorted alphabetically
 
+### Changed:
+- Optional description field in dashboard definitions
+- Optional description and unit fields in measurable definitions
+
 ### Added:
 - Maintenance task for reprocessing messages
 

@@ -9,11 +9,13 @@ class FormTextField extends StatelessWidget {
     required this.initialValue,
     required this.name,
     required this.labelText,
+    this.fieldRequired = true,
   }) : super(key: key);
 
   final String initialValue;
   final String name;
   final String labelText;
+  final bool fieldRequired;
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +26,11 @@ class FormTextField extends StatelessWidget {
       initialValue: initialValue,
       textCapitalization: TextCapitalization.sentences,
       keyboardAppearance: Brightness.dark,
-      validator: FormBuilderValidators.required(),
+      validator: fieldRequired ? FormBuilderValidators.required() : null,
       style: labelStyle,
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: TextStyle(color: AppColors.entryTextColor, fontSize: 16),
+        labelStyle: formLabelStyle,
       ),
     );
   }

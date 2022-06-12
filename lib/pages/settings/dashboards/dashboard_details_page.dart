@@ -257,6 +257,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                 labelText:
                                     localizations.dashboardDescriptionLabel,
                                 name: 'description',
+                                fieldRequired: false,
                                 key: const Key('dashboard_description_field'),
                               ),
                               FormBuilderSwitch(

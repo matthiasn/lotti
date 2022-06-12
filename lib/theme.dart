@@ -159,9 +159,8 @@ TextStyle labelStyle = TextStyle(
 
 TextStyle formLabelStyle = TextStyle(
   color: AppColors.entryTextColor,
-  height: 1.6,
   fontFamily: 'Oswald',
-  fontSize: 20,
+  fontSize: 16,
 );
 
 TextStyle settingsLabelStyle = TextStyle(
