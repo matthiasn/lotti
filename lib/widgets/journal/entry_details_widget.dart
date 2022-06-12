@@ -162,6 +162,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                   ),
                   item.maybeMap(
                     task: (_) => const SizedBox.shrink(),
+                    quantitative: (_) => const SizedBox.shrink(),
+                    measurement: (_) => const SizedBox.shrink(),
+                    workout: (_) => const SizedBox.shrink(),
+                    survey: (_) => const SizedBox.shrink(),
                     orElse: () {
                       return EditorWidget(
                         controller: controller,
@@ -185,7 +189,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     survey: (SurveyEntry surveyEntry) =>
                         SurveySummaryWidget(surveyEntry),
                     quantitative: (qe) => Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8.0,
+                        vertical: 16,
+                      ),
                       child: InfoText(entryTextForQuant(qe)),
                     ),
                     task: (Task task) {
