@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 - Sync of entities without vector clock
 
+### Added:
+- Maintenance task for reprocessing messages
+
 ## [0.8.44] - 2022-06-12
 ### Changed:
 - Layout improvements in empty dashboards page

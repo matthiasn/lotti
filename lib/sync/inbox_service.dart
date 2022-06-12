@@ -379,9 +379,4 @@ class SyncInboxService {
       );
     }
   }
-
-  Future<void> resetOffset() async {
-    await _storage.delete(key: lastReadUidKey);
-    await _vectorClockService.setNewHost();
-  }
 }
