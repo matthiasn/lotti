@@ -4,6 +4,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
 
 class DashboardsListPage extends StatefulWidget {
@@ -31,14 +32,10 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         BuildContext context,
         AsyncSnapshot<List<DashboardDefinition>> snapshot,
       ) {
-        List<DashboardDefinition> items = snapshot.data ?? [];
-        List<DashboardDefinition> filtered = items
-            .where((DashboardDefinition dashboard) =>
-                dashboard.name.toLowerCase().contains(match) &&
-                dashboard.active)
-            .toList();
+        List<DashboardDefinition> dashboards =
+            filteredSortedDashboards(snapshot.data ?? [], match);
 
-        if (items.isEmpty) {
+        if (dashboards.isEmpty) {
           return const EmptyDashboards();
         }
 
@@ -46,10 +43,10 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
           shrinkWrap: true,
           padding: const EdgeInsets.all(8.0),
           children: List.generate(
-            filtered.length,
+            dashboards.length,
             (int index) {
               return DashboardCard(
-                dashboard: filtered.elementAt(index),
+                dashboard: dashboards.elementAt(index),
                 index: index,
               );
             },

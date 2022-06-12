@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed:
 - Sync of entities without vector clock
+- Dashboards sorted alphabetically
 
 ### Added:
 - Maintenance task for reprocessing messages
