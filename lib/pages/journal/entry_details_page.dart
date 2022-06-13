@@ -71,36 +71,26 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
         return Scaffold(
           appBar: TaskAppBar(itemId: item.meta.id),
           backgroundColor: AppColors.bodyBgColor,
-          body: Stack(
-            children: [
-              SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
-                padding: const EdgeInsets.only(top: 8, bottom: 96),
-                reverse: false,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: <Widget>[
-                    EntryDetailWidget(
-                      itemId: widget.itemId,
-                      popOnDelete: true,
-                      showTaskDetails: true,
-                    ),
-                    LinkedEntriesWidget(itemId: widget.itemId),
-                    LinkedFromEntriesWidget(item: item),
-                  ],
+          floatingActionButton: RadialAddActionButtons(
+            linked: item,
+            radius: isMobile ? 180 : 120,
+          ),
+          body: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            padding: const EdgeInsets.only(top: 8, bottom: 96),
+            reverse: false,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: <Widget>[
+                EntryDetailWidget(
+                  itemId: widget.itemId,
+                  popOnDelete: true,
+                  showTaskDetails: true,
                 ),
-              ),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: RadialAddActionButtons(
-                    linked: item,
-                    radius: isMobile ? 180 : 120,
-                  ),
-                ),
-              )
-            ],
+                LinkedEntriesWidget(itemId: widget.itemId),
+                LinkedFromEntriesWidget(item: item),
+              ],
+            ),
           ),
         );
       },
