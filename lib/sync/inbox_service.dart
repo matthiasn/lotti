@@ -190,7 +190,8 @@ class SyncInboxService {
       await fetchMutex.acquire();
 
       try {
-        imapClient = await createImapClient();
+        SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
+        imapClient = await createImapClient(syncConfig);
 
         String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
         int lastReadUid =

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Check valid mail account in sync assistant
+- Check saved IMAP config in sync assistant
+
+## [0.8.53] - 2022-06-13
+### Added:
 - App bar with save button in new measurement page
 - Ignore chart interaction on journal card
 

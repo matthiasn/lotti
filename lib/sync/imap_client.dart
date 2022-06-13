@@ -3,12 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/sync_config_service.dart';
 
-Future<ImapClient?> createImapClient() async {
-  final SyncConfigService syncConfigService = getIt<SyncConfigService>();
+Future<ImapClient?> createImapClient(SyncConfig? syncConfig) async {
   final LoggingDb loggingDb = getIt<LoggingDb>();
-  SyncConfig? syncConfig = await syncConfigService.getSyncConfig();
   final transaction = loggingDb.startTransaction('createImapClient()', 'task');
 
   try {

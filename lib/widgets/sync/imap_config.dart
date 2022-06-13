@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -7,6 +8,9 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/sync_config_service.dart';
+import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
@@ -22,7 +26,90 @@ class EmailConfigForm extends StatefulWidget {
 }
 
 class _EmailConfigFormState extends State<EmailConfigForm> {
+  final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   final _formKey = GlobalKey<FormBuilderState>();
+  bool validConfig = false;
+  bool configError = false;
+
+  ImapConfig? imapConfig;
+
+  @override
+  void initState() {
+    getImapConfig();
+    super.initState();
+  }
+
+  Future<void> getImapConfig() async {
+    ImapConfig? cfg = await _syncConfigService.getImapConfig();
+    setState(() {
+      imapConfig = cfg;
+    });
+    testConnectionWithConfig(cfg);
+  }
+
+  void resetStatus() {
+    setState(() {
+      validConfig = false;
+      configError = false;
+    });
+  }
+
+  ImapConfig? configFromForm() {
+    _formKey.currentState!.save();
+    if (_formKey.currentState!.validate()) {
+      final formData = _formKey.currentState?.value;
+
+      String getTrimmed(String k) {
+        return formData![k].toString().trim();
+      }
+
+      return ImapConfig(
+        host: getTrimmed('imap_host'),
+        // folder: getTrimmed('imap_folder'),
+        folder: 'INBOX.lotti-sync',
+        userName: getTrimmed('imap_userName'),
+        password: getTrimmed('imap_password'),
+        port: int.parse(formData!['imap_port']),
+      );
+    } else {
+      return null;
+    }
+  }
+
+  Future<void> testConnectionWithConfig(ImapConfig? cfg) async {
+    if (cfg != null) {
+      ImapClient? client = await createImapClient(
+        SyncConfig(
+          imapConfig: cfg,
+          sharedSecret: '',
+        ),
+      );
+
+      if (client != null) {
+        setState(() {
+          validConfig = true;
+        });
+      } else {
+        setState(() {
+          configError = true;
+        });
+      }
+    }
+  }
+
+  Future<void> testConnection() async {
+    ImapConfig? cfg = configFromForm();
+    testConnectionWithConfig(cfg);
+  }
+
+  Future<void> saveConfig() async {
+    ImapConfig? cfg = configFromForm();
+    debugPrint('saveConfig $cfg');
+    if (cfg != null) {
+      await _syncConfigService.setImapConfig(cfg);
+      await getImapConfig();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +159,12 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
 
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
         builder: (context, SyncConfigState state) {
+      Color statusColor = validConfig
+          ? AppColors.outboxSuccessColor
+          : configError
+              ? AppColors.error
+              : Colors.grey;
+
       return SizedBox(
         width: 320,
         child: Column(
@@ -80,7 +173,10 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
             FormBuilder(
               key: _formKey,
               autovalidateMode: AutovalidateMode.onUserInteraction,
+              onChanged: resetStatus,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: <Widget>[
                   FormBuilderTextField(
                     name: 'imap_host',
@@ -156,34 +252,51 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                       labelStyle: settingsLabelStyle,
                     ),
                   ),
-                  Button(
-                    localizations.settingsSyncSaveButton,
-                    padding: const EdgeInsets.all(24.0),
-                    primaryColor: Colors.white,
-                    textColor: AppColors.headerBgColor,
-                    onPressed: () {
-                      _formKey.currentState!.save();
-                      if (_formKey.currentState!.validate()) {
-                        final formData = _formKey.currentState?.value;
-
-                        String getTrimmed(String k) {
-                          return formData![k].toString().trim();
-                        }
-
-                        ImapConfig cfg = ImapConfig(
-                          host: getTrimmed('imap_host'),
-                          // folder: getTrimmed('imap_folder'),
-                          folder: 'INBOX.lotti-sync',
-                          userName: getTrimmed('imap_userName'),
-                          password: getTrimmed('imap_password'),
-                          port: int.parse(formData!['imap_port']),
-                        );
-                        context.read<SyncConfigCubit>().setImapConfig(cfg);
-                      }
-                    },
-                  ),
                   const SizedBox(height: 16),
-                  const DeleteSyncConfigButton(),
+                  Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (validConfig && imapConfig == null)
+                        Button(
+                          localizations.settingsSyncSaveButton,
+                          primaryColor: Colors.white,
+                          textColor: AppColors.headerBgColor,
+                          onPressed: saveConfig,
+                        ),
+                      if (!validConfig && imapConfig == null)
+                        Button(
+                          localizations.settingsSyncTestConnectionButton,
+                          primaryColor: Colors.white,
+                          textColor: AppColors.headerBgColor,
+                          onPressed: testConnection,
+                        ),
+                      if (imapConfig != null)
+                        Button(
+                          localizations.settingsSyncDeleteImapButton,
+                          onPressed: () {
+                            _syncConfigService.deleteImapConfig();
+                            getImapConfig();
+                          },
+                          primaryColor: AppColors.error,
+                        ),
+                      Container(
+                        height: 24,
+                        width: 24,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: statusColor,
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            )
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
                 ],
               ),
             ),
