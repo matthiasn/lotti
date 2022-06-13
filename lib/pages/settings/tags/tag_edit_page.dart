@@ -93,7 +93,27 @@ class _TagEditPageState extends State<TagEditPage> {
     }
 
     return Scaffold(
-      appBar: TitleAppBar(title: localizations.settingsTagsTitle),
+      appBar: TitleAppBar(
+        title: localizations.settingsTagsTitle,
+        actions: [
+          if (dirty)
+            TextButton(
+              key: const Key('tag_save'),
+              onPressed: onSavePressed,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Text(
+                  localizations.settingsTagsSaveLabel,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontFamily: 'Oswald',
+                    color: AppColors.error,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
       backgroundColor: AppColors.bodyBgColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -201,25 +221,7 @@ class _TagEditPageState extends State<TagEditPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          TextButton(
-                            key: const Key('tag_save'),
-                            onPressed: onSavePressed,
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 24.0),
-                              child: Text(
-                                localizations.settingsTagsSaveLabel,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontFamily: 'Oswald',
-                                  fontWeight: FontWeight.bold,
-                                  color: dirty
-                                      ? AppColors.error
-                                      : AppColors.entryTextColor,
-                                ),
-                              ),
-                            ),
-                          ),
+                          const Spacer(),
                           IconButton(
                             icon: const Icon(MdiIcons.trashCanOutline),
                             iconSize: 24,
