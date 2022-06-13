@@ -40,7 +40,7 @@ class PersistenceLogic {
   }
 
   Future<void> init() async {
-    if (!Platform.isLinux && !Platform.isWindows) {
+    if (!Platform.isWindows) {
       location = DeviceLocation();
     }
   }
