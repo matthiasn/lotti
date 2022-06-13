@@ -58,7 +58,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       borderRadius: BorderRadius.circular(8.0),
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
-      width: isPortrait ? portraitWidth : 400,
+      width: isPortrait ? portraitWidth : MediaQuery.of(context).size.width,
       onQueryChanged: (query) async {
         setState(() {
           match = query.toLowerCase();
