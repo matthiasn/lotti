@@ -17,7 +17,7 @@ class DeviceLocation {
     bool serviceEnabled;
     PermissionStatus permissionGranted;
 
-    if (Platform.isLinux || Platform.isWindows) {
+    if (Platform.isWindows) {
       return null;
     }
 
@@ -53,8 +53,20 @@ class DeviceLocation {
     }
 
     if (Platform.isLinux) {
-      final GeoClueLocation locationData =
-          await GeoClue.getLocation(desktopId: '<desktop-id>');
+      final manager = GeoClueManager();
+      await manager.connect();
+      final client = await manager.getClient();
+      await client.setDesktopId('<desktop-id>');
+      await client.setRequestedAccuracyLevel(GeoClueAccuracyLevel.exact);
+      await client.start();
+
+      final GeoClueLocation locationData = await client.locationUpdated
+          .timeout(const Duration(seconds: 10),
+              onTimeout: (_) => manager.close())
+          .first;
+
+      client.stop();
+
       double? longitude = locationData.longitude;
       double? latitude = locationData.latitude;
 
