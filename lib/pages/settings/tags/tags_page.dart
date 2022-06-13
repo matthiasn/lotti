@@ -8,6 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/create/add_tag_actions.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
@@ -74,49 +75,49 @@ class _TagsPageState extends State<TagsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<TagEntity>>(
-      stream: stream,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<TagEntity>> snapshot,
-      ) {
-        List<TagEntity> items = snapshot.data ?? [];
-        List<TagEntity> filtered = items
-            .where(
-                (TagEntity entity) => entity.tag.toLowerCase().contains(match))
-            .toList();
+    AppLocalizations localizations = AppLocalizations.of(context)!;
 
-        return Stack(
-          children: [
-            ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.only(
-                left: 8.0,
-                right: 8.0,
-                bottom: 8,
-                top: 64,
+    return Scaffold(
+      appBar: TitleAppBar(title: localizations.settingsTagsTitle),
+      backgroundColor: AppColors.bodyBgColor,
+      floatingActionButton: const RadialAddTagButtons(),
+      body: StreamBuilder<List<TagEntity>>(
+        stream: stream,
+        builder: (
+          BuildContext context,
+          AsyncSnapshot<List<TagEntity>> snapshot,
+        ) {
+          List<TagEntity> items = snapshot.data ?? [];
+          List<TagEntity> filtered = items
+              .where((TagEntity entity) =>
+                  entity.tag.toLowerCase().contains(match))
+              .toList();
+
+          return Stack(
+            children: [
+              ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(
+                  left: 8.0,
+                  right: 8.0,
+                  bottom: 8,
+                  top: 64,
+                ),
+                children: List.generate(
+                  filtered.length,
+                  (int index) {
+                    return TagCard(
+                      tagEntity: filtered.elementAt(index),
+                      index: index,
+                    );
+                  },
+                ),
               ),
-              children: List.generate(
-                filtered.length,
-                (int index) {
-                  return TagCard(
-                    tagEntity: filtered.elementAt(index),
-                    index: index,
-                  );
-                },
-              ),
-            ),
-            buildFloatingSearchBar(),
-            const Align(
-              alignment: Alignment.bottomRight,
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: RadialAddTagButtons(),
-              ),
-            )
-          ],
-        );
-      },
+              buildFloatingSearchBar(),
+            ],
+          );
+        },
+      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class FlagsPage extends StatefulWidget {
   const FlagsPage({Key? key}) : super(key: key);
@@ -24,29 +25,35 @@ class _FlagsPageState extends State<FlagsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<ConfigFlag>>(
-      stream: stream,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<ConfigFlag>> snapshot,
-      ) {
-        List<ConfigFlag> items = snapshot.data ?? [];
-        debugPrint('$items');
+    AppLocalizations localizations = AppLocalizations.of(context)!;
 
-        return ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.all(8.0),
-          children: List.generate(
-            items.length,
-            (int index) {
-              return ConfigFlagCard(
-                item: items.elementAt(index),
-                index: index,
-              );
-            },
-          ),
-        );
-      },
+    return Scaffold(
+      appBar: TitleAppBar(title: localizations.settingsFlagsTitle),
+      backgroundColor: AppColors.bodyBgColor,
+      body: StreamBuilder<List<ConfigFlag>>(
+        stream: stream,
+        builder: (
+          BuildContext context,
+          AsyncSnapshot<List<ConfigFlag>> snapshot,
+        ) {
+          List<ConfigFlag> items = snapshot.data ?? [];
+          debugPrint('$items');
+
+          return ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(8.0),
+            children: List.generate(
+              items.length,
+              (int index) {
+                return ConfigFlagCard(
+                  item: items.elementAt(index),
+                  index: index,
+                );
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }

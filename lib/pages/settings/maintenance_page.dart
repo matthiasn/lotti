@@ -5,6 +5,7 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class MaintenancePage extends StatefulWidget {
   const MaintenancePage({Key? key}) : super(key: key);
@@ -28,58 +29,62 @@ class _MaintenancePageState extends State<MaintenancePage> {
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
 
-    return StreamBuilder<List<ConfigFlag>>(
-      stream: stream,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<ConfigFlag>> snapshot,
-      ) {
-        List<ConfigFlag> items = snapshot.data ?? [];
-        debugPrint('$items');
-        return StreamBuilder<int>(
-          stream: _db.watchTaggedCount(),
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<int> snapshot,
-          ) {
-            return ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.all(8.0),
-              children: [
-                MaintenanceCard(
-                  title:
-                      '${localizations.maintenanceDeleteTagged}, n = ${snapshot.data}',
-                  onTap: () => _maintenance.deleteTaggedLinks(),
-                ),
-                MaintenanceCard(
-                  title: localizations.maintenanceDeleteEditorDb,
-                  onTap: () => _maintenance.deleteEditorDb(),
-                ),
-                MaintenanceCard(
-                  title: localizations.maintenanceDeleteLoggingDb,
-                  onTap: () => _maintenance.deleteLoggingDb(),
-                ),
-                MaintenanceCard(
-                  title: localizations.maintenanceRecreateTagged,
-                  onTap: () => _maintenance.recreateTaggedLinks(),
-                ),
-                MaintenanceCard(
-                  title: localizations.maintenanceStories,
-                  onTap: () => _maintenance.recreateStoryAssignment(),
-                ),
-                MaintenanceCard(
-                  title: localizations.maintenancePurgeDeleted,
-                  onTap: () => _db.purgeDeleted(),
-                ),
-                MaintenanceCard(
-                  title: localizations.maintenanceReprocessSync,
-                  onTap: () => getIt<SyncConfigService>().resetOffset(),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    return Scaffold(
+      backgroundColor: AppColors.bodyBgColor,
+      appBar: TitleAppBar(title: localizations.settingsMaintenanceTitle),
+      body: StreamBuilder<List<ConfigFlag>>(
+        stream: stream,
+        builder: (
+          BuildContext context,
+          AsyncSnapshot<List<ConfigFlag>> snapshot,
+        ) {
+          List<ConfigFlag> items = snapshot.data ?? [];
+          debugPrint('$items');
+          return StreamBuilder<int>(
+            stream: _db.watchTaggedCount(),
+            builder: (
+              BuildContext context,
+              AsyncSnapshot<int> snapshot,
+            ) {
+              return ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(8.0),
+                children: [
+                  MaintenanceCard(
+                    title:
+                        '${localizations.maintenanceDeleteTagged}, n = ${snapshot.data}',
+                    onTap: () => _maintenance.deleteTaggedLinks(),
+                  ),
+                  MaintenanceCard(
+                    title: localizations.maintenanceDeleteEditorDb,
+                    onTap: () => _maintenance.deleteEditorDb(),
+                  ),
+                  MaintenanceCard(
+                    title: localizations.maintenanceDeleteLoggingDb,
+                    onTap: () => _maintenance.deleteLoggingDb(),
+                  ),
+                  MaintenanceCard(
+                    title: localizations.maintenanceRecreateTagged,
+                    onTap: () => _maintenance.recreateTaggedLinks(),
+                  ),
+                  MaintenanceCard(
+                    title: localizations.maintenanceStories,
+                    onTap: () => _maintenance.recreateStoryAssignment(),
+                  ),
+                  MaintenanceCard(
+                    title: localizations.maintenancePurgeDeleted,
+                    onTap: () => _db.purgeDeleted(),
+                  ),
+                  MaintenanceCard(
+                    title: localizations.maintenanceReprocessSync,
+                    onTap: () => getIt<SyncConfigService>().resetOffset(),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

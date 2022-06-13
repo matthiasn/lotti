@@ -8,6 +8,7 @@ import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class OutboxMonitorPage extends StatefulWidget {
@@ -43,94 +44,97 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             List<OutboxItem> items = snapshot.data ?? [];
             bool onlineStatus = state is! OutboxDisabled;
 
-            return SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(localizations.outboxMonitorSwitchLabel,
-                        style: labelStyleLarger
-                      ),
-                      CupertinoSwitch(
-                        value: onlineStatus,
-                        onChanged: (_) {
-                          context.read<OutboxCubit>().toggleStatus();
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CupertinoSegmentedControl(
-                        selectedColor: AppColors.entryBgColor,
-                        unselectedColor: AppColors.headerBgColor,
-                        borderColor: AppColors.entryBgColor,
-                        groupValue: _selectedValue,
-                        onValueChanged: (String value) {
-                          setState(() {
-                            _selectedValue = value;
-                            if (_selectedValue == 'all') {
-                              stream = _db.watchOutboxItems();
-                            }
-                            if (_selectedValue == 'pending') {
-                              stream = _db.watchOutboxItems(
-                                  statuses: [OutboxStatus.pending]);
-                            }
-                            if (_selectedValue == 'error') {
-                              stream = _db.watchOutboxItems(
-                                  statuses: [OutboxStatus.error]);
-                            }
-                          });
-                        },
-                        children: {
-                          'pending': SizedBox(
-                            width: 64,
-                            height: 32,
-                            child: Center(
-                              child: Text(
-                                localizations.outboxMonitorLabelPending,
-                                style: segmentItemStyle,
-                              ),
-                            ),
-                          ),
-                          'error': SizedBox(
-                            child: Center(
-                              child: Text(
-                                localizations.outboxMonitorLabelError,
-                                style: segmentItemStyle,
-                              ),
-                            ),
-                          ),
-                          'all': SizedBox(
-                            child: Center(
-                              child: Text(
-                                localizations.outboxMonitorLabelAll,
-                                style: segmentItemStyle,
-                              ),
-                            ),
-                          ),
-                        },
-                      ),
-                    ],
-                  ),
-                  ListView(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.all(8.0),
-                    children: List.generate(
-                      items.length,
-                      (int index) {
-                        return OutboxItemCard(
-                          item: items.elementAt(index),
-                          index: index,
-                        );
-                      },
+            return Scaffold(
+              backgroundColor: AppColors.bodyBgColor,
+              appBar: TitleAppBar(title: localizations.settingsSyncOutboxTitle),
+              body: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(localizations.outboxMonitorSwitchLabel,
+                            style: labelStyleLarger),
+                        CupertinoSwitch(
+                          value: onlineStatus,
+                          onChanged: (_) {
+                            context.read<OutboxCubit>().toggleStatus();
+                          },
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CupertinoSegmentedControl(
+                          selectedColor: AppColors.entryBgColor,
+                          unselectedColor: AppColors.headerBgColor,
+                          borderColor: AppColors.entryBgColor,
+                          groupValue: _selectedValue,
+                          onValueChanged: (String value) {
+                            setState(() {
+                              _selectedValue = value;
+                              if (_selectedValue == 'all') {
+                                stream = _db.watchOutboxItems();
+                              }
+                              if (_selectedValue == 'pending') {
+                                stream = _db.watchOutboxItems(
+                                    statuses: [OutboxStatus.pending]);
+                              }
+                              if (_selectedValue == 'error') {
+                                stream = _db.watchOutboxItems(
+                                    statuses: [OutboxStatus.error]);
+                              }
+                            });
+                          },
+                          children: {
+                            'pending': SizedBox(
+                              width: 64,
+                              height: 32,
+                              child: Center(
+                                child: Text(
+                                  localizations.outboxMonitorLabelPending,
+                                  style: segmentItemStyle,
+                                ),
+                              ),
+                            ),
+                            'error': SizedBox(
+                              child: Center(
+                                child: Text(
+                                  localizations.outboxMonitorLabelError,
+                                  style: segmentItemStyle,
+                                ),
+                              ),
+                            ),
+                            'all': SizedBox(
+                              child: Center(
+                                child: Text(
+                                  localizations.outboxMonitorLabelAll,
+                                  style: segmentItemStyle,
+                                ),
+                              ),
+                            ),
+                          },
+                        ),
+                      ],
+                    ),
+                    ListView(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.all(8.0),
+                      children: List.generate(
+                        items.length,
+                        (int index) {
+                          return OutboxItemCard(
+                            item: items.elementAt(index),
+                            index: index,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },

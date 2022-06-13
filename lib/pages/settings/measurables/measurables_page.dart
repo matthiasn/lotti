@@ -6,6 +6,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/measurables/measurable_type_card.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
@@ -76,6 +77,8 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder<List<MeasurableDataType>>(
       stream: stream,
       builder: (
@@ -88,41 +91,39 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
                 dataType.displayName.toLowerCase().contains(match))
             .toList();
 
-        return Stack(
-          children: [
-            ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.only(
-                left: 8,
-                right: 8,
-                bottom: 8,
-                top: 64,
-              ),
-              children: List.generate(
-                filtered.length,
-                (int index) {
-                  return MeasurableTypeCard(
-                    item: filtered.elementAt(index),
-                    index: index,
-                  );
-                },
-              ),
-            ),
-            buildFloatingSearchBar(),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: FloatingActionButton(
-                  backgroundColor: AppColors.entryBgColor,
-                  onPressed: () {
-                    pushNamedRoute('/settings/create_measurable');
+        return Scaffold(
+          appBar: TitleAppBar(title: localizations.settingsMeasurablesTitle),
+          backgroundColor: AppColors.bodyBgColor,
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: AppColors.entryBgColor,
+            onPressed: () {
+              pushNamedRoute('/settings/create_measurable');
+            },
+            child: const Icon(MdiIcons.plus, size: 32),
+          ),
+          body: Stack(
+            children: [
+              ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(
+                  left: 8,
+                  right: 8,
+                  bottom: 8,
+                  top: 64,
+                ),
+                children: List.generate(
+                  filtered.length,
+                  (int index) {
+                    return MeasurableTypeCard(
+                      item: filtered.elementAt(index),
+                      index: index,
+                    );
                   },
-                  child: const Icon(MdiIcons.plus, size: 32),
                 ),
               ),
-            )
-          ],
+              buildFloatingSearchBar(),
+            ],
+          ),
         );
       },
     );

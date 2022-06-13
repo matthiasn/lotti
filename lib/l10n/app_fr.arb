@@ -36,7 +36,7 @@
   "dashboardNotFound": "Tableau de bord non trouvé",
   "dashboardPrivateLabel": "Privé :",
   "dashboardReviewTimeLabel": "Temps d’examen quotidien :",
-  "dashboardSaveLabel": "Enregistrer et fermer",
+  "dashboardSaveLabel": "Enregistrer",
   "dashboardsEmptyHint": "Il n’y encore rien ici, veuillez créer un nouveau Tableau de bord dans Paramètres > Gestion du tableau de bord.\n\nLe bouton va vous y amener directement.",
   "journalDateFromLabel": "Date de début :",
   "journalDateInvalid": "Plage de dates invalide",

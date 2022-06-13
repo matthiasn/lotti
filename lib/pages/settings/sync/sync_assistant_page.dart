@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_config.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/pages/settings/sync/sync_assistant_slide_intro_3.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_qr_code.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_success.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class SyncAssistantPage extends StatefulWidget {
   const SyncAssistantPage({
@@ -35,75 +37,81 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-        child: Stack(
-      children: <Widget>[
-        SlidingTutorial(
-          controller: _pageCtrl,
-          pageCount: pageCount,
-          notifier: notifier,
-        ),
+    AppLocalizations localizations = AppLocalizations.of(context)!;
 
-        /// Separator.
-        Align(
-          alignment: const Alignment(0, 0.85),
-          child: Container(
-            width: double.infinity,
-            height: 0.5,
-            color: Colors.white,
-          ),
-        ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_rounded,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              _pageCtrl.previousPage(
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.linear,
-              );
-            },
-          ),
-        ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_rounded,
-              color: Colors.white,
-              textDirection: TextDirection.rtl,
-            ),
-            onPressed: () {
-              _pageCtrl.nextPage(
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.linear,
-              );
-            },
-          ),
-        ),
-
-        Align(
-          alignment: const Alignment(0, 0.94),
-          child: SlidingIndicator(
-            indicatorCount: pageCount,
+    return Scaffold(
+      backgroundColor: AppColors.bodyBgColor,
+      appBar: TitleAppBar(title: localizations.settingsSyncCfgTitle),
+      body: Center(
+          child: Stack(
+        children: <Widget>[
+          SlidingTutorial(
+            controller: _pageCtrl,
+            pageCount: pageCount,
             notifier: notifier,
-            activeIndicator: const Icon(
-              Icons.check_circle,
-              color: Color(0xFF29B6F6),
-            ),
-            inActiveIndicator: SvgPicture.asset(
-              'assets/images/tutorial/hollow_circle.svg',
-            ),
-            margin: 8,
-            inactiveIndicatorSize: 14,
-            activeIndicatorSize: 14,
           ),
-        )
-      ],
-    ));
+
+          /// Separator.
+          Align(
+            alignment: const Alignment(0, 0.85),
+            child: Container(
+              width: double.infinity,
+              height: 0.5,
+              color: Colors.white,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_rounded,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                _pageCtrl.previousPage(
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.linear,
+                );
+              },
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_rounded,
+                color: Colors.white,
+                textDirection: TextDirection.rtl,
+              ),
+              onPressed: () {
+                _pageCtrl.nextPage(
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.linear,
+                );
+              },
+            ),
+          ),
+
+          Align(
+            alignment: const Alignment(0, 0.94),
+            child: SlidingIndicator(
+              indicatorCount: pageCount,
+              notifier: notifier,
+              activeIndicator: const Icon(
+                Icons.check_circle,
+                color: Color(0xFF29B6F6),
+              ),
+              inActiveIndicator: SvgPicture.asset(
+                'assets/images/tutorial/hollow_circle.svg',
+              ),
+              margin: 8,
+              inactiveIndicatorSize: 14,
+              activeIndicatorSize: 14,
+            ),
+          )
+        ],
+      )),
+    );
   }
 }
 

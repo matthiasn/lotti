@@ -5,6 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/sort.dart';
+import 'package:lotti/widgets/app_bar/dashboards_app_bar.dart';
 import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
 
 class DashboardsListPage extends StatefulWidget {
@@ -26,33 +27,37 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<DashboardDefinition>>(
-      stream: stream,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<DashboardDefinition>> snapshot,
-      ) {
-        List<DashboardDefinition> dashboards =
-            filteredSortedDashboards(snapshot.data ?? [], match);
+    return Scaffold(
+      backgroundColor: AppColors.bodyBgColor,
+      appBar: const DashboardsAppBar(),
+      body: StreamBuilder<List<DashboardDefinition>>(
+        stream: stream,
+        builder: (
+          BuildContext context,
+          AsyncSnapshot<List<DashboardDefinition>> snapshot,
+        ) {
+          List<DashboardDefinition> dashboards =
+              filteredSortedDashboards(snapshot.data ?? [], match);
 
-        if (dashboards.isEmpty) {
-          return const EmptyDashboards();
-        }
+          if (dashboards.isEmpty) {
+            return const EmptyDashboards();
+          }
 
-        return ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.all(8.0),
-          children: List.generate(
-            dashboards.length,
-            (int index) {
-              return DashboardCard(
-                dashboard: dashboards.elementAt(index),
-                index: index,
-              );
-            },
-          ),
-        );
-      },
+          return ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(8.0),
+            children: List.generate(
+              dashboards.length,
+              (int index) {
+                return DashboardCard(
+                  dashboard: dashboards.elementAt(index),
+                  index: index,
+                );
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }
