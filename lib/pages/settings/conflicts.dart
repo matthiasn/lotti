@@ -9,6 +9,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class ConflictsPage extends StatefulWidget {
@@ -43,60 +44,64 @@ class _ConflictsPageState extends State<ConflictsPage> {
       ) {
         List<Conflict> items = snapshot.data ?? [];
 
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              CupertinoSegmentedControl(
-                selectedColor: AppColors.entryBgColor,
-                unselectedColor: AppColors.headerBgColor,
-                borderColor: AppColors.entryBgColor,
-                groupValue: _selectedValue,
-                onValueChanged: (String value) {
-                  setState(() {
-                    _selectedValue = value;
-                    if (_selectedValue == 'unresolved') {
-                      stream = _db.watchConflicts(ConflictStatus.unresolved);
-                    }
-                    if (_selectedValue == 'resolved') {
-                      stream = _db.watchConflicts(ConflictStatus.resolved);
-                    }
-                  });
-                },
-                children: {
-                  'unresolved': SizedBox(
-                    width: 64,
-                    height: 32,
-                    child: Center(
-                      child: Text(
-                        localizations.conflictsUnresolved,
-                        style: segmentItemStyle,
+        return Scaffold(
+          backgroundColor: AppColors.bodyBgColor,
+          appBar: TitleAppBar(title: localizations.settingsConflictsTitle),
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                CupertinoSegmentedControl(
+                  selectedColor: AppColors.entryBgColor,
+                  unselectedColor: AppColors.headerBgColor,
+                  borderColor: AppColors.entryBgColor,
+                  groupValue: _selectedValue,
+                  onValueChanged: (String value) {
+                    setState(() {
+                      _selectedValue = value;
+                      if (_selectedValue == 'unresolved') {
+                        stream = _db.watchConflicts(ConflictStatus.unresolved);
+                      }
+                      if (_selectedValue == 'resolved') {
+                        stream = _db.watchConflicts(ConflictStatus.resolved);
+                      }
+                    });
+                  },
+                  children: {
+                    'unresolved': SizedBox(
+                      width: 64,
+                      height: 32,
+                      child: Center(
+                        child: Text(
+                          localizations.conflictsUnresolved,
+                          style: segmentItemStyle,
+                        ),
                       ),
                     ),
-                  ),
-                  'resolved': SizedBox(
-                    child: Center(
-                      child: Text(
-                        localizations.conflictsResolved,
-                        style: segmentItemStyle,
+                    'resolved': SizedBox(
+                      child: Center(
+                        child: Text(
+                          localizations.conflictsResolved,
+                          style: segmentItemStyle,
+                        ),
                       ),
                     ),
-                  ),
-                },
-              ),
-              ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(8.0),
-                children: List.generate(
-                  items.length,
-                  (int index) {
-                    return ConflictCard(
-                      conflict: items.elementAt(index),
-                      index: index,
-                    );
                   },
                 ),
-              ),
-            ],
+                ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.all(8.0),
+                  children: List.generate(
+                    items.length,
+                    (int index) {
+                      return ConflictCard(
+                        conflict: items.elementAt(index),
+                        index: index,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

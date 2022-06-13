@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
+import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
@@ -33,77 +36,85 @@ class _HealthImportPageState extends State<HealthImportPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          SfDateRangePicker(
-            backgroundColor: Colors.white,
-            onSelectionChanged: _onSelectionChanged,
-            enableMultiView: true,
-            selectionMode: DateRangePickerSelectionMode.range,
-            initialSelectedRange: PickerDateRange(
-              _dateFrom,
-              _dateTo,
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      backgroundColor: AppColors.bodyBgColor,
+      appBar: TitleAppBar(
+        title: localizations.settingsHealthImportTitle,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            SfDateRangePicker(
+              backgroundColor: Colors.white,
+              onSelectionChanged: _onSelectionChanged,
+              enableMultiView: true,
+              selectionMode: DateRangePickerSelectionMode.range,
+              initialSelectedRange: PickerDateRange(
+                _dateFrom,
+                _dateTo,
+              ),
             ),
-          ),
-          Button(
-            'Import Activity Data',
-            onPressed: () {
-              _healthImport.getActivityHealthData(
-                  dateFrom: _dateFrom, dateTo: _dateTo);
-            },
-          ),
-          Button(
-            'Import Sleep Data',
-            onPressed: () {
-              _healthImport.fetchHealthData(
-                dateFrom: _dateFrom,
-                dateTo: _dateTo,
-                types: sleepTypes,
-              );
-            },
-          ),
-          Button(
-            'Import Heart Rate Data',
-            onPressed: () {
-              _healthImport.fetchHealthData(
-                dateFrom: _dateFrom,
-                dateTo: _dateTo,
-                types: heartRateTypes,
-              );
-            },
-          ),
-          Button(
-            'Import Blood Pressure Data',
-            onPressed: () {
-              _healthImport.fetchHealthData(
-                dateFrom: _dateFrom,
-                dateTo: _dateTo,
-                types: bpTypes,
-              );
-            },
-          ),
-          Button(
-            'Import Body Measurement Data',
-            onPressed: () {
-              _healthImport.fetchHealthData(
-                dateFrom: _dateFrom,
-                dateTo: _dateTo,
-                types: bodyMeasurementTypes,
-              );
-            },
-          ),
-          Button(
-            'Import Workout Data',
-            onPressed: () {
-              _healthImport.getWorkoutsHealthData(
-                dateFrom: _dateFrom,
-                dateTo: _dateTo,
-              );
-            },
-          ),
-        ],
+            Button(
+              'Import Activity Data',
+              onPressed: () {
+                _healthImport.getActivityHealthData(
+                    dateFrom: _dateFrom, dateTo: _dateTo);
+              },
+            ),
+            Button(
+              'Import Sleep Data',
+              onPressed: () {
+                _healthImport.fetchHealthData(
+                  dateFrom: _dateFrom,
+                  dateTo: _dateTo,
+                  types: sleepTypes,
+                );
+              },
+            ),
+            Button(
+              'Import Heart Rate Data',
+              onPressed: () {
+                _healthImport.fetchHealthData(
+                  dateFrom: _dateFrom,
+                  dateTo: _dateTo,
+                  types: heartRateTypes,
+                );
+              },
+            ),
+            Button(
+              'Import Blood Pressure Data',
+              onPressed: () {
+                _healthImport.fetchHealthData(
+                  dateFrom: _dateFrom,
+                  dateTo: _dateTo,
+                  types: bpTypes,
+                );
+              },
+            ),
+            Button(
+              'Import Body Measurement Data',
+              onPressed: () {
+                _healthImport.fetchHealthData(
+                  dateFrom: _dateFrom,
+                  dateTo: _dateTo,
+                  types: bodyMeasurementTypes,
+                );
+              },
+            ),
+            Button(
+              'Import Workout Data',
+              onPressed: () {
+                _healthImport.getWorkoutsHealthData(
+                  dateFrom: _dateFrom,
+                  dateTo: _dateTo,
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

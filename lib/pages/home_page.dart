@@ -8,12 +8,6 @@ import 'package:lotti/routes/observer.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/app_bar/app_bar_version.dart';
-import 'package:lotti/widgets/app_bar/dashboard_app_bar.dart';
-import 'package:lotti/widgets/app_bar/dashboards_app_bar.dart';
-import 'package:lotti/widgets/app_bar/empty_app_bar.dart';
-import 'package:lotti/widgets/app_bar/task_app_bar.dart';
-import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
@@ -30,8 +24,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<bool>(
         stream: _db.watchConfigFlag('show_tasks_tab'),
         builder: (context, snapshot) {
@@ -44,46 +36,6 @@ class HomePage extends StatelessWidget {
           return AutoTabsScaffold(
             lazyLoad: false,
             animationDuration: const Duration(milliseconds: 500),
-            appBarBuilder: (context, TabsRouter tabsRouter) {
-              final String topRouteName = tabsRouter.topRoute.name;
-
-              if (topRouteName == DashboardRoute.name) {
-                return DashboardAppBar(
-                  dashboardId:
-                      tabsRouter.topRoute.pathParams.getString('dashboardId'),
-                );
-              }
-
-              if (topRouteName == DashboardsListRoute.name) {
-                return const DashboardsAppBar();
-              }
-
-              if (topRouteName == DashboardSettingsRoute.name) {
-                return TitleAppBar(
-                    title: localizations.settingsDashboardsTitle);
-              }
-
-              if (topRouteName == MeasurablesRoute.name) {
-                return TitleAppBar(
-                    title: localizations.settingsMeasurablesTitle);
-              }
-
-              if (topRouteName == EntryDetailRoute.name) {
-                return TaskAppBar(
-                  itemId: tabsRouter.topRoute.pathParams.getString('itemId'),
-                );
-              }
-
-              if (topRouteName == SettingsRoute.name) {
-                return VersionAppBar(title: localizations.navTabTitleSettings);
-              }
-
-              if ({TasksRoute.name, JournalRoute.name}.contains(topRouteName)) {
-                return EmptyAppBar();
-              }
-
-              return const VersionAppBar(title: 'Lotti');
-            },
             builder: (context, child, _) {
               return Container(
                 color: AppColors.bodyBgColor,

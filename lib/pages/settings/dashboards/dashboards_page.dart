@@ -8,6 +8,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/sort.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
@@ -74,52 +75,52 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<DashboardDefinition>>(
-      stream: stream,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<DashboardDefinition>> snapshot,
-      ) {
-        List<DashboardDefinition> dashboards =
-            filteredSortedDashboards(snapshot.data ?? [], match);
+    AppLocalizations localizations = AppLocalizations.of(context)!;
 
-        return Stack(
-          children: [
-            ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.only(
-                left: 8.0,
-                right: 8.0,
-                bottom: 8,
-                top: 64,
-              ),
-              children: List.generate(
-                dashboards.length,
-                (int index) {
-                  return DashboardCard(
-                    dashboard: dashboards.elementAt(index),
-                    index: index,
-                  );
-                },
-              ),
-            ),
-            buildFloatingSearchBar(),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: FloatingActionButton(
-                  backgroundColor: AppColors.entryBgColor,
-                  onPressed: () {
-                    context.router.push(const CreateDashboardRoute());
+    return Scaffold(
+      backgroundColor: AppColors.bodyBgColor,
+      appBar: TitleAppBar(title: localizations.settingsDashboardsTitle),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.entryBgColor,
+        onPressed: () {
+          context.router.push(const CreateDashboardRoute());
+        },
+        child: const Icon(MdiIcons.plus, size: 32),
+      ),
+      body: StreamBuilder<List<DashboardDefinition>>(
+        stream: stream,
+        builder: (
+          BuildContext context,
+          AsyncSnapshot<List<DashboardDefinition>> snapshot,
+        ) {
+          List<DashboardDefinition> dashboards =
+              filteredSortedDashboards(snapshot.data ?? [], match);
+
+          return Stack(
+            children: [
+              ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(
+                  left: 8.0,
+                  right: 8.0,
+                  bottom: 8,
+                  top: 64,
+                ),
+                children: List.generate(
+                  dashboards.length,
+                  (int index) {
+                    return DashboardCard(
+                      dashboard: dashboards.elementAt(index),
+                      index: index,
+                    );
                   },
-                  child: const Icon(MdiIcons.plus, size: 32),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+              buildFloatingSearchBar(),
+            ],
+          );
+        },
+      ),
     );
   }
 }
