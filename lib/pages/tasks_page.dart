@@ -210,7 +210,7 @@ class _TasksPageState extends State<TasksPage> {
         top: Platform.isIOS ? 60 : 20.0,
         left: isDesktop ? 12.0 : 0.0,
       ),
-      width: isPortrait ? portraitWidth : 500,
+      width: isPortrait ? portraitWidth : MediaQuery.of(context).size.width,
       onQueryChanged: (query) async {
         List<TagEntity> res = await _db.getMatchingTags(
           query.trim(),
