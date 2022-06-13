@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -127,7 +128,7 @@ class LogDetailPage extends StatelessWidget {
           }
 
           if (logEntry == null) {
-            return const SizedBox.shrink();
+            return const EmptyScaffoldWithTitle('');
           }
 
           String timestamp = logEntry.createdAt.substring(0, 23);

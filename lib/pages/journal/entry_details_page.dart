@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:auto_route/annotations.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/task_app_bar.dart';
@@ -57,6 +59,8 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder<JournalEntity?>(
       stream: _stream,
       builder: (
@@ -65,7 +69,7 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
       ) {
         JournalEntity? item = snapshot.data;
         if (item == null) {
-          return const SizedBox.shrink();
+          return EmptyScaffoldWithTitle(localizations.dashboardNotFound);
         }
 
         return Scaffold(

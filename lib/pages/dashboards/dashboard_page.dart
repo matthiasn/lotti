@@ -2,9 +2,11 @@ import 'dart:math';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/dashboard_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
@@ -36,6 +38,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     final int shiftDays = max((horizontalPan / scale).floor(), 0);
 
     final DateTime rangeStart = getRangeStart(
@@ -86,7 +90,7 @@ class _DashboardPageState extends State<DashboardPage> {
           }
 
           if (dashboard == null) {
-            return const SizedBox.shrink();
+            return EmptyScaffoldWithTitle(localizations.dashboardNotFound);
           }
 
           return Scaffold(

@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fadein/flutter_fadein.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -35,9 +36,12 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
           if (item == null || item.meta.deletedAt != null) {
             return AppBar(
               backgroundColor: AppColors.headerBgColor,
-              title: Text(
-                localizations.taskNotFound,
-                style: appBarTextStyle,
+              title: FadeIn(
+                duration: const Duration(milliseconds: 500),
+                child: Text(
+                  localizations.taskNotFound,
+                  style: appBarTextStyle,
+                ),
               ),
               centerTitle: true,
               leading: AutoLeadingButton(

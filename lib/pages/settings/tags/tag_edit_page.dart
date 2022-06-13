@@ -5,6 +5,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
@@ -260,7 +261,7 @@ class EditExistingTagPage extends StatelessWidget {
     TagEntity? tagEntity = tagsService.getTagById(tagEntityId);
 
     if (tagEntity == null) {
-      return const SizedBox.shrink();
+      return const EmptyScaffoldWithTitle('');
     }
 
     return TagEditPage(tagEntity: tagEntity);
