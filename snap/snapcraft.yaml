@@ -1,0 +1,33 @@
+name: lotti
+version: 0.7.24
+summary: Lotti - a smart journal
+description: Super Cool App that does everything!
+
+confinement: strict
+base: core18
+grade: stable
+
+slots:
+  dbus-lotti:
+    interface: dbus
+    bus: session
+    name: com.matthiasnehlsen.lotti
+
+apps:
+  lotti:
+    command: lotti
+    extensions: [flutter-master]
+    plugs:
+      - network
+    slots:
+      - dbus-lotti
+parts:
+  lotti:
+    source: .
+    plugin: flutter
+    flutter-target: lib/main.dart
+    build-packages:
+    - libsecret-1-0
+    - libsecret-1-dev
+    - libjsoncpp-dev
+    - libkeybinder-3.0-dev
