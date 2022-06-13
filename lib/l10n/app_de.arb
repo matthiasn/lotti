@@ -7,6 +7,7 @@
   "addActionAddTask": "Aufgabe hinzufügen",
   "addActionAddText": "Texteintrag hinzufügen",
   "addMeasurementNoneDefined": "Messbaren Datentyp hinzufügen",
+  "addMeasurementSaveButton": "Speichern",
   "addMeasurementTitle": "Messbare Daten erfassen",
   "configFlagEnableNotifications": "Desktop Notifications erlauben?",
   "configFlagGlobalScreenshotHotkey": "Screenshot beim Benutzen des globalen Hotkeys?",

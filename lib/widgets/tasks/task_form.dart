@@ -159,7 +159,7 @@ class _TaskFormState extends State<TaskForm> {
                       fontFamily: 'Oswald',
                     ),
                   ),
-                  onChanged: (_) => widget.saveFn(),
+                  onChanged: (dynamic _) => widget.saveFn(),
                   selectedColor: widget.data?.status != null
                       ? taskColor(widget.data!.status)
                       : AppColors.entryBgColor,
@@ -172,49 +172,49 @@ class _TaskFormState extends State<TaskForm> {
                     fontFamily: 'Oswald',
                   ),
                   options: [
-                    FormBuilderFieldOption(
+                    FormBuilderChipOption(
                       value: 'OPEN',
                       child: Text(
                         localizations.taskStatusOpen,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderFieldOption(
+                    FormBuilderChipOption(
                       value: 'GROOMED',
                       child: Text(
                         localizations.taskStatusGroomed,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderFieldOption(
+                    FormBuilderChipOption(
                       value: 'IN PROGRESS',
                       child: Text(
                         localizations.taskStatusInProgress,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderFieldOption(
+                    FormBuilderChipOption(
                       value: 'BLOCKED',
                       child: Text(
                         localizations.taskStatusBlocked,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderFieldOption(
+                    FormBuilderChipOption(
                       value: 'ON HOLD',
                       child: Text(
                         localizations.taskStatusOnHold,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderFieldOption(
+                    FormBuilderChipOption(
                       value: 'DONE',
                       child: Text(
                         localizations.taskStatusDone,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderFieldOption(
+                    FormBuilderChipOption(
                       value: 'REJECTED',
                       child: Text(
                         localizations.taskStatusRejected,

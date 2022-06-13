@@ -8,6 +8,7 @@
   "addActionAddText": "Add Text Entry",
   "addActionAddTimeRecording": "Start Time Recording",
   "addMeasurementNoneDefined": "Add Measurable Data Type",
+  "addMeasurementSaveButton": "Save",
   "addMeasurementTitle": "Add Measurement",
   "configFlagEnableNotifications": "Enable desktop notifications?",
   "configFlagGlobalScreenshotHotkey": "Listen to global screenshot hotkey?",

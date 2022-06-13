@@ -187,21 +187,21 @@ class _TagEditPageState extends State<TagEditPage> {
                               fontFamily: 'Oswald',
                             ),
                             options: [
-                              FormBuilderFieldOption(
+                              FormBuilderChipOption(
                                 value: 'TAG',
                                 child: Text(
                                   localizations.settingsTagsTypeTag,
                                   style: const TextStyle(color: Colors.black87),
                                 ),
                               ),
-                              FormBuilderFieldOption(
+                              FormBuilderChipOption(
                                 value: 'PERSON',
                                 child: Text(
                                   localizations.settingsTagsTypePerson,
                                   style: const TextStyle(color: Colors.black87),
                                 ),
                               ),
-                              FormBuilderFieldOption(
+                              FormBuilderChipOption(
                                 value: 'STORY',
                                 child: Text(
                                   localizations.settingsTagsTypeStory,
