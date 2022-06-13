@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:lotti/theme.dart';
 
@@ -23,9 +22,7 @@ class SyncAssistantHeaderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
-    String title =
-        '${localizations.syncAssistantHeadline} ${index + 1} / $pageCount';
+    String title = '${index + 1} / $pageCount';
 
     return Align(
       alignment: Alignment.topCenter,
@@ -36,7 +33,7 @@ class SyncAssistantHeaderWidget extends StatelessWidget {
           child: Text(
             title,
             textAlign: TextAlign.center,
-            style: titleStyle.copyWith(fontSize: 24),
+            style: titleStyle.copyWith(fontSize: 16),
           ),
         ),
       ),

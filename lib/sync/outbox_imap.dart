@@ -77,7 +77,9 @@ Future<ImapClient?> persistImap({
     if (prevImapClient != null) {
       imapClient = prevImapClient;
     } else {
-      imapClient = await createImapClient();
+      final SyncConfigService syncConfigService = getIt<SyncConfigService>();
+      SyncConfig? syncConfig = await syncConfigService.getSyncConfig();
+      imapClient = await createImapClient(syncConfig);
     }
 
     GenericImapResult? res;

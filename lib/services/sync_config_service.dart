@@ -52,9 +52,24 @@ class SyncConfigService {
     await _storage.delete(key: sharedSecretKey);
   }
 
+  Future<void> deleteImapConfig() async {
+    await _storage.delete(key: imapConfigKey);
+  }
+
   Future<void> setImapConfig(ImapConfig imapConfig) async {
     String json = jsonEncode(imapConfig);
     await _storage.write(key: imapConfigKey, value: json);
+  }
+
+  Future<ImapConfig?> getImapConfig() async {
+    String? imapConfigJson = await _storage.read(key: imapConfigKey);
+    ImapConfig? imapConfig;
+
+    if (imapConfigJson != null) {
+      imapConfig = ImapConfig.fromJson(json.decode(imapConfigJson));
+    }
+
+    return imapConfig;
   }
 
   Future<void> resetOffset() async {
