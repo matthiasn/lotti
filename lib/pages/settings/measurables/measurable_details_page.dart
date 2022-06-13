@@ -7,6 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -226,6 +227,8 @@ class EditMeasurablePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder(
       stream: _db.watchMeasurableDataTypeById(measurableId),
       builder: (
@@ -235,7 +238,7 @@ class EditMeasurablePage extends StatelessWidget {
         MeasurableDataType? dataType = snapshot.data;
 
         if (dataType == null) {
-          return const SizedBox.shrink();
+          return EmptyScaffoldWithTitle(localizations.measurableNotFound);
         }
 
         return MeasurableDetailsPage(

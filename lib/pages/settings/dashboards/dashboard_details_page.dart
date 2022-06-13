@@ -13,6 +13,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/dashboards/chart_multi_select.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_item_card.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
@@ -507,6 +508,8 @@ class EditDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder(
       stream: _db.watchDashboardById(dashboardId),
       builder: (
@@ -520,7 +523,7 @@ class EditDashboardPage extends StatelessWidget {
         }
 
         if (dashboard == null) {
-          return const SizedBox.shrink();
+          return EmptyScaffoldWithTitle(localizations.dashboardNotFound);
         }
 
         return DashboardDetailPage(

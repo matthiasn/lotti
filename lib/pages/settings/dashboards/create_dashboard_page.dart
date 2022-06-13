@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_details_page.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -38,7 +39,7 @@ class _CreateDashboardPageState extends State<CreateDashboardPage> {
   @override
   Widget build(BuildContext context) {
     if (_dashboardDefinition == null) {
-      return const SizedBox.shrink();
+      return const EmptyScaffoldWithTitle('');
     }
     return DashboardDetailPage(dashboard: _dashboardDefinition!);
   }

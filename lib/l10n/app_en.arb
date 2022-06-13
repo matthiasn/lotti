@@ -77,6 +77,7 @@
   "maintenanceReprocessSync": "Reprocess sync messages",
   "maintenanceStories": "Assign stories from parent entries",
   "manualLinkText": "Check out the manual for more information",
+  "measurableNotFound": "Measurable not found",
   "navTabTitleFlagged": "Flagged",
   "navTabTitleInsights": "Dashboards",
   "navTabTitleJournal": "Journal",

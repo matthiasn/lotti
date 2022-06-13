@@ -1,6 +1,7 @@
 import 'package:auto_route/annotations.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -60,7 +61,7 @@ class _CreateTagPageState extends State<CreateTagPage> {
   @override
   Widget build(BuildContext context) {
     if (_tagEntity == null) {
-      return const SizedBox.shrink();
+      return const EmptyScaffoldWithTitle('');
     }
     return TagEditPage(tagEntity: _tagEntity!);
   }
