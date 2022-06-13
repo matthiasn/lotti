@@ -86,59 +86,61 @@ class JournalCardTitle extends StatelessWidget {
             ],
           ),
           TagsViewWidget(item: item),
-          item.map(
-            quantitative: (QuantitativeEntry qe) =>
-                HealthSummary(qe, showChart: false),
-            journalAudio: (JournalAudio journalAudio) =>
-                journalAudio.entryText?.plainText != null
-                    ? TextViewerWidget(entryText: journalAudio.entryText)
-                    : EntryTextWidget(formatAudio(journalAudio)),
-            journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
-              entryText: journalEntry.entryText,
-            ),
-            journalImage: (JournalImage journalImage) => Expanded(
-              child: TextViewerWidget(entryText: journalImage.entryText),
-            ),
-            survey: (SurveyEntry surveyEntry) => SurveySummary(surveyEntry),
-            measurement: (MeasurementEntry measurementEntry) =>
-                MeasurementSummary(measurementEntry),
-            task: (Task task) {
-              TaskData data = task.data;
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Icon(
-                        data.status.maybeMap(
-                            done: (_) => MdiIcons.checkboxMarkedOutline,
-                            orElse: () => MdiIcons.checkboxBlankOutline),
-                        size: 32,
-                        color: AppColors.entryTextColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          data.title,
-                          style: TextStyle(
-                            fontFamily: 'Oswald',
-                            color: AppColors.entryTextColor,
-                            fontWeight: FontWeight.normal,
-                            fontSize: 24.0,
+          IgnorePointer(
+            child: item.map(
+              quantitative: (QuantitativeEntry qe) =>
+                  HealthSummary(qe, showChart: false),
+              journalAudio: (JournalAudio journalAudio) =>
+                  journalAudio.entryText?.plainText != null
+                      ? TextViewerWidget(entryText: journalAudio.entryText)
+                      : EntryTextWidget(formatAudio(journalAudio)),
+              journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
+                entryText: journalEntry.entryText,
+              ),
+              journalImage: (JournalImage journalImage) => Expanded(
+                child: TextViewerWidget(entryText: journalImage.entryText),
+              ),
+              survey: (SurveyEntry surveyEntry) => SurveySummary(surveyEntry),
+              measurement: (MeasurementEntry measurementEntry) =>
+                  MeasurementSummary(measurementEntry),
+              task: (Task task) {
+                TaskData data = task.data;
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Icon(
+                          data.status.maybeMap(
+                              done: (_) => MdiIcons.checkboxMarkedOutline,
+                              orElse: () => MdiIcons.checkboxBlankOutline),
+                          size: 32,
+                          color: AppColors.entryTextColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            data.title,
+                            style: TextStyle(
+                              fontFamily: 'Oswald',
+                              color: AppColors.entryTextColor,
+                              fontWeight: FontWeight.normal,
+                              fontSize: 24.0,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  LinkedDuration(task: task),
-                  TextViewerWidget(entryText: task.entryText),
-                ],
-              );
-            },
-            workout: (WorkoutEntry workout) => WorkoutSummary(workout),
-            habitCompletion: (_) => const SizedBox.shrink(),
+                      ],
+                    ),
+                    LinkedDuration(task: task),
+                    TextViewerWidget(entryText: task.entryText),
+                  ],
+                );
+              },
+              workout: (WorkoutEntry workout) => WorkoutSummary(workout),
+              habitCompletion: (_) => const SizedBox.shrink(),
+            ),
           ),
           DurationWidget(
             item: item,

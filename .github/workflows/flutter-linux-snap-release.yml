@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Flutter Build on Linux
+    name: Flutter Build Snap on Linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
