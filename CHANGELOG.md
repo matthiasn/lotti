@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Search field for tasks in full width
+- Search field for measurables in full width
+
+## [0.8.50] - 2022-06-13
 ### Changed:
 - Indicate unsaved changes on tag edit page
 - Indicate unsaved changes on measurable data type edit page
