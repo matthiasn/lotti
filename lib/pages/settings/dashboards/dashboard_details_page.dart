@@ -43,6 +43,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
+  bool dirty = false;
 
   late final Stream<List<MeasurableDataType>> stream =
       _db.watchMeasurableDataTypes();
@@ -204,6 +205,9 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
         Future<void> saveDashboardPress() async {
           await saveDashboard();
+          setState(() {
+            dirty = false;
+          });
           context.router.pop();
         }
 
@@ -232,7 +236,23 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
         return Scaffold(
           backgroundColor: AppColors.bodyBgColor,
-          appBar: TitleAppBar(title: localizations.settingsDashboardsTitle),
+          appBar: TitleAppBar(
+            title: localizations.settingsDashboardsTitle,
+            actions: [
+              if (dirty)
+                TextButton(
+                  key: const Key('dashboard_save'),
+                  onPressed: saveDashboardPress,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text(
+                      localizations.dashboardSaveLabel,
+                      style: saveButtonStyle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           body: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -249,6 +269,11 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                             key: _formKey,
                             autovalidateMode:
                                 AutovalidateMode.onUserInteraction,
+                            onChanged: () {
+                              setState(() {
+                                dirty = true;
+                              });
+                            },
                             child: Column(
                               children: <Widget>[
                                 FormTextField(
@@ -404,14 +429,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                TextButton(
-                                  key: const Key('dashboard_save'),
-                                  onPressed: saveDashboardPress,
-                                  child: Text(
-                                    localizations.dashboardSaveLabel,
-                                    style: saveButtonStyle,
-                                  ),
-                                ),
+                                const Spacer(),
                                 const SizedBox(width: 8),
                                 Row(
                                   children: [

@@ -101,14 +101,10 @@ class _TagEditPageState extends State<TagEditPage> {
               key: const Key('tag_save'),
               onPressed: onSavePressed,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
                 child: Text(
                   localizations.settingsTagsSaveLabel,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontFamily: 'Oswald',
-                    color: AppColors.error,
-                  ),
+                  style: saveButtonStyle,
                 ),
               ),
             ),

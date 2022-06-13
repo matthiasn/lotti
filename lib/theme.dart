@@ -216,10 +216,10 @@ TextStyle chartTitleStyle = TextStyle(
 
 const taskFormFieldStyle = TextStyle(color: Colors.black87);
 
-const saveButtonStyle = TextStyle(
+ TextStyle saveButtonStyle = TextStyle(
   fontSize: 20,
   fontFamily: 'Oswald',
-  fontWeight: FontWeight.bold,
+  color: AppColors.error,
 );
 
 const segmentItemStyle = TextStyle(

@@ -69,14 +69,10 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
             TextButton(
               onPressed: onSavePressed,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
                 child: Text(
                   AppLocalizations.of(context)!.settingsMeasurableSaveLabel,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontFamily: 'Oswald',
-                    color: AppColors.error,
-                  ),
+                  style: saveButtonStyle,
                 ),
               ),
             )
