@@ -44,6 +44,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
     setState(() {
       imapConfig = cfg;
     });
+    testConnectionWithConfig(cfg);
   }
 
   void resetStatus() {
@@ -75,8 +76,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
     }
   }
 
-  Future<void> testConnection() async {
-    ImapConfig? cfg = configFromForm();
+  Future<void> testConnectionWithConfig(ImapConfig? cfg) async {
     if (cfg != null) {
       ImapClient? client = await createImapClient(
         SyncConfig(
@@ -95,6 +95,11 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
         });
       }
     }
+  }
+
+  Future<void> testConnection() async {
+    ImapConfig? cfg = configFromForm();
+    testConnectionWithConfig(cfg);
   }
 
   Future<void> saveConfig() async {
@@ -248,54 +253,50 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  const SizedBox(height: 16),
-                  if (imapConfig == null)
-                    Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (validConfig)
-                          Button(
-                            localizations.settingsSyncSaveButton,
-                            primaryColor: Colors.white,
-                            textColor: AppColors.headerBgColor,
-                            onPressed: saveConfig,
-                          ),
-                        if (!validConfig)
-                          Button(
-                            localizations.settingsSyncTestConnectionButton,
-                            primaryColor: Colors.white,
-                            textColor: AppColors.headerBgColor,
-                            onPressed: testConnection,
-                          ),
-                        const SizedBox(width: 16),
-                        Container(
-                          height: 24,
-                          width: 24,
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: statusColor,
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              )
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
-                  if (imapConfig != null)
-                    Button(
-                      localizations.settingsSyncDeleteImapButton,
-                      onPressed: () {
-                        _syncConfigService.deleteImapConfig();
-                        getImapConfig();
-                      },
-                      primaryColor: AppColors.error,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (validConfig && imapConfig == null)
+                        Button(
+                          localizations.settingsSyncSaveButton,
+                          primaryColor: Colors.white,
+                          textColor: AppColors.headerBgColor,
+                          onPressed: saveConfig,
+                        ),
+                      if (!validConfig && imapConfig == null)
+                        Button(
+                          localizations.settingsSyncTestConnectionButton,
+                          primaryColor: Colors.white,
+                          textColor: AppColors.headerBgColor,
+                          onPressed: testConnection,
+                        ),
+                      if (imapConfig != null)
+                        Button(
+                          localizations.settingsSyncDeleteImapButton,
+                          onPressed: () {
+                            _syncConfigService.deleteImapConfig();
+                            getImapConfig();
+                          },
+                          primaryColor: AppColors.error,
+                        ),
+                      Container(
+                        height: 24,
+                        width: 24,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: statusColor,
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            )
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
                 ],
               ),
             ),
