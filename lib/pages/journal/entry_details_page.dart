@@ -12,6 +12,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/task_app_bar.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/entry_detail_linked.dart';
 import 'package:lotti/widgets/journal/entry_detail_linked_from.dart';
@@ -73,7 +74,9 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
         }
 
         return Scaffold(
-          appBar: TaskAppBar(itemId: item.meta.id),
+          appBar: item is Task
+              ? TaskAppBar(itemId: item.meta.id)
+              : const TitleAppBar(title: '') as PreferredSizeWidget,
           backgroundColor: AppColors.bodyBgColor,
           floatingActionButton: RadialAddActionButtons(
             linked: item,

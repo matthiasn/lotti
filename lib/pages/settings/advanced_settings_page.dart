@@ -64,13 +64,6 @@ class AdvancedSettingsPage extends StatelessWidget {
                 pushNamedRoute('/settings/maintenance');
               },
             ),
-            SettingsCard(
-              icon: const SettingsIcon(MdiIcons.slide),
-              title: localizations.settingsPlaygroundTitle,
-              onTap: () {
-                pushNamedRoute('/settings/playground');
-              },
-            ),
           ],
         ),
       ),
