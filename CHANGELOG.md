@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Indicate unsaved changes on tag edit page
+- Indicate unsaved changes on measurable data type edit page
 
 ## [0.8.49] - 2022-06-13
 ### Fixed:

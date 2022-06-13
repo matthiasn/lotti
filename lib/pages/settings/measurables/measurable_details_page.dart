@@ -31,15 +31,57 @@ class MeasurableDetailsPage extends StatefulWidget {
 class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
+  bool dirty = false;
 
   @override
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
     final MeasurableDataType item = widget.dataType;
 
+    onSavePressed() async {
+      _formKey.currentState!.save();
+      if (_formKey.currentState!.validate()) {
+        final formData = _formKey.currentState?.value;
+        debugPrint('$formData');
+        MeasurableDataType dataType = item.copyWith(
+          description: '${formData!['description']}'.trim(),
+          unitName: '${formData['unitName']}'.trim(),
+          displayName: '${formData['displayName']}'.trim(),
+          private: formData['private'],
+          favorite: formData['favorite'],
+          aggregationType: formData['aggregationType'],
+        );
+
+        persistenceLogic.upsertEntityDefinition(dataType);
+        setState(() {
+          dirty = false;
+        });
+        context.router.pop();
+      }
+    }
+
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
-      appBar: TitleAppBar(title: localizations.settingsMeasurablesTitle),
+      appBar: TitleAppBar(
+        title: localizations.settingsMeasurablesTitle,
+        actions: [
+          if (dirty)
+            TextButton(
+              onPressed: onSavePressed,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Text(
+                  AppLocalizations.of(context)!.settingsMeasurableSaveLabel,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontFamily: 'Oswald',
+                    color: AppColors.error,
+                  ),
+                ),
+              ),
+            )
+        ],
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -55,6 +97,11 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                       FormBuilder(
                         key: _formKey,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
+                        onChanged: () {
+                          setState(() {
+                            dirty = true;
+                          });
+                        },
                         child: Column(
                           children: <Widget>[
                             FormTextField(
@@ -140,45 +187,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                       Padding(
                         padding: const EdgeInsets.only(top: 16.0),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            TextButton(
-                              onPressed: () async {
-                                _formKey.currentState!.save();
-                                if (_formKey.currentState!.validate()) {
-                                  final formData = _formKey.currentState?.value;
-                                  debugPrint('$formData');
-                                  MeasurableDataType dataType = item.copyWith(
-                                    description:
-                                        '${formData!['description']}'.trim(),
-                                    unitName: '${formData['unitName']}'.trim(),
-                                    displayName:
-                                        '${formData['displayName']}'.trim(),
-                                    private: formData['private'],
-                                    favorite: formData['favorite'],
-                                    aggregationType:
-                                        formData['aggregationType'],
-                                  );
-
-                                  persistenceLogic
-                                      .upsertEntityDefinition(dataType);
-                                  context.router.pop();
-                                }
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 24.0),
-                                child: Text(
-                                  AppLocalizations.of(context)!
-                                      .settingsMeasurableSaveLabel,
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontFamily: 'Oswald',
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
                             IconButton(
                               icon: const Icon(MdiIcons.trashCanOutline),
                               iconSize: 24,
