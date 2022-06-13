@@ -28,15 +28,74 @@ class TagEditPage extends StatefulWidget {
 class _TagEditPageState extends State<TagEditPage> {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
+  bool dirty = false;
 
   @override
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
 
+    onSavePressed() async {
+      _formKey.currentState!.save();
+      if (_formKey.currentState!.validate()) {
+        final formData = _formKey.currentState?.value;
+        TagEntity newTagEntity = widget.tagEntity.copyWith(
+          tag: '${formData!['tag']}'.trim(),
+          private: formData['private'],
+          inactive: formData['inactive'],
+          updatedAt: DateTime.now(),
+        );
+
+        String type = formData['type'];
+
+        if (type == 'PERSON') {
+          newTagEntity = TagEntity.personTag(
+            tag: newTagEntity.tag,
+            vectorClock: newTagEntity.vectorClock,
+            updatedAt: newTagEntity.updatedAt,
+            createdAt: newTagEntity.createdAt,
+            private: newTagEntity.private,
+            inactive: newTagEntity.inactive,
+            id: newTagEntity.id,
+          );
+        }
+
+        if (type == 'STORY') {
+          newTagEntity = TagEntity.storyTag(
+            tag: newTagEntity.tag,
+            vectorClock: newTagEntity.vectorClock,
+            updatedAt: newTagEntity.updatedAt,
+            createdAt: newTagEntity.createdAt,
+            private: newTagEntity.private,
+            inactive: newTagEntity.inactive,
+            id: newTagEntity.id,
+          );
+        }
+
+        if (type == 'TAG') {
+          newTagEntity = TagEntity.genericTag(
+            tag: newTagEntity.tag,
+            vectorClock: newTagEntity.vectorClock,
+            updatedAt: newTagEntity.updatedAt,
+            createdAt: newTagEntity.createdAt,
+            private: newTagEntity.private,
+            inactive: newTagEntity.inactive,
+            id: newTagEntity.id,
+          );
+        }
+
+        persistenceLogic.upsertTagEntity(newTagEntity);
+        context.router.pop();
+
+        setState(() {
+          dirty = false;
+        });
+      }
+    }
+
     return Scaffold(
       appBar: TitleAppBar(title: localizations.settingsTagsTitle),
       backgroundColor: AppColors.bodyBgColor,
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
@@ -50,6 +109,11 @@ class _TagEditPageState extends State<TagEditPage> {
                     FormBuilder(
                       key: _formKey,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
+                      onChanged: () {
+                        setState(() {
+                          dirty = true;
+                        });
+                      },
                       child: Column(
                         children: <Widget>[
                           FormTextField(
@@ -139,69 +203,19 @@ class _TagEditPageState extends State<TagEditPage> {
                         children: [
                           TextButton(
                             key: const Key('tag_save'),
-                            onPressed: () async {
-                              _formKey.currentState!.save();
-                              if (_formKey.currentState!.validate()) {
-                                final formData = _formKey.currentState?.value;
-                                TagEntity newTagEntity =
-                                    widget.tagEntity.copyWith(
-                                  tag: '${formData!['tag']}'.trim(),
-                                  private: formData['private'],
-                                  inactive: formData['inactive'],
-                                  updatedAt: DateTime.now(),
-                                );
-
-                                String type = formData['type'];
-
-                                if (type == 'PERSON') {
-                                  newTagEntity = TagEntity.personTag(
-                                    tag: newTagEntity.tag,
-                                    vectorClock: newTagEntity.vectorClock,
-                                    updatedAt: newTagEntity.updatedAt,
-                                    createdAt: newTagEntity.createdAt,
-                                    private: newTagEntity.private,
-                                    inactive: newTagEntity.inactive,
-                                    id: newTagEntity.id,
-                                  );
-                                }
-
-                                if (type == 'STORY') {
-                                  newTagEntity = TagEntity.storyTag(
-                                    tag: newTagEntity.tag,
-                                    vectorClock: newTagEntity.vectorClock,
-                                    updatedAt: newTagEntity.updatedAt,
-                                    createdAt: newTagEntity.createdAt,
-                                    private: newTagEntity.private,
-                                    inactive: newTagEntity.inactive,
-                                    id: newTagEntity.id,
-                                  );
-                                }
-
-                                if (type == 'TAG') {
-                                  newTagEntity = TagEntity.genericTag(
-                                    tag: newTagEntity.tag,
-                                    vectorClock: newTagEntity.vectorClock,
-                                    updatedAt: newTagEntity.updatedAt,
-                                    createdAt: newTagEntity.createdAt,
-                                    private: newTagEntity.private,
-                                    inactive: newTagEntity.inactive,
-                                    id: newTagEntity.id,
-                                  );
-                                }
-
-                                persistenceLogic.upsertTagEntity(newTagEntity);
-                                context.router.pop();
-                              }
-                            },
+                            onPressed: onSavePressed,
                             child: Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 24.0),
                               child: Text(
                                 localizations.settingsTagsSaveLabel,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 20,
                                   fontFamily: 'Oswald',
                                   fontWeight: FontWeight.bold,
+                                  color: dirty
+                                      ? AppColors.error
+                                      : AppColors.entryTextColor,
                                 ),
                               ),
                             ),
