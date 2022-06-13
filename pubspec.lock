@@ -308,7 +308,7 @@ packages:
       name: connectivity_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.3"
+    version: "2.3.4"
   connectivity_plus_linux:
     dependency: transitive
     description:
@@ -336,7 +336,7 @@ packages:
       name: connectivity_plus_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.1"
+    version: "1.2.2"
   connectivity_plus_windows:
     dependency: "direct overridden"
     description:
@@ -525,14 +525,14 @@ packages:
       name: enough_convert
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.4.0"
+    version: "1.5.0"
   enough_mail:
     dependency: "direct main"
     description:
       name: enough_mail
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.0"
+    version: "2.1.1"
   enough_serialization:
     dependency: transitive
     description:
@@ -689,7 +689,7 @@ packages:
       name: flutter_form_builder
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.2.1"
+    version: "7.3.0"
   flutter_health_fit:
     dependency: "direct main"
     description:
@@ -794,7 +794,7 @@ packages:
       name: flutter_native_splash
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.3"
+    version: "2.2.3+1"
   flutter_native_timezone:
     dependency: "direct main"
     description:
@@ -1725,7 +1725,7 @@ packages:
       name: share_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.7"
+    version: "4.0.8"
   share_plus_linux:
     dependency: transitive
     description:
@@ -2192,7 +2192,7 @@ packages:
       name: wechat_assets_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.3.1"
+    version: "7.3.2"
   win32:
     dependency: transitive
     description:
