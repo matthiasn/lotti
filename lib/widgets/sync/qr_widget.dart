@@ -38,7 +38,8 @@ class EncryptionQrWidget extends StatelessWidget {
               primaryColor: Colors.red,
             ),
             const Padding(padding: EdgeInsets.all(8.0)),
-            state.when(
+            state.maybeWhen(
+              orElse: () => const SizedBox.shrink(),
               (String? sharedKey, ImapConfig? imapConfig) {
                 if (sharedKey != null && imapConfig != null) {
                   SyncConfig syncConfig = SyncConfig(

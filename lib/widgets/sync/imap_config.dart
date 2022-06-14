@@ -104,7 +104,6 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
 
   Future<void> saveConfig() async {
     ImapConfig? cfg = configFromForm();
-    debugPrint('saveConfig $cfg');
     if (cfg != null) {
       await _syncConfigService.setImapConfig(cfg);
       await getImapConfig();
