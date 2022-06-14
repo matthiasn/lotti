@@ -6,9 +6,9 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
-import 'package:lotti/classes/config.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
+import 'package:lotti/widgets/sync/imap_config_utils.dart';
 
 import 'imap_config_mobile.dart';
 
@@ -21,20 +21,17 @@ class ImapConfigWidget extends StatelessWidget {
       return const MobileSyncConfig();
     }
 
-    return BlocBuilder<SyncConfigCubit, SyncConfigState>(
-        builder: (context, SyncConfigState state) {
-      return SizedBox(
-        width: 320,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            ImapConfigForm(),
-            SizedBox(height: 32),
-            ImapConfigActions(),
-          ],
-        ),
-      );
-    });
+    return SizedBox(
+      width: 320,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          ImapConfigForm(),
+          SizedBox(height: 32),
+          ImapConfigActions(),
+        ],
+      ),
+    );
   }
 }
 
@@ -232,27 +229,5 @@ class StatusIndicator extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-ImapConfig? configFromForm(GlobalKey<FormBuilderState> formKey) {
-  formKey.currentState!.save();
-  if (formKey.currentState!.validate()) {
-    final formData = formKey.currentState?.value;
-
-    String getTrimmed(String k) {
-      return formData![k].toString().trim();
-    }
-
-    return ImapConfig(
-      host: getTrimmed('imap_host'),
-      // folder: getTrimmed('imap_folder'),
-      folder: 'INBOX.lotti-sync',
-      userName: getTrimmed('imap_userName'),
-      password: getTrimmed('imap_password'),
-      port: int.parse(formData!['imap_port']),
-    );
-  } else {
-    return null;
   }
 }
