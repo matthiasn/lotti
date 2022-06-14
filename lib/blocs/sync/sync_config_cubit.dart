@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:enough_mail/enough_mail.dart';
+import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
@@ -77,7 +78,9 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
 
       if (client != null) {
         isAccountValid = true;
+        debugPrint('testConnection isAccountValid');
       } else {
+        debugPrint('testConnection error');
         connectionError = 'Error';
       }
     }
@@ -115,8 +118,9 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     loadSyncConfig();
   }
 
-  Future<void> setImapConfig(ImapConfig imapConfig) async {
-    await _syncConfigService.setImapConfig(imapConfig);
-    loadSyncConfig();
+  Future<void> setImapConfig(ImapConfig? config) async {
+    imapConfig = config;
+    debugPrint('setImapConfig $config');
+    testConnection();
   }
 }
