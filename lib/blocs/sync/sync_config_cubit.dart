@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -121,6 +122,13 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
   Future<void> setImapConfig(ImapConfig? config) async {
     imapConfig = config;
     debugPrint('setImapConfig $config');
-    testConnection();
+
+    emit(SyncConfigState.imapTesting(imapConfig: imapConfig));
+
+    EasyDebounce.debounce(
+      'syncTestConnection',
+      const Duration(seconds: 2),
+      testConnection,
+    );
   }
 }

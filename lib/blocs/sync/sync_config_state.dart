@@ -12,7 +12,7 @@ class SyncConfigState with _$SyncConfigState {
   }) = _ImapValid;
 
   factory SyncConfigState.imapTesting({
-    required ImapConfig imapConfig,
+    ImapConfig? imapConfig,
   }) = _ImapTesting;
 
   factory SyncConfigState.imapInvalid({

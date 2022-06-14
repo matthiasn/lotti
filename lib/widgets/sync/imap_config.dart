@@ -418,7 +418,7 @@ class ImapConfigActions extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           state.when(
-            (sharedSecret, imapConfig) => SizedBox.shrink(),
+            (sharedSecret, imapConfig) => const SizedBox.shrink(),
             configured: (_, __) =>
                 StatusIndicator(AppColors.outboxSuccessColor),
             imapValid: (_) => StatusIndicator(AppColors.outboxSuccessColor),
