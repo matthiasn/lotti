@@ -9,7 +9,7 @@ class ImapConfigStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    AppLocalizations loc = AppLocalizations.of(context)!;
 
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
         builder: (context, SyncConfigState state) {
@@ -21,17 +21,14 @@ class ImapConfigStatus extends StatelessWidget {
           children: [
             state.when(
               (_, __) => const SizedBox.shrink(),
-              configured: (_, __) =>
-                  const StatusText('Account is successfully configured.'),
-              imapSaved: (_) => const StatusText('IMAP configuration saved.'),
-              imapValid: (_) => const StatusText('Account is valid.'),
-              imapTesting: (_) =>
-                  const StatusText('Testing IMAP connection...'),
+              configured: (_, __) => StatusText(loc.syncAssistantStatusSuccess),
+              imapSaved: (_) => StatusText(loc.syncAssistantStatusSaved),
+              imapValid: (_) => StatusText(loc.syncAssistantStatusValid),
+              imapTesting: (_) => StatusText(loc.syncAssistantStatusTesting),
               imapInvalid: (_, String errorMessage) => StatusText(errorMessage),
-              loading: () => const StatusText('Loading...'),
-              generating: () => const StatusText('Generating secret...'),
-              empty: () =>
-                  const StatusText('Please enter valid account details.'),
+              loading: () => StatusText(loc.syncAssistantStatusLoading),
+              generating: () => StatusText(loc.syncAssistantStatusGenerating),
+              empty: () => StatusText(loc.syncAssistantStatusEmpty),
             ),
             state.when(
               (_, __) => const SizedBox.shrink(),
