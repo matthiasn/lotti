@@ -163,6 +163,12 @@ TextStyle formLabelStyle = TextStyle(
   fontSize: 16,
 );
 
+TextStyle buttonLabelStyle = const TextStyle(
+  color: Colors.white,
+  fontFamily: 'Oswald',
+  fontSize: 16,
+);
+
 TextStyle settingsLabelStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
@@ -216,7 +222,7 @@ TextStyle chartTitleStyle = TextStyle(
 
 const taskFormFieldStyle = TextStyle(color: Colors.black87);
 
- TextStyle saveButtonStyle = TextStyle(
+TextStyle saveButtonStyle = TextStyle(
   fontSize: 20,
   fontFamily: 'Oswald',
   color: AppColors.error,
