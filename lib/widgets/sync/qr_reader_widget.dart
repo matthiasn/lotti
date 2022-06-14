@@ -37,6 +37,7 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
         builder: (context, SyncConfigState state) {
       void _onQRViewCreated(QRViewController controller) {
         this.controller = controller;
+
         controller.scannedDataStream.listen((scanData) {
           if (scanData.code != null) {
             context.read<SyncConfigCubit>().setSyncConfig(scanData.code!);

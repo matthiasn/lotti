@@ -37,7 +37,7 @@ class EncryptionQrWidget extends StatelessWidget {
                   context.read<SyncConfigCubit>().generateSharedKey(),
               primaryColor: Colors.red,
             ),
-            const Padding(padding: EdgeInsets.all(8.0)),
+            const SizedBox(height: 32),
             state.maybeWhen(
               orElse: () => const SizedBox.shrink(),
               configured: (ImapConfig imapConfig, String sharedKey) {
@@ -97,6 +97,7 @@ class EncryptionQrWidget extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 32),
                     const DeleteSyncConfigButton(),
                   ],
                 );
@@ -108,6 +109,7 @@ class EncryptionQrWidget extends StatelessWidget {
               empty: () => Column(
                 children: [
                   StatusTextWidget(localizations.settingsSyncNotInitialized),
+                  const SizedBox(height: 32),
                   Button(
                     localizations.settingsSyncPasteCfg,
                     onPressed: () {

@@ -105,7 +105,7 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
 
   Future<void> setSyncConfig(String configJson) async {
     _syncConfigService.setSyncConfig(configJson);
-    emitState();
+    loadSyncConfig();
   }
 
   void testImapConfig(ImapConfig? config) {
