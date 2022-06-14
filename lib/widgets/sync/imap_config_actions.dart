@@ -18,7 +18,6 @@ class ImapConfigActions extends StatelessWidget {
 
       return Center(
         child: state.maybeWhen(
-          (_, __) => const SizedBox.shrink(),
           configured: (_, __) => Button(
             localizations.settingsSyncDeleteImapButton,
             onPressed: () {
@@ -35,7 +34,7 @@ class ImapConfigActions extends StatelessWidget {
           ),
           imapValid: (_) => Button(
             localizations.settingsSyncSaveButton,
-            primaryColor: Colors.white,
+            primaryColor: Colors.blue,
             textColor: AppColors.headerBgColor,
             onPressed: syncConfigCubit.saveImapConfig,
           ),

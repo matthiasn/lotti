@@ -20,7 +20,6 @@ class ImapConfigStatus extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             state.when(
-              (_, __) => const SizedBox.shrink(),
               configured: (_, __) => StatusText(loc.syncAssistantStatusSuccess),
               imapSaved: (_) => StatusText(loc.syncAssistantStatusSaved),
               imapValid: (_) => StatusText(loc.syncAssistantStatusValid),
@@ -31,7 +30,6 @@ class ImapConfigStatus extends StatelessWidget {
               empty: () => StatusText(loc.syncAssistantStatusEmpty),
             ),
             state.when(
-              (_, __) => const SizedBox.shrink(),
               configured: (_, __) =>
                   StatusIndicator(AppColors.outboxSuccessColor),
               imapValid: (_) => StatusIndicator(AppColors.outboxSuccessColor),

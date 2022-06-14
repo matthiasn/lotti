@@ -24,11 +24,6 @@ class SyncConfigState with _$SyncConfigState {
     required String errorMessage,
   }) = _ImapInvalid;
 
-  factory SyncConfigState({
-    String? sharedSecret,
-    ImapConfig? imapConfig,
-  }) = _SyncConfigState;
-
   factory SyncConfigState.loading() = _Loading;
 
   factory SyncConfigState.generating() = _Generating;

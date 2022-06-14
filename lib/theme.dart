@@ -163,8 +163,8 @@ TextStyle formLabelStyle = TextStyle(
   fontSize: 16,
 );
 
-TextStyle buttonLabelStyle = const TextStyle(
-  color: Colors.white,
+TextStyle buttonLabelStyle = TextStyle(
+  color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 16,
 );

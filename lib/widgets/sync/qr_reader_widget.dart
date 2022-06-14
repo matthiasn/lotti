@@ -46,7 +46,7 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
 
       return Center(
         child: state.maybeWhen(
-            (String? sharedKey, ImapConfig? imapConfig) => TextButton(
+            configured: (ImapConfig imapConfig, String sharedKey) => TextButton(
                   style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         vertical: 16.0,

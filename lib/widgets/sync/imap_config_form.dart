@@ -25,7 +25,6 @@ class _ImapConfigFormState extends State<ImapConfigForm> {
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
         builder: (context, SyncConfigState state) {
       return state.when(
-        (_, __) => const SizedBox.shrink(),
         configured: (cfg, _) => ConfigForm(
           formKey: _formKey,
           imapConfig: cfg,

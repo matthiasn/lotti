@@ -16,7 +16,7 @@ class MobileSyncConfig extends StatelessWidget {
         builder: (context, SyncConfigState state) {
       return Center(
         child: state.maybeWhen(
-          (sharedKey, imapConfig) {
+          configured: (imapConfig, sharedKey) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 88.0),
               child: Column(
@@ -24,19 +24,19 @@ class MobileSyncConfig extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Host: ${imapConfig?.host}',
+                    'Host: ${imapConfig.host}',
                     style: labelStyleLarger,
                   ),
                   Text(
-                    'Port: ${imapConfig?.port}',
+                    'Port: ${imapConfig.port}',
                     style: labelStyleLarger,
                   ),
                   Text(
-                    'IMAP Folder: ${imapConfig?.folder}',
+                    'IMAP Folder: ${imapConfig.folder}',
                     style: labelStyleLarger,
                   ),
                   Text(
-                    'User: ${imapConfig?.userName}',
+                    'User: ${imapConfig.userName}',
                     style: labelStyleLarger,
                   ),
                   const SizedBox(height: 32),
