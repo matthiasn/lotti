@@ -74,9 +74,10 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
 
   Future<void> testConnection() async {
     resetStatus();
-    emit(SyncConfigState.imapTesting(imapConfig: imapConfig));
 
     if (imapConfig != null) {
+      emit(SyncConfigState.imapTesting(imapConfig: imapConfig!));
+
       ImapClient? client = await createImapClient(
         SyncConfig(
           imapConfig: imapConfig!,

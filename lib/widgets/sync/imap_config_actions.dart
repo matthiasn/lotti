@@ -18,7 +18,7 @@ class ImapConfigActions extends StatelessWidget {
 
       return Center(
         child: state.maybeWhen(
-          (sharedSecret, imapConfig) => const SizedBox.shrink(),
+          (_, __) => const SizedBox.shrink(),
           configured: (_, __) => Button(
             localizations.settingsSyncDeleteImapButton,
             onPressed: () {

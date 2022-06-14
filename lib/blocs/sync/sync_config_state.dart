@@ -3,8 +3,8 @@ part of 'sync_config_cubit.dart';
 @freezed
 class SyncConfigState with _$SyncConfigState {
   factory SyncConfigState.configured({
-    required String sharedSecret,
     required ImapConfig imapConfig,
+    required String sharedSecret,
   }) = _Configured;
 
   factory SyncConfigState.imapSaved({
@@ -16,7 +16,7 @@ class SyncConfigState with _$SyncConfigState {
   }) = _ImapValid;
 
   factory SyncConfigState.imapTesting({
-    ImapConfig? imapConfig,
+    required ImapConfig imapConfig,
   }) = _ImapTesting;
 
   factory SyncConfigState.imapInvalid({

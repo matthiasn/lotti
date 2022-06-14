@@ -20,7 +20,7 @@ class ImapConfigStatus extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             state.when(
-              (sharedSecret, imapConfig) => const SizedBox.shrink(),
+              (_, __) => const SizedBox.shrink(),
               configured: (_, __) =>
                   const StatusText('Account is successfully configured.'),
               imapSaved: (_) => const StatusText('IMAP configuration saved.'),
@@ -34,7 +34,7 @@ class ImapConfigStatus extends StatelessWidget {
                   const StatusText('Please enter valid account details.'),
             ),
             state.when(
-              (sharedSecret, imapConfig) => const SizedBox.shrink(),
+              (_, __) => const SizedBox.shrink(),
               configured: (_, __) =>
                   StatusIndicator(AppColors.outboxSuccessColor),
               imapValid: (_) => StatusIndicator(AppColors.outboxSuccessColor),
