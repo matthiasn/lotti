@@ -130,7 +130,10 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
 
   Future<void> deleteImapConfig() async {
     await _syncConfigService.deleteImapConfig();
-    loadSyncConfig();
+    resetStatus();
+    sharedSecret = null;
+    imapConfig = null;
+    emit(SyncConfigState.empty());
   }
 
   Future<void> setImapConfig(ImapConfig? config) async {

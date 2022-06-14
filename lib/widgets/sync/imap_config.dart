@@ -7,9 +7,14 @@ import 'package:lotti/widgets/sync/imap_config_status.dart';
 
 import 'imap_config_mobile.dart';
 
-class ImapConfigWidget extends StatelessWidget {
+class ImapConfigWidget extends StatefulWidget {
   const ImapConfigWidget({Key? key}) : super(key: key);
 
+  @override
+  State<ImapConfigWidget> createState() => _ImapConfigWidgetState();
+}
+
+class _ImapConfigWidgetState extends State<ImapConfigWidget> {
   @override
   Widget build(BuildContext context) {
     if (Platform.isIOS || Platform.isAndroid) {

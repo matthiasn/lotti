@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -16,40 +17,36 @@ class ImapConfigActions extends StatelessWidget {
         builder: (context, SyncConfigState state) {
       SyncConfigCubit syncConfigCubit = context.read<SyncConfigCubit>();
 
+      void deleteConfig() {
+        syncConfigCubit.deleteImapConfig();
+        context.router.pop();
+      }
+
       return Center(
         child: state.maybeWhen(
           configured: (_, __) => Button(
             localizations.settingsSyncDeleteImapButton,
-            onPressed: () {
-              syncConfigCubit.deleteImapConfig();
-            },
+            onPressed: deleteConfig,
             primaryColor: AppColors.error,
           ),
           imapSaved: (_) => Button(
             localizations.settingsSyncDeleteImapButton,
-            onPressed: () {
-              syncConfigCubit.deleteImapConfig();
-            },
+            onPressed: deleteConfig,
             primaryColor: AppColors.error,
           ),
           imapValid: (_) => Button(
             localizations.settingsSyncSaveButton,
-            primaryColor: Colors.blue,
             textColor: AppColors.headerBgColor,
             onPressed: syncConfigCubit.saveImapConfig,
           ),
           imapTesting: (_) => Button(
             localizations.settingsSyncDeleteImapButton,
-            onPressed: () {
-              syncConfigCubit.deleteImapConfig();
-            },
+            onPressed: deleteConfig,
             primaryColor: AppColors.error,
           ),
           imapInvalid: (_, String errorMessage) => Button(
             localizations.settingsSyncDeleteImapButton,
-            onPressed: () {
-              syncConfigCubit.deleteImapConfig();
-            },
+            onPressed: deleteConfig,
             primaryColor: AppColors.error,
           ),
           orElse: () => const SizedBox.shrink(),
