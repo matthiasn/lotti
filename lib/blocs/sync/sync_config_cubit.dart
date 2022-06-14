@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
@@ -23,6 +24,11 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
 
   SyncConfigCubit() : super(SyncConfigState.loading()) {
     loadSyncConfig();
+
+    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      debugPrint('onConnectivityChanged $result');
+      testConnection();
+    });
   }
 
   Future<void> loadSyncConfig() async {
@@ -68,6 +74,7 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
 
   Future<void> testConnection() async {
     resetStatus();
+    emit(SyncConfigState.imapTesting(imapConfig: imapConfig));
 
     if (imapConfig != null) {
       ImapClient? client = await createImapClient(
@@ -127,11 +134,8 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
 
   Future<void> setImapConfig(ImapConfig? config) async {
     imapConfig = config;
-    debugPrint('setImapConfig $config');
 
     if (imapConfig != null) {
-      emit(SyncConfigState.imapTesting(imapConfig: imapConfig));
-
       EasyDebounce.debounce(
         'syncTestConnection',
         const Duration(seconds: 2),
