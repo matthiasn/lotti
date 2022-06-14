@@ -61,7 +61,7 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     } else if (imapConfig != null && connectionError != null) {
       emit(SyncConfigState.imapInvalid(
         imapConfig: imapConfig!,
-        errorMessage: connectionError,
+        errorMessage: connectionError!,
       ));
     }
   }
@@ -109,9 +109,10 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
 
   Future<void> saveImapConfig() async {
     if (imapConfig != null && isAccountValid && connectionError == null) {
+      debugPrint('saveImapConfig');
       await _syncConfigService.setImapConfig(imapConfig!);
+      emit(SyncConfigState.imapSaved(imapConfig: imapConfig!));
     }
-    emitState();
   }
 
   Future<void> deleteSharedKey() async {
@@ -119,16 +120,23 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     loadSyncConfig();
   }
 
+  Future<void> deleteImapConfig() async {
+    await _syncConfigService.deleteImapConfig();
+    loadSyncConfig();
+  }
+
   Future<void> setImapConfig(ImapConfig? config) async {
     imapConfig = config;
     debugPrint('setImapConfig $config');
 
-    emit(SyncConfigState.imapTesting(imapConfig: imapConfig));
+    if (imapConfig != null) {
+      emit(SyncConfigState.imapTesting(imapConfig: imapConfig));
 
-    EasyDebounce.debounce(
-      'syncTestConnection',
-      const Duration(seconds: 2),
-      testConnection,
-    );
+      EasyDebounce.debounce(
+        'syncTestConnection',
+        const Duration(seconds: 2),
+        testConnection,
+      );
+    }
   }
 }

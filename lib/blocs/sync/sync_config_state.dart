@@ -7,6 +7,10 @@ class SyncConfigState with _$SyncConfigState {
     required ImapConfig imapConfig,
   }) = _Configured;
 
+  factory SyncConfigState.imapSaved({
+    required ImapConfig imapConfig,
+  }) = _ImapSaved;
+
   factory SyncConfigState.imapValid({
     required ImapConfig imapConfig,
   }) = _ImapValid;
@@ -17,7 +21,7 @@ class SyncConfigState with _$SyncConfigState {
 
   factory SyncConfigState.imapInvalid({
     required ImapConfig imapConfig,
-    String? errorMessage,
+    required String errorMessage,
   }) = _ImapInvalid;
 
   factory SyncConfigState({

@@ -411,24 +411,68 @@ class ImapConfigActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
+
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
         builder: (context, SyncConfigState state) {
-      return Row(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          state.when(
-            (sharedSecret, imapConfig) => const SizedBox.shrink(),
-            configured: (_, __) =>
-                StatusIndicator(AppColors.outboxSuccessColor),
-            imapValid: (_) => StatusIndicator(AppColors.outboxSuccessColor),
-            imapTesting: (_) => StatusIndicator(AppColors.outboxPendingColor),
-            imapInvalid: (_, __) => StatusIndicator(AppColors.error),
-            loading: () => const StatusIndicator(Colors.grey),
-            generating: () => const StatusIndicator(Colors.grey),
-            empty: () => const StatusIndicator(Colors.grey),
-          ),
-        ],
+      SyncConfigCubit syncConfigCubit = context.read<SyncConfigCubit>();
+      return SizedBox(
+        height: 40,
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            state.when(
+              (sharedSecret, imapConfig) => const SizedBox.shrink(),
+              configured: (_, __) => Button(
+                localizations.settingsSyncDeleteImapButton,
+                onPressed: () {
+                  syncConfigCubit.deleteImapConfig();
+                },
+                primaryColor: AppColors.error,
+              ),
+              imapSaved: (_) => Button(
+                localizations.settingsSyncDeleteImapButton,
+                onPressed: () {
+                  syncConfigCubit.deleteImapConfig();
+                },
+                primaryColor: AppColors.error,
+              ),
+              imapValid: (_) => Button(
+                localizations.settingsSyncSaveButton,
+                primaryColor: Colors.white,
+                textColor: AppColors.headerBgColor,
+                onPressed: syncConfigCubit.saveImapConfig,
+              ),
+              imapTesting: (_) => Text(
+                'Testing IMAP connection...',
+                style: formLabelStyle,
+              ),
+              imapInvalid: (_, String errorMessage) => Text(
+                errorMessage,
+                style: formLabelStyle,
+              ),
+              loading: () => const StatusIndicator(Colors.grey),
+              generating: () => const Spacer(),
+              empty: () => Text(
+                'Please enter valid account details.',
+                style: formLabelStyle,
+              ),
+            ),
+            state.when(
+              (sharedSecret, imapConfig) => const SizedBox.shrink(),
+              configured: (_, __) =>
+                  StatusIndicator(AppColors.outboxSuccessColor),
+              imapValid: (_) => StatusIndicator(AppColors.outboxSuccessColor),
+              imapSaved: (_) => StatusIndicator(AppColors.outboxSuccessColor),
+              imapTesting: (_) => StatusIndicator(AppColors.outboxPendingColor),
+              imapInvalid: (_, __) => StatusIndicator(AppColors.error),
+              loading: () => const StatusIndicator(Colors.grey),
+              generating: () => const StatusIndicator(Colors.grey),
+              empty: () => const StatusIndicator(Colors.grey),
+            ),
+          ],
+        ),
       );
     });
   }
