@@ -37,73 +37,70 @@ class EncryptionQrWidget extends StatelessWidget {
                   context.read<SyncConfigCubit>().generateSharedKey(),
               primaryColor: Colors.red,
             ),
-            const Padding(padding: EdgeInsets.all(8.0)),
-            state.when(
-              (String? sharedKey, ImapConfig? imapConfig) {
-                if (sharedKey != null && imapConfig != null) {
-                  SyncConfig syncConfig = SyncConfig(
-                    imapConfig: imapConfig,
-                    sharedSecret: sharedKey,
-                  );
-                  String syncCfgJson = json.encode(syncConfig);
-                  return Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8.0),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(8.0),
-                          ),
-                        ),
-                        child: GestureDetector(
-                          onTap: () {
-                            showDialog<String>(
-                              context: context,
-                              builder: (BuildContext context) => AlertDialog(
-                                title: Text(
-                                  localizations.settingsSyncCopyCfg,
-                                  style: const TextStyle(fontFamily: 'Oswald'),
-                                ),
-                                content: Text(
-                                  localizations.settingsSyncCopyCfgWarning,
-                                  style: const TextStyle(fontFamily: 'Lato'),
-                                ),
-                                actions: <Widget>[
-                                  Button(
-                                    localizations.settingsSyncCancelButton,
-                                    onPressed: () {
-                                      Navigator.pop(context, 'Cancel');
-                                    },
-                                    primaryColor: Colors.grey,
-                                  ),
-                                  Button(
-                                    localizations.settingsSyncCopyButton,
-                                    onPressed: () {
-                                      Clipboard.setData(
-                                          ClipboardData(text: syncCfgJson));
-                                      Navigator.pop(context, 'Copy SyncConfig');
-                                    },
-                                    primaryColor: Colors.red,
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          child: QrImage(
-                            data: syncCfgJson,
-                            version: QrVersions.auto,
-                            size: 280.0,
-                          ),
+            const SizedBox(height: 32),
+            state.maybeWhen(
+              orElse: () => const SizedBox.shrink(),
+              configured: (ImapConfig imapConfig, String sharedKey) {
+                SyncConfig syncConfig = SyncConfig(
+                  imapConfig: imapConfig,
+                  sharedSecret: sharedKey,
+                );
+                String syncCfgJson = json.encode(syncConfig);
+                return Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8.0),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(8.0),
                         ),
                       ),
-                      const DeleteSyncConfigButton(),
-                    ],
-                  );
-                } else {
-                  return StatusTextWidget(
-                      localizations.settingsSyncIncompleteConfig);
-                }
+                      child: GestureDetector(
+                        onTap: () {
+                          showDialog<String>(
+                            context: context,
+                            builder: (BuildContext context) => AlertDialog(
+                              title: Text(
+                                localizations.settingsSyncCopyCfg,
+                                style: const TextStyle(fontFamily: 'Oswald'),
+                              ),
+                              content: Text(
+                                localizations.settingsSyncCopyCfgWarning,
+                                style: const TextStyle(fontFamily: 'Lato'),
+                              ),
+                              actions: <Widget>[
+                                Button(
+                                  localizations.settingsSyncCancelButton,
+                                  onPressed: () {
+                                    Navigator.pop(context, 'Cancel');
+                                  },
+                                  primaryColor: Colors.grey,
+                                ),
+                                Button(
+                                  localizations.settingsSyncCopyButton,
+                                  onPressed: () {
+                                    Clipboard.setData(
+                                        ClipboardData(text: syncCfgJson));
+                                    Navigator.pop(context, 'Copy SyncConfig');
+                                  },
+                                  primaryColor: Colors.red,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        child: QrImage(
+                          data: syncCfgJson,
+                          version: QrVersions.auto,
+                          size: 280.0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    const DeleteSyncConfigButton(),
+                  ],
+                );
               },
               loading: () =>
                   StatusTextWidget(localizations.settingsSyncLoadingKey),
@@ -112,6 +109,7 @@ class EncryptionQrWidget extends StatelessWidget {
               empty: () => Column(
                 children: [
                   StatusTextWidget(localizations.settingsSyncNotInitialized),
+                  const SizedBox(height: 32),
                   Button(
                     localizations.settingsSyncPasteCfg,
                     onPressed: () {

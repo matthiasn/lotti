@@ -152,6 +152,13 @@
   "syncAssistantPage2": "The communication between happens without you having to give your data away to cloud-based services. Instead, you provide your own email account and each device in the communication stores encrypted messages for your other devices in an IMAP folder. Please provide your server settings on the next page.",
   "syncAssistantPage2mobile": "Please scan the generated QR code with your settings on the next page. If you haven't done so, please start the sync setup on a Lotti desktop version.",
   "syncAssistantPage3": "In addition to using an email that you provide, all communication is also encrypted using the so called AES-GCM algorithm, where a secret is shared between your devices. We will generate this key now if it doesn't exist yet, and then generate a QR code that contains all this information. Please be mindful that this QR code contains all the information required to interact with your journal and access the email account you provide. Don't share this with anyone.",
+  "syncAssistantStatusEmpty": "Please enter valid account details.",
+  "syncAssistantStatusGenerating": "Generating secret...",
+  "syncAssistantStatusLoading": "Loading...",
+  "syncAssistantStatusSaved": "IMAP configuration saved.",
+  "syncAssistantStatusSuccess": "Account is successfully configured.",
+  "syncAssistantStatusTesting": "Testing IMAP connection...",
+  "syncAssistantStatusValid": "Account is valid.",
   "taskDueLabel": "Task due:",
   "taskEditHint": "Edit Task",
   "taskEstimateLabel": "Estimated time:",
@@ -165,11 +172,5 @@
   "taskStatusLabel": "Task status:",
   "taskStatusOnHold": "ON HOLD",
   "taskStatusOpen": "OPEN",
-  "taskStatusRejected": "REJECTED",
-  "tutorialSlide1Body": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-  "tutorialSlide1Title": "Lotti",
-  "tutorialSlide2Body": "Nori grape silver beet broccoli kombu beet greens fava bean potato quandong celery. Bunya nuts black-eyed pea prairie turnip leek lentil turnip greens parsnip Sea lettuce lettuce water chestnut eggplant winter purslane fennel azuki bean earthnut pea sierra leone bologi leek soko.",
-  "tutorialSlide2Title": "Implement change",
-  "tutorialSlide3Body": "Sea lettuce lettuce water chestnut eggplant winter purslane fennel azuki bean earthnut pea sierra leone bologi leek soko chicory celtuce parsley jícama salsify Nori grape silver beet broccoli kombu beet greens fava bean potato quandong.",
-  "tutorialSlide3Title": "Your data is YOUR data"
+  "taskStatusRejected": "REJECTED"
 }

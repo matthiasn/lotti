@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/theme.dart';
 
 class Button extends StatelessWidget {
   final String label;
@@ -23,24 +24,14 @@ class Button extends StatelessWidget {
       padding: padding,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(
-            vertical: 16.0,
-            horizontal: 32.0,
-          ),
+          padding: const EdgeInsets.all(16),
           primary: primaryColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8.0),
           ),
         ),
         onPressed: onPressed,
-        child: Text(
-          label,
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
+        child: Text(label, style: buttonLabelStyle),
       ),
     );
   }

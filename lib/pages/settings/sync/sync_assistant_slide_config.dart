@@ -31,7 +31,7 @@ class SyncAssistantConfigSlide extends StatelessWidget {
             alignment: Alignment.center,
             child: SlidingContainer(
               offset: 100,
-              child: const EmailConfigForm(),
+              child: const ImapConfigWidget(),
             ),
           ),
         ],
