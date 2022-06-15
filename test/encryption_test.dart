@@ -5,7 +5,7 @@ import 'package:encrypt/encrypt.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/sync/encryption.dart';
 
-Function eq = const ListEquality<String>().equals;
+Function eq = const ListEquality<int>().equals;
 
 void main() {
   test('File encryption', () async {
@@ -19,8 +19,8 @@ void main() {
 
     final originalBytes = await originalFile.readAsBytes();
     final decryptedBytes = await decryptedFile.readAsBytes();
-    // ignore: avoid_dynamic_calls
-    expect(eq(originalBytes, decryptedBytes), true);
+    expect(
+        const ListEquality<int>().equals(originalBytes, decryptedBytes), true);
     await encryptedFile.delete();
     await decryptedFile.delete();
   });
