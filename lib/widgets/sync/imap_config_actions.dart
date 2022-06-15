@@ -24,27 +24,27 @@ class ImapConfigActions extends StatelessWidget {
 
         return Center(
           child: state.maybeWhen(
-            configured: (_, __) => Button(
+            configured: (_, __) => FadeInButton(
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,
             ),
-            imapSaved: (_) => Button(
+            imapSaved: (_) => FadeInButton(
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,
             ),
-            imapValid: (_) => Button(
+            imapValid: (_) => FadeInButton(
               localizations.settingsSyncSaveButton,
               textColor: AppColors.headerBgColor,
               onPressed: syncConfigCubit.saveImapConfig,
             ),
-            imapTesting: (_) => Button(
+            imapTesting: (_) => FadeInButton(
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,
             ),
-            imapInvalid: (_, String errorMessage) => Button(
+            imapInvalid: (_, String errorMessage) => FadeInButton(
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,
