@@ -59,8 +59,16 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
                 color: AppColors.entryTextColor,
               ),
             ),
-            SyncNavPrevious(pageCtrl: _pageCtrl),
-            SyncNavNext(pageCtrl: _pageCtrl),
+            SyncNavPrevious(
+              pageCtrl: _pageCtrl,
+              notifier: notifier,
+            ),
+            SyncNavNext(
+              pageCtrl: _pageCtrl,
+              guardedPage: 2,
+              pageCount: pageCount,
+              notifier: notifier,
+            ),
             Align(
               alignment: const Alignment(0, 0.94),
               child: SlidingIndicator(
