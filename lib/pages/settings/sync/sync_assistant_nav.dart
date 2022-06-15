@@ -74,12 +74,14 @@ class SyncNavNext extends StatelessWidget {
     super.key,
     required this.pageCtrl,
     required this.guardedPage,
+    required this.guardedPagesAllowed,
     required this.notifier,
     required this.pageCount,
   });
 
   final PageController pageCtrl;
   final int guardedPage;
+  final Map<int, bool Function(SyncConfigState)> guardedPagesAllowed;
   final int pageCount;
   final ValueNotifier<double> notifier;
 
@@ -87,17 +89,16 @@ class SyncNavNext extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
       builder: (context, SyncConfigState state) {
-        final allowProceed = state.maybeMap(
-          configured: (_) => true,
-          imapSaved: (_) => true,
-          orElse: () => false,
-        );
-
         return ValueListenableBuilder(
           valueListenable: notifier,
           builder: (BuildContext context, double notifierValue, _) {
+            debugPrint(state.runtimeType.toString());
             final isLastPage = notifierValue == pageCount - 1;
-            final isGuardedPage = notifierValue == guardedPage;
+            final isGuardedPage = guardedPagesAllowed[notifierValue] != null;
+            final allowedCheckFn = guardedPagesAllowed[notifierValue];
+            final allowProceed =
+                allowedCheckFn != null && allowedCheckFn(state);
+
             final visible = !isLastPage && (!isGuardedPage || allowProceed);
 
             return Visibility(
