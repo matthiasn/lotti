@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -26,36 +27,59 @@ enum InsightType {
 
 @DriftDatabase(include: {'logging_db.drift'})
 class LoggingDb extends _$LoggingDb {
-  final JournalDb _journalDb = getIt<JournalDb>();
-
   LoggingDb() : super(_openConnection());
+  final JournalDb _journalDb = getIt<JournalDb>();
 
   @override
   int get schemaVersion => 1;
 
-  Future<int> log(LogEntry logEntry) async {
+  Future<int> logAsync(LogEntry logEntry) async {
     return into(logEntries).insert(logEntry);
   }
 
-  Future<void> captureEvent(
+  void log(LogEntry logEntry) {
+    unawaited(logAsync(logEntry));
+  }
+
+  Future<void> captureEventAsync(
     dynamic event, {
     required String domain,
     String? subDomain,
     InsightLevel level = InsightLevel.info,
     InsightType type = InsightType.log,
   }) async {
-    log(LogEntry(
-      id: uuid.v1(),
-      createdAt: DateTime.now().toIso8601String(),
-      domain: domain,
-      subDomain: subDomain,
-      message: event.toString(),
-      level: level.name.toUpperCase(),
-      type: type.name.toUpperCase(),
-    ));
+    log(
+      LogEntry(
+        id: uuid.v1(),
+        createdAt: DateTime.now().toIso8601String(),
+        domain: domain,
+        subDomain: subDomain,
+        message: event.toString(),
+        level: level.name.toUpperCase(),
+        type: type.name.toUpperCase(),
+      ),
+    );
   }
 
-  Future<void> captureException(
+  void captureEvent(
+    dynamic event, {
+    required String domain,
+    String? subDomain,
+    InsightLevel level = InsightLevel.info,
+    InsightType type = InsightType.log,
+  }) {
+    unawaited(
+      captureEventAsync(
+        event,
+        domain: domain,
+        subDomain: subDomain,
+        level: level,
+        type: type,
+      ),
+    );
+  }
+
+  Future<void> captureExceptionAsync(
     dynamic exception, {
     required String domain,
     String? subDomain,
@@ -63,27 +87,47 @@ class LoggingDb extends _$LoggingDb {
     InsightLevel level = InsightLevel.error,
     InsightType type = InsightType.exception,
   }) async {
-    log(LogEntry(
-      id: uuid.v1(),
-      createdAt: DateTime.now().toIso8601String(),
-      domain: domain,
-      subDomain: subDomain,
-      message: exception.toString(),
-      stacktrace: stackTrace.toString(),
-      level: level.name.toUpperCase(),
-      type: type.name.toUpperCase(),
-    ));
+    log(
+      LogEntry(
+        id: uuid.v1(),
+        createdAt: DateTime.now().toIso8601String(),
+        domain: domain,
+        subDomain: subDomain,
+        message: exception.toString(),
+        stacktrace: stackTrace.toString(),
+        level: level.name.toUpperCase(),
+        type: type.name.toUpperCase(),
+      ),
+    );
 
-    bool notifyEnabled = await _journalDb.getConfigFlag('notify_exceptions');
+    final notifyEnabled = await _journalDb.getConfigFlag('notify_exceptions');
     if (notifyEnabled) {
-      String title = 'Exception in $domain $subDomain';
-      getIt<NotificationService>().showNotification(
+      final title = 'Exception in $domain $subDomain';
+      await getIt<NotificationService>().showNotification(
         title: title,
         body: exception.toString().substring(0, 195),
         notificationId: title.hashCode,
         deepLink: '/settings/logging',
       );
     }
+  }
+
+  void captureException(
+    dynamic exception, {
+    required String domain,
+    String? subDomain,
+    dynamic stackTrace,
+    InsightLevel level = InsightLevel.error,
+    InsightType type = InsightType.exception,
+  }) {
+    captureExceptionAsync(
+      exception,
+      domain: domain,
+      subDomain: subDomain,
+      stackTrace: stackTrace,
+      level: level,
+      type: type,
+    );
   }
 
   Stream<List<LogEntry>> watchLogEntryById(String id) {

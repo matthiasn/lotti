@@ -9,7 +9,6 @@ import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
-import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -26,18 +25,6 @@ import 'package:mutex/mutex.dart';
 import 'package:path_provider/path_provider.dart';
 
 class OutboxService {
-  final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
-  ConnectivityResult? _connectivityResult;
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
-
-  final sendMutex = Mutex();
-  final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
-  String? _b64Secret;
-  bool enabled = true;
-
-  late final StreamSubscription<FGBGType> fgBgSubscription;
-  Timer? timer;
-
   OutboxService() {
     init();
 
@@ -69,16 +56,30 @@ class OutboxService {
     }
   }
 
+  final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
+  ConnectivityResult? _connectivityResult;
+  final LoggingDb _loggingDb = getIt<LoggingDb>();
+  final sendMutex = Mutex();
+  final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
+  String? _b64Secret;
+  bool enabled = true;
+  late final StreamSubscription<FGBGType> fgBgSubscription;
+  Timer? timer;
+
+  void dispose() {
+    fgBgSubscription.cancel();
+  }
+
   Future<void> init() async {
-    SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
+    final syncConfig = await _syncConfigService.getSyncConfig();
 
     if (syncConfig != null) {
       _b64Secret = syncConfig.sharedSecret;
-      startPolling();
+      await startPolling();
     }
   }
 
-  void reportConnectivity() async {
+  Future<void> reportConnectivity() async {
     _loggingDb.captureEvent(
       'reportConnectivity: $_connectivityResult',
       domain: 'OUTBOX_CUBIT',
@@ -90,16 +91,16 @@ class OutboxService {
   // scheduled. Improper handling of the retry would become
   // very obvious and painful very soon.
   String insertFault(String path) {
-    Random random = Random();
-    double randomNumber = random.nextDouble();
+    final random = Random();
+    final randomNumber = random.nextDouble();
     return (randomNumber < 0.25) ? '${path}Nope' : path;
   }
 
   Future<List<OutboxItem>> getNextItems() async {
-    return await _syncDatabase.oldestOutboxItems(10);
+    return _syncDatabase.oldestOutboxItems(10);
   }
 
-  void sendNext({ImapClient? imapClient}) async {
+  Future<void> sendNext({ImapClient? imapClient}) async {
     _loggingDb.captureEvent('sendNext()', domain: 'OUTBOX_CUBIT');
 
     if (!enabled) return;
@@ -108,47 +109,48 @@ class OutboxService {
     try {
       _connectivityResult = await Connectivity().checkConnectivity();
       if (_connectivityResult == ConnectivityResult.none) {
-        reportConnectivity();
-        stopPolling();
+        await reportConnectivity();
+        await stopPolling();
         return;
       }
 
       if (_b64Secret != null) {
+        // ignore: flutter_style_todos
         // TODO: check why not working reliably on macOS - workaround
-        bool isConnected = _connectivityResult != ConnectivityResult.none;
+        final isConnected = _connectivityResult != ConnectivityResult.none;
 
         if (isConnected && !sendMutex.isLocked) {
-          List<OutboxItem> unprocessed = await getNextItems();
+          final unprocessed = await getNextItems();
           if (unprocessed.isNotEmpty) {
-            sendMutex.acquire();
+            await sendMutex.acquire();
 
-            OutboxItem nextPending = unprocessed.first;
+            final nextPending = unprocessed.first;
             try {
-              String encryptedMessage = await encryptString(
-                b64Secret: _b64Secret,
+              final encryptedMessage = await encryptString(
+                b64Secret: _b64Secret!,
                 plainText: nextPending.message,
               );
 
-              String? filePath = nextPending.filePath;
+              final filePath = nextPending.filePath;
               String? encryptedFilePath;
 
               if (filePath != null) {
-                Directory docDir = await getApplicationDocumentsDirectory();
-                File encryptedFile =
+                final docDir = await getApplicationDocumentsDirectory();
+                final encryptedFile =
                     File('${docDir.path}${nextPending.filePath}.aes');
-                File attachment = File(insertFault('${docDir.path}$filePath'));
+                final attachment = File(insertFault('${docDir.path}$filePath'));
                 await encryptFile(attachment, encryptedFile, _b64Secret!);
                 encryptedFilePath = encryptedFile.path;
               }
 
-              ImapClient? successfulClient = await persistImap(
+              final successfulClient = await persistImap(
                 encryptedFilePath: encryptedFilePath,
                 subject: nextPending.subject,
                 encryptedMessage: encryptedMessage,
                 prevImapClient: imapClient,
               );
               if (successfulClient != null) {
-                _syncDatabase.updateOutboxItem(
+                await _syncDatabase.updateOutboxItem(
                   OutboxCompanion(
                     id: Value(nextPending.id),
                     status: Value(OutboxStatus.sent.index),
@@ -156,35 +158,37 @@ class OutboxService {
                   ),
                 );
                 if (unprocessed.length > 1) {
-                  sendNext(imapClient: successfulClient);
+                  await sendNext(imapClient: successfulClient);
                 }
               }
             } catch (e) {
-              _syncDatabase.updateOutboxItem(
+              await _syncDatabase.updateOutboxItem(
                 OutboxCompanion(
                   id: Value(nextPending.id),
-                  status: Value(nextPending.retries < 10
-                      ? OutboxStatus.pending.index
-                      : OutboxStatus.error.index),
+                  status: Value(
+                    nextPending.retries < 10
+                        ? OutboxStatus.pending.index
+                        : OutboxStatus.error.index,
+                  ),
                   retries: Value(nextPending.retries + 1),
                   updatedAt: Value(DateTime.now()),
                 ),
               );
-              stopPolling();
+              await stopPolling();
             } finally {
               if (sendMutex.isLocked) {
                 sendMutex.release();
               }
             }
           } else {
-            stopPolling();
+            await stopPolling();
           }
         }
       } else {
-        stopPolling();
+        await stopPolling();
       }
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'OUTBOX',
         subDomain: 'sendNext',
@@ -197,40 +201,44 @@ class OutboxService {
     await transaction.finish();
   }
 
-  void startPolling() async {
-    SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
+  Future<void> startPolling() async {
+    final syncConfig = await _syncConfigService.getSyncConfig();
 
     if (syncConfig == null) {
-      _loggingDb.captureEvent('Sync config missing -> polling not started',
-          domain: 'OUTBOX_CUBIT');
+      _loggingDb.captureEvent(
+        'Sync config missing -> polling not started',
+        domain: 'OUTBOX_CUBIT',
+      );
       return;
     }
 
     _loggingDb.captureEvent('startPolling()', domain: 'OUTBOX_CUBIT');
 
-    if ((timer != null && timer!.isActive) || false) {
+    if (timer != null && timer!.isActive) {
       return;
     }
 
-    sendNext();
+    await sendNext();
     timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       _connectivityResult = await Connectivity().checkConnectivity();
-      _loggingDb.captureEvent('_connectivityResult: $_connectivityResult',
-          domain: 'OUTBOX_CUBIT');
+      _loggingDb.captureEvent(
+        '_connectivityResult: $_connectivityResult',
+        domain: 'OUTBOX_CUBIT',
+      );
 
-      List<OutboxItem> unprocessed = await getNextItems();
+      final unprocessed = await getNextItems();
 
       if (_connectivityResult == ConnectivityResult.none ||
           unprocessed.isEmpty) {
         timer.cancel();
         _loggingDb.captureEvent('timer cancelled', domain: 'OUTBOX_CUBIT');
       } else {
-        sendNext();
+        await sendNext();
       }
     });
   }
 
-  void stopPolling() async {
+  Future<void> stopPolling() async {
     if (timer != null) {
       _loggingDb.captureEvent('stopPolling()', domain: 'OUTBOX_CUBIT');
 
@@ -244,17 +252,16 @@ class OutboxService {
       final transaction =
           _loggingDb.startTransaction('enqueueMessage()', 'task');
       try {
-        JournalEntity journalEntity = syncMessage.journalEntity;
-        String jsonString = json.encode(syncMessage);
-        var docDir = await getApplicationDocumentsDirectory();
-        final VectorClockService vectorClockService =
-            getIt<VectorClockService>();
+        final journalEntity = syncMessage.journalEntity;
+        final jsonString = json.encode(syncMessage);
+        final docDir = await getApplicationDocumentsDirectory();
+        final vectorClockService = getIt<VectorClockService>();
 
         File? attachment;
-        String host = await vectorClockService.getHost();
-        String hostHash = await vectorClockService.getHostHash();
-        int? localCounter = journalEntity.meta.vectorClock?.vclock[host];
-        String subject = '$hostHash:$localCounter';
+        final host = await vectorClockService.getHost();
+        final hostHash = await vectorClockService.getHostHash();
+        final localCounter = journalEntity.meta.vectorClock?.vclock[host];
+        final subject = '$hostHash:$localCounter';
 
         journalEntity.maybeMap(
           journalAudio: (JournalAudio journalAudio) {
@@ -271,21 +278,24 @@ class OutboxService {
           orElse: () {},
         );
 
-        int fileLength = attachment?.lengthSync() ?? 0;
-        await _syncDatabase.addOutboxItem(OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          filePath: Value(
-              (fileLength > 0) ? getRelativeAssetPath(attachment!.path) : null),
-          subject: Value(subject),
-          message: Value(jsonString),
-          createdAt: Value(DateTime.now()),
-          updatedAt: Value(DateTime.now()),
-        ));
+        final fileLength = attachment?.lengthSync() ?? 0;
+        await _syncDatabase.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            filePath: Value(
+              (fileLength > 0) ? getRelativeAssetPath(attachment!.path) : null,
+            ),
+            subject: Value(subject),
+            message: Value(jsonString),
+            createdAt: Value(DateTime.now()),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
 
         await transaction.finish();
-        startPolling();
+        await startPolling();
       } catch (exception, stackTrace) {
-        await _loggingDb.captureException(
+        _loggingDb.captureException(
           exception,
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
@@ -298,28 +308,28 @@ class OutboxService {
       final transaction =
           _loggingDb.startTransaction('enqueueMessage()', 'task');
       try {
-        String jsonString = json.encode(syncMessage);
-        final VectorClockService vectorClockService =
-            getIt<VectorClockService>();
-
-        String host = await vectorClockService.getHost();
-        String hostHash = await vectorClockService.getHostHash();
-        int? localCounter =
+        final jsonString = json.encode(syncMessage);
+        final vectorClockService = getIt<VectorClockService>();
+        final host = await vectorClockService.getHost();
+        final hostHash = await vectorClockService.getHostHash();
+        final localCounter =
             syncMessage.entityDefinition.vectorClock?.vclock[host];
-        String subject = '$hostHash:$localCounter';
+        final subject = '$hostHash:$localCounter';
 
-        await _syncDatabase.addOutboxItem(OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: Value(subject),
-          message: Value(jsonString),
-          createdAt: Value(DateTime.now()),
-          updatedAt: Value(DateTime.now()),
-        ));
+        await _syncDatabase.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: Value(subject),
+            message: Value(jsonString),
+            createdAt: Value(DateTime.now()),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
 
         await transaction.finish();
-        startPolling();
+        await startPolling();
       } catch (exception, stackTrace) {
-        await _loggingDb.captureException(
+        _loggingDb.captureException(
           exception,
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
@@ -332,25 +342,25 @@ class OutboxService {
       final transaction =
           _loggingDb.startTransaction('enqueueMessage()', 'link');
       try {
-        String jsonString = json.encode(syncMessage);
-        final VectorClockService vectorClockService =
-            getIt<VectorClockService>();
+        final jsonString = json.encode(syncMessage);
+        final vectorClockService = getIt<VectorClockService>();
+        final hostHash = await vectorClockService.getHostHash();
+        final subject = '$hostHash:link';
 
-        String hostHash = await vectorClockService.getHostHash();
-        String subject = '$hostHash:link';
-
-        await _syncDatabase.addOutboxItem(OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: Value(subject),
-          message: Value(jsonString),
-          createdAt: Value(DateTime.now()),
-          updatedAt: Value(DateTime.now()),
-        ));
+        await _syncDatabase.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: Value(subject),
+            message: Value(jsonString),
+            createdAt: Value(DateTime.now()),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
 
         await transaction.finish();
-        startPolling();
+        await startPolling();
       } catch (exception, stackTrace) {
-        await _loggingDb.captureException(
+        _loggingDb.captureException(
           exception,
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
@@ -363,25 +373,25 @@ class OutboxService {
       final transaction =
           _loggingDb.startTransaction('enqueueMessage()', 'tag');
       try {
-        String jsonString = json.encode(syncMessage);
-        final VectorClockService vectorClockService =
-            getIt<VectorClockService>();
+        final jsonString = json.encode(syncMessage);
+        final vectorClockService = getIt<VectorClockService>();
+        final hostHash = await vectorClockService.getHostHash();
+        final subject = '$hostHash:tag';
 
-        String hostHash = await vectorClockService.getHostHash();
-        String subject = '$hostHash:tag';
-
-        await _syncDatabase.addOutboxItem(OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: Value(subject),
-          message: Value(jsonString),
-          createdAt: Value(DateTime.now()),
-          updatedAt: Value(DateTime.now()),
-        ));
+        await _syncDatabase.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: Value(subject),
+            message: Value(jsonString),
+            createdAt: Value(DateTime.now()),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
 
         await transaction.finish();
-        startPolling();
+        await startPolling();
       } catch (exception, stackTrace) {
-        await _loggingDb.captureException(
+        _loggingDb.captureException(
           exception,
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',

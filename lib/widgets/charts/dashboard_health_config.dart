@@ -15,13 +15,6 @@ enum HealthAggregationType {
 }
 
 class HealthTypeConfig {
-  final HealthChartType chartType;
-  final HealthAggregationType aggregationType;
-  final String displayName;
-  final String healthType;
-  final Map<num, String>? colorByValue;
-  final bool hoursMinutes;
-
   HealthTypeConfig({
     required this.displayName,
     required this.healthType,
@@ -30,6 +23,13 @@ class HealthTypeConfig {
     this.colorByValue,
     this.hoursMinutes = false,
   });
+
+  final HealthChartType chartType;
+  final HealthAggregationType aggregationType;
+  final String displayName;
+  final String healthType;
+  final Map<num, String>? colorByValue;
+  final bool hoursMinutes;
 }
 
 Map<String, HealthTypeConfig> healthTypes = {
@@ -94,15 +94,16 @@ Map<String, HealthTypeConfig> healthTypes = {
     aggregationType: HealthAggregationType.none,
   ),
   'cumulative_step_count': HealthTypeConfig(
-      displayName: 'Steps',
-      healthType: 'cumulative_step_count',
-      chartType: HealthChartType.barChart,
-      aggregationType: HealthAggregationType.dailyMax,
-      colorByValue: {
-        10000: '#4BB543',
-        6000: '#FF5F1F',
-        0: '#FC100D',
-      }),
+    displayName: 'Steps',
+    healthType: 'cumulative_step_count',
+    chartType: HealthChartType.barChart,
+    aggregationType: HealthAggregationType.dailyMax,
+    colorByValue: {
+      10000: '#4BB543',
+      6000: '#FF5F1F',
+      0: '#FC100D',
+    },
+  ),
   'cumulative_flights_climbed': HealthTypeConfig(
     displayName: 'Flights of stairs',
     healthType: 'cumulative_flights_climbed',

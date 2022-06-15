@@ -8,7 +8,7 @@ import 'package:collection/collection.dart';
 // a stream instead of at least once previously,
 // which lead to plenty of costly re-renders.
 bool Function(T next) makeDuplicateFilter<T>() {
-  Function deepEq = const DeepCollectionEquality().equals;
+  final deepEq = const DeepCollectionEquality().equals;
   T? prev;
 
   bool duplicateFilter(T next) {

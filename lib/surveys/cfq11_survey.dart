@@ -14,21 +14,25 @@ RPChoiceAnswerFormat cfq11AnswerFormat = RPChoiceAnswerFormat(
 
 List<RPImageChoice> cfq11Images = [
   RPImageChoice(
-      imageUrl: 'assets/icons/green-0.png',
-      value: 0,
-      description: 'Better than usual'),
+    imageUrl: 'assets/icons/green-0.png',
+    value: 0,
+    description: 'Better than usual',
+  ),
   RPImageChoice(
-      imageUrl: 'assets/icons/green-1.png',
-      value: 1,
-      description: 'No worse than usual'),
+    imageUrl: 'assets/icons/green-1.png',
+    value: 1,
+    description: 'No worse than usual',
+  ),
   RPImageChoice(
-      imageUrl: 'assets/icons/red-2.png',
-      value: 2,
-      description: 'Worse than usual'),
+    imageUrl: 'assets/icons/red-2.png',
+    value: 2,
+    description: 'Worse than usual',
+  ),
   RPImageChoice(
-      imageUrl: 'assets/icons/red-3.png',
-      value: 3,
-      description: 'Much worse than usual'),
+    imageUrl: 'assets/icons/red-3.png',
+    value: 3,
+    description: 'Much worse than usual',
+  ),
 ];
 
 RPImageChoiceAnswerFormat cfq11ImageChoiceAnswerFormat =
@@ -37,9 +41,10 @@ RPImageChoiceAnswerFormat cfq11ImageChoiceAnswerFormat =
 );
 
 RPCompletionStep cfq11CompletionStep = RPCompletionStep(
-    identifier: 'cfq11Completion',
-    title: 'Finished',
-    text: 'Thank you for filling out the CFQ11!');
+  identifier: 'cfq11Completion',
+  title: 'Finished',
+  text: 'Thank you for filling out the CFQ11!',
+);
 
 RPInstructionStep cfq11InstructionStep = RPInstructionStep(
   identifier: 'cfq11Instructions',

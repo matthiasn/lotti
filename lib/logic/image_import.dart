@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
@@ -16,9 +15,9 @@ Future<void> importImageAssets(
   BuildContext context, {
   JournalEntity? linked,
 }) async {
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+  final persistenceLogic = getIt<PersistenceLogic>();
 
-  final List<AssetEntity>? assets = await AssetPicker.pickAssets(
+  final assets = await AssetPicker.pickAssets(
     context,
     pickerConfig: const AssetPickerConfig(
       maxAssets: 40,
@@ -27,16 +26,16 @@ Future<void> importImageAssets(
     ),
   );
   if (assets != null) {
-    for (final AssetEntity asset in assets) {
+    for (final asset in assets) {
       Geolocation? geolocation;
-      LatLng latLng = await asset.latlngAsync();
-      double? latitude = latLng.latitude ?? asset.latitude;
-      double? longitude = latLng.longitude ?? asset.longitude;
+      final latLng = await asset.latlngAsync();
+      final latitude = latLng.latitude ?? asset.latitude;
+      final longitude = latLng.longitude ?? asset.longitude;
 
       if (latitude != null &&
           longitude != null &&
-          latitude != 0.0 &&
-          longitude != 0.0) {
+          latitude != 0 &&
+          longitude != 0) {
         geolocation = Geolocation(
           createdAt: asset.createDateTime,
           latitude: latitude,
@@ -48,13 +47,13 @@ Future<void> importImageAssets(
         );
       }
 
-      DateTime createdAt = asset.createDateTime;
-      File? file = await asset.file;
+      final createdAt = asset.createDateTime;
+      final file = await asset.file;
 
       if (file != null) {
-        String idNamePart = asset.id.split('/').first;
-        String originalName = file.path.split('/').last;
-        String imageFileName = '$idNamePart.$originalName'
+        final idNamePart = asset.id.split('/').first;
+        final originalName = file.path.split('/').last;
+        final imageFileName = '$idNamePart.$originalName'
             .replaceAll(
               'HEIC',
               'JPG',
@@ -63,14 +62,14 @@ Future<void> importImageAssets(
               'PNG',
               'JPG',
             );
-        String day = DateFormat('yyyy-MM-dd').format(createdAt);
-        String relativePath = '/images/$day/';
-        String directory = await createAssetDirectory(relativePath);
-        String targetFilePath = '$directory$imageFileName';
+        final day = DateFormat('yyyy-MM-dd').format(createdAt);
+        final relativePath = '/images/$day/';
+        final directory = await createAssetDirectory(relativePath);
+        final targetFilePath = '$directory$imageFileName';
         await compressAndSave(file, targetFilePath);
-        DateTime created = asset.createDateTime;
+        final created = asset.createDateTime;
 
-        ImageData imageData = ImageData(
+        final imageData = ImageData(
           imageId: asset.id,
           imageFile: imageFileName,
           imageDirectory: relativePath,
@@ -78,7 +77,7 @@ Future<void> importImageAssets(
           geolocation: geolocation,
         );
 
-        persistenceLogic.createImageEntry(
+        await persistenceLogic.createImageEntry(
           imageData,
           linkedId: linked?.meta.id,
         );

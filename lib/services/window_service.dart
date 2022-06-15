@@ -4,12 +4,12 @@ import 'package:lotti/sync/secure_storage.dart';
 import 'package:window_manager/window_manager.dart';
 
 class WindowService implements WindowListener {
-  final String sizeKey = 'sizeKey';
-  final String offsetKey = 'offsetKey';
-
   WindowService() {
     windowManager.addListener(this);
   }
+
+  final sizeKey = 'sizeKey';
+  final offsetKey = 'offsetKey';
 
   Future<void> restore() async {
     await restoreSize();
@@ -17,24 +17,22 @@ class WindowService implements WindowListener {
   }
 
   Future<void> restoreSize() async {
-    String? sizeString = await SecureStorage.readValue(sizeKey);
-    List<double>? values =
-        sizeString?.split(',').map((e) => double.parse(e)).toList();
-    double? width = values?.first;
-    double? height = values?.last;
+    final sizeString = await SecureStorage.readValue(sizeKey);
+    final values = sizeString?.split(',').map(double.parse).toList();
+    final width = values?.first;
+    final height = values?.last;
     if (width != null && height != null) {
       await windowManager.setSize(Size(width, height));
     }
   }
 
   Future<void> restoreOffset() async {
-    String? offsetString = await SecureStorage.readValue(offsetKey);
-    List<double>? values =
-        offsetString?.split(',').map((e) => double.parse(e)).toList();
-    double? dx = values?.first;
-    double? dy = values?.last;
+    final offsetString = await SecureStorage.readValue(offsetKey);
+    final values = offsetString?.split(',').map(double.parse).toList();
+    final dx = values?.first;
+    final dy = values?.last;
     if (dx != null && dy != null) {
-      windowManager.setPosition(Offset(dx, dy));
+      await windowManager.setPosition(Offset(dx, dy));
     }
   }
 
@@ -60,15 +58,15 @@ class WindowService implements WindowListener {
   void onWindowMinimize() {}
 
   @override
-  void onWindowMove() async {
-    Offset offset = await windowManager.getPosition();
-    SecureStorage.writeValue(offsetKey, '${offset.dx},${offset.dy}');
+  Future<void> onWindowMove() async {
+    final offset = await windowManager.getPosition();
+    await SecureStorage.writeValue(offsetKey, '${offset.dx},${offset.dy}');
   }
 
   @override
-  void onWindowResize() async {
-    Size size = await windowManager.getSize();
-    SecureStorage.writeValue(sizeKey, '${size.width},${size.height}');
+  Future<void> onWindowResize() async {
+    final size = await windowManager.getSize();
+    await SecureStorage.writeValue(sizeKey, '${size.width},${size.height}');
   }
 
   @override
@@ -78,17 +76,11 @@ class WindowService implements WindowListener {
   void onWindowUnmaximize() {}
 
   @override
-  void onWindowClose() {
-    // TODO: implement onWindowClose
-  }
+  void onWindowClose() {}
 
   @override
-  void onWindowMoved() {
-    // TODO: implement onWindowMoved
-  }
+  void onWindowMoved() {}
 
   @override
-  void onWindowResized() {
-    // TODO: implement onWindowResized
-  }
+  void onWindowResized() {}
 }

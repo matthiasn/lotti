@@ -5,11 +5,16 @@ import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/sync/encryption.dart';
 
 Future<SyncMessage?> decryptMessage(
-    String? encryptedMessage, MimeMessage message, String? b64Secret) async {
+  String? encryptedMessage,
+  MimeMessage message,
+  String? b64Secret,
+) async {
   if (encryptedMessage != null) {
     if (b64Secret != null) {
-      String decryptedJson = await decryptString(encryptedMessage, b64Secret);
-      return SyncMessage.fromJson(json.decode(decryptedJson));
+      final decryptedJson = await decryptString(encryptedMessage, b64Secret);
+      return SyncMessage.fromJson(
+        json.decode(decryptedJson) as Map<String, dynamic>,
+      );
     }
   }
   return null;
@@ -18,16 +23,17 @@ Future<SyncMessage?> decryptMessage(
 String? readMessage(MimeMessage message) {
   message.parse();
   final plainText = message.decodeTextPlainPart();
-  String concatenated = '';
+  final buffer = StringBuffer();
   if (plainText != null) {
     final lines = plainText.split('\r\n');
     for (final line in lines) {
       if (line.startsWith('>')) {
         break;
       }
-      concatenated = concatenated + line;
+
+      buffer.write(line);
     }
-    return concatenated.trim();
+    return buffer.toString().trim();
   }
   return null;
 }

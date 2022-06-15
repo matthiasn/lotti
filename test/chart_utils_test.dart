@@ -32,7 +32,7 @@ void addDiscreteQuantEntity({
 }
 
 void main() {
-  List<JournalEntity> entities = [];
+  final entities = <JournalEntity>[];
 
   addDiscreteQuantEntity(
     dt: DateTime(2022, 02, 23, 1),
@@ -97,7 +97,7 @@ void main() {
   test(
     'Percentages are multiplied by a hundred',
     () async {
-      List<JournalEntity> percentageEntities = [];
+      final percentageEntities = <JournalEntity>[];
 
       addDiscreteQuantEntity(
         dt: DateTime(2022, 2, 6),
@@ -155,7 +155,7 @@ void main() {
   test(
     'Chart color is generated for observation',
     () async {
-      HealthTypeConfig config = HealthTypeConfig(
+      final config = HealthTypeConfig(
         displayName: 'Steps',
         healthType: 'cumulative_step_count',
         chartType: HealthChartType.barChart,
@@ -167,7 +167,7 @@ void main() {
         },
       );
 
-      DateTime now = DateTime.now();
+      final now = DateTime.now();
 
       expect(
         const Color(r: 252, g: 16, b: 13),
@@ -189,12 +189,12 @@ void main() {
   test(
     'Min and max functions find the respective values',
     () async {
-      List<Observation> observations = [
-        Observation(DateTime(2022, 3, 1), 6),
-        Observation(DateTime(2022, 3, 1), 27),
-        Observation(DateTime(2022, 3, 1), 1),
-        Observation(DateTime(2022, 3, 1), 99),
-        Observation(DateTime(2022, 3, 1), 42),
+      final observations = <Observation>[
+        Observation(DateTime(2022, 3), 6),
+        Observation(DateTime(2022, 3), 27),
+        Observation(DateTime(2022, 3), 1),
+        Observation(DateTime(2022, 3), 99),
+        Observation(DateTime(2022, 3), 42),
       ];
       expect(findMin(observations), 1);
       expect(findMax(observations), 99);
@@ -205,21 +205,23 @@ void main() {
     'Determine if min or max are near a range',
     () async {
       expect(
-          nearRange(
-            min: 28,
-            max: 29.5,
-            lowerBound: 30,
-            upperBound: 34.99,
-          ),
-          true);
+        nearRange(
+          min: 28,
+          max: 29.5,
+          lowerBound: 30,
+          upperBound: 34.99,
+        ),
+        true,
+      );
       expect(
-          nearRange(
-            min: 28,
-            max: 29.5,
-            lowerBound: 35,
-            upperBound: 39.99,
-          ),
-          false);
+        nearRange(
+          min: 28,
+          max: 29.5,
+          lowerBound: 35,
+          upperBound: 39.99,
+        ),
+        false,
+      );
     },
   );
 }

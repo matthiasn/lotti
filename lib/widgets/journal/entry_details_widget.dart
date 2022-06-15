@@ -30,16 +30,16 @@ import 'package:path_provider/path_provider.dart';
 import 'package:tuple/tuple.dart';
 
 class EntryDetailWidget extends StatefulWidget {
-  final String itemId;
-  final bool popOnDelete;
-  final bool showTaskDetails;
-
   const EntryDetailWidget({
-    Key? key,
+    super.key,
     @PathParam() required this.itemId,
     required this.popOnDelete,
     this.showTaskDetails = false,
-  }) : super(key: key);
+  });
+
+  final String itemId;
+  final bool popOnDelete;
+  final bool showTaskDetails;
 
   @override
   State<EntryDetailWidget> createState() => _EntryDetailWidgetState();
@@ -78,19 +78,19 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         BuildContext context,
         AsyncSnapshot<JournalEntity?> snapshot,
       ) {
-        JournalEntity? item = snapshot.data;
+        final item = snapshot.data;
         if (item == null || item.meta.deletedAt != null) {
           return const SizedBox.shrink();
         }
 
-        bool isTask = item is Task;
-        bool isAudio = item is JournalAudio;
+        final isTask = item is Task;
+        final isAudio = item is JournalAudio;
 
         if ((isTask || isAudio) && !widget.showTaskDetails) {
           return JournalCard(item: item);
         }
 
-        QuillController controller = makeController(
+        final controller = makeController(
           serializedQuill: _editorStateService.getDelta(widget.itemId) ??
               item.entryText?.quill,
           selection: _editorStateService.getSelection(widget.itemId),
@@ -129,8 +129,8 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: Container(
+            borderRadius: BorderRadius.circular(8),
+            child: ColoredBox(
               color: AppColors.entryCardColor,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,12 +179,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     journalAudio: (JournalAudio audio) {
                       return const AudioPlayerWidget();
                     },
-                    workout: (WorkoutEntry workout) => WorkoutSummary(workout),
-                    survey: (SurveyEntry surveyEntry) =>
-                        SurveySummary(surveyEntry),
-                    quantitative: (QuantitativeEntry qe) => HealthSummary(qe),
-                    measurement: (measurementEntry) =>
-                        MeasurementSummary(measurementEntry),
+                    workout: WorkoutSummary.new,
+                    survey: SurveySummary.new,
+                    quantitative: HealthSummary.new,
+                    measurement: MeasurementSummary.new,
                     task: (Task task) {
                       final formKey = GlobalKey<FormBuilderState>();
 
@@ -201,18 +199,18 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           return;
                         }
                         //final DateTime due = formData['due'];
-                        final String title = formData['title'];
-                        final DateTime dt = formData['estimate'];
-                        final String status = formData['status'];
+                        final title = formData['title'] as String;
+                        final dt = formData['estimate'] as DateTime;
+                        final status = formData['status'] as String;
 
-                        final Duration estimate = Duration(
+                        final estimate = Duration(
                           hours: dt.hour,
                           minutes: dt.minute,
                         );
 
                         HapticFeedback.heavyImpact();
 
-                        TaskData updatedData = task.data.copyWith(
+                        final updatedData = task.data.copyWith(
                           title: title,
                           estimate: estimate,
                           // due: due,

@@ -3,20 +3,20 @@ import 'package:lotti/theme.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class ChartMultiSelect<T> extends StatelessWidget {
-  final List<MultiSelectItem<T?>> multiSelectItems;
-  final void Function(List<T?>) onConfirm;
-  final String title;
-  final String buttonText;
-  final IconData iconData;
-
   const ChartMultiSelect({
-    Key? key,
+    super.key,
     required this.multiSelectItems,
     required this.onConfirm,
     required this.title,
     required this.buttonText,
     required this.iconData,
-  }) : super(key: key);
+  });
+
+  final List<MultiSelectItem<T?>> multiSelectItems;
+  final void Function(List<T?>) onConfirm;
+  final String title;
+  final String buttonText;
+  final IconData iconData;
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +24,8 @@ class ChartMultiSelect<T> extends StatelessWidget {
       width: 280,
       child: Padding(
         padding: const EdgeInsets.only(
-          left: 16.0,
-          right: 16.0,
+          left: 16,
+          right: 16,
           top: 16,
         ),
         child: MultiSelectDialogField<T?>(

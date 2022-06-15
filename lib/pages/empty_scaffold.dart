@@ -6,8 +6,8 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 class EmptyScaffoldWithTitle extends StatelessWidget {
   const EmptyScaffoldWithTitle(
     this.title, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   final String title;
 

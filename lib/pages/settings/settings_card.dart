@@ -3,11 +3,11 @@ import 'package:lotti/theme.dart';
 
 class SettingsCard extends StatelessWidget {
   const SettingsCard({
-    Key? key,
+    super.key,
     required this.icon,
     required this.title,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   final Widget icon;
   final String title;
@@ -17,24 +17,22 @@ class SettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: AppColors.entryCardColor,
-      elevation: 8.0,
+      elevation: 8,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
         leading: icon,
         title: Text(
           title,
           style: TextStyle(
             color: AppColors.entryTextColor,
             fontFamily: 'Oswald',
-            fontSize: 22.0,
+            fontSize: 22,
             fontWeight: FontWeight.w300,
           ),
         ),
-        enabled: true,
         onTap: onTap,
       ),
     );

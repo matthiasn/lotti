@@ -9,21 +9,19 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AdvancedSettingsPage extends StatelessWidget {
-  const AdvancedSettingsPage({
-    Key? key,
-  }) : super(key: key);
+  const AdvancedSettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsAdvancedTitle),
       body: Container(
         margin: const EdgeInsets.symmetric(
-          vertical: 8.0,
-          horizontal: 8.0,
+          vertical: 8,
+          horizontal: 8,
         ),
         child: ListView(
           children: [

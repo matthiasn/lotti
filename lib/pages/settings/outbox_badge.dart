@@ -5,15 +5,15 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 
 class OutboxBadgeIcon extends StatelessWidget {
+  OutboxBadgeIcon({
+    super.key,
+    required this.icon,
+  });
+
   final SyncDatabase db = getIt<SyncDatabase>();
   late final Stream<List<OutboxItem>> stream =
       db.watchOutboxItems(statuses: [OutboxStatus.pending]);
   final Widget icon;
-
-  OutboxBadgeIcon({
-    Key? key,
-    required this.icon,
-  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,7 @@ class OutboxBadgeIcon extends StatelessWidget {
         BuildContext context,
         AsyncSnapshot<List<OutboxItem>> snapshot,
       ) {
-        int count = snapshot.data?.length ?? 0;
+        final count = snapshot.data?.length ?? 0;
         return Badge(
           badgeContent: Text('$count'),
           showBadge: count > 0,

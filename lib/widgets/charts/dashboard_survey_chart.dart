@@ -12,24 +12,22 @@ import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardSurveyChart extends StatelessWidget {
-  final DashboardSurveyItem chartConfig;
-  final DateTime rangeStart;
-  final DateTime rangeEnd;
-
   DashboardSurveyChart({
-    Key? key,
+    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
-  }) : super(key: key);
+  });
 
+  final DashboardSurveyItem chartConfig;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
   final JournalDb _db = getIt<JournalDb>();
 
   @override
   Widget build(BuildContext context) {
-    charts.SeriesRendererConfig<DateTime>? defaultRenderer =
+    final charts.SeriesRendererConfig<DateTime> defaultRenderer =
         charts.LineRendererConfig<DateTime>(
-      includePoints: false,
       strokeWidthPx: 2.5,
     );
 
@@ -43,9 +41,9 @@ class DashboardSurveyChart extends StatelessWidget {
         BuildContext context,
         AsyncSnapshot<List<JournalEntity?>> snapshot,
       ) {
-        List<JournalEntity?>? items = snapshot.data ?? [];
+        final items = snapshot.data ?? [];
 
-        void onDoubleTap() async {
+        Future<void> onDoubleTap() async {
           pushNamedRoute('/journal/create_survey/${null}');
         }
 
@@ -60,7 +58,7 @@ class DashboardSurveyChart extends StatelessWidget {
                 key: Key('${chartConfig.hashCode}'),
                 color: Colors.white,
                 height: 120,
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Stack(
                   children: [
                     charts.TimeSeriesChart(
@@ -87,12 +85,12 @@ class DashboardSurveyChart extends StatelessWidget {
                       child: SizedBox(
                         width: MediaQuery.of(context).size.width / 2,
                         child: Row(
-                          mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text(chartConfig.surveyName,
-                                style: chartTitleStyle),
+                            Text(
+                              chartConfig.surveyName,
+                              style: chartTitleStyle,
+                            ),
                           ],
                         ),
                       ),

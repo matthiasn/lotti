@@ -9,16 +9,18 @@ import 'package:lotti/sync/inbox_service.dart';
 
 class SyncConfigService {
   final _storage = const FlutterSecureStorage();
-  final String sharedSecretKey = 'sharedSecret';
-  final String imapConfigKey = 'imapConfig';
+  final sharedSecretKey = 'sharedSecret';
+  final imapConfigKey = 'imapConfig';
 
   Future<SyncConfig?> getSyncConfig() async {
-    String? sharedKey = await _storage.read(key: sharedSecretKey);
-    String? imapConfigJson = await _storage.read(key: imapConfigKey);
+    final sharedKey = await _storage.read(key: sharedSecretKey);
+    final imapConfigJson = await _storage.read(key: imapConfigKey);
     ImapConfig? imapConfig;
 
     if (imapConfigJson != null) {
-      imapConfig = ImapConfig.fromJson(json.decode(imapConfigJson));
+      imapConfig = ImapConfig.fromJson(
+        json.decode(imapConfigJson) as Map<String, dynamic>,
+      );
     }
 
     if (sharedKey != null && imapConfig != null) {
@@ -31,13 +33,15 @@ class SyncConfigService {
   }
 
   Future<void> generateSharedKey() async {
-    final Key key = Key.fromSecureRandom(32);
-    String sharedKey = key.base64;
+    final key = Key.fromSecureRandom(32);
+    final sharedKey = key.base64;
     await _storage.write(key: sharedSecretKey, value: sharedKey);
   }
 
   Future<void> setSyncConfig(String configJson) async {
-    SyncConfig syncConfig = SyncConfig.fromJson(json.decode(configJson));
+    final syncConfig = SyncConfig.fromJson(
+      json.decode(configJson) as Map<String, dynamic>,
+    );
     await _storage.write(
       key: sharedSecretKey,
       value: syncConfig.sharedSecret,
@@ -57,16 +61,18 @@ class SyncConfigService {
   }
 
   Future<void> setImapConfig(ImapConfig imapConfig) async {
-    String json = jsonEncode(imapConfig);
+    final json = jsonEncode(imapConfig);
     await _storage.write(key: imapConfigKey, value: json);
   }
 
   Future<ImapConfig?> getImapConfig() async {
-    String? imapConfigJson = await _storage.read(key: imapConfigKey);
+    final imapConfigJson = await _storage.read(key: imapConfigKey);
     ImapConfig? imapConfig;
 
     if (imapConfigJson != null) {
-      imapConfig = ImapConfig.fromJson(json.decode(imapConfigJson));
+      imapConfig = ImapConfig.fromJson(
+        json.decode(imapConfigJson) as Map<String, dynamic>,
+      );
     }
 
     return imapConfig;

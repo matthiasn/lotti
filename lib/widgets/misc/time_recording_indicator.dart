@@ -8,11 +8,11 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TimeRecordingIndicatorWidget extends StatelessWidget {
-  final TimeService _timeService = getIt<TimeService>();
-
   TimeRecordingIndicatorWidget({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final TimeService _timeService = getIt<TimeService>();
 
   @override
   Widget build(BuildContext context) {
@@ -22,17 +22,17 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
         _,
         AsyncSnapshot<JournalEntity?> snapshot,
       ) {
-        JournalEntity? current = snapshot.data;
+        final current = snapshot.data;
 
         if (current == null) {
           return const SizedBox.shrink();
         }
 
-        String durationString = formatDuration(entryDuration(current));
+        final durationString = formatDuration(entryDuration(current));
 
         return GestureDetector(
           onTap: () {
-            String itemId = current.meta.id;
+            final itemId = current.meta.id;
             pushNamedRoute('/journal/$itemId');
           },
           child: MouseRegion(
@@ -59,7 +59,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                         durationString,
                         style: TextStyle(
                           fontFamily: 'ShareTechMono',
-                          fontSize: 18.0,
+                          fontSize: 18,
                           color: AppColors.editorTextColor,
                         ),
                       ),
@@ -77,8 +77,8 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
 
 class TimeRecordingIndicator extends StatelessWidget {
   const TimeRecordingIndicator({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

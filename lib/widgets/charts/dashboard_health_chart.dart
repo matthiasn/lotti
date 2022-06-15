@@ -12,23 +12,22 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_chart.dart';
+import 'package:lotti/widgets/charts/dashboard_health_bp_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-import 'dashboard_health_bp_chart.dart';
-
 class DashboardHealthChart extends StatefulWidget {
-  final DashboardHealthItem chartConfig;
-  final DateTime rangeStart;
-  final DateTime rangeEnd;
-
   const DashboardHealthChart({
-    Key? key,
+    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
-  }) : super(key: key);
+  });
+
+  final DashboardHealthItem chartConfig;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
 
   @override
   State<DashboardHealthChart> createState() => _DashboardHealthChartState();
@@ -47,7 +46,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
 
   @override
   Widget build(BuildContext context) {
-    String dataType = widget.chartConfig.healthType;
+    final dataType = widget.chartConfig.healthType;
 
     if (dataType == 'BLOOD_PRESSURE') {
       return DashboardHealthBpChart(
@@ -65,18 +64,15 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
       );
     }
 
-    HealthTypeConfig? healthType = healthTypes[dataType];
+    final healthType = healthTypes[dataType];
     charts.SeriesRendererConfig<DateTime>? defaultRenderer;
 
-    final bool isBarChart = healthType?.chartType == HealthChartType.barChart;
+    final isBarChart = healthType?.chartType == HealthChartType.barChart;
 
     if (isBarChart) {
       defaultRenderer = charts.BarRendererConfig<DateTime>();
     } else {
-      defaultRenderer = charts.LineRendererConfig<DateTime>(
-        includePoints: false,
-        strokeWidthPx: 2,
-      );
+      defaultRenderer = charts.LineRendererConfig<DateTime>();
     }
 
     return BlocProvider<HealthChartInfoCubit>(
@@ -92,9 +88,10 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
           AsyncSnapshot<List<JournalEntity?>> snapshot,
         ) {
           void _infoSelectionModelUpdated(
-              charts.SelectionModel<DateTime> model) {
+            charts.SelectionModel<DateTime> model,
+          ) {
             if (model.hasDatumSelection) {
-              Observation newSelection =
+              final newSelection =
                   model.selectedDatum.first.datum as Observation;
               context.read<HealthChartInfoCubit>().setSelected(newSelection);
 
@@ -107,9 +104,9 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
             }
           }
 
-          List<JournalEntity?>? items = snapshot.data ?? [];
+          final items = snapshot.data ?? [];
 
-          List<charts.Series<Observation, DateTime>> seriesList = [
+          final seriesList = <charts.Series<Observation, DateTime>>[
             charts.Series<Observation, DateTime>(
               id: dataType,
               colorFn: (Observation val, _) {
@@ -128,7 +125,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                 key: Key('${widget.chartConfig.hashCode}'),
                 color: Colors.white,
                 height: 120,
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Stack(
                   children: [
                     charts.TimeSeriesChart(
@@ -136,13 +133,14 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                       animate: false,
                       behaviors: [
                         chartRangeAnnotation(
-                            widget.rangeStart, widget.rangeEnd),
+                          widget.rangeStart,
+                          widget.rangeEnd,
+                        ),
                       ],
                       domainAxis: timeSeriesAxis,
                       defaultRenderer: defaultRenderer,
                       selectionModels: [
                         charts.SelectionModelConfig(
-                          type: charts.SelectionModelType.info,
                           updatedListener: _infoSelectionModelUpdated,
                         ),
                       ],
@@ -155,7 +153,8 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                         tickFormatterSpec:
                             healthType != null && healthType.hoursMinutes
                                 ? const charts.BasicNumericTickFormatterSpec(
-                                    hoursToHhMm)
+                                    hoursToHhMm,
+                                  )
                                 : null,
                       ),
                     ),
@@ -174,57 +173,56 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
 class HealthChartInfoWidget extends StatelessWidget {
   const HealthChartInfoWidget(
     this.chartConfig, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   final DashboardHealthItem chartConfig;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<HealthChartInfoCubit, HealthChartInfoState>(
-        builder: (BuildContext context, HealthChartInfoState state) {
-      final Observation? selected = state.selected;
+      builder: (BuildContext context, HealthChartInfoState state) {
+        final selected = state.selected;
 
-      return Positioned(
-        top: -1,
-        left: MediaQuery.of(context).size.width / 4,
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width / 2,
-          child: IgnorePointer(
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Spacer(),
-                Text(
-                  healthTypes[chartConfig.healthType]?.displayName ??
-                      chartConfig.healthType,
-                  style: chartTitleStyle,
-                ),
-                if (selected != null) ...[
-                  const Spacer(),
-                  Padding(
-                    padding: AppTheme.chartDateHorizontalPadding,
-                    child: Text(
-                      ' ${ymd(selected.dateTime)}',
-                      style: chartTitleStyle,
-                    ),
-                  ),
+        return Positioned(
+          top: -1,
+          left: MediaQuery.of(context).size.width / 4,
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width / 2,
+            child: IgnorePointer(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                   const Spacer(),
                   Text(
-                    ' ${NumberFormat('#,###.##').format(selected.value)}',
-                    style: chartTitleStyle.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    healthTypes[chartConfig.healthType]?.displayName ??
+                        chartConfig.healthType,
+                    style: chartTitleStyle,
                   ),
+                  if (selected != null) ...[
+                    const Spacer(),
+                    Padding(
+                      padding: AppTheme.chartDateHorizontalPadding,
+                      child: Text(
+                        ' ${ymd(selected.dateTime)}',
+                        style: chartTitleStyle,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      ' ${NumberFormat('#,###.##').format(selected.value)}',
+                      style: chartTitleStyle.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
                 ],
-                const Spacer(),
-              ],
+              ),
             ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }

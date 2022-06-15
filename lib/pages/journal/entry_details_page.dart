@@ -20,14 +20,14 @@ import 'package:lotti/widgets/journal/entry_details_widget.dart';
 import 'package:path_provider/path_provider.dart';
 
 class EntryDetailPage extends StatefulWidget {
-  final String itemId;
-  final bool readOnly;
-
   const EntryDetailPage({
-    Key? key,
+    super.key,
     @PathParam() required this.itemId,
     this.readOnly = false,
-  }) : super(key: key);
+  });
+
+  final String itemId;
+  final bool readOnly;
 
   @override
   State<EntryDetailPage> createState() => _EntryDetailPageState();
@@ -60,7 +60,7 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder<JournalEntity?>(
       stream: _stream,
@@ -68,7 +68,7 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
         BuildContext context,
         AsyncSnapshot<JournalEntity?> snapshot,
       ) {
-        JournalEntity? item = snapshot.data;
+        final item = snapshot.data;
         if (item == null) {
           return EmptyScaffoldWithTitle(localizations.dashboardNotFound);
         }
@@ -85,7 +85,6 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
           body: SingleChildScrollView(
             physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.only(top: 8, bottom: 96),
-            reverse: false,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[

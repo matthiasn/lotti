@@ -5,16 +5,14 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 
 class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
-  const DashboardsAppBar({
-    Key? key,
-  }) : super(key: key);
+  const DashboardsAppBar({super.key});
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return AppBar(
       backgroundColor: AppColors.headerBgColor,
@@ -32,12 +30,12 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
             icon: const Icon(Icons.dashboard_customize_outlined),
             color: AppColors.entryTextColor,
             onPressed: () {
-              NavService navService = getIt<NavService>();
+              final navService = getIt<NavService>();
 
               navService.tabsRouter
                   ?.setActiveIndex(navService.routesByIndex.length - 1);
 
-              Future.delayed(const Duration(milliseconds: 50))
+              Future<void>.delayed(const Duration(milliseconds: 50))
                   .then((value) => pushNamedRoute('/settings/dashboards/'));
             },
           ),

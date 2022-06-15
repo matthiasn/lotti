@@ -12,7 +12,7 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class OutboxMonitorPage extends StatefulWidget {
-  const OutboxMonitorPage({Key? key}) : super(key: key);
+  const OutboxMonitorPage({super.key});
 
   @override
   State<OutboxMonitorPage> createState() => _OutboxMonitorPageState();
@@ -31,7 +31,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return BlocBuilder<OutboxCubit, OutboxState>(
       builder: (_, OutboxState state) {
@@ -41,8 +41,8 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             BuildContext context,
             AsyncSnapshot<List<OutboxItem>> snapshot,
           ) {
-            List<OutboxItem> items = snapshot.data ?? [];
-            bool onlineStatus = state is! OutboxDisabled;
+            final items = snapshot.data ?? [];
+            final onlineStatus = state is! OutboxDisabled;
 
             return Scaffold(
               backgroundColor: AppColors.bodyBgColor,
@@ -54,8 +54,10 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(localizations.outboxMonitorSwitchLabel,
-                            style: labelStyleLarger),
+                        Text(
+                          localizations.outboxMonitorSwitchLabel,
+                          style: labelStyleLarger,
+                        ),
                         CupertinoSwitch(
                           value: onlineStatus,
                           onChanged: (_) {
@@ -81,11 +83,13 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                               }
                               if (_selectedValue == 'pending') {
                                 stream = _db.watchOutboxItems(
-                                    statuses: [OutboxStatus.pending]);
+                                  statuses: [OutboxStatus.pending],
+                                );
                               }
                               if (_selectedValue == 'error') {
                                 stream = _db.watchOutboxItems(
-                                    statuses: [OutboxStatus.error]);
+                                  statuses: [OutboxStatus.error],
+                                );
                               }
                             });
                           },
@@ -122,7 +126,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                     ),
                     ListView(
                       shrinkWrap: true,
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(8),
                       children: List.generate(
                         items.length,
                         (int index) {
@@ -145,20 +149,20 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 }
 
 class OutboxItemCard extends StatelessWidget {
+  OutboxItemCard({
+    super.key,
+    required this.item,
+    required this.index,
+  });
+
   final SyncDatabase _db = getIt<SyncDatabase>();
   final OutboxItem item;
   final int index;
 
-  OutboxItemCard({
-    Key? key,
-    required this.item,
-    required this.index,
-  }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
-    OutboxStatus statusEnum = OutboxStatus.values[item.status];
+    final localizations = AppLocalizations.of(context)!;
+    final statusEnum = OutboxStatus.values[item.status];
 
     String getStringFromStatus(OutboxStatus x) {
       switch (x) {
@@ -166,12 +170,12 @@ class OutboxItemCard extends StatelessWidget {
           return localizations.outboxMonitorLabelPending;
         case OutboxStatus.sent:
           return localizations.outboxMonitorLabelSent;
-        default:
+        case OutboxStatus.error:
           return localizations.outboxMonitorLabelError;
       }
     }
 
-    String status = getStringFromStatus(statusEnum);
+    final status = getStringFromStatus(statusEnum);
 
     Color cardColor(OutboxStatus status) {
       switch (statusEnum) {
@@ -179,18 +183,18 @@ class OutboxItemCard extends StatelessWidget {
           return AppColors.outboxPendingColor;
         case OutboxStatus.error:
           return AppColors.outboxErrorColor;
-        default:
+        case OutboxStatus.sent:
           return AppColors.outboxSuccessColor;
       }
     }
 
     return Padding(
-      padding: const EdgeInsets.all(2.0),
+      padding: const EdgeInsets.all(2),
       child: Card(
         color: cardColor(statusEnum),
-        elevation: 8.0,
+        elevation: 8,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: SingleChildScrollView(
           child: ListTile(
@@ -200,7 +204,7 @@ class OutboxItemCard extends StatelessWidget {
               style: TextStyle(
                 color: AppColors.entryTextColor,
                 fontFamily: 'Oswald',
-                fontSize: 16.0,
+                fontSize: 16,
               ),
             ),
             subtitle: Text(
@@ -210,10 +214,9 @@ class OutboxItemCard extends StatelessWidget {
                 color: AppColors.entryTextColor,
                 fontFamily: 'Oswald',
                 fontWeight: FontWeight.w200,
-                fontSize: 16.0,
+                fontSize: 16,
               ),
             ),
-            enabled: true,
             onTap: () {
               if (statusEnum == OutboxStatus.error) {
                 _db.updateOutboxItem(

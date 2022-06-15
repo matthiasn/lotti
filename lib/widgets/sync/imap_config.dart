@@ -3,12 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lotti/widgets/sync/imap_config_actions.dart';
 import 'package:lotti/widgets/sync/imap_config_form.dart';
+import 'package:lotti/widgets/sync/imap_config_mobile.dart';
 import 'package:lotti/widgets/sync/imap_config_status.dart';
 
-import 'imap_config_mobile.dart';
-
 class ImapConfigWidget extends StatefulWidget {
-  const ImapConfigWidget({Key? key}) : super(key: key);
+  const ImapConfigWidget({super.key});
 
   @override
   State<ImapConfigWidget> createState() => _ImapConfigWidgetState();

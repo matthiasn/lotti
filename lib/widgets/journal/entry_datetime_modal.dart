@@ -10,13 +10,14 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class EntryDateTimeModal extends StatefulWidget {
-  final JournalEntity item;
-  final bool readOnly;
   const EntryDateTimeModal({
-    Key? key,
+    super.key,
     required this.item,
     this.readOnly = false,
-  }) : super(key: key);
+  });
+
+  final JournalEntity item;
+  final bool readOnly;
 
   @override
   State<EntryDateTimeModal> createState() => _EntryDateTimeModalState();
@@ -39,12 +40,11 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
   }
 
   void showDatePicker({
-    required Function(DateTime) onConfirm,
+    required void Function(DateTime) onConfirm,
     required DateTime currentTime,
   }) {
     DatePicker.showDateTimePicker(
       context,
-      showTitleActions: true,
       theme: DatePickerTheme(
         headerColor: AppColors.entryCardColor,
         backgroundColor: AppColors.bodyBgColor,
@@ -60,16 +60,15 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
       ),
       onConfirm: onConfirm,
       currentTime: currentTime,
-      locale: LocaleType.en,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
-    bool valid = dateTo.isAfter(dateFrom) || dateTo == dateFrom;
-    bool changed = dateFrom != widget.item.meta.dateFrom ||
+    final valid = dateTo.isAfter(dateFrom) || dateTo == dateFrom;
+    final changed = dateFrom != widget.item.meta.dateFrom ||
         dateTo != widget.item.meta.dateTo;
 
     return StreamBuilder<JournalEntity?>(
@@ -78,7 +77,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
         BuildContext context,
         AsyncSnapshot<JournalEntity?> snapshot,
       ) {
-        JournalEntity? liveEntity = snapshot.data;
+        final liveEntity = snapshot.data;
         if (liveEntity == null) {
           return const SizedBox.shrink();
         }
@@ -87,7 +86,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
           height: 200,
           color: AppColors.bodyBgColor,
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: <Widget>[
                 Row(
@@ -161,7 +160,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                   ],
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -176,7 +175,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                               dateFrom: dateFrom,
                               dateTo: dateTo,
                             );
-                            context.router.pop();
+                            await context.router.pop();
                           },
                           child: Text(
                             localizations.journalDateSaveButton,

@@ -8,14 +8,14 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
 
 class TagsSearchWidget extends StatelessWidget {
+  TagsSearchWidget({
+    super.key,
+    required this.addTag,
+  });
+
   final JournalDb _db = getIt<JournalDb>();
   final TagsService tagsService = getIt<TagsService>();
   final void Function(String addedTag) addTag;
-
-  TagsSearchWidget({
-    Key? key,
-    required this.addTag,
-  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -28,24 +28,22 @@ class TagsSearchWidget extends StatelessWidget {
         // data in the tags service will already have been updated.
         AsyncSnapshot<List<TagEntity>> _,
       ) {
-        TextEditingController controller = TextEditingController();
+        final controller = TextEditingController();
 
         return Expanded(
           child: TypeAheadField(
             textFieldConfiguration: TextFieldConfiguration(
-              textCapitalization: TextCapitalization.none,
               autocorrect: false,
               controller: controller,
               onSubmitted: (String tag) async {},
-              autofocus: false,
               style: DefaultTextStyle.of(context).style.copyWith(
                     color: Colors.white,
                     fontFamily: 'Oswald',
-                    fontSize: 14.0,
+                    fontSize: 14,
                   ),
               decoration: InputDecoration(
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
             suggestionsCallback: (String pattern) async {
@@ -56,7 +54,7 @@ class TagsSearchWidget extends StatelessWidget {
             },
             suggestionsBoxDecoration: SuggestionsBoxDecoration(
               color: AppColors.headerBgColor,
-              borderRadius: BorderRadius.circular(8.0),
+              borderRadius: BorderRadius.circular(8),
             ),
             itemBuilder: (context, TagEntity tagEntity) {
               return ListTile(
@@ -67,7 +65,7 @@ class TagsSearchWidget extends StatelessWidget {
                     height: 1.2,
                     color: getTagColor(tagEntity),
                     fontWeight: FontWeight.normal,
-                    fontSize: 20.0,
+                    fontSize: 20,
                   ),
                 ),
               );
@@ -84,17 +82,17 @@ class TagsSearchWidget extends StatelessWidget {
 }
 
 class SelectedTagsWidget extends StatelessWidget {
+  SelectedTagsWidget({
+    required this.tagIds,
+    required this.removeTag,
+    super.key,
+  });
+
   final JournalDb _db = getIt<JournalDb>();
   final TagsService tagsService = getIt<TagsService>();
 
   final List<String> tagIds;
   final void Function(String) removeTag;
-
-  SelectedTagsWidget({
-    required this.tagIds,
-    required this.removeTag,
-    Key? key,
-  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -108,22 +106,23 @@ class SelectedTagsWidget extends StatelessWidget {
         AsyncSnapshot<List<TagEntity>> _,
       ) {
         return Padding(
-          padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
+          padding: const EdgeInsets.only(left: 16, bottom: 8),
           child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: tagIds.map((String tagId) {
-                TagEntity? tagEntity = tagsService.getTagById(tagId);
-                if (tagEntity == null) {
-                  return const SizedBox.shrink();
-                }
-                return TagWidget(
-                  tagEntity: tagEntity,
-                  onTapRemove: () {
-                    removeTag(tagEntity.id);
-                  },
-                );
-              }).toList()),
+            spacing: 4,
+            runSpacing: 4,
+            children: tagIds.map((String tagId) {
+              final tagEntity = tagsService.getTagById(tagId);
+              if (tagEntity == null) {
+                return const SizedBox.shrink();
+              }
+              return TagWidget(
+                tagEntity: tagEntity,
+                onTapRemove: () {
+                  removeTag(tagEntity.id);
+                },
+              );
+            }).toList(),
+          ),
         );
       },
     );

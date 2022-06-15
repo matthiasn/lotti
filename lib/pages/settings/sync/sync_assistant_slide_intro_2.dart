@@ -6,20 +6,20 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lottie/lottie.dart';
 
 class SyncAssistantIntroSlide2 extends StatelessWidget {
-  final int page;
-  final int pageCount;
-  final ValueNotifier<double> notifier;
-
   const SyncAssistantIntroSlide2(
     this.page,
     this.pageCount,
     this.notifier, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final int page;
+  final int pageCount;
+  final ValueNotifier<double> notifier;
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return SlidingPage(
       page: page,
@@ -50,9 +50,11 @@ class SyncAssistantIntroSlide2 extends StatelessWidget {
               ),
             ),
           ),
-          AlignedText(isMobile
-              ? localizations.syncAssistantPage2mobile
-              : localizations.syncAssistantPage2),
+          AlignedText(
+            isMobile
+                ? localizations.syncAssistantPage2mobile
+                : localizations.syncAssistantPage2,
+          ),
         ],
       ),
     );

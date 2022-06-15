@@ -18,9 +18,9 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
-    Key? key,
+    super.key,
     @PathParam() required this.dashboardId,
-  }) : super(key: key);
+  });
 
   final String dashboardId;
 
@@ -31,24 +31,24 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   final JournalDb _db = getIt<JournalDb>();
 
-  double zoomStartScale = 10.0;
-  double scale = 10.0;
-  double horizontalPan = 0.0;
+  double zoomStartScale = 10;
+  double scale = 10;
+  double horizontalPan = 0;
   bool zoomInProgress = false;
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     final int shiftDays = max((horizontalPan / scale).floor(), 0);
 
-    final DateTime rangeStart = getRangeStart(
+    final rangeStart = getRangeStart(
       context: context,
       scale: scale,
       shiftDays: shiftDays,
     );
 
-    final DateTime rangeEnd = getRangeEnd(shiftDays: shiftDays);
+    final rangeEnd = getRangeEnd(shiftDays: shiftDays);
 
     return GestureDetector(
       onScaleStart: (_) {
@@ -70,9 +70,9 @@ class _DashboardPageState extends State<DashboardPage> {
         });
       },
       onScaleUpdate: (ScaleUpdateDetails details) {
-        double horizontalScale = details.horizontalScale;
+        final horizontalScale = details.horizontalScale;
         setState(() {
-          if (horizontalScale != 1.0) {
+          if (horizontalScale != 1) {
             scale = zoomStartScale * horizontalScale;
           }
         });
@@ -84,7 +84,7 @@ class _DashboardPageState extends State<DashboardPage> {
           AsyncSnapshot<List<DashboardDefinition>> snapshot,
         ) {
           DashboardDefinition? dashboard;
-          var data = snapshot.data ?? [];
+          final data = snapshot.data ?? [];
           if (data.isNotEmpty) {
             dashboard = data.first;
           }
@@ -100,7 +100,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             body: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(8),
                 child: Column(
                   children: [
                     ...dashboard.items.map((DashboardItem dashboardItem) {
@@ -148,7 +148,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
+                          padding: const EdgeInsets.only(left: 8),
                           child: Text(
                             dashboard.description,
                             style: formLabelStyle,
@@ -159,7 +159,8 @@ class _DashboardPageState extends State<DashboardPage> {
                           color: AppColors.entryTextColor,
                           onPressed: () {
                             context.router.pushNamed(
-                                '/settings/dashboards/${widget.dashboardId}');
+                              '/settings/dashboards/${widget.dashboardId}',
+                            );
                           },
                         ),
                       ],

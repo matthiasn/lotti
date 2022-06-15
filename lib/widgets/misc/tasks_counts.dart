@@ -5,13 +5,11 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 
 class TaskCounts extends StatelessWidget {
-  const TaskCounts({
-    Key? key,
-  }) : super(key: key);
+  const TaskCounts({super.key});
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.only(bottom: 4),
@@ -49,8 +47,8 @@ class TasksCountWidget extends StatelessWidget {
   TasksCountWidget({
     required this.status,
     required this.label,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   final String status;
   final String label;
@@ -59,27 +57,28 @@ class TasksCountWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<int>(
-        stream: _db.watchTaskCount(status),
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<int> snapshot,
-        ) {
-          if (snapshot.data == null) {
-            return const SizedBox.shrink();
-          } else {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: Text(
-                '$label: ${snapshot.data}',
-                style: TextStyle(
-                  color: AppColors.headerFontColor2,
-                  fontFamily: 'Oswald',
-                  fontSize: 12.0,
-                  fontWeight: FontWeight.w100,
-                ),
+      stream: _db.watchTaskCount(status),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<int> snapshot,
+      ) {
+        if (snapshot.data == null) {
+          return const SizedBox.shrink();
+        } else {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              '$label: ${snapshot.data}',
+              style: TextStyle(
+                color: AppColors.headerFontColor2,
+                fontFamily: 'Oswald',
+                fontSize: 12,
+                fontWeight: FontWeight.w100,
               ),
-            );
-          }
-        });
+            ),
+          );
+        }
+      },
+    );
   }
 }

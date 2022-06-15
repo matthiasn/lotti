@@ -6,7 +6,6 @@ import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -29,6 +28,11 @@ const String imapConfigKey = 'imapConfig';
 const String lastReadUidKey = 'lastReadUid';
 
 class SyncInboxService {
+  SyncInboxService() {
+    _vectorClockService = getIt<VectorClockService>();
+    init();
+  }
+
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   late final VectorClockService _vectorClockService;
@@ -40,9 +44,8 @@ class SyncInboxService {
   final JournalDb _journalDb = getIt<JournalDb>();
   final LoggingDb _loggingDb = getIt<LoggingDb>();
 
-  SyncInboxService() {
-    _vectorClockService = getIt<VectorClockService>();
-    init();
+  void dispose() {
+    fgBgSubscription.cancel();
   }
 
   Future<void> init() async {
@@ -74,23 +77,23 @@ class SyncInboxService {
       }
     });
 
-    _startPeriodicFetching();
-    _observeInbox();
+    await _startPeriodicFetching();
+    await _observeInbox();
   }
 
   Future<void> processMessage(MimeMessage message) async {
     final transaction = _loggingDb.startTransaction('processMessage()', 'task');
     try {
-      String? encryptedMessage = readMessage(message);
-      SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
+      final encryptedMessage = readMessage(message);
+      final syncConfig = await _syncConfigService.getSyncConfig();
 
       if (syncConfig != null) {
-        String b64Secret = syncConfig.sharedSecret;
+        final b64Secret = syncConfig.sharedSecret;
 
-        SyncMessage? syncMessage =
+        final syncMessage =
             await decryptMessage(encryptedMessage, message, b64Secret);
 
-        syncMessage?.when(
+        await syncMessage?.when(
           journalEntity:
               (JournalEntity journalEntity, SyncEntryStatus status) async {
             await saveJournalEntityJson(journalEntity);
@@ -110,11 +113,9 @@ class SyncInboxService {
             );
 
             if (status == SyncEntryStatus.update) {
-              await persistenceLogic.updateDbEntity(journalEntity,
-                  enqueueSync: false);
+              await persistenceLogic.updateDbEntity(journalEntity);
             } else {
-              await persistenceLogic.createDbEntity(journalEntity,
-                  enqueueSync: false);
+              await persistenceLogic.createDbEntity(journalEntity);
             }
           },
           entryLink: (EntryLink entryLink, SyncEntryStatus _) {
@@ -137,7 +138,7 @@ class SyncInboxService {
         throw Exception('missing IMAP config');
       }
     } catch (e, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         e,
         domain: 'INBOX_SERVICE',
         subDomain: 'processMessage',
@@ -148,27 +149,28 @@ class SyncInboxService {
     await transaction.finish();
   }
 
-  void _startPeriodicFetching() async {
-    SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
+  Future<void> _startPeriodicFetching() async {
+    final syncConfig = await _syncConfigService.getSyncConfig();
 
     if (syncConfig == null) {
       _loggingDb.captureEvent(
-          'Sync config missing -> periodic fetching not started',
-          domain: 'OUTBOX_CUBIT');
+        'Sync config missing -> periodic fetching not started',
+        domain: 'OUTBOX_CUBIT',
+      );
       return;
     } else {
       timer?.cancel();
-      _fetchInbox();
+      await _fetchInbox();
       timer = Timer.periodic(
         const Duration(seconds: 15),
         (timer) async {
-          _fetchInbox();
+          await _fetchInbox();
         },
       );
     }
   }
 
-  void _stopPeriodicFetching() async {
+  Future<void> _stopPeriodicFetching() async {
     if (timer != null) {
       timer!.cancel();
       timer = null;
@@ -176,7 +178,7 @@ class SyncInboxService {
   }
 
   bool validSubject(String subject) {
-    RegExp validSubject = RegExp(r'[a-z0-9]{40}:[a-z0-9]+');
+    final validSubject = RegExp('[a-z0-9]{40}:[a-z0-9]+');
     return validSubject.hasMatch(subject);
   }
 
@@ -190,27 +192,27 @@ class SyncInboxService {
       await fetchMutex.acquire();
 
       try {
-        SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
+        final syncConfig = await _syncConfigService.getSyncConfig();
         imapClient = await createImapClient(syncConfig);
 
-        String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
-        int lastReadUid =
+        final lastReadUidValue = await _storage.read(key: lastReadUidKey);
+        final lastReadUid =
             lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
 
-        var sequence = MessageSequence(isUidSequence: true);
-        sequence.addRangeToLast(lastReadUid + 1);
+        final sequence = MessageSequence(isUidSequence: true)
+          ..addRangeToLast(lastReadUid + 1);
         debugPrint('_fetchInbox sequence: $sequence');
 
         if (imapClient != null) {
           final fetchResult =
               await imapClient.uidFetchMessages(sequence, 'ENVELOPE');
 
-          for (MimeMessage msg in fetchResult.messages) {
-            String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
-            int lastReadUid =
+          for (final msg in fetchResult.messages) {
+            final lastReadUidValue = await _storage.read(key: lastReadUidKey);
+            final lastReadUid =
                 lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
-            int? current = msg.uid;
-            String subject = '${msg.decodeSubject()}';
+            final current = msg.uid;
+            final subject = '${msg.decodeSubject()}';
             if (lastReadUid != current) {
               _loggingDb.captureEvent(
                 '_fetchInbox lastReadUid $lastReadUid current $current',
@@ -241,7 +243,7 @@ class SyncInboxService {
         }
       } on MailException catch (e, stackTrace) {
         debugPrint('High level API failed with $e');
-        await _loggingDb.captureException(
+        _loggingDb.captureException(
           e,
           domain: 'INBOX_SERVICE',
           subDomain: '_fetchInbox',
@@ -249,14 +251,14 @@ class SyncInboxService {
         );
       } catch (e, stackTrace) {
         debugPrint('Exception $e');
-        await _loggingDb.captureException(
+        _loggingDb.captureException(
           e,
           domain: 'INBOX_SERVICE',
           subDomain: '_fetchInbox',
           stackTrace: stackTrace,
         );
       } finally {
-        imapClient?.disconnect();
+        await imapClient?.disconnect();
         if (fetchMutex.isLocked) {
           fetchMutex.release();
         }
@@ -279,8 +281,7 @@ class SyncInboxService {
         if (imapClient != null) {
           // odd workaround, prevents intermittent failures on macOS
           await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
-          FetchImapResult res =
-              await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+          final res = await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
 
           for (final message in res.messages) {
             await processMessage(message);
@@ -289,13 +290,13 @@ class SyncInboxService {
         }
       } on MailException catch (e) {
         debugPrint('High level API failed with $e');
-        await _loggingDb.captureException(
+        _loggingDb.captureException(
           e,
           domain: 'INBOX_SERVICE',
           subDomain: '_fetchByUid',
         );
       } catch (e, stackTrace) {
-        await _loggingDb.captureException(
+        _loggingDb.captureException(
           e,
           domain: 'INBOX_SERVICE',
           subDomain: '_fetchByUid',
@@ -308,13 +309,13 @@ class SyncInboxService {
 
   Future<void> _observeInbox() async {
     try {
-      SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
+      final syncConfig = await _syncConfigService.getSyncConfig();
 
       if (syncConfig != null) {
-        _observingClient?.disconnect();
+        await _observingClient?.disconnect();
         _observingClient = null;
 
-        ImapConfig imapConfig = syncConfig.imapConfig;
+        final imapConfig = syncConfig.imapConfig;
         final account = MailAccount.fromManualSettings(
           'sync',
           imapConfig.userName,
@@ -323,7 +324,7 @@ class SyncInboxService {
           imapConfig.password,
         );
 
-        _observingClient = MailClient(account, isLogEnabled: false);
+        _observingClient = MailClient(account);
 
         await _observingClient!.connect();
         await _observingClient!.selectMailboxByPath(imapConfig.folder);
@@ -332,7 +333,7 @@ class SyncInboxService {
             .on<MailLoadEvent>()
             .listen((MailLoadEvent event) async {
           if (!fetchMutex.isLocked) {
-            _fetchInbox();
+            await _fetchInbox();
           }
         });
 
@@ -345,7 +346,7 @@ class SyncInboxService {
           );
 
           try {
-            _observingClient?.disconnect();
+            await _observingClient?.disconnect();
             _observingClient = null;
           } catch (e, stackTrace) {
             _loggingDb.captureException(
@@ -363,16 +364,16 @@ class SyncInboxService {
           );
         });
 
-        _observingClient!.startPolling();
+        await _observingClient!.startPolling();
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         e,
         domain: 'INBOX_SERVICE',
       );
     } catch (e, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         e,
         domain: 'INBOX_SERVICE',
         subDomain: '_observeInbox',

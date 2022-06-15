@@ -22,8 +22,10 @@ class EditorDb extends _$EditorDb {
     required String draftDeltaJson,
   }) async {
     await (update(editorDrafts)
-          ..where((EditorDrafts draft) =>
-              draft.entryId.equals(entryId) & draft.status.equals('DRAFT')))
+          ..where(
+            (EditorDrafts draft) =>
+                draft.entryId.equals(entryId) & draft.status.equals('DRAFT'),
+          ))
         .write(const EditorDraftsCompanion(status: Value('ARCHIVED')));
 
     final draftState = EditorDraftState(
@@ -41,7 +43,7 @@ class EditorDb extends _$EditorDb {
     required String entryId,
     required DateTime lastSaved,
   }) async {
-    return await (update(editorDrafts)
+    return (update(editorDrafts)
           ..where(
             (EditorDrafts draft) =>
                 draft.entryId.equals(entryId) & draft.status.equals('DRAFT'),
@@ -57,7 +59,7 @@ class EditorDb extends _$EditorDb {
       return null;
     }
 
-    List<EditorDraftState> res = await latestDraft(entryId, lastSaved).get();
+    final res = await latestDraft(entryId, lastSaved).get();
 
     if (res.isNotEmpty) {
       return res.first;

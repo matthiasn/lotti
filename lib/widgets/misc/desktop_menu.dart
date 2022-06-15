@@ -9,13 +9,13 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/screenshots.dart';
 
 class DesktopMenuWrapper extends StatelessWidget {
-  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
-  final Widget body;
-
   DesktopMenuWrapper(
     this.body, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+  final Widget body;
 
   @override
   Widget build(BuildContext context) {
@@ -57,9 +57,9 @@ class DesktopMenuWrapper extends StatelessWidget {
             PlatformMenuItem(
               label: 'New Entry',
               onSelected: () async {
-                String? linkedId = await getIdFromSavedRoute();
+                final linkedId = await getIdFromSavedRoute();
                 if (linkedId != null) {
-                  _persistenceLogic.createTextEntry(
+                  await _persistenceLogic.createTextEntry(
                     EntryText(plainText: ''),
                     linkedId: linkedId,
                     started: DateTime.now(),
@@ -83,7 +83,7 @@ class DesktopMenuWrapper extends StatelessWidget {
                     meta: true,
                   ),
                   onSelected: () async {
-                    String? linkedId = await getIdFromSavedRoute();
+                    final linkedId = await getIdFromSavedRoute();
                     pushNamedRoute('/tasks/create/$linkedId');
                   },
                 ),
@@ -95,7 +95,7 @@ class DesktopMenuWrapper extends StatelessWidget {
                     alt: true,
                   ),
                   onSelected: () async {
-                    takeScreenshotWithLinked();
+                    await takeScreenshotWithLinked();
                   },
                 ),
               ],

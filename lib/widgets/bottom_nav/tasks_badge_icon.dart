@@ -7,11 +7,9 @@ import 'package:lotti/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TasksBadgeIcon extends StatelessWidget {
-  final JournalDb _db = getIt<JournalDb>();
+  TasksBadgeIcon({super.key});
 
-  TasksBadgeIcon({
-    Key? key,
-  }) : super(key: key);
+  final JournalDb _db = getIt<JournalDb>();
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +22,7 @@ class TasksBadgeIcon extends StatelessWidget {
         BuildContext context,
         AsyncSnapshot<List<JournalEntity>> snapshot,
       ) {
-        int count = snapshot.data?.length ?? 0;
+        final count = snapshot.data?.length ?? 0;
         return Badge(
           badgeContent: Text('$count'),
           showBadge: count != 0,

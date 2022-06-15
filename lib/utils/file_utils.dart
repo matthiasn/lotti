@@ -3,11 +3,10 @@ import 'dart:io';
 
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
-
-import 'audio_utils.dart';
-import 'image_utils.dart';
 
 Uuid uuid = const Uuid();
 
@@ -46,27 +45,27 @@ String entityPath(JournalEntity journalEntity, Directory docDir) {
     journalAudio: (journalAudio) =>
         '${AudioUtils.getAudioPath(journalAudio, docDir)}.json',
     orElse: () {
-      DateFormat df = DateFormat('yyyy-MM-dd');
-      String dateSubFolder = df.format(journalEntity.meta.createdAt);
-      String folder = folderForJournalEntity(journalEntity);
-      String entityType = typeSuffix(journalEntity);
-      String fileName = '${journalEntity.meta.id}.$entityType.json';
+      final df = DateFormat('yyyy-MM-dd');
+      final dateSubFolder = df.format(journalEntity.meta.createdAt);
+      final folder = folderForJournalEntity(journalEntity);
+      final entityType = typeSuffix(journalEntity);
+      final fileName = '${journalEntity.meta.id}.$entityType.json';
       return '${docDir.path}/$folder/$dateSubFolder/$fileName';
     },
   );
 }
 
 Future<void> saveJournalEntityJson(JournalEntity journalEntity) async {
-  String json = jsonEncode(journalEntity);
-  Directory docDir = await getApplicationDocumentsDirectory();
-  String path = entityPath(journalEntity, docDir);
-  File file = await File(path).create(recursive: true);
+  final json = jsonEncode(journalEntity);
+  final docDir = await getApplicationDocumentsDirectory();
+  final path = entityPath(journalEntity, docDir);
+  final file = await File(path).create(recursive: true);
   await file.writeAsString(json);
 }
 
 Future<String> createAssetDirectory(String relativePath) async {
-  var docDir = await getApplicationDocumentsDirectory();
-  Directory directory =
+  final docDir = await getApplicationDocumentsDirectory();
+  final directory =
       await Directory('${docDir.path}$relativePath').create(recursive: true);
   return directory.path;
 }

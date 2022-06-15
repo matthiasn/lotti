@@ -21,9 +21,9 @@ import 'package:multi_select_flutter/util/multi_select_item.dart';
 
 class JournalPage extends StatefulWidget {
   const JournalPage({
-    Key? key,
+    super.key,
     this.navigatorKey,
-  }) : super(key: key);
+  });
 
   final GlobalKey? navigatorKey;
 
@@ -32,13 +32,13 @@ class JournalPage extends StatefulWidget {
 }
 
 class FilterBy {
-  final String typeName;
-  final String name;
-
   FilterBy({
     required this.typeName,
     required this.name,
   });
+
+  final String typeName;
+  final String name;
 }
 
 class _JournalPageState extends State<JournalPage> {
@@ -89,7 +89,7 @@ class _JournalPageState extends State<JournalPage> {
     configFlagsStream = _db.watchConfigFlags();
     configFlagsStream.listen((List<ConfigFlag> configFlags) {
       setState(() {
-        for (ConfigFlag flag in configFlags) {
+        for (final flag in configFlags) {
           if (flag.name == 'private') {
             showPrivateEntriesSwitch = flag.status;
           }
@@ -103,10 +103,10 @@ class _JournalPageState extends State<JournalPage> {
     resetStream();
   }
 
-  void resetStream() async {
+  Future<void> resetStream() async {
     Set<String>? entryIds;
-    for (String tagId in tagIds) {
-      Set<String> entryIdsForTag = (await _db.entryIdsByTagId(tagId)).toSet();
+    for (final tagId in tagIds) {
+      final entryIdsForTag = (await _db.entryIdsByTagId(tagId)).toSet();
       if (entryIds == null) {
         entryIds = entryIdsForTag;
       } else {
@@ -139,11 +139,11 @@ class _JournalPageState extends State<JournalPage> {
   }
 
   Widget buildFloatingSearchBar() {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     final isPortrait =
         MediaQuery.of(context).orientation == Orientation.portrait;
-    double portraitWidth = MediaQuery.of(context).size.width * 0.88;
+    final portraitWidth = MediaQuery.of(context).size.width * 0.88;
 
     return FloatingSearchBar(
       hint: AppLocalizations.of(context)!.journalSearchHint,
@@ -160,16 +160,16 @@ class _JournalPageState extends State<JournalPage> {
         fontSize: 24,
       ),
       physics: const BouncingScrollPhysics(),
-      borderRadius: BorderRadius.circular(8.0),
-      axisAlignment: isPortrait ? 0.0 : -1.0,
-      openAxisAlignment: 0.0,
+      borderRadius: BorderRadius.circular(8),
+      axisAlignment: isPortrait ? 0 : -1,
+      openAxisAlignment: 0,
       margins: EdgeInsets.only(
-        top: Platform.isIOS ? 48 : 8.0,
-        left: isDesktop ? 12.0 : 0.0,
+        top: Platform.isIOS ? 48 : 8,
+        left: isDesktop ? 12 : 0,
       ),
       width: isPortrait ? portraitWidth : MediaQuery.of(context).size.width,
       onQueryChanged: (query) async {
-        List<TagEntity> res = await _db.getMatchingTags(
+        final res = await _db.getMatchingTags(
           query.trim(),
           inactive: true,
         );
@@ -190,7 +190,7 @@ class _JournalPageState extends State<JournalPage> {
                 height: Platform.isIOS ? 100 : 60,
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 16.0),
+                padding: const EdgeInsets.only(left: 16),
                 child: Wrap(
                   spacing: 4,
                   runSpacing: 4,
@@ -200,7 +200,7 @@ class _JournalPageState extends State<JournalPage> {
                           (MultiSelectItem<FilterBy?> item) => GestureDetector(
                             onTap: () {
                               setState(() {
-                                String? typeName = item.value?.typeName;
+                                final typeName = item.value?.typeName;
                                 if (typeName != null) {
                                   if (types.contains(typeName)) {
                                     types.remove(typeName);
@@ -216,10 +216,10 @@ class _JournalPageState extends State<JournalPage> {
                               cursor: SystemMouseCursors.click,
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(4),
-                                child: Container(
+                                child: ColoredBox(
                                   color: types.contains(item.value?.typeName)
                                       ? Colors.lightBlue
-                                      : Colors.grey[600],
+                                      : Colors.grey,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 1,
@@ -247,7 +247,7 @@ class _JournalPageState extends State<JournalPage> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -314,34 +314,14 @@ class _JournalPageState extends State<JournalPage> {
       builder: (context, transition) {
         return Padding(
           padding: const EdgeInsets.only(
-            top: 2.0,
-            bottom: 8.0,
-            left: 0.0,
-            right: 4.0,
+            top: 2,
+            bottom: 8,
+            right: 4,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // TODO: fix or remove
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.end,
-              //   children: [
-              //     Text(
-              //       '_slideshow',
-              //       style: TextStyle(color: AppColors.entryTextColor),
-              //     ),
-              //     CupertinoSwitch(
-              //       value: showSlideshow,
-              //       activeColor: AppColors.starredGold,
-              //       onChanged: (bool value) {
-              //         setState(() {
-              //           showSlideshow = value;
-              //         });
-              //       },
-              //     ),
-              //   ],
-              // ),
               StreamBuilder<List<TagEntity>>(
                 stream: matchingTagsController.stream,
                 builder: (
@@ -351,22 +331,24 @@ class _JournalPageState extends State<JournalPage> {
                   return Column(
                     children: [
                       ...?snapshot.data
-                          ?.map((tagEntity) => ListTile(
-                                title: Text(
-                                  tagEntity.tag,
-                                  style: TextStyle(
-                                    fontFamily: 'Lato',
-                                    color: getTagColor(tagEntity),
-                                    fontWeight: FontWeight.normal,
-                                    fontSize: 20.0,
-                                  ),
+                          ?.map(
+                            (tagEntity) => ListTile(
+                              title: Text(
+                                tagEntity.tag,
+                                style: TextStyle(
+                                  fontFamily: 'Lato',
+                                  color: getTagColor(tagEntity),
+                                  fontWeight: FontWeight.normal,
+                                  fontSize: 20,
                                 ),
-                                onTap: () {
-                                  setState(() {
-                                    addTag(tagEntity.id);
-                                  });
-                                },
-                              ))
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  addTag(tagEntity.id);
+                                });
+                              },
+                            ),
+                          )
                           .toList(),
                     ],
                   );
@@ -399,9 +381,11 @@ class _JournalPageState extends State<JournalPage> {
                 if (snapshot.data == null) {
                   return Container();
                 } else {
-                  List<JournalEntity> items = snapshot.data!;
+                  final items = snapshot.data!;
 
-                  double screenWidth = MediaQuery.of(context).size.width;
+                  final screenWidth = MediaQuery.of(context).size.width;
+
+                  // ignore: omit_local_variable_types
                   double searchHeaderHeight = 136;
 
                   if (tagIds.toList().isNotEmpty) {
@@ -428,21 +412,22 @@ class _JournalPageState extends State<JournalPage> {
                               ...List.generate(
                                 items.length,
                                 (int index) {
-                                  JournalEntity item = items.elementAt(index);
+                                  final item = items.elementAt(index);
                                   return item.maybeMap(
-                                      journalImage: (JournalImage image) {
-                                    return JournalImageCard(
-                                      item: image,
-                                      key: ValueKey(item.meta.id),
-                                    );
-                                  }, orElse: () {
-                                    return JournalCard(
-                                      item: item,
-                                      key: ValueKey(item.meta.id),
-                                    );
-                                  });
+                                    journalImage: (JournalImage image) {
+                                      return JournalImageCard(
+                                        item: image,
+                                        key: ValueKey(item.meta.id),
+                                      );
+                                    },
+                                    orElse: () {
+                                      return JournalCard(
+                                        item: item,
+                                        key: ValueKey(item.meta.id),
+                                      );
+                                    },
+                                  );
                                 },
-                                growable: true,
                               ),
                               const SizedBox(height: 64),
                             ],

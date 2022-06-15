@@ -11,9 +11,9 @@ import 'package:lotti/widgets/tasks/task_form.dart';
 
 class CreateTaskPage extends StatefulWidget {
   const CreateTaskPage({
-    Key? key,
+    super.key,
     @PathParam() this.linkedId,
-  }) : super(key: key);
+  });
 
   final String? linkedId;
 
@@ -33,22 +33,22 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
     super.initState();
   }
 
-  void _save() async {
+  Future<void> _save() async {
     formKey.currentState!.save();
     if (formKey.currentState!.validate()) {
-      DateTime now = DateTime.now();
+      final now = DateTime.now();
 
       final formData = formKey.currentState?.value;
       // final DateTime due = formData!['due'];
-      final String title = formData!['title'];
-      final DateTime dt = formData['estimate'];
-      final Duration estimate = Duration(
+      final title = formData!['title'] as String;
+      final dt = formData['estimate'] as DateTime;
+      final estimate = Duration(
         hours: dt.hour,
         minutes: dt.minute,
       );
-      final String status = formData['status'];
+      final status = formData['status'] as String;
 
-      TaskData taskData = TaskData(
+      final taskData = TaskData(
         // due: due,
         status: taskStatusFromString(status),
         title: title,
@@ -58,12 +58,12 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
         estimate: estimate,
       );
 
-      persistenceLogic.createTaskEntry(
+      await persistenceLogic.createTaskEntry(
         data: taskData,
         entryText: entryTextFromController(_controller),
         linkedId: widget.linkedId,
       );
-      context.router.pop();
+      await context.router.pop();
     }
   }
 
@@ -71,7 +71,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8),
         child: Column(
           children: [
             ClipRRect(
@@ -88,7 +88,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
             TextButton(
               onPressed: _save,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
                   'Save',
                   style: TextStyle(

@@ -29,24 +29,25 @@ void main() {
 
           expect(find.text('Search...'), findsWidgets);
 
-          final Finder add = find.byIcon(Icons.add).first;
+          final add = find.byIcon(Icons.add).first;
           await tester.tap(add);
           await tester.pumpAndSettle();
 
-          final Finder addText = find.byIcon(MdiIcons.textLong).first;
+          final addText = find.byIcon(MdiIcons.textLong).first;
           await tester.tap(addText);
           await tester.pumpAndSettle();
 
-          Finder editor = find.byType(QuillEditor);
+          final editor = find.byType(QuillEditor);
           debugPrint(editor.toString());
 
+          // ignore: flutter_style_todos
           // TODO: figure out how to enter text in flutter_quill
           // String testText = 'test text: ${DateTime.now()}';
           // await tester.enterText(editor, testText);
 
           await waitSeconds(1);
 
-          final Finder saveIcon = find.byIcon(Icons.save);
+          final saveIcon = find.byIcon(Icons.save);
           await tester.tap(saveIcon);
           await tester.pumpAndSettle();
 
@@ -54,7 +55,7 @@ void main() {
 
           await waitSeconds(1);
 
-          final Finder settings = find.byIcon(Icons.settings_outlined);
+          final settings = find.byIcon(Icons.settings_outlined);
           await tester.tap(settings);
           await tester.pumpAndSettle();
 
@@ -83,10 +84,12 @@ void main() {
 
           await waitSeconds(1);
 
-          String testTag = DateTime.now().toString();
+          final testTag = DateTime.now().toString();
 
           await tester.enterText(
-              find.byKey(const Key('tag_name_field')), testTag);
+            find.byKey(const Key('tag_name_field')),
+            testTag,
+          );
           await Future.delayed(const Duration(seconds: 1), () {});
 
           await tester.tap(find.byKey(const Key('tag_save')));

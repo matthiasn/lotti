@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_dynamic_calls
+
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
@@ -8,17 +10,16 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class DurationWidget extends StatelessWidget {
-  final TimeService _timeService = getIt<TimeService>();
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-
   DurationWidget({
-    Key? key,
+    super.key,
     required this.item,
     this.style,
     this.showControls = false,
     this.saveFn,
-  }) : super(key: key);
+  });
 
+  final TimeService _timeService = getIt<TimeService>();
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final JournalEntity item;
   final TextStyle? style;
   final bool showControls;
@@ -32,27 +33,24 @@ class DurationWidget extends StatelessWidget {
         BuildContext context,
         AsyncSnapshot<JournalEntity?> snapshot,
       ) {
-        bool isRecent =
+        final isRecent =
             DateTime.now().difference(item.meta.dateFrom).inHours < 12;
 
-        JournalEntity? recording = snapshot.data;
-        JournalEntity displayed = item;
-        bool isRecording = false;
+        final recording = snapshot.data;
+        var displayed = item;
+        var isRecording = false;
 
         if (recording != null && recording.meta.id == item.meta.id) {
           displayed = recording;
           isRecording = true;
         }
 
-        Color? labelColor =
-            isRecording ? AppColors.timeRecording : style?.color;
+        final labelColor = isRecording ? AppColors.timeRecording : style?.color;
 
         return Visibility(
           visible: entryDuration(displayed).inMilliseconds > 0 ||
               (isRecent && showControls),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Padding(
                 padding: const EdgeInsets.only(right: 4),
@@ -98,7 +96,7 @@ class DurationWidget extends StatelessWidget {
                         tooltip: 'Stop',
                         color: labelColor,
                         onPressed: () async {
-                          _timeService.stop();
+                          await _timeService.stop();
 
                           if (saveFn != null) {
                             await saveFn!();

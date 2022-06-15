@@ -7,14 +7,13 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 
 class TagsViewWidget extends StatelessWidget {
+  TagsViewWidget({
+    super.key,
+    required this.item,
+  });
+
   final TagsService tagsService = getIt<TagsService>();
   final JournalDb db = getIt<JournalDb>();
-
-  TagsViewWidget({
-    Key? key,
-    required this.item,
-  }) : super(key: key);
-
   final JournalEntity item;
 
   @override
@@ -28,26 +27,24 @@ class TagsViewWidget extends StatelessWidget {
         // data in the tags service will already have been updated.
         AsyncSnapshot<List<TagEntity>> _,
       ) {
-        List<String> tagIds = item.meta.tagIds ?? [];
-        List<TagEntity> tagsFromTagIds = [];
+        final tagIds = item.meta.tagIds ?? [];
+        final tagsFromTagIds = <TagEntity>[];
 
-        for (String tagId in tagIds) {
-          TagEntity? tagEntity = tagsService.getTagById(tagId);
+        for (final tagId in tagIds) {
+          final tagEntity = tagsService.getTagById(tagId);
           if (tagEntity != null) {
             tagsFromTagIds.add(tagEntity);
           }
         }
 
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2.0),
+          padding: const EdgeInsets.symmetric(vertical: 2),
           child: Column(
             children: [
               Wrap(
                 spacing: 4,
                 runSpacing: 4,
-                children: tagsFromTagIds
-                    .map((tagEntity) => TagChip(tagEntity))
-                    .toList(),
+                children: tagsFromTagIds.map(TagChip.new).toList(),
               ),
             ],
           ),
@@ -58,17 +55,17 @@ class TagsViewWidget extends StatelessWidget {
 }
 
 class TagChip extends StatelessWidget {
-  final TagEntity tagEntity;
-
   const TagChip(
     this.tagEntity, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final TagEntity tagEntity;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 1.0),
+      padding: const EdgeInsets.only(bottom: 1),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(chipBorderRadius),
         child: Container(

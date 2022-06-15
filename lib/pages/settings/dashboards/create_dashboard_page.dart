@@ -6,8 +6,8 @@ import 'package:lotti/utils/file_utils.dart';
 
 class CreateDashboardPage extends StatefulWidget {
   const CreateDashboardPage({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   State<CreateDashboardPage> createState() => _CreateDashboardPageState();
@@ -20,7 +20,7 @@ class _CreateDashboardPageState extends State<CreateDashboardPage> {
   void initState() {
     super.initState();
 
-    final DateTime now = DateTime.now();
+    final now = DateTime.now();
     _dashboardDefinition = DashboardDefinition(
       id: uuid.v1(),
       name: '',

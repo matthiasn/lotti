@@ -20,11 +20,11 @@ import 'package:radial_button/widget/circle_floating_button.dart';
 
 class RadialAddActionButtons extends StatefulWidget {
   const RadialAddActionButtons({
-    Key? key,
+    super.key,
     this.navigatorKey,
     this.linked,
     required this.radius,
-  }) : super(key: key);
+  });
 
   final GlobalKey? navigatorKey;
   final JournalEntity? linked;
@@ -52,9 +52,9 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
-    List<Widget> items = [];
+    final items = <Widget>[];
 
     if (Platform.isMacOS) {
       items.add(
@@ -65,10 +65,8 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           onPressed: () async {
             rebuild();
 
-            ImageData imageData = await takeScreenshotMac();
-
-            JournalEntity? journalEntity =
-                await _persistenceLogic.createImageEntry(
+            final imageData = await takeScreenshotMac();
+            final journalEntity = await _persistenceLogic.createImageEntry(
               imageData,
               linkedId: widget.linked?.meta.id,
             );
@@ -85,89 +83,89 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       );
     }
 
-    items.add(
-      FloatingActionButton(
-        heroTag: 'measurement',
-        backgroundColor: AppColors.actionColor,
-        tooltip: localizations.addActionAddMeasurable,
-        onPressed: () {
-          rebuild();
+    items
+      ..add(
+        FloatingActionButton(
+          heroTag: 'measurement',
+          backgroundColor: AppColors.actionColor,
+          tooltip: localizations.addActionAddMeasurable,
+          onPressed: () {
+            rebuild();
 
-          String? linkedId = widget.linked?.meta.id;
-          context.router.push(CreateMeasurementWithLinkedRoute(
-            linkedId: linkedId,
-          ));
-        },
-        child: const Icon(
-          Icons.insights,
-          size: 32,
-        ),
-      ),
-    );
-
-    items.add(
-      FloatingActionButton(
-        heroTag: 'survey',
-        tooltip: localizations.addActionAddSurvey,
-        backgroundColor: AppColors.actionColor,
-        onPressed: () {
-          rebuild();
-
-          String? linkedId = widget.linked?.meta.id;
-          pushNamedRoute('/journal/create_survey/$linkedId');
-        },
-        child: const Icon(
-          MdiIcons.clipboardOutline,
-          size: 32,
-        ),
-      ),
-    );
-
-    items.add(
-      FloatingActionButton(
-        heroTag: 'photo',
-        tooltip: localizations.addActionAddPhotos,
-        backgroundColor: AppColors.actionColor,
-        onPressed: () {
-          rebuild();
-
-          importImageAssets(
-            context,
-            linked: widget.linked,
-          );
-        },
-        child: const Icon(
-          Icons.add_a_photo_outlined,
-          size: 32,
-        ),
-      ),
-    );
-
-    items.add(
-      FloatingActionButton(
-        heroTag: 'text',
-        tooltip: localizations.addActionAddText,
-        backgroundColor: AppColors.actionColor,
-        onPressed: () {
-          rebuild();
-
-          if (widget.linked != null) {
-            _persistenceLogic.createTextEntry(
-              EntryText(plainText: ''),
-              linkedId: widget.linked!.meta.id,
-              started: DateTime.now(),
+            final linkedId = widget.linked?.meta.id;
+            context.router.push(
+              CreateMeasurementWithLinkedRoute(
+                linkedId: linkedId,
+              ),
             );
-          } else {
-            String? linkedId = widget.linked?.meta.id;
-            pushNamedRoute('/journal/create/$linkedId');
-          }
-        },
-        child: const Icon(
-          MdiIcons.textLong,
-          size: 32,
+          },
+          child: const Icon(
+            Icons.insights,
+            size: 32,
+          ),
         ),
-      ),
-    );
+      )
+      ..add(
+        FloatingActionButton(
+          heroTag: 'survey',
+          tooltip: localizations.addActionAddSurvey,
+          backgroundColor: AppColors.actionColor,
+          onPressed: () {
+            rebuild();
+
+            final linkedId = widget.linked?.meta.id;
+            pushNamedRoute('/journal/create_survey/$linkedId');
+          },
+          child: const Icon(
+            MdiIcons.clipboardOutline,
+            size: 32,
+          ),
+        ),
+      )
+      ..add(
+        FloatingActionButton(
+          heroTag: 'photo',
+          tooltip: localizations.addActionAddPhotos,
+          backgroundColor: AppColors.actionColor,
+          onPressed: () {
+            rebuild();
+
+            importImageAssets(
+              context,
+              linked: widget.linked,
+            );
+          },
+          child: const Icon(
+            Icons.add_a_photo_outlined,
+            size: 32,
+          ),
+        ),
+      )
+      ..add(
+        FloatingActionButton(
+          heroTag: 'text',
+          tooltip: localizations.addActionAddText,
+          backgroundColor: AppColors.actionColor,
+          onPressed: () {
+            rebuild();
+
+            if (widget.linked != null) {
+              _persistenceLogic.createTextEntry(
+                EntryText(plainText: ''),
+                linkedId: widget.linked!.meta.id,
+                started: DateTime.now(),
+              );
+            } else {
+              final linkedId = widget.linked?.meta.id;
+              pushNamedRoute('/journal/create/$linkedId');
+            }
+          },
+          child: const Icon(
+            MdiIcons.textLong,
+            size: 32,
+          ),
+        ),
+      );
 
     if (widget.linked != null) {
       items.add(
@@ -179,17 +177,16 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             rebuild();
 
             if (widget.linked != null) {
-              JournalEntity? timerItem =
-                  await _persistenceLogic.createTextEntry(
+              final timerItem = await _persistenceLogic.createTextEntry(
                 EntryText(plainText: ''),
                 linkedId: widget.linked!.meta.id,
                 started: DateTime.now(),
               );
               if (timerItem != null) {
-                _timeService.start(timerItem);
+                await _timeService.start(timerItem);
               }
             } else {
-              String? linkedId = widget.linked?.meta.id;
+              final linkedId = widget.linked?.meta.id;
               pushNamedRoute('/journal/create/$linkedId');
             }
           },
@@ -210,7 +207,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           onPressed: () {
             rebuild();
 
-            String? linkedId = widget.linked?.meta.id;
+            final linkedId = widget.linked?.meta.id;
             pushNamedRoute('/journal/record_audio/$linkedId');
 
             context.read<AudioRecorderCubit>().record(
@@ -233,7 +230,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         onPressed: () {
           rebuild();
 
-          String? linkedId = widget.linked?.meta.id;
+          final linkedId = widget.linked?.meta.id;
           pushNamedRoute('/tasks/create/$linkedId');
         },
         child: const Icon(

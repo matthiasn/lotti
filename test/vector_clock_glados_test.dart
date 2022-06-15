@@ -20,11 +20,11 @@ extension AnyVectorClock on Any {
 }
 
 bool aGtB(VectorClock a, VectorClock b) {
-  Set<String> nodeIds = <String>{};
-  nodeIds.addAll(a.vclock.keys);
-  nodeIds.addAll(b.vclock.keys);
+  final nodeIds = <String>{}
+    ..addAll(a.vclock.keys)
+    ..addAll(b.vclock.keys);
 
-  for (String nodeId in nodeIds) {
+  for (final nodeId in nodeIds) {
     if (b.get(nodeId) > a.get(nodeId)) {
       return false;
     }
@@ -81,15 +81,20 @@ void main() {
   });
 
   Glados2<VectorClock, VectorClock>(
-          any.possiblyInvalidVc, any.possiblyInvalidVc)
-      .test('compare two vector clocks, throw exception when invalid',
-          (vc1, vc2) {
+    any.possiblyInvalidVc,
+    any.possiblyInvalidVc,
+  ).test('compare two vector clocks, throw exception when invalid', (vc1, vc2) {
     if (!vc1.isValid() || !vc2.isValid()) {
       expect(
-          () => VectorClock.compare(vc1, vc2),
-          throwsA(predicate((e) =>
-              e is VclockException &&
-              e.toString() == 'Invalid vector clock inputs')));
+        () => VectorClock.compare(vc1, vc2),
+        throwsA(
+          predicate(
+            (e) =>
+                e is VclockException &&
+                e.toString() == 'Invalid vector clock inputs',
+          ),
+        ),
+      );
     }
   });
 }

@@ -8,6 +8,16 @@ import 'package:lotti/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class ToolbarWidget extends StatelessWidget {
+  ToolbarWidget({
+    super.key,
+    required this.id,
+    required this.lastSaved,
+    required this.controller,
+    required this.saveFn,
+    this.toolbarIconSize = 20,
+    this.iconTheme,
+  });
+
   final LinkService linkService = getIt<LinkService>();
   final QuillController controller;
   final double toolbarIconSize;
@@ -17,19 +27,9 @@ class ToolbarWidget extends StatelessWidget {
   final WrapAlignment toolbarIconAlignment = WrapAlignment.start;
   final QuillIconTheme? iconTheme;
 
-  ToolbarWidget({
-    Key? key,
-    required this.id,
-    required this.lastSaved,
-    required this.controller,
-    required this.saveFn,
-    this.toolbarIconSize = 20.0,
-    this.iconTheme,
-  }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return QuillToolbar(
       key: key,
@@ -66,6 +66,7 @@ class ToolbarWidget extends StatelessWidget {
           controller: controller,
           iconTheme: iconTheme,
         ),
+        // ignore: flutter_style_todos
         // TODO: bring back when supported by delta_markdown
         // ToggleStyleButton(
         //   attribute: Attribute.inlineCode,
@@ -126,17 +127,16 @@ class ToolbarWidget extends StatelessWidget {
 }
 
 class SaveButton extends StatelessWidget {
-  final EditorStateService editorStateService = getIt<EditorStateService>();
-
   SaveButton({
-    Key? key,
+    super.key,
     required this.id,
     required this.lastSaved,
     required this.toolbarIconSize,
     required this.localizations,
     required this.saveFn,
-  }) : super(key: key);
+  });
 
+  final EditorStateService editorStateService = getIt<EditorStateService>();
   final String? id;
   final DateTime lastSaved;
   final double toolbarIconSize;
@@ -146,16 +146,18 @@ class SaveButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<bool>(
-        stream: editorStateService.getUnsavedStream(id, lastSaved),
-        builder: (context, snapshot) {
-          bool unsaved = snapshot.data ?? false;
-          return IconButton(
-            icon: const Icon(Icons.save),
-            color: unsaved ? AppColors.error : Colors.black,
-            iconSize: toolbarIconSize,
-            tooltip: localizations.journalToolbarSaveHint,
-            onPressed: () => saveFn(),
-          );
-        });
+      stream: editorStateService.getUnsavedStream(id, lastSaved),
+      builder: (context, snapshot) {
+        final unsaved = snapshot.data ?? false;
+        return IconButton(
+          icon: const Icon(Icons.save),
+          color: unsaved ? AppColors.error : Colors.black,
+          iconSize: toolbarIconSize,
+          tooltip: localizations.journalToolbarSaveHint,
+          // ignore: avoid_dynamic_calls, unnecessary_lambdas
+          onPressed: () => saveFn(),
+        );
+      },
+    );
   }
 }

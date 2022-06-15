@@ -11,7 +11,7 @@ Future<void> printGeolocation(Uint8List fileBytes) async {
   final data = await readExifFromBytes(fileBytes);
 
   if (data.isEmpty) {
-    debugPrint("No EXIF information found");
+    debugPrint('No EXIF information found');
     return;
   }
 
@@ -21,7 +21,7 @@ Future<void> printGeolocation(Uint8List fileBytes) async {
   var lngVal = gpsValuesToFloat(data['GPS GPSLongitude']?.values);
 
   if (latRef == null || latVal == null || lngRef == null || lngVal == null) {
-    debugPrint("GPS information not found");
+    debugPrint('GPS information not found');
     return;
   }
 
@@ -39,27 +39,29 @@ double? gpsValuesToFloat(IfdValues? values) {
     return null;
   }
 
-  double sum = 0.0;
-  double unit = 1.0;
+  // ignore: omit_local_variable_types
+  double sum = 0;
+  // ignore: omit_local_variable_types
+  double unit = 1;
 
   for (final v in values.ratios) {
     sum += v.toDouble() * unit;
-    unit /= 60.0;
+    unit /= 60;
   }
 
   return sum;
 }
 
-printExif(Uint8List bytes) async {
+Future<void> printExif(Uint8List bytes) async {
   final data = await readExifFromBytes(bytes);
 
   if (data.isEmpty) {
-    debugPrint("No EXIF information found");
+    debugPrint('No EXIF information found');
     return;
   }
 
   for (final entry in data.entries) {
-    debugPrint("${entry.key}: ${entry.value}");
+    debugPrint('${entry.key}: ${entry.value}');
   }
 
   final created = data['EXIF DateTimeOriginal']?.toString();
@@ -67,16 +69,16 @@ printExif(Uint8List bytes) async {
   debugPrint('Image created: $created $offsetTime');
 }
 
-printExifFromFile(File file) async {
+Future<void> printExifFromFile(File file) async {
   final data = await readExifFromFile(file);
 
   if (data.isEmpty) {
-    debugPrint("No EXIF information found");
+    debugPrint('No EXIF information found');
     return;
   }
 
   for (final entry in data.entries) {
-    debugPrint("${entry.key}: ${entry.value}");
+    debugPrint('${entry.key}: ${entry.value}');
   }
 
   final created = data['EXIF DateTimeOriginal']?.toString();
@@ -85,11 +87,10 @@ printExifFromFile(File file) async {
 }
 
 Future<File?> compressAndGetFile(File file) async {
-  String sourcePath = file.absolute.path;
-  File? result = await FlutterImageCompress.compressAndGetFile(
+  final sourcePath = file.absolute.path;
+  final result = await FlutterImageCompress.compressAndGetFile(
     sourcePath,
     '$sourcePath.heic',
-    quality: 95,
     format: CompressFormat.heic,
   );
   debugPrint('In: ${file.lengthSync()} out: ${result?.lengthSync()}');
@@ -97,19 +98,18 @@ Future<File?> compressAndGetFile(File file) async {
 }
 
 Future<File?> compressAndSave(File file, String targetPath) async {
-  String sourcePath = file.absolute.path;
-  File? result = await FlutterImageCompress.compressAndGetFile(
+  final sourcePath = file.absolute.path;
+  final result = await FlutterImageCompress.compressAndGetFile(
     sourcePath,
     targetPath,
     quality: 90,
-    format: CompressFormat.jpeg,
     keepExif: true,
   );
   return result;
 }
 
 Future<String> getFullAssetPath(String relativePath) async {
-  var docDir = await getApplicationDocumentsDirectory();
+  final docDir = await getApplicationDocumentsDirectory();
   return '${docDir.path}$relativePath';
 }
 
@@ -121,7 +121,7 @@ String? getRelativeAssetPath(String? absolutePath) {
 }
 
 Future<String> getFullImagePath(JournalImage img) async {
-  var docDir = await getApplicationDocumentsDirectory();
+  final docDir = await getApplicationDocumentsDirectory();
   return '${docDir.path}${img.data.imageDirectory}${img.data.imageFile}';
 }
 

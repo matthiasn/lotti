@@ -7,16 +7,16 @@ import 'package:lotti/utils/task_utils.dart';
 class TaskStatusWidget extends StatelessWidget {
   const TaskStatusWidget(
     this.task, {
-    Key? key,
+    super.key,
     this.padding = chipPadding,
-  }) : super(key: key);
+  });
 
   final Task task;
   final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(chipBorderRadius),
@@ -27,6 +27,7 @@ class TaskStatusWidget extends StatelessWidget {
           task.data.status.map(
             open: (_) => localizations.taskStatusOpen,
             groomed: (_) => localizations.taskStatusGroomed,
+            // ignore: flutter_style_todos
             started: (_) => 'STARTED', // TODO: remove DEPRECATED status
             inProgress: (_) => localizations.taskStatusInProgress,
             blocked: (_) => localizations.taskStatusBlocked,
@@ -37,7 +38,7 @@ class TaskStatusWidget extends StatelessWidget {
           style: TextStyle(
             fontFamily: 'Oswald',
             color: AppColors.bodyBgColor,
-            fontSize: 12.0,
+            fontSize: 12,
           ),
         ),
       ),

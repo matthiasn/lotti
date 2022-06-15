@@ -1,7 +1,6 @@
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
@@ -10,29 +9,28 @@ import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class DashboardItemCard extends StatelessWidget {
+  DashboardItemCard({
+    super.key,
+    required this.index,
+    required this.item,
+    required this.measurableTypes,
+    required this.updateItemFn,
+  });
+
   final TagsService tagsService = getIt<TagsService>();
   final DashboardItem item;
   final int index;
   final List<MeasurableDataType> measurableTypes;
   final void Function(DashboardItem item, int index) updateItemFn;
 
-  DashboardItemCard({
-    Key? key,
-    required this.index,
-    required this.item,
-    required this.measurableTypes,
-    required this.updateItemFn,
-  }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    String itemName = item.map(
+    final itemName = item.map(
       measurement: (measurement) {
-        Iterable<MeasurableDataType> matches =
-            measurableTypes.where((m) => measurement.id == m.id);
+        final matches = measurableTypes.where((m) => measurement.id == m.id);
         if (matches.isNotEmpty) {
-          AggregationType? aggregationType = measurement.aggregationType;
-          String aggregationTypeLabel = aggregationType != null
+          final aggregationType = measurement.aggregationType;
+          final aggregationTypeLabel = aggregationType != null
               ? '[${EnumToString.convertToString(measurement.aggregationType)}]'
               : '';
           return '${matches.first.displayName} $aggregationTypeLabel';
@@ -40,8 +38,8 @@ class DashboardItemCard extends StatelessWidget {
         return '';
       },
       healthChart: (healthLineChart) {
-        String type = healthLineChart.healthType;
-        String itemName = healthTypes[type]?.displayName ?? type;
+        final type = healthLineChart.healthType;
+        final itemName = healthTypes[type]?.displayName ?? type;
         return itemName;
       },
       surveyChart: (surveyChart) {
@@ -51,16 +49,16 @@ class DashboardItemCard extends StatelessWidget {
         return workoutChart.displayName;
       },
       storyTimeChart: (DashboardStoryTimeItem item) {
-        TagEntity? tagEntity = tagsService.getTagById(item.storyTagId);
+        final tagEntity = tagsService.getTagById(item.storyTagId);
         return tagEntity?.tag ?? item.storyTagId;
       },
     );
 
     return Card(
       color: AppColors.headerBgColor,
-      elevation: 8.0,
+      elevation: 8,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
         onTap: () {
@@ -122,10 +120,9 @@ class DashboardItemCard extends StatelessWidget {
           style: TextStyle(
             color: AppColors.entryTextColor,
             fontFamily: 'Oswald',
-            fontSize: 20.0,
+            fontSize: 20,
           ),
         ),
-        enabled: true,
       ),
     );
   }

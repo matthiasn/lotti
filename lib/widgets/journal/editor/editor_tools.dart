@@ -14,9 +14,9 @@ String quillJsonFromDelta(Delta delta) {
 }
 
 EntryText entryTextFromController(QuillController controller) {
-  Delta delta = deltaFromController(controller);
-  String json = quillJsonFromDelta(delta);
-  String markdown = deltaToMarkdown(json);
+  final delta = deltaFromController(controller);
+  final json = quillJsonFromDelta(delta);
+  final markdown = deltaToMarkdown(json);
 
   return EntryText(
     plainText: controller.document.toPlainText(),
@@ -29,13 +29,14 @@ QuillController makeController({
   String? serializedQuill,
   TextSelection? selection,
 }) {
-  QuillController controller = QuillController.basic();
+  var controller = QuillController.basic();
 
   if (serializedQuill != null) {
-    var editorJson = json.decode(serializedQuill);
+    final editorJson = json.decode(serializedQuill) as List<dynamic>;
     controller = QuillController(
-        document: Document.fromJson(editorJson),
-        selection: selection ?? const TextSelection.collapsed(offset: 0));
+      document: Document.fromJson(editorJson),
+      selection: selection ?? const TextSelection.collapsed(offset: 0),
+    );
   }
   return controller;
 }

@@ -6,14 +6,14 @@ import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class HealthSummary extends StatelessWidget {
-  final QuantitativeEntry qe;
-  final bool showChart;
-
   const HealthSummary(
     this.qe, {
     this.showChart = true,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final QuantitativeEntry qe;
+  final bool showChart;
 
   @override
   Widget build(BuildContext context) {

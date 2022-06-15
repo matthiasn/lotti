@@ -4,16 +4,16 @@ import 'package:lotti/pages/settings/sync/tutorial_utils.dart';
 import 'package:lotti/widgets/sync/imap_config.dart';
 
 class SyncAssistantConfigSlide extends StatelessWidget {
-  final int page;
-  final int pageCount;
-  final ValueNotifier<double> notifier;
-
   const SyncAssistantConfigSlide(
     this.page,
     this.pageCount,
     this.notifier, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final int page;
+  final int pageCount;
+  final ValueNotifier<double> notifier;
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +28,7 @@ class SyncAssistantConfigSlide extends StatelessWidget {
             pageCount: pageCount,
           ),
           Align(
-            alignment: Alignment.center,
             child: SlidingContainer(
-              offset: 100,
               child: const ImapConfigWidget(),
             ),
           ),

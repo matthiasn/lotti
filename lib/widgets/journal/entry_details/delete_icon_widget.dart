@@ -8,20 +8,19 @@ import 'package:lotti/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class DeleteIconWidget extends StatelessWidget {
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-
   DeleteIconWidget({
-    Key? key,
+    super.key,
     required this.entityId,
     required this.popOnDelete,
-  }) : super(key: key);
+  });
 
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final String entityId;
   final bool popOnDelete;
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     Future<void> onPressed() async {
       const deleteKey = 'deleteKey';
@@ -40,10 +39,10 @@ class DeleteIconWidget extends StatelessWidget {
       );
 
       if (result == deleteKey) {
-        persistenceLogic.deleteJournalEntity(entityId);
+        await persistenceLogic.deleteJournalEntity(entityId);
 
         if (popOnDelete) {
-          context.router.pop();
+          await context.router.pop();
         }
       }
     }
@@ -56,7 +55,6 @@ class DeleteIconWidget extends StatelessWidget {
         left: 16,
         top: 8,
         bottom: 8,
-        right: 0,
       ),
       color: AppColors.entryTextColor,
       onPressed: onPressed,

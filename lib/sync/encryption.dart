@@ -9,7 +9,7 @@ import 'package:lotti/sync/encryption_messages.dart';
 FutureOr<void> encryptFileIsolate(EncryptFileMessage msg) async {
   if (!msg.inputFile.existsSync()) {
     debugPrint('File ${msg.inputFile} does not exist, aborting');
-    throw Exception("File not found");
+    throw Exception('File not found');
   }
 
   final List<int> message = await msg.inputFile.readAsBytes();
@@ -18,7 +18,7 @@ FutureOr<void> encryptFileIsolate(EncryptFileMessage msg) async {
       await algorithm.newSecretKeyFromBytes(base64Decode(msg.b64Secret));
   final nonce = algorithm.newNonce();
 
-  final SecretBox secretBox = await algorithm.encrypt(
+  final secretBox = await algorithm.encrypt(
     message,
     secretKey: secretKey,
     nonce: nonce,
@@ -28,25 +28,29 @@ FutureOr<void> encryptFileIsolate(EncryptFileMessage msg) async {
 }
 
 Future<void> encryptFile(
-    File inputFile, File encryptedFile, String b64Secret) async {
+  File inputFile,
+  File encryptedFile,
+  String b64Secret,
+) async {
   if (!inputFile.existsSync()) {
     debugPrint('File $inputFile does not exist, aborting');
-    throw Exception("File not found");
+    throw Exception('File not found');
   }
 
   return compute(
-      encryptFileIsolate,
-      EncryptFileMessage(
-        b64Secret: b64Secret,
-        inputFile: inputFile,
-        encryptedFile: encryptedFile,
-      ));
+    encryptFileIsolate,
+    EncryptFileMessage(
+      b64Secret: b64Secret,
+      inputFile: inputFile,
+      encryptedFile: encryptedFile,
+    ),
+  );
 }
 
 FutureOr<void> decryptFileIsolate(DecryptFileMessage msg) async {
   if (!msg.inputFile.existsSync()) {
     debugPrint('File does not exist, aborting');
-    throw Exception("File not found");
+    throw Exception('File not found');
   }
 
   final algorithm = AesGcm.with256bits();
@@ -56,7 +60,7 @@ FutureOr<void> decryptFileIsolate(DecryptFileMessage msg) async {
   final secretKey =
       await algorithm.newSecretKeyFromBytes(base64Decode(msg.b64Secret));
 
-  final List<int> decryptedBytes = await algorithm.decrypt(
+  final decryptedBytes = await algorithm.decrypt(
     deserializedSecretBox,
     secretKey: secretKey,
   );
@@ -65,24 +69,28 @@ FutureOr<void> decryptFileIsolate(DecryptFileMessage msg) async {
 }
 
 Future<void> decryptFile(
-    File inputFile, File decryptedFile, String b64Secret) async {
+  File inputFile,
+  File decryptedFile,
+  String b64Secret,
+) async {
   return compute(
-      decryptFileIsolate,
-      DecryptFileMessage(
-        b64Secret: b64Secret,
-        inputFile: inputFile,
-        decryptedFile: decryptedFile,
-      ));
+    decryptFileIsolate,
+    DecryptFileMessage(
+      b64Secret: b64Secret,
+      inputFile: inputFile,
+      decryptedFile: decryptedFile,
+    ),
+  );
 }
 
 Future<String> encryptStringIsolate(EncryptStringMessage msg) async {
-  final List<int> message = utf8.encode(msg.plaintext);
+  final message = utf8.encode(msg.plaintext);
   final algorithm = AesGcm.with256bits();
   final secretKey =
       await algorithm.newSecretKeyFromBytes(base64Decode(msg.b64Secret));
   final nonce = algorithm.newNonce();
 
-  final SecretBox secretBox = await algorithm.encrypt(
+  final secretBox = await algorithm.encrypt(
     message,
     secretKey: secretKey,
     nonce: nonce,
@@ -92,7 +100,7 @@ Future<String> encryptStringIsolate(EncryptStringMessage msg) async {
 
 Future<String> encryptString({
   required String plainText,
-  required b64Secret,
+  required String b64Secret,
 }) async {
   return compute(
     encryptStringIsolate,
@@ -111,13 +119,12 @@ FutureOr<String> decryptStringIsolate(DecryptStringMessage msg) async {
   final secretKey =
       await algorithm.newSecretKeyFromBytes(base64Decode(msg.b64Secret));
 
-  final List<int> decryptedBytes = await algorithm.decrypt(
+  final decryptedBytes = await algorithm.decrypt(
     deserializedSecretBox,
     secretKey: secretKey,
   );
 
-  String decrypted = utf8.decode(decryptedBytes);
-  return decrypted;
+  return utf8.decode(decryptedBytes);
 }
 
 Future<String> decryptString(String encrypted, String b64Secret) async {

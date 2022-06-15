@@ -12,6 +12,99 @@ import 'package:intl/intl.dart';
 enum CupertinoDateTimePickerInputType { date, time, both }
 
 class FormBuilderCupertinoDateTimePicker extends FormBuilderField<DateTime> {
+  FormBuilderCupertinoDateTimePicker({
+    super.key,
+    //From Super
+    required super.name,
+    super.validator,
+    super.initialValue,
+    super.decoration,
+    super.onChanged,
+    super.valueTransformer,
+    super.enabled,
+    super.onSaved,
+    super.autovalidateMode = AutovalidateMode.disabled,
+    super.onReset,
+    super.focusNode,
+    //
+    this.locale,
+    this.format,
+    this.inputType = CupertinoDateTimePickerInputType.both,
+    this.firstDate,
+    this.lastDate,
+    this.alwaysUse24HourFormat = false,
+    this.theme,
+    this.onConfirm,
+    this.onCancel,
+
+    //TextField options
+    this.onFieldSubmitted,
+    this.controller,
+    this.keyboardType = TextInputType.datetime,
+    this.style,
+    this.textAlign = TextAlign.start,
+    this.autofocus = false,
+    this.obscureText = false,
+    this.autocorrect = false,
+    this.maxLengthEnforcement = MaxLengthEnforcement.none,
+    this.textDirection,
+    this.maxLines,
+    this.maxLength,
+    this.inputFormatters,
+    this.strutStyle = StrutStyle.disabled,
+    this.transitionBuilder,
+    this.showCursor = false,
+    this.minLines,
+    this.expands = false,
+    this.textInputAction,
+    this.onEditingComplete,
+    this.buildCounter,
+    this.cursorRadius,
+    this.cursorColor,
+    this.keyboardAppearance,
+    this.scrollPadding = const EdgeInsets.all(20),
+    this.enableInteractiveSelection = false,
+    this.cursorWidth = 2,
+    this.textCapitalization = TextCapitalization.none,
+  }) : super(
+          builder: (FormFieldState<DateTime?> field) {
+            final state = field as _FormBuilderCupertinoDateTimePickerState;
+
+            return TextField(
+              textDirection: textDirection,
+              textAlign: textAlign,
+              maxLength: maxLength,
+              autofocus: autofocus,
+              decoration: state.decoration,
+              readOnly: true,
+              enabled: state.enabled,
+              autocorrect: autocorrect,
+              controller: state._textFieldController,
+              focusNode: state.effectiveFocusNode,
+              inputFormatters: inputFormatters,
+              keyboardType: keyboardType,
+              maxLines: maxLines,
+              obscureText: obscureText,
+              showCursor: showCursor,
+              minLines: minLines,
+              expands: expands,
+              style: style,
+              onEditingComplete: onEditingComplete,
+              buildCounter: buildCounter,
+              cursorColor: cursorColor,
+              cursorRadius: cursorRadius,
+              cursorWidth: cursorWidth,
+              enableInteractiveSelection: enableInteractiveSelection,
+              keyboardAppearance: keyboardAppearance,
+              scrollPadding: scrollPadding,
+              strutStyle: strutStyle,
+              textCapitalization: textCapitalization,
+              textInputAction: textInputAction,
+              maxLengthEnforcement: maxLengthEnforcement,
+            );
+          },
+        );
+
   /// Called when an enclosing form is submitted. The value passed will be
   /// `null` if [format] fails to parse the text.
   final ValueChanged<DateTime>? onFieldSubmitted;
@@ -68,111 +161,6 @@ class FormBuilderCupertinoDateTimePicker extends FormBuilderField<DateTime> {
   final DateChangedCallback? onConfirm;
   final DateCancelledCallback? onCancel;
 
-  FormBuilderCupertinoDateTimePicker({
-    Key? key,
-    //From Super
-    required String name,
-    FormFieldValidator<DateTime>? validator,
-    DateTime? initialValue,
-    InputDecoration decoration = const InputDecoration(),
-    ValueChanged<DateTime?>? onChanged,
-    ValueTransformer<DateTime?>? valueTransformer,
-    bool enabled = true,
-    FormFieldSetter<DateTime>? onSaved,
-    AutovalidateMode autovalidateMode = AutovalidateMode.disabled,
-    VoidCallback? onReset,
-    FocusNode? focusNode,
-    //
-    this.locale,
-    this.format,
-    this.inputType = CupertinoDateTimePickerInputType.both,
-    this.firstDate,
-    this.lastDate,
-    this.alwaysUse24HourFormat = false,
-    this.theme,
-    this.onConfirm,
-    this.onCancel,
-
-    //TextField options
-    this.onFieldSubmitted,
-    this.controller,
-    this.keyboardType = TextInputType.datetime,
-    this.style,
-    this.textAlign = TextAlign.start,
-    this.autofocus = false,
-    this.obscureText = false,
-    this.autocorrect = false,
-    this.maxLengthEnforcement = MaxLengthEnforcement.none,
-    this.textDirection,
-    this.maxLines,
-    this.maxLength,
-    this.inputFormatters,
-    this.strutStyle = StrutStyle.disabled,
-    this.transitionBuilder,
-    this.showCursor = false,
-    this.minLines,
-    this.expands = false,
-    this.textInputAction,
-    this.onEditingComplete,
-    this.buildCounter,
-    this.cursorRadius,
-    this.cursorColor,
-    this.keyboardAppearance,
-    this.scrollPadding = const EdgeInsets.all(20.0),
-    this.enableInteractiveSelection = false,
-    this.cursorWidth = 2.0,
-    this.textCapitalization = TextCapitalization.none,
-  }) : super(
-          key: key,
-          initialValue: initialValue,
-          name: name,
-          validator: validator,
-          valueTransformer: valueTransformer,
-          onChanged: onChanged,
-          autovalidateMode: autovalidateMode,
-          onSaved: onSaved,
-          enabled: enabled,
-          onReset: onReset,
-          decoration: decoration,
-          focusNode: focusNode,
-          builder: (FormFieldState<DateTime?> field) {
-            final state = field as _FormBuilderCupertinoDateTimePickerState;
-
-            return TextField(
-              textDirection: textDirection,
-              textAlign: textAlign,
-              maxLength: maxLength,
-              autofocus: autofocus,
-              decoration: state.decoration,
-              readOnly: true,
-              enabled: state.enabled,
-              autocorrect: autocorrect,
-              controller: state._textFieldController,
-              focusNode: state.effectiveFocusNode,
-              inputFormatters: inputFormatters,
-              keyboardType: keyboardType,
-              maxLines: maxLines,
-              obscureText: obscureText,
-              showCursor: showCursor,
-              minLines: minLines,
-              expands: expands,
-              style: style,
-              onEditingComplete: onEditingComplete,
-              buildCounter: buildCounter,
-              cursorColor: cursorColor,
-              cursorRadius: cursorRadius,
-              cursorWidth: cursorWidth,
-              enableInteractiveSelection: enableInteractiveSelection,
-              keyboardAppearance: keyboardAppearance,
-              scrollPadding: scrollPadding,
-              strutStyle: strutStyle,
-              textCapitalization: textCapitalization,
-              textInputAction: textInputAction,
-              maxLengthEnforcement: maxLengthEnforcement,
-            );
-          },
-        );
-
   @override
   FormBuilderFieldState<FormBuilderCupertinoDateTimePicker, DateTime>
       createState() => _FormBuilderCupertinoDateTimePickerState();
@@ -219,14 +207,14 @@ class _FormBuilderCupertinoDateTimePickerState extends FormBuilderFieldState<
       case CupertinoDateTimePickerInputType.date:
         return DateFormat.yMd(languageCode);
       case CupertinoDateTimePickerInputType.both:
-      default:
         return DateFormat.yMd(languageCode).add_Hms();
     }
   }
 
   Future<DateTime?> onShowPicker(
-      BuildContext context, DateTime? currentValue) async {
-    currentValue = value;
+    BuildContext context,
+    DateTime? currentValue,
+  ) async {
     DateTime? newValue;
     switch (widget.inputType) {
       case CupertinoDateTimePickerInputType.date:
@@ -239,8 +227,6 @@ class _FormBuilderCupertinoDateTimePickerState extends FormBuilderFieldState<
       case CupertinoDateTimePickerInputType.both:
         newValue = await _showDateTimePicker(context, currentValue);
         break;
-      default:
-        throw 'Unexpected input type ${widget.inputType}';
     }
     final finalValue = newValue ?? currentValue;
     didChange(finalValue);
@@ -248,10 +234,11 @@ class _FormBuilderCupertinoDateTimePickerState extends FormBuilderFieldState<
   }
 
   Future<DateTime?> _showDatePicker(
-      BuildContext context, DateTime? currentValue) {
+    BuildContext context,
+    DateTime? currentValue,
+  ) {
     return DatePicker.showDatePicker(
       context,
-      showTitleActions: true,
       minTime: widget.firstDate ?? DateTime(1900),
       maxTime: widget.lastDate ?? DateTime(2100),
       currentTime: currentValue,
@@ -263,10 +250,11 @@ class _FormBuilderCupertinoDateTimePickerState extends FormBuilderFieldState<
   }
 
   Future<DateTime?> _showDateTimePicker(
-      BuildContext context, DateTime? currentValue) {
+    BuildContext context,
+    DateTime? currentValue,
+  ) {
     return DatePicker.showDateTimePicker(
       context,
-      showTitleActions: true,
       minTime: widget.firstDate ?? DateTime(1900),
       maxTime: widget.lastDate ?? DateTime(2100),
       currentTime: currentValue,
@@ -278,11 +266,12 @@ class _FormBuilderCupertinoDateTimePickerState extends FormBuilderFieldState<
   }
 
   Future<TimeOfDay?> _showTimePicker(
-      BuildContext context, DateTime? currentValue) async {
+    BuildContext context,
+    DateTime? currentValue,
+  ) async {
     final timePicker = widget.alwaysUse24HourFormat
         ? DatePicker.showTimePicker(
             context,
-            showTitleActions: true,
             currentTime: currentValue,
             showSecondsColumn: false,
             theme: widget.theme,
@@ -290,7 +279,6 @@ class _FormBuilderCupertinoDateTimePickerState extends FormBuilderFieldState<
           )
         : DatePicker.showTime12hPicker(
             context,
-            showTitleActions: true,
             currentTime: currentValue,
             locale: _localeType(),
           );
@@ -301,7 +289,12 @@ class _FormBuilderCupertinoDateTimePickerState extends FormBuilderFieldState<
 
   /// Sets the hour and minute of a [DateTime] from a [TimeOfDay].
   DateTime combine(DateTime date, TimeOfDay? time) => DateTime(
-      date.year, date.month, date.day, time?.hour ?? 0, time?.minute ?? 0);
+        date.year,
+        date.month,
+        date.day,
+        time?.hour ?? 0,
+        time?.minute ?? 0,
+      );
 
   DateTime? convert(TimeOfDay? time) =>
       time == null ? null : DateTime(1, 1, 1, time.hour, time.minute);

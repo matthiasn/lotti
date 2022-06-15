@@ -4,10 +4,10 @@ import 'package:getwidget/components/list_tile/gf_list_tile.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
+import 'package:lotti/widgets/journal/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
@@ -20,18 +20,17 @@ import 'package:lotti/widgets/tasks/linked_duration.dart';
 import 'package:lotti/widgets/tasks/task_status.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-import 'duration_widget.dart';
-
-const double iconSize = 18.0;
+const double iconSize = 18;
 
 class JournalCardTitle extends StatelessWidget {
+  const JournalCardTitle({super.key, required this.item});
+
   final JournalEntity item;
-  const JournalCardTitle({Key? key, required this.item}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,7 +61,7 @@ class JournalCardTitle extends StatelessWidget {
                   Visibility(
                     visible: fromNullableBool(item.meta.starred),
                     child: Padding(
-                      padding: const EdgeInsets.only(left: 4.0),
+                      padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.star,
                         color: AppColors.starredGold,
@@ -73,7 +72,7 @@ class JournalCardTitle extends StatelessWidget {
                   Visibility(
                     visible: item.meta.flag == EntryFlag.import,
                     child: Padding(
-                      padding: const EdgeInsets.only(left: 4.0),
+                      padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.flag,
                         color: AppColors.error,
@@ -100,22 +99,20 @@ class JournalCardTitle extends StatelessWidget {
               journalImage: (JournalImage journalImage) => Expanded(
                 child: TextViewerWidget(entryText: journalImage.entryText),
               ),
-              survey: (SurveyEntry surveyEntry) => SurveySummary(surveyEntry),
-              measurement: (MeasurementEntry measurementEntry) =>
-                  MeasurementSummary(measurementEntry),
+              survey: SurveySummary.new,
+              measurement: MeasurementSummary.new,
               task: (Task task) {
-                TaskData data = task.data;
+                final data = task.data;
                 return Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Icon(
                           data.status.maybeMap(
-                              done: (_) => MdiIcons.checkboxMarkedOutline,
-                              orElse: () => MdiIcons.checkboxBlankOutline),
+                            done: (_) => MdiIcons.checkboxMarkedOutline,
+                            orElse: () => MdiIcons.checkboxBlankOutline,
+                          ),
                           size: 32,
                           color: AppColors.entryTextColor,
                         ),
@@ -127,7 +124,7 @@ class JournalCardTitle extends StatelessWidget {
                               fontFamily: 'Oswald',
                               color: AppColors.entryTextColor,
                               fontWeight: FontWeight.normal,
-                              fontSize: 24.0,
+                              fontSize: 24,
                             ),
                           ),
                         ),
@@ -138,7 +135,7 @@ class JournalCardTitle extends StatelessWidget {
                   ],
                 );
               },
-              workout: (WorkoutEntry workout) => WorkoutSummary(workout),
+              workout: WorkoutSummary.new,
               habitCompletion: (_) => const SizedBox.shrink(),
             ),
           ),
@@ -158,54 +155,60 @@ class JournalCardTitle extends StatelessWidget {
 }
 
 class JournalCard extends StatelessWidget {
-  final JournalEntity item;
+  const JournalCard({
+    super.key,
+    required this.item,
+  });
 
-  const JournalCard({Key? key, required this.item}) : super(key: key);
+  final JournalEntity item;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
-        builder: (BuildContext context, AudioPlayerState state) {
-      return Card(
-        color: AppColors.entryCardColor,
-        elevation: 8.0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
-        ),
-        child: ListTile(
-          leading: item.maybeMap(
-            journalAudio: (_) => const LeadingIcon(Icons.mic),
-            journalEntry: (_) => const LeadingIcon(Icons.article),
-            quantitative: (_) => const LeadingIcon(MdiIcons.heart),
-            measurement: (_) => const LeadingIcon(Icons.insights),
-            orElse: () => null,
+      builder: (BuildContext context, AudioPlayerState state) {
+        return Card(
+          color: AppColors.entryCardColor,
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
           ),
-          title: JournalCardTitle(item: item),
-          enabled: true,
-          onTap: () {
-            item.mapOrNull(journalAudio: (JournalAudio audioNote) {
-              context.read<AudioPlayerCubit>().setAudioNote(audioNote);
-            });
+          child: ListTile(
+            leading: item.maybeMap(
+              journalAudio: (_) => const LeadingIcon(Icons.mic),
+              journalEntry: (_) => const LeadingIcon(Icons.article),
+              quantitative: (_) => const LeadingIcon(MdiIcons.heart),
+              measurement: (_) => const LeadingIcon(Icons.insights),
+              orElse: () => null,
+            ),
+            title: JournalCardTitle(item: item),
+            onTap: () {
+              item.mapOrNull(
+                journalAudio: (JournalAudio audioNote) {
+                  context.read<AudioPlayerCubit>().setAudioNote(audioNote);
+                },
+              );
 
-            pushNamedRoute('/journal/${item.meta.id}');
-          },
-        ),
-      );
-    });
+              pushNamedRoute('/journal/${item.meta.id}');
+            },
+          ),
+        );
+      },
+    );
   }
 }
 
 class LeadingIcon extends StatelessWidget {
-  final IconData iconData;
   const LeadingIcon(
     this.iconData, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final IconData iconData;
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+      borderRadius: const BorderRadius.all(Radius.circular(8)),
       child: Container(
         width: 50,
         height: 50,
@@ -220,49 +223,52 @@ class LeadingIcon extends StatelessWidget {
 }
 
 class JournalImageCard extends StatelessWidget {
-  final JournalImage item;
-
   const JournalImageCard({
-    Key? key,
+    super.key,
     required this.item,
-  }) : super(key: key);
+  });
+
+  final JournalImage item;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
-        builder: (BuildContext context, AudioPlayerState state) {
-      return Card(
-        color: AppColors.entryCardColor,
-        elevation: 8.0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
-          child: GFListTile(
-            margin: EdgeInsets.zero,
-            padding: const EdgeInsets.only(right: 8.0),
-            avatar: LimitedBox(
-              maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
-              child: CardImageWidget(
-                journalImage: item,
-                height: 160,
-                fit: BoxFit.cover,
-              ),
-            ),
-            title: SizedBox(
-              height: 160,
-              child: JournalCardTitle(item: item),
-            ),
-            onTap: () {
-              item.mapOrNull(journalAudio: (JournalAudio audioNote) {
-                context.read<AudioPlayerCubit>().setAudioNote(audioNote);
-              });
-              pushNamedRoute('/journal/${item.meta.id}');
-            },
+      builder: (BuildContext context, AudioPlayerState state) {
+        return Card(
+          color: AppColors.entryCardColor,
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
           ),
-        ),
-      );
-    });
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: GFListTile(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.only(right: 8),
+              avatar: LimitedBox(
+                maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
+                child: CardImageWidget(
+                  journalImage: item,
+                  height: 160,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              title: SizedBox(
+                height: 160,
+                child: JournalCardTitle(item: item),
+              ),
+              onTap: () {
+                item.mapOrNull(
+                  journalAudio: (JournalAudio audioNote) {
+                    context.read<AudioPlayerCubit>().setAudioNote(audioNote);
+                  },
+                );
+                pushNamedRoute('/journal/${item.meta.id}');
+              },
+            ),
+          ),
+        );
+      },
+    );
   }
 }

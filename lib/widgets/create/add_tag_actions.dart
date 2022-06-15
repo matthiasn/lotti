@@ -7,10 +7,10 @@ import 'package:radial_button/widget/circle_floating_button.dart';
 
 class RadialAddTagButtons extends StatefulWidget {
   const RadialAddTagButtons({
-    Key? key,
+    super.key,
     this.navigatorKey,
     this.radius = 120,
-  }) : super(key: key);
+  });
 
   final GlobalKey? navigatorKey;
   final double radius;
@@ -27,7 +27,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> items = [
+    final items = <Widget>[
       FloatingActionButton(
         heroTag: 'tag',
         key: const Key('add_tag_action'),

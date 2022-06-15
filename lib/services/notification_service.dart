@@ -9,23 +9,6 @@ import 'package:timezone/standalone.dart' as tz;
 final JournalDb _db = getIt<JournalDb>();
 
 class NotificationService {
-  int badgeCount = 0;
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  Future<void> onSelectNotification(String? payload) async {
-    if (payload != null) {
-      getIt<AppRouter>().pushNamed(payload);
-    }
-
-    final NotificationAppLaunchDetails? details =
-        await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
-
-    if (details?.payload != null) {
-      getIt<AppRouter>().pushNamed('${details?.payload}');
-    }
-  }
-
   NotificationService() {
     flutterLocalNotificationsPlugin.initialize(
       const InitializationSettings(
@@ -42,6 +25,23 @@ class NotificationService {
       ),
       onSelectNotification: onSelectNotification,
     );
+  }
+
+  int badgeCount = 0;
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  Future<void> onSelectNotification(String? payload) async {
+    if (payload != null) {
+      await getIt<AppRouter>().pushNamed(payload);
+    }
+
+    final details =
+        await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+
+    if (details?.payload != null) {
+      await getIt<AppRouter>().pushNamed('${details?.payload}');
+    }
   }
 
   Future<void> _requestPermissions() async {
@@ -69,7 +69,7 @@ class NotificationService {
   }
 
   Future<void> updateBadge() async {
-    bool notifyEnabled = await _db.getConfigFlag('enable_notifications');
+    final notifyEnabled = await _db.getConfigFlag('enable_notifications');
 
     if (Platform.isWindows || Platform.isLinux) {
       return;
@@ -77,7 +77,7 @@ class NotificationService {
 
     await _requestPermissions();
 
-    int count = await _db.getWipCount();
+    final count = await _db.getWipCount();
 
     if (count == badgeCount) {
       return;
@@ -85,10 +85,10 @@ class NotificationService {
       badgeCount = count;
     }
 
-    flutterLocalNotificationsPlugin.cancel(1);
+    await flutterLocalNotificationsPlugin.cancel(1);
 
     if (badgeCount == 0) {
-      flutterLocalNotificationsPlugin.show(
+      await flutterLocalNotificationsPlugin.show(
         1,
         '',
         '',
@@ -108,11 +108,10 @@ class NotificationService {
 
       return;
     } else {
-      String title =
-          '$badgeCount task${badgeCount == 1 ? '' : 's'} in progress';
-      String body = badgeCount < 5 ? 'Nice' : 'Let\'s get that number down';
+      final title = '$badgeCount task${badgeCount == 1 ? '' : 's'} in progress';
+      final body = badgeCount < 5 ? 'Nice' : "Let's get that number down";
 
-      flutterLocalNotificationsPlugin.show(
+      await flutterLocalNotificationsPlugin.show(
         1,
         title,
         body,
@@ -136,7 +135,7 @@ class NotificationService {
     required String title,
     required String body,
     required DateTime notifyAt,
-    required notificationId,
+    required int notificationId,
     String? deepLink,
   }) async {
     if (Platform.isWindows || Platform.isLinux) {
@@ -144,10 +143,9 @@ class NotificationService {
     }
 
     await _requestPermissions();
-    flutterLocalNotificationsPlugin.cancel(notificationId);
-    DateTime now = DateTime.now();
-
-    tz.TZDateTime scheduledDate = tz.TZDateTime(
+    await flutterLocalNotificationsPlugin.cancel(notificationId);
+    final now = DateTime.now();
+    final scheduledDate = tz.TZDateTime(
       tz.getLocation('Europe/Berlin'),
       now.year,
       now.month,
@@ -156,7 +154,7 @@ class NotificationService {
       notifyAt.minute,
     );
 
-    flutterLocalNotificationsPlugin.zonedSchedule(
+    await flutterLocalNotificationsPlugin.zonedSchedule(
       notificationId,
       title,
       body,
@@ -182,7 +180,7 @@ class NotificationService {
   Future<void> showNotification({
     required String title,
     required String body,
-    required notificationId,
+    required int notificationId,
     String? deepLink,
   }) async {
     if (Platform.isWindows || Platform.isLinux) {
@@ -190,9 +188,9 @@ class NotificationService {
     }
 
     await _requestPermissions();
-    flutterLocalNotificationsPlugin.cancel(notificationId);
+    await flutterLocalNotificationsPlugin.cancel(notificationId);
 
-    flutterLocalNotificationsPlugin.show(
+    await flutterLocalNotificationsPlugin.show(
       notificationId,
       title,
       body,

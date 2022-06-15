@@ -15,22 +15,21 @@ Future<void> saveAudioAttachment(
   JournalAudio? journalAudio,
   String? b64Secret,
 ) async {
-  final LoggingDb loggingDb = getIt<LoggingDb>();
+  final loggingDb = getIt<LoggingDb>();
 
   final transaction =
       loggingDb.startTransaction('saveAudioAttachment()', 'task');
-  final attachments =
-      message.findContentInfo(disposition: ContentDisposition.attachment);
+  final attachments = message.findContentInfo();
 
   for (final attachment in attachments) {
-    final MimePart? attachmentMimePart = message.getPart(attachment.fetchId);
+    final attachmentMimePart = message.getPart(attachment.fetchId);
     if (attachmentMimePart != null &&
         journalAudio != null &&
         b64Secret != null) {
-      Uint8List? bytes = attachmentMimePart.decodeContentBinary();
-      String filePath = await AudioUtils.getFullAudioPath(journalAudio);
+      final bytes = attachmentMimePart.decodeContentBinary();
+      final filePath = await AudioUtils.getFullAudioPath(journalAudio);
       await File(filePath).parent.create(recursive: true);
-      File encrypted = File('$filePath.aes');
+      final encrypted = File('$filePath.aes');
       debugPrint('saveAttachment $filePath');
       await writeToFile(bytes, encrypted.path);
       await decryptFile(encrypted, File(filePath), b64Secret);
@@ -44,21 +43,20 @@ Future<void> saveImageAttachment(
   JournalImage? journalImage,
   String? b64Secret,
 ) async {
-  final LoggingDb loggingDb = getIt<LoggingDb>();
+  final loggingDb = getIt<LoggingDb>();
   final transaction =
       loggingDb.startTransaction('saveImageAttachment()', 'task');
-  final attachments =
-      message.findContentInfo(disposition: ContentDisposition.attachment);
+  final attachments = message.findContentInfo();
 
   for (final attachment in attachments) {
-    final MimePart? attachmentMimePart = message.getPart(attachment.fetchId);
+    final attachmentMimePart = message.getPart(attachment.fetchId);
     if (attachmentMimePart != null &&
         journalImage != null &&
         b64Secret != null) {
-      Uint8List? bytes = attachmentMimePart.decodeContentBinary();
-      String filePath = await getFullImagePath(journalImage);
+      final bytes = attachmentMimePart.decodeContentBinary();
+      final filePath = await getFullImagePath(journalImage);
       await File(filePath).parent.create(recursive: true);
-      File encrypted = File('$filePath.aes');
+      final encrypted = File('$filePath.aes');
       debugPrint('saveAttachment $filePath');
       await writeToFile(bytes, encrypted.path);
       await decryptFile(encrypted, File(filePath), b64Secret);

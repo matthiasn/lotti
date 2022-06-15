@@ -7,9 +7,7 @@ import 'package:lotti/widgets/audio/vu_meter.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class AudioRecordingIndicator extends StatelessWidget {
-  const AudioRecordingIndicator({
-    Key? key,
-  }) : super(key: key);
+  const AudioRecordingIndicator({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -49,12 +47,12 @@ class AudioRecordingIndicator extends StatelessWidget {
                             color: AppColors.editorTextColor,
                           ),
                           Padding(
-                            padding: const EdgeInsets.only(left: 4.0),
+                            padding: const EdgeInsets.only(left: 4),
                             child: Text(
                               formatDuration(state.progress),
                               style: TextStyle(
                                 fontFamily: 'ShareTechMono',
-                                fontSize: 18.0,
+                                fontSize: 18,
                                 color: AppColors.editorTextColor,
                               ),
                             ),

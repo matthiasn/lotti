@@ -9,7 +9,7 @@ import 'package:lotti/widgets/sync/qr_widget.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class EncryptionQrReaderWidget extends StatefulWidget {
-  const EncryptionQrReaderWidget({Key? key}) : super(key: key);
+  const EncryptionQrReaderWidget({super.key});
 
   @override
   State<StatefulWidget> createState() => _EncryptionQrReaderWidgetState();
@@ -31,65 +31,68 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
-        builder: (context, SyncConfigState state) {
-      void _onQRViewCreated(QRViewController controller) {
-        this.controller = controller;
+      builder: (context, SyncConfigState state) {
+        void _onQRViewCreated(QRViewController controller) {
+          this.controller = controller;
 
-        controller.scannedDataStream.listen((scanData) {
-          if (scanData.code != null) {
-            context.read<SyncConfigCubit>().setSyncConfig(scanData.code!);
-          }
-        });
-      }
+          controller.scannedDataStream.listen((scanData) {
+            if (scanData.code != null) {
+              context.read<SyncConfigCubit>().setSyncConfig(scanData.code!);
+            }
+          });
+        }
 
-      return Center(
-        child: state.maybeWhen(
+        return Center(
+          child: state.maybeWhen(
             configured: (ImapConfig imapConfig, String sharedKey) => TextButton(
-                  style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16.0,
-                        horizontal: 32.0,
-                      ),
-                      backgroundColor: Colors.red),
-                  onPressed: () =>
-                      context.read<SyncConfigCubit>().deleteSharedKey(),
-                  child: Text(
-                    localizations.settingsSyncDeleteKeyButton,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 32,
                 ),
+                backgroundColor: Colors.red,
+              ),
+              onPressed: () =>
+                  context.read<SyncConfigCubit>().deleteSharedKey(),
+              child: Text(
+                localizations.settingsSyncDeleteKeyButton,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
             loading: () => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    StatusTextWidget(localizations.settingsSyncLoadingKey),
-                    const DeleteSyncConfigButton(),
-                  ],
-                ),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StatusTextWidget(localizations.settingsSyncLoadingKey),
+                const DeleteSyncConfigButton(),
+              ],
+            ),
             generating: () =>
                 StatusTextWidget(localizations.settingsSyncGenKey),
             empty: () => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      height: 300.0,
-                      width: 300.0,
-                      child: QRView(
-                        key: qrKey,
-                        onQRViewCreated: _onQRViewCreated,
-                      ),
-                    ),
-                    StatusTextWidget(localizations.settingsSyncScanning),
-                  ],
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 300,
+                  width: 300,
+                  child: QRView(
+                    key: qrKey,
+                    onQRViewCreated: _onQRViewCreated,
+                  ),
                 ),
-            orElse: () => const SizedBox.shrink()),
-      );
-    });
+                StatusTextWidget(localizations.settingsSyncScanning),
+              ],
+            ),
+            orElse: () => const SizedBox.shrink(),
+          ),
+        );
+      },
+    );
   }
 
   @override

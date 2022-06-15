@@ -4,8 +4,8 @@ import 'package:lotti/theme.dart';
 class SettingsIcon extends StatelessWidget {
   const SettingsIcon(
     this.iconData, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   final IconData iconData;
 

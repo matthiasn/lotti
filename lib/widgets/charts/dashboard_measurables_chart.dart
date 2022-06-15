@@ -15,20 +15,20 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardMeasurablesChart extends StatefulWidget {
-  final String measurableDataTypeId;
-  final DateTime rangeStart;
-  final DateTime rangeEnd;
-  final bool enableCreate;
-  final AggregationType? aggregationType;
-
   const DashboardMeasurablesChart({
-    Key? key,
+    super.key,
     required this.measurableDataTypeId,
     required this.rangeStart,
     required this.rangeEnd,
     this.aggregationType,
     this.enableCreate = false,
-  }) : super(key: key);
+  });
+
+  final String measurableDataTypeId;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
+  final bool enableCreate;
+  final AggregationType? aggregationType;
 
   @override
   State<DashboardMeasurablesChart> createState() =>
@@ -48,7 +48,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
         BuildContext context,
         AsyncSnapshot<MeasurableDataType?> typeSnapshot,
       ) {
-        MeasurableDataType? measurableDataType = typeSnapshot.data;
+        final measurableDataType = typeSnapshot.data;
 
         if (measurableDataType == null) {
           return const SizedBox.shrink();
@@ -66,31 +66,29 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               BuildContext context,
               AsyncSnapshot<List<JournalEntity?>> measurementsSnapshot,
             ) {
-              List<JournalEntity?>? measurements =
-                  measurementsSnapshot.data ?? [];
+              final measurements = measurementsSnapshot.data ?? [];
 
               charts.SeriesRendererConfig<DateTime>? defaultRenderer;
 
-              AggregationType aggregationType = widget.aggregationType ??
+              final aggregationType = widget.aggregationType ??
                   measurableDataType.aggregationType ??
                   AggregationType.dailySum;
 
-              final bool aggregationNone =
-                  aggregationType == AggregationType.none;
+              final aggregationNone = aggregationType == AggregationType.none;
 
               if (aggregationNone) {
-                defaultRenderer = charts.LineRendererConfig<DateTime>(
-                  includePoints: false,
-                  strokeWidthPx: 2,
-                );
+                defaultRenderer = charts.LineRendererConfig<DateTime>();
               } else {
                 defaultRenderer = charts.BarRendererConfig<DateTime>();
               }
 
               void onDoubleTap() {
                 if (widget.enableCreate) {
-                  context.router.push(CreateMeasurementWithTypeRoute(
-                      selectedId: measurableDataType.id));
+                  context.router.push(
+                    CreateMeasurementWithTypeRoute(
+                      selectedId: measurableDataType.id,
+                    ),
+                  );
                 }
               }
 
@@ -112,9 +110,10 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
 
               void _infoSelectionModelUpdated(
-                  charts.SelectionModel<DateTime> model) {
+                charts.SelectionModel<DateTime> model,
+              ) {
                 if (model.hasDatumSelection) {
-                  MeasuredObservation newSelection =
+                  final newSelection =
                       model.selectedDatum.first.datum as MeasuredObservation;
                   context
                       .read<MeasurablesChartInfoCubit>()
@@ -129,7 +128,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                 }
               }
 
-              List<charts.Series<MeasuredObservation, DateTime>> seriesList = [
+              final seriesList = [
                 charts.Series<MeasuredObservation, DateTime>(
                   id: measurableDataType.displayName,
                   colorFn: (MeasuredObservation val, _) {
@@ -151,7 +150,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                       key: Key(measurableDataType.description),
                       color: Colors.white,
                       height: 120,
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(8),
                       child: Stack(
                         children: [
                           charts.TimeSeriesChart(
@@ -160,13 +159,14 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                             defaultRenderer: defaultRenderer,
                             selectionModels: [
                               charts.SelectionModelConfig(
-                                type: charts.SelectionModelType.info,
                                 updatedListener: _infoSelectionModelUpdated,
                               )
                             ],
                             behaviors: [
                               chartRangeAnnotation(
-                                  widget.rangeStart, widget.rangeEnd)
+                                widget.rangeStart,
+                                widget.rangeEnd,
+                              )
                             ],
                             domainAxis: timeSeriesAxis,
                             primaryMeasureAxis: charts.NumericAxisSpec(
@@ -201,8 +201,8 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
   const MeasurablesChartInfoWidget(
     this.measurableDataType, {
     required this.aggregationType,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   final MeasurableDataType measurableDataType;
   final AggregationType aggregationType;
@@ -210,48 +210,47 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<MeasurablesChartInfoCubit, MeasurablesChartInfoState>(
-        builder: (BuildContext context, MeasurablesChartInfoState state) {
-      final MeasuredObservation? selected = state.selected;
+      builder: (BuildContext context, MeasurablesChartInfoState state) {
+        final selected = state.selected;
 
-      return Positioned(
-        top: -4,
-        left: MediaQuery.of(context).size.width / 4,
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width / 2,
-          child: IgnorePointer(
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Spacer(),
-                Text(
-                  '${measurableDataType.displayName}'
-                  ' [${EnumToString.convertToString(aggregationType)}]',
-                  style: chartTitleStyle,
-                ),
-                if (selected != null) ...[
-                  const Spacer(),
-                  Padding(
-                    padding: AppTheme.chartDateHorizontalPadding,
-                    child: Text(
-                      ' ${ymd(selected.dateTime)}',
-                      style: chartTitleStyle,
-                    ),
-                  ),
+        return Positioned(
+          top: -4,
+          left: MediaQuery.of(context).size.width / 4,
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width / 2,
+            child: IgnorePointer(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                   const Spacer(),
                   Text(
-                    ' ${selected.value.floor()} ${measurableDataType.unitName}',
-                    style:
-                        chartTitleStyle.copyWith(fontWeight: FontWeight.bold),
+                    '${measurableDataType.displayName}'
+                    ' [${EnumToString.convertToString(aggregationType)}]',
+                    style: chartTitleStyle,
                   ),
+                  if (selected != null) ...[
+                    const Spacer(),
+                    Padding(
+                      padding: AppTheme.chartDateHorizontalPadding,
+                      child: Text(
+                        ' ${ymd(selected.dateTime)}',
+                        style: chartTitleStyle,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      ' ${selected.value.floor()} ${measurableDataType.unitName}',
+                      style:
+                          chartTitleStyle.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                  const Spacer(),
                 ],
-                const Spacer(),
-              ],
+              ),
             ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }

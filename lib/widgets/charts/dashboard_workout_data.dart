@@ -11,11 +11,11 @@ List<Observation> aggregateWorkoutDailySum(
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
-  Map<String, num> sumsByDay = {};
+  final sumsByDay = <String, num>{};
 
-  Duration range = rangeEnd.difference(rangeStart);
-  List<String> dayStrings = List<String>.generate(range.inDays, (days) {
-    DateTime day = rangeStart.add(Duration(days: days));
+  final range = rangeEnd.difference(rangeStart);
+  final dayStrings = List<String>.generate(range.inDays, (days) {
+    final day = rangeStart.add(Duration(days: days));
     return ymd(day);
   });
 
@@ -23,13 +23,13 @@ List<Observation> aggregateWorkoutDailySum(
     sumsByDay[dayString] = 0;
   }
 
-  for (JournalEntity? entity in entities) {
+  for (final entity in entities) {
     entity?.maybeMap(
       workout: (WorkoutEntry workoutEntry) {
-        WorkoutData data = workoutEntry.data;
+        final data = workoutEntry.data;
         if (data.workoutType == chartConfig.workoutType) {
-          String dayString = ymd(entity.meta.dateFrom);
-          num n = sumsByDay[dayString] ?? 0;
+          final dayString = ymd(entity.meta.dateFrom);
+          final n = sumsByDay[dayString] ?? 0;
 
           if (chartConfig.valueType == WorkoutValueType.distance &&
               data.distance != null) {
@@ -42,7 +42,7 @@ List<Observation> aggregateWorkoutDailySum(
           }
 
           if (chartConfig.valueType == WorkoutValueType.duration) {
-            num minutes = workoutEntry.meta.dateTo
+            final minutes = workoutEntry.meta.dateTo
                     .difference(workoutEntry.meta.dateFrom)
                     .inSeconds /
                 60;
@@ -55,16 +55,16 @@ List<Observation> aggregateWorkoutDailySum(
   }
 
   for (final entity in entities) {
-    String dayString = ymd(entity!.meta.dateFrom);
-    num n = sumsByDay[dayString] ?? 0;
+    final dayString = ymd(entity!.meta.dateFrom);
+    final n = sumsByDay[dayString] ?? 0;
     if (entity is QuantitativeEntry) {
       sumsByDay[dayString] = n + entity.data.value;
     }
   }
 
-  List<Observation> aggregated = [];
+  final aggregated = <Observation>[];
   for (final dayString in sumsByDay.keys) {
-    DateTime day = DateTime.parse(dayString);
+    final day = DateTime.parse(dayString);
     aggregated.add(Observation(day, sumsByDay[dayString] ?? 0));
   }
 

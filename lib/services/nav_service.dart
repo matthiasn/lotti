@@ -9,16 +9,16 @@ import 'package:lotti/sync/secure_storage.dart';
 const String lastRouteKey = 'LAST_ROUTE_KEY';
 
 class NavService {
-  String? currentRoute;
-  TabsRouter? tabsRouter;
-  List<String> routesByIndex = [];
-
   NavService() {
     restoreRoute();
   }
 
-  void restoreRoute() async {
-    String? route = await getSavedRoute();
+  String? currentRoute;
+  TabsRouter? tabsRouter;
+  List<String> routesByIndex = [];
+
+  Future<void> restoreRoute() async {
+    final route = await getSavedRoute();
     currentRoute = route;
 
     if (route != null) {
@@ -30,7 +30,7 @@ class NavService {
   }
 
   void bottomNavRouteTap(int index) {
-    String route = routesByIndex[index];
+    final route = routesByIndex[index];
     debugPrint('bottomNavRouteTap: currentRoute $currentRoute route $route');
     if ('$currentRoute'.startsWith(route) && route != currentRoute) {
       tabsRouter?.setActiveIndex(index);
@@ -44,20 +44,18 @@ Future<String?> getSavedRoute() async {
 }
 
 Future<String?> getIdFromSavedRoute() async {
-  RegExp regExp = RegExp(
-    r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
+  final regExp = RegExp(
+    '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
     caseSensitive: false,
-    multiLine: false,
   );
-  String? route = await getSavedRoute();
+  final route = await getSavedRoute();
   return regExp.firstMatch('$route')?.group(0);
 }
 
 void persistNamedRoute(String route) {
   debugPrint('persistNamedRoute: $route');
   SecureStorage.writeValue(lastRouteKey, route);
-  NavService navService = getIt<NavService>();
-  navService.currentRoute = route;
+  getIt<NavService>().currentRoute = route;
 }
 
 void pushNamedRoute(String route) {

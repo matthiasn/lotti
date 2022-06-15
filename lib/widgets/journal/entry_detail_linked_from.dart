@@ -8,10 +8,10 @@ import 'package:lotti/widgets/journal/journal_card.dart';
 
 class LinkedFromEntriesWidget extends StatefulWidget {
   const LinkedFromEntriesWidget({
-    Key? key,
+    super.key,
     this.navigatorKey,
     required this.item,
-  }) : super(key: key);
+  });
 
   final GlobalKey? navigatorKey;
   final JournalEntity item;
@@ -33,7 +33,7 @@ class _LinkedFromEntriesWidgetState extends State<LinkedFromEntriesWidget> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder<List<JournalEntity>>(
       stream: stream,
@@ -44,9 +44,9 @@ class _LinkedFromEntriesWidgetState extends State<LinkedFromEntriesWidget> {
         if (snapshot.data == null || snapshot.data!.isEmpty) {
           return Container();
         } else {
-          List<JournalEntity> items = snapshot.data!;
+          final items = snapshot.data!;
           return Container(
-            margin: const EdgeInsets.all(8.0),
+            margin: const EdgeInsets.all(8),
             child: Column(
               children: [
                 Text(
@@ -59,14 +59,16 @@ class _LinkedFromEntriesWidgetState extends State<LinkedFromEntriesWidget> {
                 ...List.generate(
                   items.length,
                   (int index) {
-                    JournalEntity item = items.elementAt(index);
-                    return item.maybeMap(journalImage: (JournalImage image) {
-                      return JournalImageCard(item: image);
-                    }, orElse: () {
-                      return JournalCard(item: item);
-                    });
+                    final item = items.elementAt(index);
+                    return item.maybeMap(
+                      journalImage: (JournalImage image) {
+                        return JournalImageCard(item: image);
+                      },
+                      orElse: () {
+                        return JournalCard(item: item);
+                      },
+                    );
                   },
-                  growable: true,
                 )
               ],
             ),

@@ -7,9 +7,9 @@ import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 
 class TextViewerWidget extends StatelessWidget {
   const TextViewerWidget({
-    Key? key,
+    super.key,
     required this.entryText,
-  }) : super(key: key);
+  });
 
   final EntryText? entryText;
 
@@ -19,8 +19,7 @@ class TextViewerWidget extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    QuillController controller =
-        makeController(serializedQuill: entryText?.quill);
+    final controller = makeController(serializedQuill: entryText?.quill);
 
     return IgnorePointer(
       child: SingleChildScrollView(

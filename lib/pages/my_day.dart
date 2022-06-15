@@ -8,9 +8,9 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 class MyDayPage extends StatelessWidget {
-  final JournalDb _db = getIt<JournalDb>();
+  MyDayPage({super.key});
 
-  MyDayPage({Key? key}) : super(key: key);
+  final JournalDb _db = getIt<JournalDb>();
 
   @override
   Widget build(BuildContext context) {
@@ -35,15 +35,15 @@ class MyDayPage extends StatelessWidget {
         BuildContext context,
         AsyncSnapshot<List<JournalEntity>?> snapshot,
       ) {
-        final List<Meeting> meetings = <Meeting>[];
-        List<JournalEntity>? entities = snapshot.data;
+        final meetings = <Meeting>[];
+        final entities = snapshot.data;
         if (entities == null) {
           return const SizedBox.shrink();
         }
-        for (JournalEntity journalEntity in entities) {
-          Duration dur = entryDuration(journalEntity);
-          if (dur > const Duration()) {
-            String eventName = journalEntity.map(
+        for (final journalEntity in entities) {
+          final dur = entryDuration(journalEntity);
+          if (dur > Duration.zero) {
+            final eventName = journalEntity.map(
               journalEntry: (journalEntry) =>
                   '${journalEntry.entryText?.plainText}',
               journalImage: (journalImage) => '',
@@ -55,7 +55,7 @@ class MyDayPage extends StatelessWidget {
               habitCompletion: (habitCompletion) => '',
               survey: (survey) => survey.data.taskResult.identifier,
             );
-            Color background = journalEntity.map(
+            final background = journalEntity.map(
               journalEntry: (journalEntry) => Colors.lightGreen,
               journalImage: (journalImage) => Colors.lightBlue,
               journalAudio: (journalAudio) => AppColors.error,
@@ -89,8 +89,8 @@ class MyDayPage extends StatelessWidget {
           dataSource: MeetingDataSource(meetings),
           onTap: (CalendarTapDetails cal) {
             cal.appointments?.forEach((element) {
-              Meeting meeting = element as Meeting;
-              String entryId = meeting.journalEntity.meta.id;
+              final meeting = element as Meeting;
+              final entryId = meeting.journalEntity.meta.id;
               pushNamedRoute('/journal/$entryId');
             });
           },

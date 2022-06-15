@@ -8,7 +8,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class MaintenancePage extends StatefulWidget {
-  const MaintenancePage({Key? key}) : super(key: key);
+  const MaintenancePage({super.key});
 
   @override
   State<MaintenancePage> createState() => _MaintenancePageState();
@@ -27,7 +27,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
@@ -38,7 +38,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
           BuildContext context,
           AsyncSnapshot<List<ConfigFlag>> snapshot,
         ) {
-          List<ConfigFlag> items = snapshot.data ?? [];
+          final items = snapshot.data ?? [];
           debugPrint('$items');
           return StreamBuilder<int>(
             stream: _db.watchTaggedCount(),
@@ -48,32 +48,32 @@ class _MaintenancePageState extends State<MaintenancePage> {
             ) {
               return ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(8),
                 children: [
                   MaintenanceCard(
                     title:
                         '${localizations.maintenanceDeleteTagged}, n = ${snapshot.data}',
-                    onTap: () => _maintenance.deleteTaggedLinks(),
+                    onTap: _maintenance.deleteTaggedLinks,
                   ),
                   MaintenanceCard(
                     title: localizations.maintenanceDeleteEditorDb,
-                    onTap: () => _maintenance.deleteEditorDb(),
+                    onTap: _maintenance.deleteEditorDb,
                   ),
                   MaintenanceCard(
                     title: localizations.maintenanceDeleteLoggingDb,
-                    onTap: () => _maintenance.deleteLoggingDb(),
+                    onTap: _maintenance.deleteLoggingDb,
                   ),
                   MaintenanceCard(
                     title: localizations.maintenanceRecreateTagged,
-                    onTap: () => _maintenance.recreateTaggedLinks(),
+                    onTap: _maintenance.recreateTaggedLinks,
                   ),
                   MaintenanceCard(
                     title: localizations.maintenanceStories,
-                    onTap: () => _maintenance.recreateStoryAssignment(),
+                    onTap: _maintenance.recreateStoryAssignment,
                   ),
                   MaintenanceCard(
                     title: localizations.maintenancePurgeDeleted,
-                    onTap: () => _db.purgeDeleted(),
+                    onTap: _db.purgeDeleted,
                   ),
                   MaintenanceCard(
                     title: localizations.maintenanceReprocessSync,
@@ -91,10 +91,10 @@ class _MaintenancePageState extends State<MaintenancePage> {
 
 class MaintenanceCard extends StatelessWidget {
   const MaintenanceCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   final String title;
   final void Function()? onTap;
@@ -103,9 +103,9 @@ class MaintenanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: AppColors.headerBgColor,
-      elevation: 8.0,
+      elevation: 8,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
         contentPadding:
@@ -118,12 +118,11 @@ class MaintenanceCard extends StatelessWidget {
               style: TextStyle(
                 color: AppColors.entryTextColor,
                 fontFamily: 'Oswald',
-                fontSize: 20.0,
+                fontSize: 20,
               ),
             ),
           ],
         ),
-        enabled: true,
         onTap: onTap,
       ),
     );

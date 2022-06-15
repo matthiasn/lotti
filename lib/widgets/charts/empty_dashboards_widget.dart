@@ -9,17 +9,16 @@ import 'package:url_launcher/url_launcher.dart';
 
 class EmptyDashboards extends StatelessWidget {
   const EmptyDashboards({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Stack(
       children: [
         Align(
-          alignment: Alignment.center,
           child: SizedBox(
             width: min(MediaQuery.of(context).size.width * 0.8 - 64, 640),
             child: Column(
@@ -37,7 +36,8 @@ class EmptyDashboards extends StatelessWidget {
                   child: GestureDetector(
                     onTap: () {
                       final uri = Uri.parse(
-                          'https://github.com/matthiasn/lotti/blob/main/docs/MANUAL.md');
+                        'https://github.com/matthiasn/lotti/blob/main/docs/MANUAL.md',
+                      );
                       launchUrl(uri);
                     },
                     child: AutoSizeText(
@@ -57,7 +57,7 @@ class EmptyDashboards extends StatelessWidget {
         Align(
           alignment: Alignment.topRight,
           child: Padding(
-            padding: const EdgeInsets.only(right: 32.0),
+            padding: const EdgeInsets.only(right: 32),
             child: Opacity(
               opacity: 0.5,
               child: Lottie.asset(

@@ -5,18 +5,17 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 
 Future<ImapClient?> createImapClient(SyncConfig? syncConfig) async {
-  final LoggingDb loggingDb = getIt<LoggingDb>();
+  final loggingDb = getIt<LoggingDb>();
   final transaction = loggingDb.startTransaction('createImapClient()', 'task');
 
   try {
     if (syncConfig != null) {
-      ImapConfig imapConfig = syncConfig.imapConfig;
-      ImapClient imapClient = ImapClient(isLogEnabled: false);
+      final imapConfig = syncConfig.imapConfig;
+      final imapClient = ImapClient();
 
       await imapClient.connectToServer(
         imapConfig.host,
         imapConfig.port,
-        isSecure: true,
       );
       await imapClient.login(imapConfig.userName, imapConfig.password);
 
@@ -25,9 +24,11 @@ Future<ImapClient?> createImapClient(SyncConfig? syncConfig) async {
         await imapClient.selectMailboxByPath(imapConfig.folder);
       } catch (ex) {
         debugPrint('Attempting to create folder ${imapConfig.folder}');
-        Mailbox syncFolder = await imapClient.createMailbox(imapConfig.folder);
-        loggingDb.captureEvent('Folder created: $syncFolder',
-            domain: 'IMAP_CLIENT');
+        final syncFolder = await imapClient.createMailbox(imapConfig.folder);
+        loggingDb.captureEvent(
+          'Folder created: $syncFolder',
+          domain: 'IMAP_CLIENT',
+        );
         await imapClient.selectMailboxByPath(imapConfig.folder);
       }
 
@@ -40,7 +41,7 @@ Future<ImapClient?> createImapClient(SyncConfig? syncConfig) async {
       throw Exception('missing IMAP config');
     }
   } catch (e, stackTrace) {
-    await loggingDb.captureException(
+    loggingDb.captureException(
       e,
       domain: 'IMAP_CLIENT',
       subDomain: 'createImapClient',
