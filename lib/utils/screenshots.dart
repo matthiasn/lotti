@@ -14,32 +14,31 @@ final JournalDb db = getIt<JournalDb>();
 final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
 Future<ImageData> takeScreenshotMac() async {
-  bool hide = await db.getConfigFlag('hide_for_screenshot');
-
-  String id = uuid.v1();
-  String filename = '$id.screenshot.jpg';
-  DateTime created = DateTime.now();
-  String day = DateFormat('yyyy-MM-dd').format(created);
-  String relativePath = '/images/$day/';
-  String directory = await createAssetDirectory(relativePath);
+  final hide = await db.getConfigFlag('hide_for_screenshot');
+  final id = uuid.v1();
+  final filename = '$id.screenshot.jpg';
+  final created = DateTime.now();
+  final day = DateFormat('yyyy-MM-dd').format(created);
+  final relativePath = '/images/$day/';
+  final directory = await createAssetDirectory(relativePath);
 
   if (hide) {
     await windowManager.minimize();
   }
 
-  Process process = await Process.start(
+  final process = await Process.start(
     'screencapture',
     ['-tjpg', filename],
     runInShell: true,
     workingDirectory: directory,
   );
 
-  stdout.addStream(process.stdout);
-  stderr.addStream(process.stderr);
+  await stdout.addStream(process.stdout);
+  await stderr.addStream(process.stderr);
 
   await process.exitCode;
 
-  ImageData imageData = ImageData(
+  final imageData = ImageData(
     imageId: id,
     imageFile: filename,
     imageDirectory: relativePath,
@@ -54,9 +53,9 @@ Future<ImageData> takeScreenshotMac() async {
 }
 
 Future<void> takeScreenshotWithLinked() async {
-  String? linkedId = await getIdFromSavedRoute();
-  ImageData imageData = await takeScreenshotMac();
-  JournalEntity? journalEntity = await persistenceLogic.createImageEntry(
+  final linkedId = await getIdFromSavedRoute();
+  final imageData = await takeScreenshotMac();
+  final journalEntity = await persistenceLogic.createImageEntry(
     imageData,
     linkedId: linkedId,
   );
@@ -67,21 +66,21 @@ Future<void> takeScreenshotWithLinked() async {
 
 Future<void> registerScreenshotHotkey() async {
   if (Platform.isMacOS) {
-    HotKey screenshotKey = HotKey(
+    final screenshotKey = HotKey(
       KeyCode.digit3,
       modifiers: [
         KeyModifier.shift,
         KeyModifier.meta,
       ],
     );
-    hotKeyManager.register(
+    await hotKeyManager.register(
       screenshotKey,
       keyDownHandler: (hotKey) async {
-        bool enabled =
+        final enabled =
             await db.getConfigFlag('listen_to_global_screenshot_hotkey');
 
         if (enabled) {
-          takeScreenshotWithLinked();
+          await takeScreenshotWithLinked();
         }
       },
     );

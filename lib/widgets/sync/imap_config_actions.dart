@@ -7,51 +7,52 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 
 class ImapConfigActions extends StatelessWidget {
-  const ImapConfigActions({Key? key}) : super(key: key);
+  const ImapConfigActions({super.key});
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
-        builder: (context, SyncConfigState state) {
-      SyncConfigCubit syncConfigCubit = context.read<SyncConfigCubit>();
+      builder: (context, SyncConfigState state) {
+        final syncConfigCubit = context.read<SyncConfigCubit>();
 
-      void deleteConfig() {
-        syncConfigCubit.deleteImapConfig();
-        context.router.pop();
-      }
+        void deleteConfig() {
+          syncConfigCubit.deleteImapConfig();
+          context.router.pop();
+        }
 
-      return Center(
-        child: state.maybeWhen(
-          configured: (_, __) => Button(
-            localizations.settingsSyncDeleteImapButton,
-            onPressed: deleteConfig,
-            primaryColor: AppColors.error,
+        return Center(
+          child: state.maybeWhen(
+            configured: (_, __) => Button(
+              localizations.settingsSyncDeleteImapButton,
+              onPressed: deleteConfig,
+              primaryColor: AppColors.error,
+            ),
+            imapSaved: (_) => Button(
+              localizations.settingsSyncDeleteImapButton,
+              onPressed: deleteConfig,
+              primaryColor: AppColors.error,
+            ),
+            imapValid: (_) => Button(
+              localizations.settingsSyncSaveButton,
+              textColor: AppColors.headerBgColor,
+              onPressed: syncConfigCubit.saveImapConfig,
+            ),
+            imapTesting: (_) => Button(
+              localizations.settingsSyncDeleteImapButton,
+              onPressed: deleteConfig,
+              primaryColor: AppColors.error,
+            ),
+            imapInvalid: (_, String errorMessage) => Button(
+              localizations.settingsSyncDeleteImapButton,
+              onPressed: deleteConfig,
+              primaryColor: AppColors.error,
+            ),
+            orElse: () => const SizedBox.shrink(),
           ),
-          imapSaved: (_) => Button(
-            localizations.settingsSyncDeleteImapButton,
-            onPressed: deleteConfig,
-            primaryColor: AppColors.error,
-          ),
-          imapValid: (_) => Button(
-            localizations.settingsSyncSaveButton,
-            textColor: AppColors.headerBgColor,
-            onPressed: syncConfigCubit.saveImapConfig,
-          ),
-          imapTesting: (_) => Button(
-            localizations.settingsSyncDeleteImapButton,
-            onPressed: deleteConfig,
-            primaryColor: AppColors.error,
-          ),
-          imapInvalid: (_, String errorMessage) => Button(
-            localizations.settingsSyncDeleteImapButton,
-            onPressed: deleteConfig,
-            primaryColor: AppColors.error,
-          ),
-          orElse: () => const SizedBox.shrink(),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }

@@ -9,20 +9,20 @@ import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lottie/lottie.dart';
 
 class SyncAssistantSuccessSlide extends StatelessWidget {
-  final int page;
-  final int pageCount;
-  final ValueNotifier<double> notifier;
-
   const SyncAssistantSuccessSlide(
     this.page,
     this.pageCount,
     this.notifier, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final int page;
+  final int pageCount;
+  final ValueNotifier<double> notifier;
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return SlidingPage(
       page: page,
@@ -35,7 +35,6 @@ class SyncAssistantSuccessSlide extends StatelessWidget {
             pageCount: pageCount,
           ),
           Align(
-            alignment: Alignment.center,
             child: SlidingContainer(
               offset: 300,
               child: Container(
@@ -48,7 +47,7 @@ class SyncAssistantSuccessSlide extends StatelessWidget {
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 80.0),
+              padding: const EdgeInsets.only(bottom: 80),
               child: Button(
                 localizations.settingsSyncSuccessCloseButton,
                 onPressed: () {

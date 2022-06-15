@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_dynamic_calls
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
@@ -8,7 +10,7 @@ import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
 class HealthImportPage extends StatefulWidget {
-  const HealthImportPage({Key? key}) : super(key: key);
+  const HealthImportPage({super.key});
 
   @override
   State<HealthImportPage> createState() => _HealthImportPageState();
@@ -28,15 +30,15 @@ class _HealthImportPageState extends State<HealthImportPage> {
   void _onSelectionChanged(DateRangePickerSelectionChangedArgs args) {
     setState(() {
       if (args.value is PickerDateRange) {
-        _dateFrom = args.value.startDate;
-        _dateTo = (args.value.endDate ?? args.value.startDate);
+        _dateFrom = args.value.startDate as DateTime;
+        _dateTo = (args.value.endDate ?? args.value.startDate) as DateTime;
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
@@ -61,7 +63,9 @@ class _HealthImportPageState extends State<HealthImportPage> {
               'Import Activity Data',
               onPressed: () {
                 _healthImport.getActivityHealthData(
-                    dateFrom: _dateFrom, dateTo: _dateTo);
+                  dateFrom: _dateFrom,
+                  dateTo: _dateTo,
+                );
               },
             ),
             Button(

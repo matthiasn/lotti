@@ -9,7 +9,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/sync/imap_config_utils.dart';
 
 class ImapConfigForm extends StatefulWidget {
-  const ImapConfigForm({Key? key}) : super(key: key);
+  const ImapConfigForm({super.key});
 
   @override
   State<ImapConfigForm> createState() {
@@ -23,51 +23,51 @@ class _ImapConfigFormState extends State<ImapConfigForm> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
-        builder: (context, SyncConfigState state) {
-      return state.when(
-        configured: (cfg, _) => ConfigForm(
-          formKey: _formKey,
-          imapConfig: cfg,
-        ),
-        imapSaved: (cfg) => ConfigForm(
-          formKey: _formKey,
-          imapConfig: cfg,
-        ),
-        imapValid: (cfg) => ConfigForm(
-          formKey: _formKey,
-          imapConfig: cfg,
-        ),
-        imapTesting: (cfg) => ConfigForm(
-          formKey: _formKey,
-          imapConfig: cfg,
-        ),
-        imapInvalid: (cfg, _) => ConfigForm(
-          formKey: _formKey,
-          imapConfig: cfg,
-        ),
-        loading: () => ConfigForm(formKey: _formKey),
-        generating: () => ConfigForm(formKey: _formKey),
-        empty: () => ConfigForm(formKey: _formKey),
-      );
-    });
+      builder: (context, SyncConfigState state) {
+        return state.when(
+          configured: (cfg, _) => ConfigForm(
+            formKey: _formKey,
+            imapConfig: cfg,
+          ),
+          imapSaved: (cfg) => ConfigForm(
+            formKey: _formKey,
+            imapConfig: cfg,
+          ),
+          imapValid: (cfg) => ConfigForm(
+            formKey: _formKey,
+            imapConfig: cfg,
+          ),
+          imapTesting: (cfg) => ConfigForm(
+            formKey: _formKey,
+            imapConfig: cfg,
+          ),
+          imapInvalid: (cfg, _) => ConfigForm(
+            formKey: _formKey,
+            imapConfig: cfg,
+          ),
+          loading: () => ConfigForm(formKey: _formKey),
+          generating: () => ConfigForm(formKey: _formKey),
+          empty: () => ConfigForm(formKey: _formKey),
+        );
+      },
+    );
   }
 }
 
 class ConfigForm extends StatelessWidget {
   const ConfigForm({
-    Key? key,
+    super.key,
     required GlobalKey<FormBuilderState> formKey,
     this.imapConfig,
-  })  : _formKey = formKey,
-        super(key: key);
+  }) : _formKey = formKey;
 
   final GlobalKey<FormBuilderState> _formKey;
   final ImapConfig? imapConfig;
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
-    SyncConfigCubit syncConfigCubit = context.read<SyncConfigCubit>();
+    final localizations = AppLocalizations.of(context)!;
+    final syncConfigCubit = context.read<SyncConfigCubit>();
 
     void onChanged() {
       syncConfigCubit.setImapConfig(configFromForm(_formKey));
@@ -79,7 +79,6 @@ class ConfigForm extends StatelessWidget {
       onChanged: onChanged,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.start,
         children: <Widget>[
           FormBuilderTextField(
             name: 'imap_host',

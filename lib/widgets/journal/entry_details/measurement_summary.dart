@@ -10,18 +10,17 @@ import 'package:lotti/widgets/journal/helpers.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 
 class MeasurementSummary extends StatelessWidget {
-  final JournalDb _db = getIt<JournalDb>();
-
   MeasurementSummary(
     this.measurementEntry, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
+  final JournalDb _db = getIt<JournalDb>();
   final MeasurementEntry measurementEntry;
 
   @override
   Widget build(BuildContext context) {
-    MeasurementData data = measurementEntry.data;
+    final data = measurementEntry.data;
 
     return StreamBuilder<MeasurableDataType?>(
         stream: _db.watchMeasurableDataTypeById(data.dataTypeId),
@@ -29,16 +28,15 @@ class MeasurementSummary extends StatelessWidget {
           BuildContext context,
           AsyncSnapshot<MeasurableDataType?> typeSnapshot,
         ) {
-          MeasurableDataType? dataType = typeSnapshot.data;
+          final dataType = typeSnapshot.data;
 
           if (dataType == null) {
             return const SizedBox.shrink();
           }
 
           return Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (measurementEntry.entryText?.plainText != null)
@@ -56,6 +54,6 @@ class MeasurementSummary extends StatelessWidget {
               ],
             ),
           );
-        });
+        },);
   }
 }

@@ -97,7 +97,7 @@ class TaskData with _$TaskData {
 
 TaskStatus taskStatusFromString(String status) {
   TaskStatus newStatus;
-  DateTime now = DateTime.now();
+  final now = DateTime.now();
 
   if (status == 'DONE') {
     newStatus = TaskStatus.done(

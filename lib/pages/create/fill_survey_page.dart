@@ -11,10 +11,10 @@ import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:research_package/research_package.dart';
 
 class SurveyWidget extends StatelessWidget {
+  const SurveyWidget(this.task, this.resultCallback, {super.key});
+
   final RPOrderedTask task;
   final void Function(RPTaskResult) resultCallback;
-  const SurveyWidget(this.task, this.resultCallback, {Key? key})
-      : super(key: key);
 
   String _encode(Object object) =>
       const JsonEncoder.withIndent(' ').convert(object);
@@ -46,28 +46,28 @@ class SurveyWidget extends StatelessWidget {
                 // text styling for headlines, titles, bodies of text, and more.
                 textTheme: TextTheme(
                   headline3: const TextStyle(
-                    fontSize: 24.0,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                   headline5: const TextStyle(
-                    fontSize: 18.0,
+                    fontSize: 18,
                     fontWeight: FontWeight.w100,
                   ),
                   headline6: TextStyle(
-                    fontSize: 24.0,
+                    fontSize: 24,
                     fontWeight: FontWeight.w400,
                     color: Colors.grey[800],
                   ),
                 ),
               ),
               child: Padding(
-                padding: const EdgeInsets.only(top: 40.0),
+                padding: const EdgeInsets.only(top: 40),
                 child: RPUITask(
                   task: task,
                   onSubmit: resultCallback,
                   onCancel: (RPTaskResult? result) {
                     if (result == null) {
-                      debugPrint("No result");
+                      debugPrint('No result');
                     } else {
                       cancelCallBack(result);
                     }
@@ -84,19 +84,19 @@ class SurveyWidget extends StatelessWidget {
 
 class FillSurveyPage extends StatelessWidget {
   const FillSurveyPage({
-    Key? key,
+    super.key,
     @PathParam() this.linkedId,
-  }) : super(key: key);
+  });
 
   final String? linkedId;
 
   @override
   Widget build(BuildContext context) {
-    void runSurvey(
+    Future<void> runSurvey(
       RPOrderedTask task,
       void Function(RPTaskResult) resultCallback,
     ) async {
-      showModalBottomSheet<void>(
+      await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         shape: const RoundedRectangleBorder(

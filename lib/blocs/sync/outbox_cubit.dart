@@ -6,26 +6,26 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/outbox.dart';
 
 class OutboxCubit extends Cubit<OutboxState> {
-  final OutboxService _outbox = getIt<OutboxService>();
-
   OutboxCubit() : super(OutboxState.initial()) {
     _outbox.init();
   }
+
+  final OutboxService _outbox = getIt<OutboxService>();
 
   Future<void> toggleStatus() async {
     if (state is OutboxDisabled) {
       _outbox.enabled = true;
       emit(OutboxState.online());
-      _outbox.startPolling();
+      await _outbox.startPolling();
     } else {
       _outbox.enabled = false;
       emit(OutboxState.disabled());
-      _outbox.stopPolling();
+      await _outbox.stopPolling();
     }
   }
 
   @override
   Future<void> close() async {
-    super.close();
+    await super.close();
   }
 }

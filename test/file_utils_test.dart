@@ -8,9 +8,9 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:research_package/model.dart';
 
 void main() {
-  DateTime dt = DateTime.fromMillisecondsSinceEpoch(1638265606966);
+  final dt = DateTime.fromMillisecondsSinceEpoch(1638265606966);
 
-  Metadata testMeta = Metadata(
+  final testMeta = Metadata(
     createdAt: dt,
     id: 'test-id',
     dateTo: dt,
@@ -19,17 +19,17 @@ void main() {
   );
 
   test('JSON file name for journal entry should be correct', () async {
-    JournalEntity testEntity = JournalEntity.journalEntry(
+    final testEntity = JournalEntity.journalEntry(
       meta: testMeta,
       entryText: EntryText(plainText: 'test'),
     );
 
-    final String path = entityPath(testEntity, Directory(''));
+    final path = entityPath(testEntity, Directory(''));
     expect(path, '/text_entries/2021-11-30/test-id.text.json');
   });
 
   test('JSON file name for survey entry should be correct', () async {
-    JournalEntity testEntity = JournalEntity.survey(
+    final testEntity = JournalEntity.survey(
       meta: testMeta,
       data: SurveyData(
         scoreDefinitions: {},
@@ -38,12 +38,12 @@ void main() {
       ),
     );
 
-    final String path = entityPath(testEntity, Directory(''));
+    final path = entityPath(testEntity, Directory(''));
     expect(path, '/surveys/2021-11-30/test-id.survey.json');
   });
 
   test('JSON file name for quantitative entry should be correct', () async {
-    JournalEntity testEntity = JournalEntity.quantitative(
+    final testEntity = JournalEntity.quantitative(
       meta: testMeta,
       data: QuantitativeData.cumulativeQuantityData(
         dateFrom: dt,
@@ -54,12 +54,12 @@ void main() {
       ),
     );
 
-    final String path = entityPath(testEntity, Directory(''));
+    final path = entityPath(testEntity, Directory(''));
     expect(path, '/quantitative/2021-11-30/test-id.quantitative.json');
   });
 
   test('JSON file name for image entry should be correct', () async {
-    JournalEntity testEntity = JournalEntity.journalImage(
+    final testEntity = JournalEntity.journalImage(
       meta: testMeta,
       data: ImageData(
         imageFile: 'some-image-id.IMG_9999.JPG',
@@ -69,12 +69,12 @@ void main() {
       ),
     );
 
-    final String path = entityPath(testEntity, Directory(''));
+    final path = entityPath(testEntity, Directory(''));
     expect(path, '/images/2021-11-29/some-image-id.IMG_9999.JPG.json');
   });
 
   test('JSON file name for image entry should be correct', () async {
-    JournalEntity testEntity = JournalEntity.journalAudio(
+    final testEntity = JournalEntity.journalAudio(
       meta: testMeta,
       data: AudioData(
         audioDirectory: '/audio/2021-11-29/',
@@ -85,7 +85,7 @@ void main() {
       ),
     );
 
-    final String path = entityPath(testEntity, Directory(''));
+    final path = entityPath(testEntity, Directory(''));
     expect(path, '/audio/2021-11-29/2021-11-29_20-35-12-957.aac.json');
   });
 }

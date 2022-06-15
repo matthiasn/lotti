@@ -6,9 +6,10 @@ import 'package:flutter/widgets.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
 class MeasuredObservation {
+  MeasuredObservation(this.dateTime, this.value);
+
   final DateTime dateTime;
   final num value;
-  MeasuredObservation(this.dateTime, this.value);
 
   @override
   String toString() {
@@ -28,11 +29,10 @@ List<MeasuredObservation> aggregateSumByDay(
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
-  Map<String, num> sumsByDay = {};
-
-  Duration range = rangeEnd.difference(rangeStart);
-  List<String> dayStrings = List<String>.generate(range.inDays, (days) {
-    DateTime day = rangeStart.add(Duration(days: days));
+  final sumsByDay = <String, num>{};
+  final range = rangeEnd.difference(rangeStart);
+  final dayStrings = List<String>.generate(range.inDays, (days) {
+    final day = rangeStart.add(Duration(days: days));
     return ymd(day);
   });
 
@@ -41,16 +41,16 @@ List<MeasuredObservation> aggregateSumByDay(
   }
 
   for (final entity in entities) {
-    String dayString = ymd(entity!.meta.dateFrom);
-    num n = sumsByDay[dayString] ?? 0;
+    final dayString = ymd(entity!.meta.dateFrom);
+    final n = sumsByDay[dayString] ?? 0;
     if (entity is MeasurementEntry) {
       sumsByDay[dayString] = n + entity.data.value;
     }
   }
 
-  List<MeasuredObservation> aggregated = [];
+  final aggregated = <MeasuredObservation>[];
   for (final dayString in sumsByDay.keys) {
-    DateTime day = DateTime.parse(dayString);
+    final day = DateTime.parse(dayString);
     aggregated.add(MeasuredObservation(day, sumsByDay[dayString] ?? 0));
   }
 
@@ -62,11 +62,11 @@ List<MeasuredObservation> aggregateMaxByDay(
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
-  Map<String, num> sumsByDay = {};
+  final sumsByDay = <String, num>{};
 
-  Duration range = rangeEnd.difference(rangeStart);
-  List<String> dayStrings = List<String>.generate(range.inDays, (days) {
-    DateTime day = rangeStart.add(Duration(days: days));
+  final range = rangeEnd.difference(rangeStart);
+  final dayStrings = List<String>.generate(range.inDays, (days) {
+    final day = rangeStart.add(Duration(days: days));
     return ymd(day);
   });
 
@@ -75,16 +75,16 @@ List<MeasuredObservation> aggregateMaxByDay(
   }
 
   for (final entity in entities) {
-    String dayString = ymd(entity!.meta.dateFrom);
-    num n = sumsByDay[dayString] ?? 0;
+    final dayString = ymd(entity!.meta.dateFrom);
+    final n = sumsByDay[dayString] ?? 0;
     if (entity is MeasurementEntry) {
       sumsByDay[dayString] = max(n, entity.data.value);
     }
   }
 
-  List<MeasuredObservation> aggregated = [];
+  final aggregated = <MeasuredObservation>[];
   for (final dayString in sumsByDay.keys) {
-    DateTime day = DateTime.parse(dayString);
+    final day = DateTime.parse(dayString);
     aggregated.add(MeasuredObservation(day, sumsByDay[dayString] ?? 0));
   }
 
@@ -92,16 +92,19 @@ List<MeasuredObservation> aggregateMaxByDay(
 }
 
 List<MeasuredObservation> aggregateMeasurementNone(
-    List<JournalEntity?> entities) {
-  List<MeasuredObservation> aggregated = [];
+  List<JournalEntity?> entities,
+) {
+  final aggregated = <MeasuredObservation>[];
 
-  for (JournalEntity? entity in entities) {
+  for (final entity in entities) {
     entity?.maybeMap(
       measurement: (MeasurementEntry entry) {
-        aggregated.add(MeasuredObservation(
-          entry.data.dateFrom,
-          entry.data.value,
-        ));
+        aggregated.add(
+          MeasuredObservation(
+            entry.data.dateFrom,
+            entry.data.value,
+          ),
+        );
       },
       orElse: () {},
     );
@@ -124,28 +127,29 @@ charts.RangeAnnotation<DateTime> chartRangeAnnotation(
 }
 
 const timeSeriesAxis = charts.DateTimeAxisSpec(
-    tickProviderSpec: charts.AutoDateTimeTickProviderSpec(),
-    renderSpec: charts.SmallTickRendererSpec(
-      labelStyle: charts.TextStyleSpec(
-        fontSize: 10,
-      ),
-    ));
+  tickProviderSpec: charts.AutoDateTimeTickProviderSpec(),
+  renderSpec: charts.SmallTickRendererSpec(
+    labelStyle: charts.TextStyleSpec(
+      fontSize: 10,
+    ),
+  ),
+);
 
 DateTime getRangeStart({
   required BuildContext context,
   double scale = 10,
   int shiftDays = 0,
 }) {
-  int durationDays = (MediaQuery.of(context).size.width / scale).ceil();
-  final Duration duration = Duration(days: durationDays);
-  final DateTime now = DateTime.now();
-  final DateTime from = now.subtract(duration);
+  final durationDays = (MediaQuery.of(context).size.width / scale).ceil();
+  final duration = Duration(days: durationDays);
+  final now = DateTime.now();
+  final from = now.subtract(duration);
   return DateTime(from.year, from.month, from.day)
       .subtract(Duration(days: shiftDays));
 }
 
 DateTime getRangeEnd({int shiftDays = 0}) {
-  final DateTime now = DateTime.now();
+  final now = DateTime.now();
   return DateTime(now.year, now.month, now.day, 23, 59, 59)
       .subtract(Duration(days: shiftDays));
 }
@@ -159,11 +163,11 @@ String formatDuration(Duration dur) {
 }
 
 String minutesToHhMm(num? minutes) {
-  Duration dur = Duration(minutes: minutes?.ceil() ?? 0);
+  final dur = Duration(minutes: minutes?.ceil() ?? 0);
   return formatDuration(dur);
 }
 
 String hoursToHhMm(num? hours) {
-  int minutes = hours != null ? (hours * 60).ceil() : 0;
+  final minutes = hours != null ? (hours * 60).ceil() : 0;
   return minutesToHhMm(minutes);
 }

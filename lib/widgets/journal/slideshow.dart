@@ -9,22 +9,21 @@ import 'package:lotti/widgets/journal/editor/editor_wrapper_widget.dart';
 import 'package:path_provider/path_provider.dart';
 
 class SlideShowWidget extends StatelessWidget {
-  final List<JournalEntity> items;
   const SlideShowWidget(
     this.items, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final List<JournalEntity> items;
 
   @override
   Widget build(BuildContext context) {
-    List<JournalImage> imageItems = items.whereType<JournalImage>().toList();
+    final imageItems = items.whereType<JournalImage>().toList();
 
-    return Container(
+    return ColoredBox(
       color: Colors.black,
       child: ImageSlideshow(
-        width: double.infinity,
         height: double.infinity,
-        initialPage: 0,
         indicatorColor: AppColors.bottomNavIconSelected,
         indicatorBackgroundColor: AppColors.bottomNavIconUnselected,
         onPageChanged: (value) {
@@ -36,7 +35,7 @@ class SlideShowWidget extends StatelessWidget {
           ...List.generate(
             imageItems.length,
             (int index) {
-              JournalImage item = imageItems.elementAt(index);
+              final item = imageItems.elementAt(index);
               return Stack(
                 children: [
                   Align(
@@ -49,8 +48,8 @@ class SlideShowWidget extends StatelessWidget {
                     alignment: Alignment.bottomCenter,
                     child: ClipRRect(
                       borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16.0),
-                        topRight: Radius.circular(16.0),
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
                       ),
                       child: Container(
                         color: Colors.white,
@@ -70,7 +69,6 @@ class SlideShowWidget extends StatelessWidget {
                 ],
               );
             },
-            growable: true,
           ),
         ],
       ),
@@ -79,16 +77,16 @@ class SlideShowWidget extends StatelessWidget {
 }
 
 class CardImageWidget extends StatefulWidget {
+  const CardImageWidget({
+    super.key,
+    required this.journalImage,
+    required this.height,
+    this.fit = BoxFit.scaleDown,
+  });
+
   final JournalImage journalImage;
   final int height;
   final BoxFit fit;
-
-  const CardImageWidget(
-      {Key? key,
-      required this.journalImage,
-      required this.height,
-      this.fit = BoxFit.scaleDown})
-      : super(key: key);
 
   @override
   State<CardImageWidget> createState() => _CardImageWidgetState();
@@ -111,7 +109,7 @@ class _CardImageWidgetState extends State<CardImageWidget> {
   @override
   Widget build(BuildContext context) {
     if (docDir != null) {
-      File file =
+      final file =
           File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
 
       return Container(

@@ -5,34 +5,27 @@ import 'package:hexcolor/hexcolor.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 
 num calculateBMI(num height, num weight) {
-  num heightSquare = height * height;
+  final heightSquare = height * height;
   return weight / heightSquare;
 }
 
 num weightFromBmi(num height, num bmi) {
-  num heightSquare = height * height;
+  final heightSquare = height * height;
   return bmi * heightSquare;
 }
 
 class BmiRangeSegment {
-  final num lowerBoundInclusive;
-  final num upperBoundExclusive;
-  final bool alwaysShow;
-
   BmiRangeSegment({
     required this.lowerBoundInclusive,
     required this.upperBoundExclusive,
     this.alwaysShow = false,
   });
+  final num lowerBoundInclusive;
+  final num upperBoundExclusive;
+  final bool alwaysShow;
 }
 
 class BmiRange {
-  final String name;
-  final String hexColor;
-  final num lowerBoundInclusive;
-  final num upperBoundExclusive;
-  final List<BmiRangeSegment> segments;
-
   BmiRange({
     required this.name,
     required this.hexColor,
@@ -40,6 +33,12 @@ class BmiRange {
     required this.upperBoundExclusive,
     required this.segments,
   });
+
+  final String name;
+  final String hexColor;
+  final num lowerBoundInclusive;
+  final num upperBoundExclusive;
+  final List<BmiRangeSegment> segments;
 }
 
 List<BmiRange> bmiRanges = [
@@ -148,7 +147,7 @@ charts.RangeAnnotationSegment<num> makeRangeSegment(
   num from,
   num to,
 ) {
-  HexColor color = HexColor(hexColor);
+  final color = HexColor(hexColor);
   return charts.RangeAnnotationSegment(
     from,
     to,
@@ -166,16 +165,15 @@ List<charts.RangeAnnotationSegment<num>> makeRangeAnnotationSegments(
   List<Observation> observations,
   num height,
 ) {
-  num min = findMin(observations);
-  num max = findMax(observations);
+  final min = findMin(observations);
+  final max = findMax(observations);
+  final rangeSegments = <charts.RangeAnnotationSegment<num>>[];
 
-  List<charts.RangeAnnotationSegment<num>> rangeSegments = [];
-
-  for (BmiRange range in bmiRanges) {
-    for (BmiRangeSegment segment in range.segments) {
-      num lowerWeightBoundInclusive =
+  for (final range in bmiRanges) {
+    for (final segment in range.segments) {
+      final lowerWeightBoundInclusive =
           weightFromBmi(height, segment.lowerBoundInclusive);
-      num upperWeightBoundExclusive =
+      final upperWeightBoundExclusive =
           weightFromBmi(height, segment.upperBoundExclusive);
 
       if (segment.alwaysShow ||
@@ -185,11 +183,13 @@ List<charts.RangeAnnotationSegment<num>> makeRangeAnnotationSegments(
             lowerBound: lowerWeightBoundInclusive,
             upperBound: upperWeightBoundExclusive,
           )) {
-        rangeSegments.add(makeRangeSegment(
-          range.hexColor,
-          lowerWeightBoundInclusive,
-          upperWeightBoundExclusive,
-        ));
+        rangeSegments.add(
+          makeRangeSegment(
+            range.hexColor,
+            lowerWeightBoundInclusive,
+            upperWeightBoundExclusive,
+          ),
+        );
       }
     }
   }

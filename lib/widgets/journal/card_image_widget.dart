@@ -6,16 +6,16 @@ import 'package:lotti/utils/image_utils.dart';
 import 'package:path_provider/path_provider.dart';
 
 class CardImageWidget extends StatefulWidget {
+  const CardImageWidget({
+    super.key,
+    required this.journalImage,
+    required this.height,
+    this.fit = BoxFit.scaleDown,
+  });
+
   final JournalImage journalImage;
   final int height;
   final BoxFit fit;
-
-  const CardImageWidget(
-      {Key? key,
-      required this.journalImage,
-      required this.height,
-      this.fit = BoxFit.scaleDown})
-      : super(key: key);
 
   @override
   State<CardImageWidget> createState() => _CardImageWidgetState();
@@ -38,7 +38,7 @@ class _CardImageWidgetState extends State<CardImageWidget> {
   @override
   Widget build(BuildContext context) {
     if (docDir != null) {
-      File file =
+      final  file =
           File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
 
       return Container(

@@ -14,9 +14,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class SyncAssistantPage extends StatefulWidget {
-  const SyncAssistantPage({
-    Key? key,
-  }) : super(key: key);
+  const SyncAssistantPage({super.key});
 
   @override
   State<SyncAssistantPage> createState() => _SyncAssistantPageState();
@@ -28,7 +26,7 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
   int pageCount = 6;
 
   @override
-  initState() {
+  void initState() {
     super.initState();
     if (Platform.isIOS || Platform.isAndroid) {
       pageCount = 3;
@@ -37,80 +35,80 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsSyncCfgTitle),
       body: Center(
-          child: Stack(
-        children: <Widget>[
-          SlidingTutorial(
-            controller: _pageCtrl,
-            pageCount: pageCount,
-            notifier: notifier,
-          ),
-
-          /// Separator.
-          Align(
-            alignment: const Alignment(0, 0.85),
-            child: Container(
-              width: double.infinity,
-              height: 0.5,
-              color: Colors.white,
-            ),
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios_rounded,
-                color: Colors.white,
-              ),
-              onPressed: () {
-                _pageCtrl.previousPage(
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.linear,
-                );
-              },
-            ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios_rounded,
-                color: Colors.white,
-                textDirection: TextDirection.rtl,
-              ),
-              onPressed: () {
-                _pageCtrl.nextPage(
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.linear,
-                );
-              },
-            ),
-          ),
-
-          Align(
-            alignment: const Alignment(0, 0.94),
-            child: SlidingIndicator(
-              indicatorCount: pageCount,
+        child: Stack(
+          children: <Widget>[
+            SlidingTutorial(
+              controller: _pageCtrl,
+              pageCount: pageCount,
               notifier: notifier,
-              activeIndicator: const Icon(
-                Icons.check_circle,
-                color: Color(0xFF29B6F6),
-              ),
-              inActiveIndicator: SvgPicture.asset(
-                'assets/images/tutorial/hollow_circle.svg',
-              ),
-              margin: 8,
-              inactiveIndicatorSize: 14,
-              activeIndicatorSize: 14,
             ),
-          )
-        ],
-      )),
+
+            /// Separator.
+            Align(
+              alignment: const Alignment(0, 0.85),
+              child: Container(
+                width: double.infinity,
+                height: 0.5,
+                color: Colors.white,
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_rounded,
+                  color: Colors.white,
+                ),
+                onPressed: () {
+                  _pageCtrl.previousPage(
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.linear,
+                  );
+                },
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_rounded,
+                  color: Colors.white,
+                  textDirection: TextDirection.rtl,
+                ),
+                onPressed: () {
+                  _pageCtrl.nextPage(
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.linear,
+                  );
+                },
+              ),
+            ),
+
+            Align(
+              alignment: const Alignment(0, 0.94),
+              child: SlidingIndicator(
+                indicatorCount: pageCount,
+                notifier: notifier,
+                activeIndicator: const Icon(
+                  Icons.check_circle,
+                  color: Color(0xFF29B6F6),
+                ),
+                inActiveIndicator: SvgPicture.asset(
+                  'assets/images/tutorial/hollow_circle.svg',
+                ),
+                inactiveIndicatorSize: 14,
+                activeIndicatorSize: 14,
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 }
@@ -120,8 +118,8 @@ class SlidingTutorial extends StatefulWidget {
     required this.controller,
     required this.notifier,
     required this.pageCount,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   final ValueNotifier<double> notifier;
   final int pageCount;
@@ -157,7 +155,7 @@ class _SlidingTutorial extends State<SlidingTutorial> {
             controller: _pageController,
             children: List<Widget>.generate(
               widget.pageCount,
-              (index) => _getPageByIndex(index),
+              _getPageByIndex,
             ),
           ),
         ],
@@ -170,28 +168,46 @@ class _SlidingTutorial extends State<SlidingTutorial> {
     switch (index) {
       case 0:
         return SyncAssistantIntroSlide1(
-            index, widget.pageCount, widget.notifier);
+          index,
+          widget.pageCount,
+          widget.notifier,
+        );
       case 1:
         return SyncAssistantIntroSlide2(
-            index, widget.pageCount, widget.notifier);
+          index,
+          widget.pageCount,
+          widget.notifier,
+        );
       case 2:
         return SyncAssistantConfigSlide(
-            index, widget.pageCount, widget.notifier);
+          index,
+          widget.pageCount,
+          widget.notifier,
+        );
       case 3:
         return SyncAssistantIntroSlide3(
-            index, widget.pageCount, widget.notifier);
+          index,
+          widget.pageCount,
+          widget.notifier,
+        );
       case 4:
         return SyncAssistantQrCodeSlide(
-            index, widget.pageCount, widget.notifier);
+          index,
+          widget.pageCount,
+          widget.notifier,
+        );
       case 5:
         return SyncAssistantSuccessSlide(
-            index, widget.pageCount, widget.notifier);
+          index,
+          widget.pageCount,
+          widget.notifier,
+        );
       default:
-        throw ArgumentError("Unknown position: $index");
+        throw ArgumentError('Unknown position: $index');
     }
   }
 
-  _onScroll() {
+  void _onScroll() {
     widget.notifier.value = _pageController.page ?? 0;
   }
 }

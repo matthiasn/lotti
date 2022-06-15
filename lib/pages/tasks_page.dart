@@ -19,9 +19,9 @@ import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 class TasksPage extends StatefulWidget {
   const TasksPage({
-    Key? key,
+    super.key,
     this.navigatorKey,
-  }) : super(key: key);
+  });
 
   final GlobalKey? navigatorKey;
 
@@ -66,10 +66,10 @@ class _TasksPageState extends State<TasksPage> {
     resetStream();
   }
 
-  void resetStream() async {
+  Future<void> resetStream() async {
     Set<String>? entryIds;
-    for (String tagId in tagIds) {
-      Set<String> entryIdsForTag = (await _db.entryIdsByTagId(tagId)).toSet();
+    for (final tagId in tagIds) {
+      final entryIdsForTag = (await _db.entryIdsByTagId(tagId)).toSet();
       if (entryIds == null) {
         entryIds = entryIdsForTag;
       } else {
@@ -103,11 +103,10 @@ class _TasksPageState extends State<TasksPage> {
     final isPortrait =
         MediaQuery.of(context).orientation == Orientation.portrait;
 
-    double portraitWidth = MediaQuery.of(context).size.width * 0.88;
+    final portraitWidth = MediaQuery.of(context).size.width * 0.88;
+    final localizations = AppLocalizations.of(context)!;
 
-    AppLocalizations localizations = AppLocalizations.of(context)!;
-
-    final Map<String, String> localizationLookup = {
+    final localizationLookup = {
       'OPEN': localizations.taskStatusOpen,
       'GROOMED': localizations.taskStatusGroomed,
       'IN PROGRESS': localizations.taskStatusInProgress,
@@ -165,10 +164,10 @@ class _TasksPageState extends State<TasksPage> {
                               cursor: SystemMouseCursors.click,
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                                child: Container(
+                                child: ColoredBox(
                                   color: selectedStatuses.contains(status)
                                       ? Colors.lightBlue
-                                      : Colors.grey[600],
+                                      : Colors.grey,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 4,
@@ -203,16 +202,16 @@ class _TasksPageState extends State<TasksPage> {
         ],
       ),
       physics: const BouncingScrollPhysics(),
-      borderRadius: BorderRadius.circular(8.0),
-      axisAlignment: isPortrait ? 0.0 : -1.0,
-      openAxisAlignment: 0.0,
+      borderRadius: BorderRadius.circular(8),
+      axisAlignment: isPortrait ? 0 : -1,
+      openAxisAlignment: 0,
       margins: EdgeInsets.only(
-        top: Platform.isIOS ? 60 : 20.0,
-        left: isDesktop ? 12.0 : 0.0,
+        top: Platform.isIOS ? 60 : 20,
+        left: isDesktop ? 12 : 0,
       ),
       width: isPortrait ? portraitWidth : MediaQuery.of(context).size.width,
       onQueryChanged: (query) async {
-        List<TagEntity> res = await _db.getMatchingTags(
+        final res = await _db.getMatchingTags(
           query.trim(),
           inactive: true,
         );
@@ -227,10 +226,9 @@ class _TasksPageState extends State<TasksPage> {
       builder: (context, transition) {
         return Padding(
           padding: const EdgeInsets.only(
-            top: 2.0,
-            bottom: 8.0,
-            left: 0.0,
-            right: 4.0,
+            top: 2,
+            bottom: 8,
+            right: 4,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -245,22 +243,24 @@ class _TasksPageState extends State<TasksPage> {
                   return Column(
                     children: [
                       ...?snapshot.data
-                          ?.map((tagEntity) => ListTile(
-                                title: Text(
-                                  tagEntity.tag,
-                                  style: TextStyle(
-                                    fontFamily: 'Lato',
-                                    color: getTagColor(tagEntity),
-                                    fontWeight: FontWeight.normal,
-                                    fontSize: 20.0,
-                                  ),
+                          ?.map(
+                            (tagEntity) => ListTile(
+                              title: Text(
+                                tagEntity.tag,
+                                style: TextStyle(
+                                  fontFamily: 'Lato',
+                                  color: getTagColor(tagEntity),
+                                  fontWeight: FontWeight.normal,
+                                  fontSize: 20,
                                 ),
-                                onTap: () {
-                                  setState(() {
-                                    addTag(tagEntity.id);
-                                  });
-                                },
-                              ))
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  addTag(tagEntity.id);
+                                });
+                              },
+                            ),
+                          )
                           .toList(),
                     ],
                   );
@@ -293,8 +293,10 @@ class _TasksPageState extends State<TasksPage> {
                 if (snapshot.data == null) {
                   return Container();
                 } else {
-                  List<JournalEntity> items = snapshot.data!;
-                  double screenWidth = MediaQuery.of(context).size.width;
+                  final items = snapshot.data!;
+                  final screenWidth = MediaQuery.of(context).size.width;
+
+                  // ignore: omit_local_variable_types
                   double searchHeaderHeight = 136;
 
                   if (tagIds.toList().isNotEmpty) {
@@ -321,21 +323,22 @@ class _TasksPageState extends State<TasksPage> {
                               ...List.generate(
                                 items.length,
                                 (int index) {
-                                  JournalEntity item = items.elementAt(index);
+                                  final item = items.elementAt(index);
                                   return item.maybeMap(
-                                      journalImage: (JournalImage image) {
-                                    return JournalImageCard(
-                                      item: image,
-                                      key: ValueKey(item.meta.id),
-                                    );
-                                  }, orElse: () {
-                                    return JournalCard(
-                                      item: item,
-                                      key: ValueKey(item.meta.id),
-                                    );
-                                  });
+                                    journalImage: (JournalImage image) {
+                                      return JournalImageCard(
+                                        item: image,
+                                        key: ValueKey(item.meta.id),
+                                      );
+                                    },
+                                    orElse: () {
+                                      return JournalCard(
+                                        item: item,
+                                        key: ValueKey(item.meta.id),
+                                      );
+                                    },
+                                  );
                                 },
-                                growable: true,
                               )
                             ],
                           ),
@@ -356,14 +359,12 @@ class _TasksPageState extends State<TasksPage> {
 }
 
 class AddTask extends StatelessWidget {
-  const AddTask({
-    Key? key,
-  }) : super(key: key);
+  const AddTask({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(4.0),
+      padding: const EdgeInsets.all(4),
       child: FloatingActionButton(
         heroTag: 'addTask',
         backgroundColor: AppColors.actionColor,

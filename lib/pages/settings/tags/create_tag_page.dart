@@ -6,12 +6,12 @@ import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 class CreateTagPage extends StatefulWidget {
-  final String tagType;
-
   const CreateTagPage({
-    Key? key,
+    super.key,
     @PathParam() required this.tagType,
-  }) : super(key: key);
+  });
+
+  final String tagType;
 
   @override
   State<CreateTagPage> createState() => _CreateTagPageState();
@@ -24,7 +24,7 @@ class _CreateTagPageState extends State<CreateTagPage> {
   void initState() {
     super.initState();
 
-    final DateTime now = DateTime.now();
+    final now = DateTime.now();
     debugPrint(widget.tagType);
     if (widget.tagType == 'TAG') {
       _tagEntity = TagEntity.genericTag(

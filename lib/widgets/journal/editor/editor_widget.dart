@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_dynamic_calls
+
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/classes/journal_entities.dart';
@@ -6,6 +8,18 @@ import 'package:lotti/widgets/journal/editor/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor/editor_toolbar.dart';
 
 class EditorWidget extends StatelessWidget {
+  const EditorWidget({
+    super.key,
+    required this.controller,
+    this.journalEntity,
+    this.minHeight = 40,
+    this.maxHeight = double.maxFinite,
+    this.padding = 16,
+    this.autoFocus = false,
+    required this.saveFn,
+    required this.focusNode,
+  });
+
   final JournalEntity? journalEntity;
   final QuillController controller;
   final double maxHeight;
@@ -15,20 +29,11 @@ class EditorWidget extends StatelessWidget {
   final Function saveFn;
   final FocusNode focusNode;
 
-  const EditorWidget({
-    Key? key,
-    required this.controller,
-    this.journalEntity,
-    this.minHeight = 40,
-    this.maxHeight = double.maxFinite,
-    this.padding = 16.0,
-    this.autoFocus = false,
-    required this.saveFn,
-    required this.focusNode,
-  }) : super(key: key);
-
   void keyFormatter(
-      RawKeyEvent event, String char, Attribute<dynamic> attribute) {
+    RawKeyEvent event,
+    String char,
+    Attribute<dynamic> attribute,
+  ) {
     if (event.data.isMetaPressed && event.character == char) {
       if (controller
           .getSelectionStyle()
@@ -57,7 +62,7 @@ class EditorWidget extends StatelessWidget {
         keyFormatter(event, 'i', Attribute.italic);
         saveViaKeyboard(event);
       },
-      child: Container(
+      child: ColoredBox(
         color: AppColors.editorBgColor,
         child: ConstrainedBox(
           constraints: BoxConstraints(

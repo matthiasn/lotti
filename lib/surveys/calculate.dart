@@ -8,17 +8,16 @@ Map<String, int> calculateScores({
   required Map<String, Set<String>> scoreDefinitions,
   required RPTaskResult taskResult,
 }) {
-  Map<String, dynamic> results = taskResult.results;
-  Map<String, int> calculatedScores = {};
+  final results = taskResult.results;
+  final calculatedScores = <String, int>{};
 
-  for (MapEntry<String, Set<String>> scoreDefinition
-      in scoreDefinitions.entries) {
-    int score = 0;
+  for (final scoreDefinition in scoreDefinitions.entries) {
+    var score = 0;
 
-    for (String questionId in scoreDefinition.value) {
-      RPStepResult stepResult = results[questionId];
-      RPImageChoice choice = stepResult.results['answer'];
-      int value = choice.value;
+    for (final questionId in scoreDefinition.value) {
+      final stepResult = results[questionId] as RPStepResult;
+      final choice = stepResult.results['answer'] as RPImageChoice;
+      final value = choice.value as int;
       score = score + value;
     }
 
@@ -28,12 +27,12 @@ Map<String, int> calculateScores({
   return calculatedScores;
 }
 
-Function(RPTaskResult) createResultCallback({
+void Function(RPTaskResult) createResultCallback({
   required Map<String, Set<String>> scoreDefinitions,
   required BuildContext context,
   String? linkedId,
 }) {
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+  final persistenceLogic = getIt<PersistenceLogic>();
 
   return (RPTaskResult taskResult) {
     persistenceLogic.createSurveyEntry(

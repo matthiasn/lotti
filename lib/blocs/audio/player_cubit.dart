@@ -8,20 +8,17 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
-
   AudioPlayerCubit()
-      : super(AudioPlayerState(
-          status: AudioPlayerStatus.initializing,
-          totalDuration: const Duration(minutes: 0),
-          progress: const Duration(minutes: 0),
-          pausedAt: const Duration(minutes: 0),
-          speed: 1.0,
-        )) {
-    _audioPlayer.positionStream.listen((event) {
-      updateProgress(event);
-    });
+      : super(
+          AudioPlayerState(
+            status: AudioPlayerStatus.initializing,
+            totalDuration: Duration.zero,
+            progress: Duration.zero,
+            pausedAt: Duration.zero,
+            speed: 1,
+          ),
+        ) {
+    _audioPlayer.positionStream.listen(updateProgress);
     _audioPlayer.playbackEventStream.listen((event) {
       if (event.processingState == ProcessingState.completed) {
         stopPlay();
@@ -29,29 +26,32 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     });
   }
 
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  final LoggingDb _loggingDb = getIt<LoggingDb>();
+
   void updateProgress(Duration duration) {
     emit(state.copyWith(progress: duration));
   }
 
-  void setAudioNote(JournalAudio audioNote) async {
+  Future<void> setAudioNote(JournalAudio audioNote) async {
     try {
-      String localPath = await AudioUtils.getFullAudioPath(audioNote);
-      AudioPlayerState newState = AudioPlayerState(
+      final localPath = await AudioUtils.getFullAudioPath(audioNote);
+      final newState = AudioPlayerState(
         status: AudioPlayerStatus.stopped,
-        progress: const Duration(minutes: 0),
-        pausedAt: const Duration(minutes: 0),
+        progress: Duration.zero,
+        pausedAt: Duration.zero,
         totalDuration: entryDuration(audioNote),
-        speed: 1.0,
+        speed: 1,
         audioNote: audioNote,
       );
       emit(newState);
 
-      Duration? totalDuration = await _audioPlayer.setFilePath(localPath);
+      final totalDuration = await _audioPlayer.setFilePath(localPath);
       if (totalDuration != null) {
         emit(newState.copyWith(totalDuration: totalDuration));
       }
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -59,14 +59,14 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     }
   }
 
-  void play() async {
+  Future<void> play() async {
     try {
       await _audioPlayer.setSpeed(state.speed);
-      _audioPlayer.play();
+      await _audioPlayer.play();
       await _audioPlayer.seek(state.pausedAt);
       emit(state.copyWith(status: AudioPlayerStatus.playing));
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -74,15 +74,17 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     }
   }
 
-  void stopPlay() async {
+  Future<void> stopPlay() async {
     try {
       await _audioPlayer.stop();
-      emit(state.copyWith(
-        status: AudioPlayerStatus.stopped,
-        progress: const Duration(minutes: 0),
-      ));
+      emit(
+        state.copyWith(
+          status: AudioPlayerStatus.stopped,
+          progress: Duration.zero,
+        ),
+      );
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -90,15 +92,17 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     }
   }
 
-  void seek(Duration newPosition) async {
+  Future<void> seek(Duration newPosition) async {
     try {
       await _audioPlayer.seek(newPosition);
-      emit(state.copyWith(
-        progress: newPosition,
-        pausedAt: newPosition,
-      ));
+      emit(
+        state.copyWith(
+          progress: newPosition,
+          pausedAt: newPosition,
+        ),
+      );
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -106,12 +110,12 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     }
   }
 
-  void setSpeed(double speed) async {
+  Future<void> setSpeed(double speed) async {
     try {
       await _audioPlayer.setSpeed(speed);
       emit(state.copyWith(speed: speed));
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -119,15 +123,17 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     }
   }
 
-  void pause() async {
+  Future<void> pause() async {
     try {
       await _audioPlayer.pause();
-      emit(state.copyWith(
-        status: AudioPlayerStatus.paused,
-        pausedAt: state.progress,
-      ));
+      emit(
+        state.copyWith(
+          status: AudioPlayerStatus.paused,
+          pausedAt: state.progress,
+        ),
+      );
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -135,17 +141,19 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     }
   }
 
-  void fwd() async {
+  Future<void> fwd() async {
     try {
-      Duration newPosition =
+      final newPosition =
           Duration(milliseconds: state.progress.inMilliseconds + 15000);
       await _audioPlayer.seek(newPosition);
-      emit(state.copyWith(
-        progress: newPosition,
-        pausedAt: newPosition,
-      ));
+      emit(
+        state.copyWith(
+          progress: newPosition,
+          pausedAt: newPosition,
+        ),
+      );
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -153,17 +161,19 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     }
   }
 
-  void rew() async {
+  Future<void> rew() async {
     try {
-      Duration newPosition =
+      final newPosition =
           Duration(milliseconds: state.progress.inMilliseconds - 15000);
       await _audioPlayer.seek(newPosition);
-      emit(state.copyWith(
-        progress: newPosition,
-        pausedAt: newPosition,
-      ));
+      emit(
+        state.copyWith(
+          progress: newPosition,
+          pausedAt: newPosition,
+        ),
+      );
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'player_cubit',
         stackTrace: stackTrace,
@@ -173,7 +183,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   @override
   Future<void> close() async {
-    super.close();
-    _audioPlayer.dispose();
+    await super.close();
+    await _audioPlayer.dispose();
   }
 }

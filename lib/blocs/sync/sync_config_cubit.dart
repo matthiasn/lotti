@@ -1,7 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:easy_debounce/easy_debounce.dart';
-import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
@@ -15,13 +14,6 @@ part 'sync_config_cubit.freezed.dart';
 part 'sync_config_state.dart';
 
 class SyncConfigCubit extends Cubit<SyncConfigState> {
-  final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
-
-  String? sharedSecret;
-  ImapConfig? imapConfig;
-  bool isAccountValid = false;
-  String? connectionError;
-
   SyncConfigCubit() : super(SyncConfigState.loading()) {
     loadSyncConfig();
 
@@ -31,18 +23,24 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     });
   }
 
+  final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
+  String? sharedSecret;
+  ImapConfig? imapConfig;
+  bool isAccountValid = false;
+  String? connectionError;
+
   Future<void> loadSyncConfig() async {
     emit(SyncConfigState.loading());
-    SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
+    final syncConfig = await _syncConfigService.getSyncConfig();
     imapConfig = syncConfig?.imapConfig;
     sharedSecret = syncConfig?.sharedSecret;
 
     if (sharedSecret != null) {
-      getIt<SyncInboxService>().init();
-      getIt<OutboxService>().init();
+      await getIt<SyncInboxService>().init();
+      await getIt<OutboxService>().init();
     }
 
-    testConnection();
+    await testConnection();
   }
 
   void resetStatus() {
@@ -54,21 +52,27 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     if (imapConfig == null && sharedSecret == null) {
       emit(SyncConfigState.empty());
     } else if (imapConfig != null && sharedSecret != null && isAccountValid) {
-      emit(SyncConfigState.configured(
-        imapConfig: imapConfig!,
-        sharedSecret: sharedSecret!,
-      ));
+      emit(
+        SyncConfigState.configured(
+          imapConfig: imapConfig!,
+          sharedSecret: sharedSecret!,
+        ),
+      );
     } else if (imapConfig != null &&
         connectionError == null &&
         isAccountValid) {
-      emit(SyncConfigState.imapValid(
-        imapConfig: imapConfig!,
-      ));
+      emit(
+        SyncConfigState.imapValid(
+          imapConfig: imapConfig!,
+        ),
+      );
     } else if (imapConfig != null && connectionError != null) {
-      emit(SyncConfigState.imapInvalid(
-        imapConfig: imapConfig!,
-        errorMessage: connectionError!,
-      ));
+      emit(
+        SyncConfigState.imapInvalid(
+          imapConfig: imapConfig!,
+          errorMessage: connectionError!,
+        ),
+      );
     }
   }
 
@@ -78,7 +82,7 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     if (imapConfig != null) {
       emit(SyncConfigState.imapTesting(imapConfig: imapConfig!));
 
-      ImapClient? client = await createImapClient(
+      final client = await createImapClient(
         SyncConfig(
           imapConfig: imapConfig!,
           sharedSecret: '',
@@ -94,18 +98,18 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
       }
     }
 
-    emitState();
+    await emitState();
   }
 
   Future<void> generateSharedKey() async {
     emit(SyncConfigState.generating());
     await _syncConfigService.generateSharedKey();
-    loadSyncConfig();
+    await loadSyncConfig();
   }
 
   Future<void> setSyncConfig(String configJson) async {
-    _syncConfigService.setSyncConfig(configJson);
-    loadSyncConfig();
+    await _syncConfigService.setSyncConfig(configJson);
+    await loadSyncConfig();
   }
 
   void testImapConfig(ImapConfig? config) {
@@ -125,7 +129,7 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
 
   Future<void> deleteSharedKey() async {
     await _syncConfigService.deleteSharedKey();
-    loadSyncConfig();
+    await loadSyncConfig();
   }
 
   Future<void> deleteImapConfig() async {

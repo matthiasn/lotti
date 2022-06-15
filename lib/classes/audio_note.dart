@@ -1,8 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/sync/vector_clock.dart';
-
-import 'entry_text.dart';
 
 part 'audio_note.freezed.dart';
 part 'audio_note.g.dart';

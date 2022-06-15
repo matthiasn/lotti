@@ -17,7 +17,7 @@ ImapConfig? configFromForm(GlobalKey<FormBuilderState> formKey) {
       folder: 'INBOX.lotti-sync',
       userName: getTrimmed('imap_userName'),
       password: getTrimmed('imap_password'),
-      port: int.parse(formData!['imap_port']),
+      port: int.parse(formData!['imap_port'] as String),
     );
   } else {
     return null;

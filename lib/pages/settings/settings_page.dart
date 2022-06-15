@@ -9,9 +9,9 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
-    Key? key,
+    super.key,
     this.navigatorKey,
-  }) : super(key: key);
+  });
 
   final GlobalKey? navigatorKey;
 
@@ -27,15 +27,15 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
       appBar: VersionAppBar(title: localizations.navTabTitleSettings),
       body: Container(
         margin: const EdgeInsets.symmetric(
-          vertical: 8.0,
-          horizontal: 8.0,
+          vertical: 8,
+          horizontal: 8,
         ),
         child: ListView(
           children: [

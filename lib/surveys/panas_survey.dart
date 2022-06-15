@@ -45,9 +45,10 @@ RPImageChoiceAnswerFormat panasImageChoiceAnswerFormat =
     RPImageChoiceAnswerFormat(choices: panasImages);
 
 RPCompletionStep panasCompletionStep = RPCompletionStep(
-    identifier: 'panasCompletion',
-    title: 'Finished',
-    text: 'Thank you for filling out the PANAS!');
+  identifier: 'panasCompletion',
+  title: 'Finished',
+  text: 'Thank you for filling out the PANAS!',
+);
 
 RPOrderedTask panasSurveyTask = RPOrderedTask(
   identifier: 'panasSurveyTask',

@@ -15,164 +15,164 @@ import 'package:lotti/widgets/sync/qr_reader_widget.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class EncryptionQrWidget extends StatelessWidget {
-  const EncryptionQrWidget({Key? key}) : super(key: key);
+  const EncryptionQrWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     if (Platform.isIOS || Platform.isAndroid) {
       return const EncryptionQrReaderWidget();
     }
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
-        builder: (context, SyncConfigState state) {
-      return Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Button(
-              localizations.settingsSyncGenKeyButton,
-              onPressed: () =>
-                  context.read<SyncConfigCubit>().generateSharedKey(),
-              primaryColor: Colors.red,
-            ),
-            const SizedBox(height: 32),
-            state.maybeWhen(
-              orElse: () => const SizedBox.shrink(),
-              configured: (ImapConfig imapConfig, String sharedKey) {
-                SyncConfig syncConfig = SyncConfig(
-                  imapConfig: imapConfig,
-                  sharedSecret: sharedKey,
-                );
-                String syncCfgJson = json.encode(syncConfig);
-                return Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8.0),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.all(
-                          Radius.circular(8.0),
-                        ),
-                      ),
-                      child: GestureDetector(
-                        onTap: () {
-                          showDialog<String>(
-                            context: context,
-                            builder: (BuildContext context) => AlertDialog(
-                              title: Text(
-                                localizations.settingsSyncCopyCfg,
-                                style: const TextStyle(fontFamily: 'Oswald'),
-                              ),
-                              content: Text(
-                                localizations.settingsSyncCopyCfgWarning,
-                                style: const TextStyle(fontFamily: 'Lato'),
-                              ),
-                              actions: <Widget>[
-                                Button(
-                                  localizations.settingsSyncCancelButton,
-                                  onPressed: () {
-                                    Navigator.pop(context, 'Cancel');
-                                  },
-                                  primaryColor: Colors.grey,
-                                ),
-                                Button(
-                                  localizations.settingsSyncCopyButton,
-                                  onPressed: () {
-                                    Clipboard.setData(
-                                        ClipboardData(text: syncCfgJson));
-                                    Navigator.pop(context, 'Copy SyncConfig');
-                                  },
-                                  primaryColor: Colors.red,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        child: QrImage(
-                          data: syncCfgJson,
-                          version: QrVersions.auto,
-                          size: 280.0,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    const DeleteSyncConfigButton(),
-                  ],
-                );
-              },
-              loading: () =>
-                  StatusTextWidget(localizations.settingsSyncLoadingKey),
-              generating: () =>
-                  StatusTextWidget(localizations.settingsSyncGenKey),
-              empty: () => Column(
-                children: [
-                  StatusTextWidget(localizations.settingsSyncNotInitialized),
-                  const SizedBox(height: 32),
-                  Button(
-                    localizations.settingsSyncPasteCfg,
-                    onPressed: () {
-                      showDialog<String>(
-                        context: context,
-                        builder: (BuildContext context) => AlertDialog(
-                          title: Text(
-                            localizations.settingsSyncPasteCfg,
-                            style: const TextStyle(fontFamily: 'Oswald'),
-                          ),
-                          content: Text(
-                            localizations.settingsSyncPasteCfgWarning,
-                            style: const TextStyle(fontFamily: 'Lato'),
-                          ),
-                          actions: <Widget>[
-                            Button(
-                              localizations.settingsSyncCancelButton,
-                              onPressed: () {
-                                Navigator.pop(context, 'Cancel');
-                              },
-                              primaryColor: Colors.grey,
-                            ),
-                            Button(
-                              localizations.settingsSyncImportButton,
-                              onPressed: () async {
-                                final navigator = Navigator.of(context);
-                                final syncConfigCubit =
-                                    context.read<SyncConfigCubit>();
-
-                                ClipboardData? data =
-                                    await Clipboard.getData('text/plain');
-                                String? syncCfg = data?.text;
-                                if (syncCfg != null) {
-                                  syncConfigCubit.setSyncConfig(syncCfg);
-                                }
-                                navigator.pop('Import SyncConfig');
-                              },
-                              primaryColor: Colors.red,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    primaryColor: Colors.red,
-                  ),
-                ],
+      builder: (context, SyncConfigState state) {
+        return Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Button(
+                localizations.settingsSyncGenKeyButton,
+                onPressed: () =>
+                    context.read<SyncConfigCubit>().generateSharedKey(),
+                primaryColor: Colors.red,
               ),
-            ),
-          ],
-        ),
-      );
-    });
+              const SizedBox(height: 32),
+              state.maybeWhen(
+                orElse: () => const SizedBox.shrink(),
+                configured: (ImapConfig imapConfig, String sharedKey) {
+                  final syncConfig = SyncConfig(
+                    imapConfig: imapConfig,
+                    sharedSecret: sharedKey,
+                  );
+                  final syncCfgJson = json.encode(syncConfig);
+                  return Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(8),
+                          ),
+                        ),
+                        child: GestureDetector(
+                          onTap: () {
+                            showDialog<String>(
+                              context: context,
+                              builder: (BuildContext context) => AlertDialog(
+                                title: Text(
+                                  localizations.settingsSyncCopyCfg,
+                                  style: const TextStyle(fontFamily: 'Oswald'),
+                                ),
+                                content: Text(
+                                  localizations.settingsSyncCopyCfgWarning,
+                                  style: const TextStyle(fontFamily: 'Lato'),
+                                ),
+                                actions: <Widget>[
+                                  Button(
+                                    localizations.settingsSyncCancelButton,
+                                    onPressed: () {
+                                      Navigator.pop(context, 'Cancel');
+                                    },
+                                    primaryColor: Colors.grey,
+                                  ),
+                                  Button(
+                                    localizations.settingsSyncCopyButton,
+                                    onPressed: () {
+                                      Clipboard.setData(
+                                        ClipboardData(text: syncCfgJson),
+                                      );
+                                      Navigator.pop(context, 'Copy SyncConfig');
+                                    },
+                                    primaryColor: Colors.red,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          child: QrImage(
+                            data: syncCfgJson,
+                            size: 280,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      const DeleteSyncConfigButton(),
+                    ],
+                  );
+                },
+                loading: () =>
+                    StatusTextWidget(localizations.settingsSyncLoadingKey),
+                generating: () =>
+                    StatusTextWidget(localizations.settingsSyncGenKey),
+                empty: () => Column(
+                  children: [
+                    StatusTextWidget(localizations.settingsSyncNotInitialized),
+                    const SizedBox(height: 32),
+                    Button(
+                      localizations.settingsSyncPasteCfg,
+                      onPressed: () {
+                        showDialog<String>(
+                          context: context,
+                          builder: (BuildContext context) => AlertDialog(
+                            title: Text(
+                              localizations.settingsSyncPasteCfg,
+                              style: const TextStyle(fontFamily: 'Oswald'),
+                            ),
+                            content: Text(
+                              localizations.settingsSyncPasteCfgWarning,
+                              style: const TextStyle(fontFamily: 'Lato'),
+                            ),
+                            actions: <Widget>[
+                              Button(
+                                localizations.settingsSyncCancelButton,
+                                onPressed: () {
+                                  Navigator.pop(context, 'Cancel');
+                                },
+                                primaryColor: Colors.grey,
+                              ),
+                              Button(
+                                localizations.settingsSyncImportButton,
+                                onPressed: () async {
+                                  final navigator = Navigator.of(context);
+                                  final syncConfigCubit =
+                                      context.read<SyncConfigCubit>();
+
+                                  final data =
+                                      await Clipboard.getData('text/plain');
+                                  final syncCfg = data?.text;
+                                  if (syncCfg != null) {
+                                    await syncConfigCubit
+                                        .setSyncConfig(syncCfg);
+                                  }
+                                  navigator.pop('Import SyncConfig');
+                                },
+                                primaryColor: Colors.red,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      primaryColor: Colors.red,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 
 class DeleteSyncConfigButton extends StatelessWidget {
-  const DeleteSyncConfigButton({
-    Key? key,
-  }) : super(key: key);
+  const DeleteSyncConfigButton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Button(
       localizations.settingsSyncDeleteKeyButton,
@@ -187,16 +187,17 @@ class DeleteSyncConfigButton extends StatelessWidget {
 }
 
 class StatusTextWidget extends StatelessWidget {
-  final String label;
   const StatusTextWidget(
     this.label, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(8),
       child: Text(
         label,
         style: TextStyle(

@@ -3,20 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:lotti/theme.dart';
 
 class Button extends StatelessWidget {
-  final String label;
-  final Color primaryColor;
-  final Color textColor;
-  final Function() onPressed;
-  final EdgeInsets padding;
-
   const Button(
     this.label, {
     this.primaryColor = CupertinoColors.activeBlue,
     this.textColor = CupertinoColors.white,
-    this.padding = const EdgeInsets.all(4.0),
+    this.padding = const EdgeInsets.all(4),
     required this.onPressed,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final String label;
+  final Color primaryColor;
+  final Color textColor;
+  final void Function() onPressed;
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class Button extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           primary: primaryColor,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8.0),
+            borderRadius: BorderRadius.circular(8),
           ),
         ),
         onPressed: onPressed,

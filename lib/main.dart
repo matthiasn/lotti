@@ -25,7 +25,7 @@ Future<void> main() async {
 
   if (Platform.isMacOS) {
     await windowManager.ensureInitialized();
-    hotKeyManager.unregisterAll();
+    await hotKeyManager.unregisterAll();
   }
 
   getIt.registerSingleton<WindowService>(WindowService());
@@ -36,8 +36,7 @@ Future<void> main() async {
     registerSingletons();
 
     FlutterError.onError = (FlutterErrorDetails details) {
-      final LoggingDb loggingDb = getIt<LoggingDb>();
-      loggingDb.captureException(
+      getIt<LoggingDb>().captureException(
         details,
         domain: 'MAIN',
         subDomain: 'onError',
@@ -48,8 +47,7 @@ Future<void> main() async {
 
     runApp(LottiApp());
   }, (Object error, StackTrace stackTrace) {
-    final LoggingDb loggingDb = getIt<LoggingDb>();
-    loggingDb.captureException(
+    getIt<LoggingDb>().captureException(
       error,
       domain: 'MAIN',
       subDomain: 'runZonedGuarded',
@@ -59,7 +57,7 @@ Future<void> main() async {
 }
 
 class LottiApp extends StatelessWidget {
-  LottiApp({Key? key}) : super(key: key);
+  LottiApp({super.key});
   final router = getIt<AppRouter>();
 
   @override

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
@@ -17,11 +18,17 @@ import 'package:permission_handler/permission_handler.dart';
 
 AudioRecorderState initialState = AudioRecorderState(
   status: AudioRecorderStatus.initializing,
-  decibels: 0.0,
-  progress: const Duration(minutes: 0),
+  decibels: 0,
+  progress: Duration.zero,
 );
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
+  AudioRecorderCubit() : super(initialState) {
+    if (!Platform.isLinux && !Platform.isWindows) {
+      _deviceLocation = DeviceLocation();
+    }
+  }
+
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   String? _linkedId;
@@ -30,30 +37,24 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   AudioNote? _audioNote;
   DeviceLocation? _deviceLocation;
 
-  AudioRecorderCubit() : super(initialState) {
-    if (!Platform.isLinux && !Platform.isWindows) {
-      _deviceLocation = DeviceLocation();
-    }
-  }
-
   Future<void> _openAudioSession() async {
     try {
       if (Platform.isAndroid) {
-        var status = await Permission.microphone.request();
+        final status = await Permission.microphone.request();
         if (status != PermissionStatus.granted) {
           throw RecordingPermissionException(
-              'Microphone permission not granted');
+            'Microphone permission not granted',
+          );
         }
       }
       _myRecorder = FlutterSoundRecorder();
       await _myRecorder?.openAudioSession();
       emit(state.copyWith(status: AudioRecorderStatus.initialized));
-      _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
-      _myRecorder?.onProgress?.listen((event) {
-        updateProgress(event);
-      });
+      await _myRecorder
+          ?.setSubscriptionDuration(const Duration(milliseconds: 500));
+      _myRecorder?.onProgress?.listen(updateProgress);
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'recorder_cubit',
         stackTrace: stackTrace,
@@ -62,28 +63,32 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   void updateProgress(RecordingDisposition event) {
-    emit(state.copyWith(
-      progress: event.duration,
-      decibels: event.decibels ?? 0.0,
-    ));
+    emit(
+      state.copyWith(
+        progress: event.duration,
+        decibels: event.decibels ?? 0,
+      ),
+    );
   }
 
-  void _saveAudioNoteJson() async {
+  Future<void> _saveAudioNoteJson() async {
     if (_audioNote != null) {
       _audioNote = _audioNote?.copyWith(updatedAt: DateTime.now());
     }
   }
 
-  void _addGeolocation() async {
+  Future<void> _addGeolocation() async {
     try {
-      _deviceLocation?.getCurrentGeoLocation().then((Geolocation? geolocation) {
+      await _deviceLocation
+          ?.getCurrentGeoLocation()
+          .then((Geolocation? geolocation) {
         if (geolocation != null) {
           _audioNote = _audioNote?.copyWith(geolocation: geolocation);
           _saveAudioNoteJson();
         }
       });
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'recorder_cubit',
         stackTrace: stackTrace,
@@ -91,37 +96,38 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     }
   }
 
-  void record({
+  Future<void> record({
     String? linkedId,
   }) async {
     if (state.status == AudioRecorderStatus.recording) {
-      stop();
+      await stop();
     } else {
       _linkedId = linkedId;
       try {
         await _openAudioSession();
-        DateTime created = DateTime.now();
-        String fileName =
+        final created = DateTime.now();
+        final fileName =
             '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
-        String day = DateFormat('yyyy-MM-dd').format(created);
-        String relativePath = '/audio/$day/';
-        String directory = await createAssetDirectory(relativePath);
-        String filePath = '$directory$fileName';
+        final day = DateFormat('yyyy-MM-dd').format(created);
+        final relativePath = '/audio/$day/';
+        final directory = await createAssetDirectory(relativePath);
+        final filePath = '$directory$fileName';
 
         _audioNote = AudioNote(
-            id: uuid.v1(options: {'msecs': created.millisecondsSinceEpoch}),
-            timestamp: created.millisecondsSinceEpoch,
-            createdAt: created,
-            utcOffset: created.timeZoneOffset.inMinutes,
-            timezone: await getLocalTimezone(),
-            audioFile: fileName,
-            audioDirectory: relativePath,
-            duration: const Duration(seconds: 0));
+          id: uuid.v1(options: {'msecs': created.millisecondsSinceEpoch}),
+          timestamp: created.millisecondsSinceEpoch,
+          createdAt: created,
+          utcOffset: created.timeZoneOffset.inMinutes,
+          timezone: await getLocalTimezone(),
+          audioFile: fileName,
+          audioDirectory: relativePath,
+          duration: Duration.zero,
+        );
 
-        _saveAudioNoteJson();
-        _addGeolocation();
+        await _saveAudioNoteJson();
+        unawaited(_addGeolocation());
 
-        _myRecorder
+        await _myRecorder
             ?.startRecorder(
           toFile: filePath,
           codec: Codec.aacADTS,
@@ -132,7 +138,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           emit(state.copyWith(status: AudioRecorderStatus.recording));
         });
       } catch (exception, stackTrace) {
-        await _loggingDb.captureException(
+        _loggingDb.captureException(
           exception,
           domain: 'recorder_cubit',
           stackTrace: stackTrace,
@@ -141,34 +147,34 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     }
   }
 
-  void stop() async {
+  Future<void> stop() async {
     try {
       await _myRecorder?.stopRecorder();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
-      _saveAudioNoteJson();
+      await _saveAudioNoteJson();
       emit(initialState);
 
       if (_audioNote != null) {
-        AudioNote audioNote = _audioNote!;
-        persistenceLogic.createAudioEntry(
+        final audioNote = _audioNote!;
+        await persistenceLogic.createAudioEntry(
           audioNote,
           linkedId: _linkedId,
         );
         _linkedId = null;
       }
     } catch (exception, stackTrace) {
-      await _loggingDb.captureException(
+      _loggingDb.captureException(
         exception,
         domain: 'recorder_cubit',
         stackTrace: stackTrace,
       );
     }
-    getIt<AppRouter>().pop();
+    await getIt<AppRouter>().pop();
   }
 
   @override
   Future<void> close() async {
-    super.close();
-    _myRecorder?.stopRecorder();
+    await super.close();
+    await _myRecorder?.stopRecorder();
   }
 }

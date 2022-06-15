@@ -16,16 +16,16 @@ import 'package:lotti/widgets/charts/dashboard_workout_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardWorkoutChart extends StatefulWidget {
-  final DashboardWorkoutItem chartConfig;
-  final DateTime rangeStart;
-  final DateTime rangeEnd;
-
   const DashboardWorkoutChart({
-    Key? key,
+    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
-  }) : super(key: key);
+  });
+
+  final DashboardWorkoutItem chartConfig;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
 
   @override
   State<DashboardWorkoutChart> createState() => _DashboardWorkoutChartState();
@@ -44,7 +44,7 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
 
   @override
   Widget build(BuildContext context) {
-    charts.SeriesRendererConfig<DateTime>? defaultRenderer =
+    final charts.SeriesRendererConfig<DateTime> defaultRenderer =
         charts.BarRendererConfig<DateTime>();
 
     return BlocProvider<WorkoutChartInfoCubit>(
@@ -58,12 +58,13 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
           BuildContext context,
           AsyncSnapshot<List<JournalEntity?>> snapshot,
         ) {
-          List<JournalEntity?>? items = snapshot.data ?? [];
+          final items = snapshot.data ?? [];
 
           void _infoSelectionModelUpdated(
-              charts.SelectionModel<DateTime> model) {
+            charts.SelectionModel<DateTime> model,
+          ) {
             if (model.hasDatumSelection) {
-              Observation newSelection =
+              final newSelection =
                   model.selectedDatum.first.datum as Observation;
               context.read<WorkoutChartInfoCubit>().setSelected(newSelection);
 
@@ -76,7 +77,7 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
             }
           }
 
-          List<charts.Series<Observation, DateTime>> seriesList = [
+          final seriesList = <charts.Series<Observation, DateTime>>[
             charts.Series<Observation, DateTime>(
               id: widget.chartConfig.workoutType,
               domainFn: (Observation val, _) => val.dateTime,
@@ -97,7 +98,7 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
                 key: Key('${widget.chartConfig.hashCode}'),
                 color: Colors.white,
                 height: 120,
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Stack(
                   children: [
                     charts.TimeSeriesChart(
@@ -105,13 +106,14 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
                       animate: false,
                       behaviors: [
                         chartRangeAnnotation(
-                            widget.rangeStart, widget.rangeEnd),
+                          widget.rangeStart,
+                          widget.rangeEnd,
+                        ),
                       ],
                       domainAxis: timeSeriesAxis,
                       defaultRenderer: defaultRenderer,
                       selectionModels: [
                         charts.SelectionModelConfig(
-                          type: charts.SelectionModelType.info,
                           updatedListener: _infoSelectionModelUpdated,
                         ),
                       ],
@@ -138,56 +140,55 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
 class WorkoutChartInfoWidget extends StatelessWidget {
   const WorkoutChartInfoWidget(
     this.chartConfig, {
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   final DashboardWorkoutItem chartConfig;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<WorkoutChartInfoCubit, WorkoutChartInfoState>(
-        builder: (BuildContext context, WorkoutChartInfoState state) {
-      final Observation? selected = state.selected;
+      builder: (BuildContext context, WorkoutChartInfoState state) {
+        final selected = state.selected;
 
-      return Positioned(
-        top: -1,
-        left: MediaQuery.of(context).size.width / 4,
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width / 2,
-          child: IgnorePointer(
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Spacer(),
-                Text(
-                  chartConfig.displayName,
-                  style: chartTitleStyle,
-                ),
-                if (selected != null) ...[
-                  const Spacer(),
-                  Padding(
-                    padding: AppTheme.chartDateHorizontalPadding,
-                    child: Text(
-                      ' ${ymd(selected.dateTime)}',
-                      style: chartTitleStyle,
-                    ),
-                  ),
+        return Positioned(
+          top: -1,
+          left: MediaQuery.of(context).size.width / 4,
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width / 2,
+            child: IgnorePointer(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                   const Spacer(),
                   Text(
-                    ' ${NumberFormat('#,###.##').format(selected.value)}',
-                    style: chartTitleStyle.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    chartConfig.displayName,
+                    style: chartTitleStyle,
                   ),
+                  if (selected != null) ...[
+                    const Spacer(),
+                    Padding(
+                      padding: AppTheme.chartDateHorizontalPadding,
+                      child: Text(
+                        ' ${ymd(selected.dateTime)}',
+                        style: chartTitleStyle,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      ' ${NumberFormat('#,###.##').format(selected.value)}',
+                      style: chartTitleStyle.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
                 ],
-                const Spacer(),
-              ],
+              ),
             ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }

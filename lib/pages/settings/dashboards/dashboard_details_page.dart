@@ -29,9 +29,9 @@ import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class DashboardDetailPage extends StatefulWidget {
   const DashboardDetailPage({
-    Key? key,
+    super.key,
     required this.dashboard,
-  }) : super(key: key);
+  });
 
   final DashboardDefinition dashboard;
 
@@ -58,14 +58,16 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   }
 
   void onConfirmAddMeasurement(List<MeasurableDataType?> selection) {
-    for (MeasurableDataType? selected in selection) {
+    for (final selected in selection) {
       if (selected != null) {
         setState(() {
-          dashboardItems.add(DashboardItem.measurement(
-            id: selected.id,
-            aggregationType:
-                selected.aggregationType ?? AggregationType.dailySum,
-          ));
+          dashboardItems.add(
+            DashboardItem.measurement(
+              id: selected.id,
+              aggregationType:
+                  selected.aggregationType ?? AggregationType.dailySum,
+            ),
+          );
         });
       }
     }
@@ -73,20 +75,22 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
   void onConfirmAddHealthType(List<HealthTypeConfig?> selection) {
     dashboardItems = dashboardItems;
-    for (HealthTypeConfig? selected in selection) {
+    for (final selected in selection) {
       if (selected != null) {
         setState(() {
-          dashboardItems.add(DashboardItem.healthChart(
-            color: 'color',
-            healthType: selected.healthType,
-          ));
+          dashboardItems.add(
+            DashboardItem.healthChart(
+              color: 'color',
+              healthType: selected.healthType,
+            ),
+          );
         });
       }
     }
   }
 
   void onConfirmAddSurveyType(List<DashboardSurveyItem?> selection) {
-    for (DashboardSurveyItem? selected in selection) {
+    for (final selected in selection) {
       if (selected != null) {
         setState(() {
           dashboardItems.add(selected);
@@ -96,7 +100,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   }
 
   void onConfirmAddWorkoutType(List<DashboardWorkoutItem?> selection) {
-    for (DashboardWorkoutItem? selected in selection) {
+    for (final selected in selection) {
       if (selected != null) {
         setState(() {
           dashboardItems.add(selected);
@@ -106,7 +110,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   }
 
   void onConfirmAddStoryTimeType(List<DashboardStoryTimeItem?> selection) {
-    for (DashboardStoryTimeItem? selected in selection) {
+    for (final selected in selection) {
       if (selected != null) {
         setState(() {
           dashboardItems.add(selected);
@@ -129,51 +133,49 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
     return StreamBuilder<List<MeasurableDataType>>(
       stream: stream,
       builder: (
         BuildContext context,
         AsyncSnapshot<List<MeasurableDataType>> snapshot,
       ) {
-        List<MeasurableDataType> measurableDataTypes = snapshot.data ?? [];
+        final measurableDataTypes = snapshot.data ?? [];
 
-        final List<MultiSelectItem<MeasurableDataType>> measurableSelectItems =
-            measurableDataTypes
-                .map((item) => MultiSelectItem<MeasurableDataType>(
-                      item,
-                      item.displayName,
-                    ))
-                .toList();
+        final measurableSelectItems = measurableDataTypes
+            .map(
+              (item) => MultiSelectItem<MeasurableDataType>(
+                item,
+                item.displayName,
+              ),
+            )
+            .toList();
 
-        final List<MultiSelectItem<HealthTypeConfig>> healthSelectItems =
-            healthTypes.keys.map((String typeName) {
-          HealthTypeConfig? item = healthTypes[typeName];
+        final healthSelectItems = healthTypes.keys.map((String typeName) {
+          final item = healthTypes[typeName];
           return MultiSelectItem<HealthTypeConfig>(
             item!,
             item.displayName,
           );
         }).toList();
 
-        final List<MultiSelectItem<DashboardSurveyItem>> surveySelectItems =
-            surveyTypes.keys.map((String typeName) {
-          DashboardSurveyItem? item = surveyTypes[typeName];
+        final surveySelectItems = surveyTypes.keys.map((String typeName) {
+          final item = surveyTypes[typeName];
           return MultiSelectItem<DashboardSurveyItem>(
             item!,
             item.surveyName,
           );
         }).toList();
 
-        final List<MultiSelectItem<DashboardWorkoutItem>> workoutSelectItems =
-            workoutTypes.keys.map((String typeName) {
-          DashboardWorkoutItem? item = workoutTypes[typeName];
+        final workoutSelectItems = workoutTypes.keys.map((String typeName) {
+          final item = workoutTypes[typeName];
           return MultiSelectItem<DashboardWorkoutItem>(
             item!,
             item.displayName,
           );
         }).toList();
 
-        final List<MultiSelectItem<DashboardStoryTimeItem>> storySelectItems =
+        final storySelectItems =
             tagsService.getAllStoryTags().map((StoryTag storyTag) {
           return MultiSelectItem<DashboardStoryTimeItem>(
             DashboardStoryTimeItem(
@@ -188,12 +190,12 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
           _formKey.currentState!.save();
           if (_formKey.currentState!.validate()) {
             final formData = _formKey.currentState?.value;
-            DashboardDefinition dashboard = widget.dashboard.copyWith(
+            final dashboard = widget.dashboard.copyWith(
               name: '${formData!['name']}'.trim(),
               description: '${formData['description']}'.trim(),
-              private: formData['private'],
-              active: formData['active'],
-              reviewAt: formData['review_at'],
+              private: formData['private'] as bool,
+              active: formData['active'] as bool,
+              reviewAt: formData['review_at'] as DateTime,
               updatedAt: DateTime.now(),
               items: dashboardItems,
             );
@@ -209,17 +211,17 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
           setState(() {
             dirty = false;
           });
-          context.router.pop();
+          await context.router.pop();
         }
 
         Future<void> copyDashboard() async {
-          DashboardDefinition dashboard = await saveDashboard();
-          List<EntityDefinition> entityDefinitions = [dashboard];
+          final dashboard = await saveDashboard();
+          final entityDefinitions = <EntityDefinition>[dashboard];
 
-          for (DashboardItem item in dashboard.items) {
+          for (final item in dashboard.items) {
             await item.map(
               measurement: (DashboardMeasurementItem measurementItem) async {
-                MeasurableDataType? dataType =
+                final dataType =
                     await _db.getMeasurableDataTypeById(measurementItem.id);
                 if (dataType != null) {
                   entityDefinitions.add(dataType);
@@ -231,8 +233,9 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
               storyTimeChart: (_) {},
             );
           }
-          Clipboard.setData(
-              ClipboardData(text: json.encode(entityDefinitions)));
+          await Clipboard.setData(
+            ClipboardData(text: json.encode(entityDefinitions)),
+          );
         }
 
         return Scaffold(
@@ -245,7 +248,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                   key: const Key('dashboard_save'),
                   onPressed: saveDashboardPress,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
                       localizations.dashboardSaveLabel,
                       style: saveButtonStyle,
@@ -256,14 +259,14 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
           ),
           body: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
                       color: AppColors.headerBgColor,
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.all(24),
                       child: Column(
                         children: [
                           FormBuilder(
@@ -358,21 +361,24 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                       ? newIndex - 1
                                       : newIndex;
                                   dashboardItems.insert(
-                                      insertionIndex, movedItem);
+                                    insertionIndex,
+                                    movedItem,
+                                  );
                                 });
                               },
                               children: List.generate(
-                                (dashboardItems).length,
+                                dashboardItems.length,
                                 (int index) {
-                                  List<DashboardItem> items = dashboardItems;
-                                  DashboardItem item = items.elementAt(index);
+                                  final items = dashboardItems;
+                                  final item = items.elementAt(index);
 
                                   return Dismissible(
                                     onDismissed: (_) {
                                       dismissItem(index);
                                     },
                                     key: Key(
-                                        'dashboard-item-${item.hashCode}-$index'),
+                                      'dashboard-item-${item.hashCode}-$index',
+                                    ),
                                     child: DashboardItemCard(
                                       item: item,
                                       index: index,
@@ -426,7 +432,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                             iconData: MdiIcons.watch,
                           ),
                           Padding(
-                            padding: const EdgeInsets.only(top: 16.0),
+                            padding: const EdgeInsets.only(top: 16),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -468,13 +474,13 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                         );
 
                                         if (result == deleteKey) {
-                                          persistenceLogic
+                                          await persistenceLogic
                                               .upsertDashboardDefinition(
                                             widget.dashboard.copyWith(
                                               deletedAt: DateTime.now(),
                                             ),
                                           );
-                                          context.router.pop();
+                                          await context.router.pop();
                                         }
                                       },
                                     ),
@@ -498,17 +504,17 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 }
 
 class EditDashboardPage extends StatelessWidget {
+  EditDashboardPage({
+    super.key,
+    @PathParam() required this.dashboardId,
+  });
+
   final JournalDb _db = getIt<JournalDb>();
   final String dashboardId;
 
-  EditDashboardPage({
-    Key? key,
-    @PathParam() required this.dashboardId,
-  }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder(
       stream: _db.watchDashboardById(dashboardId),
@@ -517,7 +523,7 @@ class EditDashboardPage extends StatelessWidget {
         AsyncSnapshot<List<DashboardDefinition>> snapshot,
       ) {
         DashboardDefinition? dashboard;
-        var data = snapshot.data ?? [];
+        final data = snapshot.data ?? [];
         if (data.isNotEmpty) {
           dashboard = data.first;
         }

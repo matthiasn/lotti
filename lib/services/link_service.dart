@@ -12,9 +12,9 @@ class LinkService {
   String? _linkToId;
   String? _linkFromId;
 
-  void createLink() async {
+  Future<void> createLink() async {
     if (_linkFromId != null && _linkToId != null) {
-      HapticFeedback.heavyImpact();
+      await HapticFeedback.heavyImpact();
 
       await _persistenceLogic.createLink(
         fromId: _linkFromId!,
@@ -22,21 +22,20 @@ class LinkService {
       );
 
       final linkedFrom = await _journalDb.journalEntityById(_linkFromId!);
-      List<String>? linkedTagIds = linkedFrom?.meta.tagIds;
-      List<String> storyTags =
-          _tagsService.getFilteredStoryTagIds(linkedTagIds);
+      final linkedTagIds = linkedFrom?.meta.tagIds;
+      final storyTags = _tagsService.getFilteredStoryTagIds(linkedTagIds);
 
-      _persistenceLogic.addTags(
+      await _persistenceLogic.addTags(
         journalEntityId: _linkToId!,
         addedTagIds: storyTags,
       );
 
-      Future.delayed(const Duration(minutes: 2)).then((_) {
+      await Future<void>.delayed(const Duration(minutes: 2)).then((_) {
         _linkFromId = null;
         _linkToId = null;
       });
     } else {
-      HapticFeedback.lightImpact();
+      await HapticFeedback.lightImpact();
     }
   }
 

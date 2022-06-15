@@ -11,7 +11,7 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class LoggingPage extends StatefulWidget {
-  const LoggingPage({Key? key}) : super(key: key);
+  const LoggingPage({super.key});
 
   @override
   State<LoggingPage> createState() => _LoggingPageState();
@@ -28,7 +28,7 @@ class _LoggingPageState extends State<LoggingPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
@@ -39,11 +39,11 @@ class _LoggingPageState extends State<LoggingPage> {
           BuildContext context,
           AsyncSnapshot<List<LogEntry>> snapshot,
         ) {
-          List<LogEntry> logEntries = snapshot.data ?? [];
+          final logEntries = snapshot.data ?? [];
 
           return ListView(
             shrinkWrap: true,
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
             children: List.generate(
               logEntries.length,
               (int index) {
@@ -61,22 +61,22 @@ class _LoggingPageState extends State<LoggingPage> {
 }
 
 class LogLineCard extends StatelessWidget {
+  const LogLineCard({
+    super.key,
+    required this.logEntry,
+    required this.index,
+  });
+
   final LogEntry logEntry;
   final int index;
 
-  const LogLineCard({
-    Key? key,
-    required this.logEntry,
-    required this.index,
-  }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    String timestamp = logEntry.createdAt.substring(0, 23);
-    String domain = logEntry.domain;
-    String? subDomain = logEntry.subDomain;
-    String message = logEntry.message;
-    Color color =
+    final timestamp = logEntry.createdAt.substring(0, 23);
+    final domain = logEntry.domain;
+    final subDomain = logEntry.subDomain;
+    final message = logEntry.message;
+    final color =
         logEntry.level == 'ERROR' ? AppColors.error : AppColors.entryTextColor;
 
     return GestureDetector(
@@ -84,13 +84,13 @@ class LogLineCard extends StatelessWidget {
         pushNamedRoute('/settings/logging/${logEntry.id}');
       },
       child: Padding(
-        padding: const EdgeInsets.all(2.0),
+        padding: const EdgeInsets.all(2),
         child: Text(
           '$timestamp: $domain $subDomain $message',
           style: TextStyle(
             color: color,
             fontFamily: 'ShareTechMono',
-            fontSize: 11.0,
+            fontSize: 11,
           ),
         ),
       ),
@@ -99,18 +99,18 @@ class LogLineCard extends StatelessWidget {
 }
 
 class LogDetailPage extends StatelessWidget {
-  final LoggingDb _db = getIt<LoggingDb>();
-
   LogDetailPage({
-    Key? key,
+    super.key,
     @PathParam() required this.logEntryId,
-  }) : super(key: key);
+  });
+
+  final LoggingDb _db = getIt<LoggingDb>();
 
   final String logEntryId;
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
@@ -122,7 +122,7 @@ class LogDetailPage extends StatelessWidget {
           AsyncSnapshot<List<LogEntry>> snapshot,
         ) {
           LogEntry? logEntry;
-          var data = snapshot.data ?? [];
+          final data = snapshot.data ?? [];
           if (data.isNotEmpty) {
             logEntry = data.first;
           }
@@ -131,17 +131,17 @@ class LogDetailPage extends StatelessWidget {
             return const EmptyScaffoldWithTitle('');
           }
 
-          String timestamp = logEntry.createdAt.substring(0, 23);
-          String domain = logEntry.domain;
-          String level = logEntry.level;
-          String? subDomain = logEntry.subDomain;
-          String message = logEntry.message;
-          String? stacktrace = logEntry.stacktrace;
+          final timestamp = logEntry.createdAt.substring(0, 23);
+          final domain = logEntry.domain;
+          final level = logEntry.level;
+          final subDomain = logEntry.subDomain;
+          final message = logEntry.message;
+          final stacktrace = logEntry.stacktrace;
 
-          String clipboardText =
+          final clipboardText =
               '$timestamp $level $domain $subDomain\n\n$message\n\n$stacktrace';
 
-          TextStyle headerStyle = level == 'ERROR'
+          final headerStyle = level == 'ERROR'
               ? logDetailStyle.copyWith(
                   color: AppColors.error,
                   fontWeight: FontWeight.bold,
@@ -150,7 +150,7 @@ class LogDetailPage extends StatelessWidget {
               : logDetailStyle.copyWith(fontSize: 20);
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
             child: Column(
               children: [
                 Wrap(
@@ -167,13 +167,13 @@ class LogDetailPage extends StatelessWidget {
                   ],
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 16.0),
+                  padding: const EdgeInsets.only(top: 16),
                   child: Text('Message:', style: formLabelStyle),
                 ),
                 SelectableText(message, style: logDetailStyle),
                 if (stacktrace != null) ...[
                   Padding(
-                    padding: const EdgeInsets.only(top: 16.0),
+                    padding: const EdgeInsets.only(top: 16),
                     child: Text('Stack Trace:', style: formLabelStyle),
                   ),
                   SelectableText(stacktrace, style: logDetailStyle),

@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 
 Future<String> getLocalTimezone() async {
-  DateTime now = DateTime.now();
+  final now = DateTime.now();
 
   if (Platform.isLinux) {
-    String timezone = await File('/etc/timezone').readAsString();
+    final timezone = await File('/etc/timezone').readAsString();
     return timezone.trim();
   }
 

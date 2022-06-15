@@ -7,8 +7,6 @@ import 'package:collection/collection.dart';
 class VclockException implements Exception {
   @override
   String toString() => 'Invalid vector clock inputs';
-
-  VclockException();
 }
 
 enum VclockStatus {
@@ -19,9 +17,11 @@ enum VclockStatus {
 }
 
 class VectorClock {
-  Map<String, int> vclock = <String, int>{};
-
   VectorClock(this.vclock);
+
+  factory VectorClock.fromJson(Map<String, dynamic> json) =>
+      VectorClock(Map<String, int>.from(json));
+  Map<String, int> vclock = <String, int>{};
 
   // Compares two vector clocks. A and B are maps with node id strings as keys
   // and an integer as value, which is the offset on the node associated with
@@ -33,8 +33,8 @@ class VectorClock {
 
   // Throws an exception when input is invalid.
   static VclockStatus compare(VectorClock vc1, VectorClock vc2) {
-    Set<VclockStatus> comparisons = <VclockStatus>{};
-    Set<String> nodeIds = <String>{};
+    final comparisons = <VclockStatus>{};
+    final nodeIds = <String>{};
 
     if (!vc1.isValid() || !vc2.isValid()) {
       throw VclockException();
@@ -44,18 +44,19 @@ class VectorClock {
       return VclockStatus.equal;
     }
 
-    nodeIds.addAll(vc1.vclock.keys);
-    nodeIds.addAll(vc2.vclock.keys);
+    nodeIds
+      ..addAll(vc1.vclock.keys)
+      ..addAll(vc2.vclock.keys);
 
-    for (String nodeId in nodeIds) {
-      int counterA = vc1.get(nodeId);
-      int counterB = vc2.get(nodeId);
+    for (final nodeId in nodeIds) {
+      final counterA = vc1.get(nodeId);
+      final counterB = vc2.get(nodeId);
 
       if (counterA == counterB) {
         comparisons.add(VclockStatus.equal);
       } else if (counterA > counterB) {
         comparisons.add(VclockStatus.a_gt_b);
-      } else if (counterB > counterA) {
+      } else {
         comparisons.add(VclockStatus.b_gt_a);
       }
     }
@@ -73,9 +74,10 @@ class VectorClock {
     return VclockStatus.concurrent;
   }
 
+  // ignore: prefer_constructors_over_static_methods
   static VectorClock merge(VectorClock? vc1, VectorClock? vc2) {
-    Map<String, int> merged = <String, int>{};
-    Set<String> nodeIds = <String>{};
+    final merged = <String, int>{};
+    final nodeIds = <String>{};
 
     if (vc1?.vclock != null) {
       nodeIds.addAll(vc1!.vclock.keys);
@@ -84,7 +86,7 @@ class VectorClock {
       nodeIds.addAll(vc2!.vclock.keys);
     }
 
-    for (String nodeId in nodeIds) {
+    for (final nodeId in nodeIds) {
       merged[nodeId] = max(
         vc1?.get(nodeId) ?? 0,
         vc2?.get(nodeId) ?? 0,
@@ -99,10 +101,9 @@ class VectorClock {
   }
 
   bool isValid() {
-    Set<int> counters = <int>{};
-    counters.addAll(vclock.values);
+    final counters = <int>{}..addAll(vclock.values);
 
-    for (int counter in counters) {
+    for (final counter in counters) {
       if (counter < 0) {
         return false;
       }
@@ -114,9 +115,6 @@ class VectorClock {
   String toString() {
     return vclock.toString();
   }
-
-  factory VectorClock.fromJson(Map<String, dynamic> json) =>
-      VectorClock(Map<String, int>.from(json));
 
   Map<String, dynamic> toJson() => vclock;
 }

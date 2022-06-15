@@ -4,9 +4,9 @@ import 'package:lotti/widgets/audio/audio_recorder.dart';
 
 class RecordAudioPage extends StatefulWidget {
   const RecordAudioPage({
-    Key? key,
+    super.key,
     @PathParam() this.linkedId,
-  }) : super(key: key);
+  });
   final String? linkedId;
 
   @override
@@ -29,7 +29,6 @@ class _RecordAudioPageState extends State<RecordAudioPage> {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           AudioRecorderWidget(
             linkedId: widget.linkedId,

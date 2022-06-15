@@ -7,9 +7,9 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 class VersionAppBar extends StatefulWidget with PreferredSizeWidget {
   const VersionAppBar({
-    Key? key,
+    super.key,
     required this.title,
-  }) : super(key: key);
+  });
 
   final String title;
 
@@ -28,7 +28,7 @@ class _VersionAppBarState extends State<VersionAppBar> {
   late Stream<int> countStream;
 
   Future<void> getVersions() async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    final packageInfo = await PackageInfo.fromPlatform();
     setState(() {
       version = packageInfo.version;
       buildNumber = packageInfo.buildNumber;
@@ -45,39 +45,40 @@ class _VersionAppBarState extends State<VersionAppBar> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<int>(
-        stream: countStream,
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<int> snapshot,
-        ) {
-          if (snapshot.data == null) {
-            return const SizedBox.shrink();
-          } else {
-            return AppBar(
-              backgroundColor: AppColors.headerBgColor,
-              title: Column(
-                children: [
-                  Text(
-                    widget.title,
-                    style: appBarTextStyle,
+      stream: countStream,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<int> snapshot,
+      ) {
+        if (snapshot.data == null) {
+          return const SizedBox.shrink();
+        } else {
+          return AppBar(
+            backgroundColor: AppColors.headerBgColor,
+            title: Column(
+              children: [
+                Text(
+                  widget.title,
+                  style: appBarTextStyle,
+                ),
+                Text(
+                  'v$version ($buildNumber), n = ${snapshot.data}',
+                  style: TextStyle(
+                    color: AppColors.headerFontColor2,
+                    fontFamily: 'Oswald',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w300,
                   ),
-                  Text(
-                    'v$version ($buildNumber), n = ${snapshot.data}',
-                    style: TextStyle(
-                      color: AppColors.headerFontColor2,
-                      fontFamily: 'Oswald',
-                      fontSize: 10.0,
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
-                ],
-              ),
-              centerTitle: true,
-              leading: AutoLeadingButton(
-                color: AppColors.entryTextColor,
-              ),
-            );
-          }
-        });
+                ),
+              ],
+            ),
+            centerTitle: true,
+            leading: AutoLeadingButton(
+              color: AppColors.entryTextColor,
+            ),
+          );
+        }
+      },
+    );
   }
 }

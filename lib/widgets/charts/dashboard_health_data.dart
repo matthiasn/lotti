@@ -13,22 +13,22 @@ Color colorByValue(
   Observation observation,
   HealthTypeConfig? healthTypeConfig,
 ) {
-  Color color = charts.MaterialPalette.blue.shadeDefault;
+  final color = charts.MaterialPalette.blue.shadeDefault;
 
   if (healthTypeConfig == null) {
     return color;
   }
 
   if (healthTypeConfig.colorByValue != null) {
-    Map<num, String>? colorByValue = healthTypeConfig.colorByValue;
-    List<num> sortedThresholds = colorByValue!.keys.toList();
-    sortedThresholds.sort();
+    final colorByValue = healthTypeConfig.colorByValue;
+    final sortedThresholds = colorByValue!.keys.toList()..sort();
 
-    num aboveThreshold = sortedThresholds.reversed.firstWhere(
-        (threshold) => observation.value >= threshold,
-        orElse: () => 0);
+    final aboveThreshold = sortedThresholds.reversed.firstWhere(
+      (threshold) => observation.value >= threshold,
+      orElse: () => 0,
+    );
 
-    HexColor color = HexColor(colorByValue[aboveThreshold] ?? '#000000');
+    final color = HexColor(colorByValue[aboveThreshold] ?? '#000000');
     return charts.Color(r: color.red, g: color.green, b: color.blue);
   }
 
@@ -36,10 +36,10 @@ Color colorByValue(
 }
 
 class Observation extends Equatable {
+  const Observation(this.dateTime, this.value);
+
   final DateTime dateTime;
   final num value;
-
-  const Observation(this.dateTime, this.value);
 
   @override
   String toString() {
@@ -54,16 +54,18 @@ List<Observation> aggregateNone(
   List<JournalEntity?> entities,
   String healthType,
 ) {
-  List<Observation> aggregated = [];
-  int multiplier = healthType.contains('PERCENTAGE') ? 100 : 1;
+  final aggregated = <Observation>[];
+  final multiplier = healthType.contains('PERCENTAGE') ? 100 : 1;
 
-  for (JournalEntity? entity in entities) {
+  for (final entity in entities) {
     entity?.maybeMap(
       quantitative: (QuantitativeEntry quant) {
-        aggregated.add(Observation(
-          quant.data.dateFrom,
-          quant.data.value * multiplier,
-        ));
+        aggregated.add(
+          Observation(
+            quant.data.dateFrom,
+            quant.data.value * multiplier,
+          ),
+        );
       },
       orElse: () {},
     );
@@ -73,18 +75,18 @@ List<Observation> aggregateNone(
 }
 
 List<Observation> aggregateDailyMax(List<JournalEntity?> entities) {
-  Map<String, num> maxByDay = {};
+  final maxByDay = <String, num>{};
   for (final entity in entities) {
-    String dayString = ymd(entity!.meta.dateFrom);
-    num n = maxByDay[dayString] ?? 0;
+    final dayString = ymd(entity!.meta.dateFrom);
+    final n = maxByDay[dayString] ?? 0;
     if (entity is QuantitativeEntry) {
       maxByDay[dayString] = max(n, entity.data.value);
     }
   }
 
-  List<Observation> aggregated = [];
+  final aggregated = <Observation>[];
   for (final dayString in maxByDay.keys) {
-    DateTime day = DateTime.parse(dayString);
+    final day = DateTime.parse(dayString);
     aggregated.add(Observation(day, maxByDay[dayString] ?? 0));
   }
 
@@ -92,19 +94,19 @@ List<Observation> aggregateDailyMax(List<JournalEntity?> entities) {
 }
 
 List<Observation> aggregateDailySum(List<JournalEntity?> entities) {
-  Map<String, num> sumsByDay = {};
+  final sumsByDay = <String, num>{};
 
   for (final entity in entities) {
-    String dayString = ymd(entity!.meta.dateFrom);
-    num n = sumsByDay[dayString] ?? 0;
+    final dayString = ymd(entity!.meta.dateFrom);
+    final n = sumsByDay[dayString] ?? 0;
     if (entity is QuantitativeEntry) {
       sumsByDay[dayString] = n + entity.data.value;
     }
   }
 
-  List<Observation> aggregated = [];
+  final aggregated = <Observation>[];
   for (final dayString in sumsByDay.keys) {
-    DateTime day = DateTime.parse(dayString);
+    final day = DateTime.parse(dayString);
     aggregated.add(Observation(day, sumsByDay[dayString] ?? 0));
   }
 
@@ -112,7 +114,7 @@ List<Observation> aggregateDailySum(List<JournalEntity?> entities) {
 }
 
 List<Observation> transformToHours(List<Observation> observations) {
-  List<Observation> observationsInHours = [];
+  final observationsInHours = <Observation>[];
   for (final obs in observations) {
     observationsInHours.add(Observation(obs.dateTime, obs.value / 60));
   }
@@ -124,7 +126,7 @@ List<Observation> aggregateByType(
   List<JournalEntity?> entities,
   String dataType,
 ) {
-  HealthTypeConfig? config = healthTypes[dataType];
+  final config = healthTypes[dataType];
 
   switch (config?.aggregationType) {
     case HealthAggregationType.none:
@@ -135,7 +137,7 @@ List<Observation> aggregateByType(
       return aggregateDailySum(entities);
     case HealthAggregationType.dailyTimeSum:
       return transformToHours(aggregateDailySum(entities));
-    default:
+    case null:
       return [];
   }
 }
@@ -145,23 +147,24 @@ List<Observation> aggregateNoneFilteredBy(
   String healthType,
 ) {
   return aggregateNone(
-      entities.where((entity) {
-        if (entity is QuantitativeEntry) {
-          return entity.data.dataType == healthType;
-        } else {
-          return false;
-        }
-      }).toList(),
-      healthType);
+    entities.where((entity) {
+      if (entity is QuantitativeEntry) {
+        return entity.data.dataType == healthType;
+      } else {
+        return false;
+      }
+    }).toList(),
+    healthType,
+  );
 }
 
 num findExtreme(
   List<Observation> observations,
   num Function(num, num) extremeFn,
 ) {
-  num val = observations.first.value;
+  var val = observations.first.value;
 
-  for (Observation observation in observations) {
+  for (final observation in observations) {
     val = extremeFn(val, observation.value);
   }
 
@@ -182,10 +185,10 @@ bool nearRange({
   required num lowerBound,
   required num upperBound,
 }) {
-  num threshold = 2;
-  bool minNearLower = (lowerBound - min).abs() < threshold;
-  bool minNearUpper = (upperBound - min).abs() < threshold;
-  bool maxNearLower = (lowerBound - max).abs() < threshold;
-  bool maxNearUpper = (upperBound - max).abs() < threshold;
+  const threshold = 2;
+  final minNearLower = (lowerBound - min).abs() < threshold;
+  final minNearUpper = (upperBound - min).abs() < threshold;
+  final maxNearLower = (lowerBound - max).abs() < threshold;
+  final maxNearUpper = (upperBound - max).abs() < threshold;
   return minNearLower || minNearUpper || maxNearLower || maxNearUpper;
 }

@@ -12,14 +12,13 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-
-import 'conversions.dart';
 
 part 'database.g.dart';
 
@@ -49,7 +48,7 @@ class JournalDb extends _$JournalDb {
       onUpgrade: (Migrator m, int from, int to) async {
         debugPrint('Migration from v$from to v$to');
 
-        () async {
+        await () async {
           debugPrint('Creating habit_definitions table and indices');
           await m.createTable(habitDefinitions);
           await m.createIndex(idxHabitDefinitionsId);
@@ -57,7 +56,7 @@ class JournalDb extends _$JournalDb {
           await m.createIndex(idxHabitDefinitionsPrivate);
         }();
 
-        () async {
+        await () async {
           debugPrint('Creating dashboard_definitions table and indices');
           await m.createTable(dashboardDefinitions);
           await m.createIndex(idxDashboardDefinitionsId);
@@ -65,7 +64,7 @@ class JournalDb extends _$JournalDb {
           await m.createIndex(idxDashboardDefinitionsPrivate);
         }();
 
-        () async {
+        await () async {
           debugPrint('Add last_reviewed column in dashboard_definitions');
           await m.addColumn(
             dashboardDefinitions,
@@ -73,14 +72,14 @@ class JournalDb extends _$JournalDb {
           );
         }();
 
-        () async {
+        await () async {
           debugPrint('Creating tagged table and indices');
           await m.createTable(tagged);
           await m.createIndex(idxTaggedJournalId);
           await m.createIndex(idxTaggedTagEntityId);
         }();
 
-        () async {
+        await () async {
           debugPrint('Creating task columns and indices');
           await m.addColumn(journal, journal.taskStatus);
           await m.createIndex(idxJournalTaskStatus);
@@ -88,7 +87,7 @@ class JournalDb extends _$JournalDb {
           await m.createIndex(idxJournalTask);
         }();
 
-        () async {
+        await () async {
           debugPrint('Creating linked entries table and indices');
           await m.createTable(linkedEntries);
           await m.createIndex(idxLinkedEntriesFromId);
@@ -96,7 +95,7 @@ class JournalDb extends _$JournalDb {
           await m.createIndex(idxLinkedEntriesType);
         }();
 
-        () async {
+        await () async {
           debugPrint('Creating tag_entities table and indices');
           await m.createTable(tagEntities);
           await m.createIndex(idxTagEntitiesId);
@@ -106,12 +105,12 @@ class JournalDb extends _$JournalDb {
           await m.createIndex(idxTagEntitiesPrivate);
         }();
 
-        () async {
+        await () async {
           debugPrint('Remove journal_tags table');
           await m.deleteTable('journal_tags');
         }();
 
-        () async {
+        await () async {
           debugPrint('Remove tag_definitions table');
           await m.deleteTable('tag_definitions');
         }();
@@ -128,9 +127,9 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int?> addJournalEntity(JournalEntity journalEntity) async {
-    JournalDbEntity dbEntity = toDbEntity(journalEntity);
+    final dbEntity = toDbEntity(journalEntity);
 
-    bool exists = (await entityById(dbEntity.id)) != null;
+    final exists = (await entityById(dbEntity.id)) != null;
     if (!exists) {
       return upsertJournalDbEntity(dbEntity);
     } else {
@@ -142,23 +141,25 @@ class JournalDb extends _$JournalDb {
     JournalEntity existing,
     JournalEntity updated,
   ) async {
-    VectorClock? vcA = existing.meta.vectorClock;
-    VectorClock? vcB = updated.meta.vectorClock;
+    final vcA = existing.meta.vectorClock;
+    final vcB = updated.meta.vectorClock;
 
     if (vcA != null && vcB != null) {
-      VclockStatus status = VectorClock.compare(vcA, vcB);
+      final status = VectorClock.compare(vcA, vcB);
 
       if (status == VclockStatus.concurrent) {
         debugPrint('Conflicting vector clocks: $status');
-        DateTime now = DateTime.now();
-        await addConflict(Conflict(
-          id: updated.meta.id,
-          createdAt: now,
-          updatedAt: now,
-          serialized: jsonEncode(updated),
-          schemaVersion: schemaVersion,
-          status: ConflictStatus.unresolved.index,
-        ));
+        final now = DateTime.now();
+        await addConflict(
+          Conflict(
+            id: updated.meta.id,
+            createdAt: now,
+            updatedAt: now,
+            serialized: jsonEncode(updated),
+            schemaVersion: schemaVersion,
+            status: ConflictStatus.unresolved.index,
+          ),
+        );
       }
 
       return status;
@@ -168,42 +169,44 @@ class JournalDb extends _$JournalDb {
 
   Future<void> insertTag(String id, String tagId) async {
     try {
-      await into(tagged).insert(TaggedWith(
-        id: uuid.v1(),
-        journalId: id,
-        tagEntityId: tagId,
-      ));
+      await into(tagged).insert(
+        TaggedWith(
+          id: uuid.v1(),
+          journalId: id,
+          tagEntityId: tagId,
+        ),
+      );
     } catch (ex) {
       debugPrint(ex.toString());
     }
   }
 
   Future<void> addTagged(JournalEntity journalEntity) async {
-    String id = journalEntity.meta.id;
-    List<String> tagIds = journalEntity.meta.tagIds ?? [];
+    final id = journalEntity.meta.id;
+    final tagIds = journalEntity.meta.tagIds ?? [];
     await deleteTaggedForId(id);
 
-    for (String tagId in tagIds) {
-      insertTag(id, tagId);
+    for (final tagId in tagIds) {
+      await insertTag(id, tagId);
     }
   }
 
   Future<int> updateJournalEntity(JournalEntity updated) async {
-    int rowsAffected = 0;
-    JournalDbEntity dbEntity = toDbEntity(updated).copyWith(
+    var rowsAffected = 0;
+    final dbEntity = toDbEntity(updated).copyWith(
       updatedAt: DateTime.now(),
     );
 
-    JournalDbEntity? existingDbEntity = await entityById(dbEntity.id);
+    final existingDbEntity = await entityById(dbEntity.id);
     if (existingDbEntity != null) {
-      JournalEntity existing = fromDbEntity(existingDbEntity);
-      VclockStatus status = await detectConflict(existing, updated);
+      final existing = fromDbEntity(existingDbEntity);
+      final status = await detectConflict(existing, updated);
       debugPrint('Conflict status: ${EnumToString.convertToString(status)}');
 
       if (status == VclockStatus.b_gt_a) {
         rowsAffected = await upsertJournalDbEntity(dbEntity);
 
-        Conflict? existingConflict = await conflictById(dbEntity.id);
+        final existingConflict = await conflictById(dbEntity.id);
 
         if (existingConflict != null) {
           await resolveConflict(existingConflict);
@@ -216,8 +219,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<JournalDbEntity?> entityById(String id) async {
-    List<JournalDbEntity> res =
-        await (select(journal)..where((t) => t.id.equals(id))).get();
+    final res = await (select(journal)..where((t) => t.id.equals(id))).get();
     if (res.isNotEmpty) {
       return res.first;
     }
@@ -225,8 +227,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Stream<JournalEntity?> watchEntityById(String id) {
-    Stream<JournalEntity?> res = (select(journal)
-          ..where((t) => t.id.equals(id)))
+    final res = (select(journal)..where((t) => t.id.equals(id)))
         .watch()
         .where(makeDuplicateFilter())
         .map(entityStreamMapper)
@@ -235,8 +236,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<Conflict?> conflictById(String id) async {
-    List<Conflict> res =
-        await (select(conflicts)..where((t) => t.id.equals(id))).get();
+    final res = await (select(conflicts)..where((t) => t.id.equals(id))).get();
     if (res.isNotEmpty) {
       return res.first;
     }
@@ -244,7 +244,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<JournalEntity?> journalEntityById(String id) async {
-    JournalDbEntity? dbEntity = await entityById(id);
+    final dbEntity = await entityById(id);
     if (dbEntity != null) {
       return fromDbEntity(dbEntity);
     }
@@ -303,13 +303,15 @@ class JournalDb extends _$JournalDb {
     List<String>? ids,
     int limit = 1000,
   }) {
-    List<String> types = ['Task'];
+    final types = <String>['Task'];
     if (ids != null) {
       return filteredTasksByTag(
-              types, ids, starredStatuses, taskStatuses, limit)
-          .watch()
-          .where(makeDuplicateFilter())
-          .map(entityStreamMapper);
+        types,
+        ids,
+        starredStatuses,
+        taskStatuses,
+        limit,
+      ).watch().where(makeDuplicateFilter()).map(entityStreamMapper);
     } else {
       return filteredTasks(types, starredStatuses, taskStatuses, limit)
           .watch()
@@ -319,7 +321,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> getWipCount() async {
-    List<JournalDbEntity> res =
+    final res =
         await filteredTasks(['Task'], [true, false], ['IN PROGRESS'], 1000)
             .get();
     return res.length;
@@ -335,8 +337,9 @@ class JournalDb extends _$JournalDb {
   }
 
   FutureOr<List<String>> getSortedLinkedEntityIds(
-      List<String> linkedIds) async {
-    var dbEntities = await journalEntitiesByIds(linkedIds).get();
+    List<String> linkedIds,
+  ) async {
+    final dbEntities = await journalEntitiesByIds(linkedIds).get();
     return dbEntities.map((dbEntity) => dbEntity.id).toList();
   }
 
@@ -346,13 +349,12 @@ class JournalDb extends _$JournalDb {
     return linkedJournalEntityIds(linkedFrom)
         .watch()
         .where(makeDuplicateFilter())
-        .asyncMap((List<String> itemIds) {
-      return getSortedLinkedEntityIds(itemIds);
-    }).where(makeDuplicateFilter());
+        .asyncMap(getSortedLinkedEntityIds)
+        .where(makeDuplicateFilter());
   }
 
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
-    var dbEntities = await linkedJournalEntities(linkedFrom).get();
+    final dbEntities = await linkedJournalEntities(linkedFrom).get();
     return dbEntities.map(fromDbEntity).toList();
   }
 
@@ -364,10 +366,10 @@ class JournalDb extends _$JournalDb {
     ).map((
       List<JournalEntity> items,
     ) {
-      Map<String, Duration> durations = {};
-      for (JournalEntity journalEntity in items) {
+      final durations = <String, Duration>{};
+      for (final journalEntity in items) {
         if (journalEntity is! Task) {
-          Duration duration = entryDuration(journalEntity);
+          final duration = entryDuration(journalEntity);
           durations[journalEntity.meta.id] = duration;
         }
       }
@@ -427,9 +429,9 @@ class JournalDb extends _$JournalDb {
   }
 
   bool findConfigFlag(String flagName, List<ConfigFlag> flags) {
-    bool flag = false;
+    var flag = false;
 
-    for (ConfigFlag configFlag in flags) {
+    for (final configFlag in flags) {
       if (configFlag.name == flagName) {
         flag = configFlag.status;
       }
@@ -447,7 +449,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<bool> getConfigFlag(String flagName) async {
-    List<ConfigFlag> flags = await listConfigFlags().get();
+    final flags = await listConfigFlags().get();
     return findConfigFlag(flagName, flags);
   }
 
@@ -461,7 +463,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<ConfigFlag?> getConfigFlagByName(String flagName) async {
-    List<ConfigFlag> flags = await configFlagByName(flagName).get();
+    final flags = await configFlagByName(flagName).get();
 
     if (flags.isNotEmpty) {
       return flags.first;
@@ -470,36 +472,36 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<void> insertFlagIfNotExists(ConfigFlag configFlag) async {
-    ConfigFlag? existing = await getConfigFlagByName(configFlag.name);
+    final existing = await getConfigFlagByName(configFlag.name);
 
     if (existing == null) {
-      into(configFlags).insert(configFlag);
+      await into(configFlags).insert(configFlag);
     }
   }
 
   Future<void> initConfigFlags() async {
-    insertFlagIfNotExists(
+    await insertFlagIfNotExists(
       ConfigFlag(
         name: 'private',
         description: 'Show private entries?',
         status: true,
       ),
     );
-    insertFlagIfNotExists(
+    await insertFlagIfNotExists(
       ConfigFlag(
         name: 'notify_exceptions',
         description: 'Notify when exceptions occur?',
         status: false,
       ),
     );
-    insertFlagIfNotExists(
+    await insertFlagIfNotExists(
       ConfigFlag(
         name: 'hide_for_screenshot',
         description: 'Hide Lotti when taking screenshots?',
         status: true,
       ),
     );
-    insertFlagIfNotExists(
+    await insertFlagIfNotExists(
       ConfigFlag(
         name: 'show_tasks_tab',
         description: 'Show Tasks tab?',
@@ -507,14 +509,14 @@ class JournalDb extends _$JournalDb {
       ),
     );
     if (Platform.isMacOS) {
-      insertFlagIfNotExists(
+      await insertFlagIfNotExists(
         ConfigFlag(
           name: 'listen_to_global_screenshot_hotkey',
           description: 'Listen to global screenshot hotkey?',
           status: true,
         ),
       );
-      insertFlagIfNotExists(
+      await insertFlagIfNotExists(
         ConfigFlag(
           name: 'enable_notifications',
           description: 'Enable desktop notifications?',
@@ -529,7 +531,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> getCountImportFlagEntries() async {
-    List<int> res = await countImportFlagEntries().get();
+    final res = await countImportFlagEntries().get();
     return res.first;
   }
 
@@ -556,7 +558,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<MeasurableDataType?> getMeasurableDataTypeById(String id) async {
-    var res = await measurableTypeById(id).get();
+    final res = await measurableTypeById(id).get();
     return res.map(measurableDataType).firstOrNull;
   }
 
@@ -583,7 +585,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<QuantitativeEntry?> latestQuantitativeByType(String type) async {
-    var dbEntities = await latestQuantByType(type).get();
+    final dbEntities = await latestQuantByType(type).get();
     if (dbEntities.isEmpty) {
       debugPrint('latestQuantitativeByType no result for $type');
       return null;
@@ -592,7 +594,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<WorkoutEntry?> latestWorkout() async {
-    var dbEntities = await findLatestWorkout().get();
+    final dbEntities = await findLatestWorkout().get();
     if (dbEntities.isEmpty) {
       debugPrint('no workout found');
       return null;
@@ -675,7 +677,7 @@ class JournalDb extends _$JournalDb {
     bool inactive = false,
   }) async {
     return (await matchingTagEntities('%$match%', inactive, limit).get())
-        .map((dbEntity) => fromTagDbEntity(dbEntity))
+        .map(fromTagDbEntity)
         .toList();
   }
 
@@ -685,13 +687,14 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertMeasurableDataType(
-      MeasurableDataType entityDefinition) async {
+    MeasurableDataType entityDefinition,
+  ) async {
     return into(measurableTypes)
         .insertOnConflictUpdate(measurableDbEntity(entityDefinition));
   }
 
   Future<int> upsertTagEntity(TagEntity tag) async {
-    final TagDbEntity dbEntity = tagDbEntity(tag);
+    final dbEntity = tagDbEntity(tag);
     return into(tagEntities).insertOnConflictUpdate(dbEntity);
   }
 
@@ -701,9 +704,11 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertDashboardDefinition(
-      DashboardDefinition dashboardDefinition) async {
+    DashboardDefinition dashboardDefinition,
+  ) async {
     return into(dashboardDefinitions).insertOnConflictUpdate(
-        dashboardDefinitionDbEntity(dashboardDefinition));
+      dashboardDefinitionDbEntity(dashboardDefinition),
+    );
   }
 
   Future<List<String>> linksForEntryId(String entryId) {
@@ -726,16 +731,12 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
-    int linesAffected = await entityDefinition.map(
+    final linesAffected = await entityDefinition.map(
       measurableDataType: (MeasurableDataType measurableDataType) async {
         return upsertMeasurableDataType(measurableDataType);
       },
-      habit: (HabitDefinition habitDefinition) {
-        return upsertHabitDefinition(habitDefinition);
-      },
-      dashboard: (DashboardDefinition dashboardDefinition) {
-        return upsertDashboardDefinition(dashboardDefinition);
-      },
+      habit: upsertHabitDefinition,
+      dashboard: upsertDashboardDefinition,
     );
     return linesAffected;
   }
@@ -747,16 +748,16 @@ Future<File> getDatabaseFile() async {
 }
 
 Future<void> createDbBackup() async {
-  final File file = await getDatabaseFile();
-  String ts = DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(DateTime.now());
-  Directory backupDir =
+  final file = await getDatabaseFile();
+  final ts = DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(DateTime.now());
+  final backupDir =
       await Directory('${file.parent.path}/backup').create(recursive: true);
   await file.copy('${backupDir.path}/db.$ts.sqlite');
 }
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    final File file = await getDatabaseFile();
+    final file = await getDatabaseFile();
     debugPrint('DB LazyDatabase ${file.path}');
 
     return NativeDatabase(file);

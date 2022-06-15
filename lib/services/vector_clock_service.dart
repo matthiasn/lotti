@@ -10,24 +10,25 @@ const String nextAvailableCounterKey = 'VC_NEXT_AVAILABLE_COUNTER';
 
 class VectorClockService {
   Future<void> increment() async {
-    int next = await getNextAvailableCounter() + 1;
-    setNextAvailableCounter(next);
+    final next = await getNextAvailableCounter() + 1;
+    await setNextAvailableCounter(next);
   }
 
   Future<String> setNewHost() async {
-    String host = uuid.v4();
-    SecureStorage.writeValue(hostKey, host);
+    final host = uuid.v4();
+    await SecureStorage.writeValue(hostKey, host);
     return host;
   }
 
   Future<String> getHost() async {
-    String? host = await SecureStorage.readValue(hostKey);
+    var host = await SecureStorage.readValue(hostKey);
+    // ignore: join_return_with_assignment
     host ??= await setNewHost();
     return host;
   }
 
   Future<void> setNextAvailableCounter(int nextAvailableCounter) async {
-    SecureStorage.writeValue(
+    await SecureStorage.writeValue(
       nextAvailableCounterKey,
       nextAvailableCounter.toString(),
     );
@@ -35,7 +36,7 @@ class VectorClockService {
 
   Future<int> getNextAvailableCounter() async {
     int? nextAvailableCounter;
-    String? nextAvailableCounterString =
+    final nextAvailableCounterString =
         await SecureStorage.readValue(nextAvailableCounterKey);
 
     if (nextAvailableCounterString != null) {
@@ -48,16 +49,17 @@ class VectorClockService {
   }
 
   Future<String> getHostHash() async {
-    var bytes = utf8.encode(await getHost());
-    var digest = sha1.convert(bytes);
+    final bytes = utf8.encode(await getHost());
+    final digest = sha1.convert(bytes);
     return digest.toString();
   }
 
+  // ignore: flutter_style_todos
   // TODO: only increment after successful insertion
   Future<VectorClock> getNextVectorClock({VectorClock? previous}) async {
-    String host = await getHost();
-    int nextAvailableCounter = await getNextAvailableCounter();
-    increment();
+    final host = await getHost();
+    final nextAvailableCounter = await getNextAvailableCounter();
+    await increment();
 
     return VectorClock({
       ...?previous?.vclock,

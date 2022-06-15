@@ -4,10 +4,10 @@ import 'package:lotti/theme.dart';
 
 class TitleAppBar extends StatelessWidget with PreferredSizeWidget {
   const TitleAppBar({
-    Key? key,
+    super.key,
     required this.title,
     this.actions,
-  }) : super(key: key);
+  });
 
   final String title;
   final List<Widget>? actions;

@@ -6,9 +6,9 @@ void main() {
   test(
     'Add tags',
     () async {
-      DateTime now = DateTime.now();
+      final now = DateTime.now();
 
-      Metadata meta = Metadata(
+      final meta = Metadata(
         createdAt: now,
         id: 'test-id',
         dateTo: now,
@@ -43,9 +43,9 @@ void main() {
   test(
     'Does nothing for existing tags',
     () async {
-      DateTime now = DateTime.now();
+      final now = DateTime.now();
 
-      Metadata meta = Metadata(
+      final meta = Metadata(
         createdAt: now,
         id: 'test-id',
         dateTo: now,
@@ -79,9 +79,9 @@ void main() {
   test(
     'Removes tag',
     () async {
-      DateTime now = DateTime.now();
+      final now = DateTime.now();
 
-      Metadata meta = Metadata(
+      final meta = Metadata(
         createdAt: now,
         id: 'test-id',
         dateTo: now,
@@ -104,9 +104,9 @@ void main() {
   test(
     'Removing non-existing tag does nothing',
     () async {
-      DateTime now = DateTime.now();
+      final now = DateTime.now();
 
-      Metadata meta = Metadata(
+      final meta = Metadata(
         createdAt: now,
         id: 'test-id',
         dateTo: now,

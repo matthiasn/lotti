@@ -10,14 +10,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 
 class EntryImageWidget extends StatefulWidget {
-  final JournalImage journalImage;
-  final FocusNode focusNode;
-
   const EntryImageWidget({
-    Key? key,
+    super.key,
     required this.journalImage,
     required this.focusNode,
-  }) : super(key: key);
+  });
+
+  final JournalImage journalImage;
+  final FocusNode focusNode;
 
   @override
   State<EntryImageWidget> createState() => _EntryImageWidgetState();
@@ -40,14 +40,14 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
   @override
   Widget build(BuildContext context) {
     if (docDir != null) {
-      File file =
+      final file =
           File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
 
       return GestureDetector(
         onTap: () {
           widget.focusNode.unfocus();
           Navigator.of(context, rootNavigator: true).push(
-            MaterialPageRoute(
+            MaterialPageRoute<HeroPhotoViewRouteWrapper>(
               builder: (_) => HeroPhotoViewRouteWrapper(
                 focusNode: widget.focusNode,
                 imageProvider: FileImage(file),
@@ -55,7 +55,7 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
             ),
           );
         },
-        child: Container(
+        child: ColoredBox(
           color: Colors.black,
           child: Hero(
             tag: 'entry_img',
@@ -81,13 +81,13 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
 // from https://github.com/bluefireteam/photo_view/blob/master/example/lib/screens/examples/hero_example.dart
 class HeroPhotoViewRouteWrapper extends StatelessWidget {
   const HeroPhotoViewRouteWrapper({
-    Key? key,
+    super.key,
     required this.focusNode,
     required this.imageProvider,
     this.backgroundDecoration,
     this.minScale,
     this.maxScale,
-  }) : super(key: key);
+  });
 
   final ImageProvider imageProvider;
   final BoxDecoration? backgroundDecoration;
@@ -113,10 +113,10 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
             ),
           ),
           Positioned(
-            right: 0.0,
-            top: 0.0,
+            right: 0,
+            top: 0,
             child: IconButton(
-              padding: const EdgeInsets.all(48.0),
+              padding: const EdgeInsets.all(48),
               onPressed: () {
                 context.router.pop();
                 focusNode.requestFocus();

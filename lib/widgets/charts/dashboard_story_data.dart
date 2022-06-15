@@ -9,11 +9,11 @@ List<Observation> aggregateStoryDailyTimeSum(
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
-  Map<String, num> minutesByDay = {};
+  final minutesByDay = <String, num>{};
 
-  Duration range = rangeEnd.difference(rangeStart);
-  List<String> dayStrings = List<String>.generate(range.inDays, (days) {
-    DateTime day = rangeStart.add(Duration(days: days));
+  final range = rangeEnd.difference(rangeStart);
+  final dayStrings = List<String>.generate(range.inDays, (days) {
+    final day = rangeStart.add(Duration(days: days));
     return ymd(day);
   });
 
@@ -22,16 +22,16 @@ List<Observation> aggregateStoryDailyTimeSum(
   }
 
   for (final entity in entities) {
-    String dayString = ymd(entity!.meta.dateFrom);
-    num n = minutesByDay[dayString] ?? 0;
-    num duration =
+    final dayString = ymd(entity!.meta.dateFrom);
+    final n = minutesByDay[dayString] ?? 0;
+    final duration =
         entity.meta.dateTo.difference(entity.meta.dateFrom).inSeconds / 60;
     minutesByDay[dayString] = n + duration;
   }
 
-  List<Observation> aggregated = [];
+  final aggregated = <Observation>[];
   for (final dayString in minutesByDay.keys) {
-    DateTime day = DateTime.parse(dayString);
+    final day = DateTime.parse(dayString);
     aggregated.add(Observation(day, minutesByDay[dayString] ?? 0));
   }
 

@@ -13,7 +13,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 class DashboardSettingsPage extends StatefulWidget {
-  const DashboardSettingsPage({Key? key}) : super(key: key);
+  const DashboardSettingsPage({super.key});
 
   @override
   State<DashboardSettingsPage> createState() => _DashboardSettingsPageState();
@@ -33,7 +33,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
     final isPortrait =
         MediaQuery.of(context).orientation == Orientation.portrait;
 
-    double portraitWidth = MediaQuery.of(context).size.width * 0.5;
+    final portraitWidth = MediaQuery.of(context).size.width * 0.5;
 
     return FloatingSearchBar(
       clearQueryOnClose: false,
@@ -53,9 +53,9 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
         fontSize: 20,
       ),
       physics: const BouncingScrollPhysics(),
-      borderRadius: BorderRadius.circular(8.0),
-      axisAlignment: isPortrait ? 0.0 : -1.0,
-      openAxisAlignment: 0.0,
+      borderRadius: BorderRadius.circular(8),
+      axisAlignment: isPortrait ? 0 : -1,
+      openAxisAlignment: 0,
       width: isPortrait ? portraitWidth : 400,
       onQueryChanged: (query) async {
         setState(() {
@@ -75,7 +75,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
@@ -93,7 +93,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
           BuildContext context,
           AsyncSnapshot<List<DashboardDefinition>> snapshot,
         ) {
-          List<DashboardDefinition> dashboards =
+          final dashboards =
               filteredSortedDashboards(snapshot.data ?? [], match);
 
           return Stack(
@@ -101,8 +101,8 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
               ListView(
                 shrinkWrap: true,
                 padding: const EdgeInsets.only(
-                  left: 8.0,
-                  right: 8.0,
+                  left: 8,
+                  right: 8,
                   bottom: 8,
                   top: 64,
                 ),
@@ -126,23 +126,23 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
 }
 
 class DashboardCard extends StatelessWidget {
+  DashboardCard({
+    super.key,
+    required this.dashboard,
+    required this.index,
+  });
+
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final DashboardDefinition dashboard;
   final int index;
-
-  DashboardCard({
-    Key? key,
-    required this.dashboard,
-    required this.index,
-  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Card(
       color: AppColors.headerBgColor,
-      elevation: 8.0,
+      elevation: 8,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
         contentPadding:
@@ -152,7 +152,7 @@ class DashboardCard extends StatelessWidget {
           style: TextStyle(
             color: AppColors.entryTextColor,
             fontFamily: 'Oswald',
-            fontSize: 24.0,
+            fontSize: 24,
             fontWeight: FontWeight.w300,
           ),
         ),
@@ -161,11 +161,10 @@ class DashboardCard extends StatelessWidget {
           style: TextStyle(
             color: AppColors.entryTextColor,
             fontFamily: 'Oswald',
-            fontSize: 16.0,
+            fontSize: 16,
             fontWeight: FontWeight.w300,
           ),
         ),
-        enabled: true,
         onTap: () {
           context.router.push(
             EditDashboardRoute(dashboardId: dashboard.id),

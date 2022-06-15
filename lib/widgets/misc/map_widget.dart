@@ -7,8 +7,9 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/map/cached_tile_provider.dart';
 
 class MapWidget extends StatefulWidget {
+  const MapWidget({super.key, this.geolocation});
+
   final Geolocation? geolocation;
-  const MapWidget({Key? key, this.geolocation}) : super(key: key);
 
   @override
   State<MapWidget> createState() => _MapWidgetState();
@@ -25,11 +26,11 @@ class _MapWidgetState extends State<MapWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.geolocation == null || widget.geolocation!.latitude == 0.0) {
+    if (widget.geolocation == null || widget.geolocation!.latitude == 0) {
       return const Center();
     }
 
-    LatLng loc = LatLng(
+    final loc = LatLng(
       widget.geolocation!.latitude,
       widget.geolocation!.longitude,
     );
@@ -43,10 +44,14 @@ class _MapWidgetState extends State<MapWidget> {
               if (pointerSignal is PointerScrollEvent) {
                 if (pointerSignal.scrollDelta.dy < 0) {
                   mapController.move(
-                      mapController.center, mapController.zoom + 1);
+                    mapController.center,
+                    mapController.zoom + 1,
+                  );
                 } else {
                   mapController.move(
-                      mapController.center, mapController.zoom - 1);
+                    mapController.center,
+                    mapController.zoom - 1,
+                  );
                 }
               }
             },
@@ -54,26 +59,26 @@ class _MapWidgetState extends State<MapWidget> {
               mapController: mapController,
               options: MapOptions(
                 center: loc,
-                zoom: 13.0,
               ),
               layers: [
                 TileLayerOptions(
                   urlTemplate:
-                      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                   subdomains: ['a', 'b', 'c'],
                   tileProvider: const CachedTileProvider(),
                 ),
                 MarkerLayerOptions(
                   markers: [
                     Marker(
-                      width: 64.0,
-                      height: 64.0,
+                      width: 64,
+                      height: 64,
                       point: loc,
                       builder: (ctx) => const Opacity(
                         opacity: 0.8,
                         child: Image(
                           image: AssetImage(
-                              'assets/images/map/728975_location_map_marker_pin_place_icon.png'),
+                            'assets/images/map/728975_location_map_marker_pin_place_icon.png',
+                          ),
                         ),
                       ),
                     ),

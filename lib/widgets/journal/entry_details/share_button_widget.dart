@@ -10,62 +10,59 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:share_plus/share_plus.dart';
 
 class ShareButtonWidget extends StatelessWidget {
-  final JournalDb db = getIt<JournalDb>();
-
   ShareButtonWidget({
-    Key? key,
+    super.key,
     required this.entityId,
-  }) : super(key: key);
+  });
 
+  final JournalDb db = getIt<JournalDb>();
   final String entityId;
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder<JournalEntity?>(
-        stream: db.watchEntityById(entityId),
-        builder: (context, snapshot) {
-          JournalEntity? journalEntity = snapshot.data;
-          if (journalEntity is! JournalImage &&
-              journalEntity is! JournalAudio) {
-            return const SizedBox.shrink();
-          }
+      stream: db.watchEntityById(entityId),
+      builder: (context, snapshot) {
+        final journalEntity = snapshot.data;
+        if (journalEntity is! JournalImage && journalEntity is! JournalAudio) {
+          return const SizedBox.shrink();
+        }
 
-          String tooltip = '';
+        var tooltip = '';
 
+        if (journalEntity is JournalImage) {
+          tooltip = localizations.journalSharePhotoHint;
+        }
+        if (journalEntity is JournalAudio) {
+          tooltip = localizations.journalShareAudioHint;
+        }
+
+        Future<void> onPressed() async {
           if (journalEntity is JournalImage) {
-            tooltip = localizations.journalSharePhotoHint;
+            final filePath = await getFullImagePath(journalEntity);
+            await Share.shareFiles([filePath]);
           }
           if (journalEntity is JournalAudio) {
-            tooltip = localizations.journalShareAudioHint;
+            final filePath = await AudioUtils.getFullAudioPath(journalEntity);
+            await Share.shareFiles([filePath]);
           }
+        }
 
-          Future<void> onPressed() async {
-            if (journalEntity is JournalImage) {
-              String filePath = await getFullImagePath(journalEntity);
-              Share.shareFiles([filePath]);
-            }
-            if (journalEntity is JournalAudio) {
-              String filePath =
-                  await AudioUtils.getFullAudioPath(journalEntity);
-              Share.shareFiles([filePath]);
-            }
-          }
-
-          return IconButton(
-            icon: const Icon(MdiIcons.shareOutline),
-            iconSize: 24,
-            tooltip: tooltip,
-            padding: const EdgeInsets.only(
-              left: 12,
-              top: 8,
-              bottom: 8,
-              right: 0,
-            ),
-            color: AppColors.entryTextColor,
-            onPressed: onPressed,
-          );
-        });
+        return IconButton(
+          icon: const Icon(MdiIcons.shareOutline),
+          iconSize: 24,
+          tooltip: tooltip,
+          padding: const EdgeInsets.only(
+            left: 12,
+            top: 8,
+            bottom: 8,
+          ),
+          color: AppColors.entryTextColor,
+          onPressed: onPressed,
+        );
+      },
+    );
   }
 }

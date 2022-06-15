@@ -8,17 +8,15 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class LinkedDuration extends StatelessWidget {
-  final JournalDb db = getIt<JournalDb>();
-  final TimeService _timeService = getIt<TimeService>();
-
-  late final Stream<JournalEntity?> stream = db.watchEntityById(task.meta.id);
-
-  final Task task;
-
   LinkedDuration({
     required this.task,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  final JournalDb db = getIt<JournalDb>();
+  final TimeService _timeService = getIt<TimeService>();
+  late final Stream<JournalEntity?> stream = db.watchEntityById(task.meta.id);
+  final Task task;
 
   @override
   Widget build(BuildContext context) {
@@ -31,42 +29,42 @@ class LinkedDuration extends StatelessWidget {
             return StreamBuilder(
               stream: _timeService.getStream(),
               builder: (_, AsyncSnapshot<JournalEntity?> timeSnapshot) {
-                Map<String, Duration> durations = snapshot.data ?? {};
-                JournalEntity liveEntity = taskSnapshot.data ?? task;
-                Task liveTask = liveEntity as Task;
+                final durations = snapshot.data ?? <String, Duration>{};
+                final liveEntity = taskSnapshot.data ?? task;
+                final liveTask = liveEntity as Task;
                 durations[liveTask.meta.id] = entryDuration(liveTask);
-                JournalEntity? running = timeSnapshot.data;
+                final running = timeSnapshot.data;
 
                 if (running != null && durations.containsKey(running.meta.id)) {
                   durations[running.meta.id] = entryDuration(running);
                 }
 
-                Duration progress = const Duration();
-                for (Duration duration in durations.values) {
+                var progress = Duration.zero;
+                for (final duration in durations.values) {
                   progress = progress + duration;
                 }
 
-                Duration total = liveTask.data.estimate ?? const Duration();
+                final total = liveTask.data.estimate ?? Duration.zero;
 
                 return SizedBox(
                   width: MediaQuery.of(context).size.width - 80,
                   child: ClipRRect(
                     child: Padding(
-                      padding: const EdgeInsets.only(left: 4.0),
+                      padding: const EdgeInsets.only(left: 4),
                       child: ProgressBar(
                         progress: progress,
                         total: total,
                         progressBarColor:
                             (progress > total) ? Colors.red : Colors.green,
                         thumbColor: Colors.white,
-                        barHeight: 4.0,
-                        thumbRadius: 6.0,
+                        barHeight: 4,
+                        thumbRadius: 6,
                         onSeek: (newPosition) {},
                         timeLabelTextStyle: TextStyle(
                           fontFamily: 'Oswald',
                           color: AppColors.entryTextColor,
                           fontWeight: FontWeight.normal,
-                          fontSize: 14.0,
+                          fontSize: 14,
                         ),
                       ),
                     ),

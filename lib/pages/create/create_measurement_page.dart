@@ -20,10 +20,10 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class CreateMeasurementPage extends StatefulWidget {
   const CreateMeasurementPage({
-    Key? key,
+    super.key,
     this.linkedId,
     this.selectedId,
-  }) : super(key: key);
+  });
 
   final String? linkedId;
   final String? selectedId;
@@ -47,7 +47,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder<List<MeasurableDataType>>(
       stream: _db.watchMeasurableDataTypes(),
@@ -55,39 +55,39 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
         BuildContext context,
         AsyncSnapshot<List<MeasurableDataType>> snapshot,
       ) {
-        List<MeasurableDataType> items = snapshot.data ?? [];
+        final items = snapshot.data ?? [];
 
         if (items.length == 1) {
           selected = items.first;
         }
 
-        for (MeasurableDataType dataType in items) {
+        for (final dataType in items) {
           if (dataType.id == widget.selectedId) {
             selected = dataType;
           }
         }
 
-        void onSave() async {
+        Future<void> onSave() async {
           _formKey.currentState!.save();
           if (_formKey.currentState!.validate()) {
             final formData = _formKey.currentState?.value;
             if (selected == null) {
               return;
             }
-            MeasurementData measurement = MeasurementData(
+            final measurement = MeasurementData(
               dataTypeId: selected!.id,
-              dateTo: formData!['date'],
-              dateFrom: formData['date'],
+              dateTo: formData!['date'] as DateTime,
+              dateFrom: formData['date'] as DateTime,
               value: nf.parse('${formData['value']}'.replaceAll(',', '.')),
             );
-            persistenceLogic.createMeasurementEntry(
+            await persistenceLogic.createMeasurementEntry(
               data: measurement,
               linkedId: widget.linkedId,
             );
             setState(() {
               dirty = false;
             });
-            context.router.pop();
+            await context.router.pop();
           }
         }
 
@@ -99,7 +99,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                 TextButton(
                   onPressed: onSave,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       localizations.addMeasurementSaveButton,
                       style: saveButtonStyle,
@@ -110,7 +110,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
           ),
           backgroundColor: AppColors.bodyBgColor,
           body: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 ClipRRect(
@@ -118,7 +118,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                   child: Container(
                     color: AppColors.headerBgColor,
                     width: MediaQuery.of(context).size.width,
-                    padding: const EdgeInsets.all(32.0),
+                    padding: const EdgeInsets.all(32),
                     child: FormBuilder(
                       key: _formKey,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -137,7 +137,8 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                   child: GestureDetector(
                                     onTap: () {
                                       pushNamedRoute(
-                                          '/settings/create_measurable');
+                                        '/settings/create_measurable',
+                                      );
                                     },
                                     child: SizedBox(
                                       width: MediaQuery.of(context).size.width -
@@ -178,7 +179,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     ),
                                   ),
                                 if (selected == null)
-                                  FormBuilderDropdown(
+                                  FormBuilderDropdown<MeasurableDataType>(
                                     dropdownColor: AppColors.headerBgColor,
                                     name: 'type',
                                     decoration: InputDecoration(
@@ -195,16 +196,19 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       });
                                     },
                                     validator: FormBuilderValidators.compose(
-                                        [FormBuilderValidators.required()]),
+                                      [FormBuilderValidators.required()],
+                                    ),
                                     items: items
-                                        .map((MeasurableDataType item) =>
-                                            DropdownMenuItem(
-                                              value: item,
-                                              child: Text(
-                                                item.displayName,
-                                                style: inputStyle,
-                                              ),
-                                            ))
+                                        .map(
+                                          (MeasurableDataType item) =>
+                                              DropdownMenuItem(
+                                            value: item,
+                                            child: Text(
+                                              item.displayName,
+                                              style: inputStyle,
+                                            ),
+                                          ),
+                                        )
                                         .toList(),
                                   ),
                                 if (selected != null)
@@ -212,9 +216,8 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     name: 'date',
                                     alwaysUse24HourFormat: true,
                                     format: DateFormat(
-                                        'EEEE, MMMM d, yyyy \'at\' HH:mm'),
-                                    inputType:
-                                        CupertinoDateTimePickerInputType.both,
+                                      "EEEE, MMMM d, yyyy 'at' HH:mm",
+                                    ),
                                     style: inputStyle,
                                     decoration: InputDecoration(
                                       labelText: 'Measurement taken',
@@ -248,7 +251,8 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     name: 'value',
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                            decimal: true),
+                                      decimal: true,
+                                    ),
                                   ),
                               ],
                             ),
@@ -275,9 +279,9 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
 
 class CreateMeasurementWithLinkedPage extends StatelessWidget {
   const CreateMeasurementWithLinkedPage({
-    Key? key,
+    super.key,
     @PathParam() this.linkedId,
-  }) : super(key: key);
+  });
 
   final String? linkedId;
 
@@ -291,9 +295,9 @@ class CreateMeasurementWithLinkedPage extends StatelessWidget {
 
 class CreateMeasurementWithTypePage extends StatelessWidget {
   const CreateMeasurementWithTypePage({
-    Key? key,
+    super.key,
     @PathParam() this.selectedId,
-  }) : super(key: key);
+  });
 
   final String? selectedId;
 

@@ -15,16 +15,16 @@ import 'package:path_provider/path_provider.dart';
 import 'package:tuple/tuple.dart';
 
 class EditorWrapperWidget extends StatefulWidget {
-  final String itemId;
-  final bool popOnDelete;
-  final bool showTaskDetails;
-
   const EditorWrapperWidget({
-    Key? key,
+    super.key,
     @PathParam() required this.itemId,
     required this.popOnDelete,
     this.showTaskDetails = false,
-  }) : super(key: key);
+  });
+
+  final String itemId;
+  final bool popOnDelete;
+  final bool showTaskDetails;
 
   @override
   State<EditorWrapperWidget> createState() => _EditorWrapperWidgetState();
@@ -63,12 +63,12 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
         BuildContext context,
         AsyncSnapshot<JournalEntity?> snapshot,
       ) {
-        JournalEntity? item = snapshot.data;
+        final item = snapshot.data;
         if (item == null || item.meta.deletedAt != null) {
           return const SizedBox.shrink();
         }
 
-        QuillController controller = makeController(
+        final controller = makeController(
           serializedQuill: _editorStateService.getDelta(widget.itemId) ??
               item.entryText?.quill,
           selection: _editorStateService.getSelection(widget.itemId),
@@ -105,7 +105,6 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
               focusNode: _focusNode,
               journalEntity: item,
               saveFn: saveText,
-              autoFocus: false,
             );
           },
           orElse: () {

@@ -19,16 +19,16 @@ import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardHealthBmiChart extends StatefulWidget {
-  final DashboardHealthItem chartConfig;
-  final DateTime rangeStart;
-  final DateTime rangeEnd;
-
   const DashboardHealthBmiChart({
-    Key? key,
+    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
-  }) : super(key: key);
+  });
+
+  final DashboardHealthItem chartConfig;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
 
   @override
   State<DashboardHealthBmiChart> createState() =>
@@ -36,12 +36,8 @@ class DashboardHealthBmiChart extends StatefulWidget {
 }
 
 class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
-  final JournalDb _db = getIt<JournalDb>();
-  final HealthImport _healthImport = getIt<HealthImport>();
-  final _chartState = charts.UserManagedState<DateTime>();
-
   _DashboardHealthBmiChartState() {
-    DateTime now = DateTime.now();
+    final now = DateTime.now();
     _healthImport.fetchHealthData(
       dateFrom: now.subtract(const Duration(days: 3650)),
       dateTo: now,
@@ -49,15 +45,16 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
     );
   }
 
+  final JournalDb _db = getIt<JournalDb>();
+  final HealthImport _healthImport = getIt<HealthImport>();
+  final _chartState = charts.UserManagedState<DateTime>();
+
   @override
   Widget build(BuildContext context) {
-    String weightType = 'HealthDataType.WEIGHT';
+    const weightType = 'HealthDataType.WEIGHT';
 
-    charts.SeriesRendererConfig<DateTime>? defaultRenderer =
-        charts.LineRendererConfig<DateTime>(
-      includePoints: false,
-      strokeWidthPx: 2,
-    );
+    final charts.SeriesRendererConfig<DateTime> defaultRenderer =
+        charts.LineRendererConfig<DateTime>();
     return BlocProvider<HealthChartInfoCubit>(
       create: (BuildContext context) => HealthChartInfoCubit(),
       child: StreamBuilder<List<JournalEntity?>>(
@@ -71,9 +68,10 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
           AsyncSnapshot<List<JournalEntity?>> snapshot,
         ) {
           void _infoSelectionModelUpdated(
-              charts.SelectionModel<DateTime> model) {
+            charts.SelectionModel<DateTime> model,
+          ) {
             if (model.hasDatumSelection) {
-              Observation newSelection =
+              final newSelection =
                   model.selectedDatum.first.datum as Observation;
               context.read<HealthChartInfoCubit>().setSelected(newSelection);
 
@@ -86,9 +84,8 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
             }
           }
 
-          QuantitativeEntry? heightEntry =
-              snapshot.data?.first as QuantitativeEntry?;
-          num? height = heightEntry?.data.value;
+          final heightEntry = snapshot.data?.first as QuantitativeEntry?;
+          final height = heightEntry?.data.value;
 
           if (height == null) {
             return Text(
@@ -107,19 +104,19 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
               BuildContext context,
               AsyncSnapshot<List<JournalEntity?>> snapshot,
             ) {
-              List<JournalEntity?>? items = snapshot.data ?? [];
-              List<Observation> weightData = aggregateNone(items, weightType);
+              final items = snapshot.data ?? [];
+              final weightData = aggregateNone(items, weightType);
 
-              num minInRange = findMin(weightData);
-              num maxInRange = findMax(weightData);
+              final minInRange = findMin(weightData);
+              final maxInRange = findMax(weightData);
 
-              List<charts.RangeAnnotationSegment<num>> rangeAnnotationSegments =
+              final rangeAnnotationSegments =
                   makeRangeAnnotationSegments(weightData, height);
 
-              int tickCount = rangeAnnotationSegments.length * 2;
-              charts.Color blue = charts.MaterialPalette.blue.shadeDefault;
+              final tickCount = rangeAnnotationSegments.length * 2;
+              final blue = charts.MaterialPalette.blue.shadeDefault;
 
-              List<charts.Series<Observation, DateTime>> seriesList = [
+              final seriesList = <charts.Series<Observation, DateTime>>[
                 charts.Series<Observation, DateTime>(
                   id: weightType,
                   colorFn: (Observation val, _) => blue,
@@ -137,7 +134,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                     key: Key('${widget.chartConfig.hashCode}'),
                     color: Colors.white,
                     height: 320,
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Stack(
                       children: [
                         charts.TimeSeriesChart(
@@ -146,10 +143,11 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                           behaviors: [
                             charts.RangeAnnotation([
                               charts.RangeAnnotationSegment(
-                                  widget.rangeStart,
-                                  widget.rangeEnd,
-                                  charts.RangeAnnotationAxisType.domain,
-                                  color: charts.Color.white),
+                                widget.rangeStart,
+                                widget.rangeEnd,
+                                charts.RangeAnnotationAxisType.domain,
+                                color: charts.Color.white,
+                              ),
                               ...rangeAnnotationSegments,
                             ]),
                           ],
@@ -157,7 +155,6 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                           defaultRenderer: defaultRenderer,
                           selectionModels: [
                             charts.SelectionModelConfig(
-                              type: charts.SelectionModelType.info,
                               updatedListener: _infoSelectionModelUpdated,
                             ),
                           ],
@@ -192,27 +189,27 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
 
 class BmiRangeLegend extends StatelessWidget {
   const BmiRangeLegend({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
       bottom: 40,
       left: 40,
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.3), //New
-              blurRadius: 8.0,
+              blurRadius: 8,
               offset: const Offset(0, 8),
             )
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: Container(
+          child: ColoredBox(
             color: Colors.white.withOpacity(0.75),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -261,8 +258,8 @@ class BmiChartInfoWidget extends StatelessWidget {
     required this.height,
     required this.minInRange,
     required this.maxInRange,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   final DashboardHealthItem chartConfig;
   final num? height;
@@ -272,72 +269,73 @@ class BmiChartInfoWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<HealthChartInfoCubit, HealthChartInfoState>(
-        builder: (BuildContext context, HealthChartInfoState state) {
-      final Observation? selected = state.selected;
-      num? weight = selected?.value;
+      builder: (BuildContext context, HealthChartInfoState state) {
+        final selected = state.selected;
+        final weight = selected?.value;
 
-      return Positioned(
-        top: -1,
-        left: 0,
-        child: IgnorePointer(
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  children: [
-                    if (selected == null)
-                      Text(
-                        healthTypes[chartConfig.healthType]?.displayName ??
-                            chartConfig.healthType,
-                        style: chartTitleStyle,
-                      ),
-                    if (selected != null) ...[
-                      Padding(
-                        padding: AppTheme.chartDateHorizontalPadding,
-                        child: Text(
-                          ' ${ymd(selected.dateTime)}',
+        return Positioned(
+          top: -1,
+          left: 0,
+          child: IgnorePointer(
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      if (selected == null)
+                        Text(
+                          healthTypes[chartConfig.healthType]?.displayName ??
+                              chartConfig.healthType,
                           style: chartTitleStyle,
                         ),
-                      ),
-                      Text(
-                        ' ${NumberFormat('#,###.##').format(selected.value)} kg ',
-                        style: chartTitleStyle.copyWith(
-                          fontWeight: FontWeight.bold,
+                      if (selected != null) ...[
+                        Padding(
+                          padding: AppTheme.chartDateHorizontalPadding,
+                          child: Text(
+                            ' ${ymd(selected.dateTime)}',
+                            style: chartTitleStyle,
+                          ),
                         ),
-                      ),
-                      Text(
-                        ' BMI: ${NumberFormat('#.#').format(calculateBMI(height!, weight!))}',
-                        style: chartTitleStyle.copyWith(
-                          fontWeight: FontWeight.bold,
+                        Text(
+                          ' ${NumberFormat('#,###.##').format(selected.value)} kg ',
+                          style: chartTitleStyle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
+                        Text(
+                          ' BMI: ${NumberFormat('#.#').format(calculateBMI(height!, weight!))}',
+                          style: chartTitleStyle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                      if (selected == null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          'Min: ${NumberFormat('#,###.#').format(minInRange)} kg ',
+                          style: chartTitleStyle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Max: ${NumberFormat('#,###.#').format(maxInRange)} kg ',
+                          style: chartTitleStyle.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ],
-                    if (selected == null) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        'Min: ${NumberFormat('#,###.#').format(minInRange)} kg ',
-                        style: chartTitleStyle.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Max: ${NumberFormat('#,###.#').format(maxInRange)} kg ',
-                        style: chartTitleStyle.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }

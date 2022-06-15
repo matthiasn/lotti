@@ -5,11 +5,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 
 class FlaggedBadgeIcon extends StatelessWidget {
-  final JournalDb _db = getIt<JournalDb>();
+  FlaggedBadgeIcon({super.key});
 
-  FlaggedBadgeIcon({
-    Key? key,
-  }) : super(key: key);
+  final JournalDb _db = getIt<JournalDb>();
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +17,7 @@ class FlaggedBadgeIcon extends StatelessWidget {
         BuildContext context,
         AsyncSnapshot<int> snapshot,
       ) {
-        int? count = snapshot.data;
+        final count = snapshot.data;
         return Badge(
           badgeContent: Text(snapshot.data.toString()),
           showBadge: count != null && count != 0,

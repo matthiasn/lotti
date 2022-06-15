@@ -13,16 +13,16 @@ import 'package:lotti/widgets/charts/dashboard_story_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardStoryChart extends StatefulWidget {
-  final DashboardStoryTimeItem chartConfig;
-  final DateTime rangeStart;
-  final DateTime rangeEnd;
-
   const DashboardStoryChart({
-    Key? key,
+    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
-  }) : super(key: key);
+  });
+
+  final DashboardStoryTimeItem chartConfig;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
 
   @override
   State<DashboardStoryChart> createState() => _DashboardStoryChartState();
@@ -39,11 +39,10 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
 
   @override
   Widget build(BuildContext context) {
-    charts.SeriesRendererConfig<DateTime>? defaultRenderer =
-        charts.BarRendererConfig<DateTime>();
+    final defaultRenderer = charts.BarRendererConfig<DateTime>();
 
-    String storyTagId = widget.chartConfig.storyTagId;
-    String title = tagsService.getTagById(storyTagId)?.tag ?? storyTagId;
+    final storyTagId = widget.chartConfig.storyTagId;
+    final title = tagsService.getTagById(storyTagId)?.tag ?? storyTagId;
 
     return StreamBuilder<List<JournalEntity?>>(
       stream: _db.watchJournalEntitiesByTag(
@@ -55,15 +54,15 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
         BuildContext context,
         AsyncSnapshot<List<JournalEntity?>> snapshot,
       ) {
-        List<JournalEntity?>? items = snapshot.data ?? [];
+        final items = snapshot.data ?? [];
 
-        List<Observation> data = aggregateStoryDailyTimeSum(
+        final data = aggregateStoryDailyTimeSum(
           items,
           rangeStart: widget.rangeStart,
           rangeEnd: widget.rangeEnd,
         );
 
-        List<charts.Series<Observation, DateTime>> seriesList = [
+        final seriesList = [
           charts.Series<Observation, DateTime>(
             id: widget.chartConfig.storyTagId,
             domainFn: (Observation val, _) => val.dateTime,
@@ -79,7 +78,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
               key: Key('${widget.chartConfig.hashCode}'),
               color: Colors.white,
               height: 120,
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Stack(
                 children: [
                   charts.TimeSeriesChart(
@@ -102,9 +101,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
                     child: SizedBox(
                       width: MediaQuery.of(context).size.width / 2,
                       child: Row(
-                        mainAxisSize: MainAxisSize.max,
                         mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
                             title,

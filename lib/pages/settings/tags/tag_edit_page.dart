@@ -14,9 +14,9 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class TagEditPage extends StatefulWidget {
   const TagEditPage({
-    Key? key,
+    super.key,
     required this.tagEntity,
-  }) : super(key: key);
+  });
 
   final TagEntity tagEntity;
 
@@ -33,20 +33,20 @@ class _TagEditPageState extends State<TagEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
-    onSavePressed() async {
+    Future<void> onSavePressed() async {
       _formKey.currentState!.save();
       if (_formKey.currentState!.validate()) {
         final formData = _formKey.currentState?.value;
-        TagEntity newTagEntity = widget.tagEntity.copyWith(
+        var newTagEntity = widget.tagEntity.copyWith(
           tag: '${formData!['tag']}'.trim(),
-          private: formData['private'],
-          inactive: formData['inactive'],
+          private: formData['private'] as bool,
+          inactive: formData['inactive'] as bool,
           updatedAt: DateTime.now(),
         );
 
-        String type = formData['type'];
+        final type = formData['type'] as String;
 
         if (type == 'PERSON') {
           newTagEntity = TagEntity.personTag(
@@ -84,8 +84,8 @@ class _TagEditPageState extends State<TagEditPage> {
           );
         }
 
-        persistenceLogic.upsertTagEntity(newTagEntity);
-        context.router.pop();
+        await persistenceLogic.upsertTagEntity(newTagEntity);
+        await context.router.pop();
 
         setState(() {
           dirty = false;
@@ -102,7 +102,7 @@ class _TagEditPageState extends State<TagEditPage> {
               key: const Key('tag_save'),
               onPressed: onSavePressed,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   localizations.settingsTagsSaveLabel,
                   style: saveButtonStyle,
@@ -113,14 +113,14 @@ class _TagEditPageState extends State<TagEditPage> {
       ),
       backgroundColor: AppColors.bodyBgColor,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 color: AppColors.entryCardColor,
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
                     FormBuilder(
@@ -157,7 +157,7 @@ class _TagEditPageState extends State<TagEditPage> {
                             ),
                             activeColor: AppColors.private,
                           ),
-                          FormBuilderChoiceChip(
+                          FormBuilderChoiceChip<String>(
                             name: 'type',
                             initialValue: widget.tagEntity.map(
                               genericTag: (_) =>
@@ -175,9 +175,9 @@ class _TagEditPageState extends State<TagEditPage> {
                               ),
                             ),
                             selectedColor: widget.tagEntity.map(
-                              genericTag: (tag) => getTagColor(tag),
-                              personTag: (tag) => getTagColor(tag),
-                              storyTag: (tag) => getTagColor(tag),
+                              genericTag: getTagColor,
+                              personTag: getTagColor,
+                              storyTag: getTagColor,
                             ),
                             runSpacing: 4,
                             spacing: 4,
@@ -187,21 +187,21 @@ class _TagEditPageState extends State<TagEditPage> {
                               fontFamily: 'Oswald',
                             ),
                             options: [
-                              FormBuilderChipOption(
+                              FormBuilderChipOption<String>(
                                 value: 'TAG',
                                 child: Text(
                                   localizations.settingsTagsTypeTag,
                                   style: const TextStyle(color: Colors.black87),
                                 ),
                               ),
-                              FormBuilderChipOption(
+                              FormBuilderChipOption<String>(
                                 value: 'PERSON',
                                 child: Text(
                                   localizations.settingsTagsTypePerson,
                                   style: const TextStyle(color: Colors.black87),
                                 ),
                               ),
-                              FormBuilderChipOption(
+                              FormBuilderChipOption<String>(
                                 value: 'STORY',
                                 child: Text(
                                   localizations.settingsTagsTypeStory,
@@ -214,7 +214,7 @@ class _TagEditPageState extends State<TagEditPage> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(top: 16.0),
+                      padding: const EdgeInsets.only(top: 16),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -248,17 +248,17 @@ class _TagEditPageState extends State<TagEditPage> {
 }
 
 class EditExistingTagPage extends StatelessWidget {
+  EditExistingTagPage({
+    super.key,
+    @PathParam() required this.tagEntityId,
+  });
+
   final TagsService tagsService = getIt<TagsService>();
   final String tagEntityId;
 
-  EditExistingTagPage({
-    Key? key,
-    @PathParam() required this.tagEntityId,
-  }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    TagEntity? tagEntity = tagsService.getTagById(tagEntityId);
+    final tagEntity = tagsService.getTagById(tagEntityId);
 
     if (tagEntity == null) {
       return const EmptyScaffoldWithTitle('');

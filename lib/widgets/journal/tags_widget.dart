@@ -14,6 +14,11 @@ import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TagAddIconWidget extends StatelessWidget {
+  TagAddIconWidget({
+    required this.itemId,
+    super.key,
+  });
+
   final String itemId;
   final JournalDb db = getIt<JournalDb>();
 
@@ -22,14 +27,9 @@ class TagAddIconWidget extends StatelessWidget {
   final TagsService tagsService = getIt<TagsService>();
   late final Stream<JournalEntity?> stream = db.watchEntityById(itemId);
 
-  TagAddIconWidget({
-    required this.itemId,
-    Key? key,
-  }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder<List<TagEntity>>(
       stream: db.watchTags(),
@@ -46,7 +46,7 @@ class TagAddIconWidget extends StatelessWidget {
             BuildContext context,
             AsyncSnapshot<JournalEntity?> snapshot,
           ) {
-            JournalEntity? item = snapshot.data;
+            final item = snapshot.data;
             if (item == null) {
               return const SizedBox.shrink();
             }
@@ -65,13 +65,13 @@ class TagAddIconWidget extends StatelessWidget {
               }
             }
 
-            void pasteTags() async {
-              List<String> tagsFromClipboard = await tagsService.getClipboard();
+            Future<void> pasteTags() async {
+              final tagsFromClipboard = await tagsService.getClipboard();
               addTagIds(tagsFromClipboard);
-              HapticFeedback.heavyImpact();
+              await HapticFeedback.heavyImpact();
             }
 
-            TextEditingController controller = TextEditingController();
+            final controller = TextEditingController();
 
             void onTapAdd() {
               showModalBottomSheet<void>(
@@ -84,7 +84,7 @@ class TagAddIconWidget extends StatelessWidget {
                 ),
                 clipBehavior: Clip.antiAliasWithSaveLayer,
                 builder: (BuildContext context) {
-                  return Container(
+                  return ColoredBox(
                     color: AppColors.entryCardColor,
                     child: Padding(
                       padding: const EdgeInsets.only(
@@ -99,10 +99,9 @@ class TagAddIconWidget extends StatelessWidget {
                           TagsListWidget(itemId),
                           const SizedBox(height: 16),
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
+                                padding: const EdgeInsets.only(right: 8),
                                 child: Text(
                                   localizations.journalTagsLabel,
                                   style: formLabelStyle,
@@ -112,28 +111,26 @@ class TagAddIconWidget extends StatelessWidget {
                                 child: TypeAheadField(
                                   textFieldConfiguration:
                                       TextFieldConfiguration(
-                                    textCapitalization: TextCapitalization.none,
                                     autocorrect: false,
                                     controller: controller,
                                     onSubmitted: (String tag) async {
                                       tag = tag.trim();
-                                      String tagId = await persistenceLogic
+                                      final tagId = await persistenceLogic
                                           .addTagDefinition(tag);
                                       addTagIds([tagId]);
                                       controller.clear();
                                     },
-                                    autofocus: false,
                                     style: DefaultTextStyle.of(context)
                                         .style
                                         .copyWith(
                                           color: AppColors.entryTextColor,
                                           fontFamily: 'Oswald',
-                                          fontSize: 16.0,
+                                          fontSize: 16,
                                         ),
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8.0)),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
                                     ),
                                   ),
                                   suggestionsCallback: (String pattern) async {
@@ -145,7 +142,7 @@ class TagAddIconWidget extends StatelessWidget {
                                   suggestionsBoxDecoration:
                                       SuggestionsBoxDecoration(
                                     color: AppColors.entryCardColor,
-                                    borderRadius: BorderRadius.circular(8.0),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   itemBuilder: (context, TagEntity tagEntity) {
                                     return ListTile(
@@ -156,7 +153,7 @@ class TagAddIconWidget extends StatelessWidget {
                                           height: 1,
                                           color: getTagColor(tagEntity),
                                           fontWeight: FontWeight.normal,
-                                          fontSize: 16.0,
+                                          fontSize: 16,
                                         ),
                                       ),
                                     );
@@ -171,9 +168,9 @@ class TagAddIconWidget extends StatelessWidget {
                               IconButton(
                                 onPressed: copyTags,
                                 padding: const EdgeInsets.only(
-                                  left: 24.0,
-                                  top: 16.0,
-                                  bottom: 16.0,
+                                  left: 24,
+                                  top: 16,
+                                  bottom: 16,
                                 ),
                                 icon: Icon(
                                   MdiIcons.contentCopy,
@@ -184,9 +181,9 @@ class TagAddIconWidget extends StatelessWidget {
                               IconButton(
                                 onPressed: pasteTags,
                                 padding: const EdgeInsets.only(
-                                  left: 24.0,
-                                  top: 16.0,
-                                  bottom: 16.0,
+                                  left: 24,
+                                  top: 16,
+                                  bottom: 16,
                                 ),
                                 icon: Icon(
                                   MdiIcons.contentPaste,
@@ -206,7 +203,6 @@ class TagAddIconWidget extends StatelessWidget {
 
             return IconButton(
               onPressed: onTapAdd,
-              padding: const EdgeInsets.all(8),
               icon: Icon(
                 MdiIcons.tagPlusOutline,
                 size: 24,
@@ -222,15 +218,13 @@ class TagAddIconWidget extends StatelessWidget {
 }
 
 class TagsListWidget extends StatelessWidget {
+  TagsListWidget(this.itemId, {super.key});
+
   final String itemId;
   final JournalDb db = getIt<JournalDb>();
-
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-
   final TagsService tagsService = getIt<TagsService>();
   late final Stream<JournalEntity?> stream = db.watchEntityById(itemId);
-
-  TagsListWidget(this.itemId, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -249,16 +243,16 @@ class TagsListWidget extends StatelessWidget {
             BuildContext context,
             AsyncSnapshot<JournalEntity?> snapshot,
           ) {
-            JournalEntity? item = snapshot.data;
+            final item = snapshot.data;
             if (item == null) {
               return const SizedBox.shrink();
             }
 
-            List<String> tagIds = item.meta.tagIds ?? [];
-            List<TagEntity> tagsFromTagIds = [];
+            final tagIds = item.meta.tagIds ?? [];
+            final tagsFromTagIds = <TagEntity>[];
 
-            for (String tagId in tagIds) {
-              TagEntity? tagEntity = tagsService.getTagById(tagId);
+            for (final tagId in tagIds) {
+              final tagEntity = tagsService.getTagById(tagId);
               if (tagEntity != null) {
                 tagsFromTagIds.add(tagEntity);
               }
@@ -276,16 +270,19 @@ class TagsListWidget extends StatelessWidget {
                 maxWidth: MediaQuery.of(context).size.width - 24,
               ),
               child: Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: tagsFromTagIds
-                      .map((TagEntity tagEntity) => TagWidget(
-                            tagEntity: tagEntity,
-                            onTapRemove: () {
-                              removeTagId(tagEntity.id);
-                            },
-                          ))
-                      .toList()),
+                spacing: 4,
+                runSpacing: 4,
+                children: tagsFromTagIds
+                    .map(
+                      (TagEntity tagEntity) => TagWidget(
+                        tagEntity: tagEntity,
+                        onTapRemove: () {
+                          removeTagId(tagEntity.id);
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
             );
           },
         );
@@ -296,17 +293,17 @@ class TagsListWidget extends StatelessWidget {
 
 class TagWidget extends StatelessWidget {
   const TagWidget({
-    Key? key,
+    super.key,
     required this.tagEntity,
     required this.onTapRemove,
-  }) : super(key: key);
+  });
 
   final TagEntity tagEntity;
   final void Function()? onTapRemove;
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return GestureDetector(
       onDoubleTap: () {
@@ -319,10 +316,9 @@ class TagWidget extends StatelessWidget {
           color: getTagColor(tagEntity),
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Padding(
-                padding: const EdgeInsets.only(bottom: 2.0),
+                padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
                   tagEntity.tag,
                   style: TextStyle(
@@ -334,7 +330,7 @@ class TagWidget extends StatelessWidget {
               ),
               IconButton(
                 onPressed: onTapRemove,
-                padding: const EdgeInsets.only(left: 4.0),
+                padding: const EdgeInsets.only(left: 4),
                 constraints: const BoxConstraints(maxHeight: 16, maxWidth: 20),
                 icon: Icon(
                   MdiIcons.close,

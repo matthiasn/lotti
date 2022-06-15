@@ -1,1 +1,14 @@
 include: package:very_good_analysis/analysis_options.yaml
+
+linter:
+  rules:
+    public_member_api_docs: false
+    lines_longer_than_80_chars: false
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+  errors:
+    invalid_annotation_target: ignore
+  language:
+    strict-raw-types: true

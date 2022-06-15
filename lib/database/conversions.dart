@@ -5,12 +5,11 @@ import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-
-import 'database.dart';
+import 'package:lotti/database/database.dart';
 
 JournalDbEntity toDbEntity(JournalEntity entity) {
-  final DateTime createdAt = entity.meta.createdAt;
-  final String subtype = entity.maybeMap(
+  final createdAt = entity.meta.createdAt;
+  final subtype = entity.maybeMap(
     quantitative: (QuantitativeEntry entry) => entry.data.dataType,
     measurement: (MeasurementEntry entry) => entry.data.dataTypeId,
     survey: (SurveyEntry entry) =>
@@ -19,7 +18,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     orElse: () => '',
   );
 
-  final bool task = entity.maybeMap(
+  final task = entity.maybeMap(
     task: (qd) => true,
     orElse: () => false,
   );
@@ -33,7 +32,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     task: (item) => geolocation = item.geolocation,
   );
 
-  final String taskStatus = entity.maybeMap(
+  final taskStatus = entity.maybeMap(
     task: (task) => task.data.status.map(
       open: (_) => 'OPEN',
       groomed: (_) => 'GROOMED',
@@ -47,8 +46,8 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     orElse: () => '',
   );
 
-  String id = entity.meta.id;
-  JournalDbEntity dbEntity = JournalDbEntity(
+  final id = entity.meta.id;
+  final dbEntity = JournalDbEntity(
     id: id,
     createdAt: createdAt,
     updatedAt: createdAt,
@@ -73,7 +72,9 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
 }
 
 JournalEntity fromSerialized(String serialized) {
-  return JournalEntity.fromJson(json.decode(serialized));
+  return JournalEntity.fromJson(
+    json.decode(serialized) as Map<String, dynamic>,
+  );
 }
 
 JournalEntity fromDbEntity(JournalDbEntity dbEntity) {
@@ -81,7 +82,7 @@ JournalEntity fromDbEntity(JournalDbEntity dbEntity) {
 }
 
 List<JournalEntity> entityStreamMapper(List<JournalDbEntity> dbEntities) {
-  return dbEntities.map((dbEntity) => fromDbEntity(dbEntity)).toList();
+  return dbEntities.map(fromDbEntity).toList();
 }
 
 List<String> entityIdStreamMapper(List<JournalDbEntity> dbEntities) {
@@ -89,23 +90,27 @@ List<String> entityIdStreamMapper(List<JournalDbEntity> dbEntities) {
 }
 
 List<JournalEntity> nullAwareEntityStreamMapper(
-    List<JournalDbEntity?> dbEntities) {
+  List<JournalDbEntity?> dbEntities,
+) {
   return entityStreamMapper(
     dbEntities.whereType<JournalDbEntity>().toList(),
   );
 }
 
 MeasurableDataType measurableDataType(MeasurableDbEntity dbEntity) {
-  return MeasurableDataType.fromJson(json.decode(dbEntity.serialized));
+  return MeasurableDataType.fromJson(
+    json.decode(dbEntity.serialized) as Map<String, dynamic>,
+  );
 }
 
 List<MeasurableDataType> measurableDataTypeStreamMapper(
-    List<MeasurableDbEntity> items) {
-  List<MeasurableDataType> res =
-      items.map((e) => measurableDataType(e)).toList();
-
-  res.sort((a, b) =>
-      a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+  List<MeasurableDbEntity> items,
+) {
+  final res = items.map(measurableDataType).toList()
+    ..sort(
+      (a, b) =>
+          a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()),
+    );
 
   return res;
 }
@@ -135,9 +140,10 @@ TagDbEntity tagDbEntity(TagEntity tag) {
     serialized: jsonEncode(tag),
     deleted: tag.deletedAt != null,
     type: tag.map(
-        genericTag: (_) => 'GenericTag',
-        personTag: (_) => 'PersonTag',
-        storyTag: (_) => 'StoryTag'),
+      genericTag: (_) => 'GenericTag',
+      personTag: (_) => 'PersonTag',
+      storyTag: (_) => 'StoryTag',
+    ),
   );
 }
 
@@ -183,32 +189,43 @@ LinkedDbEntry linkedDbEntity(EntryLink link) {
 }
 
 EntryLink entryLinkFromDbEntity(LinkedDbEntry dbEntity) {
-  return EntryLink.fromJson(json.decode(dbEntity.serialized));
+  return EntryLink.fromJson(
+    json.decode(dbEntity.serialized) as Map<String, dynamic>,
+  );
 }
 
 TagEntity fromTagDbEntity(TagDbEntity dbEntity) {
-  return TagEntity.fromJson(json.decode(dbEntity.serialized));
+  return TagEntity.fromJson(
+    json.decode(dbEntity.serialized) as Map<String, dynamic>,
+  );
 }
 
 DashboardDefinition fromDashboardDbEntity(
-    DashboardDefinitionDbEntity dbEntity) {
-  return DashboardDefinition.fromJson(json.decode(dbEntity.serialized));
+  DashboardDefinitionDbEntity dbEntity,
+) {
+  return DashboardDefinition.fromJson(
+    json.decode(dbEntity.serialized) as Map<String, dynamic>,
+  );
 }
 
 List<TagEntity> tagStreamMapper(List<TagDbEntity> dbEntities) {
-  return dbEntities.map((e) => fromTagDbEntity(e)).toList();
+  return dbEntities.map(fromTagDbEntity).toList();
 }
 
 List<DashboardDefinition> dashboardStreamMapper(
-    List<DashboardDefinitionDbEntity> dbEntities) {
-  return dbEntities.map((e) => fromDashboardDbEntity(e)).toList();
+  List<DashboardDefinitionDbEntity> dbEntities,
+) {
+  return dbEntities.map(fromDashboardDbEntity).toList();
 }
 
 HabitDefinition fromHabitDefinitionDbEntity(HabitDefinitionDbEntity dbEntity) {
-  return HabitDefinition.fromJson(json.decode(dbEntity.serialized));
+  return HabitDefinition.fromJson(
+    json.decode(dbEntity.serialized) as Map<String, dynamic>,
+  );
 }
 
 List<HabitDefinition> habitDefinitionsStreamMapper(
-    List<HabitDefinitionDbEntity> dbEntities) {
-  return dbEntities.map((e) => fromHabitDefinitionDbEntity(e)).toList();
+  List<HabitDefinitionDbEntity> dbEntities,
+) {
+  return dbEntities.map(fromHabitDefinitionDbEntity).toList();
 }

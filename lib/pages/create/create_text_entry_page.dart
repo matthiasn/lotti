@@ -9,9 +9,9 @@ import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 
 class CreateTextEntryPage extends StatefulWidget {
   const CreateTextEntryPage({
-    Key? key,
+    super.key,
     @PathParam() this.linkedId,
-  }) : super(key: key);
+  });
 
   final String? linkedId;
 
@@ -32,23 +32,24 @@ class _CreateTextEntryPageState extends State<CreateTextEntryPage> {
 
   @override
   Widget build(BuildContext context) {
-    void _save() async {
-      persistenceLogic.createTextEntry(
+    Future<void> _save() async {
+      await persistenceLogic.createTextEntry(
         entryTextFromController(_controller),
         linkedId: widget.linkedId,
         started: started,
       );
-      HapticFeedback.heavyImpact();
+      await HapticFeedback.heavyImpact();
 
+      // ignore: use_build_context_synchronously
       FocusScope.of(context).unfocus();
-      context.router.pop();
+      await context.router.pop();
     }
 
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(12),
         child: ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
           child: EditorWidget(
             controller: _controller,
             focusNode: _focusNode,

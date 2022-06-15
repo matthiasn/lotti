@@ -5,7 +5,7 @@ import 'package:path_provider/path_provider.dart';
 
 class AudioUtils {
   static Future<String> getFullAudioPath(JournalAudio j) async {
-    var docDir = await getApplicationDocumentsDirectory();
+    final docDir = await getApplicationDocumentsDirectory();
     return '${docDir.path}${j.data.audioDirectory}${j.data.audioFile}';
   }
 
@@ -14,10 +14,10 @@ class AudioUtils {
   }
 
   static Future<void> moveToTrash(JournalAudio journalDbAudio) async {
-    var docDir = await getApplicationDocumentsDirectory();
-    Directory trashDirectory =
+    final docDir = await getApplicationDocumentsDirectory();
+    final trashDirectory =
         await Directory('${docDir.path}/audio/trash/').create(recursive: true);
-    String fullAudioPath = await AudioUtils.getFullAudioPath(journalDbAudio);
+    final fullAudioPath = await AudioUtils.getFullAudioPath(journalDbAudio);
 
     await File(fullAudioPath)
         .rename('${trashDirectory.path}/${journalDbAudio.data.audioFile}');

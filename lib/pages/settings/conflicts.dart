@@ -13,7 +13,7 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class ConflictsPage extends StatefulWidget {
-  const ConflictsPage({Key? key}) : super(key: key);
+  const ConflictsPage({super.key});
 
   @override
   State<ConflictsPage> createState() => _ConflictsPageState();
@@ -34,7 +34,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder<List<Conflict>>(
       stream: stream,
@@ -42,7 +42,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
         BuildContext context,
         AsyncSnapshot<List<Conflict>> snapshot,
       ) {
-        List<Conflict> items = snapshot.data ?? [];
+        final items = snapshot.data ?? [];
 
         return Scaffold(
           backgroundColor: AppColors.bodyBgColor,
@@ -89,7 +89,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
                 ),
                 ListView(
                   shrinkWrap: true,
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(8),
                   children: List.generate(
                     items.length,
                     (int index) {
@@ -114,25 +114,24 @@ String statusString(Conflict conflict) {
 }
 
 class ConflictCard extends StatelessWidget {
-  final JournalDb _db = getIt<JournalDb>();
-
-  final Conflict conflict;
-  final int index;
-
   ConflictCard({
-    Key? key,
+    super.key,
     required this.conflict,
     required this.index,
-  }) : super(key: key);
+  });
+
+  final JournalDb _db = getIt<JournalDb>();
+  final Conflict conflict;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(2.0),
+      padding: const EdgeInsets.all(2),
       child: Card(
-        elevation: 8.0,
+        elevation: 8,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: ListTile(
           contentPadding: const EdgeInsets.only(left: 24, right: 24),
@@ -141,7 +140,7 @@ class ConflictCard extends StatelessWidget {
             style: TextStyle(
               color: AppColors.entryTextColor,
               fontFamily: 'Oswald',
-              fontSize: 16.0,
+              fontSize: 16,
             ),
           ),
           subtitle: Text(
@@ -150,17 +149,16 @@ class ConflictCard extends StatelessWidget {
               color: AppColors.entryTextColor,
               fontFamily: 'Oswald',
               fontWeight: FontWeight.w200,
-              fontSize: 16.0,
+              fontSize: 16,
             ),
           ),
-          enabled: true,
           onTap: () async {
             final navigator = Navigator.of(context);
-            JournalEntity? entity = await _db.journalEntityById(conflict.id);
+            final entity = await _db.journalEntityById(conflict.id);
             if (entity == null) return;
 
-            navigator.push(
-              MaterialPageRoute(
+            await navigator.push(
+              MaterialPageRoute<DetailRoute>(
                 builder: (BuildContext context) {
                   return DetailRoute(
                     local: entity,
@@ -179,11 +177,11 @@ class ConflictCard extends StatelessWidget {
 
 class DetailRoute extends StatelessWidget {
   const DetailRoute({
-    Key? key,
+    super.key,
     required this.local,
     required this.index,
     required this.conflict,
-  }) : super(key: key);
+  });
 
   final int index;
   final JournalEntity local;
@@ -191,8 +189,8 @@ class DetailRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final JournalEntity fromSync = fromSerialized(conflict.serialized);
-    final VectorClock merged =
+    final fromSync = fromSerialized(conflict.serialized);
+    final merged =
         VectorClock.merge(local.meta.vectorClock, fromSync.meta.vectorClock);
     final withResolvedVectorClock =
         local.copyWith(meta: local.meta.copyWith(vectorClock: merged));
@@ -232,11 +230,11 @@ class DetailRoute extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
+                  horizontal: 16,
                   vertical: 8,
                 ),
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+                  borderRadius: const BorderRadius.all(Radius.circular(8)),
                   child: EntryDetailPage(
                     itemId: withResolvedVectorClock.meta.id,
                   ),
@@ -251,11 +249,11 @@ class DetailRoute extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
+                  horizontal: 16,
                   vertical: 8,
                 ),
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+                  borderRadius: const BorderRadius.all(Radius.circular(8)),
                   child: EntryDetailPage(
                     itemId: fromSync.meta.id,
                     readOnly: true,

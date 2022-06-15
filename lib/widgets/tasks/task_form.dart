@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_dynamic_calls
+
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -13,7 +15,7 @@ import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 
 class TaskForm extends StatefulWidget {
   const TaskForm({
-    Key? key,
+    super.key,
     required this.formKey,
     required this.controller,
     required this.focusNode,
@@ -22,7 +24,7 @@ class TaskForm extends StatefulWidget {
     this.data,
     this.focusOnTitle = false,
     this.withOpenDetails = false,
-  }) : super(key: key);
+  });
 
   final GlobalKey<FormBuilderState> formKey;
   final quill.QuillController controller;
@@ -42,7 +44,7 @@ class _TaskFormState extends State<TaskForm> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,36 +73,6 @@ class _TaskFormState extends State<TaskForm> {
                   ),
                   name: 'title',
                 ),
-                // TODO: either make use of due date or remove
-                // FormBuilderCupertinoDateTimePicker(
-                //   name: 'due',
-                //   alwaysUse24HourFormat: true,
-                //   format: DateFormat('EEEE, MMMM d, yyyy \'at\' HH:mm'),
-                //   inputType: CupertinoDateTimePickerInputType.both,
-                //   style: inputStyle.copyWith(
-                //     fontSize: 18,
-                //     fontWeight: FontWeight.w300,
-                //     fontFamily: 'Oswald',
-                //   ),
-                //   decoration: InputDecoration(
-                //     labelText: localizations.taskDueLabel,
-                //     labelStyle: labelStyle,
-                //   ),
-                //   initialValue: widget.data?.due ?? DateTime.now(),
-                //   theme: DatePickerTheme(
-                //     headerColor: AppColors.headerBgColor,
-                //     backgroundColor: AppColors.bodyBgColor,
-                //     itemStyle: const TextStyle(
-                //       color: Colors.white,
-                //       fontWeight: FontWeight.bold,
-                //       fontSize: 18,
-                //     ),
-                //     doneStyle: const TextStyle(
-                //       color: Colors.white,
-                //       fontSize: 16,
-                //     ),
-                //   ),
-                // ),
                 FormBuilderCupertinoDateTimePicker(
                   name: 'estimate',
                   alwaysUse24HourFormat: true,
@@ -172,49 +144,49 @@ class _TaskFormState extends State<TaskForm> {
                     fontFamily: 'Oswald',
                   ),
                   options: [
-                    FormBuilderChipOption(
+                    FormBuilderChipOption<String>(
                       value: 'OPEN',
                       child: Text(
                         localizations.taskStatusOpen,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderChipOption(
+                    FormBuilderChipOption<String>(
                       value: 'GROOMED',
                       child: Text(
                         localizations.taskStatusGroomed,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderChipOption(
+                    FormBuilderChipOption<String>(
                       value: 'IN PROGRESS',
                       child: Text(
                         localizations.taskStatusInProgress,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderChipOption(
+                    FormBuilderChipOption<String>(
                       value: 'BLOCKED',
                       child: Text(
                         localizations.taskStatusBlocked,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderChipOption(
+                    FormBuilderChipOption<String>(
                       value: 'ON HOLD',
                       child: Text(
                         localizations.taskStatusOnHold,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderChipOption(
+                    FormBuilderChipOption<String>(
                       value: 'DONE',
                       child: Text(
                         localizations.taskStatusDone,
                         style: taskFormFieldStyle,
                       ),
                     ),
-                    FormBuilderChipOption(
+                    FormBuilderChipOption<String>(
                       value: 'REJECTED',
                       child: Text(
                         localizations.taskStatusRejected,
@@ -231,9 +203,7 @@ class _TaskFormState extends State<TaskForm> {
           controller: widget.controller,
           focusNode: widget.focusNode,
           saveFn: widget.saveFn,
-          minHeight: 40,
           journalEntity: widget.task,
-          autoFocus: false,
         ),
       ],
     );

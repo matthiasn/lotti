@@ -10,10 +10,10 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
-const double iconSize = 24.0;
+const double iconSize = 24;
 
 class MeasurablesPage extends StatefulWidget {
-  const MeasurablesPage({Key? key}) : super(key: key);
+  const MeasurablesPage({super.key});
 
   @override
   State<MeasurablesPage> createState() => _MeasurablesPageState();
@@ -35,7 +35,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
     final isPortrait =
         MediaQuery.of(context).orientation == Orientation.portrait;
 
-    double portraitWidth = MediaQuery.of(context).size.width * 0.5;
+    final portraitWidth = MediaQuery.of(context).size.width * 0.5;
 
     return FloatingSearchBar(
       clearQueryOnClose: false,
@@ -55,9 +55,9 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
         fontSize: 20,
       ),
       physics: const BouncingScrollPhysics(),
-      borderRadius: BorderRadius.circular(8.0),
-      axisAlignment: isPortrait ? 0.0 : -1.0,
-      openAxisAlignment: 0.0,
+      borderRadius: BorderRadius.circular(8),
+      axisAlignment: isPortrait ? 0 : -1,
+      openAxisAlignment: 0,
       width: isPortrait ? portraitWidth : MediaQuery.of(context).size.width,
       onQueryChanged: (query) async {
         setState(() {
@@ -77,7 +77,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder<List<MeasurableDataType>>(
       stream: stream,
@@ -85,10 +85,12 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
         BuildContext context,
         AsyncSnapshot<List<MeasurableDataType>> snapshot,
       ) {
-        List<MeasurableDataType> items = snapshot.data ?? [];
-        List<MeasurableDataType> filtered = items
-            .where((MeasurableDataType dataType) =>
-                dataType.displayName.toLowerCase().contains(match))
+        final items = snapshot.data ?? [];
+        final filtered = items
+            .where(
+              (MeasurableDataType dataType) =>
+                  dataType.displayName.toLowerCase().contains(match),
+            )
             .toList();
 
         return Scaffold(

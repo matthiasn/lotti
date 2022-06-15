@@ -13,13 +13,13 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-const double iconSize = 24.0;
+const double iconSize = 24;
 
 class MeasurableDetailsPage extends StatefulWidget {
   const MeasurableDetailsPage({
-    Key? key,
+    super.key,
     required this.dataType,
-  }) : super(key: key);
+  });
 
   final MeasurableDataType dataType;
 
@@ -36,28 +36,28 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
-    final MeasurableDataType item = widget.dataType;
+    final localizations = AppLocalizations.of(context)!;
+    final item = widget.dataType;
 
-    onSavePressed() async {
+    Future<void> onSavePressed() async {
       _formKey.currentState!.save();
       if (_formKey.currentState!.validate()) {
         final formData = _formKey.currentState?.value;
         debugPrint('$formData');
-        MeasurableDataType dataType = item.copyWith(
+        final dataType = item.copyWith(
           description: '${formData!['description']}'.trim(),
           unitName: '${formData['unitName']}'.trim(),
           displayName: '${formData['displayName']}'.trim(),
-          private: formData['private'],
-          favorite: formData['favorite'],
-          aggregationType: formData['aggregationType'],
+          private: formData['private'] as bool,
+          favorite: formData['favorite'] as bool,
+          aggregationType: formData['aggregationType'] as AggregationType?,
         );
 
-        persistenceLogic.upsertEntityDefinition(dataType);
+        await persistenceLogic.upsertEntityDefinition(dataType);
         setState(() {
           dirty = false;
         });
-        context.router.pop();
+        await context.router.pop();
       }
     }
 
@@ -70,7 +70,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
             TextButton(
               onPressed: onSavePressed,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   AppLocalizations.of(context)!.settingsMeasurableSaveLabel,
                   style: saveButtonStyle,
@@ -81,14 +81,14 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   color: AppColors.headerBgColor,
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
                       FormBuilder(
@@ -151,7 +151,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               ),
                               iconEnabledColor: AppColors.entryTextColor,
                               clearIcon: Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
+                                padding: const EdgeInsets.only(right: 8),
                                 child: Icon(
                                   Icons.close,
                                   color: AppColors.entryTextColor,
@@ -165,10 +165,11 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                 return DropdownMenuItem(
                                   value: aggregationType,
                                   child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
+                                    padding: const EdgeInsets.all(8),
                                     child: Text(
                                       EnumToString.convertToString(
-                                          aggregationType),
+                                        aggregationType,
+                                      ),
                                       style: TextStyle(
                                         fontSize: 16,
                                         color: AppColors.entryTextColor,
@@ -182,7 +183,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(top: 16.0),
+                        padding: const EdgeInsets.only(top: 16),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -217,17 +218,17 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
 }
 
 class EditMeasurablePage extends StatelessWidget {
+  EditMeasurablePage({
+    super.key,
+    @PathParam() required this.measurableId,
+  });
+
   final JournalDb _db = getIt<JournalDb>();
   final String measurableId;
 
-  EditMeasurablePage({
-    Key? key,
-    @PathParam() required this.measurableId,
-  }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    AppLocalizations localizations = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder(
       stream: _db.watchMeasurableDataTypeById(measurableId),
@@ -235,7 +236,7 @@ class EditMeasurablePage extends StatelessWidget {
         BuildContext context,
         AsyncSnapshot<MeasurableDataType?> snapshot,
       ) {
-        MeasurableDataType? dataType = snapshot.data;
+        final dataType = snapshot.data;
 
         if (dataType == null) {
           return EmptyScaffoldWithTitle(localizations.measurableNotFound);
