@@ -10,18 +10,21 @@ class AlignedNavIcon extends StatelessWidget {
     required this.onPressed,
     required this.iconData,
     required this.alignment,
+    this.fadeInController,
   });
 
   final void Function() onPressed;
   final IconData iconData;
   final AlignmentGeometry alignment;
+  final FadeInController? fadeInController;
 
   @override
   Widget build(BuildContext context) {
     return Align(
       alignment: alignment,
       child: FadeIn(
-        duration: const Duration(seconds: 2),
+        controller: fadeInController,
+        duration: const Duration(seconds: 1),
         child: IconButton(
           padding: const EdgeInsets.all(12),
           icon: Icon(
@@ -36,7 +39,7 @@ class AlignedNavIcon extends StatelessWidget {
   }
 }
 
-class SyncNavPrevious extends StatelessWidget {
+class SyncNavPrevious extends StatefulWidget {
   const SyncNavPrevious({
     super.key,
     required this.pageCtrl,
@@ -47,29 +50,40 @@ class SyncNavPrevious extends StatelessWidget {
   final ValueNotifier<double> notifier;
 
   @override
+  State<SyncNavPrevious> createState() => _SyncNavPreviousState();
+}
+
+class _SyncNavPreviousState extends State<SyncNavPrevious> {
+  final FadeInController fadeInController = FadeInController();
+
+  @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      valueListenable: notifier,
+      valueListenable: widget.notifier,
       builder: (BuildContext context, double notifierValue, _) {
-        return Visibility(
-          visible: notifierValue != 0,
-          child: AlignedNavIcon(
-            alignment: Alignment.centerLeft,
-            iconData: Icons.arrow_back_ios_rounded,
-            onPressed: () {
-              pageCtrl.previousPage(
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.linear,
-              );
-            },
-          ),
+        if (notifierValue != 0) {
+          fadeInController.fadeIn();
+        } else {
+          fadeInController.fadeOut();
+        }
+
+        return AlignedNavIcon(
+          fadeInController: fadeInController,
+          alignment: Alignment.centerLeft,
+          iconData: Icons.arrow_back_ios_rounded,
+          onPressed: () {
+            widget.pageCtrl.previousPage(
+              duration: const Duration(seconds: 1),
+              curve: Curves.linear,
+            );
+          },
         );
       },
     );
   }
 }
 
-class SyncNavNext extends StatelessWidget {
+class SyncNavNext extends StatefulWidget {
   const SyncNavNext({
     super.key,
     required this.pageCtrl,
@@ -86,34 +100,46 @@ class SyncNavNext extends StatelessWidget {
   final ValueNotifier<double> notifier;
 
   @override
+  State<SyncNavNext> createState() => _SyncNavNextState();
+}
+
+class _SyncNavNextState extends State<SyncNavNext> {
+  final FadeInController fadeInController = FadeInController();
+
+  @override
   Widget build(BuildContext context) {
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
       builder: (context, SyncConfigState state) {
         return ValueListenableBuilder(
-          valueListenable: notifier,
+          valueListenable: widget.notifier,
           builder: (BuildContext context, double notifierValue, _) {
-            final isLastPage = notifierValue == pageCount - 1;
-            final isGuardedPage = guardedPagesAllowed[notifierValue] != null;
-            final allowedCheckFn = guardedPagesAllowed[notifierValue];
+            final isLastPage = notifierValue == widget.pageCount - 1;
+            final isGuardedPage =
+                widget.guardedPagesAllowed[notifierValue] != null;
+            final allowedCheckFn = widget.guardedPagesAllowed[notifierValue];
             final allowProceed =
                 allowedCheckFn != null && allowedCheckFn(state);
 
             final visible = !isLastPage && (!isGuardedPage || allowProceed);
 
-            return Visibility(
-              visible: visible,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: AlignedNavIcon(
-                  alignment: Alignment.centerRight,
-                  iconData: Icons.arrow_forward_ios_rounded,
-                  onPressed: () {
-                    pageCtrl.nextPage(
-                      duration: const Duration(milliseconds: 600),
-                      curve: Curves.linear,
-                    );
-                  },
-                ),
+            if (visible) {
+              fadeInController.fadeIn();
+            } else {
+              fadeInController.fadeOut();
+            }
+
+            return Padding(
+              padding: const EdgeInsets.all(8),
+              child: AlignedNavIcon(
+                fadeInController: fadeInController,
+                alignment: Alignment.centerRight,
+                iconData: Icons.arrow_forward_ios_rounded,
+                onPressed: () {
+                  widget.pageCtrl.nextPage(
+                    duration: const Duration(seconds: 1),
+                    curve: Curves.linear,
+                  );
+                },
               ),
             );
           },
