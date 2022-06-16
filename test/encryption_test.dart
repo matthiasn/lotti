@@ -19,8 +19,15 @@ void main() {
 
     final originalBytes = await originalFile.readAsBytes();
     final decryptedBytes = await decryptedFile.readAsBytes();
+
     expect(
-        const ListEquality<int>().equals(originalBytes, decryptedBytes), true);
+      const ListEquality<int>().equals(
+        originalBytes,
+        decryptedBytes,
+      ),
+      true,
+    );
+
     await encryptedFile.delete();
     await decryptedFile.delete();
   });

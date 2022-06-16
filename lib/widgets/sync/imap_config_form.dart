@@ -24,30 +24,33 @@ class _ImapConfigFormState extends State<ImapConfigForm> {
   Widget build(BuildContext context) {
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
       builder: (context, SyncConfigState state) {
-        return state.when(
-          configured: (cfg, _) => ConfigForm(
-            formKey: _formKey,
-            imapConfig: cfg,
+        return SizedBox(
+          height: 300,
+          child: state.when(
+            configured: (cfg, _) => ConfigForm(
+              formKey: _formKey,
+              imapConfig: cfg,
+            ),
+            imapSaved: (cfg) => ConfigForm(
+              formKey: _formKey,
+              imapConfig: cfg,
+            ),
+            imapValid: (cfg) => ConfigForm(
+              formKey: _formKey,
+              imapConfig: cfg,
+            ),
+            imapTesting: (cfg) => ConfigForm(
+              formKey: _formKey,
+              imapConfig: cfg,
+            ),
+            imapInvalid: (cfg, _) => ConfigForm(
+              formKey: _formKey,
+              imapConfig: cfg,
+            ),
+            loading: () => const SizedBox.shrink(),
+            generating: () => ConfigForm(formKey: _formKey),
+            empty: () => ConfigForm(formKey: _formKey),
           ),
-          imapSaved: (cfg) => ConfigForm(
-            formKey: _formKey,
-            imapConfig: cfg,
-          ),
-          imapValid: (cfg) => ConfigForm(
-            formKey: _formKey,
-            imapConfig: cfg,
-          ),
-          imapTesting: (cfg) => ConfigForm(
-            formKey: _formKey,
-            imapConfig: cfg,
-          ),
-          imapInvalid: (cfg, _) => ConfigForm(
-            formKey: _formKey,
-            imapConfig: cfg,
-          ),
-          loading: () => ConfigForm(formKey: _formKey),
-          generating: () => ConfigForm(formKey: _formKey),
-          empty: () => ConfigForm(formKey: _formKey),
         );
       },
     );

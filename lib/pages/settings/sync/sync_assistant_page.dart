@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/pages/settings/sync/sync_assistant_nav.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_config.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_intro_1.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_intro_2.dart';
@@ -55,41 +57,30 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
               child: Container(
                 width: double.infinity,
                 height: 0.5,
-                color: Colors.white,
+                color: AppColors.entryTextColor,
               ),
             ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios_rounded,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  _pageCtrl.previousPage(
-                    duration: const Duration(milliseconds: 600),
-                    curve: Curves.linear,
-                  );
-                },
-              ),
+            SyncNavPrevious(
+              pageCtrl: _pageCtrl,
+              notifier: notifier,
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios_rounded,
-                  color: Colors.white,
-                  textDirection: TextDirection.rtl,
-                ),
-                onPressed: () {
-                  _pageCtrl.nextPage(
-                    duration: const Duration(milliseconds: 600),
-                    curve: Curves.linear,
-                  );
-                },
-              ),
+            SyncNavNext(
+              pageCtrl: _pageCtrl,
+              guardedPage: 2,
+              pageCount: pageCount,
+              notifier: notifier,
+              guardedPagesAllowed: {
+                2: (SyncConfigState state) => state.maybeMap(
+                      configured: (_) => true,
+                      imapSaved: (_) => true,
+                      orElse: () => false,
+                    ),
+                4: (SyncConfigState state) => state.maybeMap(
+                      configured: (_) => true,
+                      orElse: () => false,
+                    ),
+              },
             ),
-
             Align(
               alignment: const Alignment(0, 0.94),
               child: SlidingIndicator(
