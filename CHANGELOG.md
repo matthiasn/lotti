@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Grey boxes in flagged entries that do not have text yet
+
+## [0.8.58] - 2022-06-16
+### Fixed:
 - App bar when creating new entries
 
 ## [0.8.55] - 2022-06-16
