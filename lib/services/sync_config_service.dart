@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:encrypt/encrypt.dart';
+import 'package:flutter/foundation.dart' as foo;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
@@ -12,16 +13,13 @@ class SyncConfigService {
   final sharedSecretKey = 'sharedSecret';
   final imapConfigKey = 'imapConfig';
 
-  Future<SyncConfig?> getSyncConfig() async {
-    final sharedKey = await _storage.read(key: sharedSecretKey);
-    final imapConfigJson = await _storage.read(key: imapConfigKey);
-    ImapConfig? imapConfig;
+  Future<String?> getSharedKey() async {
+    return _storage.read(key: sharedSecretKey);
+  }
 
-    if (imapConfigJson != null) {
-      imapConfig = ImapConfig.fromJson(
-        json.decode(imapConfigJson) as Map<String, dynamic>,
-      );
-    }
+  Future<SyncConfig?> getSyncConfig() async {
+    final sharedKey = await getSharedKey();
+    final imapConfig = await getImapConfig();
 
     if (sharedKey != null && imapConfig != null) {
       return SyncConfig(
@@ -57,6 +55,7 @@ class SyncConfigService {
   }
 
   Future<void> deleteImapConfig() async {
+    foo.debugPrint('deleteImapConfig');
     await _storage.delete(key: imapConfigKey);
   }
 
