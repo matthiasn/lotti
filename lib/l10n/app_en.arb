@@ -116,6 +116,7 @@
   "settingsSyncCopyButton": "Copy",
   "settingsSyncCopyCfg": "Copy SyncConfig to Clipboard?",
   "settingsSyncCopyCfgWarning": "With this data, anyone can read your journal. Only copy when you know what you're doing. ARE YOU SURE you want to proceed?",
+  "settingsSyncDeleteConfigButton": "Delete Sync Configuration",
   "settingsSyncDeleteImapButton": "Delete IMAP Config",
   "settingsSyncDeleteKeyButton": "Delete Shared Key",
   "settingsSyncFolderLabel": "IMAP Folder",
