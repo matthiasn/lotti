@@ -68,3 +68,6 @@ lib/routes/router.gr.dart
 missing_translations.txt
 
 nohup.out
+
+TEST-report.jsonl
+TEST-report.xml
