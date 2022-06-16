@@ -307,10 +307,6 @@ class _TasksPageState extends State<TasksPage> {
                     searchHeaderHeight += 32;
                   }
 
-                  if (Platform.isIOS) {
-                    searchHeaderHeight += 40;
-                  }
-
                   return Stack(
                     children: [
                       Scaffold(
