@@ -4,9 +4,12 @@ import 'dart:convert';
 import 'package:auto_route/annotations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/surveys/calculate.dart';
 import 'package:lotti/surveys/cfq11_survey.dart';
 import 'package:lotti/surveys/panas_survey.dart';
+import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:research_package/research_package.dart';
 
@@ -92,6 +95,8 @@ class FillSurveyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     Future<void> runSurvey(
       RPOrderedTask task,
       void Function(RPTaskResult) resultCallback,
@@ -111,36 +116,40 @@ class FillSurveyPage extends StatelessWidget {
       );
     }
 
-    return Center(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Button(
-              'CFQ 11',
-              onPressed: () => runSurvey(
-                cfq11SurveyTask,
-                createResultCallback(
-                  scoreDefinitions: cfq11ScoreDefinitions,
-                  context: context,
-                  linkedId: linkedId,
+    return Scaffold(
+      appBar: TitleAppBar(title: localizations.addSurveyTitle),
+      backgroundColor: AppColors.bodyBgColor,
+      body: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Button(
+                'CFQ 11',
+                onPressed: () => runSurvey(
+                  cfq11SurveyTask,
+                  createResultCallback(
+                    scoreDefinitions: cfq11ScoreDefinitions,
+                    context: context,
+                    linkedId: linkedId,
+                  ),
                 ),
+                primaryColor: CupertinoColors.systemOrange,
               ),
-              primaryColor: CupertinoColors.systemOrange,
-            ),
-            Button(
-              'PANAS',
-              onPressed: () => runSurvey(
-                panasSurveyTask,
-                createResultCallback(
-                  scoreDefinitions: panasScoreDefinitions,
-                  context: context,
-                  linkedId: linkedId,
+              Button(
+                'PANAS',
+                onPressed: () => runSurvey(
+                  panasSurveyTask,
+                  createResultCallback(
+                    scoreDefinitions: panasScoreDefinitions,
+                    context: context,
+                    linkedId: linkedId,
+                  ),
                 ),
+                primaryColor: CupertinoColors.systemOrange,
               ),
-              primaryColor: CupertinoColors.systemOrange,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
