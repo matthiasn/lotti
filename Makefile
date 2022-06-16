@@ -12,7 +12,8 @@ test:
 junit:
 	flutter test --coverage --reporter json > TEST-report.jsonl
 	dart pub global activate junitreport
-	dart pub global run junitreport:tojunit --input TEST-report.jsonl --output TEST-report.xml
+	dart pub global run junitreport:tojunit --input TEST-report.jsonl --output junit.xml
+	./.buildkite/junit_upload.sh
 
 .PHONY: integration_test
 integration_test:
