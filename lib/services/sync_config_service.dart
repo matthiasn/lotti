@@ -12,16 +12,13 @@ class SyncConfigService {
   final sharedSecretKey = 'sharedSecret';
   final imapConfigKey = 'imapConfig';
 
-  Future<SyncConfig?> getSyncConfig() async {
-    final sharedKey = await _storage.read(key: sharedSecretKey);
-    final imapConfigJson = await _storage.read(key: imapConfigKey);
-    ImapConfig? imapConfig;
+  Future<String?> getSharedKey() async {
+    return _storage.read(key: sharedSecretKey);
+  }
 
-    if (imapConfigJson != null) {
-      imapConfig = ImapConfig.fromJson(
-        json.decode(imapConfigJson) as Map<String, dynamic>,
-      );
-    }
+  Future<SyncConfig?> getSyncConfig() async {
+    final sharedKey = await getSharedKey();
+    final imapConfig = await getImapConfig();
 
     if (sharedKey != null && imapConfig != null) {
       return SyncConfig(

@@ -18,7 +18,6 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     loadSyncConfig();
 
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      debugPrint('onConnectivityChanged $result');
       testConnection();
     });
   }
@@ -27,20 +26,21 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
   String? sharedSecret;
   ImapConfig? imapConfig;
   bool isAccountValid = false;
+  bool saved = true;
   String? connectionError;
 
   Future<void> loadSyncConfig() async {
     emit(SyncConfigState.loading());
-    final syncConfig = await _syncConfigService.getSyncConfig();
-    imapConfig = syncConfig?.imapConfig;
-    sharedSecret = syncConfig?.sharedSecret;
+    sharedSecret = await _syncConfigService.getSharedKey();
+    imapConfig = await _syncConfigService.getImapConfig();
 
-    if (sharedSecret != null) {
+    await testConnection();
+    await emitState();
+
+    if (imapConfig != null && sharedSecret != null) {
       await getIt<SyncInboxService>().init();
       await getIt<OutboxService>().init();
     }
-
-    await testConnection();
   }
 
   void resetStatus() {
@@ -49,13 +49,25 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
   }
 
   Future<void> emitState() async {
-    if (imapConfig == null && sharedSecret == null) {
+    if (imapConfig == null) {
       emit(SyncConfigState.empty());
-    } else if (imapConfig != null && sharedSecret != null && isAccountValid) {
+    } else if (imapConfig != null &&
+        sharedSecret != null &&
+        isAccountValid &&
+        saved) {
       emit(
         SyncConfigState.configured(
           imapConfig: imapConfig!,
           sharedSecret: sharedSecret!,
+        ),
+      );
+    } else if (imapConfig != null &&
+        connectionError == null &&
+        isAccountValid &&
+        saved) {
+      emit(
+        SyncConfigState.imapSaved(
+          imapConfig: imapConfig!,
         ),
       );
     } else if (imapConfig != null &&
@@ -121,27 +133,27 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
 
   Future<void> saveImapConfig() async {
     if (imapConfig != null && isAccountValid && connectionError == null) {
-      debugPrint('saveImapConfig');
       await _syncConfigService.setImapConfig(imapConfig!);
-      emit(SyncConfigState.imapSaved(imapConfig: imapConfig!));
+      saved = true;
+      await emitState();
     }
   }
 
   Future<void> deleteSharedKey() async {
     await _syncConfigService.deleteSharedKey();
-    await loadSyncConfig();
+    sharedSecret = null;
+    await emitState();
   }
 
   Future<void> deleteImapConfig() async {
     await _syncConfigService.deleteImapConfig();
-    resetStatus();
-    sharedSecret = null;
     imapConfig = null;
-    emit(SyncConfigState.empty());
+    await loadSyncConfig();
   }
 
   Future<void> setImapConfig(ImapConfig? config) async {
     imapConfig = config;
+    saved = false;
 
     if (imapConfig != null) {
       EasyDebounce.debounce(

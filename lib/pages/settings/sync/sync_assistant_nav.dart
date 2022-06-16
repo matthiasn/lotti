@@ -92,7 +92,6 @@ class SyncNavNext extends StatelessWidget {
         return ValueListenableBuilder(
           valueListenable: notifier,
           builder: (BuildContext context, double notifierValue, _) {
-            debugPrint(state.runtimeType.toString());
             final isLastPage = notifierValue == pageCount - 1;
             final isGuardedPage = guardedPagesAllowed[notifierValue] != null;
             final allowedCheckFn = guardedPagesAllowed[notifierValue];

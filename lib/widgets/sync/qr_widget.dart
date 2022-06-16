@@ -32,7 +32,9 @@ class EncryptionQrWidget extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Button(
-                localizations.settingsSyncGenKeyButton,
+                state.maybeMap(
+                    configured: (_) => localizations.settingsSyncReGenKeyButton,
+                    orElse: () => localizations.settingsSyncGenKeyButton),
                 onPressed: () =>
                     context.read<SyncConfigCubit>().generateSharedKey(),
                 primaryColor: Colors.red,
