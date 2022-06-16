@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed:
 - Grey boxes in flagged entries that do not have text yet
+- Header margin on mobile
 
 ## [0.8.58] - 2022-06-16
 ### Fixed:
