@@ -1,11 +1,13 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
 
@@ -69,38 +71,46 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: TaskForm(
-                formKey: formKey,
-                controller: _controller,
-                focusNode: _focusNode,
-                focusOnTitle: true,
-                saveFn: _save,
-                withOpenDetails: true,
+    final localizations = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      appBar: TitleAppBar(
+        title: localizations.addTaskTitle,
+      ),
+      backgroundColor: AppColors.bodyBgColor,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: TaskForm(
+                  formKey: formKey,
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  focusOnTitle: true,
+                  saveFn: _save,
+                  withOpenDetails: true,
+                ),
               ),
-            ),
-            TextButton(
-              onPressed: _save,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Save',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontFamily: 'Oswald',
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.appBarFgColor,
+              TextButton(
+                onPressed: _save,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Save',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'Oswald',
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.appBarFgColor,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
