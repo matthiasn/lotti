@@ -33,6 +33,10 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to scan QR codes</string>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Not actually used, only required for permissions library</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Not actually used, only required for permissions library</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Read Health data</string>
 	<key>NSHealthUpdateUsageDescription</key>
