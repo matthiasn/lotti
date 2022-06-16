@@ -101,7 +101,7 @@ class EncryptionQrWidget extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 32),
-                      const DeleteSyncConfigButton(),
+                      const DeleteSyncKeyButton(),
                     ],
                   );
                 },
@@ -170,8 +170,8 @@ class EncryptionQrWidget extends StatelessWidget {
   }
 }
 
-class DeleteSyncConfigButton extends StatelessWidget {
-  const DeleteSyncConfigButton({super.key});
+class DeleteSyncKeyButton extends StatelessWidget {
+  const DeleteSyncKeyButton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -183,6 +183,24 @@ class DeleteSyncConfigButton extends StatelessWidget {
         context.read<SyncConfigCubit>().deleteSharedKey();
         persistNamedRoute('/settings/advanced');
         context.router.pop();
+      },
+      primaryColor: Colors.red,
+    );
+  }
+}
+
+class DeleteSyncConfigButton extends StatelessWidget {
+  const DeleteSyncConfigButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return Button(
+      localizations.settingsSyncDeleteConfigButton,
+      onPressed: () {
+        context.read<SyncConfigCubit>().deleteImapConfig();
+        context.read<SyncConfigCubit>().deleteSharedKey();
       },
       primaryColor: Colors.red,
     );
