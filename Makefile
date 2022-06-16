@@ -8,6 +8,13 @@ LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 test:
 	flutter test --coverage
 
+.PHONY: junit
+junit:
+	flutter test --coverage --reporter json > TEST-report.jsonl
+	dart pub global activate junitreport
+	dart pub global run junitreport:tojunit --input TEST-report.jsonl --output junit.xml
+	./.buildkite/junit_upload.sh
+
 .PHONY: integration_test
 integration_test:
 	 flutter test integration_test

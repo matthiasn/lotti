@@ -48,7 +48,7 @@ steps:
           - "apple_codegen"
         commands:
           - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "flutter test"
+          - "make junit"
         agents:
           os: "macOS"
         retry:

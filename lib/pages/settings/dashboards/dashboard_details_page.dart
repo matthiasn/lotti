@@ -68,6 +68,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                   selected.aggregationType ?? AggregationType.dailySum,
             ),
           );
+          dirty = true;
         });
       }
     }

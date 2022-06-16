@@ -39,6 +39,24 @@ Map<String, DashboardWorkoutItem> workoutTypes = {
     color: '#0000FF',
     valueType: WorkoutValueType.distance,
   ),
+  'swimming.duration': DashboardWorkoutItem(
+    displayName: 'Swimming minutes',
+    workoutType: 'swimming',
+    color: '#0000FF',
+    valueType: WorkoutValueType.duration,
+  ),
+  'swimming.calories': DashboardWorkoutItem(
+    displayName: 'Swimming calories',
+    workoutType: 'swimming',
+    color: '#0000FF',
+    valueType: WorkoutValueType.energy,
+  ),
+  'swimming.distance': DashboardWorkoutItem(
+    displayName: 'Swimming distance/km',
+    workoutType: 'swimming',
+    color: '#0000FF',
+    valueType: WorkoutValueType.distance,
+  ),
   'functionalStrengthTraining.duration': DashboardWorkoutItem(
     displayName: 'Functional strength training minutes',
     workoutType: 'functionalStrengthTraining',
