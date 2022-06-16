@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/sync/imap_config_status.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
 import 'package:lotti/widgets/sync/qr_widget.dart';
 
@@ -19,7 +20,6 @@ class MobileSyncConfig extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 88),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Host: ${imapConfig.host}',
@@ -38,7 +38,14 @@ class MobileSyncConfig extends StatelessWidget {
                       style: labelStyleLarger,
                     ),
                     const SizedBox(height: 32),
-                    const DeleteSyncConfigButton(),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        DeleteSyncConfigButton(),
+                        SizedBox(width: 16),
+                        ImapConfigStatus(showText: false)
+                      ],
+                    ),
                   ],
                 ),
               );

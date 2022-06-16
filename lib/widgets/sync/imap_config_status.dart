@@ -5,7 +5,12 @@ import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/theme.dart';
 
 class ImapConfigStatus extends StatelessWidget {
-  const ImapConfigStatus({super.key});
+  const ImapConfigStatus({
+    super.key,
+    this.showText = true,
+  });
+
+  final bool showText;
 
   @override
   Widget build(BuildContext context) {
@@ -18,18 +23,21 @@ class ImapConfigStatus extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              state.when(
-                configured: (_, __) =>
-                    StatusText(loc.syncAssistantStatusSuccess),
-                imapSaved: (_) => StatusText(loc.syncAssistantStatusSaved),
-                imapValid: (_) => StatusText(loc.syncAssistantStatusValid),
-                imapTesting: (_) => StatusText(loc.syncAssistantStatusTesting),
-                imapInvalid: (_, String errorMessage) =>
-                    StatusText(errorMessage),
-                loading: () => StatusText(loc.syncAssistantStatusLoading),
-                generating: () => StatusText(loc.syncAssistantStatusGenerating),
-                empty: () => StatusText(loc.syncAssistantStatusEmpty),
-              ),
+              if (showText)
+                state.when(
+                  configured: (_, __) =>
+                      StatusText(loc.syncAssistantStatusSuccess),
+                  imapSaved: (_) => StatusText(loc.syncAssistantStatusSaved),
+                  imapValid: (_) => StatusText(loc.syncAssistantStatusValid),
+                  imapTesting: (_) =>
+                      StatusText(loc.syncAssistantStatusTesting),
+                  imapInvalid: (_, String errorMessage) =>
+                      StatusText(errorMessage),
+                  loading: () => StatusText(loc.syncAssistantStatusLoading),
+                  generating: () =>
+                      StatusText(loc.syncAssistantStatusGenerating),
+                  empty: () => StatusText(loc.syncAssistantStatusEmpty),
+                ),
               state.when(
                 configured: (_, __) =>
                     StatusIndicator(AppColors.outboxSuccessColor),
