@@ -5,10 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Saving tags
+
+## [0.8.60] - 2022-06-17
+
 ### Changed:
 - Fill survey directly from dashboard
 
-## [0.8.59] - 2022-06-16
+## [0.8.59] - 2022-06-17
 ### Fixed:
 - Save dashboard without daily review time filled out
 

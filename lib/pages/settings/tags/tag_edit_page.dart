@@ -39,57 +39,63 @@ class _TagEditPageState extends State<TagEditPage> {
       _formKey.currentState!.save();
       if (_formKey.currentState!.validate()) {
         final formData = _formKey.currentState?.value;
-        var newTagEntity = widget.tagEntity.copyWith(
-          tag: '${formData!['tag']}'.trim(),
-          private: formData['private'] as bool,
-          inactive: formData['inactive'] as bool,
-          updatedAt: DateTime.now(),
-        );
 
-        final type = formData['type'] as String;
+        if (formData != null) {
+          final private = formData['private'] as bool? ?? false;
+          final inactive = formData['inactive'] as bool? ?? false;
 
-        if (type == 'PERSON') {
-          newTagEntity = TagEntity.personTag(
-            tag: newTagEntity.tag,
-            vectorClock: newTagEntity.vectorClock,
-            updatedAt: newTagEntity.updatedAt,
-            createdAt: newTagEntity.createdAt,
-            private: newTagEntity.private,
-            inactive: newTagEntity.inactive,
-            id: newTagEntity.id,
+          var newTagEntity = widget.tagEntity.copyWith(
+            tag: '${formData['tag']}'.trim(),
+            private: private,
+            inactive: inactive,
+            updatedAt: DateTime.now(),
           );
+
+          final type = formData['type'] as String;
+
+          if (type == 'PERSON') {
+            newTagEntity = TagEntity.personTag(
+              tag: newTagEntity.tag,
+              vectorClock: newTagEntity.vectorClock,
+              updatedAt: newTagEntity.updatedAt,
+              createdAt: newTagEntity.createdAt,
+              private: newTagEntity.private,
+              inactive: newTagEntity.inactive,
+              id: newTagEntity.id,
+            );
+          }
+
+          if (type == 'STORY') {
+            newTagEntity = TagEntity.storyTag(
+              tag: newTagEntity.tag,
+              vectorClock: newTagEntity.vectorClock,
+              updatedAt: newTagEntity.updatedAt,
+              createdAt: newTagEntity.createdAt,
+              private: newTagEntity.private,
+              inactive: newTagEntity.inactive,
+              id: newTagEntity.id,
+            );
+          }
+
+          if (type == 'TAG') {
+            newTagEntity = TagEntity.genericTag(
+              tag: newTagEntity.tag,
+              vectorClock: newTagEntity.vectorClock,
+              updatedAt: newTagEntity.updatedAt,
+              createdAt: newTagEntity.createdAt,
+              private: newTagEntity.private,
+              inactive: newTagEntity.inactive,
+              id: newTagEntity.id,
+            );
+          }
+
+          await persistenceLogic.upsertTagEntity(newTagEntity);
+          await context.router.pop();
+
+          setState(() {
+            dirty = false;
+          });
         }
-
-        if (type == 'STORY') {
-          newTagEntity = TagEntity.storyTag(
-            tag: newTagEntity.tag,
-            vectorClock: newTagEntity.vectorClock,
-            updatedAt: newTagEntity.updatedAt,
-            createdAt: newTagEntity.createdAt,
-            private: newTagEntity.private,
-            inactive: newTagEntity.inactive,
-            id: newTagEntity.id,
-          );
-        }
-
-        if (type == 'TAG') {
-          newTagEntity = TagEntity.genericTag(
-            tag: newTagEntity.tag,
-            vectorClock: newTagEntity.vectorClock,
-            updatedAt: newTagEntity.updatedAt,
-            createdAt: newTagEntity.createdAt,
-            private: newTagEntity.private,
-            inactive: newTagEntity.inactive,
-            id: newTagEntity.id,
-          );
-        }
-
-        await persistenceLogic.upsertTagEntity(newTagEntity);
-        await context.router.pop();
-
-        setState(() {
-          dirty = false;
-        });
       }
     }
 

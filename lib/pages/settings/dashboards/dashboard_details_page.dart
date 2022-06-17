@@ -197,11 +197,15 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
           _formKey.currentState!.save();
           if (_formKey.currentState!.validate()) {
             final formData = _formKey.currentState?.value;
+
+            final private = formData?['private'] as bool? ?? false;
+            final active = formData?['active'] as bool? ?? false;
+
             final dashboard = widget.dashboard.copyWith(
               name: '${formData!['name']}'.trim(),
               description: '${formData['description']}'.trim(),
-              private: formData['private'] as bool,
-              active: formData['active'] as bool,
+              private: private,
+              active: active,
               reviewAt: formData['review_at'] as DateTime?,
               updatedAt: DateTime.now(),
               items: dashboardItems,

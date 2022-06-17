@@ -43,13 +43,14 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
       _formKey.currentState!.save();
       if (_formKey.currentState!.validate()) {
         final formData = _formKey.currentState?.value;
-        debugPrint('$formData');
+        final private = formData?['private'] as bool? ?? false;
+        final favorite = formData?['favorite'] as bool? ?? false;
         final dataType = item.copyWith(
           description: '${formData!['description']}'.trim(),
           unitName: '${formData['unitName']}'.trim(),
           displayName: '${formData['displayName']}'.trim(),
-          private: formData['private'] as bool,
-          favorite: formData['favorite'] as bool,
+          private: private,
+          favorite: favorite,
           aggregationType: formData['aggregationType'] as AggregationType?,
         );
 
