@@ -6,7 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/create/fill_survey_page.dart';
+import 'package:lotti/surveys/run_surveys.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';

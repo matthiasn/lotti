@@ -5,9 +5,7 @@ import 'package:auto_route/annotations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/surveys/calculate.dart';
-import 'package:lotti/surveys/cfq11_survey.dart';
-import 'package:lotti/surveys/panas_survey.dart';
+import 'package:lotti/surveys/run_surveys.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
@@ -155,54 +153,4 @@ class FillSurveyWithLinkedPage extends StatelessWidget {
       linkedId: linkedId,
     );
   }
-}
-
-Future<void> runSurvey({
-  required RPOrderedTask task,
-  required void Function(RPTaskResult) resultCallback,
-  required BuildContext context,
-}) async {
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(16),
-      ),
-    ),
-    clipBehavior: Clip.antiAliasWithSaveLayer,
-    builder: (BuildContext context) {
-      return SurveyWidget(task, resultCallback);
-    },
-  );
-}
-
-void runCfq11({
-  required BuildContext context,
-  String? linkedId,
-}) {
-  runSurvey(
-    context: context,
-    task: cfq11SurveyTask,
-    resultCallback: createResultCallback(
-      scoreDefinitions: cfq11ScoreDefinitions,
-      context: context,
-      linkedId: linkedId,
-    ),
-  );
-}
-
-void runPanas({
-  required BuildContext context,
-  String? linkedId,
-}) {
-  runSurvey(
-    context: context,
-    task: panasSurveyTask,
-    resultCallback: createResultCallback(
-      scoreDefinitions: panasScoreDefinitions,
-      context: context,
-      linkedId: linkedId,
-    ),
-  );
 }
