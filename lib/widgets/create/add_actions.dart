@@ -114,7 +114,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             rebuild();
 
             final linkedId = widget.linked?.meta.id;
-            pushNamedRoute('/journal/create_survey/$linkedId');
+            pushNamedRoute('/journal/fill_survey_linked/$linkedId');
           },
           child: const Icon(
             MdiIcons.clipboardOutline,
