@@ -24,8 +24,12 @@ const AutoRoute journalRoutes = AutoRoute(
       page: CreateTextEntryPage,
     ),
     AutoRoute(
-      path: 'create_survey/:linkedId',
-      page: FillSurveyPage,
+      path: 'fill_survey_type/:surveyType',
+      page: FillSurveyWithTypePage,
+    ),
+    AutoRoute(
+      path: 'fill_survey_linked/:linkedId',
+      page: FillSurveyWithLinkedPage,
     ),
     AutoRoute(
       path: 'record_audio/:linkedId',
