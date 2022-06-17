@@ -202,7 +202,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
               description: '${formData['description']}'.trim(),
               private: formData['private'] as bool,
               active: formData['active'] as bool,
-              reviewAt: formData['review_at'] as DateTime,
+              reviewAt: formData['review_at'] as DateTime?,
               updatedAt: DateTime.now(),
               items: dashboardItems,
             );
