@@ -6,7 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/pages/create/fill_survey_page.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -44,7 +44,12 @@ class DashboardSurveyChart extends StatelessWidget {
         final items = snapshot.data ?? [];
 
         Future<void> onDoubleTap() async {
-          pushNamedRoute('/journal/create_survey/${null}');
+          if (chartConfig.surveyType == 'cfq11SurveyTask') {
+            runCfq11(context: context);
+          }
+          if (chartConfig.surveyType == 'panasSurveyTask') {
+            runPanas(context: context);
+          }
         }
 
         return GestureDetector(

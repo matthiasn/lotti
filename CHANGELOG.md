@@ -5,10 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Fill survey directly from dashboard
+
+## [0.8.59] - 2022-06-16
 ### Fixed:
 - Save dashboard without daily review time filled out
 
-## [0.8.58] - 2022-06-16
+## [0.8.58] - 2022-06-17
 ### Added:
 - Workout type swimming
 

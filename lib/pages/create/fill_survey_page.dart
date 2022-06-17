@@ -35,7 +35,7 @@ class SurveyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 500,
+      height: 440,
       child: Flex(
         direction: Axis.horizontal,
         children: [
@@ -64,7 +64,7 @@ class SurveyWidget extends StatelessWidget {
                 ),
               ),
               child: Padding(
-                padding: const EdgeInsets.only(top: 40),
+                padding: const EdgeInsets.only(top: 16),
                 child: RPUITask(
                   task: task,
                   onSubmit: resultCallback,
@@ -88,33 +88,16 @@ class SurveyWidget extends StatelessWidget {
 class FillSurveyPage extends StatelessWidget {
   const FillSurveyPage({
     super.key,
-    @PathParam() this.linkedId,
+    this.linkedId,
+    this.surveyType,
   });
 
   final String? linkedId;
+  final String? surveyType;
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-
-    Future<void> runSurvey(
-      RPOrderedTask task,
-      void Function(RPTaskResult) resultCallback,
-    ) async {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(16),
-          ),
-        ),
-        clipBehavior: Clip.antiAliasWithSaveLayer,
-        builder: (BuildContext context) {
-          return SurveyWidget(task, resultCallback);
-        },
-      );
-    }
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.addSurveyTitle),
@@ -126,26 +109,12 @@ class FillSurveyPage extends StatelessWidget {
             children: <Widget>[
               Button(
                 'CFQ 11',
-                onPressed: () => runSurvey(
-                  cfq11SurveyTask,
-                  createResultCallback(
-                    scoreDefinitions: cfq11ScoreDefinitions,
-                    context: context,
-                    linkedId: linkedId,
-                  ),
-                ),
+                onPressed: () => runCfq11(linkedId: linkedId, context: context),
                 primaryColor: CupertinoColors.systemOrange,
               ),
               Button(
                 'PANAS',
-                onPressed: () => runSurvey(
-                  panasSurveyTask,
-                  createResultCallback(
-                    scoreDefinitions: panasScoreDefinitions,
-                    context: context,
-                    linkedId: linkedId,
-                  ),
-                ),
+                onPressed: () => runPanas(linkedId: linkedId, context: context),
                 primaryColor: CupertinoColors.systemOrange,
               ),
             ],
@@ -154,4 +123,86 @@ class FillSurveyPage extends StatelessWidget {
       ),
     );
   }
+}
+
+class FillSurveyWithTypePage extends StatelessWidget {
+  const FillSurveyWithTypePage({
+    super.key,
+    @PathParam() this.surveyType,
+  });
+
+  final String? surveyType;
+
+  @override
+  Widget build(BuildContext context) {
+    return FillSurveyPage(
+      surveyType: surveyType,
+    );
+  }
+}
+
+class FillSurveyWithLinkedPage extends StatelessWidget {
+  const FillSurveyWithLinkedPage({
+    super.key,
+    @PathParam() this.linkedId,
+  });
+
+  final String? linkedId;
+
+  @override
+  Widget build(BuildContext context) {
+    return FillSurveyPage(
+      linkedId: linkedId,
+    );
+  }
+}
+
+Future<void> runSurvey({
+  required RPOrderedTask task,
+  required void Function(RPTaskResult) resultCallback,
+  required BuildContext context,
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(16),
+      ),
+    ),
+    clipBehavior: Clip.antiAliasWithSaveLayer,
+    builder: (BuildContext context) {
+      return SurveyWidget(task, resultCallback);
+    },
+  );
+}
+
+void runCfq11({
+  required BuildContext context,
+  String? linkedId,
+}) {
+  runSurvey(
+    context: context,
+    task: cfq11SurveyTask,
+    resultCallback: createResultCallback(
+      scoreDefinitions: cfq11ScoreDefinitions,
+      context: context,
+      linkedId: linkedId,
+    ),
+  );
+}
+
+void runPanas({
+  required BuildContext context,
+  String? linkedId,
+}) {
+  runSurvey(
+    context: context,
+    task: panasSurveyTask,
+    resultCallback: createResultCallback(
+      scoreDefinitions: panasScoreDefinitions,
+      context: context,
+      linkedId: linkedId,
+    ),
+  );
 }
