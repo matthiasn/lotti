@@ -33,15 +33,15 @@ class LoggingDb extends _$LoggingDb {
   @override
   int get schemaVersion => 1;
 
-  Future<int> logAsync(LogEntry logEntry) async {
+  Future<int> _logAsync(LogEntry logEntry) async {
     return into(logEntries).insert(logEntry);
   }
 
   void log(LogEntry logEntry) {
-    unawaited(logAsync(logEntry));
+    unawaited(_logAsync(logEntry));
   }
 
-  Future<void> captureEventAsync(
+  Future<void> _captureEventAsync(
     dynamic event, {
     required String domain,
     String? subDomain,
@@ -69,7 +69,7 @@ class LoggingDb extends _$LoggingDb {
     InsightType type = InsightType.log,
   }) {
     unawaited(
-      captureEventAsync(
+      _captureEventAsync(
         event,
         domain: domain,
         subDomain: subDomain,
@@ -79,7 +79,7 @@ class LoggingDb extends _$LoggingDb {
     );
   }
 
-  Future<void> captureExceptionAsync(
+  Future<void> _captureExceptionAsync(
     dynamic exception, {
     required String domain,
     String? subDomain,
@@ -120,7 +120,7 @@ class LoggingDb extends _$LoggingDb {
     InsightLevel level = InsightLevel.error,
     InsightType type = InsightType.exception,
   }) {
-    captureExceptionAsync(
+    _captureExceptionAsync(
       exception,
       domain: domain,
       subDomain: subDomain,

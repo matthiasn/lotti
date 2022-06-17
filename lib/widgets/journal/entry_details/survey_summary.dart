@@ -55,7 +55,7 @@ class SurveySummary extends StatelessWidget {
             )
             .toList(),
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(8),
           child: DashboardSurveyChart(
             chartConfig: chartConfig!,
             rangeStart: getRangeStart(context: context),
