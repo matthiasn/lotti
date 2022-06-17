@@ -85,6 +85,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
               healthType: selected.healthType,
             ),
           );
+          dirty = true;
         });
       }
     }
@@ -95,6 +96,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
       if (selected != null) {
         setState(() {
           dashboardItems.add(selected);
+          dirty = true;
         });
       }
     }
@@ -105,6 +107,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
       if (selected != null) {
         setState(() {
           dashboardItems.add(selected);
+          dirty = true;
         });
       }
     }
@@ -115,6 +118,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
       if (selected != null) {
         setState(() {
           dashboardItems.add(selected);
+          dirty = true;
         });
       }
     }
@@ -123,12 +127,14 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
   void updateItem(DashboardItem item, int index) {
     setState(() {
       dashboardItems[index] = item;
+      dirty = true;
     });
   }
 
   void dismissItem(int index) {
     setState(() {
       dashboardItems.removeAt(index);
+      dirty = true;
     });
   }
 
