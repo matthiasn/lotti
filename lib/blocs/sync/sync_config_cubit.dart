@@ -6,7 +6,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
-import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/outbox.dart';
 
@@ -94,14 +93,14 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     if (imapConfig != null) {
       emit(SyncConfigState.imapTesting(imapConfig: imapConfig!));
 
-      final client = await createImapClient(
+      final valid = await _syncConfigService.testConnection(
         SyncConfig(
           imapConfig: imapConfig!,
           sharedSecret: '',
         ),
       );
 
-      if (client != null) {
+      if (valid) {
         isAccountValid = true;
         debugPrint('testConnection isAccountValid');
       } else {
