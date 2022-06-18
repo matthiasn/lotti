@@ -20,6 +20,7 @@ final testImapConfig = ImapConfig(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  var mock = MockSyncConfigService();
 
   group('SyncConfigCubit Tests - ', () {
     setUp(() {
@@ -39,7 +40,7 @@ void main() {
       'in empty state',
       build: SyncConfigCubit.new,
       setUp: () {
-        final mock = MockSyncConfigService();
+        mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async {});
         when(mock.getImapConfig).thenAnswer((_) async {});
         getIt.registerSingleton<SyncConfigService>(mock);
@@ -47,13 +48,17 @@ void main() {
       act: (c) => c.emitState(),
       wait: defaultWait,
       expect: () => <SyncConfigState>[SyncConfigState.empty()],
+      verify: (c) {
+        verify(() => mock.getImapConfig()).called(1);
+        verify(() => mock.getSharedKey()).called(1);
+      },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in configured state',
       build: SyncConfigCubit.new,
       setUp: () {
-        final mock = MockSyncConfigService();
+        mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => testKey);
         when(mock.getImapConfig).thenAnswer((_) async => testImapConfig);
 
@@ -74,13 +79,17 @@ void main() {
           sharedSecret: testKey,
         ),
       ],
+      verify: (c) {
+        verify(() => mock.getImapConfig()).called(1);
+        verify(() => mock.getSharedKey()).called(1);
+      },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in IMAP saved state from configured state after deleting shared key',
       build: SyncConfigCubit.new,
       setUp: () {
-        final mock = MockSyncConfigService();
+        mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => testKey);
         when(mock.getImapConfig).thenAnswer((_) async => testImapConfig);
 
@@ -102,13 +111,17 @@ void main() {
         SyncConfigState.imapTesting(imapConfig: testImapConfig),
         SyncConfigState.imapSaved(imapConfig: testImapConfig),
       ],
+      verify: (c) {
+        verify(() => mock.getImapConfig()).called(1);
+        verify(() => mock.getSharedKey()).called(1);
+      },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in empty state from configured state after deleting imap config',
       build: SyncConfigCubit.new,
       setUp: () {
-        final mock = MockSyncConfigService();
+        mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => testKey);
         when(mock.getImapConfig).thenAnswer((_) async => testImapConfig);
 
@@ -128,13 +141,17 @@ void main() {
       expect: () => <SyncConfigState>[
         SyncConfigState.empty(),
       ],
+      verify: (c) {
+        verify(() => mock.getImapConfig()).called(2);
+        verify(() => mock.getSharedKey()).called(2);
+      },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'imap config valid state',
       build: SyncConfigCubit.new,
       setUp: () {
-        final mock = MockSyncConfigService();
+        mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => null);
         when(mock.getImapConfig).thenAnswer((_) async => testImapConfig);
 
@@ -152,13 +169,17 @@ void main() {
         SyncConfigState.imapTesting(imapConfig: testImapConfig),
         SyncConfigState.imapSaved(imapConfig: testImapConfig),
       ],
+      verify: (c) {
+        verify(() => mock.getImapConfig()).called(1);
+        verify(() => mock.getSharedKey()).called(1);
+      },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in invalid state when testing fails',
       build: SyncConfigCubit.new,
       setUp: () {
-        final mock = MockSyncConfigService();
+        mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => testKey);
         when(mock.getImapConfig).thenAnswer((_) async => testImapConfig);
 
@@ -179,13 +200,17 @@ void main() {
           errorMessage: 'Error',
         ),
       ],
+      verify: (c) {
+        verify(() => mock.getImapConfig()).called(1);
+        verify(() => mock.getSharedKey()).called(1);
+      },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in invalid state after testing incorrect config',
       build: SyncConfigCubit.new,
       setUp: () {
-        final mock = MockSyncConfigService();
+        mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => null);
         when(mock.getImapConfig).thenAnswer((_) async => null);
 
@@ -209,13 +234,17 @@ void main() {
           errorMessage: 'Error',
         ),
       ],
+      verify: (c) {
+        verify(() => mock.getImapConfig()).called(1);
+        verify(() => mock.getSharedKey()).called(1);
+      },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in valid state after testing correct config',
       build: SyncConfigCubit.new,
       setUp: () {
-        final mock = MockSyncConfigService();
+        mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => null);
         when(mock.getImapConfig).thenAnswer((_) async => null);
 
@@ -236,6 +265,10 @@ void main() {
         SyncConfigState.imapTesting(imapConfig: testImapConfig),
         SyncConfigState.imapSaved(imapConfig: testImapConfig),
       ],
+      verify: (c) {
+        verify(() => mock.getImapConfig()).called(1);
+        verify(() => mock.getSharedKey()).called(1);
+      },
     );
   });
 }
