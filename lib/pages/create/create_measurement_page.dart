@@ -67,9 +67,16 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
           }
         }
 
+        bool validate() {
+          if (_formKey.currentState != null) {
+            return _formKey.currentState!.validate();
+          }
+          return false;
+        }
+
         Future<void> onSave() async {
           _formKey.currentState!.save();
-          if (_formKey.currentState!.validate()) {
+          if (validate()) {
             final formData = _formKey.currentState?.value;
             if (selected == null) {
               return;
@@ -95,7 +102,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
           appBar: TitleAppBar(
             title: localizations.addMeasurementTitle,
             actions: [
-              if (dirty)
+              if (dirty && validate())
                 TextButton(
                   onPressed: onSave,
                   child: Padding(
@@ -248,6 +255,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     ),
                                     keyboardAppearance: Brightness.dark,
                                     style: inputStyle,
+                                    validator: FormBuilderValidators.required(),
                                     name: 'value',
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
