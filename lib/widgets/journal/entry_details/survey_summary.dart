@@ -25,7 +25,10 @@ class SurveySummary extends StatelessWidget {
         ...surveyEntry.data.calculatedScores.entries
             .map(
               (mapEntry) => Padding(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
                 child: Row(
                   children: [
                     Text(
@@ -51,10 +54,13 @@ class SurveySummary extends StatelessWidget {
               ),
             )
             .toList(),
-        DashboardSurveyChart(
-          chartConfig: chartConfig!,
-          rangeStart: getRangeStart(context: context),
-          rangeEnd: getRangeEnd(),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: DashboardSurveyChart(
+            chartConfig: chartConfig!,
+            rangeStart: getRangeStart(context: context),
+            rangeEnd: getRangeEnd(),
+          ),
         ),
       ],
     );
