@@ -8,7 +8,7 @@ import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/outbox.dart';
 import 'package:mocktail/mocktail.dart';
 
-const defaultWait = Duration(milliseconds: 1);
+const defaultWait = Duration(milliseconds: 100);
 
 const testSharedKey = 'abc123';
 
