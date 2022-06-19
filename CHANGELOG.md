@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Tests for Sync assistant logic (no UI changes)
+- Tests for Sync assistant widgets (no UI changes)
 
 ## [0.8.62] - 2022-06-18
 ### Changed:
