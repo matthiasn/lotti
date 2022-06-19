@@ -13,7 +13,10 @@ part 'sync_config_cubit.freezed.dart';
 part 'sync_config_state.dart';
 
 class SyncConfigCubit extends Cubit<SyncConfigState> {
-  SyncConfigCubit({bool autoLoad = true}) : super(SyncConfigState.loading()) {
+  SyncConfigCubit({
+    bool autoLoad = true,
+    this.debounceDuration = const Duration(seconds: 2),
+  }) : super(SyncConfigState.loading()) {
     if (autoLoad) {
       loadSyncConfig();
     }
@@ -21,6 +24,8 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
       testConnection();
     });
   }
+
+  final Duration debounceDuration;
 
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   String? sharedSecret;
@@ -158,7 +163,7 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     if (imapConfig != null) {
       EasyDebounce.debounce(
         'syncTestConnection',
-        const Duration(seconds: 2),
+        debounceDuration,
         testConnection,
       );
     }
