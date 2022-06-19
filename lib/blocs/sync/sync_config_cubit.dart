@@ -140,7 +140,7 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     if (imapConfig != null && isAccountValid && connectionError == null) {
       await _syncConfigService.setImapConfig(imapConfig!);
       saved = true;
-      await emitState();
+      await loadSyncConfig();
     }
   }
 

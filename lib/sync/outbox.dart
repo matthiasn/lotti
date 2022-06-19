@@ -71,6 +71,7 @@ class OutboxService {
   }
 
   Future<void> init() async {
+    debugPrint('OutboxService init');
     final syncConfig = await _syncConfigService.getSyncConfig();
 
     if (syncConfig != null) {

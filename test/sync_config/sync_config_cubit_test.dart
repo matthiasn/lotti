@@ -409,10 +409,12 @@ void main() {
       expect: () => <SyncConfigState>[
         SyncConfigState.imapTesting(imapConfig: testImapConfig),
         SyncConfigState.imapValid(imapConfig: testImapConfig),
+        SyncConfigState.loading(),
+        SyncConfigState.imapTesting(imapConfig: testImapConfig),
         SyncConfigState.imapSaved(imapConfig: testImapConfig),
       ],
       verify: (c) {
-        verify(() => mock.testConnection(testSyncConfigNoKey)).called(1);
+        verify(() => mock.testConnection(testSyncConfigNoKey)).called(2);
       },
     );
 
