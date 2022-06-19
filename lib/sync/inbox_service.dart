@@ -49,6 +49,7 @@ class SyncInboxService {
   }
 
   Future<void> init() async {
+    debugPrint('SyncInboxService init');
     if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
         _loggingDb.captureEvent(event, domain: 'INBOX_CUBIT');

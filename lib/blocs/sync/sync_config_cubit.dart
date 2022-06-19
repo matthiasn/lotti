@@ -6,7 +6,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
-import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/outbox.dart';
 
@@ -14,13 +13,23 @@ part 'sync_config_cubit.freezed.dart';
 part 'sync_config_state.dart';
 
 class SyncConfigCubit extends Cubit<SyncConfigState> {
-  SyncConfigCubit() : super(SyncConfigState.loading()) {
-    loadSyncConfig();
+  SyncConfigCubit({
+    bool autoLoad = true,
+    bool testOnNetworkChange = false,
+    this.debounceDuration = const Duration(seconds: 2),
+  }) : super(SyncConfigState.loading()) {
+    if (autoLoad) {
+      loadSyncConfig();
+    }
 
-    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      testConnection();
-    });
+    if (testOnNetworkChange) {
+      Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+        testConnection();
+      });
+    }
   }
+
+  final Duration debounceDuration;
 
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   String? sharedSecret;
@@ -35,7 +44,6 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     imapConfig = await _syncConfigService.getImapConfig();
 
     await testConnection();
-    await emitState();
 
     if (imapConfig != null && sharedSecret != null) {
       await getIt<SyncInboxService>().init();
@@ -94,16 +102,16 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     if (imapConfig != null) {
       emit(SyncConfigState.imapTesting(imapConfig: imapConfig!));
 
-      final client = await createImapClient(
+      final valid = await _syncConfigService.testConnection(
         SyncConfig(
           imapConfig: imapConfig!,
-          sharedSecret: '',
+          sharedSecret: sharedSecret ?? '',
         ),
       );
 
-      if (client != null) {
+      if (valid) {
         isAccountValid = true;
-        debugPrint('testConnection isAccountValid');
+        debugPrint('testConnection valid');
       } else {
         debugPrint('testConnection error');
         connectionError = 'Error';
@@ -124,10 +132,11 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     await loadSyncConfig();
   }
 
-  void testImapConfig(ImapConfig? config) {
+  Future<void> testImapConfig(ImapConfig? config) async {
     if (config != null) {
       imapConfig = config;
-      testConnection();
+      saved = false;
+      await testConnection();
     }
   }
 
@@ -135,20 +144,20 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     if (imapConfig != null && isAccountValid && connectionError == null) {
       await _syncConfigService.setImapConfig(imapConfig!);
       saved = true;
-      await emitState();
+      await loadSyncConfig();
     }
   }
 
   Future<void> deleteSharedKey() async {
     await _syncConfigService.deleteSharedKey();
     sharedSecret = null;
-    await emitState();
+    await loadSyncConfig();
   }
 
   Future<void> deleteImapConfig() async {
     await _syncConfigService.deleteImapConfig();
     imapConfig = null;
-    await loadSyncConfig();
+    await emitState();
   }
 
   Future<void> setImapConfig(ImapConfig? config) async {
@@ -158,7 +167,7 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     if (imapConfig != null) {
       EasyDebounce.debounce(
         'syncTestConnection',
-        const Duration(seconds: 2),
+        debounceDuration,
         testConnection,
       );
     }

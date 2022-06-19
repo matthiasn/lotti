@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox_service.dart';
 
 class SyncConfigService {
@@ -60,6 +61,11 @@ class SyncConfigService {
   Future<void> setImapConfig(ImapConfig imapConfig) async {
     final json = jsonEncode(imapConfig);
     await _storage.write(key: imapConfigKey, value: json);
+  }
+
+  Future<bool> testConnection(SyncConfig syncConfig) async {
+    final client = await createImapClient(syncConfig);
+    return client != null;
   }
 
   Future<ImapConfig?> getImapConfig() async {
