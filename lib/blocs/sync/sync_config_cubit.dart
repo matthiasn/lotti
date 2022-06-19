@@ -13,9 +13,10 @@ part 'sync_config_cubit.freezed.dart';
 part 'sync_config_state.dart';
 
 class SyncConfigCubit extends Cubit<SyncConfigState> {
-  SyncConfigCubit() : super(SyncConfigState.loading()) {
-    loadSyncConfig();
-
+  SyncConfigCubit({bool autoLoad = true}) : super(SyncConfigState.loading()) {
+    if (autoLoad) {
+      loadSyncConfig();
+    }
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
       testConnection();
     });
@@ -34,7 +35,6 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     imapConfig = await _syncConfigService.getImapConfig();
 
     await testConnection();
-    await emitState();
 
     if (imapConfig != null && sharedSecret != null) {
       await getIt<SyncInboxService>().init();
@@ -96,13 +96,13 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
       final valid = await _syncConfigService.testConnection(
         SyncConfig(
           imapConfig: imapConfig!,
-          sharedSecret: '',
+          sharedSecret: sharedSecret ?? '',
         ),
       );
 
       if (valid) {
         isAccountValid = true;
-        debugPrint('testConnection isAccountValid');
+        debugPrint('testConnection valid');
       } else {
         debugPrint('testConnection error');
         connectionError = 'Error';
@@ -123,10 +123,11 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     await loadSyncConfig();
   }
 
-  void testImapConfig(ImapConfig? config) {
+  Future<void> testImapConfig(ImapConfig? config) async {
     if (config != null) {
       imapConfig = config;
-      testConnection();
+      saved = false;
+      await testConnection();
     }
   }
 
@@ -141,13 +142,13 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
   Future<void> deleteSharedKey() async {
     await _syncConfigService.deleteSharedKey();
     sharedSecret = null;
-    await emitState();
+    await loadSyncConfig();
   }
 
   Future<void> deleteImapConfig() async {
     await _syncConfigService.deleteImapConfig();
     imapConfig = null;
-    await loadSyncConfig();
+    await emitState();
   }
 
   Future<void> setImapConfig(ImapConfig? config) async {

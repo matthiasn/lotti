@@ -8,7 +8,7 @@ import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/outbox.dart';
 import 'package:mocktail/mocktail.dart';
 
-const defaultWait = Duration(milliseconds: 10);
+const defaultWait = Duration(milliseconds: 1);
 
 const testSharedKey = 'abc123';
 
@@ -52,16 +52,19 @@ void main() {
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in empty state',
-      build: SyncConfigCubit.new,
+      build: () => SyncConfigCubit(autoLoad: false),
       setUp: () {
         mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async {});
         when(mock.getImapConfig).thenAnswer((_) async {});
         getIt.registerSingleton<SyncConfigService>(mock);
       },
-      act: (c) => c.emitState(),
+      act: (c) => c.loadSyncConfig(),
       wait: defaultWait,
-      expect: () => <SyncConfigState>[SyncConfigState.empty()],
+      expect: () => <SyncConfigState>[
+        SyncConfigState.loading(),
+        SyncConfigState.empty(),
+      ],
       verify: (c) {
         verify(() => mock.getImapConfig()).called(1);
         verify(() => mock.getSharedKey()).called(1);
@@ -70,21 +73,49 @@ void main() {
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in configured state',
-      build: SyncConfigCubit.new,
+      build: () => SyncConfigCubit(autoLoad: false),
       setUp: () {
         mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => testSharedKey);
         when(mock.getImapConfig).thenAnswer((_) async => testImapConfig);
 
-        when(() => mock.testConnection(testSyncConfigNoKey))
+        when(() => mock.testConnection(testSyncConfigConfigured))
             .thenAnswer((_) async => true);
 
         getIt.registerSingleton<SyncConfigService>(mock);
       },
-      act: (c) => c.emitState(),
+      act: (c) => c.loadSyncConfig(),
       wait: defaultWait,
       expect: () => <SyncConfigState>[
-        SyncConfigState.empty(),
+        SyncConfigState.loading(),
+        SyncConfigState.imapTesting(imapConfig: testImapConfig),
+        SyncConfigState.configured(
+          imapConfig: testImapConfig,
+          sharedSecret: testSharedKey,
+        ),
+      ],
+      verify: (c) {
+        verify(() => mock.getImapConfig()).called(1);
+        verify(() => mock.getSharedKey()).called(1);
+      },
+    );
+
+    blocTest<SyncConfigCubit, SyncConfigState>(
+      'in configured state, loaded automatically',
+      build: () => SyncConfigCubit(autoLoad: true),
+      setUp: () {
+        mock = MockSyncConfigService();
+        when(mock.getSharedKey).thenAnswer((_) async => testSharedKey);
+        when(mock.getImapConfig).thenAnswer((_) async => testImapConfig);
+
+        when(() => mock.testConnection(testSyncConfigConfigured))
+            .thenAnswer((_) async => true);
+
+        getIt.registerSingleton<SyncConfigService>(mock);
+      },
+      act: (c) {},
+      wait: defaultWait,
+      expect: () => <SyncConfigState>[
         SyncConfigState.imapTesting(imapConfig: testImapConfig),
         SyncConfigState.configured(
           imapConfig: testImapConfig,
@@ -99,7 +130,7 @@ void main() {
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in IMAP saved state from configured state after deleting shared key',
-      build: SyncConfigCubit.new,
+      build: () => SyncConfigCubit(autoLoad: false),
       setUp: () {
         mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => testSharedKey);
@@ -112,12 +143,15 @@ void main() {
         when(() => mock.testConnection(testSyncConfigNoKey))
             .thenAnswer((_) async => true);
 
+        when(() => mock.testConnection(testSyncConfigConfigured))
+            .thenAnswer((_) async => true);
+
         getIt.registerSingleton<SyncConfigService>(mock);
       },
       act: (c) => c.deleteSharedKey(),
       wait: defaultWait,
       expect: () => <SyncConfigState>[
-        SyncConfigState.empty(),
+        SyncConfigState.loading(),
         SyncConfigState.imapTesting(imapConfig: testImapConfig),
         SyncConfigState.imapSaved(imapConfig: testImapConfig),
       ],
@@ -128,8 +162,8 @@ void main() {
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
-      'in empty state from configured state after deleting imap config',
-      build: SyncConfigCubit.new,
+      'in empty state from configured state after deleting IMAP config',
+      build: () => SyncConfigCubit(autoLoad: false),
       setUp: () {
         mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => testSharedKey);
@@ -139,9 +173,6 @@ void main() {
           when(mock.getImapConfig).thenAnswer((_) async => null);
         });
 
-        when(() => mock.testConnection(testSyncConfigNoKey))
-            .thenAnswer((_) async => true);
-
         getIt.registerSingleton<SyncConfigService>(mock);
       },
       act: (c) => c.deleteImapConfig(),
@@ -150,14 +181,13 @@ void main() {
         SyncConfigState.empty(),
       ],
       verify: (c) {
-        verify(() => mock.getImapConfig()).called(2);
-        verify(() => mock.getSharedKey()).called(2);
+        verify(() => mock.deleteImapConfig()).called(1);
       },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
-      'imap config valid state',
-      build: SyncConfigCubit.new,
+      'in IMAP config valid state',
+      build: () => SyncConfigCubit(autoLoad: false),
       setUp: () {
         mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => null);
@@ -168,10 +198,10 @@ void main() {
 
         getIt.registerSingleton<SyncConfigService>(mock);
       },
-      act: (c) => c.emitState(),
+      act: (c) => c.loadSyncConfig(),
       wait: defaultWait,
       expect: () => <SyncConfigState>[
-        SyncConfigState.empty(),
+        SyncConfigState.loading(),
         SyncConfigState.imapTesting(imapConfig: testImapConfig),
         SyncConfigState.imapSaved(imapConfig: testImapConfig),
       ],
@@ -183,21 +213,21 @@ void main() {
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in invalid state when testing fails',
-      build: SyncConfigCubit.new,
+      build: () => SyncConfigCubit(autoLoad: false),
       setUp: () {
         mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => testSharedKey);
         when(mock.getImapConfig).thenAnswer((_) async => testImapConfig);
 
-        when(() => mock.testConnection(testSyncConfigNoKey))
+        when(() => mock.testConnection(testSyncConfigConfigured))
             .thenAnswer((_) async => false);
 
         getIt.registerSingleton<SyncConfigService>(mock);
       },
-      act: (c) => c.emitState(),
+      act: (c) => c.loadSyncConfig(),
       wait: defaultWait,
       expect: () => <SyncConfigState>[
-        SyncConfigState.empty(),
+        SyncConfigState.loading(),
         SyncConfigState.imapTesting(imapConfig: testImapConfig),
         SyncConfigState.imapInvalid(
           imapConfig: testImapConfig,
@@ -207,12 +237,13 @@ void main() {
       verify: (c) {
         verify(() => mock.getImapConfig()).called(1);
         verify(() => mock.getSharedKey()).called(1);
+        verify(() => mock.testConnection(testSyncConfigConfigured)).called(1);
       },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in invalid state after testing incorrect config',
-      build: SyncConfigCubit.new,
+      build: () => SyncConfigCubit(autoLoad: false),
       setUp: () {
         mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => null);
@@ -228,8 +259,6 @@ void main() {
       },
       act: (c) => c.testImapConfig(testImapConfig),
       wait: defaultWait,
-      // TODO: examine why it is necessary to skip anything
-      skip: 2,
       expect: () => <SyncConfigState>[
         SyncConfigState.imapTesting(imapConfig: testImapConfig),
         SyncConfigState.imapInvalid(
@@ -238,14 +267,13 @@ void main() {
         ),
       ],
       verify: (c) {
-        verify(() => mock.getImapConfig()).called(1);
-        verify(() => mock.getSharedKey()).called(1);
+        verify(() => mock.testConnection(testSyncConfigNoKey)).called(1);
       },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in valid state after testing correct config',
-      build: SyncConfigCubit.new,
+      build: () => SyncConfigCubit(autoLoad: false),
       setUp: () {
         mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => null);
@@ -261,27 +289,24 @@ void main() {
       },
       act: (c) => c.testImapConfig(testImapConfig),
       wait: defaultWait,
-      // TODO: examine why it is necessary to skip anything
-      skip: 2,
       expect: () => <SyncConfigState>[
         SyncConfigState.imapTesting(imapConfig: testImapConfig),
-        SyncConfigState.imapSaved(imapConfig: testImapConfig),
+        SyncConfigState.imapValid(imapConfig: testImapConfig),
       ],
       verify: (c) {
-        verify(() => mock.getImapConfig()).called(1);
-        verify(() => mock.getSharedKey()).called(1);
+        verify(() => mock.testConnection(testSyncConfigNoKey)).called(1);
       },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in configured state after imap saved and generating key',
-      build: SyncConfigCubit.new,
+      build: () => SyncConfigCubit(autoLoad: false),
       setUp: () {
         mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => null);
         when(mock.getImapConfig).thenAnswer((_) async => testImapConfig);
 
-        when(() => mock.testConnection(testSyncConfigNoKey))
+        when(() => mock.testConnection(testSyncConfigConfigured))
             .thenAnswer((_) async {
           return true;
         });
@@ -302,28 +327,22 @@ void main() {
           imapConfig: testImapConfig,
           sharedSecret: testSharedKey,
         ),
-        // TODO: examine why emitted twice
-        SyncConfigState.imapTesting(imapConfig: testImapConfig),
-        SyncConfigState.configured(
-          imapConfig: testImapConfig,
-          sharedSecret: testSharedKey,
-        ),
       ],
       verify: (c) {
-        verify(() => mock.getImapConfig()).called(2);
-        verify(() => mock.getSharedKey()).called(2);
+        verify(() => mock.getImapConfig()).called(1);
+        verify(() => mock.getSharedKey()).called(1);
       },
     );
 
     blocTest<SyncConfigCubit, SyncConfigState>(
       'in configured state after empty and setting valid sync config',
-      build: SyncConfigCubit.new,
+      build: () => SyncConfigCubit(autoLoad: false),
       setUp: () {
         mock = MockSyncConfigService();
         when(mock.getSharedKey).thenAnswer((_) async => null);
         when(mock.getImapConfig).thenAnswer((_) async => null);
 
-        when(() => mock.testConnection(testSyncConfigNoKey))
+        when(() => mock.testConnection(testSyncConfigConfigured))
             .thenAnswer((_) async {
           return true;
         });
@@ -339,12 +358,7 @@ void main() {
       act: (c) => c.setSyncConfig(testSyncConfigJson),
       wait: defaultWait,
       expect: () => <SyncConfigState>[
-        SyncConfigState.imapTesting(imapConfig: testImapConfig),
-        SyncConfigState.configured(
-          imapConfig: testImapConfig,
-          sharedSecret: testSharedKey,
-        ),
-        // TODO: examine why emitted twice
+        SyncConfigState.loading(),
         SyncConfigState.imapTesting(imapConfig: testImapConfig),
         SyncConfigState.configured(
           imapConfig: testImapConfig,
@@ -352,9 +366,47 @@ void main() {
         ),
       ],
       verify: (c) {
-        verify(() => mock.getImapConfig()).called(2);
-        verify(() => mock.getSharedKey()).called(2);
+        verify(() => mock.getImapConfig()).called(1);
+        verify(() => mock.getSharedKey()).called(1);
         verify(() => mock.setSyncConfig(testSyncConfigJson)).called(1);
+      },
+    );
+
+    blocTest<SyncConfigCubit, SyncConfigState>(
+      'in IMAP saved state after empty and setting valid IMAP config',
+      build: () => SyncConfigCubit(autoLoad: false),
+      setUp: () {
+        mock = MockSyncConfigService();
+        when(mock.getSharedKey).thenAnswer((_) async => null);
+        when(mock.getImapConfig).thenAnswer((_) async => null);
+
+        when(() => mock.testConnection(testSyncConfigNoKey))
+            .thenAnswer((_) async {
+          return true;
+        });
+
+        when(() => mock.setImapConfig(testImapConfig)).thenAnswer((_) async {
+          when(mock.getImapConfig).thenAnswer((_) async => testImapConfig);
+        });
+
+        getIt.registerSingleton<SyncConfigService>(mock);
+      },
+      act: (c) async {
+        await c.testImapConfig(testImapConfig);
+        await c.saveImapConfig();
+      },
+      wait: defaultWait,
+      expect: () => <SyncConfigState>[
+        SyncConfigState.imapTesting(imapConfig: testImapConfig),
+        SyncConfigState.imapValid(
+          imapConfig: testImapConfig,
+        ),
+        SyncConfigState.imapSaved(
+          imapConfig: testImapConfig,
+        ),
+      ],
+      verify: (c) {
+        verify(() => mock.testConnection(testSyncConfigNoKey)).called(1);
       },
     );
   });
