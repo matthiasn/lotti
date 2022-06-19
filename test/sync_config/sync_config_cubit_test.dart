@@ -35,11 +35,13 @@ final testSyncConfigJson = testSyncConfigConfigured.toJson().toString();
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   var mock = MockSyncConfigService();
+  var mockInboxService = MockSyncInboxService();
+  var mockOutboxService = MockOutboxService();
 
   group('SyncConfigCubit Tests - ', () {
     setUp(() {
-      final mockInboxService = MockSyncInboxService();
-      final mockOutboxService = MockOutboxService();
+      mockInboxService = MockSyncInboxService();
+      mockOutboxService = MockOutboxService();
 
       when(mockInboxService.init).thenAnswer((_) async {});
       when(mockOutboxService.init).thenAnswer((_) async {});
@@ -97,6 +99,8 @@ void main() {
       verify: (c) {
         verify(() => mock.getImapConfig()).called(1);
         verify(() => mock.getSharedKey()).called(1);
+        verify(() => mockInboxService.init()).called(1);
+        verify(() => mockOutboxService.init()).called(1);
       },
     );
 
@@ -125,6 +129,8 @@ void main() {
       verify: (c) {
         verify(() => mock.getImapConfig()).called(1);
         verify(() => mock.getSharedKey()).called(1);
+        verify(() => mockInboxService.init()).called(1);
+        verify(() => mockOutboxService.init()).called(1);
       },
     );
 
@@ -331,6 +337,8 @@ void main() {
       verify: (c) {
         verify(() => mock.getImapConfig()).called(1);
         verify(() => mock.getSharedKey()).called(1);
+        verify(() => mockInboxService.init()).called(1);
+        verify(() => mockOutboxService.init()).called(1);
       },
     );
 
@@ -369,6 +377,8 @@ void main() {
         verify(() => mock.getImapConfig()).called(1);
         verify(() => mock.getSharedKey()).called(1);
         verify(() => mock.setSyncConfig(testSyncConfigJson)).called(1);
+        verify(() => mockInboxService.init()).called(1);
+        verify(() => mockOutboxService.init()).called(1);
       },
     );
 
