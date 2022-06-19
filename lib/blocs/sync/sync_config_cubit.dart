@@ -15,14 +15,18 @@ part 'sync_config_state.dart';
 class SyncConfigCubit extends Cubit<SyncConfigState> {
   SyncConfigCubit({
     bool autoLoad = true,
+    bool testOnNetworkChange = false,
     this.debounceDuration = const Duration(seconds: 2),
   }) : super(SyncConfigState.loading()) {
     if (autoLoad) {
       loadSyncConfig();
     }
-    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      testConnection();
-    });
+
+    if (testOnNetworkChange) {
+      Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+        testConnection();
+      });
+    }
   }
 
   final Duration debounceDuration;

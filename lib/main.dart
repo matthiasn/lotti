@@ -66,7 +66,9 @@ class LottiApp extends StatelessWidget {
       providers: [
         BlocProvider<SyncConfigCubit>(
           lazy: false,
-          create: (BuildContext context) => SyncConfigCubit(),
+          create: (BuildContext context) => SyncConfigCubit(
+            testOnNetworkChange: true,
+          ),
         ),
         BlocProvider<OutboxCubit>(
           lazy: false,
