@@ -57,7 +57,7 @@ Development is primarily done on macOS and both the iOS and macOS versions are a
 2. Download and install [Android Studio](https://developer.android.com/studio)
 3. Clone repository and go to `./lotti`
 4. Run `flutter pub get`
-5. Run `flutter create`
+5. Run `flutter create .`
 6. Open `./lotti` in **Android Studio**
 
 
