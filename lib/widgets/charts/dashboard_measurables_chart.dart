@@ -72,7 +72,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
               final aggregationType = widget.aggregationType ??
                   measurableDataType.aggregationType ??
-                  AggregationType.dailySum;
+                  AggregationType.none;
 
               final aggregationNone = aggregationType == AggregationType.none;
 
@@ -213,6 +213,10 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
       builder: (BuildContext context, MeasurablesChartInfoState state) {
         final selected = state.selected;
 
+        final aggregationLabel = aggregationType != AggregationType.none
+            ? '[${EnumToString.convertToString(aggregationType)}]'
+            : '';
+
         return Positioned(
           top: -4,
           left: MediaQuery.of(context).size.width / 4,
@@ -224,8 +228,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                 children: [
                   const Spacer(),
                   Text(
-                    '${measurableDataType.displayName}'
-                    ' [${EnumToString.convertToString(aggregationType)}]',
+                    '${measurableDataType.displayName} $aggregationLabel',
                     style: chartTitleStyle,
                   ),
                   if (selected != null) ...[
