@@ -1,39 +1,18 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
-import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/outbox.dart';
 import 'package:mocktail/mocktail.dart';
 
-const defaultWait = Duration(milliseconds: 100);
-
-const testSharedKey = 'abc123';
-
-final testImapConfig = ImapConfig(
-  host: 'host',
-  folder: 'folder',
-  userName: 'userName',
-  password: 'password',
-  port: 993,
-);
-
-final testSyncConfigNoKey = SyncConfig(
-  imapConfig: testImapConfig,
-  sharedSecret: '',
-);
-
-final testSyncConfigConfigured = SyncConfig(
-  imapConfig: testImapConfig,
-  sharedSecret: testSharedKey,
-);
-
-final testSyncConfigJson = testSyncConfigConfigured.toJson().toString();
+import 'sync_config_test_data.dart';
+import 'sync_config_test_mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
   var mock = MockSyncConfigService();
   var mockInboxService = MockSyncInboxService();
   var mockOutboxService = MockOutboxService();
@@ -490,9 +469,3 @@ void main() {
     );
   });
 }
-
-class MockSyncConfigService extends Mock implements SyncConfigService {}
-
-class MockSyncInboxService extends Mock implements SyncInboxService {}
-
-class MockOutboxService extends Mock implements OutboxService {}
