@@ -32,6 +32,7 @@ class EncryptionQrWidget extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Button(
+                key: const Key('genKeyButton'),
                 state.maybeMap(
                   configured: (_) => localizations.settingsSyncReGenKeyButton,
                   orElse: () => localizations.settingsSyncGenKeyButton,
@@ -60,6 +61,7 @@ class EncryptionQrWidget extends StatelessWidget {
                           ),
                         ),
                         child: GestureDetector(
+                          key: const Key('QrImageGestureDetector'),
                           onTap: () {
                             showDialog<String>(
                               context: context,
@@ -75,6 +77,7 @@ class EncryptionQrWidget extends StatelessWidget {
                                 actions: <Widget>[
                                   Button(
                                     localizations.settingsSyncCancelButton,
+                                    key: const Key('cancelCopyButton'),
                                     onPressed: () {
                                       Navigator.pop(context, 'Cancel');
                                     },
@@ -82,6 +85,7 @@ class EncryptionQrWidget extends StatelessWidget {
                                   ),
                                   Button(
                                     localizations.settingsSyncCopyButton,
+                                    key: const Key('copyButton'),
                                     onPressed: () {
                                       Clipboard.setData(
                                         ClipboardData(text: syncCfgJson),
@@ -97,11 +101,14 @@ class EncryptionQrWidget extends StatelessWidget {
                           child: QrImage(
                             data: syncCfgJson,
                             size: 280,
+                            key: const Key('QrImage'),
                           ),
                         ),
                       ),
                       const SizedBox(height: 32),
-                      const DeleteSyncKeyButton(),
+                      const DeleteSyncKeyButton(
+                        key: Key('deleteSyncKeyButton'),
+                      ),
                     ],
                   );
                 },
