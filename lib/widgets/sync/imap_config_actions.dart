@@ -7,7 +7,12 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 
 class ImapConfigActions extends StatelessWidget {
-  const ImapConfigActions({super.key});
+  const ImapConfigActions({
+    super.key,
+    this.doPop = true,
+  });
+
+  final bool doPop;
 
   @override
   Widget build(BuildContext context) {
@@ -19,32 +24,40 @@ class ImapConfigActions extends StatelessWidget {
 
         void deleteConfig() {
           syncConfigCubit.deleteImapConfig();
-          context.router.pop();
+          if (doPop) {
+            // TODO: test if called instead of ignoring in test
+            context.router.pop();
+          }
         }
 
         return Center(
           child: state.maybeWhen(
             configured: (_, __) => FadeInButton(
+              key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,
             ),
             imapSaved: (_) => FadeInButton(
+              key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,
             ),
             imapValid: (_) => FadeInButton(
+              key: const Key('settingsSyncSaveButton'),
               localizations.settingsSyncSaveButton,
               textColor: AppColors.headerBgColor,
               onPressed: syncConfigCubit.saveImapConfig,
             ),
             imapTesting: (_) => FadeInButton(
+              key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,
             ),
             imapInvalid: (_, String errorMessage) => FadeInButton(
+              key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,
