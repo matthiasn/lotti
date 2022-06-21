@@ -121,6 +121,7 @@ class EncryptionQrWidget extends StatelessWidget {
                     StatusTextWidget(localizations.settingsSyncNotInitialized),
                     const SizedBox(height: 32),
                     Button(
+                      key: const Key('settingsSyncPasteCfg'),
                       localizations.settingsSyncPasteCfg,
                       onPressed: () {
                         showDialog<String>(
@@ -137,6 +138,7 @@ class EncryptionQrWidget extends StatelessWidget {
                             actions: <Widget>[
                               Button(
                                 localizations.settingsSyncCancelButton,
+                                key: const Key('syncCancelButton'),
                                 onPressed: () {
                                   Navigator.pop(context, 'Cancel');
                                 },
@@ -144,6 +146,7 @@ class EncryptionQrWidget extends StatelessWidget {
                               ),
                               Button(
                                 localizations.settingsSyncImportButton,
+                                key: const Key('syncImportButton'),
                                 onPressed: () async {
                                   final navigator = Navigator.of(context);
                                   final syncConfigCubit =

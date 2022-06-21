@@ -164,5 +164,51 @@ void main() {
       expect(cancelButtonFinder, findsNothing);
       expect(copyButtonFinder, findsNothing);
     });
+
+    testWidgets(
+        'Widget shows paste button when status configured, '
+        'then allows interaction', (tester) async {
+      final mock = mockSyncConfigCubitWithState(SyncConfigState.empty());
+
+      when(mock.deleteImapConfig).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        BlocProvider<SyncConfigCubit>(
+          lazy: false,
+          create: (BuildContext context) => mock,
+          child: makeTestableWidget(
+            const EncryptionQrWidget(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final pasteButtonFinder = find.byKey(const Key('settingsSyncPasteCfg'));
+      expect(pasteButtonFinder, findsOneWidget);
+
+      final cancelButtonFinder = find.byKey(const Key('syncCancelButton'));
+      expect(cancelButtonFinder, findsNothing);
+
+      await tester.tap(pasteButtonFinder);
+      await tester.pumpAndSettle();
+
+      expect(cancelButtonFinder, findsOneWidget);
+
+      await tester.tap(cancelButtonFinder);
+      await tester.pumpAndSettle();
+
+      expect(cancelButtonFinder, findsNothing);
+      expect(pasteButtonFinder, findsOneWidget);
+
+      await tester.tap(pasteButtonFinder);
+      await tester.pumpAndSettle();
+
+      final importButtonFinder = find.byKey(const Key('syncImportButton'));
+      expect(importButtonFinder, findsOneWidget);
+
+      await tester.tap(importButtonFinder);
+      await tester.pumpAndSettle();
+    });
   });
 }
