@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Tests for Sync assistant widgets (no UI changes)
+- Tests for OutboxCubit (no UI changes)
+
+## [0.8.65] - 2022-06-20
 ### Changed:
 - Remove aggregation label in chart when aggregation none
 - Use aggregation none as default

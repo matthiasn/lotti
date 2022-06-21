@@ -7,7 +7,12 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 
 class ImapConfigActions extends StatelessWidget {
-  const ImapConfigActions({super.key});
+  const ImapConfigActions({
+    super.key,
+    this.mockRouter,
+  });
+
+  final StackRouter? mockRouter;
 
   @override
   Widget build(BuildContext context) {
@@ -15,36 +20,43 @@ class ImapConfigActions extends StatelessWidget {
 
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
       builder: (context, SyncConfigState state) {
+        final router = mockRouter ?? context.router;
+
         final syncConfigCubit = context.read<SyncConfigCubit>();
 
         void deleteConfig() {
           syncConfigCubit.deleteImapConfig();
-          context.router.pop();
+          router.pop();
         }
 
         return Center(
           child: state.maybeWhen(
             configured: (_, __) => FadeInButton(
+              key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,
             ),
             imapSaved: (_) => FadeInButton(
+              key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,
             ),
             imapValid: (_) => FadeInButton(
+              key: const Key('settingsSyncSaveButton'),
               localizations.settingsSyncSaveButton,
               textColor: AppColors.headerBgColor,
               onPressed: syncConfigCubit.saveImapConfig,
             ),
             imapTesting: (_) => FadeInButton(
+              key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,
             ),
             imapInvalid: (_, String errorMessage) => FadeInButton(
+              key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
               primaryColor: AppColors.error,

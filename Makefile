@@ -45,10 +45,13 @@ l10n: sort_arb_files
 doctor:
 	flutter doctor
 
-.PHONY: coverage
-coverage: test
+.PHONY: coverage_report
+coverage_report:
 	genhtml coverage/lcov.info -o coverage
 	open coverage/index.html
+
+.PHONY: coverage
+coverage: test coverage_report
 
 .PHONY: check-null-safety
 check-null-safety:
