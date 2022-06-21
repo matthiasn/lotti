@@ -11,6 +11,13 @@ import '../sync_config_test_mocks.dart';
 
 void main() {
   group('SyncConfig Imap Config Actions Widgets Tests - ', () {
+    final mockRouter = MockStackRouter();
+
+    setUp(() {
+      reset(mockRouter);
+      when(mockRouter.pop).thenAnswer((_) async => true);
+    });
+
     testWidgets('Widget shows no button when status empty', (tester) async {
       final mock = mockSyncConfigCubitWithState(SyncConfigState.empty());
 
@@ -18,7 +25,9 @@ void main() {
         BlocProvider<SyncConfigCubit>(
           lazy: false,
           create: (BuildContext context) => mock,
-          child: makeTestableWidget(const ImapConfigActions()),
+          child: makeTestableWidget(
+            ImapConfigActions(mockRouter: mockRouter),
+          ),
         ),
       );
 
@@ -45,9 +54,7 @@ void main() {
           lazy: false,
           create: (BuildContext context) => mock,
           child: makeTestableWidget(
-            const ImapConfigActions(
-              doPop: false,
-            ),
+            ImapConfigActions(mockRouter: mockRouter),
           ),
         ),
       );
@@ -60,6 +67,8 @@ void main() {
 
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
+
+      verify(mockRouter.pop).called(1);
     });
 
     testWidgets('Widget shows save button when status valid', (tester) async {
@@ -76,9 +85,7 @@ void main() {
           lazy: false,
           create: (BuildContext context) => mock,
           child: makeTestableWidget(
-            const ImapConfigActions(
-              doPop: false,
-            ),
+            ImapConfigActions(mockRouter: mockRouter),
           ),
         ),
       );
@@ -106,9 +113,7 @@ void main() {
           lazy: false,
           create: (BuildContext context) => mock,
           child: makeTestableWidget(
-            const ImapConfigActions(
-              doPop: false,
-            ),
+            ImapConfigActions(mockRouter: mockRouter),
           ),
         ),
       );
@@ -121,6 +126,8 @@ void main() {
 
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
+
+      verify(mockRouter.pop).called(1);
     });
 
     testWidgets('Widget shows delete button when status invalid',
@@ -140,9 +147,7 @@ void main() {
           lazy: false,
           create: (BuildContext context) => mock,
           child: makeTestableWidget(
-            const ImapConfigActions(
-              doPop: false,
-            ),
+            ImapConfigActions(mockRouter: mockRouter),
           ),
         ),
       );
@@ -155,6 +160,8 @@ void main() {
 
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
+
+      verify(mockRouter.pop).called(1);
     });
 
     testWidgets('Widget shows delete button when status testing',
@@ -172,9 +179,7 @@ void main() {
           lazy: false,
           create: (BuildContext context) => mock,
           child: makeTestableWidget(
-            const ImapConfigActions(
-              doPop: false,
-            ),
+            ImapConfigActions(mockRouter: mockRouter),
           ),
         ),
       );
@@ -187,6 +192,8 @@ void main() {
 
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
+
+      verify(mockRouter.pop).called(1);
     });
   });
 }

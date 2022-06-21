@@ -9,10 +9,10 @@ import 'package:lotti/widgets/misc/buttons.dart';
 class ImapConfigActions extends StatelessWidget {
   const ImapConfigActions({
     super.key,
-    this.doPop = true,
+    this.mockRouter,
   });
 
-  final bool doPop;
+  final StackRouter? mockRouter;
 
   @override
   Widget build(BuildContext context) {
@@ -20,14 +20,13 @@ class ImapConfigActions extends StatelessWidget {
 
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
       builder: (context, SyncConfigState state) {
+        final router = mockRouter ?? context.router;
+
         final syncConfigCubit = context.read<SyncConfigCubit>();
 
         void deleteConfig() {
           syncConfigCubit.deleteImapConfig();
-          if (doPop) {
-            // TODO: test if called instead of ignoring in test
-            context.router.pop();
-          }
+          router.pop();
         }
 
         return Center(

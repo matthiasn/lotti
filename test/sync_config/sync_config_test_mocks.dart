@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox_service.dart';
@@ -24,3 +25,5 @@ MockSyncConfigCubit mockSyncConfigCubitWithState(SyncConfigState state) {
 
   return mock;
 }
+
+class MockStackRouter extends Mock implements StackRouter {}
