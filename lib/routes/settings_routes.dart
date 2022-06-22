@@ -11,7 +11,7 @@ import 'package:lotti/pages/settings/maintenance_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
 import 'package:lotti/pages/settings/measurables/measurables_page.dart';
-import 'package:lotti/pages/settings/outbox_monitor.dart';
+import 'package:lotti/pages/settings/outbox/outbox_monitor.dart';
 import 'package:lotti/pages/settings/settings_page.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_page.dart';
 import 'package:lotti/pages/settings/tags/create_tag_page.dart';

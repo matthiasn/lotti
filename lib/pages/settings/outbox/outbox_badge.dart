@@ -1,8 +1,10 @@
+import 'dart:math';
+
 import 'package:badges/badges.dart';
 import 'package:flutter/widgets.dart';
-import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/theme.dart';
 
 class OutboxBadgeIcon extends StatelessWidget {
   OutboxBadgeIcon({
@@ -11,21 +13,27 @@ class OutboxBadgeIcon extends StatelessWidget {
   });
 
   final SyncDatabase db = getIt<SyncDatabase>();
-  late final Stream<List<OutboxItem>> stream =
-      db.watchOutboxItems(statuses: [OutboxStatus.pending]);
+
+  late final Stream<int> stream = db.watchOutboxCount();
   final Widget icon;
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<OutboxItem>>(
+    return StreamBuilder<int>(
       stream: stream,
       builder: (
         BuildContext context,
-        AsyncSnapshot<List<OutboxItem>> snapshot,
+        AsyncSnapshot<int> snapshot,
       ) {
-        final count = snapshot.data?.length ?? 0;
+        final count = snapshot.data ?? 0;
+        final label = '$count';
+        final padding = max(6 - '$count'.length, 4);
         return Badge(
-          badgeContent: Text('$count'),
+          badgeContent: Text(
+            label,
+            style: badgeStyle,
+          ),
+          padding: EdgeInsets.all(padding.toDouble()),
           showBadge: count > 0,
           toAnimate: false,
           elevation: 3,

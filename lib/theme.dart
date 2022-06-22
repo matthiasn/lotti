@@ -231,3 +231,14 @@ const segmentItemStyle = TextStyle(
   fontFamily: 'Oswald',
   fontSize: 14,
 );
+
+const badgeStyle = TextStyle(
+  fontFamily: 'Oswald',
+  fontWeight: FontWeight.w300,
+  fontSize: 12,
+);
+
+const bottomNavLabelStyle = TextStyle(
+  fontFamily: 'Oswald',
+  fontWeight: FontWeight.w300,
+);
