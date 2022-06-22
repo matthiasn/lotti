@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -88,6 +89,7 @@ class HomePage extends StatelessWidget {
               debugPrint('onTap: $index');
               tabsRouter.setActiveIndex(index);
               navService.bottomNavRouteTap(index);
+              HapticFeedback.lightImpact();
             }
 
             if (hideBottomNavRoutes.contains(tabsRouter.topRoute.name)) {
@@ -110,10 +112,12 @@ class HomePage extends StatelessWidget {
                 unselectedItemColor: AppColors.bottomNavIconUnselected,
                 selectedItemColor: AppColors.bottomNavIconSelected,
                 currentIndex: tabsRouter.activeIndex,
+                selectedLabelStyle: bottomNavLabelStyle,
+                unselectedLabelStyle: bottomNavLabelStyle,
                 onTap: onTap,
                 enableFeedback: true,
                 selectedFontSize: 18,
-                unselectedFontSize: 14,
+                unselectedFontSize: 16,
                 items: [
                   BottomNavigationBarItem(
                     icon: FlaggedBadgeIcon(),

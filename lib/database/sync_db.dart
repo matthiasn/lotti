@@ -81,6 +81,15 @@ class SyncDatabase extends _$SyncDatabase {
         .watch();
   }
 
+  Stream<int> watchOutboxCount() {
+    return (select(outbox)
+          ..where(
+            (t) => t.status.equals(OutboxStatus.pending.index),
+          ))
+        .watch()
+        .map((res) => res.length);
+  }
+
   @override
   int get schemaVersion => 1;
 }

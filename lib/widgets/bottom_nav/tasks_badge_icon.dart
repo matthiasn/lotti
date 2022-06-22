@@ -24,7 +24,10 @@ class TasksBadgeIcon extends StatelessWidget {
       ) {
         final count = snapshot.data?.length ?? 0;
         return Badge(
-          badgeContent: Text('$count'),
+          badgeContent: Text(
+            '$count',
+            style: badgeStyle,
+          ),
           showBadge: count != 0,
           toAnimate: false,
           elevation: 3,

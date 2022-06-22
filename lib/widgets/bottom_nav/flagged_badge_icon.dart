@@ -19,7 +19,10 @@ class FlaggedBadgeIcon extends StatelessWidget {
       ) {
         final count = snapshot.data;
         return Badge(
-          badgeContent: Text(snapshot.data.toString()),
+          badgeContent: Text(
+            snapshot.data.toString(),
+            style: badgeStyle,
+          ),
           showBadge: count != null && count != 0,
           toAnimate: false,
           elevation: 3,
