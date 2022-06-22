@@ -94,6 +94,7 @@
   "outboxMonitorLabelSent": "sent",
   "outboxMonitorNoAttachment": "no attachment",
   "outboxMonitorRetries": "retries",
+  "outboxMonitorRetry": "retry",
   "outboxMonitorSwitchLabel": "enabled",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsConflictsTitle": "Sync Conflicts",

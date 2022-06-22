@@ -12,7 +12,12 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class OutboxMonitorPage extends StatefulWidget {
-  const OutboxMonitorPage({super.key});
+  const OutboxMonitorPage({
+    super.key,
+    this.leadingIcon = true,
+  });
+
+  final bool leadingIcon;
 
   @override
   State<OutboxMonitorPage> createState() => _OutboxMonitorPageState();
@@ -67,6 +72,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                 onlineStatus: onlineStatus,
                 selectedValue: _selectedValue,
                 onValueChanged: onValueChanged,
+                leadingIcon: widget.leadingIcon,
               ),
               body: ListView(
                 shrinkWrap: true,
@@ -129,6 +135,10 @@ class OutboxItemCard extends StatelessWidget {
       }
     }
 
+    final retriesText = item.retries == 1
+        ? localizations.outboxMonitorRetry
+        : localizations.outboxMonitorRetries;
+
     return Padding(
       padding: const EdgeInsets.all(2),
       child: Card(
@@ -148,7 +158,7 @@ class OutboxItemCard extends StatelessWidget {
             ),
           ),
           subtitle: Text(
-            '${item.retries} ${localizations.outboxMonitorRetries} - '
+            '${item.retries} $retriesText - '
             '${item.filePath ?? localizations.outboxMonitorNoAttachment}',
             style: TextStyle(
               color: AppColors.entryTextColor,
@@ -183,11 +193,14 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
     required this.onlineStatus,
     required this.selectedValue,
     required this.onValueChanged,
+    required this.leadingIcon,
   });
 
   final bool onlineStatus;
   final String selectedValue;
   final void Function(String value) onValueChanged;
+
+  final bool leadingIcon;
 
   @override
   Size get preferredSize => const Size.fromHeight(toolbarHeight);
@@ -195,6 +208,10 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+
+    Widget? leading = leadingIcon
+        ? AutoLeadingButton(color: AppColors.entryTextColor)
+        : SizedBox.shrink();
 
     return AppBar(
       backgroundColor: AppColors.headerBgColor,
@@ -264,9 +281,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
       ),
       toolbarHeight: toolbarHeight,
       centerTitle: true,
-      leading: AutoLeadingButton(
-        color: AppColors.entryTextColor,
-      ),
+      leading: leading,
     );
   }
 }
