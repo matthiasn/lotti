@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
@@ -91,7 +93,10 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
         dirty = false;
       });
 
-      await context.router.pop();
+      // TODO: mock the router & remove
+      if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+        await context.router.pop();
+      }
     }
   }
 
@@ -123,6 +128,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
             actions: [
               if (dirty && validate())
                 TextButton(
+                  key: const Key('measurement_save'),
                   onPressed: saveMeasurement,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -285,6 +291,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                 if (selected != null)
                                   FormBuilderTextField(
                                     initialValue: '',
+                                    key: const Key('measurement_value_field'),
                                     decoration: InputDecoration(
                                       labelText: '${selected?.displayName} '
                                           '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
