@@ -5,12 +5,15 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/pages/dashboards/dashboards_list_page.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
+import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/sync/imap_config_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../test_data.dart';
 import '../../../widget_test_utils.dart';
 import 'dashboard_definition_test_mocks.dart';
 
@@ -28,7 +31,10 @@ void main() {
 
     setUp(() {
       mockTagsService = mockTagsServiceWithTags([]);
-      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+      mockJournalDb = mockJournalDbWithMeasurableTypes([
+        measurableWater,
+        measurableChocolate,
+      ]);
       mockPersistenceLogic = MockPersistenceLogic();
 
       getIt
@@ -37,39 +43,6 @@ void main() {
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
     });
     tearDown(getIt.reset);
-
-    final testDateTime = DateTime.fromMillisecondsSinceEpoch(0);
-    const testDashboardName = 'Some test dashboard';
-    const testDashboardDescription = 'Some test dashboard description';
-
-    final testDashboardConfig = DashboardDefinition(
-      items: [
-        DashboardHealthItem(
-          color: '#0000FF',
-          healthType: 'HealthDataType.RESTING_HEART_RATE',
-        ),
-        DashboardWorkoutItem(
-          workoutType: 'running',
-          displayName: 'Running calories',
-          color: '#0000FF',
-          valueType: WorkoutValueType.energy,
-        ),
-        DashboardMeasurementItem(
-          id: '08511530-eb2d-11ec-bbb3-0f45b65444d2',
-          aggregationType: AggregationType.dailySum,
-        ),
-      ],
-      name: testDashboardName,
-      description: '',
-      createdAt: testDateTime,
-      updatedAt: testDateTime,
-      vectorClock: null,
-      private: false,
-      version: '',
-      lastReviewed: testDateTime,
-      active: true,
-      id: '',
-    );
 
     testWidgets(
         'dashboard definition page is displayed with test item, '
@@ -85,7 +58,7 @@ void main() {
                 maxWidth: 500,
               ),
               child: DashboardDefinitionPage(
-                dashboard: testDashboardConfig,
+                dashboard: testDashboardConfig.copyWith(description: ''),
                 formKey: formKey,
               ),
             ),
@@ -106,25 +79,31 @@ void main() {
       expect(find.text('Running calories'), findsOneWidget);
       expect(find.text('Resting Heart Rate'), findsOneWidget);
 
+      // save button is invisible - no changes yet
       expect(saveButtonFinder, findsNothing);
-      expect(formKey.currentState!.isValid, isTrue);
 
+      formKey.currentState!.save();
       expect(formKey.currentState!.isValid, isTrue);
       final formData = formKey.currentState!.value;
+
+      // form is filled with name and empty description
+      expect(getTrimmed(formData, 'name'), testDashboardName);
       expect(getTrimmed(formData, 'description'), '');
 
       await tester.enterText(
         descriptionFieldFinder,
         'Some test dashboard description',
       );
-
       await tester.pumpAndSettle();
 
       final formData2 = formKey.currentState!.value;
       expect(formKey.currentState!.isValid, isTrue);
+
+      // form description is now filled and stored in formKey
       expect(getTrimmed(formData2, 'name'), testDashboardName);
       expect(getTrimmed(formData2, 'description'), testDashboardDescription);
 
+      // save button is visible as there are unsaved changes
       expect(saveButtonFinder, findsOneWidget);
     });
 
@@ -158,18 +137,84 @@ void main() {
 
       expect(nameFieldFinder, findsOneWidget);
       expect(descriptionFieldFinder, findsOneWidget);
+
+      // save button is invisible as there are no changes yet
       expect(saveButtonFinder, findsNothing);
 
       await tester.enterText(nameFieldFinder, testDashboardConfig.name);
-
       await tester.pumpAndSettle();
+
+      // save button is now visible after text enter
       expect(saveButtonFinder, findsOneWidget);
 
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
 
+      // save button calls mocked function
       verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
           .called(1);
+    });
+
+    testWidgets('dashboard definitions page is displayed with one test item',
+        (tester) async {
+      when(mockJournalDb.watchDashboards).thenAnswer(
+        (_) => Stream<List<DashboardDefinition>>.fromIterable([
+          [testDashboardConfig],
+        ]),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Material(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 500,
+              ),
+              child: const DashboardSettingsPage(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      verify(mockJournalDb.watchDashboards).called(1);
+
+      // finds text in dashboard card
+      expect(find.text(testDashboardName), findsOneWidget);
+      expect(find.text(testDashboardDescription), findsOneWidget);
+    });
+
+    testWidgets('dashboard list page is displayed with one test item',
+        (tester) async {
+      when(mockJournalDb.watchDashboards).thenAnswer(
+        (_) => Stream<List<DashboardDefinition>>.fromIterable([
+          [testDashboardConfig],
+        ]),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Material(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 500,
+              ),
+              child: const DashboardsListPage(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      verify(mockJournalDb.watchDashboards).called(1);
+
+      // finds text in dashboard card
+      expect(find.text(testDashboardName), findsOneWidget);
+      expect(find.text(testDashboardDescription), findsOneWidget);
     });
   });
 }
