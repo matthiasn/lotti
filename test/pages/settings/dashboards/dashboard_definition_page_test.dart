@@ -11,6 +11,7 @@ import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/sync/imap_config_utils.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../test_data.dart';
@@ -46,16 +47,34 @@ void main() {
 
     testWidgets(
         'dashboard definition page is displayed with test item, '
-        'then save button becomes visible after entering text', (tester) async {
+        'then save button becomes visible after entering text ',
+        (tester) async {
       final formKey = GlobalKey<FormBuilderState>();
+
+      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .thenAnswer((_) async => 1);
+
+      when(
+        () => mockJournalDb
+            .getMeasurableDataTypeById('f8f55c10-e30b-4bf5-990d-d569ce4867fb'),
+      ).thenAnswer((_) async => measurableChocolate);
+
+      when(
+        () => mockJournalDb
+            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+      ).thenAnswer((_) async => measurableWater);
+
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(any()),
+      ).thenAnswer((_) async => measurableWater);
 
       await tester.pumpWidget(
         makeTestableWidget(
           Material(
             child: ConstrainedBox(
               constraints: const BoxConstraints(
-                maxHeight: 1000,
-                maxWidth: 500,
+                maxHeight: 1500,
+                maxWidth: 800,
               ),
               child: DashboardDefinitionPage(
                 dashboard: testDashboardConfig.copyWith(description: ''),
@@ -105,7 +124,176 @@ void main() {
 
       // save button is visible as there are unsaved changes
       expect(saveButtonFinder, findsOneWidget);
+
+      await tester.tap(saveButtonFinder);
+      await tester.pumpAndSettle();
+
+      // save button calls mocked function
+      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .called(1);
     });
+
+    testWidgets(
+        'dashboard definition page is displayed with test item, '
+        'then tapping delete', (tester) async {
+      final formKey = GlobalKey<FormBuilderState>();
+
+      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .thenAnswer((_) async => 1);
+
+      when(
+        () => mockJournalDb
+            .getMeasurableDataTypeById('f8f55c10-e30b-4bf5-990d-d569ce4867fb'),
+      ).thenAnswer((_) async => measurableChocolate);
+
+      when(
+        () => mockJournalDb
+            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+      ).thenAnswer((_) async => measurableWater);
+
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(any()),
+      ).thenAnswer((_) async => measurableWater);
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Material(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1500,
+                maxWidth: 800,
+              ),
+              child: DashboardDefinitionPage(
+                dashboard: testDashboardConfig,
+                formKey: formKey,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
+      final descriptionFieldFinder =
+          find.byKey(const Key('dashboard_description_field'));
+      final saveButtonFinder = find.byKey(const Key('dashboard_save'));
+
+      expect(nameFieldFinder, findsOneWidget);
+      expect(descriptionFieldFinder, findsOneWidget);
+
+      expect(find.text('Running calories'), findsOneWidget);
+      expect(find.text('Resting Heart Rate'), findsOneWidget);
+
+      // save button is invisible - no changes yet
+      expect(saveButtonFinder, findsNothing);
+
+      formKey.currentState!.save();
+      expect(formKey.currentState!.isValid, isTrue);
+      final formData = formKey.currentState!.value;
+
+      // form description is now filled and stored in formKey
+      expect(getTrimmed(formData, 'name'), testDashboardName);
+      expect(getTrimmed(formData, 'description'), testDashboardDescription);
+
+      // dashboard delete calls method in mock
+      final trashIconFinder = find.byIcon(MdiIcons.trashCanOutline);
+      expect(trashIconFinder, findsOneWidget);
+
+      await tester.dragUntilVisible(
+        trashIconFinder, // what you want to find
+        find.byType(SingleChildScrollView), // widget you want to scroll
+        const Offset(0, 50), // delta to move
+      );
+
+      await tester.tap(trashIconFinder);
+      await tester.pumpAndSettle();
+
+      final deleteQuestionFinder =
+          find.text('Do you want to delete this dashboard?');
+      final confirmDeleteFinder = find.text('YES, DELETE THIS DASHBOARD');
+      expect(deleteQuestionFinder, findsOneWidget);
+      expect(confirmDeleteFinder, findsOneWidget);
+
+      await tester.tap(confirmDeleteFinder);
+      await tester.pumpAndSettle();
+
+      // delete button calls mocked function
+      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .called(1);
+    });
+
+    testWidgets(
+        'dashboard definition page is displayed with test item, '
+        'then tapping copy icon', (tester) async {
+      final formKey = GlobalKey<FormBuilderState>();
+
+      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .thenAnswer((_) async => 1);
+
+      when(
+        () => mockJournalDb
+            .getMeasurableDataTypeById('f8f55c10-e30b-4bf5-990d-d569ce4867fb'),
+      ).thenAnswer((_) async => measurableChocolate);
+
+      when(
+        () => mockJournalDb
+            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+      ).thenAnswer((_) async => measurableWater);
+
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(any()),
+      ).thenAnswer((_) async => measurableWater);
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Material(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1500,
+                maxWidth: 800,
+              ),
+              child: DashboardDefinitionPage(
+                dashboard: testDashboardConfig,
+                formKey: formKey,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
+      final descriptionFieldFinder =
+          find.byKey(const Key('dashboard_description_field'));
+      final saveButtonFinder = find.byKey(const Key('dashboard_save'));
+
+      expect(nameFieldFinder, findsOneWidget);
+      expect(descriptionFieldFinder, findsOneWidget);
+
+      expect(find.text('Running calories'), findsOneWidget);
+      expect(find.text('Resting Heart Rate'), findsOneWidget);
+
+      // tapping copy copies to clipboard
+      final copyIconFinder = find.byIcon(Icons.copy);
+      expect(copyIconFinder, findsOneWidget);
+
+      await tester.dragUntilVisible(
+        copyIconFinder, // what you want to find
+        find.byType(SingleChildScrollView), // widget you want to scroll
+        const Offset(0, 50), // delta to move
+      );
+
+      await tester.tap(copyIconFinder);
+      await tester.pumpAndSettle();
+
+      // delete button calls mocked function
+      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .called(1);
+    });
+
+    ////////
 
     testWidgets(
         'empty dashboard creation page is displayed, '

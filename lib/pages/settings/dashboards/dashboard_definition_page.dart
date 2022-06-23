@@ -500,7 +500,12 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                               deletedAt: DateTime.now(),
                                             ),
                                           );
-                                          await context.router.pop();
+
+                                          // TODO: mock the router & remove
+                                          if (!Platform.environment
+                                              .containsKey('FLUTTER_TEST')) {
+                                            await context.router.pop();
+                                          }
                                         }
                                       },
                                     ),

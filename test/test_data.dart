@@ -41,10 +41,6 @@ final testDashboardConfig = DashboardDefinition(
       valueType: WorkoutValueType.energy,
     ),
     DashboardMeasurementItem(
-      id: '08511530-eb2d-11ec-bbb3-0f45b65444d2',
-      aggregationType: AggregationType.dailySum,
-    ),
-    DashboardMeasurementItem(
       id: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
       aggregationType: AggregationType.dailySum,
     ),
