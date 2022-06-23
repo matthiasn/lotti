@@ -47,7 +47,8 @@ doctor:
 
 .PHONY: coverage_report
 coverage_report:
-	genhtml coverage/lcov.info -o coverage
+	lcov --remove coverage/lcov.info 'lib/classes/*.g.dart' 'lib/database/*.g.dart' 'lib/routes/router.gr.dart' -o coverage/new_lcov.info
+	genhtml coverage/new_lcov.info -o coverage
 	open coverage/index.html
 
 .PHONY: coverage
