@@ -147,11 +147,13 @@ class _DashboardPageState extends State<DashboardPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: Text(
-                            dashboard.description,
-                            style: formLabelStyle,
+                        Flexible(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Text(
+                              dashboard.description,
+                              style: formLabelStyle,
+                            ),
                           ),
                         ),
                         IconButton(

@@ -247,6 +247,7 @@ final definitionCardTitleStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 24,
+  height: 1.2,
 );
 
 final definitionCardSubtitleStyle = TextStyle(

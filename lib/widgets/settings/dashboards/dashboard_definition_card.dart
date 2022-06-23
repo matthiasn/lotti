@@ -29,30 +29,38 @@ class DashboardDefinitionCard extends StatelessWidget {
       child: ListTile(
         contentPadding:
             const EdgeInsets.only(left: 16, top: 8, bottom: 20, right: 16),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              dashboard.name,
-              style: definitionCardTitleStyle,
-            ),
-            Expanded(child: Container()),
-            Visibility(
-              visible: dashboard.private,
-              child: Icon(
-                MdiIcons.security,
-                color: AppColors.error,
-                size: definitionCardIconSize,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                flex: 9,
+                child: Text(
+                  dashboard.name,
+                  style: definitionCardTitleStyle,
+                ),
               ),
-            ),
-          ],
+              const Spacer(),
+              Visibility(
+                visible: dashboard.private,
+                child: Icon(
+                  MdiIcons.security,
+                  color: AppColors.error,
+                  size: definitionCardIconSize,
+                ),
+              ),
+            ],
+          ),
         ),
         subtitle: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              dashboard.description,
-              style: definitionCardSubtitleStyle,
+            Flexible(
+              child: Text(
+                dashboard.description,
+                style: definitionCardSubtitleStyle,
+              ),
             ),
             Text(
               dashboard.reviewAt != null
