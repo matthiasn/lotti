@@ -357,7 +357,6 @@ void main() {
       final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
       final descriptionFieldFinder =
           find.byKey(const Key('dashboard_description_field'));
-      final saveButtonFinder = find.byKey(const Key('dashboard_save'));
 
       expect(nameFieldFinder, findsOneWidget);
       expect(descriptionFieldFinder, findsOneWidget);

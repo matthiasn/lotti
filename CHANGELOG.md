@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Faster measurement entry on desktop with autofocus and Cmd-S hotkey
+
+## [0.8.73] - 2022-06-23
+### Added:
 - Widget tests for dashboard definition page (no UI changes)
 
 ## [0.8.72] - 2022-06-23
