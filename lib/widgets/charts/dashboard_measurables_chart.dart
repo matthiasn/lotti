@@ -213,10 +213,6 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
       builder: (BuildContext context, MeasurablesChartInfoState state) {
         final selected = state.selected;
 
-        final aggregationLabel = aggregationType != AggregationType.none
-            ? '[${EnumToString.convertToString(aggregationType)}]'
-            : '';
-
         return Positioned(
           top: -4,
           left: MediaQuery.of(context).size.width / 4,
@@ -228,7 +224,8 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                 children: [
                   const Spacer(),
                   Text(
-                    '${measurableDataType.displayName} $aggregationLabel',
+                    '${measurableDataType.displayName} '
+                    '${aggregationLabel(aggregationType)}',
                     style: chartTitleStyle,
                   ),
                   if (selected != null) ...[
@@ -256,4 +253,13 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
       },
     );
   }
+}
+
+String aggregationLabel(AggregationType? aggregationType) {
+  if (aggregationType == null) {
+    return '';
+  }
+  return aggregationType != AggregationType.none
+      ? '[${EnumToString.convertToString(aggregationType)}]'
+      : '';
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -37,10 +38,14 @@ class MeasurableTypeCard extends StatelessWidget {
               children: [
                 Text(
                   item.displayName,
-                  style: TextStyle(
-                    color: AppColors.entryTextColor,
-                    fontFamily: 'Oswald',
-                    fontSize: 24,
+                  style: definitionCardTitleStyle,
+                ),
+                const SizedBox(width: 8),
+                Visibility(
+                  visible: item.unitName.isNotEmpty,
+                  child: Text(
+                    '[${item.unitName}]',
+                    style: definitionCardTitleStyle,
                   ),
                 ),
                 Expanded(child: Container()),
@@ -65,14 +70,18 @@ class MeasurableTypeCard extends StatelessWidget {
                 ),
               ],
             ),
-            subtitle: Text(
-              item.description,
-              style: TextStyle(
-                color: AppColors.entryTextColor,
-                fontFamily: 'Oswald',
-                fontWeight: FontWeight.w200,
-                fontSize: 16,
-              ),
+            subtitle: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  item.description,
+                  style: definitionCardSubtitleStyle,
+                ),
+                Text(
+                  aggregationLabel(item.aggregationType),
+                  style: definitionCardSubtitleStyle,
+                ),
+              ],
             ),
             onTap: () {
               context.router.push(

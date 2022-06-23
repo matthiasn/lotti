@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Show unit name in measurement type card
+- Show aggregation type in measurement type card
+
+## [0.8.68] - 2022-06-23
+### Changed:
 - Leading insights icon in measurement card removed
 
 ## [0.8.67] - 2022-06-23
