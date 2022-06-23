@@ -9,6 +9,7 @@ import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/sync/imap_config_utils.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../widget_test_utils.dart';
 import 'dashboard_definition_test_mocks.dart';
@@ -21,6 +22,10 @@ void main() {
   var mockPersistenceLogic = MockPersistenceLogic();
 
   group('DashboardDefinitionPage Widget Tests - ', () {
+    setUpAll(() {
+      registerFallbackValue(FakeDashboardDefinition());
+    });
+
     setUp(() {
       mockTagsService = mockTagsServiceWithTags([]);
       mockJournalDb = mockJournalDbWithMeasurableTypes([]);
@@ -38,7 +43,22 @@ void main() {
     const testDashboardDescription = 'Some test dashboard description';
 
     final testDashboardConfig = DashboardDefinition(
-      items: [],
+      items: [
+        DashboardHealthItem(
+          color: '#0000FF',
+          healthType: 'HealthDataType.RESTING_HEART_RATE',
+        ),
+        DashboardWorkoutItem(
+          workoutType: 'running',
+          displayName: 'Running calories',
+          color: '#0000FF',
+          valueType: WorkoutValueType.energy,
+        ),
+        DashboardMeasurementItem(
+          id: '08511530-eb2d-11ec-bbb3-0f45b65444d2',
+          aggregationType: AggregationType.dailySum,
+        ),
+      ],
       name: testDashboardName,
       description: '',
       createdAt: testDateTime,
@@ -82,6 +102,10 @@ void main() {
 
       expect(nameFieldFinder, findsOneWidget);
       expect(descriptionFieldFinder, findsOneWidget);
+
+      expect(find.text('Running calories'), findsOneWidget);
+      expect(find.text('Resting Heart Rate'), findsOneWidget);
+
       expect(saveButtonFinder, findsNothing);
       expect(formKey.currentState!.isValid, isTrue);
 
@@ -104,7 +128,13 @@ void main() {
       expect(saveButtonFinder, findsOneWidget);
     });
 
-    testWidgets('empty dashboard creation page is displayed ', (tester) async {
+    testWidgets(
+        'empty dashboard creation page is displayed, '
+        'save button visible after entering data, '
+        'tap save calls persistence mock', (tester) async {
+      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .thenAnswer((_) async => 1);
+
       await tester.pumpWidget(
         makeTestableWidget(
           Material(
@@ -134,6 +164,12 @@ void main() {
 
       await tester.pumpAndSettle();
       expect(saveButtonFinder, findsOneWidget);
+
+      await tester.tap(saveButtonFinder);
+      await tester.pumpAndSettle();
+
+      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .called(1);
     });
   });
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:auto_route/auto_route.dart';
@@ -226,7 +227,10 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
           setState(() {
             dirty = false;
           });
-          await context.router.pop();
+          // TODO: mock the router & remove
+          if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+            await context.router.pop();
+          }
         }
 
         Future<void> copyDashboard() async {

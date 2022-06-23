@@ -33,3 +33,5 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
 }
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+class FakeDashboardDefinition extends Fake implements DashboardDefinition {}
