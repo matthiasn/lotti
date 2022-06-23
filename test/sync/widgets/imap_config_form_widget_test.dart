@@ -426,6 +426,9 @@ void main() {
       await tester.enterText(passwordFieldFinder, 'password');
       await tester.enterText(portFieldFinder, '111');
 
+      await tester.pumpAndSettle();
+
+      expect(formKey.currentState!.isValid, isTrue);
       final formData = formKey.currentState!.value;
       expect(getTrimmed(formData, 'imap_host'), 'hostname');
       expect(getTrimmed(formData, 'imap_userName'), 'userName');

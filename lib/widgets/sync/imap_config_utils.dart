@@ -3,7 +3,11 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/config.dart';
 
 String getTrimmed(Map<String, dynamic>? formData, String k) {
-  return formData![k].toString().trim();
+  if (formData == null || formData[k] == null) {
+    return '';
+  }
+
+  return formData[k].toString().trim();
 }
 
 int getPort(Map<String, dynamic>? formData) {

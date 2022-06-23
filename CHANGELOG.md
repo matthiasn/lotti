@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Widget tests for dashboard definition page (no UI changes)
+
+## [0.8.72] - 2022-06-23
+### Added:
 - Link from new measurement page to respective measurable definition
 
 ## [0.8.71] - 2022-06-23

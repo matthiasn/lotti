@@ -2,7 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:lotti/pages/settings/advanced_settings_page.dart';
 import 'package:lotti/pages/settings/conflicts.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
-import 'package:lotti/pages/settings/dashboards/dashboard_details_page.dart';
+import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
 import 'package:lotti/pages/settings/health_import_page.dart';

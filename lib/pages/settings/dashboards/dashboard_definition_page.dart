@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:auto_route/auto_route.dart';
@@ -27,19 +28,22 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
-class DashboardDetailPage extends StatefulWidget {
-  const DashboardDetailPage({
+class DashboardDefinitionPage extends StatefulWidget {
+  const DashboardDefinitionPage({
     super.key,
     required this.dashboard,
+    this.formKey,
   });
 
   final DashboardDefinition dashboard;
+  final GlobalKey<FormBuilderState>? formKey;
 
   @override
-  State<DashboardDetailPage> createState() => _DashboardDetailPageState();
+  State<DashboardDefinitionPage> createState() =>
+      _DashboardDefinitionPageState();
 }
 
-class _DashboardDetailPageState extends State<DashboardDetailPage> {
+class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
   final TagsService tagsService = getIt<TagsService>();
   final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
@@ -140,6 +144,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final formKey = widget.formKey ?? _formKey;
     final localizations = AppLocalizations.of(context)!;
     return StreamBuilder<List<MeasurableDataType>>(
       stream: stream,
@@ -194,9 +199,9 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
         }).toList();
 
         Future<DashboardDefinition> saveDashboard() async {
-          _formKey.currentState!.save();
-          if (_formKey.currentState!.validate()) {
-            final formData = _formKey.currentState?.value;
+          formKey.currentState!.save();
+          if (formKey.currentState!.validate()) {
+            final formData = formKey.currentState?.value;
 
             final private = formData?['private'] as bool? ?? false;
             final active = formData?['active'] as bool? ?? false;
@@ -222,7 +227,10 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
           setState(() {
             dirty = false;
           });
-          await context.router.pop();
+          // TODO: mock the router & remove
+          if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+            await context.router.pop();
+          }
         }
 
         Future<void> copyDashboard() async {
@@ -281,10 +289,11 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                       child: Column(
                         children: [
                           FormBuilder(
-                            key: _formKey,
+                            key: formKey,
                             autovalidateMode:
                                 AutovalidateMode.onUserInteraction,
                             onChanged: () {
+                              formKey.currentState?.save();
                               setState(() {
                                 dirty = true;
                               });
@@ -543,7 +552,7 @@ class EditDashboardPage extends StatelessWidget {
           return EmptyScaffoldWithTitle(localizations.dashboardNotFound);
         }
 
-        return DashboardDetailPage(
+        return DashboardDefinitionPage(
           dashboard: dashboard,
         );
       },

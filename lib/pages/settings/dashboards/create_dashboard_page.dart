@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
-import 'package:lotti/pages/settings/dashboards/dashboard_details_page.dart';
+import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 class CreateDashboardPage extends StatefulWidget {
@@ -41,6 +41,6 @@ class _CreateDashboardPageState extends State<CreateDashboardPage> {
     if (_dashboardDefinition == null) {
       return const EmptyScaffoldWithTitle('');
     }
-    return DashboardDetailPage(dashboard: _dashboardDefinition!);
+    return DashboardDefinitionPage(dashboard: _dashboardDefinition!);
   }
 }

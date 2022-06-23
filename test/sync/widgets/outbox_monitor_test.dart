@@ -13,6 +13,7 @@ import '../sync_config_test_mocks.dart';
 
 void main() {
   var syncDatabaseMock = MockSyncDatabase();
+  final testDateTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   group('OutboxBadge Widget Tests - ', () {
     setUp(() {});
@@ -32,8 +33,8 @@ void main() {
           [
             OutboxItem(
               id: 1,
-              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-              updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+              createdAt: testDateTime,
+              updatedAt: testDateTime,
               status: 1,
               retries: 0,
               message: 'message',
@@ -41,8 +42,8 @@ void main() {
             ),
             OutboxItem(
               id: 2,
-              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-              updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+              createdAt: testDateTime,
+              updatedAt: testDateTime,
               status: 0,
               retries: 1,
               message: 'message',
@@ -50,8 +51,8 @@ void main() {
             ),
             OutboxItem(
               id: 2,
-              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-              updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+              createdAt: testDateTime,
+              updatedAt: testDateTime,
               status: 2,
               retries: 2,
               message: 'message',
