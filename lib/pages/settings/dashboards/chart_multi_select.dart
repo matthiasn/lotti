@@ -20,57 +20,54 @@ class ChartMultiSelect<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 280,
-      child: Padding(
-        padding: const EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: MultiSelectDialogField<T?>(
-          searchable: true,
-          backgroundColor: AppColors.bodyBgColor,
-          items: multiSelectItems,
-          initialValue: const [],
-          title: Text(title, style: titleStyle),
-          checkColor: AppColors.entryTextColor,
-          selectedColor: Colors.blue,
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            borderRadius: const BorderRadius.all(
-              Radius.circular(40),
-            ),
-            border: Border.all(
-              color: AppColors.entryTextColor,
-              width: 2,
-            ),
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+      ),
+      child: MultiSelectDialogField<T?>(
+        searchable: true,
+        backgroundColor: AppColors.bodyBgColor,
+        items: multiSelectItems,
+        initialValue: const [],
+        title: Text(title, style: titleStyle),
+        checkColor: AppColors.entryTextColor,
+        selectedColor: Colors.blue,
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.1),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(40),
           ),
-          itemsTextStyle: multiSelectStyle,
-          selectedItemsTextStyle: multiSelectStyle.copyWith(
-            fontWeight: FontWeight.normal,
-          ),
-          unselectedColor: AppColors.entryTextColor,
-          searchIcon: Icon(
-            Icons.search,
-            size: 32,
+          border: Border.all(
             color: AppColors.entryTextColor,
+            width: 2,
           ),
-          searchTextStyle: formLabelStyle,
-          searchHintStyle: formLabelStyle,
-          buttonIcon: Icon(
-            iconData,
-            color: AppColors.entryTextColor,
-          ),
-          buttonText: Text(
-            buttonText,
-            style: TextStyle(
-              color: AppColors.entryTextColor,
-              fontSize: 16,
-            ),
-          ),
-          onConfirm: onConfirm,
         ),
+        itemsTextStyle: multiSelectStyle,
+        selectedItemsTextStyle: multiSelectStyle.copyWith(
+          fontWeight: FontWeight.normal,
+        ),
+        unselectedColor: AppColors.entryTextColor,
+        searchIcon: Icon(
+          Icons.search,
+          size: 32,
+          color: AppColors.entryTextColor,
+        ),
+        searchTextStyle: formLabelStyle,
+        searchHintStyle: formLabelStyle,
+        buttonIcon: Icon(
+          iconData,
+          color: AppColors.entryTextColor,
+        ),
+        buttonText: Text(
+          buttonText,
+          style: TextStyle(
+            color: AppColors.entryTextColor,
+            fontSize: 16,
+          ),
+        ),
+        onConfirm: onConfirm,
       ),
     );
   }
