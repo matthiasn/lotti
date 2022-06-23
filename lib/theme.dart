@@ -242,3 +242,9 @@ const bottomNavLabelStyle = TextStyle(
   fontFamily: 'Oswald',
   fontWeight: FontWeight.w300,
 );
+
+final definitionCardTitleStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  fontFamily: 'Oswald',
+  fontSize: 24,
+);

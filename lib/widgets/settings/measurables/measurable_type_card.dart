@@ -37,10 +37,14 @@ class MeasurableTypeCard extends StatelessWidget {
               children: [
                 Text(
                   item.displayName,
-                  style: TextStyle(
-                    color: AppColors.entryTextColor,
-                    fontFamily: 'Oswald',
-                    fontSize: 24,
+                  style: definitionCardTitleStyle,
+                ),
+                const SizedBox(width: 8),
+                Visibility(
+                  visible: item.unitName.isNotEmpty,
+                  child: Text(
+                    '[${item.unitName}]',
+                    style: definitionCardTitleStyle,
                   ),
                 ),
                 Expanded(child: Container()),
