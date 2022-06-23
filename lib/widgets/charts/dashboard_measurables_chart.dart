@@ -223,10 +223,17 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Spacer(),
-                  Text(
-                    '${measurableDataType.displayName} '
-                    '${aggregationLabel(aggregationType)}',
-                    style: chartTitleStyle,
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width / 2,
+                    ),
+                    child: Text(
+                      '${measurableDataType.displayName} '
+                      '${aggregationLabel(aggregationType)}',
+                      style: chartTitleStyle,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                    ),
                   ),
                   if (selected != null) ...[
                     const Spacer(),

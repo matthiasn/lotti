@@ -31,49 +31,65 @@ class MeasurableTypeCard extends StatelessWidget {
           child: ListTile(
             contentPadding:
                 const EdgeInsets.only(left: 24, top: 4, bottom: 12, right: 24),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  item.displayName,
-                  style: definitionCardTitleStyle,
-                ),
-                const SizedBox(width: 8),
-                Visibility(
-                  visible: item.unitName.isNotEmpty,
-                  child: Text(
-                    '[${item.unitName}]',
-                    style: definitionCardTitleStyle,
-                  ),
-                ),
-                Expanded(child: Container()),
-                Visibility(
-                  visible: fromNullableBool(item.private),
-                  child: Icon(
-                    MdiIcons.security,
-                    color: AppColors.error,
-                    size: definitionCardIconSize,
-                  ),
-                ),
-                Visibility(
-                  visible: fromNullableBool(item.favorite),
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Icon(
-                      MdiIcons.star,
-                      color: AppColors.starredGold,
-                      size: definitionCardIconSize,
+            title: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    flex: 9,
+                    child: Text(
+                      item.displayName,
+                      style: definitionCardTitleStyle,
+                      softWrap: true,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Visibility(
+                    visible: item.unitName.isNotEmpty,
+                    child: Text(
+                      '[${item.unitName}]',
+                      style: definitionCardTitleStyle.copyWith(
+                        fontWeight: FontWeight.w100,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Visibility(
+                        visible: fromNullableBool(item.private),
+                        child: Icon(
+                          MdiIcons.security,
+                          color: AppColors.error,
+                          size: definitionCardIconSize,
+                        ),
+                      ),
+                      Visibility(
+                        visible: fromNullableBool(item.favorite),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Icon(
+                            MdiIcons.star,
+                            color: AppColors.starredGold,
+                            size: definitionCardIconSize,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             subtitle: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  item.description,
-                  style: definitionCardSubtitleStyle,
+                Flexible(
+                  child: Text(
+                    item.description,
+                    style: definitionCardSubtitleStyle,
+                    softWrap: true,
+                  ),
                 ),
                 Text(
                   aggregationLabel(item.aggregationType),

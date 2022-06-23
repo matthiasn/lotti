@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Line wrap for long title and description in dashboard definition card
+- Line wrap for long description in dashboard page
+- Line wrap for long title and description in measurement card
+- Line wrap for long title in dashboard chart header
+
+## [0.8.70] - 2022-06-23
 ### Changed:
 - Show private status in dashboard card
 - Show daily review time in dashboard card
