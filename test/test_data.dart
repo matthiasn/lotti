@@ -12,6 +12,7 @@ final measurableWater = MeasurableDataType(
   updatedAt: testEpochDateTime,
   vectorClock: null,
   version: 1,
+  aggregationType: AggregationType.dailySum,
 );
 
 final measurableChocolate = MeasurableDataType(

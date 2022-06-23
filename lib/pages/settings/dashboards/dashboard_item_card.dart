@@ -31,9 +31,9 @@ class DashboardItemCard extends StatelessWidget {
         if (matches.isNotEmpty) {
           final aggregationType = measurement.aggregationType;
           final aggregationTypeLabel = aggregationType != null
-              ? '[${EnumToString.convertToString(measurement.aggregationType)}]'
+              ? ' [${EnumToString.convertToString(measurement.aggregationType)}]'
               : '';
-          return '${matches.first.displayName} $aggregationTypeLabel';
+          return '${matches.first.displayName}$aggregationTypeLabel';
         }
         return '';
       },

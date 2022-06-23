@@ -135,6 +135,96 @@ void main() {
 
     testWidgets(
         'dashboard definition page is displayed with test item, '
+        'then updating aggregation type in one measurement ', (tester) async {
+      final formKey = GlobalKey<FormBuilderState>();
+
+      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .thenAnswer((_) async => 1);
+
+      when(
+        () => mockJournalDb
+            .getMeasurableDataTypeById('f8f55c10-e30b-4bf5-990d-d569ce4867fb'),
+      ).thenAnswer((_) async => measurableChocolate);
+
+      when(
+        () => mockJournalDb
+            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+      ).thenAnswer((_) async => measurableWater);
+
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(any()),
+      ).thenAnswer((_) async => measurableWater);
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Material(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1500,
+                maxWidth: 800,
+              ),
+              child: DashboardDefinitionPage(
+                dashboard: testDashboardConfig,
+                formKey: formKey,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
+      final descriptionFieldFinder =
+          find.byKey(const Key('dashboard_description_field'));
+      final saveButtonFinder = find.byKey(const Key('dashboard_save'));
+
+      expect(nameFieldFinder, findsOneWidget);
+      expect(descriptionFieldFinder, findsOneWidget);
+
+      expect(find.text('Running calories'), findsOneWidget);
+      expect(find.text('Resting Heart Rate'), findsOneWidget);
+
+      // save button is invisible - no changes yet
+      expect(saveButtonFinder, findsNothing);
+
+      formKey.currentState!.save();
+      expect(formKey.currentState!.isValid, isTrue);
+      final formData = formKey.currentState!.value;
+
+      // form is filled with name and empty description
+      expect(getTrimmed(formData, 'name'), testDashboardName);
+      expect(getTrimmed(formData, 'description'), testDashboardDescription);
+
+      final measurableFinder = find.text(measurableChocolate.displayName);
+      expect(measurableFinder, findsOneWidget);
+
+      await tester.dragUntilVisible(
+        measurableFinder,
+        find.byType(SingleChildScrollView),
+        const Offset(0, 50),
+      );
+
+      await tester.tap(measurableFinder);
+      await tester.pumpAndSettle();
+
+      final aggregationFinder = find.text('dailySum');
+      expect(aggregationFinder, findsOneWidget);
+
+      await tester.tap(aggregationFinder);
+      await tester.pumpAndSettle();
+
+      // save button is visible as the aggregation type changed
+      expect(saveButtonFinder, findsOneWidget);
+
+      expect(
+        find.text('${measurableChocolate.displayName} [dailySum]'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'dashboard definition page is displayed with test item, '
         'then tapping delete', (tester) async {
       final formKey = GlobalKey<FormBuilderState>();
 
@@ -288,13 +378,16 @@ void main() {
       await tester.tap(copyIconFinder);
       await tester.pumpAndSettle();
 
+      // TODO:
+      // final clipboardText = await Clipboard.getData('text/plain');
+      // debugPrint(clipboardText?.text);
+
       // delete button calls mocked function
       verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
           .called(1);
     });
 
-    ////////
-
+    // Tests for CreateDashboardPage
     testWidgets(
         'empty dashboard creation page is displayed, '
         'save button visible after entering data, '
