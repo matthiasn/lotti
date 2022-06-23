@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -24,6 +23,7 @@ import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -326,7 +326,7 @@ class _DashboardDetailPageState extends State<DashboardDetailPage> {
                                 FormBuilderCupertinoDateTimePicker(
                                   name: 'review_at',
                                   alwaysUse24HourFormat: true,
-                                  format: DateFormat('HH:mm'),
+                                  format: hhMmFormat,
                                   inputType:
                                       CupertinoDateTimePickerInputType.time,
                                   style: inputStyle.copyWith(

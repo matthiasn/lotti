@@ -41,6 +41,7 @@ bool fromNullableBool(bool? value) {
 }
 
 DateFormat df = DateFormat('yyyy-MM-dd HH:mm:ss');
+DateFormat hhMmFormat = DateFormat('HH:mm');
 
 String formatType(String s) => s.replaceAll('HealthDataType.', '');
 String formatUnit(String s) => s.replaceAll('HealthDataUnit.', '');

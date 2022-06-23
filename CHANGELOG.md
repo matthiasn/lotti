@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Show private status in dashboard card
+- Show daily review time in dashboard card
+
+## [0.8.69] - 2022-06-23
+### Changed:
 - Show unit name in measurement type card
 - Show aggregation type in measurement type card
 

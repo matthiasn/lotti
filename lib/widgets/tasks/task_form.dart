@@ -5,13 +5,13 @@ import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/task_utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class TaskForm extends StatefulWidget {
   const TaskForm({
@@ -76,7 +76,7 @@ class _TaskFormState extends State<TaskForm> {
                 FormBuilderCupertinoDateTimePicker(
                   name: 'estimate',
                   alwaysUse24HourFormat: true,
-                  format: DateFormat('HH:mm'),
+                  format: hhMmFormat,
                   inputType: CupertinoDateTimePickerInputType.time,
                   style: inputStyle.copyWith(
                     fontSize: 18,
