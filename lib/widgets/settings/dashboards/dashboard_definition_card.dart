@@ -30,7 +30,7 @@ class DashboardDefinitionCard extends StatelessWidget {
         contentPadding:
             const EdgeInsets.only(left: 16, top: 8, bottom: 20, right: 16),
         title: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2.0),
+          padding: const EdgeInsets.symmetric(vertical: 2),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

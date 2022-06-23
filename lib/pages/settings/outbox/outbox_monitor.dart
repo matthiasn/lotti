@@ -1,4 +1,3 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class OutboxMonitorPage extends StatefulWidget {
@@ -72,7 +72,6 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                 onlineStatus: onlineStatus,
                 selectedValue: _selectedValue,
                 onValueChanged: onValueChanged,
-                leadingIcon: widget.leadingIcon,
               ),
               body: ListView(
                 shrinkWrap: true,
@@ -193,14 +192,11 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
     required this.onlineStatus,
     required this.selectedValue,
     required this.onValueChanged,
-    required this.leadingIcon,
   });
 
   final bool onlineStatus;
   final String selectedValue;
   final void Function(String value) onValueChanged;
-
-  final bool leadingIcon;
 
   @override
   Size get preferredSize => const Size.fromHeight(toolbarHeight);
@@ -208,10 +204,6 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-
-    final leading = leadingIcon
-        ? AutoLeadingButton(color: AppColors.entryTextColor)
-        : const SizedBox.shrink();
 
     return AppBar(
       backgroundColor: AppColors.headerBgColor,
@@ -281,7 +273,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
       ),
       toolbarHeight: toolbarHeight,
       centerTitle: true,
-      leading: leading,
+      leading: const TestDetectingAutoLeadingButton(),
     );
   }
 }
