@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class DashboardDefinitionCard extends StatelessWidget {
@@ -51,6 +52,12 @@ class DashboardDefinitionCard extends StatelessWidget {
           children: [
             Text(
               dashboard.description,
+              style: definitionCardSubtitleStyle,
+            ),
+            Text(
+              dashboard.reviewAt != null
+                  ? hhMmFormat.format(dashboard.reviewAt!)
+                  : '',
               style: definitionCardSubtitleStyle,
             ),
           ],

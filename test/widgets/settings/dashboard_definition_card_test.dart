@@ -59,5 +59,28 @@ void main() {
       expect(find.text(testDescription), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsOneWidget);
     });
+
+    testWidgets('displays test dashboard card with private icon & review time',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          DashboardDefinitionCard(
+            index: 0,
+            dashboard: testItem.copyWith(
+              private: true,
+              reviewAt: DateTime(0, 0, 0, 7),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text(testName), findsOneWidget);
+      expect(find.text(testDescription), findsOneWidget);
+      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+
+      expect(find.text('07:00'), findsOneWidget);
+    });
   });
 }
