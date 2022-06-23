@@ -255,3 +255,5 @@ final definitionCardSubtitleStyle = TextStyle(
   fontWeight: FontWeight.w200,
   fontSize: 16,
 );
+
+const definitionCardIconSize = 24.0;

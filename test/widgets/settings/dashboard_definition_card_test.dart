@@ -41,5 +41,23 @@ void main() {
       expect(find.text(testDescription), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsNothing);
     });
+
+    testWidgets('displays test dashboard card with private icon',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          DashboardDefinitionCard(
+            index: 0,
+            dashboard: testItem.copyWith(private: true),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text(testName), findsOneWidget);
+      expect(find.text(testDescription), findsOneWidget);
+      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+    });
   });
 }

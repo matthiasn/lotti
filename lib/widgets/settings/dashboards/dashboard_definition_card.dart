@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class DashboardDefinitionCard extends StatelessWidget {
   const DashboardDefinitionCard({
@@ -27,23 +28,32 @@ class DashboardDefinitionCard extends StatelessWidget {
       child: ListTile(
         contentPadding:
             const EdgeInsets.only(left: 16, top: 8, bottom: 20, right: 16),
-        title: Text(
-          dashboard.name,
-          style: TextStyle(
-            color: AppColors.entryTextColor,
-            fontFamily: 'Oswald',
-            fontSize: 24,
-            fontWeight: FontWeight.w300,
-          ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              dashboard.name,
+              style: definitionCardTitleStyle,
+            ),
+            Expanded(child: Container()),
+            Visibility(
+              visible: dashboard.private,
+              child: Icon(
+                MdiIcons.security,
+                color: AppColors.error,
+                size: definitionCardIconSize,
+              ),
+            ),
+          ],
         ),
-        subtitle: Text(
-          dashboard.description,
-          style: TextStyle(
-            color: AppColors.entryTextColor,
-            fontFamily: 'Oswald',
-            fontSize: 16,
-            fontWeight: FontWeight.w300,
-          ),
+        subtitle: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              dashboard.description,
+              style: definitionCardSubtitleStyle,
+            ),
+          ],
         ),
         onTap: () => context.router.push(EditDashboardRoute(dashboardId: id)),
       ),

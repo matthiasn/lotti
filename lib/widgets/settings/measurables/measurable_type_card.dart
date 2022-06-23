@@ -7,8 +7,6 @@ import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-const double iconSize = 24;
-
 class MeasurableTypeCard extends StatelessWidget {
   const MeasurableTypeCard({
     super.key,
@@ -54,7 +52,7 @@ class MeasurableTypeCard extends StatelessWidget {
                   child: Icon(
                     MdiIcons.security,
                     color: AppColors.error,
-                    size: iconSize,
+                    size: definitionCardIconSize,
                   ),
                 ),
                 Visibility(
@@ -64,7 +62,7 @@ class MeasurableTypeCard extends StatelessWidget {
                     child: Icon(
                       MdiIcons.star,
                       color: AppColors.starredGold,
-                      size: iconSize,
+                      size: definitionCardIconSize,
                     ),
                   ),
                 ),
