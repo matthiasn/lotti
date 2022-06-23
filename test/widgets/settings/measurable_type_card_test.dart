@@ -127,5 +127,117 @@ void main() {
       expect(find.byIcon(MdiIcons.star), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsOneWidget);
     });
+
+    testWidgets(
+        'displays private starred measurable data type with unit and '
+        'aggregation type daily sum', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          MeasurableTypeCard(
+            index: 0,
+            item: testItem.copyWith(
+              favorite: true,
+              private: true,
+              aggregationType: AggregationType.dailySum,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text(testDisplayName), findsOneWidget);
+      expect(find.text(testDescription), findsOneWidget);
+      expect(find.text('[$testUnit]'), findsOneWidget);
+
+      expect(find.text('[dailySum]'), findsOneWidget);
+
+      expect(find.byIcon(MdiIcons.star), findsOneWidget);
+      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+    });
+
+    testWidgets(
+        'displays private starred measurable data type with unit and '
+        'aggregation type daily max', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          MeasurableTypeCard(
+            index: 0,
+            item: testItem.copyWith(
+              favorite: true,
+              private: true,
+              aggregationType: AggregationType.dailyMax,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text(testDisplayName), findsOneWidget);
+      expect(find.text(testDescription), findsOneWidget);
+      expect(find.text('[$testUnit]'), findsOneWidget);
+
+      expect(find.text('[dailyMax]'), findsOneWidget);
+
+      expect(find.byIcon(MdiIcons.star), findsOneWidget);
+      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+    });
+
+    testWidgets(
+        'displays private starred measurable data type with unit and '
+        'aggregation type daily avg', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          MeasurableTypeCard(
+            index: 0,
+            item: testItem.copyWith(
+              favorite: true,
+              private: true,
+              aggregationType: AggregationType.dailyAvg,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text(testDisplayName), findsOneWidget);
+      expect(find.text(testDescription), findsOneWidget);
+      expect(find.text('[$testUnit]'), findsOneWidget);
+
+      expect(find.text('[dailyAvg]'), findsOneWidget);
+
+      expect(find.byIcon(MdiIcons.star), findsOneWidget);
+      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+    });
+
+    testWidgets(
+        'displays private starred measurable data type with unit and '
+        'aggregation type none', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          MeasurableTypeCard(
+            index: 0,
+            item: testItem.copyWith(
+              favorite: true,
+              private: true,
+              aggregationType: AggregationType.none,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text(testDisplayName), findsOneWidget);
+      expect(find.text(testDescription), findsOneWidget);
+      expect(find.text('[$testUnit]'), findsOneWidget);
+
+      expect(find.text('[none]'), findsNothing);
+
+      expect(find.byIcon(MdiIcons.star), findsOneWidget);
+      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+    });
   });
 }

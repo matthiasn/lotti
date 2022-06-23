@@ -55,7 +55,7 @@ class AppColors {
   static Color error = Colors.red;
   static Color private = Colors.red;
   static Color audioMeterBarBackground =
-      TinyColor(headerBgColor).lighten(40).color;
+      TinyColor.fromColor(headerBgColor).lighten(40).color;
   static Color inactiveAudioControl = const Color.fromRGBO(155, 155, 177, 1);
   static Color listItemText = bodyBgColor;
 }
@@ -99,7 +99,7 @@ class AppColors2 {
   static Color error = Colors.red;
   static Color private = Colors.red;
   static Color audioMeterBarBackground =
-      TinyColor(headerBgColor).lighten(40).color;
+      TinyColor.fromColor(headerBgColor).lighten(40).color;
   static Color inactiveAudioControl = const Color.fromRGBO(155, 155, 177, 1);
   static Color listItemText = bodyBgColor;
 }
@@ -247,4 +247,11 @@ final definitionCardTitleStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 24,
+);
+
+final definitionCardSubtitleStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  fontFamily: 'Oswald',
+  fontWeight: FontWeight.w200,
+  fontSize: 16,
 );

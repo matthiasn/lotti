@@ -209,9 +209,9 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    Widget? leading = leadingIcon
+    final leading = leadingIcon
         ? AutoLeadingButton(color: AppColors.entryTextColor)
-        : SizedBox.shrink();
+        : const SizedBox.shrink();
 
     return AppBar(
       backgroundColor: AppColors.headerBgColor,
