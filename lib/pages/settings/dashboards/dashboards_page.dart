@@ -4,11 +4,11 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/settings/dashboards/dashboard_definition_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
@@ -109,7 +109,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
                 children: List.generate(
                   dashboards.length,
                   (int index) {
-                    return DashboardCard(
+                    return DashboardDefinitionCard(
                       dashboard: dashboards.elementAt(index),
                       index: index,
                     );
@@ -118,56 +118,6 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
               ),
               buildFloatingSearchBar(),
             ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class DashboardCard extends StatelessWidget {
-  DashboardCard({
-    super.key,
-    required this.dashboard,
-    required this.index,
-  });
-
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-  final DashboardDefinition dashboard;
-  final int index;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: AppColors.headerBgColor,
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.only(left: 16, top: 8, bottom: 20, right: 16),
-        title: Text(
-          dashboard.name,
-          style: TextStyle(
-            color: AppColors.entryTextColor,
-            fontFamily: 'Oswald',
-            fontSize: 24,
-            fontWeight: FontWeight.w300,
-          ),
-        ),
-        subtitle: Text(
-          dashboard.description,
-          style: TextStyle(
-            color: AppColors.entryTextColor,
-            fontFamily: 'Oswald',
-            fontSize: 16,
-            fontWeight: FontWeight.w300,
-          ),
-        ),
-        onTap: () {
-          context.router.push(
-            EditDashboardRoute(dashboardId: dashboard.id),
           );
         },
       ),
