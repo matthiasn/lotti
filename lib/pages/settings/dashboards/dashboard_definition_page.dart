@@ -289,7 +289,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             autovalidateMode:
                                 AutovalidateMode.onUserInteraction,
                             onChanged: () {
-                              debugPrint('onChaged');
+                              formKey.currentState?.save();
                               setState(() {
                                 dirty = true;
                               });
