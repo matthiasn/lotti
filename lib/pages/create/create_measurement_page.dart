@@ -166,14 +166,30 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                             ),
                           if (items.isNotEmpty)
                             Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  selected?.displayName ?? '',
-                                  style: TextStyle(
-                                    color: AppColors.entryTextColor,
-                                    fontFamily: 'Oswald',
-                                    fontSize: 20,
-                                  ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      selected?.displayName ?? '',
+                                      style: TextStyle(
+                                        color: AppColors.entryTextColor,
+                                        fontFamily: 'Oswald',
+                                        fontSize: 24,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.settings_outlined),
+                                      color: AppColors.entryTextColor,
+                                      onPressed: () {
+                                        context.router.pushNamed(
+                                          '/settings/measurables/${selected?.id}',
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
                                 if (selected?.description != null)
                                   Text(
