@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -40,9 +43,61 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
 
   MeasurableDataType? selected;
 
+  final hotkeyCmdS = HotKey(
+    KeyCode.keyS,
+    modifiers: [KeyModifier.meta],
+    scope: HotKeyScope.inapp,
+  );
+
   @override
   void initState() {
     super.initState();
+
+    hotKeyManager.register(
+      hotkeyCmdS,
+      keyDownHandler: (hotKey) => saveMeasurement(),
+    );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    hotKeyManager.unregister(hotkeyCmdS);
+  }
+
+  bool validate() {
+    if (_formKey.currentState != null) {
+      return _formKey.currentState!.validate();
+    }
+    return false;
+  }
+
+  Future<void> saveMeasurement() async {
+    _formKey.currentState!.save();
+    if (validate()) {
+      final formData = _formKey.currentState?.value;
+      if (selected == null) {
+        return;
+      }
+      final measurement = MeasurementData(
+        dataTypeId: selected!.id,
+        dateTo: formData!['date'] as DateTime,
+        dateFrom: formData['date'] as DateTime,
+        value: nf.parse('${formData['value']}'.replaceAll(',', '.')),
+      );
+      await persistenceLogic.createMeasurementEntry(
+        data: measurement,
+        linkedId: widget.linkedId,
+      );
+      setState(() {
+        dirty = false;
+      });
+
+      // TODO: mock the router & remove
+      if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+        await context.router.pop();
+      }
+    }
   }
 
   @override
@@ -67,44 +122,14 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
           }
         }
 
-        bool validate() {
-          if (_formKey.currentState != null) {
-            return _formKey.currentState!.validate();
-          }
-          return false;
-        }
-
-        Future<void> onSave() async {
-          _formKey.currentState!.save();
-          if (validate()) {
-            final formData = _formKey.currentState?.value;
-            if (selected == null) {
-              return;
-            }
-            final measurement = MeasurementData(
-              dataTypeId: selected!.id,
-              dateTo: formData!['date'] as DateTime,
-              dateFrom: formData['date'] as DateTime,
-              value: nf.parse('${formData['value']}'.replaceAll(',', '.')),
-            );
-            await persistenceLogic.createMeasurementEntry(
-              data: measurement,
-              linkedId: widget.linkedId,
-            );
-            setState(() {
-              dirty = false;
-            });
-            await context.router.pop();
-          }
-        }
-
         return Scaffold(
           appBar: TitleAppBar(
             title: localizations.addMeasurementTitle,
             actions: [
               if (dirty && validate())
                 TextButton(
-                  onPressed: onSave,
+                  key: const Key('measurement_save'),
+                  onPressed: saveMeasurement,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
@@ -172,12 +197,14 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      selected?.displayName ?? '',
-                                      style: TextStyle(
-                                        color: AppColors.entryTextColor,
-                                        fontFamily: 'Oswald',
-                                        fontSize: 24,
+                                    Expanded(
+                                      child: Text(
+                                        selected?.displayName ?? '',
+                                        style: TextStyle(
+                                          color: AppColors.entryTextColor,
+                                          fontFamily: 'Oswald',
+                                          fontSize: 24,
+                                        ),
                                       ),
                                     ),
                                     IconButton(
@@ -264,6 +291,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                 if (selected != null)
                                   FormBuilderTextField(
                                     initialValue: '',
+                                    key: const Key('measurement_value_field'),
                                     decoration: InputDecoration(
                                       labelText: '${selected?.displayName} '
                                           '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
@@ -271,6 +299,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     ),
                                     keyboardAppearance: Brightness.dark,
                                     style: inputStyle,
+                                    autofocus: true,
                                     validator: FormBuilderValidators.required(),
                                     name: 'value',
                                     keyboardType:
