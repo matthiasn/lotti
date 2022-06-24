@@ -1,6 +1,7 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -33,6 +34,8 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
 }
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+class MockSyncDatabase extends Mock implements SyncDatabase {}
 
 class FakeDashboardDefinition extends Fake implements DashboardDefinition {}
 
