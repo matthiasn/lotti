@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Tests for measurables detail page
+
+## [0.8.74] - 2022-06-24
+### Added:
 - Faster measurement entry on desktop with autofocus and Cmd-S hotkey
 - Widget tests for new measurement page (no UI changes)
 

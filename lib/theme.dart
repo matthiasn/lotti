@@ -257,4 +257,4 @@ final definitionCardSubtitleStyle = TextStyle(
   fontSize: 16,
 );
 
-const definitionCardIconSize = 24.0;
+const settingsIconSize = 24.0;

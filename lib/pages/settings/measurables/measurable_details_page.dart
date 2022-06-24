@@ -13,8 +13,6 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-const double iconSize = 24;
-
 class MeasurableDetailsPage extends StatefulWidget {
   const MeasurableDetailsPage({
     super.key,
@@ -190,7 +188,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           children: [
                             IconButton(
                               icon: const Icon(MdiIcons.trashCanOutline),
-                              iconSize: 24,
+                              iconSize: settingsIconSize,
                               tooltip: AppLocalizations.of(context)!
                                   .settingsMeasurableDeleteTooltip,
                               color: AppColors.appBarFgColor,

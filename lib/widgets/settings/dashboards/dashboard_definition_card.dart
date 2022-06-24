@@ -47,7 +47,7 @@ class DashboardDefinitionCard extends StatelessWidget {
                 child: Icon(
                   MdiIcons.security,
                   color: AppColors.error,
-                  size: definitionCardIconSize,
+                  size: settingsIconSize,
                 ),
               ),
             ],

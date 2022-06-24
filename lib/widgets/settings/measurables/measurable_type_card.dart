@@ -62,7 +62,7 @@ class MeasurableTypeCard extends StatelessWidget {
                         child: Icon(
                           MdiIcons.security,
                           color: AppColors.error,
-                          size: definitionCardIconSize,
+                          size: settingsIconSize,
                         ),
                       ),
                       Visibility(
@@ -72,7 +72,7 @@ class MeasurableTypeCard extends StatelessWidget {
                           child: Icon(
                             MdiIcons.star,
                             color: AppColors.starredGold,
-                            size: definitionCardIconSize,
+                            size: settingsIconSize,
                           ),
                         ),
                       ),
