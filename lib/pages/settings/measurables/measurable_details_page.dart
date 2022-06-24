@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
@@ -12,8 +15,6 @@ import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-
-const double iconSize = 24;
 
 class MeasurableDetailsPage extends StatefulWidget {
   const MeasurableDetailsPage({
@@ -58,7 +59,11 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
         setState(() {
           dirty = false;
         });
-        await context.router.pop();
+
+        // TODO: mock the router & remove
+        if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+          await context.router.pop();
+        }
       }
     }
 
@@ -69,6 +74,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
         actions: [
           if (dirty)
             TextButton(
+              key: const Key('measurable_save'),
               onPressed: onSavePressed,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -103,12 +109,14 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                         child: Column(
                           children: <Widget>[
                             FormTextField(
+                              key: const Key('measurable_name_field'),
                               initialValue: item.displayName,
                               labelText: AppLocalizations.of(context)!
                                   .settingsMeasurableNameLabel,
                               name: 'displayName',
                             ),
                             FormTextField(
+                              key: const Key('measurable_description_field'),
                               initialValue: item.description,
                               labelText: AppLocalizations.of(context)!
                                   .settingsMeasurableDescriptionLabel,
@@ -189,20 +197,43 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             IconButton(
-                              icon: const Icon(MdiIcons.trashCanOutline),
-                              iconSize: 24,
-                              tooltip: AppLocalizations.of(context)!
-                                  .settingsMeasurableDeleteTooltip,
-                              color: AppColors.appBarFgColor,
-                              onPressed: () {
-                                persistenceLogic.upsertEntityDefinition(
-                                  item.copyWith(
-                                    deletedAt: DateTime.now(),
-                                  ),
-                                );
-                                context.router.pop();
-                              },
-                            ),
+                                icon: const Icon(MdiIcons.trashCanOutline),
+                                iconSize: settingsIconSize,
+                                tooltip: AppLocalizations.of(context)!
+                                    .settingsMeasurableDeleteTooltip,
+                                color: AppColors.appBarFgColor,
+                                onPressed: () async {
+                                  const deleteKey = 'deleteKey';
+                                  final result =
+                                      await showModalActionSheet<String>(
+                                    context: context,
+                                    title:
+                                        localizations.measurableDeleteQuestion,
+                                    actions: [
+                                      SheetAction(
+                                        icon: Icons.warning,
+                                        label: localizations
+                                            .measurableDeleteConfirm,
+                                        key: deleteKey,
+                                        isDestructiveAction: true,
+                                        isDefaultAction: true,
+                                      ),
+                                    ],
+                                  );
+
+                                  if (result == deleteKey) {
+                                    await persistenceLogic
+                                        .upsertEntityDefinition(
+                                      item.copyWith(deletedAt: DateTime.now()),
+                                    );
+
+                                    // TODO: mock the router & remove
+                                    if (!Platform.environment
+                                        .containsKey('FLUTTER_TEST')) {
+                                      await context.router.pop();
+                                    }
+                                  }
+                                }),
                           ],
                         ),
                       ),

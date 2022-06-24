@@ -462,7 +462,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   children: [
                                     IconButton(
                                       icon: const Icon(Icons.copy),
-                                      iconSize: 24,
+                                      iconSize: settingsIconSize,
                                       tooltip: localizations.dashboardCopyHint,
                                       color: AppColors.appBarFgColor,
                                       onPressed: copyDashboard,
@@ -470,7 +470,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     IconButton(
                                       icon:
                                           const Icon(MdiIcons.trashCanOutline),
-                                      iconSize: 24,
+                                      iconSize: settingsIconSize,
                                       tooltip:
                                           localizations.dashboardDeleteHint,
                                       color: AppColors.appBarFgColor,
