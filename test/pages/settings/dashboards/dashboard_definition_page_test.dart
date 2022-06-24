@@ -16,7 +16,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../test_data.dart';
 import '../../../widget_test_utils.dart';
-import 'dashboard_definition_test_mocks.dart';
+import '../mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
