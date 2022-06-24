@@ -59,7 +59,7 @@ check-null-safety:
 	flutter pub outdated --mode=null-safety
 
 .PHONY: build_runner
-build_runner:
+build_runner: l10n
 	flutter pub run build_runner build --delete-conflicting-outputs
 
 .PHONY: watch
