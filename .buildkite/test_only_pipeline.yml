@@ -1,0 +1,10 @@
+steps:
+  - label: "🔬 Test"
+    key: "apple_clean_test"
+    commands:
+      - "flutter clean"
+      - "flutter pub get"
+      - "flutter pub run build_runner build --delete-conflicting-outputs"
+      - "make junit"
+    agents:
+      os: "macOS"
