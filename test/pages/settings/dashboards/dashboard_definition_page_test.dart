@@ -70,16 +70,14 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Material(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1500,
-                maxWidth: 800,
-              ),
-              child: DashboardDefinitionPage(
-                dashboard: testDashboardConfig.copyWith(description: ''),
-                formKey: formKey,
-              ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
+            ),
+            child: DashboardDefinitionPage(
+              dashboard: testDashboardConfig.copyWith(description: ''),
+              formKey: formKey,
             ),
           ),
         ),
@@ -157,16 +155,14 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Material(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1500,
-                maxWidth: 800,
-              ),
-              child: DashboardDefinitionPage(
-                dashboard: testDashboardConfig,
-                formKey: formKey,
-              ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
+            ),
+            child: DashboardDefinitionPage(
+              dashboard: testDashboardConfig,
+              formKey: formKey,
             ),
           ),
         ),
@@ -247,16 +243,14 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Material(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1500,
-                maxWidth: 800,
-              ),
-              child: DashboardDefinitionPage(
-                dashboard: testDashboardConfig,
-                formKey: formKey,
-              ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
+            ),
+            child: DashboardDefinitionPage(
+              dashboard: testDashboardConfig,
+              formKey: formKey,
             ),
           ),
         ),
@@ -337,16 +331,14 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Material(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1500,
-                maxWidth: 800,
-              ),
-              child: DashboardDefinitionPage(
-                dashboard: testDashboardConfig,
-                formKey: formKey,
-              ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
+            ),
+            child: DashboardDefinitionPage(
+              dashboard: testDashboardConfig,
+              formKey: formKey,
             ),
           ),
         ),
@@ -396,14 +388,12 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Material(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1000,
-                maxWidth: 500,
-              ),
-              child: const CreateDashboardPage(),
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
             ),
+            child: const CreateDashboardPage(),
           ),
         ),
       );
@@ -445,14 +435,12 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Material(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1000,
-                maxWidth: 500,
-              ),
-              child: const DashboardSettingsPage(),
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
             ),
+            child: const DashboardSettingsPage(),
           ),
         ),
       );
@@ -476,14 +464,12 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Material(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1000,
-                maxWidth: 500,
-              ),
-              child: const DashboardsListPage(),
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
             ),
+            child: const DashboardsListPage(),
           ),
         ),
       );
