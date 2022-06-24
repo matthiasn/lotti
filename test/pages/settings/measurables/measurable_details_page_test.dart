@@ -96,9 +96,11 @@ void main() {
             .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
       ).thenAnswer((_) async => measurableWater);
 
-      when(
-        () => mockPersistenceLogic.upsertEntityDefinition(any()),
-      ).thenAnswer((_) async => 1);
+      Future<int> mockUpsertEntity() {
+        return mockPersistenceLogic.upsertEntityDefinition(any());
+      }
+
+      when(mockUpsertEntity).thenAnswer((_) async => 1);
 
       await tester.pumpWidget(
         makeTestableWidget(
@@ -116,6 +118,19 @@ void main() {
 
       final trashIconFinder = find.byIcon(MdiIcons.trashCanOutline);
       await tester.tap(trashIconFinder);
+      await tester.pumpAndSettle();
+
+      final deleteQuestionFinder =
+          find.text('Do you want to delete this measurable data type?');
+      final confirmDeleteFinder = find.text('YES, DELETE THIS MEASURABLE');
+      expect(deleteQuestionFinder, findsOneWidget);
+      expect(confirmDeleteFinder, findsOneWidget);
+
+      await tester.tap(confirmDeleteFinder);
+      await tester.pumpAndSettle();
+
+      // delete button calls mocked function
+      verify(mockUpsertEntity).called(1);
     });
   });
 }

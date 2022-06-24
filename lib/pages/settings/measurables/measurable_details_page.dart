@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
@@ -196,25 +197,43 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             IconButton(
-                              icon: const Icon(MdiIcons.trashCanOutline),
-                              iconSize: settingsIconSize,
-                              tooltip: AppLocalizations.of(context)!
-                                  .settingsMeasurableDeleteTooltip,
-                              color: AppColors.appBarFgColor,
-                              onPressed: () {
-                                persistenceLogic.upsertEntityDefinition(
-                                  item.copyWith(
-                                    deletedAt: DateTime.now(),
-                                  ),
-                                );
+                                icon: const Icon(MdiIcons.trashCanOutline),
+                                iconSize: settingsIconSize,
+                                tooltip: AppLocalizations.of(context)!
+                                    .settingsMeasurableDeleteTooltip,
+                                color: AppColors.appBarFgColor,
+                                onPressed: () async {
+                                  const deleteKey = 'deleteKey';
+                                  final result =
+                                      await showModalActionSheet<String>(
+                                    context: context,
+                                    title:
+                                        localizations.measurableDeleteQuestion,
+                                    actions: [
+                                      SheetAction(
+                                        icon: Icons.warning,
+                                        label: localizations
+                                            .measurableDeleteConfirm,
+                                        key: deleteKey,
+                                        isDestructiveAction: true,
+                                        isDefaultAction: true,
+                                      ),
+                                    ],
+                                  );
 
-                                // TODO: mock the router & remove
-                                if (!Platform.environment
-                                    .containsKey('FLUTTER_TEST')) {
-                                  context.router.pop();
-                                }
-                              },
-                            ),
+                                  if (result == deleteKey) {
+                                    await persistenceLogic
+                                        .upsertEntityDefinition(
+                                      item.copyWith(deletedAt: DateTime.now()),
+                                    );
+
+                                    // TODO: mock the router & remove
+                                    if (!Platform.environment
+                                        .containsKey('FLUTTER_TEST')) {
+                                      await context.router.pop();
+                                    }
+                                  }
+                                }),
                           ],
                         ),
                       ),
