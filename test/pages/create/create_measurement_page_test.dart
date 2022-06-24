@@ -144,5 +144,34 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+        'create measurement page is displayed with selected measurable type '
+        'if only one exists', (tester) async {
+      when(mockJournalDb.watchMeasurableDataTypes).thenAnswer(
+        (_) => Stream<List<MeasurableDataType>>.fromIterable([
+          [measurableWater]
+        ]),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 600,
+              maxWidth: 800,
+            ),
+            child: const CreateMeasurementPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Water'),
+        findsOneWidget,
+      );
+    });
   });
 }
