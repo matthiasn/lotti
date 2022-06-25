@@ -26,6 +26,7 @@ class AppColors {
   static Color bottomNavIconSelected = const Color.fromRGBO(252, 147, 76, 1);
   static Color editorTextColor = const Color.fromRGBO(51, 51, 51, 1);
   static Color starredGold = const Color.fromRGBO(255, 215, 0, 1);
+  static Color yolk = const Color.fromRGBO(244, 187, 41, 1);
   static Color recordingTextColor = const Color.fromRGBO(224, 224, 224, 0.8);
   static Color editorBgColor = Colors.white;
 
