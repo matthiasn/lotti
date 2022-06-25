@@ -29,9 +29,11 @@ class AppColors {
   static Color recordingTextColor = const Color.fromRGBO(224, 224, 224, 0.8);
   static Color editorBgColor = Colors.white;
 
-  static Color bodyBgColor = const Color.fromRGBO(29, 45, 69, 1);
-  static Color headerBgColor = const Color.fromRGBO(40, 60, 92, 1);
-  static Color entryCardColor = const Color.fromRGBO(51, 77, 118, 1);
+  static Color baseColor = const Color.fromRGBO(51, 77, 118, 1);
+
+  static Color bodyBgColor = darken(baseColor, 20);
+  static Color headerBgColor = darken(baseColor, 10);
+  static Color entryCardColor = baseColor;
   static Color entryTextColor = const Color.fromRGBO(200, 195, 190, 1);
 
   static Color vuBgColor = headerBgColor;
@@ -58,6 +60,14 @@ class AppColors {
       TinyColor.fromColor(headerBgColor).lighten(40).color;
   static Color inactiveAudioControl = const Color.fromRGBO(155, 155, 177, 1);
   static Color listItemText = bodyBgColor;
+}
+
+Color darken(Color color, int value) {
+  return TinyColor.fromColor(color).darken(value).color;
+}
+
+Color lighten(Color color, int value) {
+  return TinyColor.fromColor(color).lighten(value).color;
 }
 
 class AppColors2 {
