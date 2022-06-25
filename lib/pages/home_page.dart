@@ -112,7 +112,9 @@ class HomePage extends StatelessWidget {
                 unselectedItemColor: AppColors.bottomNavIconUnselected,
                 selectedItemColor: AppColors.bottomNavIconSelected,
                 currentIndex: tabsRouter.activeIndex,
-                selectedLabelStyle: bottomNavLabelStyle,
+                selectedLabelStyle: bottomNavLabelStyle.copyWith(
+                  fontWeight: FontWeight.normal,
+                ),
                 unselectedLabelStyle: bottomNavLabelStyle,
                 onTap: onTap,
                 enableFeedback: true,

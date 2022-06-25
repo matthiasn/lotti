@@ -197,43 +197,42 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             IconButton(
-                                icon: const Icon(MdiIcons.trashCanOutline),
-                                iconSize: settingsIconSize,
-                                tooltip: AppLocalizations.of(context)!
-                                    .settingsMeasurableDeleteTooltip,
-                                color: AppColors.appBarFgColor,
-                                onPressed: () async {
-                                  const deleteKey = 'deleteKey';
-                                  final result =
-                                      await showModalActionSheet<String>(
-                                    context: context,
-                                    title:
-                                        localizations.measurableDeleteQuestion,
-                                    actions: [
-                                      SheetAction(
-                                        icon: Icons.warning,
-                                        label: localizations
-                                            .measurableDeleteConfirm,
-                                        key: deleteKey,
-                                        isDestructiveAction: true,
-                                        isDefaultAction: true,
-                                      ),
-                                    ],
+                              icon: const Icon(MdiIcons.trashCanOutline),
+                              iconSize: settingsIconSize,
+                              tooltip: AppLocalizations.of(context)!
+                                  .settingsMeasurableDeleteTooltip,
+                              color: AppColors.appBarFgColor,
+                              onPressed: () async {
+                                const deleteKey = 'deleteKey';
+                                final result =
+                                    await showModalActionSheet<String>(
+                                  context: context,
+                                  title: localizations.measurableDeleteQuestion,
+                                  actions: [
+                                    SheetAction(
+                                      icon: Icons.warning,
+                                      label:
+                                          localizations.measurableDeleteConfirm,
+                                      key: deleteKey,
+                                      isDestructiveAction: true,
+                                      isDefaultAction: true,
+                                    ),
+                                  ],
+                                );
+
+                                if (result == deleteKey) {
+                                  await persistenceLogic.upsertEntityDefinition(
+                                    item.copyWith(deletedAt: DateTime.now()),
                                   );
 
-                                  if (result == deleteKey) {
-                                    await persistenceLogic
-                                        .upsertEntityDefinition(
-                                      item.copyWith(deletedAt: DateTime.now()),
-                                    );
-
-                                    // TODO: mock the router & remove
-                                    if (!Platform.environment
-                                        .containsKey('FLUTTER_TEST')) {
-                                      await context.router.pop();
-                                    }
+                                  // TODO: mock the router & remove
+                                  if (!Platform.environment
+                                      .containsKey('FLUTTER_TEST')) {
+                                    await context.router.pop();
                                   }
-                                }),
+                                }
+                              },
+                            ),
                           ],
                         ),
                       ),

@@ -100,7 +100,7 @@ Map<String, HealthTypeConfig> healthTypes = {
     aggregationType: HealthAggregationType.dailyMax,
     colorByValue: {
       10000: '#4BB543',
-      6000: '#FF5F1F',
+      6000: '#FCB004',
       0: '#FC100D',
     },
   ),

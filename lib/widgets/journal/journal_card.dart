@@ -106,30 +106,16 @@ class JournalCardTitle extends StatelessWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          data.status.maybeMap(
-                            done: (_) => MdiIcons.checkboxMarkedOutline,
-                            orElse: () => MdiIcons.checkboxBlankOutline,
-                          ),
-                          size: 32,
-                          color: AppColors.entryTextColor,
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            data.title,
-                            style: TextStyle(
-                              fontFamily: 'Oswald',
-                              color: AppColors.entryTextColor,
-                              fontWeight: FontWeight.normal,
-                              fontSize: 24,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      data.title,
+                      style: TextStyle(
+                        fontFamily: 'Oswald',
+                        color: AppColors.entryTextColor,
+                        fontWeight: FontWeight.normal,
+                        fontSize: 24,
+                      ),
                     ),
+                    const SizedBox(height: 8),
                     LinkedDuration(task: task),
                     TextViewerWidget(entryText: task.entryText),
                   ],
@@ -139,13 +125,16 @@ class JournalCardTitle extends StatelessWidget {
               habitCompletion: (_) => const SizedBox.shrink(),
             ),
           ),
-          DurationWidget(
-            item: item,
-            style: TextStyle(
-              color: AppColors.entryTextColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w300,
-              fontFamily: 'Oswald',
+          item.maybeMap(
+            task: (_) => const SizedBox.shrink(),
+            orElse: () => DurationWidget(
+              item: item,
+              style: TextStyle(
+                color: AppColors.entryTextColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w300,
+                fontFamily: 'Oswald',
+              ),
             ),
           ),
         ],
@@ -177,6 +166,12 @@ class JournalCard extends StatelessWidget {
               journalAudio: (_) => const LeadingIcon(Icons.mic),
               journalEntry: (_) => const LeadingIcon(Icons.article),
               quantitative: (_) => const LeadingIcon(MdiIcons.heart),
+              task: (task) => LeadingIcon(
+                task.data.status.maybeMap(
+                  done: (_) => MdiIcons.checkboxMarkedOutline,
+                  orElse: () => MdiIcons.checkboxBlankOutline,
+                ),
+              ),
               orElse: () => null,
             ),
             title: JournalCardTitle(item: item),
@@ -206,17 +201,10 @@ class LeadingIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.all(Radius.circular(8)),
-      child: Container(
-        width: 50,
-        height: 50,
-        color: AppColors.entryBgColor,
-        child: Icon(
-          iconData,
-          size: 32,
-        ),
-      ),
+    return Icon(
+      iconData,
+      size: 32,
+      color: AppColors.entryTextColor,
     );
   }
 }
