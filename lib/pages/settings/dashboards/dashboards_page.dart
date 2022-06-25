@@ -56,7 +56,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
       borderRadius: BorderRadius.circular(8),
       axisAlignment: isPortrait ? 0 : -1,
       openAxisAlignment: 0,
-      width: isPortrait ? portraitWidth : 400,
+      width: isPortrait ? portraitWidth : MediaQuery.of(context).size.width,
       onQueryChanged: (query) async {
         setState(() {
           match = query.toLowerCase();
