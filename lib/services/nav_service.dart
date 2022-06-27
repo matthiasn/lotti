@@ -40,7 +40,7 @@ class NavService {
 }
 
 Future<String?> getSavedRoute() async {
-  return await SecureStorage.readValue(lastRouteKey);
+  return await getIt<SecureStorage>().readValue(lastRouteKey);
 }
 
 Future<String?> getIdFromSavedRoute() async {
@@ -54,7 +54,7 @@ Future<String?> getIdFromSavedRoute() async {
 
 void persistNamedRoute(String route) {
   debugPrint('persistNamedRoute: $route');
-  SecureStorage.writeValue(lastRouteKey, route);
+  getIt<SecureStorage>().writeValue(lastRouteKey, route);
   getIt<NavService>().currentRoute = route;
 }
 

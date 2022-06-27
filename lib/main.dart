@@ -15,6 +15,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';
+import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -28,7 +29,10 @@ Future<void> main() async {
     await hotKeyManager.unregisterAll();
   }
 
-  getIt.registerSingleton<WindowService>(WindowService());
+  getIt
+    ..registerSingleton<SecureStorage>(SecureStorage())
+    ..registerSingleton<WindowService>(WindowService());
+
   await getIt<WindowService>().restore();
   tz.initializeTimeZones();
 

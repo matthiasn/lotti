@@ -5,7 +5,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox_read.dart';
 import 'package:lotti/sync/inbox_save_attachments.dart';
+import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mutex/mutex.dart';
 
@@ -40,7 +40,6 @@ class SyncInboxService {
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
   final fetchMutex = Mutex();
-  final _storage = const FlutterSecureStorage();
   final JournalDb _journalDb = getIt<JournalDb>();
   final LoggingDb _loggingDb = getIt<LoggingDb>();
 
@@ -196,7 +195,8 @@ class SyncInboxService {
         final syncConfig = await _syncConfigService.getSyncConfig();
         imapClient = await createImapClient(syncConfig);
 
-        final lastReadUidValue = await _storage.read(key: lastReadUidKey);
+        final lastReadUidValue =
+            await getIt<SecureStorage>().read(key: lastReadUidKey);
         final lastReadUid =
             lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
 
@@ -209,7 +209,8 @@ class SyncInboxService {
               await imapClient.uidFetchMessages(sequence, 'ENVELOPE');
 
           for (final msg in fetchResult.messages) {
-            final lastReadUidValue = await _storage.read(key: lastReadUidKey);
+            final lastReadUidValue =
+                await getIt<SecureStorage>().read(key: lastReadUidKey);
             final lastReadUid =
                 lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
             final current = msg.uid;
@@ -269,7 +270,7 @@ class SyncInboxService {
   }
 
   Future<void> _setLastReadUid(int? uid) async {
-    await _storage.write(key: lastReadUidKey, value: '$uid');
+    await getIt<SecureStorage>().write(key: lastReadUidKey, value: '$uid');
   }
 
   Future<void> _fetchByUid({

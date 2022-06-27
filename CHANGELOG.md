@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Dependency injection for SecureStorage (no UI changes)
+
+## [0.8.78] - 2022-06-25
+### Changed:
 - Improve dashboards search width on desktop
 
 ## [0.8.78] - 2022-06-24
