@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -93,7 +92,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             rebuild();
 
             final linkedId = widget.linked?.meta.id;
-            context.router.push(
+            getIt<AppRouter>().push(
               CreateMeasurementWithLinkedRoute(
                 linkedId: linkedId,
               ),

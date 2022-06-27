@@ -5,6 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -17,6 +18,7 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
+  var mockAppRouter = MockAppRouter();
 
   group('MeasurableDetailsPage Widget Tests - ', () {
     setUpAll(() {
@@ -30,9 +32,13 @@ void main() {
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
 
+      mockAppRouter = MockAppRouter();
+      when(mockAppRouter.pop).thenAnswer((invocation) async => true);
+
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<AppRouter>(mockAppRouter);
     });
     tearDown(getIt.reset);
 

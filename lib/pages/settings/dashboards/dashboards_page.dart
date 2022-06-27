@@ -1,4 +1,3 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -83,7 +82,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.entryBgColor,
         onPressed: () {
-          context.router.push(const CreateDashboardRoute());
+          getIt<AppRouter>().push(const CreateDashboardRoute());
         },
         child: const Icon(MdiIcons.plus, size: 32),
       ),

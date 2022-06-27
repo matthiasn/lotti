@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -90,7 +91,7 @@ class _TagEditPageState extends State<TagEditPage> {
           }
 
           await persistenceLogic.upsertTagEntity(newTagEntity);
-          await context.router.pop();
+          await getIt<AppRouter>().pop();
 
           setState(() {
             dirty = false;
@@ -236,7 +237,7 @@ class _TagEditPageState extends State<TagEditPage> {
                                   deletedAt: DateTime.now(),
                                 ),
                               );
-                              context.router.pop();
+                              getIt<AppRouter>().pop();
                             },
                           ),
                         ],

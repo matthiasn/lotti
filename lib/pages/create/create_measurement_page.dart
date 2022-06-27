@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:auto_route/auto_route.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +11,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -93,10 +92,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
         dirty = false;
       });
 
-      // TODO: mock the router & remove
-      if (!Platform.environment.containsKey('FLUTTER_TEST')) {
-        await context.router.pop();
-      }
+      await getIt<AppRouter>().pop();
     }
   }
 
@@ -211,7 +207,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       icon: const Icon(Icons.settings_outlined),
                                       color: AppColors.entryTextColor,
                                       onPressed: () {
-                                        context.router.pushNamed(
+                                        getIt<AppRouter>().pushNamed(
                                           '/settings/measurables/${selected?.id}',
                                         );
                                       },

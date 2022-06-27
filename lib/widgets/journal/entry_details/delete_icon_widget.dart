@@ -1,9 +1,9 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -42,7 +42,7 @@ class DeleteIconWidget extends StatelessWidget {
         await persistenceLogic.deleteJournalEntity(entityId);
 
         if (popOnDelete) {
-          await context.router.pop();
+          await getIt<AppRouter>().pop();
         }
       }
     }

@@ -1,6 +1,5 @@
 import 'dart:core';
 
-import 'package:auto_route/auto_route.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +83,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
               void onDoubleTap() {
                 if (widget.enableCreate) {
-                  context.router.push(
+                  getIt<AppRouter>().push(
                     CreateMeasurementWithTypeRoute(
                       selectedId: measurableDataType.id,
                     ),

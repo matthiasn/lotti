@@ -1,5 +1,5 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -33,7 +33,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
         key: const Key('add_tag_action'),
         backgroundColor: AppColors.entryBgColor,
         onPressed: () {
-          context.router.push(
+          getIt<AppRouter>().push(
             CreateTagRoute(
               tagType: 'TAG',
             ),
@@ -48,7 +48,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
         heroTag: 'person',
         backgroundColor: AppColors.entryBgColor,
         onPressed: () {
-          context.router.push(
+          getIt<AppRouter>().push(
             CreateTagRoute(
               tagType: 'PERSON',
             ),
@@ -63,7 +63,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
         heroTag: 'story',
         backgroundColor: AppColors.entryBgColor,
         onPressed: () {
-          context.router.push(
+          getIt<AppRouter>().push(
             CreateTagRoute(
               tagType: 'STORY',
             ),
