@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -17,7 +18,7 @@ class WindowService implements WindowListener {
   }
 
   Future<void> restoreSize() async {
-    final sizeString = await SecureStorage.readValue(sizeKey);
+    final sizeString = await getIt<SecureStorage>().readValue(sizeKey);
     final values = sizeString?.split(',').map(double.parse).toList();
     final width = values?.first;
     final height = values?.last;
@@ -27,7 +28,7 @@ class WindowService implements WindowListener {
   }
 
   Future<void> restoreOffset() async {
-    final offsetString = await SecureStorage.readValue(offsetKey);
+    final offsetString = await getIt<SecureStorage>().readValue(offsetKey);
     final values = offsetString?.split(',').map(double.parse).toList();
     final dx = values?.first;
     final dy = values?.last;
@@ -60,13 +61,15 @@ class WindowService implements WindowListener {
   @override
   Future<void> onWindowMove() async {
     final offset = await windowManager.getPosition();
-    await SecureStorage.writeValue(offsetKey, '${offset.dx},${offset.dy}');
+    await getIt<SecureStorage>()
+        .writeValue(offsetKey, '${offset.dx},${offset.dy}');
   }
 
   @override
   Future<void> onWindowResize() async {
     final size = await windowManager.getSize();
-    await SecureStorage.writeValue(sizeKey, '${size.width},${size.height}');
+    await getIt<SecureStorage>()
+        .writeValue(sizeKey, '${size.width},${size.height}');
   }
 
   @override

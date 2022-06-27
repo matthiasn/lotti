@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -16,19 +17,19 @@ class VectorClockService {
 
   Future<String> setNewHost() async {
     final host = uuid.v4();
-    await SecureStorage.writeValue(hostKey, host);
+    await getIt<SecureStorage>().writeValue(hostKey, host);
     return host;
   }
 
   Future<String> getHost() async {
-    var host = await SecureStorage.readValue(hostKey);
+    var host = await getIt<SecureStorage>().readValue(hostKey);
     // ignore: join_return_with_assignment
     host ??= await setNewHost();
     return host;
   }
 
   Future<void> setNextAvailableCounter(int nextAvailableCounter) async {
-    await SecureStorage.writeValue(
+    await getIt<SecureStorage>().writeValue(
       nextAvailableCounterKey,
       nextAvailableCounter.toString(),
     );
@@ -37,7 +38,7 @@ class VectorClockService {
   Future<int> getNextAvailableCounter() async {
     int? nextAvailableCounter;
     final nextAvailableCounterString =
-        await SecureStorage.readValue(nextAvailableCounterKey);
+        await getIt<SecureStorage>().readValue(nextAvailableCounterKey);
 
     if (nextAvailableCounterString != null) {
       nextAvailableCounter = int.parse(nextAvailableCounterString);
