@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:auto_route/auto_route.dart';
@@ -17,6 +16,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/dashboards/chart_multi_select.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_item_card.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -227,10 +227,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
           setState(() {
             dirty = false;
           });
-          // TODO: mock the router & remove
-          if (!Platform.environment.containsKey('FLUTTER_TEST')) {
-            await context.router.pop();
-          }
+
+          await getIt<AppRouter>().pop();
         }
 
         Future<void> copyDashboard() async {
@@ -501,11 +499,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                             ),
                                           );
 
-                                          // TODO: mock the router & remove
-                                          if (!Platform.environment
-                                              .containsKey('FLUTTER_TEST')) {
-                                            await context.router.pop();
-                                          }
+                                          await getIt<AppRouter>().pop();
                                         }
                                       },
                                     ),

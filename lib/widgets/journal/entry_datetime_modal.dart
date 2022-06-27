@@ -1,4 +1,3 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -175,7 +175,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                               dateFrom: dateFrom,
                               dateTo: dateTo,
                             );
-                            await context.router.pop();
+                            await getIt<AppRouter>().pop();
                           },
                           child: Text(
                             localizations.journalDateSaveButton,

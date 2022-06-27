@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Use AppRouter mock in tests (no UI changes)
+
+## [0.8.79] - 2022-06-27
+### Changed:
 - Dependency injection for SecureStorage (no UI changes)
 
 ## [0.8.78] - 2022-06-25

@@ -2,21 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/widgets/sync/imap_config_actions.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../pages/settings/mocks.dart';
 import '../../widget_test_utils.dart';
 import '../sync_config_test_data.dart';
 import '../sync_config_test_mocks.dart';
 
 void main() {
   group('SyncConfig Imap Config Actions Widgets Tests - ', () {
-    final mockRouter = MockStackRouter();
+    final mockAppRouter = MockAppRouter();
 
     setUp(() {
-      reset(mockRouter);
-      when(mockRouter.pop).thenAnswer((_) async => true);
+      reset(mockAppRouter);
+      when(mockAppRouter.pop).thenAnswer((_) async => true);
+      getIt.registerSingleton<AppRouter>(mockAppRouter);
     });
+    tearDown(getIt.reset);
 
     testWidgets('Widget shows no button when status empty', (tester) async {
       final mock = mockSyncConfigCubitWithState(SyncConfigState.empty());
@@ -25,9 +30,7 @@ void main() {
         BlocProvider<SyncConfigCubit>(
           lazy: false,
           create: (BuildContext context) => mock,
-          child: makeTestableWidget(
-            ImapConfigActions(mockRouter: mockRouter),
-          ),
+          child: makeTestableWidget(const ImapConfigActions()),
         ),
       );
 
@@ -53,9 +56,7 @@ void main() {
         BlocProvider<SyncConfigCubit>(
           lazy: false,
           create: (BuildContext context) => mock,
-          child: makeTestableWidget(
-            ImapConfigActions(mockRouter: mockRouter),
-          ),
+          child: makeTestableWidget(const ImapConfigActions()),
         ),
       );
 
@@ -68,7 +69,7 @@ void main() {
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
 
-      verify(mockRouter.pop).called(1);
+      verify(mockAppRouter.pop).called(1);
     });
 
     testWidgets('Widget shows save button when status valid', (tester) async {
@@ -84,9 +85,7 @@ void main() {
         BlocProvider<SyncConfigCubit>(
           lazy: false,
           create: (BuildContext context) => mock,
-          child: makeTestableWidget(
-            ImapConfigActions(mockRouter: mockRouter),
-          ),
+          child: makeTestableWidget(const ImapConfigActions()),
         ),
       );
 
@@ -112,9 +111,7 @@ void main() {
         BlocProvider<SyncConfigCubit>(
           lazy: false,
           create: (BuildContext context) => mock,
-          child: makeTestableWidget(
-            ImapConfigActions(mockRouter: mockRouter),
-          ),
+          child: makeTestableWidget(const ImapConfigActions()),
         ),
       );
 
@@ -127,7 +124,7 @@ void main() {
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
 
-      verify(mockRouter.pop).called(1);
+      verify(mockAppRouter.pop).called(1);
     });
 
     testWidgets('Widget shows delete button when status invalid',
@@ -146,9 +143,7 @@ void main() {
         BlocProvider<SyncConfigCubit>(
           lazy: false,
           create: (BuildContext context) => mock,
-          child: makeTestableWidget(
-            ImapConfigActions(mockRouter: mockRouter),
-          ),
+          child: makeTestableWidget(const ImapConfigActions()),
         ),
       );
 
@@ -161,7 +156,7 @@ void main() {
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
 
-      verify(mockRouter.pop).called(1);
+      verify(mockAppRouter.pop).called(1);
     });
 
     testWidgets('Widget shows delete button when status testing',
@@ -178,9 +173,7 @@ void main() {
         BlocProvider<SyncConfigCubit>(
           lazy: false,
           create: (BuildContext context) => mock,
-          child: makeTestableWidget(
-            ImapConfigActions(mockRouter: mockRouter),
-          ),
+          child: makeTestableWidget(const ImapConfigActions()),
         ),
       );
 
@@ -193,7 +186,7 @@ void main() {
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
 
-      verify(mockRouter.pop).called(1);
+      verify(mockAppRouter.pop).called(1);
     });
   });
 }

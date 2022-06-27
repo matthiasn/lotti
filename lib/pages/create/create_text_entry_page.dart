@@ -5,6 +5,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
@@ -47,7 +48,7 @@ class _CreateTextEntryPageState extends State<CreateTextEntryPage> {
 
       // ignore: use_build_context_synchronously
       FocusScope.of(context).unfocus();
-      await context.router.pop();
+      await getIt<AppRouter>().pop();
     }
 
     return Scaffold(

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:enum_to_string/enum_to_string.dart';
@@ -12,6 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -60,10 +59,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
           dirty = false;
         });
 
-        // TODO: mock the router & remove
-        if (!Platform.environment.containsKey('FLUTTER_TEST')) {
-          await context.router.pop();
-        }
+        await getIt<AppRouter>().pop();
       }
     }
 
@@ -225,11 +221,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                     item.copyWith(deletedAt: DateTime.now()),
                                   );
 
-                                  // TODO: mock the router & remove
-                                  if (!Platform.environment
-                                      .containsKey('FLUTTER_TEST')) {
-                                    await context.router.pop();
-                                  }
+                                  await getIt<AppRouter>().pop();
                                 }
                               },
                             ),
