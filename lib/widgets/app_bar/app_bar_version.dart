@@ -67,7 +67,7 @@ class _VersionAppBarState extends State<VersionAppBar> {
                 Text(
                   'v$version ($buildNumber), n = ${snapshot.data}',
                   style: TextStyle(
-                    color: AppColors.headerFontColor2,
+                    color: AppColors.headerFontColor,
                     fontFamily: 'Oswald',
                     fontSize: 10,
                     fontWeight: FontWeight.w300,

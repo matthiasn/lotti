@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:themed/themed.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
 Color getTagColor(TagEntity tagEntity) {
@@ -15,52 +16,53 @@ Color getTagColor(TagEntity tagEntity) {
 }
 
 class AppColors {
-  static Color entryBgColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color actionColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color tagColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color tagTextColor = editorTextColor;
-  static Color personTagColor = const Color.fromRGBO(55, 201, 154, 1);
-  static Color storyTagColor = const Color.fromRGBO(200, 120, 0, 1);
-  static Color privateTagColor = Colors.red;
-  static Color bottomNavIconUnselected = entryTextColor;
-  static Color bottomNavIconSelected = const Color.fromRGBO(252, 147, 76, 1);
-  static Color editorTextColor = const Color.fromRGBO(51, 51, 51, 1);
-  static Color starredGold = const Color.fromRGBO(255, 215, 0, 1);
-  static Color yolk = const Color.fromRGBO(244, 187, 41, 1);
-  static Color recordingTextColor = const Color.fromRGBO(224, 224, 224, 0.8);
-  static Color editorBgColor = Colors.white;
+  static Color entryBgColor = const ColorRef(Color.fromRGBO(155, 200, 245, 1));
+  static Color actionColor = const ColorRef(Color.fromRGBO(155, 200, 245, 1));
+  static Color tagColor = const ColorRef(Color.fromRGBO(155, 200, 245, 1));
+  static Color tagTextColor = ColorRef(editorTextColor);
+  static Color personTagColor = const ColorRef(Color.fromRGBO(55, 201, 154, 1));
+  static Color storyTagColor = const ColorRef(Color.fromRGBO(200, 120, 0, 1));
+  static Color privateTagColor = const ColorRef(Colors.red);
+  static Color bottomNavIconUnselected = ColorRef(entryTextColor);
+  static Color bottomNavIconSelected =
+      const ColorRef(Color.fromRGBO(252, 147, 76, 1));
+  static Color editorTextColor = const ColorRef(Color.fromRGBO(51, 51, 51, 1));
+  static Color starredGold = const ColorRef(Color.fromRGBO(255, 215, 0, 1));
+  static Color editorBgColor = const ColorRef(Colors.white);
 
-  static Color baseColor = const Color.fromRGBO(51, 77, 118, 1);
+  static Color baseColor = const ColorRef(Color.fromRGBO(51, 77, 118, 1));
 
-  static Color bodyBgColor = darken(baseColor, 20);
-  static Color headerBgColor = darken(baseColor, 10);
-  static Color entryCardColor = baseColor;
-  static Color entryTextColor = const Color.fromRGBO(200, 195, 190, 1);
+  static Color bodyBgColor = ColorRef(darken(baseColor, 20));
+  static Color headerBgColor = ColorRef(darken(baseColor, 10));
+  static Color entryCardColor = ColorRef(baseColor);
+  static Color entryTextColor =
+      const ColorRef(Color.fromRGBO(200, 195, 190, 1));
 
-  static Color vuBgColor = headerBgColor;
-  static Color searchBgColor = const Color.fromRGBO(68, 68, 85, 0.3);
-  static Color searchBgHoverColor = const Color.fromRGBO(68, 68, 85, 0.6);
-  static Color appBarFgColor = const Color.fromRGBO(180, 190, 200, 1);
-  static Color codeBlockBackground = const Color.fromRGBO(228, 232, 240, 1);
+  static Color searchBgColor = const ColorRef(Color.fromRGBO(68, 68, 85, 0.3));
+  static Color appBarFgColor = const ColorRef(Color.fromRGBO(180, 190, 200, 1));
+  static Color codeBlockBackground =
+      const ColorRef(Color.fromRGBO(228, 232, 240, 1));
 
-  static Color timeRecording = const Color.fromRGBO(255, 22, 22, 1);
-  static Color timeRecordingBg = const Color.fromRGBO(255, 44, 44, 0.95);
+  static Color timeRecording = const ColorRef(Color.fromRGBO(255, 22, 22, 1));
+  static Color timeRecordingBg =
+      const ColorRef(Color.fromRGBO(255, 44, 44, 0.95));
 
-  static Color outboxSuccessColor = const Color.fromRGBO(50, 120, 50, 1);
-  static Color outboxPendingColor = const Color.fromRGBO(200, 120, 0, 1);
-  static Color outboxErrorColor = const Color.fromRGBO(120, 50, 50, 1);
-  static Color headerFontColor = Colors.white;
-  static Color headerFontColor2 = entryBgColor;
-  static Color activeAudioControl = Colors.red;
-  static Color audioMeterBar = Colors.blue;
-  static Color audioMeterTooHotBar = Colors.orange;
-  static Color audioMeterPeakedBar = Colors.red;
-  static Color error = Colors.red;
-  static Color private = Colors.red;
-  static Color audioMeterBarBackground =
-      TinyColor.fromColor(headerBgColor).lighten(40).color;
-  static Color inactiveAudioControl = const Color.fromRGBO(155, 155, 177, 1);
-  static Color listItemText = bodyBgColor;
+  static Color outboxSuccessColor =
+      const ColorRef(Color.fromRGBO(50, 120, 50, 1));
+  static Color outboxPendingColor =
+      const ColorRef(Color.fromRGBO(200, 120, 0, 1));
+  static Color outboxErrorColor =
+      const ColorRef(Color.fromRGBO(120, 50, 50, 1));
+  static Color headerFontColor = ColorRef(entryBgColor);
+  static Color activeAudioControl = const ColorRef(Colors.red);
+  static Color audioMeterBar = const ColorRef(Colors.blue);
+  static Color audioMeterTooHotBar = const ColorRef(Colors.orange);
+  static Color audioMeterPeakedBar = const ColorRef(Colors.red);
+  static Color error = const ColorRef(Colors.red);
+  static Color private = const ColorRef(Colors.red);
+  static Color audioMeterBarBackground = ColorRef(lighten(headerBgColor, 40));
+  static Color inactiveAudioControl =
+      const ColorRef(Color.fromRGBO(155, 155, 177, 1));
 }
 
 Color darken(Color color, int value) {
@@ -69,50 +71,6 @@ Color darken(Color color, int value) {
 
 Color lighten(Color color, int value) {
   return TinyColor.fromColor(color).lighten(value).color;
-}
-
-class AppColors2 {
-  static Color bodyBgColor = const Color.fromRGBO(47, 47, 59, 1);
-  static Color entryBgColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color actionColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color tagColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color tagTextColor = editorTextColor;
-  static Color personTagColor = const Color.fromRGBO(55, 201, 154, 1);
-  static Color storyTagColor = const Color.fromRGBO(200, 120, 0, 1);
-  static Color privateTagColor = Colors.red;
-  static Color entryTextColor = const Color.fromRGBO(158, 158, 158, 1);
-  static Color bottomNavIconUnselected = entryTextColor;
-  static Color bottomNavIconSelected = const Color.fromRGBO(200, 120, 0, 1);
-  static Color editorTextColor = const Color.fromRGBO(51, 51, 51, 1);
-  static Color starredGold = const Color.fromRGBO(255, 215, 0, 1);
-  static Color recordingTextColor = const Color.fromRGBO(224, 224, 224, 0.8);
-  static Color editorBgColor = Colors.white;
-
-  static Color headerBgColor = const Color.fromRGBO(68, 68, 85, 1);
-  static Color vuBgColor = headerBgColor;
-  static Color searchBgColor = const Color.fromRGBO(68, 68, 85, 0.3);
-  static Color searchBgHoverColor = const Color.fromRGBO(68, 68, 85, 0.6);
-  static Color appBarFgColor = const Color.fromRGBO(180, 190, 200, 1);
-  static Color codeBlockBackground = const Color.fromRGBO(228, 232, 240, 1);
-
-  static Color timeRecording = const Color.fromRGBO(255, 22, 22, 1);
-  static Color timeRecordingBg = const Color.fromRGBO(255, 44, 44, 0.95);
-
-  static Color outboxSuccessColor = const Color.fromRGBO(50, 120, 50, 1);
-  static Color outboxPendingColor = const Color.fromRGBO(200, 120, 0, 1);
-  static Color outboxErrorColor = const Color.fromRGBO(120, 50, 50, 1);
-  static Color headerFontColor = Colors.white;
-  static Color headerFontColor2 = entryBgColor;
-  static Color activeAudioControl = Colors.red;
-  static Color audioMeterBar = Colors.blue;
-  static Color audioMeterTooHotBar = Colors.orange;
-  static Color audioMeterPeakedBar = Colors.red;
-  static Color error = Colors.red;
-  static Color private = Colors.red;
-  static Color audioMeterBarBackground =
-      TinyColor.fromColor(headerBgColor).lighten(40).color;
-  static Color inactiveAudioControl = const Color.fromRGBO(155, 155, 177, 1);
-  static Color listItemText = bodyBgColor;
 }
 
 class AppTheme {

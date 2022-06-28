@@ -131,6 +131,7 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.2
   syncfusion_flutter_calendar: ^20.1.47
   syncfusion_flutter_datepicker: ^20.1.47
+  themed: ^3.0.2
   timezone: ^0.8.0
   tinycolor2: ^2.0.0
   tuple: ^2.0.0

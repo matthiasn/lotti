@@ -508,6 +508,13 @@ class JournalDb extends _$JournalDb {
         status: false,
       ),
     );
+    await insertFlagIfNotExists(
+      ConfigFlag(
+        name: 'show_bright_scheme',
+        description: 'Show Bright ☀️ scheme?',
+        status: false,
+      ),
+    );
     if (Platform.isMacOS) {
       await insertFlagIfNotExists(
         ConfigFlag(
