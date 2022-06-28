@@ -44,7 +44,7 @@ class DashboardDefinitionCard extends StatelessWidget {
               const Spacer(),
               Visibility(
                 visible: dashboard.private,
-                child: Icon(
+                child: const Icon(
                   MdiIcons.security,
                   color: AppColors.error,
                   size: settingsIconSize,

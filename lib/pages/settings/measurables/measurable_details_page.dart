@@ -155,8 +155,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                 labelStyle: formLabelStyle,
                               ),
                               iconEnabledColor: AppColors.entryTextColor,
-                              clearIcon: Padding(
-                                padding: const EdgeInsets.only(right: 8),
+                              clearIcon: const Padding(
+                                padding: EdgeInsets.only(right: 8),
                                 child: Icon(
                                   Icons.close,
                                   color: AppColors.entryTextColor,
@@ -175,7 +175,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                       EnumToString.convertToString(
                                         aggregationType,
                                       ),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 16,
                                         color: AppColors.entryTextColor,
                                       ),

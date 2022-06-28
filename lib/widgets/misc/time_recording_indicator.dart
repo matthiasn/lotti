@@ -48,7 +48,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       MdiIcons.timerOutline,
                       color: AppColors.editorTextColor,
                       size: 16,
@@ -57,7 +57,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Text(
                         durationString,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'ShareTechMono',
                           fontSize: 18,
                           color: AppColors.editorTextColor,

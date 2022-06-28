@@ -89,27 +89,27 @@ class DashboardItemCard extends StatelessWidget {
           horizontal: 16,
         ),
         leading: item.map(
-          measurement: (_) => Icon(
+          measurement: (_) => const Icon(
             Icons.insights,
             size: 32,
             color: AppColors.entryTextColor,
           ),
-          healthChart: (_) => Icon(
+          healthChart: (_) => const Icon(
             MdiIcons.stethoscope,
             size: 32,
             color: AppColors.entryTextColor,
           ),
-          workoutChart: (_) => Icon(
+          workoutChart: (_) => const Icon(
             Icons.sports_gymnastics,
             size: 32,
             color: AppColors.entryTextColor,
           ),
-          surveyChart: (_) => Icon(
+          surveyChart: (_) => const Icon(
             MdiIcons.clipboardOutline,
             size: 32,
             color: AppColors.entryTextColor,
           ),
-          storyTimeChart: (_) => Icon(
+          storyTimeChart: (_) => const Icon(
             MdiIcons.bookOutline,
             size: 32,
             color: AppColors.entryTextColor,
@@ -117,7 +117,7 @@ class DashboardItemCard extends StatelessWidget {
         ),
         title: Text(
           itemName,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 20,

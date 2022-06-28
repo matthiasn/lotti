@@ -105,7 +105,7 @@ class ConfigFlagCard extends StatelessWidget {
             children: [
               Text(
                 getLocalizedDescription(item),
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.entryTextColor,
                   fontFamily: 'Oswald',
                   fontSize: 20,

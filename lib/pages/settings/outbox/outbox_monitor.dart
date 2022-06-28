@@ -150,7 +150,7 @@ class OutboxItemCard extends StatelessWidget {
           contentPadding: const EdgeInsets.only(left: 24, right: 24),
           title: Text(
             '${df.format(item.createdAt)} - $status',
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.entryTextColor,
               fontFamily: 'Oswald',
               fontSize: 16,
@@ -159,7 +159,7 @@ class OutboxItemCard extends StatelessWidget {
           subtitle: Text(
             '${item.retries} $retriesText - '
             '${item.filePath ?? localizations.outboxMonitorNoAttachment}',
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.entryTextColor,
               fontFamily: 'Oswald',
               fontWeight: FontWeight.w200,
