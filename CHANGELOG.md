@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Default and Bright color schemes (toggle via config flag)
 
+### Changed:
+- Similar text styles in settings cards and config flags
+
 ## [0.8.81] - 2022-06-27
 ### Changed:
 - Use AppRouter mock in tests (no UI changes)

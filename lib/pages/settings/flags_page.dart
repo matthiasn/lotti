@@ -91,7 +91,7 @@ class ConfigFlagCard extends StatelessWidget {
     }
 
     return Card(
-      color: getIt<ThemeService>().colors.headerBgColor,
+      color: getIt<ThemeService>().colors.entryCardColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -105,11 +105,7 @@ class ConfigFlagCard extends StatelessWidget {
             children: [
               Text(
                 getLocalizedDescription(item),
-                style: TextStyle(
-                  color: getIt<ThemeService>().colors.entryTextColor,
-                  fontFamily: 'Oswald',
-                  fontSize: 20,
-                ),
+                style: settingsCardTitleStyle,
               ),
               CupertinoSwitch(
                 value: item.status,

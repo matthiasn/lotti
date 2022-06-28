@@ -25,15 +25,7 @@ class SettingsCard extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
         leading: icon,
-        title: Text(
-          title,
-          style: TextStyle(
-            color: getIt<ThemeService>().colors.entryTextColor,
-            fontFamily: 'Oswald',
-            fontSize: 22,
-            fontWeight: FontWeight.w300,
-          ),
-        ),
+        title: Text(title, style: settingsCardTitleStyle),
         onTap: onTap,
       ),
     );

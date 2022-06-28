@@ -276,4 +276,11 @@ final definitionCardSubtitleStyle = TextStyle(
   fontSize: 16,
 );
 
+final settingsCardTitleStyle = TextStyle(
+  color: getIt<ThemeService>().colors.entryTextColor,
+  fontFamily: 'Oswald',
+  fontSize: 22,
+  fontWeight: FontWeight.w300,
+);
+
 const settingsIconSize = 24.0;
