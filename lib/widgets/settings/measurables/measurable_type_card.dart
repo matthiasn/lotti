@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -22,7 +22,7 @@ class MeasurableTypeCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(4),
       child: Card(
-        color: AppColors.headerBgColor,
+        color: getIt<ThemeService>().colors.headerBgColor,
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -61,7 +61,7 @@ class MeasurableTypeCard extends StatelessWidget {
                         visible: fromNullableBool(item.private),
                         child: Icon(
                           MdiIcons.security,
-                          color: AppColors.error,
+                          color: getIt<ThemeService>().colors.error,
                           size: settingsIconSize,
                         ),
                       ),
@@ -71,7 +71,7 @@ class MeasurableTypeCard extends StatelessWidget {
                           padding: const EdgeInsets.only(left: 4),
                           child: Icon(
                             MdiIcons.star,
-                            color: AppColors.starredGold,
+                            color: getIt<ThemeService>().colors.starredGold,
                             size: settingsIconSize,
                           ),
                         ),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/classes/entry_text.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/editor/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 
@@ -35,8 +36,8 @@ class TextViewerWidget extends StatelessWidget {
           padding: const EdgeInsets.only(top: 8, bottom: 16),
           keyboardAppearance: Brightness.dark,
           customStyles: customTextViewerStyles(
-            textColor: AppColors.entryTextColor,
-            codeBlockBackground: AppColors.bodyBgColor,
+            textColor: getIt<ThemeService>().colors.entryTextColor,
+            codeBlockBackground: getIt<ThemeService>().colors.bodyBgColor,
           ),
         ),
       ),

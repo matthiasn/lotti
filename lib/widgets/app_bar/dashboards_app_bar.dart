@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 
 class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
   const DashboardsAppBar({super.key});
@@ -15,7 +15,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return AppBar(
-      backgroundColor: AppColors.headerBgColor,
+      backgroundColor: getIt<ThemeService>().colors.headerBgColor,
       automaticallyImplyLeading: false,
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -28,7 +28,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
           IconButton(
             padding: const EdgeInsets.all(4),
             icon: const Icon(Icons.dashboard_customize_outlined),
-            color: AppColors.entryTextColor,
+            color: getIt<ThemeService>().colors.entryTextColor,
             onPressed: () {
               final navService = getIt<NavService>();
 

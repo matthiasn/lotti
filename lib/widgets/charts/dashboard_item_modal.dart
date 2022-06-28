@@ -2,7 +2,8 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 
 class DashboardItemModal extends StatelessWidget {
   const DashboardItemModal({
@@ -23,7 +24,7 @@ class DashboardItemModal extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return ColoredBox(
-      color: AppColors.bodyBgColor,
+      color: getIt<ThemeService>().colors.bodyBgColor,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
@@ -57,7 +58,8 @@ class DashboardItemModal extends StatelessWidget {
                     EnumToString.convertToString(aggregationType),
                     style: choiceLabelStyle,
                   ),
-                  selectedColor: AppColors.outboxSuccessColor,
+                  selectedColor:
+                      getIt<ThemeService>().colors.outboxSuccessColor,
                   selected: aggregationType == item.aggregationType,
                 );
               }).toList(),

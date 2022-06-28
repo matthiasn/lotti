@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class FlagsPage extends StatefulWidget {
@@ -29,7 +29,7 @@ class _FlagsPageState extends State<FlagsPage> {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.settingsFlagsTitle),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       body: StreamBuilder<List<ConfigFlag>>(
         stream: stream,
         builder: (
@@ -91,7 +91,7 @@ class ConfigFlagCard extends StatelessWidget {
     }
 
     return Card(
-      color: AppColors.headerBgColor,
+      color: getIt<ThemeService>().colors.headerBgColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -106,14 +106,14 @@ class ConfigFlagCard extends StatelessWidget {
               Text(
                 getLocalizedDescription(item),
                 style: TextStyle(
-                  color: AppColors.entryTextColor,
+                  color: getIt<ThemeService>().colors.entryTextColor,
                   fontFamily: 'Oswald',
                   fontSize: 20,
                 ),
               ),
               CupertinoSwitch(
                 value: item.status,
-                activeColor: AppColors.private,
+                activeColor: getIt<ThemeService>().colors.private,
                 onChanged: (bool status) {
                   _db.upsertConfigFlag(item.copyWith(status: status));
                 },

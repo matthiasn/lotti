@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -21,7 +21,7 @@ class DashboardDefinitionCard extends StatelessWidget {
     final id = dashboard.id;
 
     return Card(
-      color: AppColors.headerBgColor,
+      color: getIt<ThemeService>().colors.headerBgColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -46,7 +46,7 @@ class DashboardDefinitionCard extends StatelessWidget {
                 visible: dashboard.private,
                 child: Icon(
                   MdiIcons.security,
-                  color: AppColors.error,
+                  color: getIt<ThemeService>().colors.error,
                   size: settingsIconSize,
                 ),
               ),

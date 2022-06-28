@@ -4,7 +4,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 
 class TagsViewWidget extends StatelessWidget {
   TagsViewWidget({

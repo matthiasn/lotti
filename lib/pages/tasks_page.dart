@@ -10,7 +10,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags_search_widget.dart';
@@ -121,7 +121,7 @@ class _TasksPageState extends State<TasksPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: AppColors.appBarFgColor,
+      backgroundColor: getIt<ThemeService>().colors.appBarFgColor,
       queryStyle: const TextStyle(
         fontFamily: 'Lato',
         fontSize: 24,
@@ -167,7 +167,9 @@ class _TasksPageState extends State<TasksPage> {
                                 child: ColoredBox(
                                   color: selectedStatuses.contains(status)
                                       ? Colors.lightBlue
-                                      : Colors.grey,
+                                      : getIt<ThemeService>()
+                                          .colors
+                                          .unselectedChoiceChipColor,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 4,
@@ -180,7 +182,7 @@ class _TasksPageState extends State<TasksPage> {
                                         fontSize: 16,
                                         color: selectedStatuses.contains(status)
                                             ? Colors.grey[900]
-                                            : Colors.grey[400],
+                                            : Colors.grey[600],
                                       ),
                                     ),
                                   ),
@@ -270,7 +272,7 @@ class _TasksPageState extends State<TasksPage> {
           ),
         ).asGlass(
           clipBorderRadius: BorderRadius.circular(8),
-          tintColor: AppColors.searchBgColor,
+          tintColor: getIt<ThemeService>().colors.searchBgColor,
         );
       },
     );
@@ -310,7 +312,8 @@ class _TasksPageState extends State<TasksPage> {
                   return Stack(
                     children: [
                       Scaffold(
-                        backgroundColor: AppColors.bodyBgColor,
+                        backgroundColor:
+                            getIt<ThemeService>().colors.bodyBgColor,
                         body: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 8),
                           child: ListView(
@@ -363,7 +366,7 @@ class AddTask extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       child: FloatingActionButton(
         heroTag: 'addTask',
-        backgroundColor: AppColors.actionColor,
+        backgroundColor: getIt<ThemeService>().colors.actionColor,
         onPressed: () {
           String? linkedId;
           pushNamedRoute('/tasks/create/$linkedId');

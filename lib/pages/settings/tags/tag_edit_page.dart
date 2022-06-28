@@ -9,7 +9,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -118,7 +118,7 @@ class _TagEditPageState extends State<TagEditPage> {
             ),
         ],
       ),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -126,7 +126,7 @@ class _TagEditPageState extends State<TagEditPage> {
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Container(
-                color: AppColors.entryCardColor,
+                color: getIt<ThemeService>().colors.entryCardColor,
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
@@ -153,7 +153,7 @@ class _TagEditPageState extends State<TagEditPage> {
                               localizations.settingsTagsPrivateLabel,
                               style: formLabelStyle,
                             ),
-                            activeColor: AppColors.private,
+                            activeColor: getIt<ThemeService>().colors.private,
                           ),
                           FormBuilderSwitch(
                             name: 'inactive',
@@ -162,7 +162,7 @@ class _TagEditPageState extends State<TagEditPage> {
                               localizations.settingsTagsHideLabel,
                               style: formLabelStyle,
                             ),
-                            activeColor: AppColors.private,
+                            activeColor: getIt<ThemeService>().colors.private,
                           ),
                           FormBuilderChoiceChip<String>(
                             name: 'type',
@@ -230,7 +230,7 @@ class _TagEditPageState extends State<TagEditPage> {
                             icon: const Icon(MdiIcons.trashCanOutline),
                             iconSize: 24,
                             tooltip: localizations.settingsTagsDeleteTooltip,
-                            color: AppColors.appBarFgColor,
+                            color: getIt<ThemeService>().colors.appBarFgColor,
                             onPressed: () {
                               persistenceLogic.upsertTagEntity(
                                 widget.tagEntity.copyWith(

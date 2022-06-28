@@ -5,7 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
@@ -81,7 +81,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
               children: [
                 SwitchIconWidget(
                   tooltip: localizations.journalFavoriteTooltip,
-                  activeColor: AppColors.starredGold,
+                  activeColor: getIt<ThemeService>().colors.starredGold,
                   onPressed: () {
                     final prev = item.meta.starred ?? false;
                     final newMeta = item.meta.copyWith(
@@ -94,7 +94,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                 ),
                 SwitchIconWidget(
                   tooltip: localizations.journalPrivateTooltip,
-                  activeColor: AppColors.error,
+                  activeColor: getIt<ThemeService>().colors.error,
                   onPressed: () {
                     final prev = item.meta.private ?? false;
                     final newMeta = item.meta.copyWith(
@@ -107,7 +107,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                 ),
                 SwitchIconWidget(
                   tooltip: localizations.journalFlaggedTooltip,
-                  activeColor: AppColors.error,
+                  activeColor: getIt<ThemeService>().colors.error,
                   onPressed: () {
                     final prev = item.meta.flag == EntryFlag.import;
                     final newMeta = item.meta.copyWith(
@@ -158,7 +158,8 @@ class SwitchIconWidget extends StatelessWidget {
       },
       icon: Icon(
         iconData,
-        color: value ? activeColor : AppColors.entryTextColor,
+        color:
+            value ? activeColor : getIt<ThemeService>().colors.entryTextColor,
       ),
     );
   }

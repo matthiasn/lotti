@@ -6,7 +6,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -31,7 +31,7 @@ class _LoggingPageState extends State<LoggingPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsLogsTitle),
       body: StreamBuilder<List<LogEntry>>(
         stream: stream,
@@ -76,8 +76,9 @@ class LogLineCard extends StatelessWidget {
     final domain = logEntry.domain;
     final subDomain = logEntry.subDomain;
     final message = logEntry.message;
-    final color =
-        logEntry.level == 'ERROR' ? AppColors.error : AppColors.entryTextColor;
+    final color = logEntry.level == 'ERROR'
+        ? getIt<ThemeService>().colors.error
+        : getIt<ThemeService>().colors.entryTextColor;
 
     return GestureDetector(
       onTap: () {
@@ -113,7 +114,7 @@ class LogDetailPage extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsLogsTitle),
       body: StreamBuilder(
         stream: _db.watchLogEntryById(logEntryId),
@@ -143,7 +144,7 @@ class LogDetailPage extends StatelessWidget {
 
           final headerStyle = level == 'ERROR'
               ? logDetailStyle.copyWith(
-                  color: AppColors.error,
+                  color: getIt<ThemeService>().colors.error,
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                 )
@@ -181,7 +182,7 @@ class LogDetailPage extends StatelessWidget {
                 IconButton(
                   icon: const Icon(MdiIcons.clipboardOutline),
                   iconSize: 48,
-                  color: AppColors.entryTextColor,
+                  color: getIt<ThemeService>().colors.entryTextColor,
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: clipboardText));
                   },

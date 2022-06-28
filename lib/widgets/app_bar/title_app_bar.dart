@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 
 class TitleAppBar extends StatelessWidget with PreferredSizeWidget {
@@ -19,7 +20,7 @@ class TitleAppBar extends StatelessWidget with PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       actions: actions,
-      backgroundColor: AppColors.headerBgColor,
+      backgroundColor: getIt<ThemeService>().colors.headerBgColor,
       title: Text(title, style: appBarTextStyle),
       centerTitle: true,
       leading: const TestDetectingAutoLeadingButton(),

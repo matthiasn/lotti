@@ -11,7 +11,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/routes/router.gr.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -64,7 +64,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       appBar: TitleAppBar(
         title: localizations.settingsMeasurablesTitle,
         actions: [
@@ -90,7 +90,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  color: AppColors.headerBgColor,
+                  color: getIt<ThemeService>().colors.headerBgColor,
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
@@ -134,7 +134,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                     .settingsMeasurablePrivateLabel,
                                 style: formLabelStyle,
                               ),
-                              activeColor: AppColors.private,
+                              activeColor: getIt<ThemeService>().colors.private,
                             ),
                             FormBuilderSwitch(
                               name: 'favorite',
@@ -144,7 +144,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                     .settingsMeasurableFavoriteLabel,
                                 style: formLabelStyle,
                               ),
-                              activeColor: AppColors.starredGold,
+                              activeColor:
+                                  getIt<ThemeService>().colors.starredGold,
                             ),
                             FormBuilderDropdown(
                               name: 'aggregationType',
@@ -154,17 +155,21 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                     .settingsMeasurableAggregationLabel,
                                 labelStyle: formLabelStyle,
                               ),
-                              iconEnabledColor: AppColors.entryTextColor,
+                              iconEnabledColor:
+                                  getIt<ThemeService>().colors.entryTextColor,
                               clearIcon: Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: Icon(
                                   Icons.close,
-                                  color: AppColors.entryTextColor,
+                                  color: getIt<ThemeService>()
+                                      .colors
+                                      .entryTextColor,
                                 ),
                               ),
                               style: const TextStyle(fontSize: 40),
                               allowClear: true,
-                              dropdownColor: AppColors.headerBgColor,
+                              dropdownColor:
+                                  getIt<ThemeService>().colors.headerBgColor,
                               items:
                                   AggregationType.values.map((aggregationType) {
                                 return DropdownMenuItem(
@@ -177,7 +182,9 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                       ),
                                       style: TextStyle(
                                         fontSize: 16,
-                                        color: AppColors.entryTextColor,
+                                        color: getIt<ThemeService>()
+                                            .colors
+                                            .entryTextColor,
                                       ),
                                     ),
                                   ),
@@ -197,7 +204,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               iconSize: settingsIconSize,
                               tooltip: AppLocalizations.of(context)!
                                   .settingsMeasurableDeleteTooltip,
-                              color: AppColors.appBarFgColor,
+                              color: getIt<ThemeService>().colors.appBarFgColor,
                               onPressed: () async {
                                 const deleteKey = 'deleteKey';
                                 final result =

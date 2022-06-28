@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_fadein/flutter_fadein.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class EmptyScaffoldWithTitle extends StatelessWidget {
@@ -16,7 +17,7 @@ class EmptyScaffoldWithTitle extends StatelessWidget {
     return FadeIn(
       duration: const Duration(seconds: 2),
       child: Scaffold(
-        backgroundColor: AppColors.bodyBgColor,
+        backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
         appBar: TitleAppBar(
           title: title,
         ),

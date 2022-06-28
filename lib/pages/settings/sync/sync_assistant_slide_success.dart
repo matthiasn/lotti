@@ -5,7 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/sync/tutorial_utils.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lottie/lottie.dart';
 
@@ -55,7 +55,7 @@ class SyncAssistantSuccessSlide extends StatelessWidget {
                   persistNamedRoute('/settings/advanced');
                   getIt<AppRouter>().pop();
                 },
-                primaryColor: AppColors.outboxSuccessColor,
+                primaryColor: getIt<ThemeService>().colors.outboxSuccessColor,
               ),
             ),
           ),

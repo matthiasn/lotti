@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -36,7 +37,7 @@ class SurveySummary extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontFamily: 'Lato',
-                        color: AppColors.entryTextColor,
+                        color: getIt<ThemeService>().colors.entryTextColor,
                         fontSize: 16,
                       ),
                     ),
@@ -45,7 +46,7 @@ class SurveySummary extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w400,
                         fontSize: 16,
-                        color: AppColors.entryTextColor,
+                        color: getIt<ThemeService>().colors.entryTextColor,
                         fontFamily: 'Lato',
                       ),
                     ),

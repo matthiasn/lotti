@@ -1,7 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/task_utils.dart';
 
 class TaskStatusWidget extends StatelessWidget {
@@ -37,7 +38,7 @@ class TaskStatusWidget extends StatelessWidget {
           ),
           style: TextStyle(
             fontFamily: 'Oswald',
-            color: AppColors.bodyBgColor,
+            color: getIt<ThemeService>().colors.unselectedChoiceChipTextColor,
             fontSize: 12,
           ),
         ),

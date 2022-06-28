@@ -4,7 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/settings/measurables/measurable_type_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -44,7 +44,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: AppColors.appBarFgColor,
+      backgroundColor: getIt<ThemeService>().colors.appBarFgColor,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: 'Lato',
@@ -95,9 +95,9 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
 
         return Scaffold(
           appBar: TitleAppBar(title: localizations.settingsMeasurablesTitle),
-          backgroundColor: AppColors.bodyBgColor,
+          backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
           floatingActionButton: FloatingActionButton(
-            backgroundColor: AppColors.entryBgColor,
+            backgroundColor: getIt<ThemeService>().colors.entryBgColor,
             onPressed: () {
               pushNamedRoute('/settings/create_measurable');
             },

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 
 class ImapConfigStatus extends StatelessWidget {
   const ImapConfigStatus({
@@ -39,13 +40,20 @@ class ImapConfigStatus extends StatelessWidget {
                   empty: () => StatusText(loc.syncAssistantStatusEmpty),
                 ),
               state.when(
-                configured: (_, __) =>
-                    StatusIndicator(AppColors.outboxSuccessColor),
-                imapValid: (_) => StatusIndicator(AppColors.outboxSuccessColor),
-                imapSaved: (_) => StatusIndicator(AppColors.outboxSuccessColor),
-                imapTesting: (_) =>
-                    StatusIndicator(AppColors.outboxPendingColor),
-                imapInvalid: (_, __) => StatusIndicator(AppColors.error),
+                configured: (_, __) => StatusIndicator(
+                  getIt<ThemeService>().colors.outboxSuccessColor,
+                ),
+                imapValid: (_) => StatusIndicator(
+                  getIt<ThemeService>().colors.outboxSuccessColor,
+                ),
+                imapSaved: (_) => StatusIndicator(
+                  getIt<ThemeService>().colors.outboxSuccessColor,
+                ),
+                imapTesting: (_) => StatusIndicator(
+                  getIt<ThemeService>().colors.outboxPendingColor,
+                ),
+                imapInvalid: (_, __) =>
+                    StatusIndicator(getIt<ThemeService>().colors.error),
                 loading: () => const StatusIndicator(Colors.grey),
                 generating: () => const StatusIndicator(Colors.grey),
                 empty: () => const StatusIndicator(Colors.grey),

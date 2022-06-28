@@ -7,7 +7,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
@@ -78,7 +78,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
       appBar: TitleAppBar(
         title: localizations.addTaskTitle,
       ),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(8),
@@ -105,7 +105,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                       fontSize: 20,
                       fontFamily: 'Oswald',
                       fontWeight: FontWeight.bold,
-                      color: AppColors.appBarFgColor,
+                      color: getIt<ThemeService>().colors.appBarFgColor,
                     ),
                   ),
                 ),

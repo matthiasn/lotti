@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 
 class VuMeterWidget extends StatelessWidget {
   const VuMeterWidget({
@@ -26,11 +27,12 @@ class VuMeterWidget extends StatelessWidget {
               value: state.decibels / 160,
               minHeight: height,
               color: (state.decibels > 130)
-                  ? AppColors.audioMeterPeakedBar
+                  ? getIt<ThemeService>().colors.audioMeterPeakedBar
                   : (state.decibels > 100)
-                      ? AppColors.audioMeterTooHotBar
-                      : AppColors.audioMeterBar,
-              backgroundColor: AppColors.audioMeterBarBackground,
+                      ? getIt<ThemeService>().colors.audioMeterTooHotBar
+                      : getIt<ThemeService>().colors.audioMeterBar,
+              backgroundColor:
+                  getIt<ThemeService>().colors.audioMeterBarBackground,
             ),
           ),
         );

@@ -3,7 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
@@ -58,7 +58,8 @@ class MyDayPage extends StatelessWidget {
             final background = journalEntity.map(
               journalEntry: (journalEntry) => Colors.lightGreen,
               journalImage: (journalImage) => Colors.lightBlue,
-              journalAudio: (journalAudio) => AppColors.error,
+              journalAudio: (journalAudio) =>
+                  getIt<ThemeService>().colors.error,
               task: (task) => Colors.lightBlue,
               quantitative: (quantitative) => Colors.lightBlue,
               measurement: (measurement) => Colors.lightBlue,

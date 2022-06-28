@@ -13,7 +13,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -136,7 +136,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                 ),
             ],
           ),
-          backgroundColor: AppColors.bodyBgColor,
+          backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -144,7 +144,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    color: AppColors.headerBgColor,
+                    color: getIt<ThemeService>().colors.headerBgColor,
                     width: MediaQuery.of(context).size.width,
                     padding: const EdgeInsets.all(32),
                     child: FormBuilder(
@@ -175,7 +175,9 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                         localizations.addMeasurementNoneDefined,
                                         style: titleStyle.copyWith(
                                           decoration: TextDecoration.underline,
-                                          color: AppColors.tagColor,
+                                          color: getIt<ThemeService>()
+                                              .colors
+                                              .tagColor,
                                         ),
                                         wrapWords: false,
                                         maxLines: 3,
@@ -197,7 +199,9 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       child: Text(
                                         selected?.displayName ?? '',
                                         style: TextStyle(
-                                          color: AppColors.entryTextColor,
+                                          color: getIt<ThemeService>()
+                                              .colors
+                                              .entryTextColor,
                                           fontFamily: 'Oswald',
                                           fontSize: 24,
                                         ),
@@ -205,7 +209,9 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.settings_outlined),
-                                      color: AppColors.entryTextColor,
+                                      color: getIt<ThemeService>()
+                                          .colors
+                                          .entryTextColor,
                                       onPressed: () {
                                         getIt<AppRouter>().pushNamed(
                                           '/settings/measurables/${selected?.id}',
@@ -218,7 +224,9 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                   Text(
                                     selected!.description,
                                     style: TextStyle(
-                                      color: AppColors.entryTextColor,
+                                      color: getIt<ThemeService>()
+                                          .colors
+                                          .entryTextColor,
                                       fontFamily: 'Oswald',
                                       fontWeight: FontWeight.w300,
                                       fontSize: 14,
@@ -226,7 +234,9 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                   ),
                                 if (selected == null)
                                   FormBuilderDropdown<MeasurableDataType>(
-                                    dropdownColor: AppColors.headerBgColor,
+                                    dropdownColor: getIt<ThemeService>()
+                                        .colors
+                                        .headerBgColor,
                                     name: 'type',
                                     decoration: InputDecoration(
                                       labelText: 'Type',
@@ -271,8 +281,12 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     ),
                                     initialValue: DateTime.now(),
                                     theme: DatePickerTheme(
-                                      headerColor: AppColors.headerBgColor,
-                                      backgroundColor: AppColors.bodyBgColor,
+                                      headerColor: getIt<ThemeService>()
+                                          .colors
+                                          .headerBgColor,
+                                      backgroundColor: getIt<ThemeService>()
+                                          .colors
+                                          .bodyBgColor,
                                       itemStyle: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,

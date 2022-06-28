@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -57,7 +57,7 @@ class _VersionAppBarState extends State<VersionAppBar> {
           return const SizedBox.shrink();
         } else {
           return AppBar(
-            backgroundColor: AppColors.headerBgColor,
+            backgroundColor: getIt<ThemeService>().colors.headerBgColor,
             title: Column(
               children: [
                 Text(
@@ -67,7 +67,7 @@ class _VersionAppBarState extends State<VersionAppBar> {
                 Text(
                   'v$version ($buildNumber), n = ${snapshot.data}',
                   style: TextStyle(
-                    color: AppColors.headerFontColor2,
+                    color: getIt<ThemeService>().colors.headerFontColor,
                     fontFamily: 'Oswald',
                     fontSize: 10,
                     fontWeight: FontWeight.w300,

@@ -3,7 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/audio/vu_meter.dart';
 
 const double iconSize = 64;
@@ -39,8 +40,8 @@ class AudioRecorderWidget extends StatelessWidget {
                   iconSize: iconSize,
                   tooltip: 'Record',
                   color: state.status == AudioRecorderStatus.recording
-                      ? AppColors.activeAudioControl
-                      : AppColors.inactiveAudioControl,
+                      ? getIt<ThemeService>().colors.activeAudioControl
+                      : getIt<ThemeService>().colors.inactiveAudioControl,
                   onPressed: () => context
                       .read<AudioRecorderCubit>()
                       .record(linkedId: linkedId),
@@ -49,7 +50,7 @@ class AudioRecorderWidget extends StatelessWidget {
                   icon: const Icon(Icons.stop),
                   iconSize: iconSize,
                   tooltip: 'Stop',
-                  color: AppColors.inactiveAudioControl,
+                  color: getIt<ThemeService>().colors.inactiveAudioControl,
                   onPressed: () {
                     context.read<AudioRecorderCubit>().stop();
                   },
@@ -61,7 +62,7 @@ class AudioRecorderWidget extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'ShareTechMono',
                       fontSize: 32,
-                      color: AppColors.inactiveAudioControl,
+                      color: getIt<ThemeService>().colors.inactiveAudioControl,
                     ),
                   ),
                 ),
@@ -75,7 +76,7 @@ class AudioRecorderWidget extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: 'ShareTechMono',
                   fontSize: 20,
-                  color: AppColors.inactiveAudioControl,
+                  color: getIt<ThemeService>().colors.inactiveAudioControl,
                 ),
               ),
             ),

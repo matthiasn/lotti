@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 
 class TestDetectingAutoLeadingButton extends StatelessWidget {
   const TestDetectingAutoLeadingButton({
@@ -19,7 +20,7 @@ class TestDetectingAutoLeadingButton extends StatelessWidget {
     }
 
     return AutoLeadingButton(
-      color: color ?? AppColors.entryTextColor,
+      color: color ?? getIt<ThemeService>().colors.entryTextColor,
     );
   }
 }

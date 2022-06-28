@@ -5,7 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -45,7 +45,9 @@ class DurationWidget extends StatelessWidget {
           isRecording = true;
         }
 
-        final labelColor = isRecording ? AppColors.timeRecording : style?.color;
+        final labelColor = isRecording
+            ? getIt<ThemeService>().colors.timeRecording
+            : style?.color;
 
         return Visibility(
           visible: entryDuration(displayed).inMilliseconds > 0 ||

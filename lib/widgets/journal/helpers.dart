@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 
 class EntryTextWidget extends StatelessWidget {
   const EntryTextWidget(
@@ -22,7 +23,7 @@ class EntryTextWidget extends StatelessWidget {
         maxLines: maxLines,
         style: TextStyle(
           fontFamily: 'ShareTechMono',
-          color: AppColors.entryTextColor,
+          color: getIt<ThemeService>().colors.entryTextColor,
           fontWeight: FontWeight.w300,
           fontSize: 14,
         ),

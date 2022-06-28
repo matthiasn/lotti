@@ -1,7 +1,8 @@
 import 'package:auto_route/annotations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/audio/audio_recorder.dart';
 
@@ -33,7 +34,7 @@ class _RecordAudioPageState extends State<RecordAudioPage> {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.addAudioTitle),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

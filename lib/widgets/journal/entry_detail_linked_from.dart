@@ -3,7 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 
 class LinkedFromEntriesWidget extends StatefulWidget {
@@ -52,7 +52,7 @@ class _LinkedFromEntriesWidgetState extends State<LinkedFromEntriesWidget> {
                 Text(
                   localizations.journalLinkedFromLabel,
                   style: TextStyle(
-                    color: AppColors.entryTextColor,
+                    color: getIt<ThemeService>().colors.entryTextColor,
                     fontFamily: 'Oswald',
                   ),
                 ),

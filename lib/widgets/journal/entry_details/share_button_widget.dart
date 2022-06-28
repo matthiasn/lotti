@@ -3,7 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -59,7 +59,7 @@ class ShareButtonWidget extends StatelessWidget {
             top: 8,
             bottom: 8,
           ),
-          color: AppColors.entryTextColor,
+          color: getIt<ThemeService>().colors.entryTextColor,
           onPressed: onPressed,
         );
       },

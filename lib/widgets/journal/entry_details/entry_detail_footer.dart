@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';

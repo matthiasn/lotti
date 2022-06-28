@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
 
@@ -31,7 +31,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       FloatingActionButton(
         heroTag: 'tag',
         key: const Key('add_tag_action'),
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: getIt<ThemeService>().colors.entryBgColor,
         onPressed: () {
           getIt<AppRouter>().push(
             CreateTagRoute(
@@ -46,7 +46,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       ),
       FloatingActionButton(
         heroTag: 'person',
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: getIt<ThemeService>().colors.entryBgColor,
         onPressed: () {
           getIt<AppRouter>().push(
             CreateTagRoute(
@@ -61,7 +61,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       ),
       FloatingActionButton(
         heroTag: 'story',
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: getIt<ThemeService>().colors.entryBgColor,
         onPressed: () {
           getIt<AppRouter>().push(
             CreateTagRoute(
@@ -80,7 +80,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       radius: widget.radius,
       useOpacity: true,
       items: items,
-      color: AppColors.entryBgColor,
+      color: getIt<ThemeService>().colors.entryBgColor,
       icon: Icons.add,
       duration: const Duration(milliseconds: 500),
       curveAnim: Curves.ease,

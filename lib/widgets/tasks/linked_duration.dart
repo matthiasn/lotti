@@ -4,7 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class LinkedDuration extends StatelessWidget {
@@ -62,7 +62,7 @@ class LinkedDuration extends StatelessWidget {
                         onSeek: (newPosition) {},
                         timeLabelTextStyle: TextStyle(
                           fontFamily: 'Oswald',
-                          color: AppColors.entryTextColor,
+                          color: getIt<ThemeService>().colors.entryTextColor,
                           fontWeight: FontWeight.normal,
                           fontSize: 14,
                         ),

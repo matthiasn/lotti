@@ -3,7 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/editor/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor/editor_toolbar.dart';
 
@@ -63,7 +64,7 @@ class EditorWidget extends StatelessWidget {
         saveViaKeyboard(event);
       },
       child: ColoredBox(
-        color: AppColors.editorBgColor,
+        color: getIt<ThemeService>().colors.editorBgColor,
         child: ConstrainedBox(
           constraints: BoxConstraints(
             maxHeight: maxHeight,
@@ -93,8 +94,9 @@ class EditorWidget extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 8, bottom: 16),
                     keyboardAppearance: Brightness.dark,
                     customStyles: customEditorStyles(
-                      textColor: AppColors.editorTextColor,
-                      codeBlockBackground: AppColors.codeBlockBackground,
+                      textColor: getIt<ThemeService>().colors.editorTextColor,
+                      codeBlockBackground:
+                          getIt<ThemeService>().colors.codeBlockBackground,
                     ),
                   ),
                 ),

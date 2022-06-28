@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_fadein/flutter_fadein.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 
 class Button extends StatelessWidget {
   const Button(

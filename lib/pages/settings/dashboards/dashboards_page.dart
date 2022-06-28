@@ -4,7 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/settings/dashboards/dashboard_definition_card.dart';
@@ -41,7 +41,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: AppColors.appBarFgColor,
+      backgroundColor: getIt<ThemeService>().colors.appBarFgColor,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: 'Lato',
@@ -77,10 +77,10 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsDashboardsTitle),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: getIt<ThemeService>().colors.entryBgColor,
         onPressed: () {
           getIt<AppRouter>().push(const CreateDashboardRoute());
         },

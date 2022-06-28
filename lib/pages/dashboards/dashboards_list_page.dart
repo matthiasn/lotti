@@ -3,7 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/dashboards_app_bar.dart';
 import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
@@ -28,7 +28,7 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       appBar: const DashboardsAppBar(),
       body: StreamBuilder<List<DashboardDefinition>>(
         stream: stream,
@@ -75,7 +75,7 @@ class DashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.entryCardColor,
+      color: getIt<ThemeService>().colors.entryCardColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -86,7 +86,7 @@ class DashboardCard extends StatelessWidget {
         title: Text(
           dashboard.name,
           style: TextStyle(
-            color: AppColors.entryTextColor,
+            color: getIt<ThemeService>().colors.entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 24,
             fontWeight: FontWeight.w300,
@@ -95,7 +95,7 @@ class DashboardCard extends StatelessWidget {
         subtitle: Text(
           dashboard.description,
           style: TextStyle(
-            color: AppColors.entryTextColor,
+            color: getIt<ThemeService>().colors.entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 16,
             fontWeight: FontWeight.w300,

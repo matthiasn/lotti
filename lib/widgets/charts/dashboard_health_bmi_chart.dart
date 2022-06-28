@@ -4,7 +4,6 @@ import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health/health.dart';
-import 'package:hexcolor/hexcolor.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/charts/health_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -12,11 +11,12 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_data.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/misc/color_utils.dart';
 
 class DashboardHealthBmiChart extends StatefulWidget {
   const DashboardHealthBmiChart({
@@ -226,7 +226,8 @@ class BmiRangeLegend extends StatelessWidget {
                             child: Container(
                               width: 12,
                               height: 12,
-                              color: HexColor(range.hexColor).withOpacity(0.7),
+                              color: HexColor.fromHex(range.hexColor)
+                                  .withOpacity(0.7),
                             ),
                           ),
                           const SizedBox(

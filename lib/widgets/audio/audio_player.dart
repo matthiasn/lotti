@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 
 class AudioPlayerWidget extends StatelessWidget {
   const AudioPlayerWidget({super.key});
@@ -24,36 +25,36 @@ class AudioPlayerWidget extends StatelessWidget {
                     iconSize: 32,
                     tooltip: 'Play',
                     color: (state.status == AudioPlayerStatus.playing)
-                        ? AppColors.activeAudioControl
-                        : AppColors.inactiveAudioControl,
+                        ? getIt<ThemeService>().colors.activeAudioControl
+                        : getIt<ThemeService>().colors.inactiveAudioControl,
                     onPressed: () => context.read<AudioPlayerCubit>().play(),
                   ),
                   IconButton(
                     icon: const Icon(Icons.fast_rewind),
                     iconSize: 32,
                     tooltip: 'Rewind 15s',
-                    color: AppColors.inactiveAudioControl,
+                    color: getIt<ThemeService>().colors.inactiveAudioControl,
                     onPressed: () => context.read<AudioPlayerCubit>().rew(),
                   ),
                   IconButton(
                     icon: const Icon(Icons.pause),
                     iconSize: 32,
                     tooltip: 'Pause',
-                    color: AppColors.inactiveAudioControl,
+                    color: getIt<ThemeService>().colors.inactiveAudioControl,
                     onPressed: () => context.read<AudioPlayerCubit>().pause(),
                   ),
                   IconButton(
                     icon: const Icon(Icons.fast_forward),
                     iconSize: 32,
                     tooltip: 'Fast forward 15s',
-                    color: AppColors.inactiveAudioControl,
+                    color: getIt<ThemeService>().colors.inactiveAudioControl,
                     onPressed: () => context.read<AudioPlayerCubit>().fwd(),
                   ),
                   IconButton(
                     icon: const Icon(Icons.stop),
                     iconSize: 32,
                     tooltip: 'Stop',
-                    color: AppColors.inactiveAudioControl,
+                    color: getIt<ThemeService>().colors.inactiveAudioControl,
                     onPressed: () =>
                         context.read<AudioPlayerCubit>().stopPlay(),
                   ),
@@ -64,8 +65,8 @@ class AudioPlayerWidget extends StatelessWidget {
                         fontFamily: 'Oswald',
                         fontWeight: FontWeight.bold,
                         color: (state.speed == 1)
-                            ? AppColors.activeAudioControl
-                            : AppColors.inactiveAudioControl,
+                            ? getIt<ThemeService>().colors.activeAudioControl
+                            : getIt<ThemeService>().colors.inactiveAudioControl,
                       ),
                     ),
                     tooltip: 'Normal speed',
@@ -79,8 +80,8 @@ class AudioPlayerWidget extends StatelessWidget {
                         fontFamily: 'Oswald',
                         fontWeight: FontWeight.bold,
                         color: (state.speed == 1.5)
-                            ? AppColors.activeAudioControl
-                            : AppColors.inactiveAudioControl,
+                            ? getIt<ThemeService>().colors.activeAudioControl
+                            : getIt<ThemeService>().colors.inactiveAudioControl,
                       ),
                     ),
                     tooltip: '1.5x speed',

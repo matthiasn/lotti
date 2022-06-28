@@ -4,7 +4,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
 
 class TagsSearchWidget extends StatelessWidget {
@@ -53,7 +53,7 @@ class TagsSearchWidget extends StatelessWidget {
               );
             },
             suggestionsBoxDecoration: SuggestionsBoxDecoration(
-              color: AppColors.headerBgColor,
+              color: getIt<ThemeService>().colors.headerBgColor,
               borderRadius: BorderRadius.circular(8),
             ),
             itemBuilder: (context, TagEntity tagEntity) {

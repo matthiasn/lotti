@@ -8,7 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/sync/vector_clock.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -45,15 +45,15 @@ class _ConflictsPageState extends State<ConflictsPage> {
         final items = snapshot.data ?? [];
 
         return Scaffold(
-          backgroundColor: AppColors.bodyBgColor,
+          backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
           appBar: TitleAppBar(title: localizations.settingsConflictsTitle),
           body: SingleChildScrollView(
             child: Column(
               children: [
                 CupertinoSegmentedControl(
-                  selectedColor: AppColors.entryBgColor,
-                  unselectedColor: AppColors.headerBgColor,
-                  borderColor: AppColors.entryBgColor,
+                  selectedColor: getIt<ThemeService>().colors.entryBgColor,
+                  unselectedColor: getIt<ThemeService>().colors.headerBgColor,
+                  borderColor: getIt<ThemeService>().colors.entryBgColor,
                   groupValue: _selectedValue,
                   onValueChanged: (String value) {
                     setState(() {
@@ -138,7 +138,7 @@ class ConflictCard extends StatelessWidget {
           title: Text(
             '${df.format(conflict.createdAt)} - ${statusString(conflict)}',
             style: TextStyle(
-              color: AppColors.entryTextColor,
+              color: getIt<ThemeService>().colors.entryTextColor,
               fontFamily: 'Oswald',
               fontSize: 16,
             ),
@@ -146,7 +146,7 @@ class ConflictCard extends StatelessWidget {
           subtitle: Text(
             '${fromSerialized(conflict.serialized).meta.vectorClock}',
             style: TextStyle(
-              color: AppColors.entryTextColor,
+              color: getIt<ThemeService>().colors.entryTextColor,
               fontFamily: 'Oswald',
               fontWeight: FontWeight.w200,
               fontSize: 16,
@@ -200,13 +200,13 @@ class DetailRoute extends StatelessWidget {
         title: Text(
           df.format(local.meta.dateFrom),
           style: TextStyle(
-            color: AppColors.entryBgColor,
+            color: getIt<ThemeService>().colors.entryBgColor,
             fontFamily: 'Oswald',
           ),
         ),
-        backgroundColor: AppColors.headerBgColor,
+        backgroundColor: getIt<ThemeService>().colors.headerBgColor,
       ),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       body: SingleChildScrollView(
         child: Container(
           padding: EdgeInsets.only(

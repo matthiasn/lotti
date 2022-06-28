@@ -4,8 +4,9 @@ import 'package:getwidget/components/list_tile/gf_list_tile.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
@@ -41,7 +42,7 @@ class JournalCardTitle extends StatelessWidget {
               Text(
                 df.format(item.meta.dateFrom),
                 style: TextStyle(
-                  color: AppColors.entryTextColor,
+                  color: getIt<ThemeService>().colors.entryTextColor,
                   fontSize: 14,
                   fontWeight: FontWeight.w300,
                   fontFamily: 'Oswald',
@@ -54,7 +55,7 @@ class JournalCardTitle extends StatelessWidget {
                     visible: fromNullableBool(item.meta.private),
                     child: Icon(
                       MdiIcons.security,
-                      color: AppColors.error,
+                      color: getIt<ThemeService>().colors.error,
                       size: iconSize,
                     ),
                   ),
@@ -64,7 +65,7 @@ class JournalCardTitle extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.star,
-                        color: AppColors.starredGold,
+                        color: getIt<ThemeService>().colors.starredGold,
                         size: iconSize,
                       ),
                     ),
@@ -75,7 +76,7 @@ class JournalCardTitle extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.flag,
-                        color: AppColors.error,
+                        color: getIt<ThemeService>().colors.error,
                         size: iconSize,
                       ),
                     ),
@@ -110,7 +111,7 @@ class JournalCardTitle extends StatelessWidget {
                       data.title,
                       style: TextStyle(
                         fontFamily: 'Oswald',
-                        color: AppColors.entryTextColor,
+                        color: getIt<ThemeService>().colors.entryTextColor,
                         fontWeight: FontWeight.normal,
                         fontSize: 24,
                       ),
@@ -130,7 +131,7 @@ class JournalCardTitle extends StatelessWidget {
             orElse: () => DurationWidget(
               item: item,
               style: TextStyle(
-                color: AppColors.entryTextColor,
+                color: getIt<ThemeService>().colors.entryTextColor,
                 fontSize: 14,
                 fontWeight: FontWeight.w300,
                 fontFamily: 'Oswald',
@@ -156,7 +157,7 @@ class JournalCard extends StatelessWidget {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       builder: (BuildContext context, AudioPlayerState state) {
         return Card(
-          color: AppColors.entryCardColor,
+          color: getIt<ThemeService>().colors.entryCardColor,
           elevation: 8,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -204,7 +205,7 @@ class LeadingIcon extends StatelessWidget {
     return Icon(
       iconData,
       size: 32,
-      color: AppColors.entryTextColor,
+      color: getIt<ThemeService>().colors.entryTextColor,
     );
   }
 }
@@ -222,7 +223,7 @@ class JournalImageCard extends StatelessWidget {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       builder: (BuildContext context, AudioPlayerState state) {
         return Card(
-          color: AppColors.entryCardColor,
+          color: getIt<ThemeService>().colors.entryCardColor,
           elevation: 8,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),

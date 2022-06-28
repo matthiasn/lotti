@@ -5,6 +5,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_nav.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_config.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_intro_1.dart';
@@ -12,7 +13,7 @@ import 'package:lotti/pages/settings/sync/sync_assistant_slide_intro_2.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_intro_3.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_qr_code.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_success.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class SyncAssistantPage extends StatefulWidget {
@@ -40,7 +41,7 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsSyncCfgTitle),
       body: Center(
         child: Stack(
@@ -57,7 +58,7 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
               child: Container(
                 width: double.infinity,
                 height: 0.5,
-                color: AppColors.entryTextColor,
+                color: getIt<ThemeService>().colors.entryTextColor,
               ),
             ),
             SyncNavPrevious(
@@ -136,9 +137,9 @@ class _SlidingTutorial extends State<SlidingTutorial> {
       pageController: _pageController,
       pageCount: widget.pageCount,
       colors: [
-        AppColors.bodyBgColor,
-        AppColors.headerBgColor,
-        AppColors.bodyBgColor,
+        getIt<ThemeService>().colors.bodyBgColor,
+        getIt<ThemeService>().colors.headerBgColor,
+        getIt<ThemeService>().colors.bodyBgColor,
       ],
       child: Stack(
         children: [

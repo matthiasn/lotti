@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/sync/imap_config_status.dart';
 
 import '../../widget_test_utils.dart';
@@ -100,8 +101,9 @@ void main() {
       final labelFinder = find.text('Account is successfully configured.');
       expect(labelFinder, findsOneWidget);
 
-      final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.outboxSuccessColor);
+      final successIndicatorFinder = find.byContainerColor(
+        color: getIt<ThemeService>().colors.outboxSuccessColor,
+      );
 
       expect(successIndicatorFinder, findsOneWidget);
     });
@@ -128,8 +130,9 @@ void main() {
       final labelFinder = find.text('Account is valid.');
       expect(labelFinder, findsOneWidget);
 
-      final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.outboxSuccessColor);
+      final successIndicatorFinder = find.byContainerColor(
+        color: getIt<ThemeService>().colors.outboxSuccessColor,
+      );
 
       expect(successIndicatorFinder, findsOneWidget);
     });
@@ -156,8 +159,9 @@ void main() {
       final labelFinder = find.text('IMAP configuration saved.');
       expect(labelFinder, findsOneWidget);
 
-      final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.outboxSuccessColor);
+      final successIndicatorFinder = find.byContainerColor(
+        color: getIt<ThemeService>().colors.outboxSuccessColor,
+      );
 
       expect(successIndicatorFinder, findsOneWidget);
     });
@@ -187,7 +191,7 @@ void main() {
       expect(labelFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.error);
+          find.byContainerColor(color: getIt<ThemeService>().colors.error);
 
       expect(successIndicatorFinder, findsOneWidget);
     });
@@ -214,8 +218,9 @@ void main() {
       final labelFinder = find.text('Testing IMAP connection...');
       expect(labelFinder, findsOneWidget);
 
-      final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.outboxPendingColor);
+      final successIndicatorFinder = find.byContainerColor(
+        color: getIt<ThemeService>().colors.outboxPendingColor,
+      );
 
       expect(successIndicatorFinder, findsOneWidget);
     });

@@ -3,7 +3,8 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 
 NumberFormat nf = NumberFormat('###.##');
 
@@ -66,7 +67,7 @@ class InfoText extends StatelessWidget {
       style: TextStyle(
         fontFamily: 'ShareTechMono',
         fontSize: 14,
-        color: AppColors.entryTextColor,
+        color: getIt<ThemeService>().colors.entryTextColor,
       ),
     );
   }

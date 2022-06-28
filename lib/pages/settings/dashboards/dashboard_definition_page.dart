@@ -18,7 +18,7 @@ import 'package:lotti/pages/settings/dashboards/dashboard_item_card.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
@@ -256,7 +256,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
         }
 
         return Scaffold(
-          backgroundColor: AppColors.bodyBgColor,
+          backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
           appBar: TitleAppBar(
             title: localizations.settingsDashboardsTitle,
             actions: [
@@ -282,7 +282,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      color: AppColors.headerBgColor,
+                      color: getIt<ThemeService>().colors.headerBgColor,
                       padding: const EdgeInsets.all(24),
                       child: Column(
                         children: [
@@ -319,7 +319,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     localizations.dashboardPrivateLabel,
                                     style: formLabelStyle,
                                   ),
-                                  activeColor: AppColors.private,
+                                  activeColor:
+                                      getIt<ThemeService>().colors.private,
                                 ),
                                 FormBuilderSwitch(
                                   name: 'active',
@@ -328,7 +329,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     localizations.dashboardActiveLabel,
                                     style: formLabelStyle,
                                   ),
-                                  activeColor: AppColors.starredGold,
+                                  activeColor:
+                                      getIt<ThemeService>().colors.starredGold,
                                 ),
                                 FormBuilderCupertinoDateTimePicker(
                                   name: 'review_at',
@@ -348,8 +350,12 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     labelStyle: labelStyle,
                                   ),
                                   theme: DatePickerTheme(
-                                    headerColor: AppColors.headerBgColor,
-                                    backgroundColor: AppColors.bodyBgColor,
+                                    headerColor: getIt<ThemeService>()
+                                        .colors
+                                        .headerBgColor,
+                                    backgroundColor: getIt<ThemeService>()
+                                        .colors
+                                        .bodyBgColor,
                                     itemStyle: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -462,7 +468,9 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       icon: const Icon(Icons.copy),
                                       iconSize: settingsIconSize,
                                       tooltip: localizations.dashboardCopyHint,
-                                      color: AppColors.appBarFgColor,
+                                      color: getIt<ThemeService>()
+                                          .colors
+                                          .appBarFgColor,
                                       onPressed: copyDashboard,
                                     ),
                                     IconButton(
@@ -471,7 +479,9 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       iconSize: settingsIconSize,
                                       tooltip:
                                           localizations.dashboardDeleteHint,
-                                      color: AppColors.appBarFgColor,
+                                      color: getIt<ThemeService>()
+                                          .colors
+                                          .appBarFgColor,
                                       onPressed: () async {
                                         const deleteKey = 'deleteKey';
                                         final result =

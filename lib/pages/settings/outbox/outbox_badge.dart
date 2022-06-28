@@ -4,7 +4,7 @@ import 'package:badges/badges.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 
 class OutboxBadgeIcon extends StatelessWidget {
   OutboxBadgeIcon({

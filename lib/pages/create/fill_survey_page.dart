@@ -5,8 +5,9 @@ import 'package:auto_route/annotations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/surveys/run_surveys.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:research_package/research_package.dart';
@@ -99,7 +100,7 @@ class FillSurveyPage extends StatelessWidget {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.addSurveyTitle),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       body: Center(
         child: SingleChildScrollView(
           child: Column(

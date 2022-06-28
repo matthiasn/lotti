@@ -9,7 +9,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -85,7 +85,7 @@ class TagAddIconWidget extends StatelessWidget {
                 clipBehavior: Clip.antiAliasWithSaveLayer,
                 builder: (BuildContext context) {
                   return ColoredBox(
-                    color: AppColors.entryCardColor,
+                    color: getIt<ThemeService>().colors.entryCardColor,
                     child: Padding(
                       padding: const EdgeInsets.only(
                         left: 16,
@@ -123,7 +123,9 @@ class TagAddIconWidget extends StatelessWidget {
                                     style: DefaultTextStyle.of(context)
                                         .style
                                         .copyWith(
-                                          color: AppColors.entryTextColor,
+                                          color: getIt<ThemeService>()
+                                              .colors
+                                              .entryTextColor,
                                           fontFamily: 'Oswald',
                                           fontSize: 16,
                                         ),
@@ -141,7 +143,9 @@ class TagAddIconWidget extends StatelessWidget {
                                   },
                                   suggestionsBoxDecoration:
                                       SuggestionsBoxDecoration(
-                                    color: AppColors.entryCardColor,
+                                    color: getIt<ThemeService>()
+                                        .colors
+                                        .entryCardColor,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   itemBuilder: (context, TagEntity tagEntity) {
@@ -174,7 +178,9 @@ class TagAddIconWidget extends StatelessWidget {
                                 ),
                                 icon: Icon(
                                   MdiIcons.contentCopy,
-                                  color: AppColors.entryTextColor,
+                                  color: getIt<ThemeService>()
+                                      .colors
+                                      .entryTextColor,
                                 ),
                                 tooltip: localizations.journalTagsCopyHint,
                               ),
@@ -187,7 +193,9 @@ class TagAddIconWidget extends StatelessWidget {
                                 ),
                                 icon: Icon(
                                   MdiIcons.contentPaste,
-                                  color: AppColors.entryTextColor,
+                                  color: getIt<ThemeService>()
+                                      .colors
+                                      .entryTextColor,
                                 ),
                                 tooltip: localizations.journalTagsPasteHint,
                               ),
@@ -206,7 +214,7 @@ class TagAddIconWidget extends StatelessWidget {
               icon: Icon(
                 MdiIcons.tagPlusOutline,
                 size: 24,
-                color: AppColors.entryTextColor,
+                color: getIt<ThemeService>().colors.entryTextColor,
               ),
               tooltip: localizations.journalTagPlusHint,
             );
@@ -324,7 +332,7 @@ class TagWidget extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Oswald',
-                    color: AppColors.tagTextColor,
+                    color: getIt<ThemeService>().colors.tagTextColor,
                   ),
                 ),
               ),
@@ -335,7 +343,7 @@ class TagWidget extends StatelessWidget {
                 icon: Icon(
                   MdiIcons.close,
                   size: 16,
-                  color: AppColors.tagTextColor,
+                  color: getIt<ThemeService>().colors.tagTextColor,
                 ),
                 tooltip: localizations.journalTagsRemoveHint,
               ),

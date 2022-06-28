@@ -11,7 +11,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
@@ -131,7 +131,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: ColoredBox(
-              color: AppColors.entryCardColor,
+              color: getIt<ThemeService>().colors.entryCardColor,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

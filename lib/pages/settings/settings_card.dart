@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 
 class SettingsCard extends StatelessWidget {
   const SettingsCard({
@@ -16,7 +17,7 @@ class SettingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.entryCardColor,
+      color: getIt<ThemeService>().colors.entryCardColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -27,7 +28,7 @@ class SettingsCard extends StatelessWidget {
         title: Text(
           title,
           style: TextStyle(
-            color: AppColors.entryTextColor,
+            color: getIt<ThemeService>().colors.entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 22,
             fontWeight: FontWeight.w300,

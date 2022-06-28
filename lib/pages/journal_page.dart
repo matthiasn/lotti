@@ -10,7 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
@@ -150,7 +150,7 @@ class _JournalPageState extends State<JournalPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: AppColors.appBarFgColor,
+      backgroundColor: getIt<ThemeService>().colors.appBarFgColor,
       queryStyle: const TextStyle(
         fontFamily: 'Lato',
         fontSize: 24,
@@ -257,11 +257,14 @@ class _JournalPageState extends State<JournalPage> {
                         children: [
                           Text(
                             localizations.journalPrivateTooltip,
-                            style: TextStyle(color: AppColors.entryTextColor),
+                            style: TextStyle(
+                              color:
+                                  getIt<ThemeService>().colors.entryTextColor,
+                            ),
                           ),
                           CupertinoSwitch(
                             value: privateEntriesOnly,
-                            activeColor: AppColors.private,
+                            activeColor: getIt<ThemeService>().colors.private,
                             onChanged: (bool value) {
                               setState(() {
                                 privateEntriesOnly = value;
@@ -274,11 +277,13 @@ class _JournalPageState extends State<JournalPage> {
                     ),
                     Text(
                       localizations.journalFavoriteTooltip,
-                      style: TextStyle(color: AppColors.entryTextColor),
+                      style: TextStyle(
+                        color: getIt<ThemeService>().colors.entryTextColor,
+                      ),
                     ),
                     CupertinoSwitch(
                       value: starredEntriesOnly,
-                      activeColor: AppColors.starredGold,
+                      activeColor: getIt<ThemeService>().colors.starredGold,
                       onChanged: (bool value) {
                         setState(() {
                           starredEntriesOnly = value;
@@ -288,11 +293,13 @@ class _JournalPageState extends State<JournalPage> {
                     ),
                     Text(
                       localizations.journalFlaggedTooltip,
-                      style: TextStyle(color: AppColors.entryTextColor),
+                      style: TextStyle(
+                        color: getIt<ThemeService>().colors.entryTextColor,
+                      ),
                     ),
                     CupertinoSwitch(
                       value: flaggedEntriesOnly,
-                      activeColor: AppColors.starredGold,
+                      activeColor: getIt<ThemeService>().colors.starredGold,
                       onChanged: (bool value) {
                         setState(() {
                           flaggedEntriesOnly = value;
@@ -358,7 +365,7 @@ class _JournalPageState extends State<JournalPage> {
           ),
         ).asGlass(
           clipBorderRadius: BorderRadius.circular(8),
-          tintColor: AppColors.searchBgColor,
+          tintColor: getIt<ThemeService>().colors.searchBgColor,
         );
       },
     );
@@ -399,7 +406,8 @@ class _JournalPageState extends State<JournalPage> {
                   return Stack(
                     children: [
                       Scaffold(
-                        backgroundColor: AppColors.bodyBgColor,
+                        backgroundColor:
+                            getIt<ThemeService>().colors.bodyBgColor,
                         body: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 8),
                           child: ListView(
@@ -447,7 +455,9 @@ class _JournalPageState extends State<JournalPage> {
                             },
                             icon: Icon(
                               Icons.close,
-                              color: AppColors.bottomNavIconUnselected,
+                              color: getIt<ThemeService>()
+                                  .colors
+                                  .bottomNavIconUnselected,
                             ),
                           ),
                         ),

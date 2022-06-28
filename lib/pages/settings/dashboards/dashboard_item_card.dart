@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -55,7 +55,7 @@ class DashboardItemCard extends StatelessWidget {
     );
 
     return Card(
-      color: AppColors.headerBgColor,
+      color: getIt<ThemeService>().colors.headerBgColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -92,33 +92,33 @@ class DashboardItemCard extends StatelessWidget {
           measurement: (_) => Icon(
             Icons.insights,
             size: 32,
-            color: AppColors.entryTextColor,
+            color: getIt<ThemeService>().colors.entryTextColor,
           ),
           healthChart: (_) => Icon(
             MdiIcons.stethoscope,
             size: 32,
-            color: AppColors.entryTextColor,
+            color: getIt<ThemeService>().colors.entryTextColor,
           ),
           workoutChart: (_) => Icon(
             Icons.sports_gymnastics,
             size: 32,
-            color: AppColors.entryTextColor,
+            color: getIt<ThemeService>().colors.entryTextColor,
           ),
           surveyChart: (_) => Icon(
             MdiIcons.clipboardOutline,
             size: 32,
-            color: AppColors.entryTextColor,
+            color: getIt<ThemeService>().colors.entryTextColor,
           ),
           storyTimeChart: (_) => Icon(
             MdiIcons.bookOutline,
             size: 32,
-            color: AppColors.entryTextColor,
+            color: getIt<ThemeService>().colors.entryTextColor,
           ),
         ),
         title: Text(
           itemName,
           style: TextStyle(
-            color: AppColors.entryTextColor,
+            color: getIt<ThemeService>().colors.entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 20,
           ),

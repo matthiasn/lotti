@@ -3,7 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 
 class DashboardAppBar extends StatefulWidget with PreferredSizeWidget {
@@ -48,7 +48,7 @@ class _DashboardAppBarState extends State<DashboardAppBar> {
         }
 
         return AppBar(
-          backgroundColor: AppColors.headerBgColor,
+          backgroundColor: getIt<ThemeService>().colors.headerBgColor,
           title: Text(
             dashboard == null
                 ? localizations.dashboardNotFound

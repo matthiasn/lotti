@@ -4,7 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 
 class ImapConfigActions extends StatelessWidget {
@@ -31,31 +31,31 @@ class ImapConfigActions extends StatelessWidget {
               key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
-              primaryColor: AppColors.error,
+              primaryColor: getIt<ThemeService>().colors.error,
             ),
             imapSaved: (_) => FadeInButton(
               key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
-              primaryColor: AppColors.error,
+              primaryColor: getIt<ThemeService>().colors.error,
             ),
             imapValid: (_) => FadeInButton(
               key: const Key('settingsSyncSaveButton'),
               localizations.settingsSyncSaveButton,
-              textColor: AppColors.headerBgColor,
+              textColor: getIt<ThemeService>().colors.headerBgColor,
               onPressed: syncConfigCubit.saveImapConfig,
             ),
             imapTesting: (_) => FadeInButton(
               key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
-              primaryColor: AppColors.error,
+              primaryColor: getIt<ThemeService>().colors.error,
             ),
             imapInvalid: (_, String errorMessage) => FadeInButton(
               key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
-              primaryColor: AppColors.error,
+              primaryColor: getIt<ThemeService>().colors.error,
             ),
             orElse: () => const SizedBox.shrink(),
           ),

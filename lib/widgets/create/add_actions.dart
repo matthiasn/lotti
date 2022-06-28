@@ -12,7 +12,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
@@ -60,7 +60,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'screenshot',
           tooltip: localizations.addActionAddScreenshot,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: getIt<ThemeService>().colors.actionColor,
           onPressed: () async {
             rebuild();
 
@@ -86,7 +86,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       ..add(
         FloatingActionButton(
           heroTag: 'measurement',
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: getIt<ThemeService>().colors.actionColor,
           tooltip: localizations.addActionAddMeasurable,
           onPressed: () {
             rebuild();
@@ -108,7 +108,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'survey',
           tooltip: localizations.addActionAddSurvey,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: getIt<ThemeService>().colors.actionColor,
           onPressed: () {
             rebuild();
 
@@ -125,7 +125,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'photo',
           tooltip: localizations.addActionAddPhotos,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: getIt<ThemeService>().colors.actionColor,
           onPressed: () {
             rebuild();
 
@@ -144,7 +144,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'text',
           tooltip: localizations.addActionAddText,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: getIt<ThemeService>().colors.actionColor,
           onPressed: () {
             rebuild();
 
@@ -171,7 +171,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'timer',
           tooltip: localizations.addActionAddTimeRecording,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: getIt<ThemeService>().colors.actionColor,
           onPressed: () async {
             rebuild();
 
@@ -202,7 +202,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'audio',
           tooltip: localizations.addActionAddAudioRecording,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: getIt<ThemeService>().colors.actionColor,
           onPressed: () {
             rebuild();
 
@@ -225,7 +225,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       FloatingActionButton(
         heroTag: 'task',
         tooltip: localizations.addActionAddTask,
-        backgroundColor: AppColors.actionColor,
+        backgroundColor: getIt<ThemeService>().colors.actionColor,
         onPressed: () {
           rebuild();
 
@@ -243,7 +243,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       radius: items.length * 32,
       useOpacity: true,
       items: items,
-      color: AppColors.actionColor,
+      color: getIt<ThemeService>().colors.actionColor,
       icon: Icons.add,
       key: Key(keyDateTime.toString()),
       duration: const Duration(milliseconds: 500),

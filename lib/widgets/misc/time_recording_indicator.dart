@@ -3,7 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -42,7 +42,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                 topRight: Radius.circular(8),
               ),
               child: Container(
-                color: AppColors.timeRecordingBg,
+                color: getIt<ThemeService>().colors.timeRecordingBg,
                 width: 110,
                 height: 32,
                 child: Row(
@@ -50,7 +50,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                   children: [
                     Icon(
                       MdiIcons.timerOutline,
-                      color: AppColors.editorTextColor,
+                      color: getIt<ThemeService>().colors.editorTextColor,
                       size: 16,
                     ),
                     Padding(
@@ -60,7 +60,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: 'ShareTechMono',
                           fontSize: 18,
-                          color: AppColors.editorTextColor,
+                          color: getIt<ThemeService>().colors.editorTextColor,
                         ),
                       ),
                     ),

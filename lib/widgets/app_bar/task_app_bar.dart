@@ -4,7 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/app_bar_version.dart';
 import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 import 'package:lotti/widgets/tasks/linked_duration.dart';
@@ -35,7 +35,7 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
         final item = snapshot.data;
         if (item == null || item.meta.deletedAt != null) {
           return AppBar(
-            backgroundColor: AppColors.headerBgColor,
+            backgroundColor: getIt<ThemeService>().colors.headerBgColor,
             title: FadeIn(
               duration: const Duration(milliseconds: 500),
               child: Text(
@@ -54,7 +54,7 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
           return const VersionAppBar(title: 'Lotti');
         } else {
           return AppBar(
-            backgroundColor: AppColors.headerBgColor,
+            backgroundColor: getIt<ThemeService>().colors.headerBgColor,
             title: Stack(
               children: [
                 Opacity(

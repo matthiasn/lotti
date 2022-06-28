@@ -4,7 +4,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class ToolbarWidget extends StatelessWidget {
@@ -151,7 +151,7 @@ class SaveButton extends StatelessWidget {
         final unsaved = snapshot.data ?? false;
         return IconButton(
           icon: const Icon(Icons.save),
-          color: unsaved ? AppColors.error : Colors.black,
+          color: unsaved ? getIt<ThemeService>().colors.error : Colors.black,
           iconSize: toolbarIconSize,
           tooltip: localizations.journalToolbarSaveHint,
           // ignore: avoid_dynamic_calls, unnecessary_lambdas

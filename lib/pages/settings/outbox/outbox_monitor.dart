@@ -7,7 +7,7 @@ import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -67,7 +67,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             }
 
             return Scaffold(
-              backgroundColor: AppColors.bodyBgColor,
+              backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
               appBar: OutboxAppBar(
                 onlineStatus: onlineStatus,
                 selectedValue: _selectedValue,
@@ -126,11 +126,11 @@ class OutboxItemCard extends StatelessWidget {
     Color cardColor(OutboxStatus status) {
       switch (statusEnum) {
         case OutboxStatus.pending:
-          return AppColors.outboxPendingColor;
+          return getIt<ThemeService>().colors.outboxPendingColor;
         case OutboxStatus.error:
-          return AppColors.outboxErrorColor;
+          return getIt<ThemeService>().colors.outboxErrorColor;
         case OutboxStatus.sent:
-          return AppColors.outboxSuccessColor;
+          return getIt<ThemeService>().colors.outboxSuccessColor;
       }
     }
 
@@ -151,7 +151,7 @@ class OutboxItemCard extends StatelessWidget {
           title: Text(
             '${df.format(item.createdAt)} - $status',
             style: TextStyle(
-              color: AppColors.entryTextColor,
+              color: getIt<ThemeService>().colors.entryTextColor,
               fontFamily: 'Oswald',
               fontSize: 16,
             ),
@@ -160,7 +160,7 @@ class OutboxItemCard extends StatelessWidget {
             '${item.retries} $retriesText - '
             '${item.filePath ?? localizations.outboxMonitorNoAttachment}',
             style: TextStyle(
-              color: AppColors.entryTextColor,
+              color: getIt<ThemeService>().colors.entryTextColor,
               fontFamily: 'Oswald',
               fontWeight: FontWeight.w200,
               fontSize: 16,
@@ -206,7 +206,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return AppBar(
-      backgroundColor: AppColors.headerBgColor,
+      backgroundColor: getIt<ThemeService>().colors.headerBgColor,
       title: Column(
         children: [
           Row(
@@ -235,9 +235,9 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
             ],
           ),
           CupertinoSegmentedControl(
-            selectedColor: AppColors.entryBgColor,
-            unselectedColor: AppColors.headerBgColor,
-            borderColor: AppColors.entryBgColor,
+            selectedColor: getIt<ThemeService>().colors.entryBgColor,
+            unselectedColor: getIt<ThemeService>().colors.headerBgColor,
+            borderColor: getIt<ThemeService>().colors.entryBgColor,
             groupValue: selectedValue,
             onValueChanged: onValueChanged,
             children: {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 
 class TaskCounts extends StatelessWidget {
   const TaskCounts({super.key});
@@ -70,7 +70,7 @@ class TasksCountWidget extends StatelessWidget {
             child: Text(
               '$label: ${snapshot.data}',
               style: TextStyle(
-                color: AppColors.headerFontColor2,
+                color: getIt<ThemeService>().colors.headerFontColor,
                 fontFamily: 'Oswald',
                 fontSize: 12,
                 fontWeight: FontWeight.w100,

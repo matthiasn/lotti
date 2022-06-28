@@ -4,7 +4,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class MaintenancePage extends StatefulWidget {
@@ -30,7 +30,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsMaintenanceTitle),
       body: StreamBuilder<List<ConfigFlag>>(
         stream: stream,
@@ -102,7 +102,7 @@ class MaintenanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.headerBgColor,
+      color: getIt<ThemeService>().colors.headerBgColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -116,7 +116,7 @@ class MaintenanceCard extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
-                color: AppColors.entryTextColor,
+                color: getIt<ThemeService>().colors.entryTextColor,
                 fontFamily: 'Oswald',
                 fontSize: 20,
               ),

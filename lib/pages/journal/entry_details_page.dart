@@ -9,7 +9,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/task_app_bar.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -77,7 +77,7 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
           appBar: item is Task
               ? TaskAppBar(itemId: item.meta.id)
               : const TitleAppBar(title: '') as PreferredSizeWidget,
-          backgroundColor: AppColors.bodyBgColor,
+          backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
           floatingActionButton: RadialAddActionButtons(
             linked: item,
             radius: isMobile ? 180 : 120,

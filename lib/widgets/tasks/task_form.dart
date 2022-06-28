@@ -7,7 +7,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/utils/task_utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
@@ -93,8 +94,8 @@ class _TaskFormState extends State<TaskForm> {
                     isUtc: true,
                   ),
                   theme: DatePickerTheme(
-                    headerColor: AppColors.headerBgColor,
-                    backgroundColor: AppColors.bodyBgColor,
+                    headerColor: getIt<ThemeService>().colors.headerBgColor,
+                    backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
                     itemStyle: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -112,7 +113,8 @@ class _TaskFormState extends State<TaskForm> {
                     horizontal: 8,
                     vertical: 4,
                   ),
-                  backgroundColor: AppColors.entryTextColor,
+                  backgroundColor:
+                      getIt<ThemeService>().colors.unselectedChoiceChipColor,
                   initialValue: widget.data?.status.map(
                         open: (_) => 'OPEN',
                         groomed: (_) => 'GROOMED',
@@ -134,7 +136,7 @@ class _TaskFormState extends State<TaskForm> {
                   onChanged: (dynamic _) => widget.saveFn(),
                   selectedColor: widget.data?.status != null
                       ? taskColor(widget.data!.status)
-                      : AppColors.entryBgColor,
+                      : getIt<ThemeService>().colors.entryBgColor,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   runSpacing: 6,
                   spacing: 4,

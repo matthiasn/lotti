@@ -6,7 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/theme/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class EntryDateTimeModal extends StatefulWidget {
@@ -46,8 +46,8 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
     DatePicker.showDateTimePicker(
       context,
       theme: DatePickerTheme(
-        headerColor: AppColors.entryCardColor,
-        backgroundColor: AppColors.bodyBgColor,
+        headerColor: getIt<ThemeService>().colors.entryCardColor,
+        backgroundColor: getIt<ThemeService>().colors.bodyBgColor,
         itemStyle: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.bold,
@@ -84,7 +84,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
 
         return Container(
           height: 200,
-          color: AppColors.bodyBgColor,
+          color: getIt<ThemeService>().colors.bodyBgColor,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -187,8 +187,9 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                         visible: !valid,
                         child: Text(
                           localizations.journalDateInvalid,
-                          style:
-                              textStyleLarger.copyWith(color: AppColors.error),
+                          style: textStyleLarger.copyWith(
+                            color: getIt<ThemeService>().colors.error,
+                          ),
                         ),
                       ),
                     ],
