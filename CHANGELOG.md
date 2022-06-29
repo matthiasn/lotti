@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Bright ☀️ color scheme with config flag
+- Change️ color scheme from menu on desktop
 
 ## [0.8.80] - 2022-06-27
 ### Changed:

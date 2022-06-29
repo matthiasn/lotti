@@ -1,8 +1,11 @@
 // ignore_for_file: equal_keys_in_map
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:themed/themed.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
@@ -167,16 +170,28 @@ Map<ThemeRef, Object> brightTheme = {
   AppColors.unselectedChoiceChipTextColor: const Color.fromRGBO(51, 77, 118, 1),
 };
 
+enum Themes {
+  dark,
+  bright,
+}
+
 class ThemeService {
   ThemeService() {
+    _controller = StreamController<Themes>.broadcast();
     Themed.defaultTheme = darkTheme;
 
-    _db.watchConfigFlag('show_bright_scheme').listen((bright) {
+    _db.watchConfigFlag(showBrightSchemeFlagName).listen((bright) {
       Themed.currentTheme = bright ? brightTheme : darkTheme;
+      _controller.add(bright ? Themes.bright : Themes.dark);
     });
   }
 
+  late final StreamController<Themes> _controller;
   final _db = getIt<JournalDb>();
+
+  Stream<Themes> getStream() {
+    return _controller.stream;
+  }
 }
 
 const double chipBorderRadius = 8;
