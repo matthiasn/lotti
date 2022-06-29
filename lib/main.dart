@@ -16,6 +16,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -85,25 +86,31 @@ class LottiApp extends StatelessWidget {
           create: (BuildContext context) => AudioPlayerCubit(),
         ),
       ],
-      child: DesktopMenuWrapper(
-        MaterialApp.router(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            FormBuilderLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: ThemeData(
-            primarySwatch: Colors.grey,
-          ),
-          debugShowCheckedModeBanner: false,
-          routerDelegate: router.delegate(
-            navigatorObservers: () => [],
-          ),
-          routeInformationParser: router.defaultRouteParser(),
-        ),
+      child: StreamBuilder<Themes>(
+        stream: getIt<ThemeService>().getStream(),
+        builder: (context, snapshot) {
+          debugPrint('${snapshot.data}');
+          return DesktopMenuWrapper(
+            MaterialApp.router(
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                FormBuilderLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: ThemeData(
+                primarySwatch: Colors.grey,
+              ),
+              debugShowCheckedModeBanner: false,
+              routerDelegate: router.delegate(
+                navigatorObservers: () => [],
+              ),
+              routeInformationParser: router.defaultRouteParser(),
+            ),
+          );
+        },
       ),
     );
   }
