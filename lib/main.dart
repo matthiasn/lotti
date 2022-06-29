@@ -95,7 +95,7 @@ class LottiApp extends StatelessWidget {
               color: AppColors.bodyBgColor,
               key: Key('theme-${snapshot.data}'),
               child: FadeIn(
-                duration: const Duration(milliseconds: 500),
+                duration: const Duration(milliseconds: 1000),
                 child: MaterialApp.router(
                   localizationsDelegates: const [
                     AppLocalizations.delegate,
