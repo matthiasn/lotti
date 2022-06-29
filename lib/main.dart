@@ -91,30 +91,28 @@ class LottiApp extends StatelessWidget {
         stream: getIt<ThemeService>().getStream(),
         builder: (context, snapshot) {
           return DesktopMenuWrapper(
-            ColoredBox(
-              color: AppColors.bodyBgColor,
+            FadeIn(
               key: Key('theme-${snapshot.data}'),
-              child: FadeIn(
-                duration: const Duration(milliseconds: 1000),
-                child: MaterialApp.router(
-                  localizationsDelegates: const [
-                    AppLocalizations.delegate,
-                    FormBuilderLocalizations.delegate,
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                    GlobalCupertinoLocalizations.delegate,
-                  ],
-                  color: AppColors.bodyBgColor,
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  theme: ThemeData(
-                    primarySwatch: Colors.grey,
-                  ),
-                  debugShowCheckedModeBanner: false,
-                  routerDelegate: router.delegate(
-                    navigatorObservers: () => [],
-                  ),
-                  routeInformationParser: router.defaultRouteParser(),
+              duration: const Duration(milliseconds: 500),
+              child: MaterialApp.router(
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  FormBuilderLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                color: AppColors.bodyBgColor,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: ThemeData(
+                  primarySwatch: Colors.grey,
+                  scaffoldBackgroundColor: AppColors.bodyBgColor,
                 ),
+                debugShowCheckedModeBanner: false,
+                routerDelegate: router.delegate(
+                  navigatorObservers: () => [],
+                ),
+                routeInformationParser: router.defaultRouteParser(),
               ),
             ),
           );
