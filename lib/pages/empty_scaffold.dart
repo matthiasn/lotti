@@ -7,9 +7,11 @@ class EmptyScaffoldWithTitle extends StatelessWidget {
   const EmptyScaffoldWithTitle(
     this.title, {
     super.key,
+    this.body,
   });
 
   final String title;
+  final Widget? body;
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +22,7 @@ class EmptyScaffoldWithTitle extends StatelessWidget {
         appBar: TitleAppBar(
           title: title,
         ),
+        body: body,
       ),
     );
   }
