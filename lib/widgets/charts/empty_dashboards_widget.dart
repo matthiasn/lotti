@@ -76,3 +76,27 @@ class EmptyDashboards extends StatelessWidget {
     );
   }
 }
+
+class LoadingDashboards extends StatelessWidget {
+  const LoadingDashboards({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      child: Opacity(
+        opacity: 0.3,
+        child: Lottie.asset(
+          // from https://lottiefiles.com/27-loading
+          'assets/lottiefiles/27-loading.json',
+          width: 80,
+          height: 80,
+          fit: BoxFit.contain,
+          frameRate: FrameRate(60),
+          reverse: true,
+        ),
+      ),
+    );
+  }
+}

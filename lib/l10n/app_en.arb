@@ -45,6 +45,7 @@
   "dashboardReviewTimeLabel": "Daily Review Time:",
   "dashboardSaveLabel": "Save",
   "dashboardsEmptyHint": "Nothing to see here yet, please create a new Dashboard in Settings, Dashboard Management. \n\nThe cogs button above will take you there directly.",
+  "dashboardsLoadingHint": "Loading...",
   "entryNotFound": "Entry not found",
   "journalDateFromLabel": "Date from:",
   "journalDateInvalid": "Invalid Date Range",

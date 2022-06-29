@@ -36,6 +36,10 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
           BuildContext context,
           AsyncSnapshot<List<DashboardDefinition>> snapshot,
         ) {
+          if (snapshot.data == null) {
+            return const LoadingDashboards();
+          }
+
           final dashboards =
               filteredSortedDashboards(snapshot.data ?? [], match);
 

@@ -16,6 +16,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_data.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
+import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardHealthBmiChart extends StatefulWidget {
@@ -88,10 +89,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
           final height = heightEntry?.data.value;
 
           if (height == null) {
-            return Text(
-              'Missing height entry',
-              style: labelStyle,
-            );
+            return const LoadingDashboards();
           }
 
           return StreamBuilder<List<JournalEntity?>>(
@@ -104,6 +102,10 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
               BuildContext context,
               AsyncSnapshot<List<JournalEntity?>> snapshot,
             ) {
+              if (snapshot.data == null) {
+                return const LoadingDashboards();
+              }
+
               final items = snapshot.data ?? [];
               final weightData = aggregateNone(items, weightType);
 

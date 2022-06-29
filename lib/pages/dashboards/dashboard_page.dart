@@ -15,6 +15,7 @@ import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_story_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_chart.dart';
+import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -84,6 +85,13 @@ class _DashboardPageState extends State<DashboardPage> {
           BuildContext context,
           AsyncSnapshot<List<DashboardDefinition>> snapshot,
         ) {
+          if (!snapshot.hasData) {
+            return EmptyScaffoldWithTitle(
+              localizations.dashboardsLoadingHint,
+              body: const LoadingDashboards(),
+            );
+          }
+
           DashboardDefinition? dashboard;
           final data = snapshot.data ?? [];
           if (data.isNotEmpty) {
@@ -91,14 +99,14 @@ class _DashboardPageState extends State<DashboardPage> {
           }
 
           if (dashboard == null) {
-            return EmptyScaffoldWithTitle(localizations.dashboardNotFound);
+            return EmptyScaffoldWithTitle(
+              localizations.dashboardNotFound,
+            );
           }
 
           return Scaffold(
             backgroundColor: AppColors.bodyBgColor,
-            appBar: DashboardAppBar(
-              dashboardId: dashboard.id,
-            ),
+            appBar: DashboardAppBar(dashboard),
             body: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(8),
