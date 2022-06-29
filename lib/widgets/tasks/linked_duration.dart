@@ -60,7 +60,7 @@ class LinkedDuration extends StatelessWidget {
                         barHeight: 4,
                         thumbRadius: 6,
                         onSeek: (newPosition) {},
-                        timeLabelTextStyle: TextStyle(
+                        timeLabelTextStyle: const TextStyle(
                           fontFamily: 'Oswald',
                           color: AppColors.entryTextColor,
                           fontWeight: FontWeight.normal,

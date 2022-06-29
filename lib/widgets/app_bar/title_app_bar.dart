@@ -20,7 +20,12 @@ class TitleAppBar extends StatelessWidget with PreferredSizeWidget {
     return AppBar(
       actions: actions,
       backgroundColor: AppColors.headerBgColor,
-      title: Text(title, style: appBarTextStyle),
+      title: Text(
+        title,
+        style: appBarTextStyle.copyWith(
+          color: AppColors.entryTextColor,
+        ),
+      ),
       centerTitle: true,
       leading: const TestDetectingAutoLeadingButton(),
     );

@@ -1,5 +1,13 @@
+// ignore_for_file: equal_keys_in_map
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
+import 'package:themed/themed.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
 Color getTagColor(TagEntity tagEntity) {
@@ -14,53 +22,56 @@ Color getTagColor(TagEntity tagEntity) {
   );
 }
 
+const defaultBaseColor = Color.fromRGBO(51, 77, 118, 1);
+
 class AppColors {
-  static Color entryBgColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color actionColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color tagColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color tagTextColor = editorTextColor;
-  static Color personTagColor = const Color.fromRGBO(55, 201, 154, 1);
-  static Color storyTagColor = const Color.fromRGBO(200, 120, 0, 1);
-  static Color privateTagColor = Colors.red;
-  static Color bottomNavIconUnselected = entryTextColor;
-  static Color bottomNavIconSelected = const Color.fromRGBO(252, 147, 76, 1);
-  static Color editorTextColor = const Color.fromRGBO(51, 51, 51, 1);
-  static Color starredGold = const Color.fromRGBO(255, 215, 0, 1);
-  static Color yolk = const Color.fromRGBO(244, 187, 41, 1);
-  static Color recordingTextColor = const Color.fromRGBO(224, 224, 224, 0.8);
-  static Color editorBgColor = Colors.white;
+  static const entryBgColor = ColorRef(Color.fromRGBO(155, 200, 245, 1));
+  static const actionColor = ColorRef(Color.fromRGBO(155, 200, 245, 1));
+  static const tagColor = ColorRef(Color.fromRGBO(155, 200, 245, 1));
+  static const tagTextColor = ColorRef(editorTextColor);
+  static const personTagColor = ColorRef(Color.fromRGBO(55, 201, 154, 1));
+  static const storyTagColor = ColorRef(Color.fromRGBO(200, 120, 0, 1));
+  static const privateTagColor = ColorRef(Colors.red);
+  static const bottomNavIconUnselected = ColorRef(entryTextColor);
+  static const bottomNavIconSelected =
+      ColorRef(Color.fromRGBO(252, 147, 76, 1));
+  static const editorTextColor = ColorRef(Color.fromRGBO(51, 51, 51, 1));
+  static const starredGold = ColorRef(Color.fromRGBO(255, 215, 0, 1));
+  static const editorBgColor = ColorRef(Colors.white);
 
-  static Color baseColor = const Color.fromRGBO(51, 77, 118, 1);
+  static const baseColor = ColorRef(Color.fromRGBO(51, 77, 118, 1));
 
-  static Color bodyBgColor = darken(baseColor, 20);
-  static Color headerBgColor = darken(baseColor, 10);
-  static Color entryCardColor = baseColor;
-  static Color entryTextColor = const Color.fromRGBO(200, 195, 190, 1);
+  static final bodyBgColor = ColorRef(darken(baseColor, 20));
+  static final headerBgColor = ColorRef(darken(baseColor, 10));
+  static const entryCardColor = ColorRef(baseColor);
+  static const entryTextColor = ColorRef(Color.fromRGBO(200, 195, 190, 1));
 
-  static Color vuBgColor = headerBgColor;
-  static Color searchBgColor = const Color.fromRGBO(68, 68, 85, 0.3);
-  static Color searchBgHoverColor = const Color.fromRGBO(68, 68, 85, 0.6);
-  static Color appBarFgColor = const Color.fromRGBO(180, 190, 200, 1);
-  static Color codeBlockBackground = const Color.fromRGBO(228, 232, 240, 1);
+  static const searchBgColor = ColorRef(Color.fromRGBO(68, 68, 85, 0.3));
+  static const appBarFgColor = ColorRef(Color.fromRGBO(180, 190, 200, 1));
+  static const codeBlockBackground = ColorRef(Color.fromRGBO(228, 232, 240, 1));
 
-  static Color timeRecording = const Color.fromRGBO(255, 22, 22, 1);
-  static Color timeRecordingBg = const Color.fromRGBO(255, 44, 44, 0.95);
+  static const timeRecording = ColorRef(Color.fromRGBO(255, 22, 22, 1));
+  static const timeRecordingBg = ColorRef(Color.fromRGBO(255, 44, 44, 0.95));
 
-  static Color outboxSuccessColor = const Color.fromRGBO(50, 120, 50, 1);
-  static Color outboxPendingColor = const Color.fromRGBO(200, 120, 0, 1);
-  static Color outboxErrorColor = const Color.fromRGBO(120, 50, 50, 1);
-  static Color headerFontColor = Colors.white;
-  static Color headerFontColor2 = entryBgColor;
-  static Color activeAudioControl = Colors.red;
-  static Color audioMeterBar = Colors.blue;
-  static Color audioMeterTooHotBar = Colors.orange;
-  static Color audioMeterPeakedBar = Colors.red;
-  static Color error = Colors.red;
-  static Color private = Colors.red;
-  static Color audioMeterBarBackground =
-      TinyColor.fromColor(headerBgColor).lighten(40).color;
-  static Color inactiveAudioControl = const Color.fromRGBO(155, 155, 177, 1);
-  static Color listItemText = bodyBgColor;
+  static const outboxSuccessColor = ColorRef(Color.fromRGBO(50, 120, 50, 1));
+  static const outboxPendingColor = ColorRef(Color.fromRGBO(200, 120, 0, 1));
+  static const outboxErrorColor = ColorRef(Color.fromRGBO(120, 50, 50, 1));
+  static const headerFontColor = ColorRef(entryBgColor);
+  static const activeAudioControl = ColorRef(Colors.red);
+  static const audioMeterBar = ColorRef(Colors.blue);
+  static const audioMeterTooHotBar = ColorRef(Colors.orange);
+  static const audioMeterPeakedBar = ColorRef(Colors.red);
+  static const error = ColorRef(Colors.red);
+  static const private = ColorRef(Colors.red);
+  static final audioMeterBarBackground = ColorRef(lighten(headerBgColor, 40));
+  static const inactiveAudioControl =
+      ColorRef(Color.fromRGBO(155, 155, 177, 1));
+
+  static const unselectedChoiceChipColor =
+      ColorRef(Color.fromRGBO(200, 195, 190, 1));
+
+  static const unselectedChoiceChipTextColor =
+      ColorRef(Color.fromRGBO(51, 77, 118, 1));
 }
 
 Color darken(Color color, int value) {
@@ -71,56 +82,118 @@ Color lighten(Color color, int value) {
   return TinyColor.fromColor(color).lighten(value).color;
 }
 
-class AppColors2 {
-  static Color bodyBgColor = const Color.fromRGBO(47, 47, 59, 1);
-  static Color entryBgColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color actionColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color tagColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color tagTextColor = editorTextColor;
-  static Color personTagColor = const Color.fromRGBO(55, 201, 154, 1);
-  static Color storyTagColor = const Color.fromRGBO(200, 120, 0, 1);
-  static Color privateTagColor = Colors.red;
-  static Color entryTextColor = const Color.fromRGBO(158, 158, 158, 1);
-  static Color bottomNavIconUnselected = entryTextColor;
-  static Color bottomNavIconSelected = const Color.fromRGBO(200, 120, 0, 1);
-  static Color editorTextColor = const Color.fromRGBO(51, 51, 51, 1);
-  static Color starredGold = const Color.fromRGBO(255, 215, 0, 1);
-  static Color recordingTextColor = const Color.fromRGBO(224, 224, 224, 0.8);
-  static Color editorBgColor = Colors.white;
-
-  static Color headerBgColor = const Color.fromRGBO(68, 68, 85, 1);
-  static Color vuBgColor = headerBgColor;
-  static Color searchBgColor = const Color.fromRGBO(68, 68, 85, 0.3);
-  static Color searchBgHoverColor = const Color.fromRGBO(68, 68, 85, 0.6);
-  static Color appBarFgColor = const Color.fromRGBO(180, 190, 200, 1);
-  static Color codeBlockBackground = const Color.fromRGBO(228, 232, 240, 1);
-
-  static Color timeRecording = const Color.fromRGBO(255, 22, 22, 1);
-  static Color timeRecordingBg = const Color.fromRGBO(255, 44, 44, 0.95);
-
-  static Color outboxSuccessColor = const Color.fromRGBO(50, 120, 50, 1);
-  static Color outboxPendingColor = const Color.fromRGBO(200, 120, 0, 1);
-  static Color outboxErrorColor = const Color.fromRGBO(120, 50, 50, 1);
-  static Color headerFontColor = Colors.white;
-  static Color headerFontColor2 = entryBgColor;
-  static Color activeAudioControl = Colors.red;
-  static Color audioMeterBar = Colors.blue;
-  static Color audioMeterTooHotBar = Colors.orange;
-  static Color audioMeterPeakedBar = Colors.red;
-  static Color error = Colors.red;
-  static Color private = Colors.red;
-  static Color audioMeterBarBackground =
-      TinyColor.fromColor(headerBgColor).lighten(40).color;
-  static Color inactiveAudioControl = const Color.fromRGBO(155, 155, 177, 1);
-  static Color listItemText = bodyBgColor;
-}
-
 class AppTheme {
   static const double bottomNavIconSize = 24;
 
   static const chartDateHorizontalPadding = EdgeInsets.symmetric(
     horizontal: 4,
   );
+}
+
+Map<ThemeRef, Object> darkTheme = {
+  AppColors.entryBgColor: Colors.white,
+  AppColors.unselectedChoiceChipColor: const Color.fromRGBO(200, 195, 190, 1),
+  AppColors.actionColor: const Color.fromRGBO(155, 200, 245, 1),
+  AppColors.tagColor: const Color.fromRGBO(155, 200, 245, 1),
+  AppColors.tagTextColor: const Color.fromRGBO(51, 51, 51, 1),
+  AppColors.personTagColor: const Color.fromRGBO(55, 201, 154, 1),
+  AppColors.storyTagColor: const Color.fromRGBO(200, 120, 0, 1),
+  AppColors.privateTagColor: Colors.red,
+  AppColors.bottomNavIconUnselected: const Color.fromRGBO(200, 195, 190, 1),
+  AppColors.bottomNavIconSelected: const Color.fromRGBO(252, 147, 76, 1),
+  AppColors.editorTextColor: const Color.fromRGBO(51, 51, 51, 1),
+  AppColors.starredGold: const Color.fromRGBO(255, 215, 0, 1),
+  AppColors.editorBgColor: Colors.white,
+  AppColors.baseColor: const Color.fromRGBO(51, 77, 118, 1),
+  AppColors.bodyBgColor: darken(defaultBaseColor, 20),
+  AppColors.headerBgColor: darken(defaultBaseColor, 10),
+  AppColors.entryCardColor: defaultBaseColor,
+  AppColors.entryTextColor: const Color.fromRGBO(200, 195, 190, 1),
+  AppColors.searchBgColor: const Color.fromRGBO(68, 68, 85, 0.3),
+  AppColors.appBarFgColor: const Color.fromRGBO(180, 190, 200, 1),
+  AppColors.codeBlockBackground: const Color.fromRGBO(228, 232, 240, 1),
+  AppColors.timeRecording: const Color.fromRGBO(255, 22, 22, 1),
+  AppColors.timeRecordingBg: const Color.fromRGBO(255, 44, 44, 0.95),
+  AppColors.outboxSuccessColor: const Color.fromRGBO(50, 120, 50, 1),
+  AppColors.outboxPendingColor: const Color.fromRGBO(200, 120, 0, 1),
+  AppColors.outboxErrorColor: const Color.fromRGBO(120, 50, 50, 1),
+  AppColors.headerFontColor: const Color.fromRGBO(155, 200, 245, 1),
+  AppColors.activeAudioControl: Colors.red,
+  AppColors.audioMeterBar: Colors.blue,
+  AppColors.audioMeterTooHotBar: Colors.orange,
+  AppColors.audioMeterPeakedBar: Colors.red,
+  AppColors.error: Colors.red,
+  AppColors.private: Colors.red,
+  AppColors.audioMeterBarBackground:
+      TinyColor.fromColor(defaultBaseColor).lighten(30).color,
+  AppColors.inactiveAudioControl: const Color.fromRGBO(155, 155, 177, 1),
+  AppColors.unselectedChoiceChipTextColor: const Color.fromRGBO(51, 77, 118, 1),
+};
+const brightBaseColor = Color.fromRGBO(244, 187, 41, 1);
+
+Map<ThemeRef, Object> brightTheme = {
+  AppColors.entryBgColor: Colors.white,
+  AppColors.unselectedChoiceChipColor: const Color.fromRGBO(200, 195, 190, 1),
+  AppColors.actionColor: const Color.fromRGBO(155, 200, 245, 1),
+  AppColors.tagColor: const Color.fromRGBO(155, 200, 245, 1),
+  AppColors.tagTextColor: const Color.fromRGBO(51, 51, 51, 1),
+  AppColors.personTagColor: const Color.fromRGBO(55, 201, 154, 1),
+  AppColors.storyTagColor: const Color.fromRGBO(200, 120, 0, 1),
+  AppColors.privateTagColor: Colors.red,
+  AppColors.bottomNavIconUnselected: const Color.fromRGBO(30, 50, 90, 1),
+  AppColors.bottomNavIconSelected: Colors.white,
+  AppColors.editorTextColor: const Color.fromRGBO(51, 51, 51, 1),
+  AppColors.starredGold: const Color.fromRGBO(255, 215, 0, 1),
+  AppColors.editorBgColor: Colors.white,
+  AppColors.baseColor: const Color.fromRGBO(244, 187, 41, 1),
+  AppColors.bodyBgColor: darken(brightBaseColor, 20),
+  AppColors.headerBgColor: darken(brightBaseColor, 10),
+  AppColors.entryCardColor: brightBaseColor,
+  AppColors.entryTextColor: const Color.fromRGBO(30, 50, 90, 1),
+  AppColors.searchBgColor: const Color.fromRGBO(68, 68, 85, 0.3),
+  AppColors.appBarFgColor: const Color.fromRGBO(180, 190, 200, 1),
+  AppColors.codeBlockBackground: const Color.fromRGBO(228, 232, 240, 1),
+  AppColors.timeRecording: const Color.fromRGBO(255, 22, 22, 1),
+  AppColors.timeRecordingBg: const Color.fromRGBO(255, 44, 44, 0.95),
+  AppColors.outboxSuccessColor: const Color.fromRGBO(50, 120, 50, 1),
+  AppColors.outboxPendingColor: const Color.fromRGBO(200, 120, 0, 1),
+  AppColors.outboxErrorColor: const Color.fromRGBO(120, 50, 50, 1),
+  AppColors.headerFontColor: const Color.fromRGBO(40, 60, 100, 1),
+  AppColors.activeAudioControl: Colors.red,
+  AppColors.audioMeterBar: Colors.blue,
+  AppColors.audioMeterTooHotBar: Colors.orange,
+  AppColors.audioMeterPeakedBar: Colors.red,
+  AppColors.error: Colors.red,
+  AppColors.private: Colors.red,
+  AppColors.audioMeterBarBackground:
+      TinyColor.fromColor(defaultBaseColor).lighten(30).color,
+  AppColors.inactiveAudioControl: const Color.fromRGBO(155, 155, 177, 1),
+  AppColors.unselectedChoiceChipTextColor: const Color.fromRGBO(51, 77, 118, 1),
+};
+
+enum Themes {
+  dark,
+  bright,
+}
+
+class ThemeService {
+  ThemeService() {
+    _controller = StreamController<Themes>.broadcast();
+    Themed.defaultTheme = darkTheme;
+
+    _db.watchConfigFlag(showBrightSchemeFlagName).listen((bright) {
+      Themed.currentTheme = bright ? brightTheme : darkTheme;
+      _controller.add(bright ? Themes.bright : Themes.dark);
+      getIt<NavService>().restoreRoute();
+    });
+  }
+
+  late final StreamController<Themes> _controller;
+  final _db = getIt<JournalDb>();
+
+  Stream<Themes> getStream() {
+    return _controller.stream;
+  }
 }
 
 const double chipBorderRadius = 8;
@@ -137,14 +210,14 @@ const chipPaddingClosable = EdgeInsets.only(
   right: 4,
 );
 
-TextStyle inputStyle = TextStyle(
+TextStyle inputStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontWeight: FontWeight.bold,
   fontFamily: 'Lato',
   fontSize: 18,
 );
 
-TextStyle textStyle = TextStyle(
+TextStyle textStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontWeight: FontWeight.w400,
@@ -161,62 +234,62 @@ TextStyle labelStyleLarger = textStyleLarger.copyWith(
   fontWeight: FontWeight.w300,
 );
 
-TextStyle labelStyle = TextStyle(
+TextStyle labelStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontWeight: FontWeight.w500,
   fontSize: 18,
 );
 
-TextStyle formLabelStyle = TextStyle(
+TextStyle formLabelStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 16,
 );
 
-TextStyle buttonLabelStyle = TextStyle(
+TextStyle buttonLabelStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 16,
 );
 
-TextStyle settingsLabelStyle = TextStyle(
+TextStyle settingsLabelStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 16,
 );
 
-TextStyle choiceLabelStyle = TextStyle(
+TextStyle choiceLabelStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 16,
 );
 
-TextStyle logDetailStyle = TextStyle(
+TextStyle logDetailStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'ShareTechMono',
   fontSize: 10,
 );
 
-TextStyle appBarTextStyle = TextStyle(
+TextStyle appBarTextStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 20,
 );
 
-TextStyle titleStyle = TextStyle(
+TextStyle titleStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 32,
   fontWeight: FontWeight.w300,
 );
 
-TextStyle taskTitleStyle = TextStyle(
+TextStyle taskTitleStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 24,
 );
 
-TextStyle multiSelectStyle = TextStyle(
+TextStyle multiSelectStyle = const TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontWeight: FontWeight.w100,
@@ -232,7 +305,7 @@ TextStyle chartTitleStyle = TextStyle(
 
 const taskFormFieldStyle = TextStyle(color: Colors.black87);
 
-TextStyle saveButtonStyle = TextStyle(
+TextStyle saveButtonStyle = const TextStyle(
   fontSize: 20,
   fontFamily: 'Oswald',
   color: AppColors.error,
@@ -254,14 +327,14 @@ const bottomNavLabelStyle = TextStyle(
   fontWeight: FontWeight.w300,
 );
 
-final definitionCardTitleStyle = TextStyle(
+const definitionCardTitleStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontSize: 24,
   height: 1.2,
 );
 
-final definitionCardSubtitleStyle = TextStyle(
+const definitionCardSubtitleStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
   fontWeight: FontWeight.w200,

@@ -51,7 +51,7 @@ class _LinkedFromEntriesWidgetState extends State<LinkedFromEntriesWidget> {
               children: [
                 Text(
                   localizations.journalLinkedFromLabel,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.entryTextColor,
                     fontFamily: 'Oswald',
                   ),

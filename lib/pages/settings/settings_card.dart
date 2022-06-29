@@ -26,7 +26,7 @@ class SettingsCard extends StatelessWidget {
         leading: icon,
         title: Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 22,

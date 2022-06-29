@@ -196,7 +196,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     Expanded(
                                       child: Text(
                                         selected?.displayName ?? '',
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: AppColors.entryTextColor,
                                           fontFamily: 'Oswald',
                                           fontSize: 24,
@@ -217,7 +217,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                 if (selected?.description != null)
                                   Text(
                                     selected!.description,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: AppColors.entryTextColor,
                                       fontFamily: 'Oswald',
                                       fontWeight: FontWeight.w300,

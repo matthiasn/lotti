@@ -97,8 +97,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
               ),
               TextButton(
                 onPressed: _save,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     'Save',
                     style: TextStyle(

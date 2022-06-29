@@ -45,7 +45,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
             children: [
               Text(
                 localizations.journalLinkedEntriesLabel,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.entryTextColor,
                   fontFamily: 'Oswald',
                 ),

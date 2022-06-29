@@ -115,7 +115,7 @@ class MaintenanceCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.entryTextColor,
                 fontFamily: 'Oswald',
                 fontSize: 20,

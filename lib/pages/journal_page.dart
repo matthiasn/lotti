@@ -257,7 +257,9 @@ class _JournalPageState extends State<JournalPage> {
                         children: [
                           Text(
                             localizations.journalPrivateTooltip,
-                            style: TextStyle(color: AppColors.entryTextColor),
+                            style: const TextStyle(
+                              color: AppColors.entryTextColor,
+                            ),
                           ),
                           CupertinoSwitch(
                             value: privateEntriesOnly,
@@ -274,7 +276,7 @@ class _JournalPageState extends State<JournalPage> {
                     ),
                     Text(
                       localizations.journalFavoriteTooltip,
-                      style: TextStyle(color: AppColors.entryTextColor),
+                      style: const TextStyle(color: AppColors.entryTextColor),
                     ),
                     CupertinoSwitch(
                       value: starredEntriesOnly,
@@ -288,7 +290,7 @@ class _JournalPageState extends State<JournalPage> {
                     ),
                     Text(
                       localizations.journalFlaggedTooltip,
-                      style: TextStyle(color: AppColors.entryTextColor),
+                      style: const TextStyle(color: AppColors.entryTextColor),
                     ),
                     CupertinoSwitch(
                       value: flaggedEntriesOnly,
@@ -445,7 +447,7 @@ class _JournalPageState extends State<JournalPage> {
                                 resetStream();
                               });
                             },
-                            icon: Icon(
+                            icon: const Icon(
                               Icons.close,
                               color: AppColors.bottomNavIconUnselected,
                             ),

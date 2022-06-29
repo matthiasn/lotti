@@ -15,6 +15,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/sync/vector_clock.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:path/path.dart' as p;
@@ -508,6 +509,13 @@ class JournalDb extends _$JournalDb {
         status: false,
       ),
     );
+    await insertFlagIfNotExists(
+      ConfigFlag(
+        name: showBrightSchemeFlagName,
+        description: 'Show Bright ☀️ scheme?',
+        status: false,
+      ),
+    );
     if (Platform.isMacOS) {
       await insertFlagIfNotExists(
         ConfigFlag(
@@ -528,6 +536,14 @@ class JournalDb extends _$JournalDb {
 
   Future<int> upsertConfigFlag(ConfigFlag configFlag) async {
     return into(configFlags).insertOnConflictUpdate(configFlag);
+  }
+
+  Future<void> toggleConfigFlag(String flagName) async {
+    final configFlag = await getConfigFlagByName(flagName);
+
+    if (configFlag != null) {
+      await upsertConfigFlag(configFlag.copyWith(status: !configFlag.status));
+    }
   }
 
   Future<int> getCountImportFlagEntries() async {

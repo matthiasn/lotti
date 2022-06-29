@@ -41,7 +41,7 @@ class AudioRecordingIndicator extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[
-                          Icon(
+                          const Icon(
                             Icons.mic,
                             size: 24,
                             color: AppColors.editorTextColor,
@@ -50,7 +50,7 @@ class AudioRecordingIndicator extends StatelessWidget {
                             padding: const EdgeInsets.only(left: 4),
                             child: Text(
                               formatDuration(state.progress),
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontFamily: 'ShareTechMono',
                                 fontSize: 18,
                                 color: AppColors.editorTextColor,

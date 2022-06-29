@@ -85,7 +85,7 @@ class DashboardCard extends StatelessWidget {
             const EdgeInsets.only(left: 16, top: 8, bottom: 20, right: 16),
         title: Text(
           dashboard.name,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 24,
@@ -94,7 +94,7 @@ class DashboardCard extends StatelessWidget {
         ),
         subtitle: Text(
           dashboard.description,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 16,

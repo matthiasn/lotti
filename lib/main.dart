@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_fadein/flutter_fadein.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -85,25 +87,36 @@ class LottiApp extends StatelessWidget {
           create: (BuildContext context) => AudioPlayerCubit(),
         ),
       ],
-      child: DesktopMenuWrapper(
-        MaterialApp.router(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            FormBuilderLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: ThemeData(
-            primarySwatch: Colors.grey,
-          ),
-          debugShowCheckedModeBanner: false,
-          routerDelegate: router.delegate(
-            navigatorObservers: () => [],
-          ),
-          routeInformationParser: router.defaultRouteParser(),
-        ),
+      child: StreamBuilder<Themes>(
+        stream: getIt<ThemeService>().getStream(),
+        builder: (context, snapshot) {
+          return DesktopMenuWrapper(
+            FadeIn(
+              key: Key('theme-${snapshot.data}'),
+              duration: const Duration(milliseconds: 500),
+              child: MaterialApp.router(
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  FormBuilderLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                color: AppColors.bodyBgColor,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: ThemeData(
+                  primarySwatch: Colors.grey,
+                  scaffoldBackgroundColor: AppColors.bodyBgColor,
+                ),
+                debugShowCheckedModeBanner: false,
+                routerDelegate: router.delegate(
+                  navigatorObservers: () => [],
+                ),
+                routeInformationParser: router.defaultRouteParser(),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

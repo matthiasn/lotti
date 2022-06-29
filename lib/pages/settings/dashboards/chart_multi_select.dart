@@ -49,7 +49,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
           fontWeight: FontWeight.normal,
         ),
         unselectedColor: AppColors.entryTextColor,
-        searchIcon: Icon(
+        searchIcon: const Icon(
           Icons.search,
           size: 32,
           color: AppColors.entryTextColor,
@@ -62,7 +62,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
         ),
         buttonText: Text(
           buttonText,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.entryTextColor,
             fontSize: 16,
           ),

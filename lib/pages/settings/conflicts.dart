@@ -137,7 +137,7 @@ class ConflictCard extends StatelessWidget {
           contentPadding: const EdgeInsets.only(left: 24, right: 24),
           title: Text(
             '${df.format(conflict.createdAt)} - ${statusString(conflict)}',
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.entryTextColor,
               fontFamily: 'Oswald',
               fontSize: 16,
@@ -145,7 +145,7 @@ class ConflictCard extends StatelessWidget {
           ),
           subtitle: Text(
             '${fromSerialized(conflict.serialized).meta.vectorClock}',
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.entryTextColor,
               fontFamily: 'Oswald',
               fontWeight: FontWeight.w200,
@@ -199,7 +199,7 @@ class DetailRoute extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           df.format(local.meta.dateFrom),
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.entryBgColor,
             fontFamily: 'Oswald',
           ),

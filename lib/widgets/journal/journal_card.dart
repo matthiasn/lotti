@@ -40,7 +40,7 @@ class JournalCardTitle extends StatelessWidget {
             children: [
               Text(
                 df.format(item.meta.dateFrom),
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.entryTextColor,
                   fontSize: 14,
                   fontWeight: FontWeight.w300,
@@ -52,7 +52,7 @@ class JournalCardTitle extends StatelessWidget {
                 children: [
                   Visibility(
                     visible: fromNullableBool(item.meta.private),
-                    child: Icon(
+                    child: const Icon(
                       MdiIcons.security,
                       color: AppColors.error,
                       size: iconSize,
@@ -60,8 +60,8 @@ class JournalCardTitle extends StatelessWidget {
                   ),
                   Visibility(
                     visible: fromNullableBool(item.meta.starred),
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
+                    child: const Padding(
+                      padding: EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.star,
                         color: AppColors.starredGold,
@@ -71,8 +71,8 @@ class JournalCardTitle extends StatelessWidget {
                   ),
                   Visibility(
                     visible: item.meta.flag == EntryFlag.import,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
+                    child: const Padding(
+                      padding: EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.flag,
                         color: AppColors.error,
@@ -108,7 +108,7 @@ class JournalCardTitle extends StatelessWidget {
                   children: [
                     Text(
                       data.title,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Oswald',
                         color: AppColors.entryTextColor,
                         fontWeight: FontWeight.normal,
@@ -129,7 +129,7 @@ class JournalCardTitle extends StatelessWidget {
             task: (_) => const SizedBox.shrink(),
             orElse: () => DurationWidget(
               item: item,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.entryTextColor,
                 fontSize: 14,
                 fontWeight: FontWeight.w300,

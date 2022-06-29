@@ -172,7 +172,7 @@ class TagAddIconWidget extends StatelessWidget {
                                   top: 16,
                                   bottom: 16,
                                 ),
-                                icon: Icon(
+                                icon: const Icon(
                                   MdiIcons.contentCopy,
                                   color: AppColors.entryTextColor,
                                 ),
@@ -185,7 +185,7 @@ class TagAddIconWidget extends StatelessWidget {
                                   top: 16,
                                   bottom: 16,
                                 ),
-                                icon: Icon(
+                                icon: const Icon(
                                   MdiIcons.contentPaste,
                                   color: AppColors.entryTextColor,
                                 ),
@@ -203,7 +203,7 @@ class TagAddIconWidget extends StatelessWidget {
 
             return IconButton(
               onPressed: onTapAdd,
-              icon: Icon(
+              icon: const Icon(
                 MdiIcons.tagPlusOutline,
                 size: 24,
                 color: AppColors.entryTextColor,
@@ -321,7 +321,7 @@ class TagWidget extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
                   tagEntity.tag,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Oswald',
                     color: AppColors.tagTextColor,
@@ -332,7 +332,7 @@ class TagWidget extends StatelessWidget {
                 onPressed: onTapRemove,
                 padding: const EdgeInsets.only(left: 4),
                 constraints: const BoxConstraints(maxHeight: 16, maxWidth: 20),
-                icon: Icon(
+                icon: const Icon(
                   MdiIcons.close,
                   size: 16,
                   color: AppColors.tagTextColor,

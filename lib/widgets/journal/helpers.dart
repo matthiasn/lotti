@@ -20,7 +20,7 @@ class EntryTextWidget extends StatelessWidget {
       child: Text(
         text,
         maxLines: maxLines,
-        style: TextStyle(
+        style: const TextStyle(
           fontFamily: 'ShareTechMono',
           color: AppColors.entryTextColor,
           fontWeight: FontWeight.w300,
