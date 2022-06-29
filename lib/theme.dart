@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:themed/themed.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -183,6 +184,7 @@ class ThemeService {
     _db.watchConfigFlag(showBrightSchemeFlagName).listen((bright) {
       Themed.currentTheme = bright ? brightTheme : darkTheme;
       _controller.add(bright ? Themes.bright : Themes.dark);
+      getIt<NavService>().restoreRoute();
     });
   }
 

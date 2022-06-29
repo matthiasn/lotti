@@ -89,8 +89,8 @@ class LottiApp extends StatelessWidget {
       child: StreamBuilder<Themes>(
         stream: getIt<ThemeService>().getStream(),
         builder: (context, snapshot) {
-          debugPrint('${snapshot.data}');
           return DesktopMenuWrapper(
+            key: Key('theme-${snapshot.data}'),
             MaterialApp.router(
               localizationsDelegates: const [
                 AppLocalizations.delegate,
