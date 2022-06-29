@@ -53,17 +53,15 @@ class _VersionAppBarState extends State<VersionAppBar> {
         BuildContext context,
         AsyncSnapshot<int> snapshot,
       ) {
-        if (snapshot.data == null) {
-          return const SizedBox.shrink();
-        } else {
-          return AppBar(
-            backgroundColor: AppColors.headerBgColor,
-            title: Column(
-              children: [
-                Text(
-                  widget.title,
-                  style: appBarTextStyle,
-                ),
+        return AppBar(
+          backgroundColor: AppColors.headerBgColor,
+          title: Column(
+            children: [
+              Text(
+                widget.title,
+                style: appBarTextStyle,
+              ),
+              if (snapshot.data != null)
                 Text(
                   'v$version ($buildNumber), n = ${snapshot.data}',
                   style: const TextStyle(
@@ -73,12 +71,11 @@ class _VersionAppBarState extends State<VersionAppBar> {
                     fontWeight: FontWeight.w300,
                   ),
                 ),
-              ],
-            ),
-            centerTitle: true,
-            leading: const TestDetectingAutoLeadingButton(),
-          );
-        }
+            ],
+          ),
+          centerTitle: true,
+          leading: const TestDetectingAutoLeadingButton(),
+        );
       },
     );
   }

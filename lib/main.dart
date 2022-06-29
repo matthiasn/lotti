@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_fadein/flutter_fadein.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
@@ -90,24 +91,31 @@ class LottiApp extends StatelessWidget {
         stream: getIt<ThemeService>().getStream(),
         builder: (context, snapshot) {
           return DesktopMenuWrapper(
-            key: Key('theme-${snapshot.data}'),
-            MaterialApp.router(
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                FormBuilderLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: AppLocalizations.supportedLocales,
-              theme: ThemeData(
-                primarySwatch: Colors.grey,
+            ColoredBox(
+              color: AppColors.bodyBgColor,
+              key: Key('theme-${snapshot.data}'),
+              child: FadeIn(
+                duration: const Duration(milliseconds: 500),
+                child: MaterialApp.router(
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    FormBuilderLocalizations.delegate,
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  color: AppColors.bodyBgColor,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  theme: ThemeData(
+                    primarySwatch: Colors.grey,
+                  ),
+                  debugShowCheckedModeBanner: false,
+                  routerDelegate: router.delegate(
+                    navigatorObservers: () => [],
+                  ),
+                  routeInformationParser: router.defaultRouteParser(),
+                ),
               ),
-              debugShowCheckedModeBanner: false,
-              routerDelegate: router.delegate(
-                navigatorObservers: () => [],
-              ),
-              routeInformationParser: router.defaultRouteParser(),
             ),
           );
         },
