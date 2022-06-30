@@ -66,15 +66,20 @@ class ToolbarWidget extends StatelessWidget {
           controller: controller,
           iconTheme: iconTheme,
         ),
-        // ignore: flutter_style_todos
-        // TODO: bring back when supported by delta_markdown
-        // ToggleStyleButton(
-        //   attribute: Attribute.inlineCode,
-        //   icon: Icons.code,
-        //   iconSize: toolbarIconSize,
-        //   controller: controller,
-        //   iconTheme: iconTheme,
-        // ),
+        ToggleStyleButton(
+          attribute: Attribute.strikeThrough,
+          icon: Icons.format_strikethrough,
+          iconSize: toolbarIconSize,
+          controller: controller,
+          iconTheme: iconTheme,
+        ),
+        ToggleStyleButton(
+          attribute: Attribute.inlineCode,
+          icon: Icons.code,
+          iconSize: toolbarIconSize,
+          controller: controller,
+          iconTheme: iconTheme,
+        ),
         SelectHeaderStyleButton(
           controller: controller,
           iconSize: toolbarIconSize,
