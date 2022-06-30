@@ -6,7 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
-- Build Android on GitHub Actions
+- FadeIn animation on new measurement page
+
+### Fixed:
+- Navigation pop after changing entry date
+- Navigation pop after adding measurement
+- Entry text color in for creating measurable
 
 ## [0.8.83] - 2022-06-30
 ### Fixed:

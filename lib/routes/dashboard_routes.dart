@@ -17,7 +17,7 @@ const AutoRoute dashboardRoutes = AutoRoute(
       page: DashboardPage,
     ),
     AutoRoute(
-      path: 'add_measurement/:selectedId',
+      path: 'measure/:selectedId',
       page: CreateMeasurementWithTypePage,
     ),
   ],
