@@ -230,7 +230,7 @@ void main() {
         'then tapping delete', (tester) async {
       final formKey = GlobalKey<FormBuilderState>();
 
-      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+      when(() => mockPersistenceLogic.deleteDashboardDefinition(any()))
           .thenAnswer((_) async => 1);
 
       when(
@@ -309,7 +309,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // delete button calls mocked function
-      verify(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+      verify(() => mockPersistenceLogic.deleteDashboardDefinition(any()))
           .called(1);
     });
 

@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -78,6 +79,10 @@ class _MaintenancePageState extends State<MaintenancePage> {
                   MaintenanceCard(
                     title: localizations.maintenanceReprocessSync,
                     onTap: () => getIt<SyncConfigService>().resetOffset(),
+                  ),
+                  MaintenanceCard(
+                    title: localizations.maintenanceCancelNotifications,
+                    onTap: () => getIt<NotificationService>().cancelAll(),
                   ),
                 ],
               );

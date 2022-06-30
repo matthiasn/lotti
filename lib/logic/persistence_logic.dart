@@ -943,7 +943,7 @@ class PersistenceLogic {
       ),
     );
 
-    if (dashboard.reviewAt != null) {
+    if (dashboard.reviewAt != null && dashboard.deletedAt != null) {
       await getIt<NotificationService>().scheduleNotification(
         title: 'Time for a Dashboard Review!',
         body: dashboard.name,
@@ -952,6 +952,19 @@ class PersistenceLogic {
         deepLink: '/dashboards/${dashboard.id}',
       );
     }
+
+    return linesAffected;
+  }
+
+  Future<int> deleteDashboardDefinition(DashboardDefinition dashboard) async {
+    final linesAffected = await upsertDashboardDefinition(
+      dashboard.copyWith(
+        deletedAt: DateTime.now(),
+      ),
+    );
+
+    await getIt<NotificationService>()
+        .cancelNotification(dashboard.id.hashCode);
 
     return linesAffected;
   }

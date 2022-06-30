@@ -493,10 +493,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
 
                                         if (result == deleteKey) {
                                           await persistenceLogic
-                                              .upsertDashboardDefinition(
-                                            widget.dashboard.copyWith(
-                                              deletedAt: DateTime.now(),
-                                            ),
+                                              .deleteDashboardDefinition(
+                                            widget.dashboard,
                                           );
 
                                           await getIt<AppRouter>().pop();
