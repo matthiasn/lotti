@@ -25,9 +25,9 @@ Color getTagColor(TagEntity tagEntity) {
 const defaultBaseColor = Color.fromRGBO(51, 77, 118, 1);
 
 class AppColors {
-  static const entryBgColor = ColorRef(Color.fromRGBO(155, 200, 245, 1));
+  static const entryBgColor = ColorRef(Color.fromRGBO(155, 200, 244, 1));
   static const actionColor = ColorRef(Color.fromRGBO(155, 200, 245, 1));
-  static const tagColor = ColorRef(Color.fromRGBO(155, 200, 245, 1));
+  static const tagColor = ColorRef(Color.fromRGBO(155, 200, 246, 1));
   static const tagTextColor = ColorRef(editorTextColor);
   static const personTagColor = ColorRef(Color.fromRGBO(55, 201, 154, 1));
   static const storyTagColor = ColorRef(Color.fromRGBO(200, 120, 0, 1));
@@ -67,11 +67,12 @@ class AppColors {
   static const inactiveAudioControl =
       ColorRef(Color.fromRGBO(155, 155, 177, 1));
 
-  static const unselectedChoiceChipColor =
-      ColorRef(Color.fromRGBO(200, 195, 190, 1));
-
-  static const unselectedChoiceChipTextColor =
-      ColorRef(Color.fromRGBO(51, 77, 118, 1));
+  static const selectedChoiceChipColor = ColorRef(Colors.lightBlue);
+  static const selectedChoiceChipTextColor = ColorRef(AppColors.entryTextColor);
+  static final unselectedChoiceChipColor =
+      ColorRef(HexColor.fromHex('#BBBBBB'));
+  static final unselectedChoiceChipTextColor =
+      ColorRef(HexColor.fromHex('#474b40'));
 }
 
 Color darken(Color color, int value) {
@@ -92,9 +93,8 @@ class AppTheme {
 
 Map<ThemeRef, Object> darkTheme = {
   AppColors.entryBgColor: Colors.white,
-  AppColors.unselectedChoiceChipColor: const Color.fromRGBO(200, 195, 190, 1),
   AppColors.actionColor: const Color.fromRGBO(155, 200, 245, 1),
-  AppColors.tagColor: const Color.fromRGBO(155, 200, 245, 1),
+  AppColors.tagColor: const Color.fromRGBO(155, 200, 246, 1),
   AppColors.tagTextColor: const Color.fromRGBO(51, 51, 51, 1),
   AppColors.personTagColor: const Color.fromRGBO(55, 201, 154, 1),
   AppColors.storyTagColor: const Color.fromRGBO(200, 120, 0, 1),
@@ -127,20 +127,19 @@ Map<ThemeRef, Object> darkTheme = {
   AppColors.audioMeterBarBackground:
       TinyColor.fromColor(defaultBaseColor).lighten(30).color,
   AppColors.inactiveAudioControl: const Color.fromRGBO(155, 155, 177, 1),
-  AppColors.unselectedChoiceChipTextColor: const Color.fromRGBO(51, 77, 118, 1),
 };
+
 const brightBaseColor = Color.fromRGBO(244, 187, 41, 1);
 
 Map<ThemeRef, Object> brightTheme = {
   AppColors.entryBgColor: Colors.white,
-  AppColors.unselectedChoiceChipColor: const Color.fromRGBO(200, 195, 190, 1),
-  AppColors.actionColor: const Color.fromRGBO(155, 200, 245, 1),
-  AppColors.tagColor: const Color.fromRGBO(155, 200, 245, 1),
-  AppColors.tagTextColor: const Color.fromRGBO(51, 51, 51, 1),
+  AppColors.actionColor: HexColor.fromHex('#E27930'),
+  AppColors.tagColor: HexColor.fromHex('#89BE2E'),
+  AppColors.tagTextColor: HexColor.fromHex('#474B40'),
   AppColors.personTagColor: const Color.fromRGBO(55, 201, 154, 1),
-  AppColors.storyTagColor: const Color.fromRGBO(200, 120, 0, 1),
-  AppColors.privateTagColor: Colors.red,
-  AppColors.bottomNavIconUnselected: const Color.fromRGBO(30, 50, 90, 1),
+  AppColors.storyTagColor: HexColor.fromHex('#E27930'),
+  AppColors.privateTagColor: HexColor.fromHex('#CF322F'),
+  AppColors.bottomNavIconUnselected: HexColor.fromHex('#474B40'),
   AppColors.bottomNavIconSelected: Colors.white,
   AppColors.editorTextColor: const Color.fromRGBO(51, 51, 51, 1),
   AppColors.starredGold: const Color.fromRGBO(255, 215, 0, 1),
@@ -149,26 +148,25 @@ Map<ThemeRef, Object> brightTheme = {
   AppColors.bodyBgColor: darken(brightBaseColor, 20),
   AppColors.headerBgColor: darken(brightBaseColor, 10),
   AppColors.entryCardColor: brightBaseColor,
-  AppColors.entryTextColor: const Color.fromRGBO(30, 50, 90, 1),
+  AppColors.entryTextColor: HexColor.fromHex('#474B40'),
   AppColors.searchBgColor: const Color.fromRGBO(68, 68, 85, 0.3),
   AppColors.appBarFgColor: const Color.fromRGBO(180, 190, 200, 1),
   AppColors.codeBlockBackground: const Color.fromRGBO(228, 232, 240, 1),
-  AppColors.timeRecording: const Color.fromRGBO(255, 22, 22, 1),
-  AppColors.timeRecordingBg: const Color.fromRGBO(255, 44, 44, 0.95),
+  AppColors.timeRecording: HexColor.fromHex('#CF322F'),
+  AppColors.timeRecordingBg: HexColor.fromHex('#CF322FCC'),
   AppColors.outboxSuccessColor: const Color.fromRGBO(50, 120, 50, 1),
   AppColors.outboxPendingColor: const Color.fromRGBO(200, 120, 0, 1),
-  AppColors.outboxErrorColor: const Color.fromRGBO(120, 50, 50, 1),
+  AppColors.outboxErrorColor: HexColor.fromHex('#CF322F'),
   AppColors.headerFontColor: const Color.fromRGBO(40, 60, 100, 1),
-  AppColors.activeAudioControl: Colors.red,
+  AppColors.activeAudioControl: HexColor.fromHex('#CF322F'),
   AppColors.audioMeterBar: Colors.blue,
   AppColors.audioMeterTooHotBar: Colors.orange,
-  AppColors.audioMeterPeakedBar: Colors.red,
-  AppColors.error: Colors.red,
-  AppColors.private: Colors.red,
+  AppColors.audioMeterPeakedBar: HexColor.fromHex('#CF322F'),
+  AppColors.error: HexColor.fromHex('#CF322F'),
+  AppColors.private: HexColor.fromHex('#CF322F'),
   AppColors.audioMeterBarBackground:
       TinyColor.fromColor(defaultBaseColor).lighten(30).color,
   AppColors.inactiveAudioControl: const Color.fromRGBO(155, 155, 177, 1),
-  AppColors.unselectedChoiceChipTextColor: const Color.fromRGBO(51, 77, 118, 1),
 };
 
 enum Themes {
@@ -296,10 +294,10 @@ TextStyle multiSelectStyle = const TextStyle(
   fontSize: 24,
 );
 
-TextStyle chartTitleStyle = TextStyle(
+TextStyle chartTitleStyle = const TextStyle(
   fontFamily: 'Oswald',
   fontSize: 14,
-  color: AppColors.bodyBgColor,
+  color: AppColors.entryTextColor,
   fontWeight: FontWeight.w300,
 );
 
@@ -342,3 +340,20 @@ const definitionCardSubtitleStyle = TextStyle(
 );
 
 const settingsIconSize = 24.0;
+
+extension HexColor on Color {
+  static Color fromHex(String hexString) {
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
+    buffer.write(hexString.replaceFirst('#', ''));
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
+
+  String toHex({bool leadingHashSign = true}) {
+    return '${leadingHashSign ? '#' : ''}'
+        '${alpha.toRadixString(16).padLeft(2, '0')}'
+        '${red.toRadixString(16).padLeft(2, '0')}'
+        '${green.toRadixString(16).padLeft(2, '0')}'
+        '${blue.toRadixString(16).padLeft(2, '0')}';
+  }
+}

@@ -166,8 +166,8 @@ class _TasksPageState extends State<TasksPage> {
                                 borderRadius: BorderRadius.circular(8),
                                 child: ColoredBox(
                                   color: selectedStatuses.contains(status)
-                                      ? Colors.lightBlue
-                                      : Colors.grey,
+                                      ? AppColors.selectedChoiceChipColor
+                                      : AppColors.unselectedChoiceChipColor,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 4,
@@ -179,8 +179,10 @@ class _TasksPageState extends State<TasksPage> {
                                         fontFamily: 'Oswald',
                                         fontSize: 16,
                                         color: selectedStatuses.contains(status)
-                                            ? Colors.grey[900]
-                                            : Colors.grey[400],
+                                            ? AppColors
+                                                .selectedChoiceChipTextColor
+                                            : AppColors
+                                                .unselectedChoiceChipTextColor,
                                       ),
                                     ),
                                   ),

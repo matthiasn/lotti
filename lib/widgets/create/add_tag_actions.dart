@@ -31,7 +31,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       FloatingActionButton(
         heroTag: 'tag',
         key: const Key('add_tag_action'),
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: AppColors.actionColor,
         onPressed: () {
           getIt<AppRouter>().push(
             CreateTagRoute(
@@ -46,7 +46,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       ),
       FloatingActionButton(
         heroTag: 'person',
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: AppColors.actionColor,
         onPressed: () {
           getIt<AppRouter>().push(
             CreateTagRoute(
@@ -61,7 +61,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       ),
       FloatingActionButton(
         heroTag: 'story',
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: AppColors.actionColor,
         onPressed: () {
           getIt<AppRouter>().push(
             CreateTagRoute(
@@ -80,7 +80,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       radius: widget.radius,
       useOpacity: true,
       items: items,
-      color: AppColors.entryBgColor,
+      color: AppColors.actionColor,
       icon: Icons.add,
       duration: const Duration(milliseconds: 500),
       curveAnim: Curves.ease,
