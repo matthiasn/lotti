@@ -431,10 +431,12 @@ packages:
   delta_markdown:
     dependency: "direct main"
     description:
-      name: delta_markdown
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.6.0"
+      path: "."
+      ref: "0ed09ed"
+      resolved-ref: "0ed09ed4fa9061ea4fa0654f50ef8a1b0a70fcdc"
+      url: "https://github.com/matthiasn/delta_markdown.git"
+    source: git
+    version: "0.7.0"
   device_info_plus:
     dependency: "direct main"
     description:
