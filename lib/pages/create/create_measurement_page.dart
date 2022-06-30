@@ -180,7 +180,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                           style: titleStyle.copyWith(
                                             decoration:
                                                 TextDecoration.underline,
-                                            color: AppColors.tagColor,
+                                            color: AppColors.entryTextColor,
                                           ),
                                           wrapWords: false,
                                           maxLines: 3,
