@@ -218,8 +218,8 @@ class _JournalPageState extends State<JournalPage> {
                                 borderRadius: BorderRadius.circular(4),
                                 child: ColoredBox(
                                   color: types.contains(item.value?.typeName)
-                                      ? Colors.lightBlue
-                                      : Colors.grey,
+                                      ? AppColors.selectedChoiceChipColor
+                                      : AppColors.unselectedChoiceChipColor,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 1,
@@ -230,10 +230,11 @@ class _JournalPageState extends State<JournalPage> {
                                       style: TextStyle(
                                         fontFamily: 'Oswald',
                                         fontSize: 14,
-                                        color:
-                                            types.contains(item.value?.typeName)
-                                                ? Colors.grey[900]
-                                                : Colors.grey[400],
+                                        color: types
+                                                .contains(item.value?.typeName)
+                                            ? AppColors.selectedChoiceChipTextColor
+                                            : AppColors
+                                                .unselectedChoiceChipTextColor,
                                       ),
                                     ),
                                   ),

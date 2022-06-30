@@ -4,7 +4,6 @@ import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health/health.dart';
-import 'package:hexcolor/hexcolor.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/charts/health_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -228,7 +227,8 @@ class BmiRangeLegend extends StatelessWidget {
                             child: Container(
                               width: 12,
                               height: 12,
-                              color: HexColor(range.hexColor).withOpacity(0.7),
+                              color: HexColor.fromHex(range.hexColor)
+                                  .withOpacity(0.7),
                             ),
                           ),
                           const SizedBox(
