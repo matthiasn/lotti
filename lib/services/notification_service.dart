@@ -177,6 +177,22 @@ class NotificationService {
     );
   }
 
+  Future<void> cancelNotification(int notificationId) async {
+    if (Platform.isWindows || Platform.isLinux) {
+      return;
+    }
+
+    await flutterLocalNotificationsPlugin.cancel(notificationId);
+  }
+
+  Future<void> cancelAll() async {
+    if (Platform.isWindows || Platform.isLinux) {
+      return;
+    }
+
+    await flutterLocalNotificationsPlugin.cancelAll();
+  }
+
   Future<void> showNotification({
     required String title,
     required String body,
