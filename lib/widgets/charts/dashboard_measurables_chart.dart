@@ -83,11 +83,8 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
               void onDoubleTap() {
                 if (widget.enableCreate) {
-                  getIt<AppRouter>().push(
-                    CreateMeasurementWithTypeRoute(
-                      selectedId: measurableDataType.id,
-                    ),
-                  );
+                  final id = measurableDataType.id;
+                  getIt<AppRouter>().pushNamed('/dashboards/measure/$id');
                 }
               }
 
