@@ -2,10 +2,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:themed/themed.dart';
@@ -340,3 +342,5 @@ const definitionCardSubtitleStyle = TextStyle(
 );
 
 const settingsIconSize = 24.0;
+
+ColorConfig colorConfig() => getIt<ColorsService>().current;

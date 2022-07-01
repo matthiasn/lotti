@@ -18,12 +18,14 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/outbox.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/themes/themes_service.dart';
 
 final getIt = GetIt.instance;
 
 void registerSingletons() {
   getIt
     ..registerSingleton<JournalDb>(JournalDb())
+    ..registerSingleton<ColorsService>(ColorsService())
     ..registerSingleton<ThemeService>(ThemeService())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())

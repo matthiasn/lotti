@@ -40,7 +40,7 @@ class HomePage extends StatelessWidget {
           animationDuration: const Duration(milliseconds: 500),
           builder: (context, child, _) {
             return Container(
-              color: AppColors.bodyBgColor,
+              color: colorConfig().bodyBgColor,
               height: double.maxFinite,
               width: double.maxFinite,
               child: Stack(
@@ -52,7 +52,7 @@ class HomePage extends StatelessWidget {
               ),
             );
           },
-          backgroundColor: AppColors.bodyBgColor,
+          backgroundColor: colorConfig().bodyBgColor,
           routes: [
             const JournalRouter(),
             if (showTasks) const TasksRouter(),
@@ -108,9 +108,9 @@ class HomePage extends StatelessWidget {
               ),
               child: BottomNavigationBar(
                 type: BottomNavigationBarType.fixed,
-                backgroundColor: AppColors.headerBgColor,
-                unselectedItemColor: AppColors.bottomNavIconUnselected,
-                selectedItemColor: AppColors.bottomNavIconSelected,
+                backgroundColor: colorConfig().bottomNavBackground,
+                unselectedItemColor: colorConfig().bottomNavIconUnselected,
+                selectedItemColor: colorConfig().bottomNavIconSelected,
                 currentIndex: tabsRouter.activeIndex,
                 selectedLabelStyle: bottomNavLabelStyle.copyWith(
                   fontWeight: FontWeight.normal,
