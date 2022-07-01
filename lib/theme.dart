@@ -1,13 +1,8 @@
 // ignore_for_file: equal_keys_in_map
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:lotti/utils/consts.dart';
 
 class AppTheme {
   static const double bottomNavIconSize = 24;
@@ -15,29 +10,6 @@ class AppTheme {
   static const chartDateHorizontalPadding = EdgeInsets.symmetric(
     horizontal: 4,
   );
-}
-
-enum Themes {
-  dark,
-  bright,
-}
-
-class ThemeService {
-  ThemeService() {
-    _controller = StreamController<Themes>.broadcast();
-
-    _db.watchConfigFlag(showBrightSchemeFlagName).listen((bright) {
-      _controller.add(bright ? Themes.bright : Themes.dark);
-      getIt<NavService>().restoreRoute();
-    });
-  }
-
-  late final StreamController<Themes> _controller;
-  final _db = getIt<JournalDb>();
-
-  Stream<Themes> getStream() {
-    return _controller.stream;
-  }
 }
 
 const double chipBorderRadius = 8;
