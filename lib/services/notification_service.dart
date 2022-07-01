@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/utils/timezone.dart';
 import 'package:timezone/standalone.dart' as tz;
 
 final JournalDb _db = getIt<JournalDb>();
@@ -145,8 +147,11 @@ class NotificationService {
     await _requestPermissions();
     await flutterLocalNotificationsPlugin.cancel(notificationId);
     final now = DateTime.now();
+    final localTimezone = await getLocalTimezone();
+    final location = tz.getLocation(localTimezone);
+    debugPrint('scheduleNotification $localTimezone $location $notifyAt');
     final scheduledDate = tz.TZDateTime(
-      tz.getLocation('Europe/Berlin'),
+      location,
       now.year,
       now.month,
       now.day,
