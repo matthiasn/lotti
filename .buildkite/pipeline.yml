@@ -203,7 +203,7 @@ steps:
           - "macos_dmg"
         commands:
           - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "xcrun altool --notarize-app -f build/export/*.dmg --primary-bundle-id com.matthiasnehlsen.lotti -u $$APPLEID -p $$APPLEIDPASS"
+          - "xcrun altool --notarize-app -f build/export/*.dmg --primary-bundle-id com.matthiasnehlsen.lotti -u $$APPLEID -p $$APPLEIDPASS --asc-provider $$APPLE_DEV_PROVIDER"
         agents:
           os: "macOS"
         soft_fail:
