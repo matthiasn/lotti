@@ -4,8 +4,8 @@ import 'dart:math';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:charts_flutter/flutter.dart';
 import 'package:equatable/equatable.dart';
-import 'package:hexcolor/hexcolor.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -28,7 +28,7 @@ Color colorByValue(
       orElse: () => 0,
     );
 
-    final color = HexColor(colorByValue[aboveThreshold] ?? '#000000');
+    final color = colorFromCssHex(colorByValue[aboveThreshold] ?? '#000000');
     return charts.Color(r: color.red, g: color.green, b: color.blue);
   }
 

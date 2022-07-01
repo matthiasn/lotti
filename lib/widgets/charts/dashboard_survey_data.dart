@@ -1,11 +1,11 @@
 import 'dart:core';
 
 import 'package:charts_flutter/flutter.dart' as charts;
-import 'package:hexcolor/hexcolor.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/surveys/cfq11_survey.dart';
 import 'package:lotti/surveys/panas_survey.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:research_package/model.dart';
 
@@ -74,7 +74,7 @@ List<charts.Series<Observation, DateTime>> surveySeries({
   final colorsByScoreKey = dashboardSurveyItem.colorsByScoreKey;
 
   for (final scoreKey in dashboardSurveyItem.colorsByScoreKey.keys) {
-    final color = HexColor(colorsByScoreKey[scoreKey] ?? '#000000');
+    final color = colorFromCssHex(colorsByScoreKey[scoreKey] ?? '#000000');
     final lineColor = charts.Color(r: color.red, g: color.green, b: color.blue);
 
     seriesList.add(

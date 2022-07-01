@@ -6,6 +6,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:themed/themed.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -69,10 +70,9 @@ class AppColors {
 
   static const selectedChoiceChipColor = ColorRef(Colors.lightBlue);
   static const selectedChoiceChipTextColor = ColorRef(AppColors.entryTextColor);
-  static final unselectedChoiceChipColor =
-      ColorRef(HexColor.fromHex('#BBBBBB'));
+  static final unselectedChoiceChipColor = ColorRef(colorFromCssHex('#BBBBBB'));
   static final unselectedChoiceChipTextColor =
-      ColorRef(HexColor.fromHex('#474b40'));
+      ColorRef(colorFromCssHex('#474b40'));
 }
 
 Color darken(Color color, int value) {
@@ -133,13 +133,13 @@ const brightBaseColor = Color.fromRGBO(244, 187, 41, 1);
 
 Map<ThemeRef, Object> brightTheme = {
   AppColors.entryBgColor: Colors.white,
-  AppColors.actionColor: HexColor.fromHex('#E27930'),
-  AppColors.tagColor: HexColor.fromHex('#89BE2E'),
-  AppColors.tagTextColor: HexColor.fromHex('#474B40'),
+  AppColors.actionColor: colorFromCssHex('#E27930'),
+  AppColors.tagColor: colorFromCssHex('#89BE2E'),
+  AppColors.tagTextColor: colorFromCssHex('#474B40'),
   AppColors.personTagColor: const Color.fromRGBO(55, 201, 154, 1),
-  AppColors.storyTagColor: HexColor.fromHex('#E27930'),
-  AppColors.privateTagColor: HexColor.fromHex('#CF322F'),
-  AppColors.bottomNavIconUnselected: HexColor.fromHex('#474B40'),
+  AppColors.storyTagColor: colorFromCssHex('#E27930'),
+  AppColors.privateTagColor: colorFromCssHex('#CF322F'),
+  AppColors.bottomNavIconUnselected: colorFromCssHex('#474B40'),
   AppColors.bottomNavIconSelected: Colors.white,
   AppColors.editorTextColor: const Color.fromRGBO(51, 51, 51, 1),
   AppColors.starredGold: const Color.fromRGBO(255, 215, 0, 1),
@@ -148,22 +148,22 @@ Map<ThemeRef, Object> brightTheme = {
   AppColors.bodyBgColor: darken(brightBaseColor, 20),
   AppColors.headerBgColor: darken(brightBaseColor, 10),
   AppColors.entryCardColor: brightBaseColor,
-  AppColors.entryTextColor: HexColor.fromHex('#474B40'),
+  AppColors.entryTextColor: colorFromCssHex('#474B40'),
   AppColors.searchBgColor: const Color.fromRGBO(68, 68, 85, 0.3),
   AppColors.appBarFgColor: const Color.fromRGBO(180, 190, 200, 1),
   AppColors.codeBlockBackground: const Color.fromRGBO(228, 232, 240, 1),
-  AppColors.timeRecording: HexColor.fromHex('#CF322F'),
-  AppColors.timeRecordingBg: HexColor.fromHex('#CF322FCC'),
+  AppColors.timeRecording: colorFromCssHex('#CF322F'),
+  AppColors.timeRecordingBg: colorFromCssHex('#CF322FEE'),
   AppColors.outboxSuccessColor: const Color.fromRGBO(50, 120, 50, 1),
   AppColors.outboxPendingColor: const Color.fromRGBO(200, 120, 0, 1),
-  AppColors.outboxErrorColor: HexColor.fromHex('#CF322F'),
+  AppColors.outboxErrorColor: colorFromCssHex('#CF322F'),
   AppColors.headerFontColor: const Color.fromRGBO(40, 60, 100, 1),
-  AppColors.activeAudioControl: HexColor.fromHex('#CF322F'),
+  AppColors.activeAudioControl: colorFromCssHex('#CF322F'),
   AppColors.audioMeterBar: Colors.blue,
   AppColors.audioMeterTooHotBar: Colors.orange,
-  AppColors.audioMeterPeakedBar: HexColor.fromHex('#CF322F'),
-  AppColors.error: HexColor.fromHex('#CF322F'),
-  AppColors.private: HexColor.fromHex('#CF322F'),
+  AppColors.audioMeterPeakedBar: colorFromCssHex('#CF322F'),
+  AppColors.error: colorFromCssHex('#CF322F'),
+  AppColors.private: colorFromCssHex('#CF322F'),
   AppColors.audioMeterBarBackground:
       TinyColor.fromColor(defaultBaseColor).lighten(30).color,
   AppColors.inactiveAudioControl: const Color.fromRGBO(155, 155, 177, 1),
@@ -340,20 +340,3 @@ const definitionCardSubtitleStyle = TextStyle(
 );
 
 const settingsIconSize = 24.0;
-
-extension HexColor on Color {
-  static Color fromHex(String hexString) {
-    final buffer = StringBuffer();
-    if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
-    buffer.write(hexString.replaceFirst('#', ''));
-    return Color(int.parse(buffer.toString(), radix: 16));
-  }
-
-  String toHex({bool leadingHashSign = true}) {
-    return '${leadingHashSign ? '#' : ''}'
-        '${alpha.toRadixString(16).padLeft(2, '0')}'
-        '${red.toRadixString(16).padLeft(2, '0')}'
-        '${green.toRadixString(16).padLeft(2, '0')}'
-        '${blue.toRadixString(16).padLeft(2, '0')}';
-  }
-}
