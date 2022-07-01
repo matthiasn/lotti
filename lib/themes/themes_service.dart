@@ -5,14 +5,17 @@ import 'package:lotti/themes/themes.dart';
 import 'package:lotti/utils/consts.dart';
 
 class ColorsService {
-  ColorsService() {
+  ColorsService({bool watch = true}) {
     current = darkTheme;
 
-    _db.watchConfigFlag(showBrightSchemeFlagName).listen((bright) {
-      current = bright ? brightTheme : darkTheme;
-    });
+    if (watch) {
+      getIt<JournalDb>()
+          .watchConfigFlag(showBrightSchemeFlagName)
+          .listen((bright) {
+        current = bright ? brightTheme : darkTheme;
+      });
+    }
   }
 
   late ColorConfig current;
-  final _db = getIt<JournalDb>();
 }

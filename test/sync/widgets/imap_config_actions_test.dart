@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_actions.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,7 +20,9 @@ void main() {
     setUp(() {
       reset(mockAppRouter);
       when(mockAppRouter.pop).thenAnswer((_) async => true);
-      getIt.registerSingleton<AppRouter>(mockAppRouter);
+      getIt
+        ..registerSingleton<AppRouter>(mockAppRouter)
+        ..registerSingleton<ColorsService>(ColorsService(watch: false));
     });
     tearDown(getIt.reset);
 

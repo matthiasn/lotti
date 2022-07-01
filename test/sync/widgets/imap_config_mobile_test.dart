@@ -7,6 +7,7 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/outbox.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_mobile.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
 import 'package:mocktail/mocktail.dart';
@@ -30,7 +31,8 @@ void main() {
 
       getIt
         ..registerSingleton<OutboxService>(mockOutboxService)
-        ..registerSingleton<SyncInboxService>(mockInboxService);
+        ..registerSingleton<SyncInboxService>(mockInboxService)
+        ..registerSingleton<ColorsService>(ColorsService(watch: false));
     });
     tearDown(getIt.reset);
 

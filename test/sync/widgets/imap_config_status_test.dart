@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_status.dart';
 
 import '../../widget_test_utils.dart';
@@ -11,6 +13,11 @@ import '../sync_config_test_mocks.dart';
 
 void main() {
   group('SyncConfig Imap Config Status Widgets Tests - ', () {
+    setUp(() {
+      getIt.registerSingleton<ColorsService>(ColorsService(watch: false));
+    });
+
+    tearDown(getIt.reset);
     testWidgets(
         'Widget shows grey status indicator & correct label when status empty',
         (tester) async {

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
+import 'package:lotti/themes/themes_service.dart';
 
 import '../../widget_test_utils.dart';
 import '../sync_config_test_mocks.dart';
@@ -11,7 +12,9 @@ void main() {
   var mock = MockSyncDatabase();
 
   group('OutboxBadge Widget Tests - ', () {
-    setUp(() {});
+    setUp(() {
+      getIt.registerSingleton<ColorsService>(ColorsService(watch: false));
+    });
     tearDown(getIt.reset);
 
     testWidgets('Badge shows count 999', (tester) async {

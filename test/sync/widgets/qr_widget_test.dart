@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/qr_widget.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -11,6 +13,11 @@ import '../sync_config_test_mocks.dart';
 
 void main() {
   group('SyncConfig QR Widget Tests - ', () {
+    setUp(() {
+      getIt.registerSingleton<ColorsService>(ColorsService(watch: false));
+    });
+    tearDown(getIt.reset);
+
     testWidgets('Widget shows no button when status empty', (tester) async {
       final mock = mockSyncConfigCubitWithState(SyncConfigState.empty());
 
