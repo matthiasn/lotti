@@ -12,6 +12,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_data.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
@@ -227,7 +228,7 @@ class BmiRangeLegend extends StatelessWidget {
                             child: Container(
                               width: 12,
                               height: 12,
-                              color: HexColor.fromHex(range.hexColor)
+                              color: colorFromCssHex(range.hexColor)
                                   .withOpacity(0.7),
                             ),
                           ),

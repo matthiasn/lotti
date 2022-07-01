@@ -1,7 +1,7 @@
 import 'dart:core';
 
 import 'package:charts_flutter/flutter.dart' as charts;
-import 'package:hexcolor/hexcolor.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 
 num calculateBMI(num height, num weight) {
@@ -147,7 +147,7 @@ charts.RangeAnnotationSegment<num> makeRangeSegment(
   num from,
   num to,
 ) {
-  final color = HexColor(hexColor);
+  final color = colorFromCssHex(hexColor);
   return charts.RangeAnnotationSegment(
     from,
     to,

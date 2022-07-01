@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Hex color strings now parsed like CSS colors
+
+## [0.8.87] - 2022-07-01
+### Fixed:
 - Timezone for notification
 
 ## [0.8.86] - 2022-07-01

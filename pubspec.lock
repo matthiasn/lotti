@@ -1024,13 +1024,6 @@ packages:
       url: "https://github.com/matthiasn/flutter-plugins"
     source: git
     version: "3.4.4"
-  hexcolor:
-    dependency: "direct main"
-    description:
-      name: hexcolor
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.0.7"
   hotkey_manager:
     dependency: "direct main"
     description:
