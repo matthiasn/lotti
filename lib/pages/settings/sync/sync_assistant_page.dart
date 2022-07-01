@@ -40,7 +40,7 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: colorConfig().bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsSyncCfgTitle),
       body: Center(
         child: Stack(
@@ -57,7 +57,7 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
               child: Container(
                 width: double.infinity,
                 height: 0.5,
-                color: AppColors.entryTextColor,
+                color: colorConfig().entryTextColor,
               ),
             ),
             SyncNavPrevious(
@@ -136,9 +136,9 @@ class _SlidingTutorial extends State<SlidingTutorial> {
       pageController: _pageController,
       pageCount: widget.pageCount,
       colors: [
-        AppColors.bodyBgColor,
-        AppColors.headerBgColor,
-        AppColors.bodyBgColor,
+        colorConfig().bodyBgColor,
+        colorConfig().headerBgColor,
+        colorConfig().bodyBgColor,
       ],
       child: Stack(
         children: [

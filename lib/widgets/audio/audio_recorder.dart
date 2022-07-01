@@ -39,8 +39,8 @@ class AudioRecorderWidget extends StatelessWidget {
                   iconSize: iconSize,
                   tooltip: 'Record',
                   color: state.status == AudioRecorderStatus.recording
-                      ? AppColors.activeAudioControl
-                      : AppColors.inactiveAudioControl,
+                      ? colorConfig().activeAudioControl
+                      : colorConfig().inactiveAudioControl,
                   onPressed: () => context
                       .read<AudioRecorderCubit>()
                       .record(linkedId: linkedId),
@@ -49,7 +49,7 @@ class AudioRecorderWidget extends StatelessWidget {
                   icon: const Icon(Icons.stop),
                   iconSize: iconSize,
                   tooltip: 'Stop',
-                  color: AppColors.inactiveAudioControl,
+                  color: colorConfig().inactiveAudioControl,
                   onPressed: () {
                     context.read<AudioRecorderCubit>().stop();
                   },
@@ -58,10 +58,10 @@ class AudioRecorderWidget extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   child: Text(
                     formatDuration(state.progress.toString()),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'ShareTechMono',
                       fontSize: 32,
-                      color: AppColors.inactiveAudioControl,
+                      color: colorConfig().inactiveAudioControl,
                     ),
                   ),
                 ),
@@ -72,10 +72,10 @@ class AudioRecorderWidget extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               child: Text(
                 formatDecibels(state.decibels),
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'ShareTechMono',
                   fontSize: 20,
-                  color: AppColors.inactiveAudioControl,
+                  color: colorConfig().inactiveAudioControl,
                 ),
               ),
             ),

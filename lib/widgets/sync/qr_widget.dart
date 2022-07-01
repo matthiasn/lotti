@@ -232,9 +232,9 @@ class StatusTextWidget extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'ShareTechMono',
-          color: AppColors.entryTextColor,
+          color: colorConfig().entryTextColor,
         ),
       ),
     );

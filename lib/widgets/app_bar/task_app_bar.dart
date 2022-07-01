@@ -35,7 +35,7 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
         final item = snapshot.data;
         if (item == null || item.meta.deletedAt != null) {
           return AppBar(
-            backgroundColor: AppColors.headerBgColor,
+            backgroundColor: colorConfig().headerBgColor,
             title: FadeIn(
               duration: const Duration(milliseconds: 500),
               child: Text(
@@ -54,7 +54,7 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
           return const VersionAppBar(title: 'Lotti');
         } else {
           return AppBar(
-            backgroundColor: AppColors.headerBgColor,
+            backgroundColor: colorConfig().headerBgColor,
             title: Stack(
               children: [
                 Opacity(

@@ -21,7 +21,7 @@ class DashboardDefinitionCard extends StatelessWidget {
     final id = dashboard.id;
 
     return Card(
-      color: AppColors.headerBgColor,
+      color: colorConfig().headerBgColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -44,9 +44,9 @@ class DashboardDefinitionCard extends StatelessWidget {
               const Spacer(),
               Visibility(
                 visible: dashboard.private,
-                child: const Icon(
+                child: Icon(
                   MdiIcons.security,
-                  color: AppColors.error,
+                  color: colorConfig().error,
                   size: settingsIconSize,
                 ),
               ),

@@ -28,7 +28,7 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: colorConfig().bodyBgColor,
       appBar: const DashboardsAppBar(),
       body: StreamBuilder<List<DashboardDefinition>>(
         stream: stream,
@@ -79,7 +79,7 @@ class DashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.entryCardColor,
+      color: colorConfig().entryCardColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -89,8 +89,8 @@ class DashboardCard extends StatelessWidget {
             const EdgeInsets.only(left: 16, top: 8, bottom: 20, right: 16),
         title: Text(
           dashboard.name,
-          style: const TextStyle(
-            color: AppColors.entryTextColor,
+          style: TextStyle(
+            color: colorConfig().entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 24,
             fontWeight: FontWeight.w300,
@@ -98,8 +98,8 @@ class DashboardCard extends StatelessWidget {
         ),
         subtitle: Text(
           dashboard.description,
-          style: const TextStyle(
-            color: AppColors.entryTextColor,
+          style: TextStyle(
+            color: colorConfig().entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 16,
             fontWeight: FontWeight.w300,

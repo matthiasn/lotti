@@ -105,7 +105,7 @@ class _DashboardPageState extends State<DashboardPage> {
           }
 
           return Scaffold(
-            backgroundColor: AppColors.bodyBgColor,
+            backgroundColor: colorConfig().bodyBgColor,
             appBar: DashboardAppBar(dashboard),
             body: SingleChildScrollView(
               child: Padding(
@@ -167,7 +167,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.dashboard_customize_outlined),
-                          color: AppColors.entryTextColor,
+                          color: colorConfig().entryTextColor,
                           onPressed: () {
                             getIt<AppRouter>().pushNamed(
                               '/settings/dashboards/${widget.dashboardId}',

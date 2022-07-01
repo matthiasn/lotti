@@ -78,7 +78,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
       appBar: TitleAppBar(
         title: localizations.addTaskTitle,
       ),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: colorConfig().bodyBgColor,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(8),
@@ -97,15 +97,15 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
               ),
               TextButton(
                 onPressed: _save,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     'Save',
                     style: TextStyle(
                       fontSize: 20,
                       fontFamily: 'Oswald',
                       fontWeight: FontWeight.bold,
-                      color: AppColors.appBarFgColor,
+                      color: colorConfig().appBarFgColor,
                     ),
                   ),
                 ),

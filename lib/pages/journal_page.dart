@@ -11,6 +11,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/themes/utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
@@ -150,7 +151,7 @@ class _JournalPageState extends State<JournalPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: AppColors.appBarFgColor,
+      backgroundColor: colorConfig().appBarFgColor,
       queryStyle: const TextStyle(
         fontFamily: 'Lato',
         fontSize: 24,
@@ -218,8 +219,8 @@ class _JournalPageState extends State<JournalPage> {
                                 borderRadius: BorderRadius.circular(4),
                                 child: ColoredBox(
                                   color: types.contains(item.value?.typeName)
-                                      ? AppColors.selectedChoiceChipColor
-                                      : AppColors.unselectedChoiceChipColor,
+                                      ? colorConfig().selectedChoiceChipColor
+                                      : colorConfig().unselectedChoiceChipColor,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 1,
@@ -232,8 +233,9 @@ class _JournalPageState extends State<JournalPage> {
                                         fontSize: 14,
                                         color: types
                                                 .contains(item.value?.typeName)
-                                            ? AppColors.selectedChoiceChipTextColor
-                                            : AppColors
+                                            ? colorConfig()
+                                                .selectedChoiceChipTextColor
+                                            : colorConfig()
                                                 .unselectedChoiceChipTextColor,
                                       ),
                                     ),
@@ -258,13 +260,13 @@ class _JournalPageState extends State<JournalPage> {
                         children: [
                           Text(
                             localizations.journalPrivateTooltip,
-                            style: const TextStyle(
-                              color: AppColors.entryTextColor,
+                            style: TextStyle(
+                              color: colorConfig().entryTextColor,
                             ),
                           ),
                           CupertinoSwitch(
                             value: privateEntriesOnly,
-                            activeColor: AppColors.private,
+                            activeColor: colorConfig().private,
                             onChanged: (bool value) {
                               setState(() {
                                 privateEntriesOnly = value;
@@ -277,11 +279,11 @@ class _JournalPageState extends State<JournalPage> {
                     ),
                     Text(
                       localizations.journalFavoriteTooltip,
-                      style: const TextStyle(color: AppColors.entryTextColor),
+                      style: TextStyle(color: colorConfig().entryTextColor),
                     ),
                     CupertinoSwitch(
                       value: starredEntriesOnly,
-                      activeColor: AppColors.starredGold,
+                      activeColor: colorConfig().starredGold,
                       onChanged: (bool value) {
                         setState(() {
                           starredEntriesOnly = value;
@@ -291,11 +293,11 @@ class _JournalPageState extends State<JournalPage> {
                     ),
                     Text(
                       localizations.journalFlaggedTooltip,
-                      style: const TextStyle(color: AppColors.entryTextColor),
+                      style: TextStyle(color: colorConfig().entryTextColor),
                     ),
                     CupertinoSwitch(
                       value: flaggedEntriesOnly,
-                      activeColor: AppColors.starredGold,
+                      activeColor: colorConfig().starredGold,
                       onChanged: (bool value) {
                         setState(() {
                           flaggedEntriesOnly = value;
@@ -361,7 +363,7 @@ class _JournalPageState extends State<JournalPage> {
           ),
         ).asGlass(
           clipBorderRadius: BorderRadius.circular(8),
-          tintColor: AppColors.searchBgColor,
+          tintColor: colorConfig().searchBgColor,
         );
       },
     );
@@ -402,7 +404,7 @@ class _JournalPageState extends State<JournalPage> {
                   return Stack(
                     children: [
                       Scaffold(
-                        backgroundColor: AppColors.bodyBgColor,
+                        backgroundColor: colorConfig().bodyBgColor,
                         body: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 8),
                           child: ListView(
@@ -448,9 +450,9 @@ class _JournalPageState extends State<JournalPage> {
                                 resetStream();
                               });
                             },
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.close,
-                              color: AppColors.bottomNavIconUnselected,
+                              color: colorConfig().bottomNavIconUnselected,
                             ),
                           ),
                         ),

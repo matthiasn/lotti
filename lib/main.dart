@@ -102,11 +102,11 @@ class LottiApp extends StatelessWidget {
                   GlobalWidgetsLocalizations.delegate,
                   GlobalCupertinoLocalizations.delegate,
                 ],
-                color: AppColors.bodyBgColor,
+                color: colorConfig().bodyBgColor,
                 supportedLocales: AppLocalizations.supportedLocales,
                 theme: ThemeData(
                   primarySwatch: Colors.grey,
-                  scaffoldBackgroundColor: AppColors.bodyBgColor,
+                  scaffoldBackgroundColor: colorConfig().bodyBgColor,
                 ),
                 debugShowCheckedModeBanner: false,
                 routerDelegate: router.delegate(

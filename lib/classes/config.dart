@@ -55,6 +55,8 @@ class ColorConfig with _$ColorConfig {
     @ColorConverter() required Color searchBgColor,
     @ColorConverter() required Color appBarFgColor,
     @ColorConverter() required Color codeBlockBackground,
+    @ColorConverter() required Color selectedChoiceChipColor,
+    @ColorConverter() required Color selectedChoiceChipTextColor,
     @ColorConverter() required Color unselectedChoiceChipColor,
     @ColorConverter() required Color unselectedChoiceChipTextColor,
     @ColorConverter() required Color timeRecording,

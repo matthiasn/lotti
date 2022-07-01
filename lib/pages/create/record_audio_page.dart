@@ -33,7 +33,7 @@ class _RecordAudioPageState extends State<RecordAudioPage> {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.addAudioTitle),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: colorConfig().bodyBgColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

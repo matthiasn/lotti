@@ -17,7 +17,7 @@ class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: AppColors.headerBgColor,
+      backgroundColor: colorConfig().headerBgColor,
       title: Text(
         dashboard.name,
         style: appBarTextStyle,

@@ -29,7 +29,7 @@ class AlignedNavIcon extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           icon: Icon(
             iconData,
-            color: AppColors.entryTextColor,
+            color: colorConfig().entryTextColor,
             size: 32,
           ),
           onPressed: onPressed,

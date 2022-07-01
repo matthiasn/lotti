@@ -55,7 +55,7 @@ class _CreateTextEntryPageState extends State<CreateTextEntryPage> {
       appBar: TitleAppBar(
         title: localizations.addEntryTitle,
       ),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: colorConfig().bodyBgColor,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(12),

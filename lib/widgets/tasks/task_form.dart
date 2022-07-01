@@ -93,8 +93,8 @@ class _TaskFormState extends State<TaskForm> {
                     isUtc: true,
                   ),
                   theme: DatePickerTheme(
-                    headerColor: AppColors.headerBgColor,
-                    backgroundColor: AppColors.bodyBgColor,
+                    headerColor: colorConfig().headerBgColor,
+                    backgroundColor: colorConfig().bodyBgColor,
                     itemStyle: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -112,7 +112,7 @@ class _TaskFormState extends State<TaskForm> {
                     horizontal: 8,
                     vertical: 4,
                   ),
-                  backgroundColor: AppColors.unselectedChoiceChipColor,
+                  backgroundColor: colorConfig().unselectedChoiceChipColor,
                   initialValue: widget.data?.status.map(
                         open: (_) => 'OPEN',
                         groomed: (_) => 'GROOMED',
@@ -134,7 +134,7 @@ class _TaskFormState extends State<TaskForm> {
                   onChanged: (dynamic _) => widget.saveFn(),
                   selectedColor: widget.data?.status != null
                       ? taskColor(widget.data!.status)
-                      : AppColors.unselectedChoiceChipColor,
+                      : colorConfig().unselectedChoiceChipColor,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   runSpacing: 6,
                   spacing: 4,
@@ -142,7 +142,7 @@ class _TaskFormState extends State<TaskForm> {
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Oswald',
-                    color: AppColors.unselectedChoiceChipColor,
+                    color: colorConfig().unselectedChoiceChipColor,
                   ),
                   options: [
                     FormBuilderChipOption<String>(

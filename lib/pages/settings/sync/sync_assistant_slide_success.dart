@@ -55,7 +55,7 @@ class SyncAssistantSuccessSlide extends StatelessWidget {
                   persistNamedRoute('/settings/advanced');
                   getIt<AppRouter>().pop();
                 },
-                primaryColor: AppColors.outboxSuccessColor,
+                primaryColor: colorConfig().outboxSuccessColor,
               ),
             ),
           ),

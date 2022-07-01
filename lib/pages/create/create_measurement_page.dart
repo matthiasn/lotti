@@ -137,7 +137,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                 ),
             ],
           ),
-          backgroundColor: AppColors.bodyBgColor,
+          backgroundColor: colorConfig().bodyBgColor,
           body: FadeIn(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -146,7 +146,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      color: AppColors.headerBgColor,
+                      color: colorConfig().headerBgColor,
                       width: MediaQuery.of(context).size.width,
                       padding: const EdgeInsets.all(32),
                       child: FormBuilder(
@@ -180,7 +180,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                           style: titleStyle.copyWith(
                                             decoration:
                                                 TextDecoration.underline,
-                                            color: AppColors.entryTextColor,
+                                            color: colorConfig().entryTextColor,
                                           ),
                                           wrapWords: false,
                                           maxLines: 3,
@@ -201,8 +201,8 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       Expanded(
                                         child: Text(
                                           selected?.displayName ?? '',
-                                          style: const TextStyle(
-                                            color: AppColors.entryTextColor,
+                                          style: TextStyle(
+                                            color: colorConfig().entryTextColor,
                                             fontFamily: 'Oswald',
                                             fontSize: 24,
                                           ),
@@ -211,7 +211,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       IconButton(
                                         icon:
                                             const Icon(Icons.settings_outlined),
-                                        color: AppColors.entryTextColor,
+                                        color: colorConfig().entryTextColor,
                                         onPressed: () {
                                           getIt<AppRouter>().pushNamed(
                                             '/settings/measurables/${selected?.id}',
@@ -223,8 +223,8 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                   if (selected?.description != null)
                                     Text(
                                       selected!.description,
-                                      style: const TextStyle(
-                                        color: AppColors.entryTextColor,
+                                      style: TextStyle(
+                                        color: colorConfig().entryTextColor,
                                         fontFamily: 'Oswald',
                                         fontWeight: FontWeight.w300,
                                         fontSize: 14,
@@ -232,7 +232,8 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     ),
                                   if (selected == null)
                                     FormBuilderDropdown<MeasurableDataType>(
-                                      dropdownColor: AppColors.headerBgColor,
+                                      dropdownColor:
+                                          colorConfig().headerBgColor,
                                       name: 'type',
                                       decoration: InputDecoration(
                                         labelText: 'Type',
@@ -277,8 +278,10 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       ),
                                       initialValue: DateTime.now(),
                                       theme: DatePickerTheme(
-                                        headerColor: AppColors.headerBgColor,
-                                        backgroundColor: AppColors.bodyBgColor,
+                                        headerColor:
+                                            colorConfig().headerBgColor,
+                                        backgroundColor:
+                                            colorConfig().bodyBgColor,
                                         itemStyle: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,

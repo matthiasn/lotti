@@ -24,8 +24,8 @@ class SlideShowWidget extends StatelessWidget {
       color: Colors.black,
       child: ImageSlideshow(
         height: double.infinity,
-        indicatorColor: AppColors.bottomNavIconSelected,
-        indicatorBackgroundColor: AppColors.bottomNavIconUnselected,
+        indicatorColor: colorConfig().bottomNavIconSelected,
+        indicatorBackgroundColor: colorConfig().bottomNavIconUnselected,
         onPageChanged: (value) {
           debugPrint('Page changed: $value');
         },

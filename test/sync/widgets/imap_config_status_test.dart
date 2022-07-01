@@ -101,7 +101,7 @@ void main() {
       expect(labelFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.outboxSuccessColor);
+          find.byContainerColor(color: colorConfig().outboxSuccessColor);
 
       expect(successIndicatorFinder, findsOneWidget);
     });
@@ -129,7 +129,7 @@ void main() {
       expect(labelFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.outboxSuccessColor);
+          find.byContainerColor(color: colorConfig().outboxSuccessColor);
 
       expect(successIndicatorFinder, findsOneWidget);
     });
@@ -157,7 +157,7 @@ void main() {
       expect(labelFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.outboxSuccessColor);
+          find.byContainerColor(color: colorConfig().outboxSuccessColor);
 
       expect(successIndicatorFinder, findsOneWidget);
     });
@@ -187,7 +187,7 @@ void main() {
       expect(labelFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.error);
+          find.byContainerColor(color: colorConfig().error);
 
       expect(successIndicatorFinder, findsOneWidget);
     });
@@ -215,7 +215,7 @@ void main() {
       expect(labelFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.outboxPendingColor);
+          find.byContainerColor(color: colorConfig().outboxPendingColor);
 
       expect(successIndicatorFinder, findsOneWidget);
     });

@@ -44,7 +44,7 @@ class EmptyDashboards extends StatelessWidget {
                       localizations.manualLinkText,
                       style: titleStyle.copyWith(
                         decoration: TextDecoration.underline,
-                        color: AppColors.tagColor,
+                        color: colorConfig().tagColor,
                       ),
                       maxLines: 2,
                     ),

@@ -19,11 +19,11 @@ class TitleAppBar extends StatelessWidget with PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       actions: actions,
-      backgroundColor: AppColors.headerBgColor,
+      backgroundColor: colorConfig().headerBgColor,
       title: Text(
         title,
         style: appBarTextStyle.copyWith(
-          color: AppColors.entryTextColor,
+          color: colorConfig().entryTextColor,
         ),
       ),
       centerTitle: true,

@@ -1,7 +1,7 @@
 // ignore_for_file: equal_keys_in_map
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/utils.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
@@ -45,8 +45,10 @@ final darkTheme = ColorConfig(
   audioMeterBarBackground:
       TinyColor.fromColor(defaultBaseColor).lighten(30).color,
   inactiveAudioControl: const Color.fromRGBO(155, 155, 177, 1),
-  unselectedChoiceChipTextColor: const Color.fromRGBO(51, 51, 51, 1),
-  unselectedChoiceChipColor: const Color.fromRGBO(155, 155, 177, 1),
+  selectedChoiceChipColor: Colors.lightBlue,
+  selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
+  unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
+  unselectedChoiceChipTextColor: colorFromCssHex('#474b40'),
 );
 
 final brightTheme = ColorConfig(
@@ -86,6 +88,8 @@ final brightTheme = ColorConfig(
   audioMeterBarBackground:
       TinyColor.fromColor(defaultBaseColor).lighten(30).color,
   inactiveAudioControl: const Color.fromRGBO(155, 155, 177, 1),
-  unselectedChoiceChipTextColor: const Color.fromRGBO(51, 51, 51, 1),
-  unselectedChoiceChipColor: const Color.fromRGBO(155, 155, 177, 1),
+  selectedChoiceChipColor: Colors.lightBlue,
+  selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
+  unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
+  unselectedChoiceChipTextColor: colorFromCssHex('#474b40'),
 );

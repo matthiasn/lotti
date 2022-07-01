@@ -42,25 +42,25 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                 topRight: Radius.circular(8),
               ),
               child: Container(
-                color: AppColors.timeRecordingBg,
+                color: colorConfig().timeRecordingBg,
                 width: 110,
                 height: 32,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       MdiIcons.timerOutline,
-                      color: AppColors.editorTextColor,
+                      color: colorConfig().editorTextColor,
                       size: 16,
                     ),
                     Padding(
                       padding: const EdgeInsets.only(left: 4),
                       child: Text(
                         durationString,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'ShareTechMono',
                           fontSize: 18,
-                          color: AppColors.editorTextColor,
+                          color: colorConfig().editorTextColor,
                         ),
                       ),
                     ),

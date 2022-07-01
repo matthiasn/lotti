@@ -35,9 +35,9 @@ class TaskStatusWidget extends StatelessWidget {
             done: (_) => localizations.taskStatusDone,
             rejected: (_) => localizations.taskStatusRejected,
           ),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Oswald',
-            color: AppColors.selectedChoiceChipTextColor,
+            color: colorConfig().selectedChoiceChipTextColor,
             fontSize: 12,
           ),
         ),

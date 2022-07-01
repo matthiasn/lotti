@@ -22,7 +22,7 @@ class MeasurableTypeCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(4),
       child: Card(
-        color: AppColors.headerBgColor,
+        color: colorConfig().headerBgColor,
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -59,19 +59,19 @@ class MeasurableTypeCard extends StatelessWidget {
                     children: [
                       Visibility(
                         visible: fromNullableBool(item.private),
-                        child: const Icon(
+                        child: Icon(
                           MdiIcons.security,
-                          color: AppColors.error,
+                          color: colorConfig().error,
                           size: settingsIconSize,
                         ),
                       ),
                       Visibility(
                         visible: fromNullableBool(item.favorite),
-                        child: const Padding(
-                          padding: EdgeInsets.only(left: 4),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 4),
                           child: Icon(
                             MdiIcons.star,
-                            color: AppColors.starredGold,
+                            color: colorConfig().starredGold,
                             size: settingsIconSize,
                           ),
                         ),

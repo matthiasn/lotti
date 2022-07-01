@@ -23,7 +23,7 @@ class DashboardItemModal extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return ColoredBox(
-      color: AppColors.bodyBgColor,
+      color: colorConfig().bodyBgColor,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
@@ -57,7 +57,7 @@ class DashboardItemModal extends StatelessWidget {
                     EnumToString.convertToString(aggregationType),
                     style: choiceLabelStyle,
                   ),
-                  selectedColor: AppColors.outboxSuccessColor,
+                  selectedColor: colorConfig().outboxSuccessColor,
                   selected: aggregationType == item.aggregationType,
                 );
               }).toList(),

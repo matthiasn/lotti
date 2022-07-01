@@ -18,7 +18,7 @@ class EmptyScaffoldWithTitle extends StatelessWidget {
     return FadeIn(
       duration: const Duration(seconds: 2),
       child: Scaffold(
-        backgroundColor: AppColors.bodyBgColor,
+        backgroundColor: colorConfig().bodyBgColor,
         appBar: TitleAppBar(
           title: title,
         ),

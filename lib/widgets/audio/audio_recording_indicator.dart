@@ -34,26 +34,26 @@ class AudioRecordingIndicator extends StatelessWidget {
                 child: Container(
                   width: 120,
                   height: 32,
-                  color: AppColors.timeRecordingBg,
+                  color: colorConfig().timeRecordingBg,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[
-                          const Icon(
+                          Icon(
                             Icons.mic,
                             size: 24,
-                            color: AppColors.editorTextColor,
+                            color: colorConfig().editorTextColor,
                           ),
                           Padding(
                             padding: const EdgeInsets.only(left: 4),
                             child: Text(
                               formatDuration(state.progress),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'ShareTechMono',
                                 fontSize: 18,
-                                color: AppColors.editorTextColor,
+                                color: colorConfig().editorTextColor,
                               ),
                             ),
                           ),

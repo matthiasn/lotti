@@ -44,7 +44,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: AppColors.appBarFgColor,
+      backgroundColor: colorConfig().appBarFgColor,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: 'Lato',
@@ -95,9 +95,9 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
 
         return Scaffold(
           appBar: TitleAppBar(title: localizations.settingsMeasurablesTitle),
-          backgroundColor: AppColors.bodyBgColor,
+          backgroundColor: colorConfig().bodyBgColor,
           floatingActionButton: FloatingActionButton(
-            backgroundColor: AppColors.entryBgColor,
+            backgroundColor: colorConfig().entryBgColor,
             onPressed: () {
               pushNamedRoute('/settings/create_measurable');
             },
