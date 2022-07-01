@@ -943,7 +943,13 @@ class PersistenceLogic {
       ),
     );
 
-    if (dashboard.reviewAt != null && dashboard.deletedAt != null) {
+    if (dashboard.deletedAt != null) {
+      await getIt<NotificationService>().cancelNotification(
+        dashboard.id.hashCode,
+      );
+    }
+
+    if (dashboard.reviewAt != null && dashboard.deletedAt == null) {
       await getIt<NotificationService>().scheduleNotification(
         title: 'Time for a Dashboard Review!',
         body: dashboard.name,
