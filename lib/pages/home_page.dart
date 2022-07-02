@@ -26,10 +26,10 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<bool>(
-      stream: _db.watchConfigFlag('show_tasks_tab'),
+    return StreamBuilder<Set<String>>(
+      stream: _db.watchActiveConfigFlagNames(),
       builder: (context, snapshot) {
-        final showTasks = snapshot.data;
+        final showTasks = snapshot.data?.contains('show_tasks_tab');
 
         if (showTasks == null) {
           return const CircularProgressIndicator();

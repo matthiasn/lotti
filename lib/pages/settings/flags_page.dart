@@ -16,7 +16,7 @@ class FlagsPage extends StatefulWidget {
 class _FlagsPageState extends State<FlagsPage> {
   final JournalDb _db = getIt<JournalDb>();
 
-  late final Stream<List<ConfigFlag>> stream = _db.watchConfigFlags();
+  late final Stream<Set<ConfigFlag>> stream = _db.watchConfigFlags();
 
   @override
   void initState() {
@@ -30,13 +30,13 @@ class _FlagsPageState extends State<FlagsPage> {
     return Scaffold(
       appBar: TitleAppBar(title: localizations.settingsFlagsTitle),
       backgroundColor: colorConfig().bodyBgColor,
-      body: StreamBuilder<List<ConfigFlag>>(
+      body: StreamBuilder<Set<ConfigFlag>>(
         stream: stream,
         builder: (
           BuildContext context,
-          AsyncSnapshot<List<ConfigFlag>> snapshot,
+          AsyncSnapshot<Set<ConfigFlag>> snapshot,
         ) {
-          final items = snapshot.data ?? [];
+          final items = snapshot.data?.toList() ?? [];
           debugPrint('$items');
 
           return ListView(
@@ -105,7 +105,7 @@ class ConfigFlagCard extends StatelessWidget {
             children: [
               Text(
                 getLocalizedDescription(item),
-                style:  TextStyle(
+                style: TextStyle(
                   color: colorConfig().entryTextColor,
                   fontFamily: 'Oswald',
                   fontSize: 20,

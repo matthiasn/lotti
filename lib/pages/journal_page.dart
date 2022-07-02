@@ -57,7 +57,7 @@ class _JournalPageState extends State<JournalPage> {
   ];
 
   late Stream<List<JournalEntity>> stream;
-  late Stream<List<ConfigFlag>> configFlagsStream;
+  late Stream<Set<ConfigFlag>> configFlagsStream;
 
   final List<MultiSelectItem<FilterBy?>> _items = _entryTypes
       .map((entryType) => MultiSelectItem<FilterBy?>(entryType, entryType.name))
@@ -88,7 +88,7 @@ class _JournalPageState extends State<JournalPage> {
     super.initState();
     types = defaultTypes.toSet();
     configFlagsStream = _db.watchConfigFlags();
-    configFlagsStream.listen((List<ConfigFlag> configFlags) {
+    configFlagsStream.listen((Set<ConfigFlag> configFlags) {
       setState(() {
         for (final flag in configFlags) {
           if (flag.name == 'private') {

@@ -33,7 +33,7 @@ class TasksPage extends StatefulWidget {
 class _TasksPageState extends State<TasksPage> {
   final JournalDb _db = getIt<JournalDb>();
   late Stream<List<JournalEntity>> stream;
-  late Stream<List<ConfigFlag>> configFlagsStream;
+  late Stream<Set<ConfigFlag>> configFlagsStream;
 
   final List<String> taskStatuses = [
     'OPEN',
@@ -61,7 +61,7 @@ class _TasksPageState extends State<TasksPage> {
     super.initState();
 
     configFlagsStream = _db.watchConfigFlags();
-    configFlagsStream.listen((List<ConfigFlag> configFlags) {
+    configFlagsStream.listen((Set<ConfigFlag> configFlags) {
       resetStream();
     });
     resetStream();

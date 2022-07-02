@@ -1,3 +1,4 @@
+import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -12,7 +13,7 @@ class Maintenance {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
   Future<void> recreateTaggedLinks() async {
-    await createDbBackup();
+    await createDbBackup(journalDbFileName);
 
     final count = await _db.getJournalCount();
     const pageSize = 100;
@@ -30,7 +31,7 @@ class Maintenance {
   }
 
   Future<void> recreateStoryAssignment() async {
-    await createDbBackup();
+    await createDbBackup(journalDbFileName);
 
     final count = await _db.getJournalCount();
     const pageSize = 100;
@@ -59,7 +60,7 @@ class Maintenance {
   }
 
   Future<void> deleteTaggedLinks() async {
-    await createDbBackup();
+    await createDbBackup(journalDbFileName);
     await _db.deleteTagged();
   }
 
