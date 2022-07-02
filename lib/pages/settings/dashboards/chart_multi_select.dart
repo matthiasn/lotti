@@ -31,7 +31,10 @@ class ChartMultiSelect<T> extends StatelessWidget {
         backgroundColor: colorConfig().bodyBgColor,
         items: multiSelectItems,
         initialValue: const [],
-        title: Text(title, style: titleStyle),
+        title: Text(
+          title,
+          style: titleStyle(),
+        ),
         checkColor: colorConfig().entryTextColor,
         selectedColor: Colors.blue,
         decoration: BoxDecoration(
@@ -44,8 +47,8 @@ class ChartMultiSelect<T> extends StatelessWidget {
             width: 2,
           ),
         ),
-        itemsTextStyle: multiSelectStyle,
-        selectedItemsTextStyle: multiSelectStyle.copyWith(
+        itemsTextStyle: multiSelectStyle(),
+        selectedItemsTextStyle: multiSelectStyle().copyWith(
           fontWeight: FontWeight.normal,
         ),
         unselectedColor: colorConfig().entryTextColor,
@@ -54,8 +57,8 @@ class ChartMultiSelect<T> extends StatelessWidget {
           size: 32,
           color: colorConfig().entryTextColor,
         ),
-        searchTextStyle: formLabelStyle,
-        searchHintStyle: formLabelStyle,
+        searchTextStyle: formLabelStyle(),
+        searchHintStyle: formLabelStyle(),
         buttonIcon: Icon(
           iconData,
           color: colorConfig().entryTextColor,

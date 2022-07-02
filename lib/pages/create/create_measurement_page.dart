@@ -131,7 +131,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       localizations.addMeasurementSaveButton,
-                      style: saveButtonStyle,
+                      style: saveButtonStyle(),
                     ),
                   ),
                 ),
@@ -177,7 +177,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                         child: AutoSizeText(
                                           localizations
                                               .addMeasurementNoneDefined,
-                                          style: titleStyle.copyWith(
+                                          style: titleStyle().copyWith(
                                             decoration:
                                                 TextDecoration.underline,
                                             color: colorConfig().entryTextColor,
@@ -237,11 +237,11 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       name: 'type',
                                       decoration: InputDecoration(
                                         labelText: 'Type',
-                                        labelStyle: labelStyle,
+                                        labelStyle: labelStyle(),
                                       ),
                                       hint: Text(
                                         'Select Measurement Type',
-                                        style: inputStyle,
+                                        style: inputStyle(),
                                       ),
                                       onChanged: (MeasurableDataType? value) {
                                         setState(() {
@@ -258,7 +258,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                               value: item,
                                               child: Text(
                                                 item.displayName,
-                                                style: inputStyle,
+                                                style: inputStyle(),
                                               ),
                                             ),
                                           )
@@ -271,10 +271,10 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       format: DateFormat(
                                         "EEEE, MMMM d, yyyy 'at' HH:mm",
                                       ),
-                                      style: inputStyle,
+                                      style: inputStyle(),
                                       decoration: InputDecoration(
                                         labelText: 'Measurement taken',
-                                        labelStyle: labelStyle,
+                                        labelStyle: labelStyle(),
                                       ),
                                       initialValue: DateTime.now(),
                                       theme: DatePickerTheme(
@@ -300,10 +300,10 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       decoration: InputDecoration(
                                         labelText: '${selected?.displayName} '
                                             '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
-                                        labelStyle: labelStyle,
+                                        labelStyle: labelStyle(),
                                       ),
                                       keyboardAppearance: Brightness.dark,
-                                      style: inputStyle,
+                                      style: inputStyle(),
                                       autofocus: true,
                                       validator:
                                           FormBuilderValidators.required(),

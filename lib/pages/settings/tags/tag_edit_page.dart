@@ -113,7 +113,7 @@ class _TagEditPageState extends State<TagEditPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   localizations.settingsTagsSaveLabel,
-                  style: saveButtonStyle,
+                  style: saveButtonStyle(),
                 ),
               ),
             ),
@@ -152,7 +152,7 @@ class _TagEditPageState extends State<TagEditPage> {
                             initialValue: widget.tagEntity.private,
                             title: Text(
                               localizations.settingsTagsPrivateLabel,
-                              style: formLabelStyle,
+                              style: formLabelStyle(),
                             ),
                             activeColor: colorConfig().private,
                           ),
@@ -161,7 +161,7 @@ class _TagEditPageState extends State<TagEditPage> {
                             initialValue: widget.tagEntity.inactive,
                             title: Text(
                               localizations.settingsTagsHideLabel,
-                              style: formLabelStyle,
+                              style: formLabelStyle(),
                             ),
                             activeColor: colorConfig().private,
                           ),
@@ -177,7 +177,7 @@ class _TagEditPageState extends State<TagEditPage> {
                             ),
                             decoration: InputDecoration(
                               labelText: localizations.settingsTagsTypeLabel,
-                              labelStyle: labelStyle.copyWith(
+                              labelStyle: labelStyle().copyWith(
                                 height: 0.6,
                                 fontFamily: 'Oswald',
                               ),

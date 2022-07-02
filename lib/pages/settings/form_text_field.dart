@@ -27,10 +27,10 @@ class FormTextField extends StatelessWidget {
       textCapitalization: TextCapitalization.sentences,
       keyboardAppearance: Brightness.dark,
       validator: fieldRequired ? FormBuilderValidators.required() : null,
-      style: labelStyle,
+      style: labelStyle(),
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: formLabelStyle,
+        labelStyle: formLabelStyle(),
       ),
     );
   }

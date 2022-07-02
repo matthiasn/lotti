@@ -95,11 +95,11 @@ class ConfigForm extends StatelessWidget {
             key: const Key('imap_host_form_field'),
             initialValue: imapConfig?.host,
             validator: FormBuilderValidators.required(),
-            style: inputStyle,
+            style: inputStyle(),
             keyboardAppearance: Brightness.dark,
             decoration: InputDecoration(
               labelText: localizations.settingsSyncHostLabel,
-              labelStyle: settingsLabelStyle,
+              labelStyle: settingsLabelStyle(),
             ),
           ),
           FormBuilderTextField(
@@ -107,11 +107,11 @@ class ConfigForm extends StatelessWidget {
             key: const Key('imap_user_name_form_field'),
             initialValue: imapConfig?.userName,
             validator: FormBuilderValidators.required(),
-            style: inputStyle,
+            style: inputStyle(),
             keyboardAppearance: Brightness.dark,
             decoration: InputDecoration(
               labelText: localizations.settingsSyncUserLabel,
-              labelStyle: settingsLabelStyle,
+              labelStyle: settingsLabelStyle(),
             ),
           ),
           FormBuilderTextField(
@@ -120,11 +120,11 @@ class ConfigForm extends StatelessWidget {
             initialValue: imapConfig?.password,
             obscureText: true,
             validator: FormBuilderValidators.required(),
-            style: inputStyle,
+            style: inputStyle(),
             keyboardAppearance: Brightness.dark,
             decoration: InputDecoration(
               labelText: localizations.settingsSyncPasswordLabel,
-              labelStyle: settingsLabelStyle,
+              labelStyle: settingsLabelStyle(),
             ),
           ),
           FormBuilderTextField(
@@ -132,11 +132,11 @@ class ConfigForm extends StatelessWidget {
             key: const Key('imap_port_form_field'),
             initialValue: imapConfig?.port.toString() ?? '993',
             validator: FormBuilderValidators.integer(),
-            style: inputStyle,
+            style: inputStyle(),
             keyboardAppearance: Brightness.dark,
             decoration: InputDecoration(
               labelText: localizations.settingsSyncPortLabel,
-              labelStyle: settingsLabelStyle,
+              labelStyle: settingsLabelStyle(),
             ),
           ),
         ],

@@ -27,7 +27,7 @@ class EmptyDashboards extends StatelessWidget {
               children: [
                 AutoSizeText(
                   localizations.dashboardsEmptyHint,
-                  style: titleStyle,
+                  style: titleStyle(),
                   maxLines: 7,
                 ),
                 const SizedBox(height: 32),
@@ -42,7 +42,7 @@ class EmptyDashboards extends StatelessWidget {
                     },
                     child: AutoSizeText(
                       localizations.manualLinkText,
-                      style: titleStyle.copyWith(
+                      style: titleStyle().copyWith(
                         decoration: TextDecoration.underline,
                         color: colorConfig().tagColor,
                       ),

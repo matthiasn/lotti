@@ -74,7 +74,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
               },
               child: Text(
                 df.format(item.meta.dateFrom),
-                style: textStyle,
+                style: textStyle(),
               ),
             ),
             Row(

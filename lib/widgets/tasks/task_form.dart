@@ -61,12 +61,12 @@ class _TaskFormState extends State<TaskForm> {
                   initialValue: widget.data?.title ?? '',
                   decoration: InputDecoration(
                     labelText: localizations.taskNameLabel,
-                    labelStyle: labelStyle,
+                    labelStyle: labelStyle(),
                   ),
                   textCapitalization: TextCapitalization.sentences,
                   keyboardAppearance: Brightness.dark,
                   maxLines: null,
-                  style: inputStyle.copyWith(
+                  style: inputStyle().copyWith(
                     fontFamily: 'Oswald',
                     fontSize: 24,
                     fontWeight: FontWeight.normal,
@@ -78,7 +78,7 @@ class _TaskFormState extends State<TaskForm> {
                   alwaysUse24HourFormat: true,
                   format: hhMmFormat,
                   inputType: CupertinoDateTimePickerInputType.time,
-                  style: inputStyle.copyWith(
+                  style: inputStyle().copyWith(
                     fontSize: 18,
                     fontWeight: FontWeight.w300,
                     fontFamily: 'Oswald',
@@ -86,7 +86,7 @@ class _TaskFormState extends State<TaskForm> {
                   onChanged: (_) => widget.saveFn(),
                   decoration: InputDecoration(
                     labelText: localizations.taskEstimateLabel,
-                    labelStyle: labelStyle,
+                    labelStyle: labelStyle(),
                   ),
                   initialValue: DateTime.fromMillisecondsSinceEpoch(
                     widget.data?.estimate?.inMilliseconds ?? 0,
@@ -126,7 +126,7 @@ class _TaskFormState extends State<TaskForm> {
                       'OPEN',
                   decoration: InputDecoration(
                     labelText: localizations.taskStatusLabel,
-                    labelStyle: labelStyle.copyWith(
+                    labelStyle: labelStyle().copyWith(
                       height: 0.6,
                       fontFamily: 'Oswald',
                     ),

@@ -143,12 +143,12 @@ class LogDetailPage extends StatelessWidget {
               '$timestamp $level $domain $subDomain\n\n$message\n\n$stacktrace';
 
           final headerStyle = level == 'ERROR'
-              ? logDetailStyle.copyWith(
+              ? logDetailStyle().copyWith(
                   color: colorConfig().error,
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                 )
-              : logDetailStyle.copyWith(fontSize: 20);
+              : logDetailStyle().copyWith(fontSize: 20);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(8),
@@ -169,15 +169,21 @@ class LogDetailPage extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 16),
-                  child: Text('Message:', style: formLabelStyle),
+                  child: Text(
+                    'Message:',
+                    style: formLabelStyle(),
+                  ),
                 ),
-                SelectableText(message, style: logDetailStyle),
+                SelectableText(message, style: logDetailStyle()),
                 if (stacktrace != null) ...[
                   Padding(
                     padding: const EdgeInsets.only(top: 16),
-                    child: Text('Stack Trace:', style: formLabelStyle),
+                    child: Text(
+                      'Stack Trace:',
+                      style: formLabelStyle(),
+                    ),
                   ),
-                  SelectableText(stacktrace, style: logDetailStyle),
+                  SelectableText(stacktrace, style: logDetailStyle()),
                 ],
                 IconButton(
                   icon: const Icon(MdiIcons.clipboardOutline),

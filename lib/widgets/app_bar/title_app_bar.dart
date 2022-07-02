@@ -22,7 +22,7 @@ class TitleAppBar extends StatelessWidget with PreferredSizeWidget {
       backgroundColor: colorConfig().headerBgColor,
       title: Text(
         title,
-        style: appBarTextStyle.copyWith(
+        style: appBarTextStyle().copyWith(
           color: colorConfig().entryTextColor,
         ),
       ),

@@ -70,7 +70,10 @@ class StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: formLabelStyle);
+    return Text(
+      text,
+      style: formLabelStyle(),
+    );
   }
 }
 

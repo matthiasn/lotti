@@ -60,7 +60,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                 children: [
                   DurationWidget(
                     item: item,
-                    style: textStyle,
+                    style: textStyle(),
                     showControls: true,
                     saveFn: widget.saveFn,
                   ),
@@ -77,7 +77,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                             child: Text(
                               '📍 ${formatLatLon(loc?.latitude)}, '
                               '${formatLatLon(loc?.longitude)}',
-                              style: textStyle,
+                              style: textStyle(),
                             ),
                           ),
                         ],

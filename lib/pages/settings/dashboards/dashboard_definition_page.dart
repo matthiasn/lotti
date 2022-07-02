@@ -268,7 +268,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
                       localizations.dashboardSaveLabel,
-                      style: saveButtonStyle,
+                      style: saveButtonStyle(),
                     ),
                   ),
                 ),
@@ -317,7 +317,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   initialValue: widget.dashboard.private,
                                   title: Text(
                                     localizations.dashboardPrivateLabel,
-                                    style: formLabelStyle,
+                                    style: formLabelStyle(),
                                   ),
                                   activeColor: colorConfig().private,
                                 ),
@@ -326,7 +326,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   initialValue: widget.dashboard.active,
                                   title: Text(
                                     localizations.dashboardActiveLabel,
-                                    style: formLabelStyle,
+                                    style: formLabelStyle(),
                                   ),
                                   activeColor: colorConfig().starredGold,
                                 ),
@@ -336,7 +336,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   format: hhMmFormat,
                                   inputType:
                                       CupertinoDateTimePickerInputType.time,
-                                  style: inputStyle.copyWith(
+                                  style: inputStyle().copyWith(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w300,
                                     fontFamily: 'Oswald',
@@ -345,7 +345,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   decoration: InputDecoration(
                                     labelText:
                                         localizations.dashboardReviewTimeLabel,
-                                    labelStyle: labelStyle,
+                                    labelStyle: labelStyle(),
                                   ),
                                   theme: DatePickerTheme(
                                     headerColor: colorConfig().headerBgColor,
@@ -410,7 +410,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           ),
                           Text(
                             localizations.dashboardAddChartsTitle,
-                            style: formLabelStyle,
+                            style: formLabelStyle(),
                           ),
                           if (measurableSelectItems.isNotEmpty)
                             ChartMultiSelect<MeasurableDataType>(

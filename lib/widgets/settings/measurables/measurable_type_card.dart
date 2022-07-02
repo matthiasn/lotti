@@ -40,7 +40,7 @@ class MeasurableTypeCard extends StatelessWidget {
                     flex: 9,
                     child: Text(
                       item.displayName,
-                      style: definitionCardTitleStyle,
+                      style: definitionCardTitleStyle(),
                       softWrap: true,
                     ),
                   ),
@@ -49,7 +49,7 @@ class MeasurableTypeCard extends StatelessWidget {
                     visible: item.unitName.isNotEmpty,
                     child: Text(
                       '[${item.unitName}]',
-                      style: definitionCardTitleStyle.copyWith(
+                      style: definitionCardTitleStyle().copyWith(
                         fontWeight: FontWeight.w100,
                       ),
                     ),
@@ -87,13 +87,13 @@ class MeasurableTypeCard extends StatelessWidget {
                 Flexible(
                   child: Text(
                     item.description,
-                    style: definitionCardSubtitleStyle,
+                    style: definitionCardSubtitleStyle(),
                     softWrap: true,
                   ),
                 ),
                 Text(
                   aggregationLabel(item.aggregationType),
-                  style: definitionCardSubtitleStyle,
+                  style: definitionCardSubtitleStyle(),
                 ),
               ],
             ),

@@ -105,7 +105,7 @@ class TagAddIconWidget extends StatelessWidget {
                                 padding: const EdgeInsets.only(right: 8),
                                 child: Text(
                                   localizations.journalTagsLabel,
-                                  style: formLabelStyle,
+                                  style: formLabelStyle(),
                                 ),
                               ),
                               Expanded(

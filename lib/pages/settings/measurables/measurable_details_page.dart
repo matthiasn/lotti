@@ -76,7 +76,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   AppLocalizations.of(context)!.settingsMeasurableSaveLabel,
-                  style: saveButtonStyle,
+                  style: saveButtonStyle(),
                 ),
               ),
             )
@@ -132,7 +132,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               title: Text(
                                 AppLocalizations.of(context)!
                                     .settingsMeasurablePrivateLabel,
-                                style: formLabelStyle,
+                                style: formLabelStyle(),
                               ),
                               activeColor: colorConfig().private,
                             ),
@@ -142,7 +142,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               title: Text(
                                 AppLocalizations.of(context)!
                                     .settingsMeasurableFavoriteLabel,
-                                style: formLabelStyle,
+                                style: formLabelStyle(),
                               ),
                               activeColor: colorConfig().starredGold,
                             ),
@@ -152,7 +152,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               decoration: InputDecoration(
                                 labelText: AppLocalizations.of(context)!
                                     .settingsMeasurableAggregationLabel,
-                                labelStyle: formLabelStyle,
+                                labelStyle: formLabelStyle(),
                               ),
                               iconEnabledColor: colorConfig().entryTextColor,
                               clearIcon: Padding(

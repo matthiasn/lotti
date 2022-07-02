@@ -23,7 +23,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
           const SizedBox(width: 40),
           Text(
             localizations.navTabTitleInsights,
-            style: appBarTextStyle,
+            style: appBarTextStyle(),
           ),
           IconButton(
             padding: const EdgeInsets.all(4),

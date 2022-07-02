@@ -161,7 +161,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             padding: const EdgeInsets.only(left: 8),
                             child: Text(
                               dashboard.description,
-                              style: formLabelStyle,
+                              style: formLabelStyle(),
                             ),
                           ),
                         ),

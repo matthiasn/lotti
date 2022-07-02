@@ -94,7 +94,7 @@ class DashboardSurveyChart extends StatelessWidget {
                           children: [
                             Text(
                               chartConfig.surveyName,
-                              style: chartTitleStyle,
+                              style: chartTitleStyle(),
                             ),
                           ],
                         ),

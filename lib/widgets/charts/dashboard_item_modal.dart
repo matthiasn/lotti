@@ -29,12 +29,15 @@ class DashboardItemModal extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Text(title, style: titleStyle),
+            Text(
+              title,
+              style: titleStyle(),
+            ),
             const SizedBox(height: 16),
             Text(
               localizations.dashboardAggregationLabel,
               textAlign: TextAlign.end,
-              style: labelStyleLarger.copyWith(fontSize: 14),
+              style: labelStyleLarger().copyWith(fontSize: 14),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -55,7 +58,7 @@ class DashboardItemModal extends StatelessWidget {
                   },
                   label: Text(
                     EnumToString.convertToString(aggregationType),
-                    style: choiceLabelStyle,
+                    style: choiceLabelStyle(),
                   ),
                   selectedColor: colorConfig().outboxSuccessColor,
                   selected: aggregationType == item.aggregationType,

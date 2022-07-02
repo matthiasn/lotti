@@ -33,7 +33,7 @@ class SyncAssistantHeaderWidget extends StatelessWidget {
           child: Text(
             title,
             textAlign: TextAlign.center,
-            style: titleStyle.copyWith(fontSize: 16),
+            style: titleStyle().copyWith(fontSize: 16),
           ),
         ),
       ),
@@ -61,7 +61,7 @@ class AlignedText extends StatelessWidget {
             child: AutoSizeText(
               text,
               textAlign: TextAlign.start,
-              style: titleStyle,
+              style: titleStyle(),
               maxFontSize: 32,
             ),
           ),

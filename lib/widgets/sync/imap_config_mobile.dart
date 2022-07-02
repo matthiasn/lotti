@@ -49,19 +49,19 @@ class ImapConfigInfo extends StatelessWidget {
         children: [
           Text(
             'Host: ${imapConfig.host}',
-            style: labelStyleLarger,
+            style: labelStyleLarger(),
           ),
           Text(
             'Port: ${imapConfig.port}',
-            style: labelStyleLarger,
+            style: labelStyleLarger(),
           ),
           Text(
             'IMAP Folder: ${imapConfig.folder}',
-            style: labelStyleLarger,
+            style: labelStyleLarger(),
           ),
           Text(
             'User: ${imapConfig.userName}',
-            style: labelStyleLarger,
+            style: labelStyleLarger(),
           ),
           const SizedBox(height: 32),
           Row(

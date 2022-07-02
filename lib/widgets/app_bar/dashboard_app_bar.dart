@@ -20,7 +20,7 @@ class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {
       backgroundColor: colorConfig().headerBgColor,
       title: Text(
         dashboard.name,
-        style: appBarTextStyle,
+        style: appBarTextStyle(),
       ),
       centerTitle: true,
       leading: const TestDetectingAutoLeadingButton(),

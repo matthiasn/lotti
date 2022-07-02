@@ -59,7 +59,7 @@ class _VersionAppBarState extends State<VersionAppBar> {
             children: [
               Text(
                 widget.title,
-                style: appBarTextStyle,
+                style: appBarTextStyle(),
               ),
               if (snapshot.data != null)
                 Text(

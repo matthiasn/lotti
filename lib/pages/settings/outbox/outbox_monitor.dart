@@ -214,7 +214,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
             children: [
               Text(
                 localizations.settingsSyncOutboxTitle,
-                style: appBarTextStyle,
+                style: appBarTextStyle(),
               ),
               const SizedBox(width: 32),
               Row(
@@ -222,7 +222,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
                 children: [
                   Text(
                     localizations.outboxMonitorSwitchLabel,
-                    style: labelStyleLarger,
+                    style: labelStyleLarger(),
                   ),
                   CupertinoSwitch(
                     value: onlineStatus,

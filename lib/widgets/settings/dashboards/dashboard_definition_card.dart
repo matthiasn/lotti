@@ -38,7 +38,7 @@ class DashboardDefinitionCard extends StatelessWidget {
                 flex: 9,
                 child: Text(
                   dashboard.name,
-                  style: definitionCardTitleStyle,
+                  style: definitionCardTitleStyle(),
                 ),
               ),
               const Spacer(),
@@ -59,14 +59,14 @@ class DashboardDefinitionCard extends StatelessWidget {
             Flexible(
               child: Text(
                 dashboard.description,
-                style: definitionCardSubtitleStyle,
+                style: definitionCardSubtitleStyle(),
               ),
             ),
             Text(
               dashboard.reviewAt != null
                   ? hhMmFormat.format(dashboard.reviewAt!)
                   : '',
-              style: definitionCardSubtitleStyle,
+              style: definitionCardSubtitleStyle(),
             ),
           ],
         ),
