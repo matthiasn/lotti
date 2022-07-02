@@ -19,7 +19,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
   final JournalDb _db = getIt<JournalDb>();
   final Maintenance _maintenance = getIt<Maintenance>();
 
-  late final Stream<List<ConfigFlag>> stream = _db.watchConfigFlags();
+  late final Stream<Set<ConfigFlag>> stream = _db.watchConfigFlags();
 
   @override
   void initState() {
@@ -33,13 +33,13 @@ class _MaintenancePageState extends State<MaintenancePage> {
     return Scaffold(
       backgroundColor: colorConfig().bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsMaintenanceTitle),
-      body: StreamBuilder<List<ConfigFlag>>(
+      body: StreamBuilder<Set<ConfigFlag>>(
         stream: stream,
         builder: (
           BuildContext context,
-          AsyncSnapshot<List<ConfigFlag>> snapshot,
+          AsyncSnapshot<Set<ConfigFlag>> snapshot,
         ) {
-          final items = snapshot.data ?? [];
+          final items = snapshot.data?.toList() ?? [];
           debugPrint('$items');
           return StreamBuilder<int>(
             stream: _db.watchTaggedCount(),

@@ -4,24 +4,23 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 part 'database.g.dart';
+
+const journalDbFileName = 'db.sqlite';
 
 enum ConflictStatus {
   unresolved,
@@ -32,7 +31,15 @@ enum ConflictStatus {
   include: {'database.drift'},
 )
 class JournalDb extends _$JournalDb {
-  JournalDb() : super(_openConnection());
+  JournalDb({this.inMemoryDatabase = false})
+      : super(
+          openDbConnection(
+            journalDbFileName,
+            inMemoryDatabase: inMemoryDatabase,
+          ),
+        );
+
+  bool inMemoryDatabase;
 
   @override
   int get schemaVersion => 18;
@@ -421,8 +428,11 @@ class JournalDb extends _$JournalDb {
     return (await countJournalEntries().get()).first;
   }
 
-  Stream<List<ConfigFlag>> watchConfigFlags() {
-    return listConfigFlags().watch().where(makeDuplicateFilter());
+  Stream<Set<ConfigFlag>> watchConfigFlags() {
+    return listConfigFlags()
+        .watch()
+        .where(makeDuplicateFilter())
+        .map((flags) => flags.toSet());
   }
 
   Stream<Set<String>> watchActiveConfigFlagNames() {
@@ -435,10 +445,6 @@ class JournalDb extends _$JournalDb {
       }
       return activeFlags;
     });
-  }
-
-  Future<List<ConfigFlag>> getConfigFlags() {
-    return listConfigFlags().get();
   }
 
   bool findConfigFlag(String flagName, List<ConfigFlag> flags) {
@@ -454,7 +460,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<void> purgeDeleted() async {
-    await createDbBackup();
+    await createDbBackup(journalDbFileName);
     await purgeDeletedDashboards();
     await purgeDeletedMeasurables();
     await purgeDeletedTagEntities();
@@ -768,26 +774,4 @@ class JournalDb extends _$JournalDb {
     );
     return linesAffected;
   }
-}
-
-Future<File> getDatabaseFile() async {
-  final dbFolder = await getApplicationDocumentsDirectory();
-  return File(p.join(dbFolder.path, 'db.sqlite'));
-}
-
-Future<void> createDbBackup() async {
-  final file = await getDatabaseFile();
-  final ts = DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(DateTime.now());
-  final backupDir =
-      await Directory('${file.parent.path}/backup').create(recursive: true);
-  await file.copy('${backupDir.path}/db.$ts.sqlite');
-}
-
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final file = await getDatabaseFile();
-    debugPrint('DB LazyDatabase ${file.path}');
-
-    return NativeDatabase(file);
-  });
 }
