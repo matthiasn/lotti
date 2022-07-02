@@ -425,6 +425,18 @@ class JournalDb extends _$JournalDb {
     return listConfigFlags().watch().where(makeDuplicateFilter());
   }
 
+  Stream<Set<String>> watchActiveConfigFlagNames() {
+    return watchConfigFlags().map((configFlags) {
+      final activeFlags = <String>{};
+      for (final flag in configFlags) {
+        if (flag.status) {
+          activeFlags.add(flag.name);
+        }
+      }
+      return activeFlags;
+    });
+  }
+
   Future<List<ConfigFlag>> getConfigFlags() {
     return listConfigFlags().get();
   }
