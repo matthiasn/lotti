@@ -14,7 +14,7 @@ class SettingsIcon extends StatelessWidget {
     return Icon(
       iconData,
       size: 40,
-      color: AppColors.entryTextColor,
+      color: colorConfig().entryTextColor,
     );
   }
 }

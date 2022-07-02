@@ -60,7 +60,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'screenshot',
           tooltip: localizations.addActionAddScreenshot,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: colorConfig().actionColor,
           onPressed: () async {
             rebuild();
 
@@ -86,7 +86,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       ..add(
         FloatingActionButton(
           heroTag: 'measurement',
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: colorConfig().actionColor,
           tooltip: localizations.addActionAddMeasurable,
           onPressed: () {
             rebuild();
@@ -108,7 +108,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'survey',
           tooltip: localizations.addActionAddSurvey,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: colorConfig().actionColor,
           onPressed: () {
             rebuild();
 
@@ -125,7 +125,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'photo',
           tooltip: localizations.addActionAddPhotos,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: colorConfig().actionColor,
           onPressed: () {
             rebuild();
 
@@ -144,7 +144,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'text',
           tooltip: localizations.addActionAddText,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: colorConfig().actionColor,
           onPressed: () {
             rebuild();
 
@@ -171,7 +171,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'timer',
           tooltip: localizations.addActionAddTimeRecording,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: colorConfig().actionColor,
           onPressed: () async {
             rebuild();
 
@@ -202,7 +202,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'audio',
           tooltip: localizations.addActionAddAudioRecording,
-          backgroundColor: AppColors.actionColor,
+          backgroundColor: colorConfig().actionColor,
           onPressed: () {
             rebuild();
 
@@ -225,7 +225,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       FloatingActionButton(
         heroTag: 'task',
         tooltip: localizations.addActionAddTask,
-        backgroundColor: AppColors.actionColor,
+        backgroundColor: colorConfig().actionColor,
         onPressed: () {
           rebuild();
 
@@ -243,7 +243,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       radius: items.length * 32,
       useOpacity: true,
       items: items,
-      color: AppColors.actionColor,
+      color: colorConfig().actionColor,
       icon: Icons.add,
       key: Key(keyDateTime.toString()),
       duration: const Duration(milliseconds: 500),

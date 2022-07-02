@@ -21,7 +21,7 @@ class DashboardDefinitionCard extends StatelessWidget {
     final id = dashboard.id;
 
     return Card(
-      color: AppColors.headerBgColor,
+      color: colorConfig().headerBgColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -38,15 +38,15 @@ class DashboardDefinitionCard extends StatelessWidget {
                 flex: 9,
                 child: Text(
                   dashboard.name,
-                  style: definitionCardTitleStyle,
+                  style: definitionCardTitleStyle(),
                 ),
               ),
               const Spacer(),
               Visibility(
                 visible: dashboard.private,
-                child: const Icon(
+                child: Icon(
                   MdiIcons.security,
-                  color: AppColors.error,
+                  color: colorConfig().error,
                   size: settingsIconSize,
                 ),
               ),
@@ -59,14 +59,14 @@ class DashboardDefinitionCard extends StatelessWidget {
             Flexible(
               child: Text(
                 dashboard.description,
-                style: definitionCardSubtitleStyle,
+                style: definitionCardSubtitleStyle(),
               ),
             ),
             Text(
               dashboard.reviewAt != null
                   ? hhMmFormat.format(dashboard.reviewAt!)
                   : '',
-              style: definitionCardSubtitleStyle,
+              style: definitionCardSubtitleStyle(),
             ),
           ],
         ),

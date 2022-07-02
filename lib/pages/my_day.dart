@@ -58,7 +58,7 @@ class MyDayPage extends StatelessWidget {
             final background = journalEntity.map(
               journalEntry: (journalEntry) => Colors.lightGreen,
               journalImage: (journalImage) => Colors.lightBlue,
-              journalAudio: (journalAudio) => AppColors.error,
+              journalAudio: (journalAudio) => colorConfig().error,
               task: (task) => Colors.lightBlue,
               quantitative: (quantitative) => Colors.lightBlue,
               measurement: (measurement) => Colors.lightBlue,

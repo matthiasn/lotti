@@ -156,7 +156,7 @@ class SaveButton extends StatelessWidget {
         final unsaved = snapshot.data ?? false;
         return IconButton(
           icon: const Icon(Icons.save),
-          color: unsaved ? AppColors.error : Colors.black,
+          color: unsaved ? colorConfig().error : Colors.black,
           iconSize: toolbarIconSize,
           tooltip: localizations.journalToolbarSaveHint,
           // ignore: avoid_dynamic_calls, unnecessary_lambdas

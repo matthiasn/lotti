@@ -40,14 +40,14 @@ class ImapConfigStatus extends StatelessWidget {
                 ),
               state.when(
                 configured: (_, __) =>
-                    const StatusIndicator(AppColors.outboxSuccessColor),
+                    StatusIndicator(colorConfig().outboxSuccessColor),
                 imapValid: (_) =>
-                    const StatusIndicator(AppColors.outboxSuccessColor),
+                    StatusIndicator(colorConfig().outboxSuccessColor),
                 imapSaved: (_) =>
-                    const StatusIndicator(AppColors.outboxSuccessColor),
+                    StatusIndicator(colorConfig().outboxSuccessColor),
                 imapTesting: (_) =>
-                    const StatusIndicator(AppColors.outboxPendingColor),
-                imapInvalid: (_, __) => const StatusIndicator(AppColors.error),
+                    StatusIndicator(colorConfig().outboxPendingColor),
+                imapInvalid: (_, __) => StatusIndicator(colorConfig().error),
                 loading: () => const StatusIndicator(Colors.grey),
                 generating: () => const StatusIndicator(Colors.grey),
                 empty: () => const StatusIndicator(Colors.grey),
@@ -70,7 +70,10 @@ class StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: formLabelStyle);
+    return Text(
+      text,
+      style: formLabelStyle(),
+    );
   }
 }
 

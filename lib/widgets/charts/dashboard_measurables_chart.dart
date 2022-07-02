@@ -226,7 +226,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                     child: Text(
                       '${measurableDataType.displayName} '
                       '${aggregationLabel(aggregationType)}',
-                      style: chartTitleStyle,
+                      style: chartTitleStyle(),
                       overflow: TextOverflow.ellipsis,
                       softWrap: false,
                     ),
@@ -237,14 +237,14 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                       padding: AppTheme.chartDateHorizontalPadding,
                       child: Text(
                         ' ${ymd(selected.dateTime)}',
-                        style: chartTitleStyle,
+                        style: chartTitleStyle(),
                       ),
                     ),
                     const Spacer(),
                     Text(
                       ' ${selected.value.floor()} ${measurableDataType.unitName}',
-                      style:
-                          chartTitleStyle.copyWith(fontWeight: FontWeight.bold),
+                      style: chartTitleStyle()
+                          .copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
                   const Spacer(),

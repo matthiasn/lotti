@@ -11,6 +11,7 @@ import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -47,7 +48,8 @@ void main() {
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<AppRouter>(mockAppRouter);
+        ..registerSingleton<AppRouter>(mockAppRouter)
+        ..registerSingleton<ColorsService>(ColorsService(watch: false));
     });
     tearDown(getIt.reset);
 

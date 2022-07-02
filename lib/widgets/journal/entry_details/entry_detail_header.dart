@@ -74,14 +74,14 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
               },
               child: Text(
                 df.format(item.meta.dateFrom),
-                style: textStyle,
+                style: textStyle(),
               ),
             ),
             Row(
               children: [
                 SwitchIconWidget(
                   tooltip: localizations.journalFavoriteTooltip,
-                  activeColor: AppColors.starredGold,
+                  activeColor: colorConfig().starredGold,
                   onPressed: () {
                     final prev = item.meta.starred ?? false;
                     final newMeta = item.meta.copyWith(
@@ -94,7 +94,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                 ),
                 SwitchIconWidget(
                   tooltip: localizations.journalPrivateTooltip,
-                  activeColor: AppColors.error,
+                  activeColor: colorConfig().error,
                   onPressed: () {
                     final prev = item.meta.private ?? false;
                     final newMeta = item.meta.copyWith(
@@ -107,7 +107,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                 ),
                 SwitchIconWidget(
                   tooltip: localizations.journalFlaggedTooltip,
-                  activeColor: AppColors.error,
+                  activeColor: colorConfig().error,
                   onPressed: () {
                     final prev = item.meta.flag == EntryFlag.import;
                     final newMeta = item.meta.copyWith(
@@ -158,7 +158,7 @@ class SwitchIconWidget extends StatelessWidget {
       },
       icon: Icon(
         iconData,
-        color: value ? activeColor : AppColors.entryTextColor,
+        color: value ? activeColor : colorConfig().entryTextColor,
       ),
     );
   }

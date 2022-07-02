@@ -41,7 +41,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: colorConfig().bodyBgColor,
       appBar: TitleAppBar(
         title: localizations.settingsHealthImportTitle,
       ),

@@ -7,6 +7,7 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/outbox.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_mobile.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
 import 'package:mocktail/mocktail.dart';
@@ -30,7 +31,8 @@ void main() {
 
       getIt
         ..registerSingleton<OutboxService>(mockOutboxService)
-        ..registerSingleton<SyncInboxService>(mockInboxService);
+        ..registerSingleton<SyncInboxService>(mockInboxService)
+        ..registerSingleton<ColorsService>(ColorsService(watch: false));
     });
     tearDown(getIt.reset);
 
@@ -69,7 +71,7 @@ void main() {
       expect(userFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.outboxSuccessColor);
+          find.byContainerColor(color: colorConfig().outboxSuccessColor);
       expect(successIndicatorFinder, findsOneWidget);
     });
 
@@ -138,7 +140,7 @@ void main() {
       expect(userFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: AppColors.error);
+          find.byContainerColor(color: colorConfig().error);
 
       final deleteButtonFinder = find.text('Delete Sync Configuration');
       final scannerLabelFinder = find.text('Scanning Shared Secret...');

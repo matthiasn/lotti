@@ -41,7 +41,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: AppColors.appBarFgColor,
+      backgroundColor: colorConfig().appBarFgColor,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: 'Lato',
@@ -77,10 +77,10 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: colorConfig().bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsDashboardsTitle),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: colorConfig().entryBgColor,
         onPressed: () {
           getIt<AppRouter>().push(const CreateDashboardRoute());
         },

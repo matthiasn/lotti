@@ -26,11 +26,11 @@ class VuMeterWidget extends StatelessWidget {
               value: state.decibels / 160,
               minHeight: height,
               color: (state.decibels > 130)
-                  ? AppColors.audioMeterPeakedBar
+                  ? colorConfig().audioMeterPeakedBar
                   : (state.decibels > 100)
-                      ? AppColors.audioMeterTooHotBar
-                      : AppColors.audioMeterBar,
-              backgroundColor: AppColors.audioMeterBarBackground,
+                      ? colorConfig().audioMeterTooHotBar
+                      : colorConfig().audioMeterBar,
+              backgroundColor: colorConfig().audioMeterBarBackground,
             ),
           ),
         );

@@ -6,6 +6,7 @@ import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox/outbox_monitor.dart';
+import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../widget_test_utils.dart';
@@ -16,7 +17,9 @@ void main() {
   final testDateTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   group('OutboxBadge Widget Tests - ', () {
-    setUp(() {});
+    setUp(() {
+      getIt.registerSingleton<ColorsService>(ColorsService(watch: false));
+    });
     tearDown(getIt.reset);
 
     testWidgets('OutboxMonitor is rendered', (tester) async {

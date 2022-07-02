@@ -28,11 +28,14 @@ class ChartMultiSelect<T> extends StatelessWidget {
       ),
       child: MultiSelectDialogField<T?>(
         searchable: true,
-        backgroundColor: AppColors.bodyBgColor,
+        backgroundColor: colorConfig().bodyBgColor,
         items: multiSelectItems,
         initialValue: const [],
-        title: Text(title, style: titleStyle),
-        checkColor: AppColors.entryTextColor,
+        title: Text(
+          title,
+          style: titleStyle(),
+        ),
+        checkColor: colorConfig().entryTextColor,
         selectedColor: Colors.blue,
         decoration: BoxDecoration(
           color: Colors.blue.withOpacity(0.1),
@@ -40,30 +43,30 @@ class ChartMultiSelect<T> extends StatelessWidget {
             Radius.circular(40),
           ),
           border: Border.all(
-            color: AppColors.entryTextColor,
+            color: colorConfig().entryTextColor,
             width: 2,
           ),
         ),
-        itemsTextStyle: multiSelectStyle,
-        selectedItemsTextStyle: multiSelectStyle.copyWith(
+        itemsTextStyle: multiSelectStyle(),
+        selectedItemsTextStyle: multiSelectStyle().copyWith(
           fontWeight: FontWeight.normal,
         ),
-        unselectedColor: AppColors.entryTextColor,
-        searchIcon: const Icon(
+        unselectedColor: colorConfig().entryTextColor,
+        searchIcon: Icon(
           Icons.search,
           size: 32,
-          color: AppColors.entryTextColor,
+          color: colorConfig().entryTextColor,
         ),
-        searchTextStyle: formLabelStyle,
-        searchHintStyle: formLabelStyle,
+        searchTextStyle: formLabelStyle(),
+        searchHintStyle: formLabelStyle(),
         buttonIcon: Icon(
           iconData,
-          color: AppColors.entryTextColor,
+          color: colorConfig().entryTextColor,
         ),
         buttonText: Text(
           buttonText,
-          style: const TextStyle(
-            color: AppColors.entryTextColor,
+          style: TextStyle(
+            color: colorConfig().entryTextColor,
             fontSize: 16,
           ),
         ),

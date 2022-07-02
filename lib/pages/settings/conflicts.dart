@@ -45,15 +45,15 @@ class _ConflictsPageState extends State<ConflictsPage> {
         final items = snapshot.data ?? [];
 
         return Scaffold(
-          backgroundColor: AppColors.bodyBgColor,
+          backgroundColor: colorConfig().bodyBgColor,
           appBar: TitleAppBar(title: localizations.settingsConflictsTitle),
           body: SingleChildScrollView(
             child: Column(
               children: [
                 CupertinoSegmentedControl(
-                  selectedColor: AppColors.entryBgColor,
-                  unselectedColor: AppColors.headerBgColor,
-                  borderColor: AppColors.entryBgColor,
+                  selectedColor: colorConfig().entryBgColor,
+                  unselectedColor: colorConfig().headerBgColor,
+                  borderColor: colorConfig().entryBgColor,
                   groupValue: _selectedValue,
                   onValueChanged: (String value) {
                     setState(() {
@@ -137,16 +137,16 @@ class ConflictCard extends StatelessWidget {
           contentPadding: const EdgeInsets.only(left: 24, right: 24),
           title: Text(
             '${df.format(conflict.createdAt)} - ${statusString(conflict)}',
-            style: const TextStyle(
-              color: AppColors.entryTextColor,
+            style: TextStyle(
+              color: colorConfig().entryTextColor,
               fontFamily: 'Oswald',
               fontSize: 16,
             ),
           ),
           subtitle: Text(
             '${fromSerialized(conflict.serialized).meta.vectorClock}',
-            style: const TextStyle(
-              color: AppColors.entryTextColor,
+            style: TextStyle(
+              color: colorConfig().entryTextColor,
               fontFamily: 'Oswald',
               fontWeight: FontWeight.w200,
               fontSize: 16,
@@ -199,14 +199,14 @@ class DetailRoute extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           df.format(local.meta.dateFrom),
-          style: const TextStyle(
-            color: AppColors.entryBgColor,
+          style: TextStyle(
+            color: colorConfig().entryBgColor,
             fontFamily: 'Oswald',
           ),
         ),
-        backgroundColor: AppColors.headerBgColor,
+        backgroundColor: colorConfig().headerBgColor,
       ),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: colorConfig().bodyBgColor,
       body: SingleChildScrollView(
         child: Container(
           padding: EdgeInsets.only(

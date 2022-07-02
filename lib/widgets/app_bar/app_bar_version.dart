@@ -54,18 +54,18 @@ class _VersionAppBarState extends State<VersionAppBar> {
         AsyncSnapshot<int> snapshot,
       ) {
         return AppBar(
-          backgroundColor: AppColors.headerBgColor,
+          backgroundColor: colorConfig().headerBgColor,
           title: Column(
             children: [
               Text(
                 widget.title,
-                style: appBarTextStyle,
+                style: appBarTextStyle(),
               ),
               if (snapshot.data != null)
                 Text(
                   'v$version ($buildNumber), n = ${snapshot.data}',
-                  style: const TextStyle(
-                    color: AppColors.headerFontColor,
+                  style: TextStyle(
+                    color: colorConfig().headerFontColor,
                     fontFamily: 'Oswald',
                     fontSize: 10,
                     fontWeight: FontWeight.w300,

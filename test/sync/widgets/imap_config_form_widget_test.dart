@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_form.dart';
 import 'package:lotti/widgets/sync/imap_config_utils.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,6 +15,11 @@ import '../sync_config_test_mocks.dart';
 
 void main() {
   group('SyncConfig QR Widget Tests - ', () {
+    setUp(() {
+      getIt.registerSingleton<ColorsService>(ColorsService(watch: false));
+    });
+    tearDown(getIt.reset);
+
     testWidgets('Widget shows form status empty', (tester) async {
       final mock = mockSyncConfigCubitWithState(SyncConfigState.empty());
       final formKey = GlobalKey<FormBuilderState>();

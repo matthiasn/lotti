@@ -45,8 +45,8 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
             children: [
               Text(
                 localizations.journalLinkedEntriesLabel,
-                style: const TextStyle(
-                  color: AppColors.entryTextColor,
+                style: TextStyle(
+                  color: colorConfig().entryTextColor,
                   fontFamily: 'Oswald',
                 ),
               ),
@@ -65,7 +65,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                     key: ValueKey('Dismissible-$itemId'),
                     onDismissed: onDismissed,
                     background: ColoredBox(
-                      color: AppColors.error,
+                      color: colorConfig().error,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -74,7 +74,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                             child: Text(
                               localizations.journalUnlinkText,
                               style: TextStyle(
-                                color: AppColors.bodyBgColor,
+                                color: colorConfig().bodyBgColor,
                                 fontFamily: 'Oswald',
                                 fontWeight: FontWeight.w300,
                                 fontSize: 24,
@@ -86,7 +86,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                             child: Icon(
                               Icons.link_off,
                               size: 32,
-                              color: AppColors.bodyBgColor,
+                              color: colorConfig().bodyBgColor,
                             ),
                           ),
                         ],

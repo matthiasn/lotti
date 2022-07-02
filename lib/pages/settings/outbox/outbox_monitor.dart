@@ -67,7 +67,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             }
 
             return Scaffold(
-              backgroundColor: AppColors.bodyBgColor,
+              backgroundColor: colorConfig().bodyBgColor,
               appBar: OutboxAppBar(
                 onlineStatus: onlineStatus,
                 selectedValue: _selectedValue,
@@ -126,11 +126,11 @@ class OutboxItemCard extends StatelessWidget {
     Color cardColor(OutboxStatus status) {
       switch (statusEnum) {
         case OutboxStatus.pending:
-          return AppColors.outboxPendingColor;
+          return colorConfig().outboxPendingColor;
         case OutboxStatus.error:
-          return AppColors.outboxErrorColor;
+          return colorConfig().outboxErrorColor;
         case OutboxStatus.sent:
-          return AppColors.outboxSuccessColor;
+          return colorConfig().outboxSuccessColor;
       }
     }
 
@@ -150,8 +150,8 @@ class OutboxItemCard extends StatelessWidget {
           contentPadding: const EdgeInsets.only(left: 24, right: 24),
           title: Text(
             '${df.format(item.createdAt)} - $status',
-            style: const TextStyle(
-              color: AppColors.entryTextColor,
+            style: TextStyle(
+              color: colorConfig().entryTextColor,
               fontFamily: 'Oswald',
               fontSize: 16,
             ),
@@ -159,8 +159,8 @@ class OutboxItemCard extends StatelessWidget {
           subtitle: Text(
             '${item.retries} $retriesText - '
             '${item.filePath ?? localizations.outboxMonitorNoAttachment}',
-            style: const TextStyle(
-              color: AppColors.entryTextColor,
+            style: TextStyle(
+              color: colorConfig().entryTextColor,
               fontFamily: 'Oswald',
               fontWeight: FontWeight.w200,
               fontSize: 16,
@@ -206,7 +206,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return AppBar(
-      backgroundColor: AppColors.headerBgColor,
+      backgroundColor: colorConfig().headerBgColor,
       title: Column(
         children: [
           Row(
@@ -214,7 +214,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
             children: [
               Text(
                 localizations.settingsSyncOutboxTitle,
-                style: appBarTextStyle,
+                style: appBarTextStyle(),
               ),
               const SizedBox(width: 32),
               Row(
@@ -222,7 +222,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
                 children: [
                   Text(
                     localizations.outboxMonitorSwitchLabel,
-                    style: labelStyleLarger,
+                    style: labelStyleLarger(),
                   ),
                   CupertinoSwitch(
                     value: onlineStatus,
@@ -235,9 +235,9 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
             ],
           ),
           CupertinoSegmentedControl(
-            selectedColor: AppColors.entryBgColor,
-            unselectedColor: AppColors.headerBgColor,
-            borderColor: AppColors.entryBgColor,
+            selectedColor: colorConfig().entryBgColor,
+            unselectedColor: colorConfig().headerBgColor,
+            borderColor: colorConfig().entryBgColor,
             groupValue: selectedValue,
             onValueChanged: onValueChanged,
             children: {

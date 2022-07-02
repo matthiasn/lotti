@@ -64,7 +64,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: colorConfig().bodyBgColor,
       appBar: TitleAppBar(
         title: localizations.settingsMeasurablesTitle,
         actions: [
@@ -76,7 +76,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   AppLocalizations.of(context)!.settingsMeasurableSaveLabel,
-                  style: saveButtonStyle,
+                  style: saveButtonStyle(),
                 ),
               ),
             )
@@ -90,7 +90,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  color: AppColors.headerBgColor,
+                  color: colorConfig().headerBgColor,
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
@@ -132,9 +132,9 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               title: Text(
                                 AppLocalizations.of(context)!
                                     .settingsMeasurablePrivateLabel,
-                                style: formLabelStyle,
+                                style: formLabelStyle(),
                               ),
-                              activeColor: AppColors.private,
+                              activeColor: colorConfig().private,
                             ),
                             FormBuilderSwitch(
                               name: 'favorite',
@@ -142,9 +142,9 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               title: Text(
                                 AppLocalizations.of(context)!
                                     .settingsMeasurableFavoriteLabel,
-                                style: formLabelStyle,
+                                style: formLabelStyle(),
                               ),
-                              activeColor: AppColors.starredGold,
+                              activeColor: colorConfig().starredGold,
                             ),
                             FormBuilderDropdown(
                               name: 'aggregationType',
@@ -152,19 +152,19 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               decoration: InputDecoration(
                                 labelText: AppLocalizations.of(context)!
                                     .settingsMeasurableAggregationLabel,
-                                labelStyle: formLabelStyle,
+                                labelStyle: formLabelStyle(),
                               ),
-                              iconEnabledColor: AppColors.entryTextColor,
-                              clearIcon: const Padding(
-                                padding: EdgeInsets.only(right: 8),
+                              iconEnabledColor: colorConfig().entryTextColor,
+                              clearIcon: Padding(
+                                padding: const EdgeInsets.only(right: 8),
                                 child: Icon(
                                   Icons.close,
-                                  color: AppColors.entryTextColor,
+                                  color: colorConfig().entryTextColor,
                                 ),
                               ),
                               style: const TextStyle(fontSize: 40),
                               allowClear: true,
-                              dropdownColor: AppColors.headerBgColor,
+                              dropdownColor: colorConfig().headerBgColor,
                               items:
                                   AggregationType.values.map((aggregationType) {
                                 return DropdownMenuItem(
@@ -175,9 +175,9 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                       EnumToString.convertToString(
                                         aggregationType,
                                       ),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
-                                        color: AppColors.entryTextColor,
+                                        color: colorConfig().entryTextColor,
                                       ),
                                     ),
                                   ),
@@ -197,7 +197,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               iconSize: settingsIconSize,
                               tooltip: AppLocalizations.of(context)!
                                   .settingsMeasurableDeleteTooltip,
-                              color: AppColors.appBarFgColor,
+                              color: colorConfig().appBarFgColor,
                               onPressed: () async {
                                 const deleteKey = 'deleteKey';
                                 final result =

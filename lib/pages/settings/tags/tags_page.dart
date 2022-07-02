@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/create/add_tag_actions.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
@@ -41,7 +42,7 @@ class _TagsPageState extends State<TagsPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: AppColors.appBarFgColor,
+      backgroundColor: colorConfig().appBarFgColor,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: 'Lato',
@@ -78,7 +79,7 @@ class _TagsPageState extends State<TagsPage> {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.settingsTagsTitle),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: colorConfig().bodyBgColor,
       floatingActionButton: const RadialAddTagButtons(),
       body: StreamBuilder<List<TagEntity>>(
         stream: stream,
@@ -136,7 +137,7 @@ class TagCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.entryCardColor,
+      color: colorConfig().entryCardColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -158,7 +159,7 @@ class TagCard extends StatelessWidget {
               ),
               CupertinoSwitch(
                 value: tagEntity.private,
-                activeColor: AppColors.private,
+                activeColor: colorConfig().private,
                 onChanged: (bool private) async {
                   await persistenceLogic
                       .upsertTagEntity(tagEntity.copyWith(private: private));

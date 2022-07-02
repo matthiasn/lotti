@@ -69,8 +69,8 @@ class TasksCountWidget extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
               '$label: ${snapshot.data}',
-              style: const TextStyle(
-                color: AppColors.headerFontColor,
+              style:  TextStyle(
+                color: colorConfig().headerFontColor,
                 fontFamily: 'Oswald',
                 fontSize: 12,
                 fontWeight: FontWeight.w100,

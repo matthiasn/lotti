@@ -45,7 +45,8 @@ class DurationWidget extends StatelessWidget {
           isRecording = true;
         }
 
-        final labelColor = isRecording ? AppColors.timeRecording : style?.color;
+        final labelColor =
+            isRecording ? colorConfig().timeRecording : style?.color;
 
         return Visibility(
           visible: entryDuration(displayed).inMilliseconds > 0 ||

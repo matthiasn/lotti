@@ -46,8 +46,8 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
     DatePicker.showDateTimePicker(
       context,
       theme: DatePickerTheme(
-        headerColor: AppColors.entryCardColor,
-        backgroundColor: AppColors.bodyBgColor,
+        headerColor: colorConfig().entryCardColor,
+        backgroundColor: colorConfig().bodyBgColor,
         itemStyle: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.bold,
@@ -84,7 +84,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
 
         return Container(
           height: 200,
-          color: AppColors.bodyBgColor,
+          color: colorConfig().bodyBgColor,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -96,7 +96,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       child: Text(
                         localizations.journalDateFromLabel,
                         textAlign: TextAlign.end,
-                        style: labelStyleLarger,
+                        style: labelStyleLarger(),
                       ),
                     ),
                     TextButton(
@@ -112,7 +112,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       },
                       child: Text(
                         df.format(dateFrom),
-                        style: textStyleLarger,
+                        style: textStyleLarger(),
                       ),
                     ),
                   ],
@@ -127,7 +127,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       child: Text(
                         localizations.journalDateToLabel,
                         textAlign: TextAlign.end,
-                        style: labelStyleLarger,
+                        style: labelStyleLarger(),
                       ),
                     ),
                     TextButton(
@@ -143,7 +143,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       },
                       child: Text(
                         df.format(dateTo),
-                        style: textStyleLarger,
+                        style: textStyleLarger(),
                       ),
                     ),
                     TextButton(
@@ -154,7 +154,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       },
                       child: Text(
                         localizations.journalDateNowButton,
-                        style: textStyleLarger,
+                        style: textStyleLarger(),
                       ),
                     ),
                   ],
@@ -179,7 +179,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                           },
                           child: Text(
                             localizations.journalDateSaveButton,
-                            style: textStyleLarger,
+                            style: textStyleLarger(),
                           ),
                         ),
                       ),
@@ -187,8 +187,9 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                         visible: !valid,
                         child: Text(
                           localizations.journalDateInvalid,
-                          style:
-                              textStyleLarger.copyWith(color: AppColors.error),
+                          style: textStyleLarger().copyWith(
+                            color: colorConfig().error,
+                          ),
                         ),
                       ),
                     ],

@@ -209,21 +209,21 @@ class BpChartInfoWidget extends StatelessWidget {
                   if (systolic == null)
                     Text(
                       'Blood Pressure',
-                      style: chartTitleStyle,
+                      style: chartTitleStyle(),
                     ),
                   if (systolic != null) ...[
                     Padding(
                       padding: AppTheme.chartDateHorizontalPadding,
                       child: Text(
                         ' ${ymd(systolic.dateTime)}',
-                        style: chartTitleStyle,
+                        style: chartTitleStyle(),
                       ),
                     ),
                     const Spacer(),
                     Text(
                       ' ${NumberFormat('#').format(systolic.value)}/'
                       '${NumberFormat('#').format(diastolic!.value)} mmHg',
-                      style: chartTitleStyle.copyWith(
+                      style: chartTitleStyle().copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),

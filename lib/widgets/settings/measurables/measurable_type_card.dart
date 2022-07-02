@@ -22,7 +22,7 @@ class MeasurableTypeCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(4),
       child: Card(
-        color: AppColors.headerBgColor,
+        color: colorConfig().headerBgColor,
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -40,7 +40,7 @@ class MeasurableTypeCard extends StatelessWidget {
                     flex: 9,
                     child: Text(
                       item.displayName,
-                      style: definitionCardTitleStyle,
+                      style: definitionCardTitleStyle(),
                       softWrap: true,
                     ),
                   ),
@@ -49,7 +49,7 @@ class MeasurableTypeCard extends StatelessWidget {
                     visible: item.unitName.isNotEmpty,
                     child: Text(
                       '[${item.unitName}]',
-                      style: definitionCardTitleStyle.copyWith(
+                      style: definitionCardTitleStyle().copyWith(
                         fontWeight: FontWeight.w100,
                       ),
                     ),
@@ -59,19 +59,19 @@ class MeasurableTypeCard extends StatelessWidget {
                     children: [
                       Visibility(
                         visible: fromNullableBool(item.private),
-                        child: const Icon(
+                        child: Icon(
                           MdiIcons.security,
-                          color: AppColors.error,
+                          color: colorConfig().error,
                           size: settingsIconSize,
                         ),
                       ),
                       Visibility(
                         visible: fromNullableBool(item.favorite),
-                        child: const Padding(
-                          padding: EdgeInsets.only(left: 4),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 4),
                           child: Icon(
                             MdiIcons.star,
-                            color: AppColors.starredGold,
+                            color: colorConfig().starredGold,
                             size: settingsIconSize,
                           ),
                         ),
@@ -87,13 +87,13 @@ class MeasurableTypeCard extends StatelessWidget {
                 Flexible(
                   child: Text(
                     item.description,
-                    style: definitionCardSubtitleStyle,
+                    style: definitionCardSubtitleStyle(),
                     softWrap: true,
                   ),
                 ),
                 Text(
                   aggregationLabel(item.aggregationType),
-                  style: definitionCardSubtitleStyle,
+                  style: definitionCardSubtitleStyle(),
                 ),
               ],
             ),

@@ -12,12 +12,14 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -87,8 +89,8 @@ class LottiApp extends StatelessWidget {
           create: (BuildContext context) => AudioPlayerCubit(),
         ),
       ],
-      child: StreamBuilder<Themes>(
-        stream: getIt<ThemeService>().getStream(),
+      child: StreamBuilder<ColorConfig>(
+        stream: getIt<ColorsService>().getStream(),
         builder: (context, snapshot) {
           return DesktopMenuWrapper(
             FadeIn(
@@ -102,11 +104,11 @@ class LottiApp extends StatelessWidget {
                   GlobalWidgetsLocalizations.delegate,
                   GlobalCupertinoLocalizations.delegate,
                 ],
-                color: AppColors.bodyBgColor,
+                color: colorConfig().bodyBgColor,
                 supportedLocales: AppLocalizations.supportedLocales,
                 theme: ThemeData(
                   primarySwatch: Colors.grey,
-                  scaffoldBackgroundColor: AppColors.bodyBgColor,
+                  scaffoldBackgroundColor: colorConfig().bodyBgColor,
                 ),
                 debugShowCheckedModeBanner: false,
                 routerDelegate: router.delegate(

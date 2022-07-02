@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/measurables/measurables_page.dart';
+import 'package:lotti/themes/themes_service.dart';
 
 import '../../../test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -20,7 +21,9 @@ void main() {
         measurableChocolate,
       ]);
 
-      getIt.registerSingleton<JournalDb>(mockJournalDb);
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<ColorsService>(ColorsService(watch: false));
     });
     tearDown(getIt.reset);
 

@@ -10,6 +10,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/themes/utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -85,7 +86,7 @@ class TagAddIconWidget extends StatelessWidget {
                 clipBehavior: Clip.antiAliasWithSaveLayer,
                 builder: (BuildContext context) {
                   return ColoredBox(
-                    color: AppColors.entryCardColor,
+                    color: colorConfig().entryCardColor,
                     child: Padding(
                       padding: const EdgeInsets.only(
                         left: 16,
@@ -104,7 +105,7 @@ class TagAddIconWidget extends StatelessWidget {
                                 padding: const EdgeInsets.only(right: 8),
                                 child: Text(
                                   localizations.journalTagsLabel,
-                                  style: formLabelStyle,
+                                  style: formLabelStyle(),
                                 ),
                               ),
                               Expanded(
@@ -123,7 +124,7 @@ class TagAddIconWidget extends StatelessWidget {
                                     style: DefaultTextStyle.of(context)
                                         .style
                                         .copyWith(
-                                          color: AppColors.entryTextColor,
+                                          color: colorConfig().entryTextColor,
                                           fontFamily: 'Oswald',
                                           fontSize: 16,
                                         ),
@@ -141,7 +142,7 @@ class TagAddIconWidget extends StatelessWidget {
                                   },
                                   suggestionsBoxDecoration:
                                       SuggestionsBoxDecoration(
-                                    color: AppColors.entryCardColor,
+                                    color: colorConfig().entryCardColor,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   itemBuilder: (context, TagEntity tagEntity) {
@@ -172,9 +173,9 @@ class TagAddIconWidget extends StatelessWidget {
                                   top: 16,
                                   bottom: 16,
                                 ),
-                                icon: const Icon(
+                                icon: Icon(
                                   MdiIcons.contentCopy,
-                                  color: AppColors.entryTextColor,
+                                  color: colorConfig().entryTextColor,
                                 ),
                                 tooltip: localizations.journalTagsCopyHint,
                               ),
@@ -185,9 +186,9 @@ class TagAddIconWidget extends StatelessWidget {
                                   top: 16,
                                   bottom: 16,
                                 ),
-                                icon: const Icon(
+                                icon: Icon(
                                   MdiIcons.contentPaste,
-                                  color: AppColors.entryTextColor,
+                                  color: colorConfig().entryTextColor,
                                 ),
                                 tooltip: localizations.journalTagsPasteHint,
                               ),
@@ -203,10 +204,10 @@ class TagAddIconWidget extends StatelessWidget {
 
             return IconButton(
               onPressed: onTapAdd,
-              icon: const Icon(
+              icon: Icon(
                 MdiIcons.tagPlusOutline,
                 size: 24,
-                color: AppColors.entryTextColor,
+                color: colorConfig().entryTextColor,
               ),
               tooltip: localizations.journalTagPlusHint,
             );
@@ -321,10 +322,10 @@ class TagWidget extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
                   tagEntity.tag,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Oswald',
-                    color: AppColors.tagTextColor,
+                    color: colorConfig().tagTextColor,
                   ),
                 ),
               ),
@@ -332,10 +333,10 @@ class TagWidget extends StatelessWidget {
                 onPressed: onTapRemove,
                 padding: const EdgeInsets.only(left: 4),
                 constraints: const BoxConstraints(maxHeight: 16, maxWidth: 20),
-                icon: const Icon(
+                icon: Icon(
                   MdiIcons.close,
                   size: 16,
-                  color: AppColors.tagTextColor,
+                  color: colorConfig().tagTextColor,
                 ),
                 tooltip: localizations.journalTagsRemoveHint,
               ),

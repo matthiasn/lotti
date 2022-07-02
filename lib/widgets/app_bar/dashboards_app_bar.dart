@@ -15,7 +15,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return AppBar(
-      backgroundColor: AppColors.headerBgColor,
+      backgroundColor: colorConfig().headerBgColor,
       automaticallyImplyLeading: false,
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -23,12 +23,12 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
           const SizedBox(width: 40),
           Text(
             localizations.navTabTitleInsights,
-            style: appBarTextStyle,
+            style: appBarTextStyle(),
           ),
           IconButton(
             padding: const EdgeInsets.all(4),
             icon: const Icon(Icons.dashboard_customize_outlined),
-            color: AppColors.entryTextColor,
+            color: colorConfig().entryTextColor,
             onPressed: () {
               final navService = getIt<NavService>();
 

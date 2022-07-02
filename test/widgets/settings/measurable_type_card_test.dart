@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/settings/measurables/measurable_type_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -7,6 +9,11 @@ import '../../widget_test_utils.dart';
 
 void main() {
   group('MeasurableTypeCard Widget Tests - ', () {
+    setUp(() {
+      getIt.registerSingleton<ColorsService>(ColorsService(watch: false));
+    });
+    tearDown(getIt.reset);
+
     const testDescription = 'test description';
     const testUnit = 'ml';
     const testUnitEmpty = '';

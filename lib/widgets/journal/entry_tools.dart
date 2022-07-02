@@ -63,10 +63,10 @@ class InfoText extends StatelessWidget {
     return Text(
       text,
       maxLines: maxLines,
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: 'ShareTechMono',
         fontSize: 14,
-        color: AppColors.entryTextColor,
+        color: colorConfig().entryTextColor,
       ),
     );
   }

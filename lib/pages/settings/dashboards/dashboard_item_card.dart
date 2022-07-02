@@ -55,7 +55,7 @@ class DashboardItemCard extends StatelessWidget {
     );
 
     return Card(
-      color: AppColors.headerBgColor,
+      color: colorConfig().headerBgColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -89,36 +89,36 @@ class DashboardItemCard extends StatelessWidget {
           horizontal: 16,
         ),
         leading: item.map(
-          measurement: (_) => const Icon(
+          measurement: (_) => Icon(
             Icons.insights,
             size: 32,
-            color: AppColors.entryTextColor,
+            color: colorConfig().entryTextColor,
           ),
-          healthChart: (_) => const Icon(
+          healthChart: (_) => Icon(
             MdiIcons.stethoscope,
             size: 32,
-            color: AppColors.entryTextColor,
+            color: colorConfig().entryTextColor,
           ),
-          workoutChart: (_) => const Icon(
+          workoutChart: (_) => Icon(
             Icons.sports_gymnastics,
             size: 32,
-            color: AppColors.entryTextColor,
+            color: colorConfig().entryTextColor,
           ),
-          surveyChart: (_) => const Icon(
+          surveyChart: (_) => Icon(
             MdiIcons.clipboardOutline,
             size: 32,
-            color: AppColors.entryTextColor,
+            color: colorConfig().entryTextColor,
           ),
-          storyTimeChart: (_) => const Icon(
+          storyTimeChart: (_) => Icon(
             MdiIcons.bookOutline,
             size: 32,
-            color: AppColors.entryTextColor,
+            color: colorConfig().entryTextColor,
           ),
         ),
         title: Text(
           itemName,
-          style: const TextStyle(
-            color: AppColors.entryTextColor,
+          style: TextStyle(
+            color: colorConfig().entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 20,
           ),

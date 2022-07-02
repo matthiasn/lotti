@@ -40,8 +40,8 @@ class JournalCardTitle extends StatelessWidget {
             children: [
               Text(
                 df.format(item.meta.dateFrom),
-                style: const TextStyle(
-                  color: AppColors.entryTextColor,
+                style: TextStyle(
+                  color: colorConfig().entryTextColor,
                   fontSize: 14,
                   fontWeight: FontWeight.w300,
                   fontFamily: 'Oswald',
@@ -52,30 +52,30 @@ class JournalCardTitle extends StatelessWidget {
                 children: [
                   Visibility(
                     visible: fromNullableBool(item.meta.private),
-                    child: const Icon(
+                    child: Icon(
                       MdiIcons.security,
-                      color: AppColors.error,
+                      color: colorConfig().error,
                       size: iconSize,
                     ),
                   ),
                   Visibility(
                     visible: fromNullableBool(item.meta.starred),
-                    child: const Padding(
-                      padding: EdgeInsets.only(left: 4),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.star,
-                        color: AppColors.starredGold,
+                        color: colorConfig().starredGold,
                         size: iconSize,
                       ),
                     ),
                   ),
                   Visibility(
                     visible: item.meta.flag == EntryFlag.import,
-                    child: const Padding(
-                      padding: EdgeInsets.only(left: 4),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.flag,
-                        color: AppColors.error,
+                        color: colorConfig().error,
                         size: iconSize,
                       ),
                     ),
@@ -108,9 +108,9 @@ class JournalCardTitle extends StatelessWidget {
                   children: [
                     Text(
                       data.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Oswald',
-                        color: AppColors.entryTextColor,
+                        color: colorConfig().entryTextColor,
                         fontWeight: FontWeight.normal,
                         fontSize: 24,
                       ),
@@ -129,8 +129,8 @@ class JournalCardTitle extends StatelessWidget {
             task: (_) => const SizedBox.shrink(),
             orElse: () => DurationWidget(
               item: item,
-              style: const TextStyle(
-                color: AppColors.entryTextColor,
+              style: TextStyle(
+                color: colorConfig().entryTextColor,
                 fontSize: 14,
                 fontWeight: FontWeight.w300,
                 fontFamily: 'Oswald',
@@ -156,7 +156,7 @@ class JournalCard extends StatelessWidget {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       builder: (BuildContext context, AudioPlayerState state) {
         return Card(
-          color: AppColors.entryCardColor,
+          color: colorConfig().entryCardColor,
           elevation: 8,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -204,7 +204,7 @@ class LeadingIcon extends StatelessWidget {
     return Icon(
       iconData,
       size: 32,
-      color: AppColors.entryTextColor,
+      color: colorConfig().entryTextColor,
     );
   }
 }
@@ -222,7 +222,7 @@ class JournalImageCard extends StatelessWidget {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       builder: (BuildContext context, AudioPlayerState state) {
         return Card(
-          color: AppColors.entryCardColor,
+          color: colorConfig().entryCardColor,
           elevation: 8,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),

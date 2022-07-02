@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Refactor theme management for color picker
+
+## [0.8.88] - 2022-07-01
 ### Fixed:
 - Hex color strings now parsed like CSS colors
 

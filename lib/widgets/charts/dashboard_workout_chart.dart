@@ -163,7 +163,7 @@ class WorkoutChartInfoWidget extends StatelessWidget {
                   const Spacer(),
                   Text(
                     chartConfig.displayName,
-                    style: chartTitleStyle,
+                    style: chartTitleStyle(),
                   ),
                   if (selected != null) ...[
                     const Spacer(),
@@ -171,13 +171,13 @@ class WorkoutChartInfoWidget extends StatelessWidget {
                       padding: AppTheme.chartDateHorizontalPadding,
                       child: Text(
                         ' ${ymd(selected.dateTime)}',
-                        style: chartTitleStyle,
+                        style: chartTitleStyle(),
                       ),
                     ),
                     const Spacer(),
                     Text(
                       ' ${NumberFormat('#,###.##').format(selected.value)}',
-                      style: chartTitleStyle.copyWith(
+                      style: chartTitleStyle().copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),

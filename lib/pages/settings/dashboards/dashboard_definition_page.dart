@@ -256,7 +256,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
         }
 
         return Scaffold(
-          backgroundColor: AppColors.bodyBgColor,
+          backgroundColor: colorConfig().bodyBgColor,
           appBar: TitleAppBar(
             title: localizations.settingsDashboardsTitle,
             actions: [
@@ -268,7 +268,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
                       localizations.dashboardSaveLabel,
-                      style: saveButtonStyle,
+                      style: saveButtonStyle(),
                     ),
                   ),
                 ),
@@ -282,7 +282,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      color: AppColors.headerBgColor,
+                      color: colorConfig().headerBgColor,
                       padding: const EdgeInsets.all(24),
                       child: Column(
                         children: [
@@ -317,18 +317,18 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   initialValue: widget.dashboard.private,
                                   title: Text(
                                     localizations.dashboardPrivateLabel,
-                                    style: formLabelStyle,
+                                    style: formLabelStyle(),
                                   ),
-                                  activeColor: AppColors.private,
+                                  activeColor: colorConfig().private,
                                 ),
                                 FormBuilderSwitch(
                                   name: 'active',
                                   initialValue: widget.dashboard.active,
                                   title: Text(
                                     localizations.dashboardActiveLabel,
-                                    style: formLabelStyle,
+                                    style: formLabelStyle(),
                                   ),
-                                  activeColor: AppColors.starredGold,
+                                  activeColor: colorConfig().starredGold,
                                 ),
                                 FormBuilderCupertinoDateTimePicker(
                                   name: 'review_at',
@@ -336,7 +336,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   format: hhMmFormat,
                                   inputType:
                                       CupertinoDateTimePickerInputType.time,
-                                  style: inputStyle.copyWith(
+                                  style: inputStyle().copyWith(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w300,
                                     fontFamily: 'Oswald',
@@ -345,11 +345,11 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   decoration: InputDecoration(
                                     labelText:
                                         localizations.dashboardReviewTimeLabel,
-                                    labelStyle: labelStyle,
+                                    labelStyle: labelStyle(),
                                   ),
                                   theme: DatePickerTheme(
-                                    headerColor: AppColors.headerBgColor,
-                                    backgroundColor: AppColors.bodyBgColor,
+                                    headerColor: colorConfig().headerBgColor,
+                                    backgroundColor: colorConfig().bodyBgColor,
                                     itemStyle: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -410,7 +410,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           ),
                           Text(
                             localizations.dashboardAddChartsTitle,
-                            style: formLabelStyle,
+                            style: formLabelStyle(),
                           ),
                           if (measurableSelectItems.isNotEmpty)
                             ChartMultiSelect<MeasurableDataType>(
@@ -462,7 +462,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       icon: const Icon(Icons.copy),
                                       iconSize: settingsIconSize,
                                       tooltip: localizations.dashboardCopyHint,
-                                      color: AppColors.appBarFgColor,
+                                      color: colorConfig().appBarFgColor,
                                       onPressed: copyDashboard,
                                     ),
                                     IconButton(
@@ -471,7 +471,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       iconSize: settingsIconSize,
                                       tooltip:
                                           localizations.dashboardDeleteHint,
-                                      color: AppColors.appBarFgColor,
+                                      color: colorConfig().appBarFgColor,
                                       onPressed: () async {
                                         const deleteKey = 'deleteKey';
                                         final result =

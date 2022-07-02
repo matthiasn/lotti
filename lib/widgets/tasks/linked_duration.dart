@@ -60,9 +60,9 @@ class LinkedDuration extends StatelessWidget {
                         barHeight: 4,
                         thumbRadius: 6,
                         onSeek: (newPosition) {},
-                        timeLabelTextStyle: const TextStyle(
+                        timeLabelTextStyle: TextStyle(
                           fontFamily: 'Oswald',
-                          color: AppColors.entryTextColor,
+                          color: colorConfig().entryTextColor,
                           fontWeight: FontWeight.normal,
                           fontSize: 14,
                         ),

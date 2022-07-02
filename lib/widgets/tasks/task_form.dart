@@ -61,12 +61,12 @@ class _TaskFormState extends State<TaskForm> {
                   initialValue: widget.data?.title ?? '',
                   decoration: InputDecoration(
                     labelText: localizations.taskNameLabel,
-                    labelStyle: labelStyle,
+                    labelStyle: labelStyle(),
                   ),
                   textCapitalization: TextCapitalization.sentences,
                   keyboardAppearance: Brightness.dark,
                   maxLines: null,
-                  style: inputStyle.copyWith(
+                  style: inputStyle().copyWith(
                     fontFamily: 'Oswald',
                     fontSize: 24,
                     fontWeight: FontWeight.normal,
@@ -78,7 +78,7 @@ class _TaskFormState extends State<TaskForm> {
                   alwaysUse24HourFormat: true,
                   format: hhMmFormat,
                   inputType: CupertinoDateTimePickerInputType.time,
-                  style: inputStyle.copyWith(
+                  style: inputStyle().copyWith(
                     fontSize: 18,
                     fontWeight: FontWeight.w300,
                     fontFamily: 'Oswald',
@@ -86,15 +86,15 @@ class _TaskFormState extends State<TaskForm> {
                   onChanged: (_) => widget.saveFn(),
                   decoration: InputDecoration(
                     labelText: localizations.taskEstimateLabel,
-                    labelStyle: labelStyle,
+                    labelStyle: labelStyle(),
                   ),
                   initialValue: DateTime.fromMillisecondsSinceEpoch(
                     widget.data?.estimate?.inMilliseconds ?? 0,
                     isUtc: true,
                   ),
                   theme: DatePickerTheme(
-                    headerColor: AppColors.headerBgColor,
-                    backgroundColor: AppColors.bodyBgColor,
+                    headerColor: colorConfig().headerBgColor,
+                    backgroundColor: colorConfig().bodyBgColor,
                     itemStyle: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -112,7 +112,7 @@ class _TaskFormState extends State<TaskForm> {
                     horizontal: 8,
                     vertical: 4,
                   ),
-                  backgroundColor: AppColors.unselectedChoiceChipColor,
+                  backgroundColor: colorConfig().unselectedChoiceChipColor,
                   initialValue: widget.data?.status.map(
                         open: (_) => 'OPEN',
                         groomed: (_) => 'GROOMED',
@@ -126,7 +126,7 @@ class _TaskFormState extends State<TaskForm> {
                       'OPEN',
                   decoration: InputDecoration(
                     labelText: localizations.taskStatusLabel,
-                    labelStyle: labelStyle.copyWith(
+                    labelStyle: labelStyle().copyWith(
                       height: 0.6,
                       fontFamily: 'Oswald',
                     ),
@@ -134,7 +134,7 @@ class _TaskFormState extends State<TaskForm> {
                   onChanged: (dynamic _) => widget.saveFn(),
                   selectedColor: widget.data?.status != null
                       ? taskColor(widget.data!.status)
-                      : AppColors.unselectedChoiceChipColor,
+                      : colorConfig().unselectedChoiceChipColor,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   runSpacing: 6,
                   spacing: 4,
@@ -142,7 +142,7 @@ class _TaskFormState extends State<TaskForm> {
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Oswald',
-                    color: AppColors.unselectedChoiceChipColor,
+                    color: colorConfig().unselectedChoiceChipColor,
                   ),
                   options: [
                     FormBuilderChipOption<String>(

@@ -105,7 +105,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
                         children: [
                           Text(
                             title,
-                            style: chartTitleStyle,
+                            style: chartTitleStyle(),
                           ),
                         ],
                       ),

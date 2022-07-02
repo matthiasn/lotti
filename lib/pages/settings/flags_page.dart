@@ -29,7 +29,7 @@ class _FlagsPageState extends State<FlagsPage> {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.settingsFlagsTitle),
-      backgroundColor: AppColors.bodyBgColor,
+      backgroundColor: colorConfig().bodyBgColor,
       body: StreamBuilder<List<ConfigFlag>>(
         stream: stream,
         builder: (
@@ -91,7 +91,7 @@ class ConfigFlagCard extends StatelessWidget {
     }
 
     return Card(
-      color: AppColors.headerBgColor,
+      color: colorConfig().headerBgColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -105,15 +105,15 @@ class ConfigFlagCard extends StatelessWidget {
             children: [
               Text(
                 getLocalizedDescription(item),
-                style: const TextStyle(
-                  color: AppColors.entryTextColor,
+                style:  TextStyle(
+                  color: colorConfig().entryTextColor,
                   fontFamily: 'Oswald',
                   fontSize: 20,
                 ),
               ),
               CupertinoSwitch(
                 value: item.status,
-                activeColor: AppColors.private,
+                activeColor: colorConfig().private,
                 onChanged: (bool status) {
                   _db.upsertConfigFlag(item.copyWith(status: status));
                 },

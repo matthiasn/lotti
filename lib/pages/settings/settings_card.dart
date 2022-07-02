@@ -16,7 +16,7 @@ class SettingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.entryCardColor,
+      color: colorConfig().entryCardColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -26,8 +26,8 @@ class SettingsCard extends StatelessWidget {
         leading: icon,
         title: Text(
           title,
-          style: const TextStyle(
-            color: AppColors.entryTextColor,
+          style: TextStyle(
+            color: colorConfig().entryTextColor,
             fontFamily: 'Oswald',
             fontSize: 22,
             fontWeight: FontWeight.w300,

@@ -19,7 +19,7 @@ class TestDetectingAutoLeadingButton extends StatelessWidget {
     }
 
     return AutoLeadingButton(
-      color: color ?? AppColors.entryTextColor,
+      color: color ?? colorConfig().entryTextColor,
     );
   }
 }
