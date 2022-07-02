@@ -16,6 +16,7 @@ import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 part 'database.g.dart';
@@ -549,6 +550,15 @@ class JournalDb extends _$JournalDb {
           status: false,
         ),
       );
+      if (isDesktop) {
+        await insertFlagIfNotExists(
+          ConfigFlag(
+            name: 'show_theme_config',
+            description: 'Show Theme Config UI?',
+            status: false,
+          ),
+        );
+      }
     }
   }
 

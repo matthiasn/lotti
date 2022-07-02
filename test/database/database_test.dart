@@ -41,6 +41,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Show Bright ☀️ scheme?',
     status: false,
   ),
+  ConfigFlag(
+    name: 'show_theme_config',
+    description: 'Show Theme Config UI?',
+    status: false,
+  ),
 };
 
 final expectedMacFlags = <ConfigFlag>{
