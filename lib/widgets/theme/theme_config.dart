@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/theme.dart';
 import 'package:lotti/themes/themes_service.dart';
 
 class ThemeConfigWidget extends StatelessWidget {
@@ -8,7 +9,7 @@ class ThemeConfigWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('ThemeConfigWidget render');
+    final colorNames = getIt<ColorsService>().colorNames();
     return Positioned(
       width: 400,
       height: MediaQuery.of(context).size.height,
@@ -18,70 +19,57 @@ class ThemeConfigWidget extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              const Text('bodyBgColor'),
-              ColorPicker(
-                hexInputBar: true,
-                enableAlpha: false,
-                portraitOnly: true,
-                pickerColor: getIt<ColorsService>().current.bodyBgColor,
-                onColorChanged: (Color color) {
-                  getIt<ColorsService>().setTheme(
-                    getIt<ColorsService>().current.copyWith(bodyBgColor: color),
-                  );
-                },
-              ),
-              const Divider(
-                color: Colors.grey,
-                thickness: 2,
-              ),
-              const Text('headerBgColor'),
-              ColorPicker(
-                portraitOnly: true,
-                hexInputBar: true,
-                enableAlpha: false,
-                pickerColor: getIt<ColorsService>().current.headerBgColor,
-                onColorChanged: (Color color) {
-                  getIt<ColorsService>().setTheme(
-                    getIt<ColorsService>()
-                        .current
-                        .copyWith(headerBgColor: color),
-                  );
-                },
-              ),
-              const Divider(color: Colors.grey, thickness: 2),
-              const Text('entryCardColor'),
-              ColorPicker(
-                portraitOnly: true,
-                hexInputBar: true,
-                enableAlpha: false,
-                pickerColor: getIt<ColorsService>().current.entryCardColor,
-                onColorChanged: (Color color) {
-                  getIt<ColorsService>().setTheme(
-                    getIt<ColorsService>()
-                        .current
-                        .copyWith(entryCardColor: color),
-                  );
-                },
-              ),
-              const Divider(color: Colors.grey, thickness: 2),
-              const Text('bottomNavBackground'),
-              ColorPicker(
-                portraitOnly: true,
-                hexInputBar: true,
-                enableAlpha: false,
-                pickerColor: getIt<ColorsService>().current.bottomNavBackground,
-                onColorChanged: (Color color) {
-                  getIt<ColorsService>().setTheme(
-                    getIt<ColorsService>()
-                        .current
-                        .copyWith(bottomNavBackground: color),
-                  );
-                },
-              ),
+              ...colorNames.map(AppColorPicker.new),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class AppColorPicker extends StatefulWidget {
+  const AppColorPicker(this.colorKey, {super.key});
+
+  final String colorKey;
+
+  @override
+  State<AppColorPicker> createState() => _AppColorPickerState();
+}
+
+class _AppColorPickerState extends State<AppColorPicker> {
+  void onColorChanged(Color color) {
+    getIt<ColorsService>().setColor(widget.colorKey, color);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<Color>(
+      stream: getIt<ColorsService>().watchColorByKey(widget.colorKey),
+      builder: (context, snapshot) {
+        final currentColor = snapshot.data;
+
+        if (currentColor == null) {
+          return Text(
+            '${widget.colorKey} loading...',
+            style: labelStyle().copyWith(fontWeight: FontWeight.w100),
+          );
+        }
+
+        return Column(
+          children: [
+            Text(widget.colorKey, style: labelStyleLarger()),
+            ColorPicker(
+              portraitOnly: true,
+              hexInputBar: true,
+              enableAlpha: false,
+              pickerColor: currentColor,
+              onColorChanged: onColorChanged,
+            ),
+            const Divider(color: Colors.grey, thickness: 2),
+          ],
+        );
+      },
     );
   }
 }
