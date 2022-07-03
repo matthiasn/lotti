@@ -23,7 +23,7 @@ class NavService {
 
     if (route != null) {
       Timer(const Duration(milliseconds: 1), () {
-        getIt<AppRouter>().pushNamed(route);
+        pushNamedRoute(route);
         debugPrint('restoreRoute: $route');
       });
     }

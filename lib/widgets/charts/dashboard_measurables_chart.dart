@@ -9,7 +9,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -84,7 +84,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               void onDoubleTap() {
                 if (widget.enableCreate) {
                   final id = measurableDataType.id;
-                  getIt<AppRouter>().pushNamed('/dashboards/measure/$id');
+                  pushNamedRoute('/dashboards/measure/$id');
                 }
               }
 
