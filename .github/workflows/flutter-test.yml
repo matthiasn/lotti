@@ -17,5 +17,7 @@ jobs:
           channel: 'stable'
       - name: Run Flutter tests
         run: make clean_test
+      - name: Run Flutter Analyze
+        run: make analyze
       - name: Run Flutter bundle
         run: make bundle
