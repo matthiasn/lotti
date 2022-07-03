@@ -14,6 +14,7 @@ class ThemeConfigWidget extends StatelessWidget {
       width: 400,
       height: MediaQuery.of(context).size.height,
       top: 0,
+      left: 0,
       child: ColoredBox(
         color: Colors.white,
         child: SingleChildScrollView(
@@ -50,21 +51,32 @@ class _AppColorPickerState extends State<AppColorPicker> {
         final currentColor = snapshot.data;
 
         if (currentColor == null) {
-          return Text(
-            '${widget.colorKey} loading...',
-            style: labelStyle().copyWith(fontWeight: FontWeight.w100),
-          );
+          return const SizedBox.shrink();
         }
 
         return Column(
           children: [
             Text(widget.colorKey, style: labelStyleLarger()),
-            ColorPicker(
-              portraitOnly: true,
-              hexInputBar: true,
-              enableAlpha: false,
-              pickerColor: currentColor,
-              onColorChanged: onColorChanged,
+            Theme(
+              data: ThemeData(
+                primarySwatch: Colors.blue,
+                textTheme: TextTheme(
+                  bodyText1: labelStyleLarger(),
+                  bodyText2: const TextStyle(
+                    fontFamily: 'ShareTechMono',
+                    fontWeight: FontWeight.w100,
+                  ),
+                ),
+              ),
+              child: ColorPicker(
+                portraitOnly: true,
+                hexInputBar: true,
+                enableAlpha: false,
+                pickerColor: currentColor,
+                onColorChanged: onColorChanged,
+                labelTypes: const [ColorLabelType.rgb],
+                pickerAreaBorderRadius: BorderRadius.circular(16),
+              ),
             ),
             const Divider(color: Colors.grey, thickness: 2),
           ],
