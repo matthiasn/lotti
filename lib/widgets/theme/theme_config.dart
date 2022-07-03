@@ -48,10 +48,7 @@ class ThemeConfigWidget extends StatelessWidget {
                   );
                 },
               ),
-              const Divider(
-                color: Colors.grey,
-                thickness: 2,
-              ),
+              const Divider(color: Colors.grey, thickness: 2),
               const Text('entryCardColor'),
               ColorPicker(
                 portraitOnly: true,
@@ -66,6 +63,7 @@ class ThemeConfigWidget extends StatelessWidget {
                   );
                 },
               ),
+              const Divider(color: Colors.grey, thickness: 2),
               const Text('bottomNavBackground'),
               ColorPicker(
                 portraitOnly: true,

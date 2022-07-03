@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Refactor theme management for color picker
 - Config flag for color picker on desktop
+- Basic theming config with color pickers on desktop
 
 ## [0.8.88] - 2022-07-01
 ### Fixed:
