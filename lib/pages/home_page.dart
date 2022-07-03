@@ -9,10 +9,12 @@ import 'package:lotti/routes/observer.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
+import 'package:lotti/widgets/theme/theme_config.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
@@ -30,6 +32,9 @@ class HomePage extends StatelessWidget {
       stream: _db.watchActiveConfigFlagNames(),
       builder: (context, snapshot) {
         final showTasks = snapshot.data?.contains('show_tasks_tab');
+        final showThemeConfig = snapshot.data != null &&
+            snapshot.data!.contains('show_theme_config') &&
+            isDesktop;
 
         if (showTasks == null) {
           return const CircularProgressIndicator();
@@ -45,9 +50,13 @@ class HomePage extends StatelessWidget {
               width: double.maxFinite,
               child: Stack(
                 children: [
-                  child,
+                  Padding(
+                    padding: EdgeInsets.only(left: showThemeConfig ? 400 : 0),
+                    child: child,
+                  ),
                   const TimeRecordingIndicator(),
                   const AudioRecordingIndicator(),
+                  if (showThemeConfig) const ThemeConfigWidget(),
                 ],
               ),
             );

@@ -29,4 +29,9 @@ class ColorsService {
   Stream<ColorConfig> getStream() {
     return _controller.stream;
   }
+
+  void setTheme(ColorConfig updated) {
+    current = updated;
+    _controller.add(current);
+  }
 }
