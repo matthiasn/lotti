@@ -8,6 +8,10 @@ LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 test:
 	flutter test --coverage
 
+.PHONY: analyze
+analyze:
+	flutter analyze
+
 .PHONY: junit
 junit:
 	flutter test --coverage --reporter json > TEST-report.jsonl
@@ -230,7 +234,7 @@ viz:
 	open classes.viz.png
 
 .PHONY: clean_test
-clean_test: clean deps l10n build_runner test
+clean_test: clean deps l10n build_runner test analyze
 
 .PHONY: clean_integration_test
 clean_integration_test: clean deps build_runner integration_test
