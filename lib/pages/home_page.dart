@@ -41,129 +41,142 @@ class HomePage extends StatelessWidget {
           return const CircularProgressIndicator();
         }
 
-        return AutoTabsScaffold(
-          lazyLoad: false,
-          animationDuration: const Duration(milliseconds: 500),
-          builder: (context, child, _) {
-            return Container(
-              color: colorConfig().bodyBgColor,
-              height: double.maxFinite,
-              width: double.maxFinite,
-              child: Stack(
-                children: [
-                  ColorThemeRefresh(
-                    keyPrefix: 'body',
-                    child: Padding(
-                      padding: EdgeInsets.only(left: showThemeConfig ? 400 : 0),
-                      child: child,
-                    ),
-                  ),
-                  const TimeRecordingIndicator(),
-                  const AudioRecordingIndicator(),
-                  if (showThemeConfig) const ThemeConfigWidget(),
-                ],
-              ),
-            );
-          },
-          backgroundColor: colorConfig().bodyBgColor,
-          routes: [
-            const JournalRouter(),
-            if (showTasks) const TasksRouter(),
-            const DashboardsRouter(),
-            // ignore: flutter_style_todos
-            // TODO: bring back or remove
-            // MyDayRouter(),
-            const SettingsRouter(),
-            //TutorialRouter(),
-          ],
-          bottomNavigationBuilder: (_, TabsRouter tabsRouter) {
-            final hideBottomNavRoutes = <String>{
-              DashboardRoute.name,
-              EntryDetailRoute.name,
-              LoggingRoute.name,
-              LogDetailRoute.name,
-              SyncAssistantRoute.name,
-            };
+        return Material(
+          child: Stack(
+            children: [
+              Padding(
+                padding: EdgeInsets.only(left: showThemeConfig ? 400 : 0),
+                child: AutoTabsScaffold(
+                  lazyLoad: false,
+                  animationDuration: const Duration(milliseconds: 500),
+                  builder: (context, child, _) {
+                    return Container(
+                      color: colorConfig().bodyBgColor,
+                      height: double.maxFinite,
+                      width: double.maxFinite,
+                      child: Stack(
+                        children: [
+                          ColorThemeRefresh(
+                            keyPrefix: 'body',
+                            child: child,
+                          ),
+                          const TimeRecordingIndicator(),
+                          const AudioRecordingIndicator(),
+                          //  if (showThemeConfig) const ThemeConfigWidget(),
+                        ],
+                      ),
+                    );
+                  },
+                  backgroundColor: colorConfig().bodyBgColor,
+                  routes: [
+                    const JournalRouter(),
+                    if (showTasks) const TasksRouter(),
+                    const DashboardsRouter(),
+                    // ignore: flutter_style_todos
+                    // TODO: bring back or remove
+                    // MyDayRouter(),
+                    const SettingsRouter(),
+                    //TutorialRouter(),
+                  ],
+                  bottomNavigationBuilder: (_, TabsRouter tabsRouter) {
+                    final hideBottomNavRoutes = <String>{
+                      DashboardRoute.name,
+                      EntryDetailRoute.name,
+                      LoggingRoute.name,
+                      LogDetailRoute.name,
+                      SyncAssistantRoute.name,
+                    };
 
-            final navService = getIt<NavService>();
+                    final navService = getIt<NavService>();
 
-            final routesByIndex = <String>[
-              '/journal',
-              if (showTasks) '/tasks',
-              '/dashboards',
-              '/settings',
-            ];
+                    final routesByIndex = <String>[
+                      '/journal',
+                      if (showTasks) '/tasks',
+                      '/dashboards',
+                      '/settings',
+                    ];
 
-            navService
-              ..routesByIndex = routesByIndex
-              ..tabsRouter = tabsRouter;
+                    navService
+                      ..routesByIndex = routesByIndex
+                      ..tabsRouter = tabsRouter;
 
-            void onTap(int index) {
-              debugPrint('onTap: $index');
-              tabsRouter.setActiveIndex(index);
-              navService.bottomNavRouteTap(index);
-              HapticFeedback.lightImpact();
-            }
+                    void onTap(int index) {
+                      debugPrint('onTap: $index');
+                      tabsRouter.setActiveIndex(index);
+                      navService.bottomNavRouteTap(index);
+                      HapticFeedback.lightImpact();
+                    }
 
-            if (hideBottomNavRoutes.contains(tabsRouter.topRoute.name)) {
-              return const SizedBox.shrink();
-            }
+                    if (hideBottomNavRoutes
+                        .contains(tabsRouter.topRoute.name)) {
+                      return const SizedBox.shrink();
+                    }
 
-            return DecoratedBox(
-              decoration: const BoxDecoration(
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black54,
-                    blurRadius: 8,
-                    offset: Offset(0, 0.75),
-                  )
-                ],
-              ),
-              child: BottomNavigationBar(
-                type: BottomNavigationBarType.fixed,
-                backgroundColor: colorConfig().bottomNavBackground,
-                unselectedItemColor: colorConfig().bottomNavIconUnselected,
-                selectedItemColor: colorConfig().bottomNavIconSelected,
-                currentIndex: tabsRouter.activeIndex,
-                selectedLabelStyle: bottomNavLabelStyle.copyWith(
-                  fontWeight: FontWeight.normal,
+                    return DecoratedBox(
+                      decoration: const BoxDecoration(
+                        boxShadow: <BoxShadow>[
+                          BoxShadow(
+                            color: Colors.black54,
+                            blurRadius: 8,
+                            offset: Offset(0, 0.75),
+                          )
+                        ],
+                      ),
+                      child: BottomNavigationBar(
+                        type: BottomNavigationBarType.fixed,
+                        backgroundColor: colorConfig().bottomNavBackground,
+                        unselectedItemColor:
+                            colorConfig().bottomNavIconUnselected,
+                        selectedItemColor: colorConfig().bottomNavIconSelected,
+                        currentIndex: tabsRouter.activeIndex,
+                        selectedLabelStyle: bottomNavLabelStyle.copyWith(
+                          fontWeight: FontWeight.normal,
+                        ),
+                        unselectedLabelStyle: bottomNavLabelStyle,
+                        onTap: onTap,
+                        enableFeedback: true,
+                        selectedFontSize: 18,
+                        unselectedFontSize: 16,
+                        items: [
+                          BottomNavigationBarItem(
+                            icon: FlaggedBadgeIcon(),
+                            label: AppLocalizations.of(context)!
+                                .navTabTitleJournal,
+                          ),
+                          if (showTasks)
+                            BottomNavigationBarItem(
+                              icon: TasksBadgeIcon(),
+                              label: AppLocalizations.of(context)!
+                                  .navTabTitleTasks,
+                            ),
+                          BottomNavigationBarItem(
+                            icon: const Icon(Icons.dashboard_outlined),
+                            label: AppLocalizations.of(context)!
+                                .navTabTitleInsights,
+                          ),
+                          // ignore: flutter_style_todos
+                          // TODO: bring back or remove
+                          // const BottomNavigationBarItem(
+                          //   icon: Icon(Icons.calendar_today),
+                          //   label: 'My Day',
+                          // ),
+                          BottomNavigationBarItem(
+                            icon: OutboxBadgeIcon(
+                              icon: const Icon(Icons.settings_outlined),
+                            ),
+                            label: AppLocalizations.of(context)!
+                                .navTabTitleSettings,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  navigatorObservers: () => [NavObserver()],
                 ),
-                unselectedLabelStyle: bottomNavLabelStyle,
-                onTap: onTap,
-                enableFeedback: true,
-                selectedFontSize: 18,
-                unselectedFontSize: 16,
-                items: [
-                  BottomNavigationBarItem(
-                    icon: FlaggedBadgeIcon(),
-                    label: AppLocalizations.of(context)!.navTabTitleJournal,
-                  ),
-                  if (showTasks)
-                    BottomNavigationBarItem(
-                      icon: TasksBadgeIcon(),
-                      label: AppLocalizations.of(context)!.navTabTitleTasks,
-                    ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.dashboard_outlined),
-                    label: AppLocalizations.of(context)!.navTabTitleInsights,
-                  ),
-                  // ignore: flutter_style_todos
-                  // TODO: bring back or remove
-                  // const BottomNavigationBarItem(
-                  //   icon: Icon(Icons.calendar_today),
-                  //   label: 'My Day',
-                  // ),
-                  BottomNavigationBarItem(
-                    icon: OutboxBadgeIcon(
-                      icon: const Icon(Icons.settings_outlined),
-                    ),
-                    label: AppLocalizations.of(context)!.navTabTitleSettings,
-                  ),
-                ],
               ),
-            );
-          },
-          navigatorObservers: () => [NavObserver()],
+              if (showThemeConfig) const ThemeConfigWidget(),
+            ],
+          ),
         );
       },
     );
