@@ -56,6 +56,11 @@ TextStyle labelStyle() => TextStyle(
       fontSize: 18,
     );
 
+TextStyle pickerMonoTextStyle() => textStyle().copyWith(
+      fontFamily: 'ShareTechMono',
+      fontWeight: FontWeight.w100,
+    );
+
 TextStyle formLabelStyle() => TextStyle(
       color: colorConfig().entryTextColor,
       fontFamily: 'Oswald',
