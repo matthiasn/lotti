@@ -42,7 +42,7 @@ class _ColorThemeRefreshState extends State<ColorThemeRefresh> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DateTime>(
-      stream: getIt<ColorsService>().getLastUpdateStream(),
+      stream: getIt<ThemesService>().getLastUpdateStream(),
       builder: (context, snapshot) {
         final key = '${widget.keyPrefix}-${snapshot.data}';
         debugPrint('ColorThemeRefresh $key');

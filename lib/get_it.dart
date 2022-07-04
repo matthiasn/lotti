@@ -24,7 +24,7 @@ final getIt = GetIt.instance;
 void registerSingletons() {
   getIt
     ..registerSingleton<JournalDb>(JournalDb())
-    ..registerSingleton<ColorsService>(ColorsService())
+    ..registerSingleton<ThemesService>(ThemesService())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
     ..registerSingleton<SyncDatabase>(SyncDatabase())

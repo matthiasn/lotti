@@ -574,6 +574,14 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Future<void> setConfigFlag(String flagName, {required bool value}) async {
+    final configFlag = await getConfigFlagByName(flagName);
+
+    if (configFlag != null) {
+      await upsertConfigFlag(configFlag.copyWith(status: value));
+    }
+  }
+
   Future<int> getCountImportFlagEntries() async {
     final res = await countImportFlagEntries().get();
     return res.first;

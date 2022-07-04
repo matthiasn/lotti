@@ -32,7 +32,7 @@ void main() {
       getIt
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<SyncInboxService>(mockInboxService)
-        ..registerSingleton<ColorsService>(ColorsService(watch: false));
+        ..registerSingleton<ThemesService>(ThemesService(watch: false));
     });
     tearDown(getIt.reset);
 

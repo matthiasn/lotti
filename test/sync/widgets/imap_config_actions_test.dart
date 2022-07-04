@@ -22,7 +22,7 @@ void main() {
       when(mockAppRouter.pop).thenAnswer((_) async => true);
       getIt
         ..registerSingleton<AppRouter>(mockAppRouter)
-        ..registerSingleton<ColorsService>(ColorsService(watch: false));
+        ..registerSingleton<ThemesService>(ThemesService(watch: false));
     });
     tearDown(getIt.reset);
 

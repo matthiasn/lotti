@@ -40,7 +40,7 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<AppRouter>(mockAppRouter)
-        ..registerSingleton<ColorsService>(ColorsService(watch: false));
+        ..registerSingleton<ThemesService>(ThemesService(watch: false));
     });
     tearDown(getIt.reset);
 

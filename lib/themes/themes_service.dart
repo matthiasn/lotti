@@ -9,14 +9,15 @@ import 'package:lotti/themes/themes.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/consts.dart';
 
-class ColorsService {
-  ColorsService({bool watch = true}) {
+class ThemesService {
+  ThemesService({bool watch = true}) {
     current = darkTheme;
 
     if (watch) {
       _colorConfigController = StreamController<ColorConfig>.broadcast();
       _colorMapController = StreamController<Map<String, dynamic>>.broadcast();
       _updateController = StreamController<DateTime>.broadcast();
+      publishLastUpdated();
       getIt<JournalDb>()
           .watchConfigFlag(showBrightSchemeFlagName)
           .listen((bright) {
@@ -35,10 +36,14 @@ class ColorsService {
     _colorMapController.add(getColorsMap());
   }
 
+  void publishLastUpdated() {
+    _updateController.add(DateTime.now());
+  }
+
   void publishColorConfig() {
     _colorConfigController.add(current);
     publishColorsMap();
-    _updateController.add(DateTime.now());
+    publishLastUpdated();
   }
 
   Stream<ColorConfig> getColorConfigStream() {
@@ -46,7 +51,8 @@ class ColorsService {
   }
 
   Stream<Color> watchColorByKey(String colorKey) {
-    publishColorsMap();
+    Future<void>.delayed(const Duration(milliseconds: 1))
+        .then((value) => publishColorsMap());
     return _colorMapController.stream.map((colorsMap) {
       final cssHex = colorsMap[colorKey].toString();
       return colorFromCssHex(cssHex);

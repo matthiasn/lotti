@@ -11,7 +11,7 @@ class ThemeConfigWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorNames = getIt<ColorsService>().colorNames();
+    final colorNames = getIt<ThemesService>().colorNames();
     return Positioned(
       width: 360,
       height: MediaQuery.of(context).size.height,
@@ -45,7 +45,7 @@ class AppColorPicker extends StatefulWidget {
 
 class _AppColorPickerState extends State<AppColorPicker> {
   void onColorChanged(Color color) {
-    getIt<ColorsService>().setColor(widget.colorKey, color);
+    getIt<ThemesService>().setColor(widget.colorKey, color);
   }
 
   bool expanded = false;
@@ -54,7 +54,7 @@ class _AppColorPickerState extends State<AppColorPicker> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Color>(
-      stream: getIt<ColorsService>().watchColorByKey(widget.colorKey),
+      stream: getIt<ThemesService>().watchColorByKey(widget.colorKey),
       builder: (context, snapshot) {
         final currentColor = snapshot.data;
 

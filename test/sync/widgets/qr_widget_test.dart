@@ -14,7 +14,7 @@ import '../sync_config_test_mocks.dart';
 void main() {
   group('SyncConfig QR Widget Tests - ', () {
     setUp(() {
-      getIt.registerSingleton<ColorsService>(ColorsService(watch: false));
+      getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
     });
     tearDown(getIt.reset);
 

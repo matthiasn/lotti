@@ -164,4 +164,4 @@ TextStyle definitionCardSubtitleStyle() => TextStyle(
 
 const settingsIconSize = 24.0;
 
-ColorConfig colorConfig() => getIt<ColorsService>().current;
+ColorConfig colorConfig() => getIt<ThemesService>().current;
