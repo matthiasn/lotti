@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -22,13 +23,14 @@ class DesktopMenuWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     if (!Platform.isMacOS) {
       return body;
     }
 
-    return StreamBuilder<bool>(
-      //stream: getIt<ThemeService>().getStream(),
-      stream: _db.watchConfigFlag(showBrightSchemeFlagName),
+    return StreamBuilder<Set<String>>(
+      stream: _db.watchActiveConfigFlagNames(),
       builder: (context, snapshot) {
         return PlatformMenuBar(
           body: body,
@@ -59,10 +61,10 @@ class DesktopMenuWrapper extends StatelessWidget {
               ],
             ),
             PlatformMenu(
-              label: 'File',
+              label: localizations.fileMenuTitle,
               menus: [
                 PlatformMenuItem(
-                  label: 'New Entry',
+                  label: localizations.fileMenuNewEntry,
                   onSelected: () async {
                     final linkedId = await getIdFromSavedRoute();
                     if (linkedId != null) {
@@ -81,10 +83,10 @@ class DesktopMenuWrapper extends StatelessWidget {
                   ),
                 ),
                 PlatformMenu(
-                  label: 'New ...',
+                  label: localizations.fileMenuNewEllipsis,
                   menus: [
                     PlatformMenuItem(
-                      label: 'Task',
+                      label: localizations.fileMenuNewTask,
                       shortcut: const SingleActivator(
                         LogicalKeyboardKey.keyT,
                         meta: true,
@@ -95,7 +97,7 @@ class DesktopMenuWrapper extends StatelessWidget {
                       },
                     ),
                     PlatformMenuItem(
-                      label: 'Screenshot',
+                      label: localizations.fileMenuNewScreenshot,
                       shortcut: const SingleActivator(
                         LogicalKeyboardKey.keyS,
                         meta: true,
@@ -109,12 +111,12 @@ class DesktopMenuWrapper extends StatelessWidget {
                 ),
               ],
             ),
-            const PlatformMenu(
-              label: 'Edit',
+            PlatformMenu(
+              label: localizations.editMenuTitle,
               menus: [],
             ),
             PlatformMenu(
-              label: 'View',
+              label: localizations.viewMenuTitle,
               menus: [
                 const PlatformProvidedMenuItem(
                   type: PlatformProvidedMenuItemType.toggleFullScreen,
@@ -125,9 +127,11 @@ class DesktopMenuWrapper extends StatelessWidget {
                 PlatformMenuItemGroup(
                   members: [
                     PlatformMenuItem(
-                      label: snapshot.data ?? false
-                          ? 'Disable Bright Theme'
-                          : 'Enable Bright theme',
+                      label:
+                          snapshot.data?.contains(showBrightSchemeFlagName) ??
+                                  false
+                              ? localizations.viewMenuDisableBrightTheme
+                              : localizations.viewMenuEnableBrightTheme,
                       shortcut: const SingleActivator(
                         LogicalKeyboardKey.keyS,
                         meta: true,
@@ -135,6 +139,20 @@ class DesktopMenuWrapper extends StatelessWidget {
                       ),
                       onSelected: () async {
                         await _db.toggleConfigFlag(showBrightSchemeFlagName);
+                      },
+                    ),
+                    PlatformMenuItem(
+                      label: snapshot.data?.contains(showThemeConfigFlagName) ??
+                              false
+                          ? localizations.viewMenuHideThemeConfig
+                          : localizations.viewMenuShowThemeConfig,
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyS,
+                        meta: true,
+                        alt: true,
+                      ),
+                      onSelected: () async {
+                        await _db.toggleConfigFlag(showThemeConfigFlagName);
                       },
                     ),
                   ],

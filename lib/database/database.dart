@@ -554,7 +554,7 @@ class JournalDb extends _$JournalDb {
     if (isDesktop) {
       await insertFlagIfNotExists(
         ConfigFlag(
-          name: 'show_theme_config',
+          name: showThemeConfigFlagName,
           description: 'Show Theme Config UI?',
           status: false,
         ),

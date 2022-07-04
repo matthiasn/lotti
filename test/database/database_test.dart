@@ -42,7 +42,7 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   ConfigFlag(
-    name: 'show_theme_config',
+    name: showThemeConfigFlagName,
     description: 'Show Theme Config UI?',
     status: false,
   ),

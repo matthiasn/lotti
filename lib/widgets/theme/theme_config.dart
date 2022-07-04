@@ -4,6 +4,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/themes/themes_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 
 class ThemeConfigWidget extends StatelessWidget {
@@ -149,7 +150,7 @@ class ThemeConfigWrapper extends StatelessWidget {
       stream: _db.watchActiveConfigFlagNames(),
       builder: (context, snapshot) {
         final showThemeConfig = snapshot.data != null &&
-            snapshot.data!.contains('show_theme_config') &&
+            snapshot.data!.contains(showThemeConfigFlagName) &&
             isDesktop;
 
         if (!showThemeConfig) {
