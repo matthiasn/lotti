@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/database/database.dart';
@@ -23,145 +23,150 @@ class DesktopMenuWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     if (!Platform.isMacOS) {
       return body;
     }
 
-    return StreamBuilder<Set<String>>(
-      stream: _db.watchActiveConfigFlagNames(),
-      builder: (context, snapshot) {
-        return PlatformMenuBar(
-          body: body,
-          menus: <MenuItem>[
-            const PlatformMenu(
-              label: 'Lotti',
-              menus: [
-                PlatformProvidedMenuItem(
-                  type: PlatformProvidedMenuItemType.about,
-                ),
-                PlatformMenuItemGroup(
-                  members: [
-                    PlatformProvidedMenuItem(
-                      type: PlatformProvidedMenuItemType.servicesSubmenu,
-                    ),
-                  ],
-                ),
-                PlatformMenuItemGroup(
-                  members: [
-                    PlatformProvidedMenuItem(
-                      type: PlatformProvidedMenuItemType.hide,
-                    ),
-                  ],
-                ),
-                PlatformProvidedMenuItem(
-                  type: PlatformProvidedMenuItemType.quit,
-                ),
-              ],
-            ),
-            PlatformMenu(
-              label: localizations.fileMenuTitle,
-              menus: [
-                PlatformMenuItem(
-                  label: localizations.fileMenuNewEntry,
-                  onSelected: () async {
-                    final linkedId = await getIdFromSavedRoute();
-                    if (linkedId != null) {
-                      await _persistenceLogic.createTextEntry(
-                        EntryText(plainText: ''),
-                        linkedId: linkedId,
-                        started: DateTime.now(),
-                      );
-                    } else {
-                      pushNamedRoute('/journal/create/$linkedId');
-                    }
-                  },
-                  shortcut: const SingleActivator(
-                    LogicalKeyboardKey.keyN,
-                    meta: true,
+    return MaterialApp(
+      localizationsDelegates: const [AppLocalizations.delegate],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: StreamBuilder<Set<String>>(
+        stream: _db.watchActiveConfigFlagNames(),
+        builder: (context, snapshot) {
+          final localizations = AppLocalizations.of(context)!;
+
+          return PlatformMenuBar(
+            body: body,
+            menus: <MenuItem>[
+              const PlatformMenu(
+                label: 'Lotti',
+                menus: [
+                  PlatformProvidedMenuItem(
+                    type: PlatformProvidedMenuItemType.about,
                   ),
-                ),
-                PlatformMenu(
-                  label: localizations.fileMenuNewEllipsis,
-                  menus: [
-                    PlatformMenuItem(
-                      label: localizations.fileMenuNewTask,
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.keyT,
-                        meta: true,
+                  PlatformMenuItemGroup(
+                    members: [
+                      PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.servicesSubmenu,
                       ),
-                      onSelected: () async {
-                        final linkedId = await getIdFromSavedRoute();
-                        pushNamedRoute('/tasks/create/$linkedId');
-                      },
-                    ),
-                    PlatformMenuItem(
-                      label: localizations.fileMenuNewScreenshot,
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.keyS,
-                        meta: true,
-                        alt: true,
+                    ],
+                  ),
+                  PlatformMenuItemGroup(
+                    members: [
+                      PlatformProvidedMenuItem(
+                        type: PlatformProvidedMenuItemType.hide,
                       ),
-                      onSelected: () async {
-                        await takeScreenshotWithLinked();
-                      },
+                    ],
+                  ),
+                  PlatformProvidedMenuItem(
+                    type: PlatformProvidedMenuItemType.quit,
+                  ),
+                ],
+              ),
+              PlatformMenu(
+                label: localizations.fileMenuTitle,
+                menus: [
+                  PlatformMenuItem(
+                    label: localizations.fileMenuNewEntry,
+                    onSelected: () async {
+                      final linkedId = await getIdFromSavedRoute();
+                      if (linkedId != null) {
+                        await _persistenceLogic.createTextEntry(
+                          EntryText(plainText: ''),
+                          linkedId: linkedId,
+                          started: DateTime.now(),
+                        );
+                      } else {
+                        pushNamedRoute('/journal/create/$linkedId');
+                      }
+                    },
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.keyN,
+                      meta: true,
                     ),
-                  ],
-                ),
-              ],
-            ),
-            PlatformMenu(
-              label: localizations.editMenuTitle,
-              menus: [],
-            ),
-            PlatformMenu(
-              label: localizations.viewMenuTitle,
-              menus: [
-                const PlatformProvidedMenuItem(
-                  type: PlatformProvidedMenuItemType.toggleFullScreen,
-                ),
-                const PlatformProvidedMenuItem(
-                  type: PlatformProvidedMenuItemType.zoomWindow,
-                ),
-                PlatformMenuItemGroup(
-                  members: [
-                    PlatformMenuItem(
-                      label:
-                          snapshot.data?.contains(showBrightSchemeFlagName) ??
-                                  false
-                              ? localizations.viewMenuDisableBrightTheme
-                              : localizations.viewMenuEnableBrightTheme,
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.keyS,
-                        meta: true,
-                        alt: true,
+                  ),
+                  PlatformMenu(
+                    label: localizations.fileMenuNewEllipsis,
+                    menus: [
+                      PlatformMenuItem(
+                        label: localizations.fileMenuNewTask,
+                        shortcut: const SingleActivator(
+                          LogicalKeyboardKey.keyT,
+                          meta: true,
+                        ),
+                        onSelected: () async {
+                          final linkedId = await getIdFromSavedRoute();
+                          pushNamedRoute('/tasks/create/$linkedId');
+                        },
                       ),
-                      onSelected: () async {
-                        await _db.toggleConfigFlag(showBrightSchemeFlagName);
-                      },
-                    ),
-                    PlatformMenuItem(
-                      label: snapshot.data?.contains(showThemeConfigFlagName) ??
-                              false
-                          ? localizations.viewMenuHideThemeConfig
-                          : localizations.viewMenuShowThemeConfig,
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.keyS,
-                        meta: true,
-                        alt: true,
+                      PlatformMenuItem(
+                        label: localizations.fileMenuNewScreenshot,
+                        shortcut: const SingleActivator(
+                          LogicalKeyboardKey.keyS,
+                          meta: true,
+                          alt: true,
+                        ),
+                        onSelected: () async {
+                          await takeScreenshotWithLinked();
+                        },
                       ),
-                      onSelected: () async {
-                        await _db.toggleConfigFlag(showThemeConfigFlagName);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        );
-      },
+                    ],
+                  ),
+                ],
+              ),
+              PlatformMenu(
+                label: localizations.editMenuTitle,
+                menus: [],
+              ),
+              PlatformMenu(
+                label: localizations.viewMenuTitle,
+                menus: [
+                  const PlatformProvidedMenuItem(
+                    type: PlatformProvidedMenuItemType.toggleFullScreen,
+                  ),
+                  const PlatformProvidedMenuItem(
+                    type: PlatformProvidedMenuItemType.zoomWindow,
+                  ),
+                  PlatformMenuItemGroup(
+                    members: [
+                      PlatformMenuItem(
+                        label:
+                            snapshot.data?.contains(showBrightSchemeFlagName) ??
+                                    false
+                                ? localizations.viewMenuDisableBrightTheme
+                                : localizations.viewMenuEnableBrightTheme,
+                        shortcut: const SingleActivator(
+                          LogicalKeyboardKey.keyS,
+                          meta: true,
+                          alt: true,
+                        ),
+                        onSelected: () async {
+                          await _db.toggleConfigFlag(showBrightSchemeFlagName);
+                        },
+                      ),
+                      PlatformMenuItem(
+                        label:
+                            snapshot.data?.contains(showThemeConfigFlagName) ??
+                                    false
+                                ? localizations.viewMenuHideThemeConfig
+                                : localizations.viewMenuShowThemeConfig,
+                        shortcut: const SingleActivator(
+                          LogicalKeyboardKey.keyS,
+                          meta: true,
+                          alt: true,
+                        ),
+                        onSelected: () async {
+                          await _db.toggleConfigFlag(showThemeConfigFlagName);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
