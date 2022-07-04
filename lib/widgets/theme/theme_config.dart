@@ -13,7 +13,7 @@ class ThemeConfigWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorNames = getIt<ColorsService>().colorNames();
     return Positioned(
-      width: 400,
+      width: 360,
       height: MediaQuery.of(context).size.height,
       top: 0,
       left: 0,
@@ -23,6 +23,7 @@ class ThemeConfigWidget extends StatelessWidget {
           child: SingleChildScrollView(
             child: Column(
               children: [
+                const SizedBox(height: 8),
                 ...colorNames.map(AppColorPicker.new),
               ],
             ),
@@ -47,6 +48,9 @@ class _AppColorPickerState extends State<AppColorPicker> {
     getIt<ColorsService>().setColor(widget.colorKey, color);
   }
 
+  bool expanded = false;
+  void onTap() => setState(() => expanded = !expanded);
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Color>(
@@ -58,32 +62,75 @@ class _AppColorPickerState extends State<AppColorPicker> {
           return const SizedBox.shrink();
         }
 
-        return Column(
-          children: [
-            Text(widget.colorKey, style: labelStyleLarger()),
-            Theme(
-              data: ThemeData(
-                primarySwatch: Colors.blue,
-                textTheme: TextTheme(
-                  bodyText1: labelStyleLarger(),
-                  bodyText2: const TextStyle(
-                    fontFamily: 'ShareTechMono',
-                    fontWeight: FontWeight.w100,
+        return GestureDetector(
+          onTap: onTap,
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, right: 16),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 2,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: 60,
+                          height: 40,
+                          color: currentColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Text(widget.colorKey, style: labelStyleLarger()),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: onTap,
+                    icon: Icon(
+                      expanded
+                          ? Icons.keyboard_double_arrow_up
+                          : Icons.keyboard_double_arrow_down,
+                      color: colorConfig().entryTextColor,
+                    ),
+                  ),
+                ],
+              ),
+              if (expanded)
+                Theme(
+                  data: ThemeData(
+                    primarySwatch: Colors.blue,
+                    textTheme: TextTheme(
+                      bodyText1: labelStyleLarger(),
+                      bodyText2: pickerMonoTextStyle(),
+                      subtitle1: pickerMonoTextStyle(),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: ColorPicker(
+                      portraitOnly: true,
+                      hexInputBar: true,
+                      enableAlpha: false,
+                      pickerColor: currentColor,
+                      onColorChanged: onColorChanged,
+                      labelTypes: const [ColorLabelType.rgb],
+                      pickerAreaBorderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
-              ),
-              child: ColorPicker(
-                portraitOnly: true,
-                hexInputBar: true,
-                enableAlpha: false,
-                pickerColor: currentColor,
-                onColorChanged: onColorChanged,
-                labelTypes: const [ColorLabelType.rgb],
-                pickerAreaBorderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            const Divider(color: Colors.grey, thickness: 2),
-          ],
+              const Divider(color: Colors.grey, thickness: 1),
+            ],
+          ),
         );
       },
     );
@@ -113,7 +160,7 @@ class ThemeConfigWrapper extends StatelessWidget {
           home: Stack(
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 400),
+                padding: const EdgeInsets.only(left: 360),
                 child: child,
               ),
               if (showThemeConfig) const ThemeConfigWidget(),
