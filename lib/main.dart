@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_fadein/flutter_fadein.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
@@ -12,16 +11,15 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
-import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
+import 'package:lotti/widgets/theme/theme_config.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
@@ -89,36 +87,29 @@ class LottiApp extends StatelessWidget {
           create: (BuildContext context) => AudioPlayerCubit(),
         ),
       ],
-      child: StreamBuilder<ColorConfig>(
-        stream: getIt<ColorsService>().getStream(),
-        builder: (context, snapshot) {
-          return DesktopMenuWrapper(
-            FadeIn(
-              key: Key('theme-${snapshot.data}'),
-              duration: const Duration(milliseconds: 500),
-              child: MaterialApp.router(
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  FormBuilderLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-                color: colorConfig().bodyBgColor,
-                supportedLocales: AppLocalizations.supportedLocales,
-                theme: ThemeData(
-                  primarySwatch: Colors.grey,
-                  scaffoldBackgroundColor: colorConfig().bodyBgColor,
-                ),
-                debugShowCheckedModeBanner: false,
-                routerDelegate: router.delegate(
-                  navigatorObservers: () => [],
-                ),
-                routeInformationParser: router.defaultRouteParser(),
-              ),
+      child: DesktopMenuWrapper(
+        ThemeConfigWrapper(
+          MaterialApp.router(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              FormBuilderLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            color: colorConfig().bodyBgColor,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: ThemeData(
+              primarySwatch: Colors.grey,
+              scaffoldBackgroundColor: colorConfig().bodyBgColor,
             ),
-          );
-        },
+            debugShowCheckedModeBanner: false,
+            routerDelegate: router.delegate(
+              navigatorObservers: () => [],
+            ),
+            routeInformationParser: router.defaultRouteParser(),
+          ),
+        ),
       ),
     );
   }

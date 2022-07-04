@@ -18,7 +18,7 @@ void main() {
 
   group('OutboxBadge Widget Tests - ', () {
     setUp(() {
-      getIt.registerSingleton<ColorsService>(ColorsService(watch: false));
+      getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
     });
     tearDown(getIt.reset);
 

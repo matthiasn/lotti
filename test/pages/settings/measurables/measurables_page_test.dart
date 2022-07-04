@@ -23,7 +23,7 @@ void main() {
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<ColorsService>(ColorsService(watch: false));
+        ..registerSingleton<ThemesService>(ThemesService(watch: false));
     });
     tearDown(getIt.reset);
 

@@ -213,7 +213,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                             const Icon(Icons.settings_outlined),
                                         color: colorConfig().entryTextColor,
                                         onPressed: () {
-                                          getIt<AppRouter>().pushNamed(
+                                          pushNamedRoute(
                                             '/settings/measurables/${selected?.id}',
                                           );
                                         },

@@ -554,7 +554,7 @@ class JournalDb extends _$JournalDb {
     if (isDesktop) {
       await insertFlagIfNotExists(
         ConfigFlag(
-          name: 'show_theme_config',
+          name: showThemeConfigFlagName,
           description: 'Show Theme Config UI?',
           status: false,
         ),
@@ -571,6 +571,14 @@ class JournalDb extends _$JournalDb {
 
     if (configFlag != null) {
       await upsertConfigFlag(configFlag.copyWith(status: !configFlag.status));
+    }
+  }
+
+  Future<void> setConfigFlag(String flagName, {required bool value}) async {
+    final configFlag = await getConfigFlagByName(flagName);
+
+    if (configFlag != null) {
+      await upsertConfigFlag(configFlag.copyWith(status: value));
     }
   }
 

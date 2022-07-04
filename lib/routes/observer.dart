@@ -6,7 +6,9 @@ class NavObserver extends AutoRouterObserver {
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPush(route, previousRoute);
-    debugPrint('New route pushed: ${route.settings}');
+    debugPrint(
+      'New route pushed: ${route.settings} previous: ${previousRoute?.settings}',
+    );
   }
 
   @override

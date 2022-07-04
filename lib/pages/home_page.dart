@@ -9,6 +9,7 @@ import 'package:lotti/routes/observer.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
@@ -45,9 +46,13 @@ class HomePage extends StatelessWidget {
               width: double.maxFinite,
               child: Stack(
                 children: [
-                  child,
+                  ColorThemeRefresh(
+                    keyPrefix: 'body',
+                    child: child,
+                  ),
                   const TimeRecordingIndicator(),
                   const AudioRecordingIndicator(),
+                  //  if (showThemeConfig) const ThemeConfigWidget(),
                 ],
               ),
             );

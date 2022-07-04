@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_fadein/flutter_fadein.dart';
-import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
@@ -27,23 +25,30 @@ Color getTagColor(TagEntity tagEntity) {
   );
 }
 
-class ColorThemeRefresh extends StatelessWidget {
+class ColorThemeRefresh extends StatefulWidget {
   const ColorThemeRefresh({
     required this.child,
+    required this.keyPrefix,
     super.key,
   });
   final Widget child;
+  final String keyPrefix;
 
   @override
+  State<ColorThemeRefresh> createState() => _ColorThemeRefreshState();
+}
+
+class _ColorThemeRefreshState extends State<ColorThemeRefresh> {
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<ColorConfig>(
-      stream: getIt<ColorsService>().getStream(),
+    return StreamBuilder<DateTime>(
+      stream: getIt<ThemesService>().getLastUpdateStream(),
       builder: (context, snapshot) {
-        final key = 'theme-${snapshot.data}';
+        final key = '${widget.keyPrefix}-${snapshot.data}';
         debugPrint('ColorThemeRefresh $key');
-        return FadeIn(
+        return Container(
           key: Key(key),
-          child: child,
+          child: widget.child,
         );
       },
     );

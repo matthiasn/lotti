@@ -38,6 +38,13 @@
   "dashboardPrivateLabel": "Privat:",
   "dashboardReviewTimeLabel": "Täglich erinnern um:",
   "dashboardSaveLabel": "Speichern",
+  "editMenuTitle": "Bearbeiten",
+  "entryNotFound": "Eintrag nicht gefunden",
+  "fileMenuNewEllipsis": "Neu ...",
+  "fileMenuNewEntry": "Neuer Texteintrag",
+  "fileMenuNewScreenshot": "Bildschirmfoto",
+  "fileMenuNewTask": "Aufgabe",
+  "fileMenuTitle": "Datei",
   "journalDateFromLabel": "Beginn:",
   "journalDateInvalid": "Ungültige Zeitspanne",
   "journalDateNowButton": "jetzt",
@@ -151,5 +158,10 @@
   "taskStatusLabel": "Aufgabenstatus:",
   "taskStatusOnHold": "AUF EIS",
   "taskStatusOpen": "OFFEN",
-  "taskStatusRejected": "VERWORFEN"
+  "taskStatusRejected": "VERWORFEN",
+  "viewMenuDisableBrightTheme": "Helles Farbschema deaktivieren",
+  "viewMenuEnableBrightTheme": "Helles Farbschema aktivieren",
+  "viewMenuHideThemeConfig": "Farbschemamanager verstecken",
+  "viewMenuShowThemeConfig": "Farbschemamanager anzeigen",
+  "viewMenuTitle": "Ansicht"
 }

@@ -36,7 +36,7 @@ void main() {
       mockAppRouter = MockAppRouter();
       when(mockAppRouter.pop).thenAnswer((invocation) async => true);
       getIt
-        ..registerSingleton<ColorsService>(ColorsService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<AppRouter>(mockAppRouter);

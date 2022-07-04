@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:timezone/standalone.dart' as tz;
 
@@ -35,14 +35,14 @@ class NotificationService {
 
   Future<void> onSelectNotification(String? payload) async {
     if (payload != null) {
-      await getIt<AppRouter>().pushNamed(payload);
+      pushNamedRoute(payload);
     }
 
     final details =
         await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
 
     if (details?.payload != null) {
-      await getIt<AppRouter>().pushNamed('${details?.payload}');
+      pushNamedRoute('${details?.payload}');
     }
   }
 

@@ -56,6 +56,11 @@ TextStyle labelStyle() => TextStyle(
       fontSize: 18,
     );
 
+TextStyle pickerMonoTextStyle() => textStyle().copyWith(
+      fontFamily: 'ShareTechMono',
+      fontWeight: FontWeight.w100,
+    );
+
 TextStyle formLabelStyle() => TextStyle(
       color: colorConfig().entryTextColor,
       fontFamily: 'Oswald',
@@ -159,4 +164,4 @@ TextStyle definitionCardSubtitleStyle() => TextStyle(
 
 const settingsIconSize = 24.0;
 
-ColorConfig colorConfig() => getIt<ColorsService>().current;
+ColorConfig colorConfig() => getIt<ThemesService>().current;
