@@ -107,7 +107,6 @@ void main() {
       );
 
       final testColor = colorFromCssHex('#FF0000');
-
       themesService.setColor('bodyBgColor', testColor);
 
       expect(
