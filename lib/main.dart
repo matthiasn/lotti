@@ -19,6 +19,7 @@ import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
+import 'package:lotti/widgets/theme/theme_config.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
@@ -87,25 +88,27 @@ class LottiApp extends StatelessWidget {
         ),
       ],
       child: DesktopMenuWrapper(
-        MaterialApp.router(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            FormBuilderLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          color: colorConfig().bodyBgColor,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: ThemeData(
-            primarySwatch: Colors.grey,
-            scaffoldBackgroundColor: colorConfig().bodyBgColor,
+        ThemeConfigWrapper(
+          MaterialApp.router(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              FormBuilderLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            color: colorConfig().bodyBgColor,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: ThemeData(
+              primarySwatch: Colors.grey,
+              scaffoldBackgroundColor: colorConfig().bodyBgColor,
+            ),
+            debugShowCheckedModeBanner: false,
+            routerDelegate: router.delegate(
+              navigatorObservers: () => [],
+            ),
+            routeInformationParser: router.defaultRouteParser(),
           ),
-          debugShowCheckedModeBanner: false,
-          routerDelegate: router.delegate(
-            navigatorObservers: () => [],
-          ),
-          routeInformationParser: router.defaultRouteParser(),
         ),
       ),
     );
