@@ -59,6 +59,10 @@ Future<void> saveJournalEntityJson(JournalEntity journalEntity) async {
   final json = jsonEncode(journalEntity);
   final docDir = await getApplicationDocumentsDirectory();
   final path = entityPath(journalEntity, docDir);
+  await saveJson(path, json);
+}
+
+Future<void> saveJson(String path, String json) async {
   final file = await File(path).create(recursive: true);
   await file.writeAsString(json);
 }

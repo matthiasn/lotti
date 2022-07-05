@@ -22,7 +22,12 @@ void main() {
 
       getIt
         ..registerSingleton<JournalDb>(db)
-        ..registerSingleton(ThemesService());
+        ..registerSingleton(
+          ThemesService(
+            debounceSeconds: 0,
+            saveThemeAsJson: false,
+          ),
+        );
 
       db.insertFlagIfNotExists(
         ConfigFlag(
