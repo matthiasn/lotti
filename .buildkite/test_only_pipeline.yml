@@ -8,4 +8,4 @@ steps:
       - "make junit"
       - "make analyze"
     agents:
-      os: "macOS"
+      os: "macOS_no_signing"
