@@ -492,7 +492,7 @@ packages:
       name: drift
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.7.0"
+    version: "1.7.1"
   drift_dev:
     dependency: "direct dev"
     description:
@@ -796,7 +796,7 @@ packages:
       name: flutter_native_splash
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.3+1"
+    version: "2.2.4"
   flutter_native_timezone:
     dependency: "direct main"
     description:
@@ -894,7 +894,7 @@ packages:
       name: flutter_svg
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.1"
+    version: "1.1.1+1"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -1280,7 +1280,7 @@ packages:
       name: macos_ui
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.5.0"
+    version: "1.5.1"
   matcher:
     dependency: transitive
     description:
