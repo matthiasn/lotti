@@ -1,17 +1,16 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
+import 'package:lotti/database/common.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 part 'logging_db.g.dart';
+
+const loggingDbFileName = 'logging_db.sqlite';
 
 enum InsightLevel {
   error,
@@ -27,8 +26,16 @@ enum InsightType {
 
 @DriftDatabase(include: {'logging_db.drift'})
 class LoggingDb extends _$LoggingDb {
-  LoggingDb() : super(_openConnection());
+  LoggingDb({this.inMemoryDatabase = false})
+      : super(
+          openDbConnection(
+            loggingDbFileName,
+            inMemoryDatabase: inMemoryDatabase,
+          ),
+        );
+
   final JournalDb _journalDb = getIt<JournalDb>();
+  final bool inMemoryDatabase;
 
   @override
   int get schemaVersion => 1;
@@ -148,16 +155,4 @@ class LoggingDb extends _$LoggingDb {
 class InsightsSpan {
   Future<void> finish() async {}
   Future<void> error() async {}
-}
-
-Future<File> getLoggingDbFile() async {
-  final dbFolder = await getApplicationDocumentsDirectory();
-  return File(p.join(dbFolder.path, 'logging_db.sqlite'));
-}
-
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final file = await getLoggingDbFile();
-    return NativeDatabase(file);
-  });
 }

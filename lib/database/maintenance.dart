@@ -65,12 +65,12 @@ class Maintenance {
   }
 
   Future<void> deleteEditorDb() async {
-    final file = await getEditorDbFile();
+    final file = await getDatabaseFile(editorDbFileName);
     file.deleteSync();
   }
 
   Future<void> deleteLoggingDb() async {
-    final file = await getLoggingDbFile();
+    final file = await getDatabaseFile(loggingDbFileName);
     file.deleteSync();
   }
 }
