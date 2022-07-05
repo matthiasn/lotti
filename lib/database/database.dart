@@ -40,7 +40,7 @@ class JournalDb extends _$JournalDb {
           ),
         );
 
-  bool inMemoryDatabase;
+  final bool inMemoryDatabase;
 
   @override
   int get schemaVersion => 18;
