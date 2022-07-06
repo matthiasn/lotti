@@ -42,6 +42,17 @@ class FilterBy {
   final String name;
 }
 
+final List<String> defaultTypes = [
+  'JournalEntry',
+  'JournalAudio',
+  'JournalImage',
+  'SurveyEntry',
+  'Task',
+  'QuantitativeEntry',
+  'MeasurementEntry',
+  'WorkoutEntry',
+];
+
 class _JournalPageState extends State<JournalPage> {
   final JournalDb _db = getIt<JournalDb>();
 
@@ -63,16 +74,6 @@ class _JournalPageState extends State<JournalPage> {
       .map((entryType) => MultiSelectItem<FilterBy?>(entryType, entryType.name))
       .toList();
 
-  final List<String> defaultTypes = [
-    'JournalEntry',
-    'JournalAudio',
-    'JournalImage',
-    'SurveyEntry',
-    'Task',
-    'QuantitativeEntry',
-    'MeasurementEntry',
-    'WorkoutEntry',
-  ];
   late Set<String> types;
   Set<String> tagIds = {};
   StreamController<List<TagEntity>> matchingTagsController =

@@ -1,10 +1,12 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockTagsService extends Mock implements TagsService {}
@@ -39,6 +41,10 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 class MockSyncDatabase extends Mock implements SyncDatabase {}
 
 class MockAppRouter extends Mock implements AppRouter {}
+
+class MockTimeService extends Mock implements TimeService {}
+
+class MockLoggingDb extends Mock implements LoggingDb {}
 
 class FakeDashboardDefinition extends Fake implements DashboardDefinition {}
 
