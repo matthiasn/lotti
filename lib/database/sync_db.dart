@@ -1,12 +1,10 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:lotti/database/common.dart';
 
 part 'sync_db.g.dart';
+
+const syncDbFileName = 'sync.sqlite';
 
 @DataClassName('OutboxItem')
 class Outbox extends Table {
@@ -27,17 +25,17 @@ class Outbox extends Table {
   TextColumn get filePath => text().named('file_path').nullable()();
 }
 
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'sync.sqlite'));
-    return NativeDatabase(file);
-  });
-}
-
 @DriftDatabase(tables: [Outbox])
 class SyncDatabase extends _$SyncDatabase {
-  SyncDatabase() : super(_openConnection());
+  SyncDatabase({this.inMemoryDatabase = false})
+      : super(
+          openDbConnection(
+            syncDbFileName,
+            inMemoryDatabase: inMemoryDatabase,
+          ),
+        );
+
+  final bool inMemoryDatabase;
 
   Future<int> updateOutboxItem(OutboxCompanion item) {
     return (update(outbox)..where((t) => t.id.equals(item.id.value)))

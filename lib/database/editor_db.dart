@@ -1,17 +1,24 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
+import 'package:lotti/database/common.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 part 'editor_db.g.dart';
 
+const editorDbFileName = 'editor_drafts_db.sqlite';
+
 @DriftDatabase(include: {'editor_db.drift'})
 class EditorDb extends _$EditorDb {
-  EditorDb() : super(_openConnection());
+  EditorDb({this.inMemoryDatabase = false})
+      : super(
+          openDbConnection(
+            editorDbFileName,
+            inMemoryDatabase: inMemoryDatabase,
+          ),
+        );
+
+  final bool inMemoryDatabase;
 
   @override
   int get schemaVersion => 1;
@@ -67,16 +74,4 @@ class EditorDb extends _$EditorDb {
       return null;
     }
   }
-}
-
-Future<File> getEditorDbFile() async {
-  final dbFolder = await getApplicationDocumentsDirectory();
-  return File(p.join(dbFolder.path, 'editor_drafts_db.sqlite'));
-}
-
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final file = await getEditorDbFile();
-    return NativeDatabase(file);
-  });
 }

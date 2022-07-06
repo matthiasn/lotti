@@ -40,7 +40,7 @@ class JournalDb extends _$JournalDb {
           ),
         );
 
-  bool inMemoryDatabase;
+  final bool inMemoryDatabase;
 
   @override
   int get schemaVersion => 18;
@@ -240,7 +240,7 @@ class JournalDb extends _$JournalDb {
         .watch()
         .where(makeDuplicateFilter())
         .map(entityStreamMapper)
-        .map((event) => event.first);
+        .map((entities) => entities.isNotEmpty ? entities.first : null);
     return res;
   }
 
@@ -460,8 +460,11 @@ class JournalDb extends _$JournalDb {
     return flag;
   }
 
-  Future<void> purgeDeleted() async {
-    await createDbBackup(journalDbFileName);
+  Future<void> purgeDeleted({bool backup = true}) async {
+    if (backup) {
+      await createDbBackup(journalDbFileName);
+    }
+
     await purgeDeletedDashboards();
     await purgeDeletedMeasurables();
     await purgeDeletedTagEntities();

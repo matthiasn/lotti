@@ -4,6 +4,7 @@ import 'package:dart_geohash/dart_geohash.dart';
 import 'package:geoclue/geoclue.dart';
 import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/utils/platform.dart';
 
 class DeviceLocation {
   DeviceLocation() {
@@ -17,7 +18,7 @@ class DeviceLocation {
     bool serviceEnabled;
     PermissionStatus permissionGranted;
 
-    if (Platform.isWindows) {
+    if (isWindows || isTestEnv) {
       return;
     }
 

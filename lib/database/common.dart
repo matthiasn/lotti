@@ -30,7 +30,7 @@ LazyDatabase openDbConnection(
       return NativeDatabase.memory();
     }
 
-    final file = await getDatabaseFile('db.sqlite');
+    final file = await getDatabaseFile(fileName);
     debugPrint('DB LazyDatabase ${file.path}');
 
     return NativeDatabase(file);
