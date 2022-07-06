@@ -240,7 +240,7 @@ class JournalDb extends _$JournalDb {
         .watch()
         .where(makeDuplicateFilter())
         .map(entityStreamMapper)
-        .map((event) => event.first);
+        .map((entities) => entities.isNotEmpty ? entities.first : null);
     return res;
   }
 
