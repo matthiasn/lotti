@@ -82,7 +82,7 @@ class PersistenceLogic {
     return true;
   }
 
-  Future<bool> createWorkoutEntry(WorkoutData data) async {
+  Future<WorkoutEntry?> createWorkoutEntry(WorkoutData data) async {
     final transaction =
         _loggingDb.startTransaction('createQuantitativeEntry()', 'task');
     try {
@@ -91,7 +91,7 @@ class PersistenceLogic {
       final dateFrom = data.dateFrom;
       final dateTo = data.dateTo;
 
-      final journalEntity = JournalEntity.workout(
+      final workout = WorkoutEntry(
         data: data,
         meta: Metadata(
           createdAt: now,
@@ -104,7 +104,10 @@ class PersistenceLogic {
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
       );
-      await createDbEntity(journalEntity, enqueueSync: true);
+      await createDbEntity(workout, enqueueSync: true);
+      await transaction.finish();
+
+      return workout;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -114,8 +117,8 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.finish();
-    return true;
+    await transaction.error();
+    return null;
   }
 
   Future<bool> createSurveyEntry({
