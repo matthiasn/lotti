@@ -210,7 +210,7 @@ class PersistenceLogic {
     return true;
   }
 
-  Future<bool> createTaskEntry({
+  Future<Task?> createTaskEntry({
     required TaskData data,
     required EntryText entryText,
     String? linkedId,
@@ -219,10 +219,10 @@ class PersistenceLogic {
         _loggingDb.startTransaction('createMeasurementEntry()', 'task');
     try {
       final now = DateTime.now();
-      final vc = await _vectorClockService.getNextVectorClock();
       final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
+      final vc = await _vectorClockService.getNextVectorClock();
 
-      final journalEntity = JournalEntity.task(
+      final task = Task(
         data: data,
         entryText: entryText,
         meta: Metadata(
@@ -239,11 +239,13 @@ class PersistenceLogic {
       );
 
       await createDbEntity(
-        journalEntity,
+        task,
         enqueueSync: true,
         linkedId: linkedId,
       );
-      addGeolocation(journalEntity.meta.id);
+      addGeolocation(task.meta.id);
+      await transaction.finish();
+      return task;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -253,8 +255,8 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.finish();
-    return true;
+    await transaction.error();
+    return null;
   }
 
   Future<JournalEntity?> createImageEntry(
@@ -439,7 +441,6 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     final tagsService = getIt<TagsService>();
-
     JournalEntity? linked;
 
     if (linkedId != null) {
@@ -581,11 +582,10 @@ class PersistenceLogic {
 
   Future<bool> updateTask({
     required String journalEntityId,
-    required EntryText entryText,
+    EntryText? entryText,
     required TaskData taskData,
   }) async {
-    final transaction =
-        _loggingDb.startTransaction('updateJournalEntity()', 'task');
+    final transaction = _loggingDb.startTransaction('updateTask()', 'task');
     try {
       final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
@@ -594,7 +594,7 @@ class PersistenceLogic {
         return false;
       }
 
-      journalEntity.maybeMap(
+      await journalEntity.maybeMap(
         task: (Task task) async {
           final vc = await _vectorClockService.getNextVectorClock(
             previous: journalEntity.meta.vectorClock,
@@ -606,15 +606,15 @@ class PersistenceLogic {
             vectorClock: vc,
           );
 
-          final newJournalEntry = task.copyWith(
+          final newTask = task.copyWith(
             meta: newMeta,
             entryText: entryText,
             data: taskData,
           );
 
-          await updateDbEntity(newJournalEntry, enqueueSync: true);
+          await updateDbEntity(newTask, enqueueSync: true);
         },
-        orElse: () => _loggingDb.captureException(
+        orElse: () async => _loggingDb.captureException(
           'not a task',
           domain: 'persistence_logic',
           subDomain: 'updateTask',
@@ -635,7 +635,7 @@ class PersistenceLogic {
 
   Future<void> addGeolocationAsync(String journalEntityId) async {
     final transaction =
-        _loggingDb.startTransaction('createTextEntry()', 'task');
+        _loggingDb.startTransaction('addGeolocationAsync()', 'task');
     try {
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
       final geolocation = await location?.getCurrentGeoLocation().timeout(
@@ -881,8 +881,7 @@ class PersistenceLogic {
   }) async {
     final transaction = _loggingDb.startTransaction('updateDbEntity()', 'task');
     try {
-      final res = await _journalDb.updateJournalEntity(journalEntity);
-      debugPrint('updateDbEntity res $res');
+      await _journalDb.updateJournalEntity(journalEntity);
       await saveJournalEntityJson(journalEntity);
       await _journalDb.addTagged(journalEntity);
 
