@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -376,6 +377,39 @@ void main() {
       expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 0);
       expect(await getIt<JournalDb>().watchTaskCount('DONE').first, 0);
       expect(await getIt<JournalDb>().getWipCount(), 0);
+    });
+
+    test('create and retrieve workout entry', () async {
+      // create test workout
+      final workoutData = WorkoutData(
+        id: 'some_id',
+        workoutType: '',
+        energy: 100,
+        distance: 10,
+        dateFrom: DateTime.fromMillisecondsSinceEpoch(0),
+        dateTo: DateTime.fromMillisecondsSinceEpoch(3600000),
+        source: '',
+      );
+
+      final workout =
+          await getIt<PersistenceLogic>().createWorkoutEntry(workoutData);
+      expect(workout?.data, workoutData);
+
+      // workout is retrieved as latest workout
+      expect((await getIt<JournalDb>().latestWorkout())?.data, workoutData);
+
+      // workout is retrieved on workout watch stream
+      expect(
+        ((await getIt<JournalDb>()
+                    .watchWorkouts(
+                      rangeStart: DateTime(0),
+                      rangeEnd: DateTime(2100),
+                    )
+                    .first)
+                .first as WorkoutEntry)
+            .data,
+        workoutData,
+      );
     });
   });
 }
