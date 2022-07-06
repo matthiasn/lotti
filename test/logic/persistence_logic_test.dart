@@ -22,6 +22,7 @@ import 'package:mocktail/mocktail.dart';
 import '../helpers/path_provider.dart';
 import '../sync/sync_config_test_data.dart';
 import '../sync/sync_config_test_mocks.dart';
+import '../test_data.dart';
 
 class MockSecureStorage extends Mock implements SecureStorage {}
 
@@ -338,6 +339,24 @@ void main() {
       expect(linked.first.meta.tagIds?.toSet(), {testTagId});
 
       expect(
+        (await getIt<JournalDb>().getLinkedEntities(task.meta.id))
+            .first
+            .entryText,
+        (await getIt<JournalDb>().journalEntityById(comment.meta.id))
+            ?.entryText,
+      );
+
+      expect(
+        (await getIt<JournalDb>()
+                .watchLinkedToEntities(linkedTo: comment.meta.id)
+                .first)
+            .first
+            .entryText,
+        (await getIt<JournalDb>().journalEntityById(task.meta.id))?.entryText,
+      );
+
+      // linked ids can be watched
+      expect(
         await getIt<JournalDb>().watchLinkedEntityIds(task.meta.id).first,
         [comment.meta.id],
       );
@@ -377,6 +396,8 @@ void main() {
       expect(await getIt<JournalDb>().watchTaskCount('OPEN').first, 0);
       expect(await getIt<JournalDb>().watchTaskCount('DONE').first, 0);
       expect(await getIt<JournalDb>().getWipCount(), 0);
+
+      await getIt<JournalDb>().purgeDeleted(backup: false);
     });
 
     test('create and retrieve workout entry', () async {
@@ -409,6 +430,85 @@ void main() {
                 .first as WorkoutEntry)
             .data,
         workoutData,
+      );
+    });
+
+    test('create and retrieve measurement entry', () async {
+      // create test data types
+      await getIt<JournalDb>().upsertMeasurableDataType(measurableWater);
+      await getIt<JournalDb>().upsertMeasurableDataType(measurableChocolate);
+
+      // create test measurements
+      final measurementData = MeasurementData(
+        dateFrom: DateTime.fromMillisecondsSinceEpoch(0),
+        dateTo: DateTime.fromMillisecondsSinceEpoch(3600000),
+        value: 1000,
+        dataTypeId: measurableWater.id,
+      );
+
+      // measurement data from db equals data used for creating measurement
+      final measurement = await getIt<PersistenceLogic>()
+          .createMeasurementEntry(data: measurementData);
+      expect(measurement?.data, measurementData);
+
+      // measurement is retrieved in query by type
+      expect(
+        ((await getIt<JournalDb>()
+                    .watchMeasurementsByType(
+                      rangeStart: DateTime(0),
+                      rangeEnd: DateTime(2100),
+                      type: measurableWater.id,
+                    )
+                    .first)
+                .first as MeasurementEntry)
+            .data,
+        measurementData,
+      );
+
+      expect(
+        await getIt<JournalDb>()
+            .watchMeasurementsByType(
+              rangeStart: DateTime(0),
+              rangeEnd: DateTime(2100),
+              type: measurableChocolate.id,
+            )
+            .first,
+        isEmpty,
+      );
+
+      // measurable types can be retrieved
+      expect(
+        (await getIt<JournalDb>().watchMeasurableDataTypes().first).toSet(),
+        {measurableChocolate, measurableWater},
+      );
+
+      expect(
+        await getIt<JournalDb>()
+            .watchMeasurableDataTypeById(measurableChocolate.id)
+            .first,
+        measurableChocolate,
+      );
+
+      expect(
+        await getIt<JournalDb>()
+            .getMeasurableDataTypeById(measurableChocolate.id),
+        measurableChocolate,
+      );
+
+      // measurable can be deleted
+      await getIt<PersistenceLogic>().upsertEntityDefinition(
+        measurableChocolate.copyWith(deletedAt: DateTime.now()),
+      );
+
+      expect(
+        await getIt<JournalDb>()
+            .getMeasurableDataTypeById(measurableChocolate.id),
+        null,
+      );
+
+      expect(
+        (await getIt<JournalDb>().watchMeasurableDataTypes().first).toSet(),
+        {measurableWater},
       );
     });
   });

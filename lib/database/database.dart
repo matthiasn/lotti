@@ -460,8 +460,11 @@ class JournalDb extends _$JournalDb {
     return flag;
   }
 
-  Future<void> purgeDeleted() async {
-    await createDbBackup(journalDbFileName);
+  Future<void> purgeDeleted({bool backup = true}) async {
+    if (backup) {
+      await createDbBackup(journalDbFileName);
+    }
+
     await purgeDeletedDashboards();
     await purgeDeletedMeasurables();
     await purgeDeletedTagEntities();
