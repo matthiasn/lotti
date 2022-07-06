@@ -4,7 +4,7 @@ import 'package:lotti/pages/create/create_text_entry_page.dart';
 import 'package:lotti/pages/create/fill_survey_page.dart';
 import 'package:lotti/pages/create/record_audio_page.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
-import 'package:lotti/pages/journal_page.dart';
+import 'package:lotti/pages/journal/journal_page.dart';
 
 const AutoRoute journalRoutes = AutoRoute(
   path: 'journal',
