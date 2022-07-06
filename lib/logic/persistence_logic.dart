@@ -165,7 +165,7 @@ class PersistenceLogic {
     return true;
   }
 
-  Future<bool> createMeasurementEntry({
+  Future<MeasurementEntry?> createMeasurementEntry({
     required MeasurementData data,
     String? linkedId,
   }) async {
@@ -176,7 +176,7 @@ class PersistenceLogic {
       final vc = await _vectorClockService.getNextVectorClock();
       final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
 
-      final journalEntity = JournalEntity.measurement(
+      final measurementEntry = MeasurementEntry(
         data: data,
         meta: Metadata(
           createdAt: now,
@@ -191,15 +191,18 @@ class PersistenceLogic {
       );
 
       await createDbEntity(
-        journalEntity,
+        measurementEntry,
         enqueueSync: true,
         linkedId: linkedId,
       );
 
       if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
           data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
-        addGeolocation(journalEntity.meta.id);
+        addGeolocation(measurementEntry.meta.id);
       }
+      await transaction.finish();
+
+      return measurementEntry;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -209,8 +212,8 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.finish();
-    return true;
+    await transaction.error();
+    return null;
   }
 
   Future<Task?> createTaskEntry({
