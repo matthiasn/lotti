@@ -224,7 +224,8 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                       maxWidth: MediaQuery.of(context).size.width / 2,
                     ),
                     child: Text(
-                      '${measurableDataType.displayName} '
+                      '${measurableDataType.displayName}'
+                      '${aggregationType != AggregationType.none ? ' ' : ''}'
                       '${aggregationLabel(aggregationType)}',
                       style: chartTitleStyle(),
                       overflow: TextOverflow.ellipsis,

@@ -6,7 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
-- Tests for dashboards
+- Tests for measurement in journal
+- Tests for health entry in journal
+- Tests for dashboards measurement chart
 
 ## [0.8.95] - 2022-07-07
 ### Changed:

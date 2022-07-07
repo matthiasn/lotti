@@ -8,8 +8,11 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/sync/secure_storage.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockTagsService extends Mock implements TagsService {}
@@ -54,6 +57,12 @@ class MockEditorStateService extends Mock implements EditorStateService {}
 class MockLinkService extends Mock implements LinkService {}
 
 class MockHealthImport extends Mock implements HealthImport {}
+
+class MockSecureStorage extends Mock implements SecureStorage {}
+
+class MockNavService extends Mock implements NavService {}
+
+class MockNotificationService extends Mock implements NotificationService {}
 
 class FakeDashboardDefinition extends Fake implements DashboardDefinition {}
 

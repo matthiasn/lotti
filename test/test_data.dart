@@ -19,6 +19,18 @@ final measurableWater = MeasurableDataType(
   aggregationType: AggregationType.dailySum,
 );
 
+final measurablePullUps = MeasurableDataType(
+  id: '22922182-15bf-4f2b-864f-1f546f95cac2',
+  displayName: 'Pull-Ups',
+  description: 'maximum repetitions in one recording',
+  unitName: 'reps',
+  createdAt: testEpochDateTime,
+  updatedAt: testEpochDateTime,
+  vectorClock: null,
+  version: 1,
+  aggregationType: AggregationType.dailyMax,
+);
+
 final measurableChocolate = MeasurableDataType(
   id: 'f8f55c10-e30b-4bf5-990d-d569ce4867fb',
   displayName: 'Chocolate',
@@ -153,7 +165,7 @@ final testWeightEntry = QuantitativeEntry(
   ),
 );
 
-final testMeasurementEntry = MeasurementEntry(
+final testMeasurementChocolateEntry = MeasurementEntry(
   meta: Metadata(
     id: 'c4824b56-2d4e-4ac0-92b7-08e69dae0d5a',
     createdAt: DateTime(2022, 7, 7, 17),
@@ -186,5 +198,23 @@ final testMeasuredCoverageEntry = MeasurementEntry(
     dataTypeId: measurableCoverage.id,
     dateTo: DateTime(2022, 7, 7, 17),
     dateFrom: DateTime(2022, 7, 7, 17),
+  ),
+);
+
+final testMeasuredPullUpsEntry = MeasurementEntry(
+  meta: Metadata(
+    id: '2f952c8f-5a27-4125-a745-623ec3917c4f',
+    createdAt: DateTime(2022, 7, 7, 20),
+    dateFrom: DateTime(2022, 7, 7, 20),
+    dateTo: DateTime(2022, 7, 7, 20),
+    updatedAt: DateTime(2022, 7, 7, 20),
+    starred: false,
+    private: false,
+  ),
+  data: MeasurementData(
+    value: 10,
+    dataTypeId: measurablePullUps.id,
+    dateTo: DateTime(2022, 7, 7, 20),
+    dateFrom: DateTime(2022, 7, 7, 20),
   ),
 );

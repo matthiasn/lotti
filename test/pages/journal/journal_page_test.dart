@@ -315,7 +315,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasurementEntry]
+          [testMeasurementChocolateEntry]
         ]),
       );
 
@@ -345,7 +345,7 @@ void main() {
 
       // measurement entry displays expected date
       expect(
-        find.text(df.format(testMeasurementEntry.meta.dateFrom)),
+        find.text(df.format(testMeasurementChocolateEntry.meta.dateFrom)),
         findsOneWidget,
       );
 
@@ -353,7 +353,7 @@ void main() {
       expect(
         find.text(
           '${measurableChocolate.displayName}: '
-          '${testMeasurementEntry.data.value} '
+          '${testMeasurementChocolateEntry.data.value} '
           '${measurableChocolate.unitName}',
         ),
         findsOneWidget,
@@ -434,7 +434,7 @@ void main() {
 
       // measurement entry displays expected date
       expect(
-        find.text(df.format(testMeasurementEntry.meta.dateFrom)),
+        find.text(df.format(testMeasurementChocolateEntry.meta.dateFrom)),
         findsOneWidget,
       );
 

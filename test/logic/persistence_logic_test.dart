@@ -20,13 +20,10 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/path_provider.dart';
+import '../mocks.dart';
 import '../sync/sync_config_test_data.dart';
 import '../sync/sync_config_test_mocks.dart';
 import '../test_data.dart';
-
-class MockSecureStorage extends Mock implements SecureStorage {}
-
-class MockNotificationService extends Mock implements NotificationService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
