@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 
 class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
   const DashboardsAppBar({super.key});

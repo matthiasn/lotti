@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class ChartMultiSelect<T> extends StatelessWidget {

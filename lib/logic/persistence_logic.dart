@@ -15,12 +15,12 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/location.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/outbox.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/location.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:uuid/uuid.dart';
 

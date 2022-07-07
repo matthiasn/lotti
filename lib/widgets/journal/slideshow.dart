@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/widgets/journal/editor/editor_wrapper_widget.dart';
 import 'package:path_provider/path_provider.dart';

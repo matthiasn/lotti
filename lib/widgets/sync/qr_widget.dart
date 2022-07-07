@@ -10,7 +10,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
 import 'package:qr_flutter/qr_flutter.dart';
