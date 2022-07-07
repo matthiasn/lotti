@@ -3,6 +3,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -51,6 +52,8 @@ class MockLoggingDb extends Mock implements LoggingDb {}
 class MockEditorStateService extends Mock implements EditorStateService {}
 
 class MockLinkService extends Mock implements LinkService {}
+
+class MockHealthImport extends Mock implements HealthImport {}
 
 class FakeDashboardDefinition extends Fake implements DashboardDefinition {}
 

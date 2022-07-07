@@ -9,6 +9,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/pages/journal/journal_page.dart';
@@ -52,6 +53,7 @@ void main() {
       final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();
       final mockEditorStateService = MockEditorStateService();
+      final mockHealthImport = MockHealthImport();
 
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
@@ -59,6 +61,7 @@ void main() {
         ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<LinkService>(MockLinkService())
         ..registerSingleton<TagsService>(mockTagsService)
+        ..registerSingleton<HealthImport>(mockHealthImport)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
@@ -102,6 +105,7 @@ void main() {
           [
             testTextEntry,
             testTask,
+            testWeightEntry,
           ]
         ]),
       );
@@ -114,6 +118,12 @@ void main() {
 
       when(
         () => mockJournalDb.watchLinkedEntityIds(testTask.meta.id),
+      ).thenAnswer(
+        (_) => Stream<List<String>>.fromIterable([]),
+      );
+
+      when(
+        () => mockJournalDb.watchLinkedEntityIds(testWeightEntry.meta.id),
       ).thenAnswer(
         (_) => Stream<List<String>>.fromIterable([]),
       );
@@ -133,6 +143,14 @@ void main() {
       );
 
       when(
+        () => mockJournalDb.watchLinkedToEntities(
+          linkedTo: testWeightEntry.meta.id,
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([]),
+      );
+
+      when(
         () => mockJournalDb.watchEntityById(testTask.meta.id),
       ).thenAnswer(
         (_) => Stream<JournalEntity>.fromIterable([testTask]),
@@ -145,6 +163,12 @@ void main() {
       );
 
       when(
+        () => mockJournalDb.watchEntityById(testWeightEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([testWeightEntry]),
+      );
+
+      when(
         () => mockEditorStateService.getUnsavedStream(
           testTextEntry.meta.id,
           any(),
@@ -152,6 +176,19 @@ void main() {
       ).thenAnswer(
         (_) => Stream<bool>.fromIterable([false]),
       );
+
+      when(
+        () => mockHealthImport
+            .fetchHealthDataDelta(testWeightEntry.data.dataType),
+      ).thenAnswer((_) async {});
+
+      when(
+        () => mockJournalDb.watchQuantitativeByType(
+          type: testWeightEntry.data.dataType,
+          rangeEnd: any(named: 'rangeEnd'),
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer((_) => Stream<List<JournalEntity>>.fromIterable([]));
 
       when(
         () => mockEditorStateService.getUnsavedStream(
@@ -299,6 +336,42 @@ void main() {
       expect(
         (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
         darkTheme.starredGold,
+      );
+    });
+
+    testWidgets('Weight Entry is rendered properly', (tester) async {
+      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
+        return mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+        );
+      }
+
+      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: EntryDetailPage(
+              itemId: testWeightEntry.meta.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // test entry displays expected date
+      expect(
+        find.text(df.format(testWeightEntry.meta.dateFrom)),
+        findsOneWidget,
+      );
+
+      // test weight entry is not starred
+      expect(
+        (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
+        darkTheme.entryTextColor,
       );
     });
   });

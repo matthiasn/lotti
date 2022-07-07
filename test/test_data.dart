@@ -1,5 +1,6 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
@@ -27,6 +28,19 @@ final measurableChocolate = MeasurableDataType(
   updatedAt: testEpochDateTime,
   vectorClock: null,
   version: 1,
+  aggregationType: AggregationType.dailySum,
+);
+
+final measurableCoverage = MeasurableDataType(
+  id: '55cd4c41-efcf-4819-8619-f79281b1de17',
+  displayName: 'Coverage',
+  description: 'Lotti test coverage',
+  unitName: '%',
+  createdAt: testEpochDateTime,
+  updatedAt: testEpochDateTime,
+  vectorClock: null,
+  version: 1,
+  aggregationType: AggregationType.none,
 );
 
 const testDashboardName = 'Some test dashboard';
@@ -119,4 +133,58 @@ final testTask = Task(
     starred: true,
   ),
   entryText: EntryText(plainText: '- test task text'),
+);
+
+final testWeightEntry = QuantitativeEntry(
+  meta: Metadata(
+    id: 'c4824b56-2d4e-4ac0-92b7-08e69dae0d5a',
+    createdAt: DateTime(2022, 7, 7, 15),
+    dateFrom: DateTime(2022, 7, 7, 15),
+    dateTo: DateTime(2022, 7, 7, 15),
+    updatedAt: DateTime(2022, 7, 7, 15),
+    starred: false,
+  ),
+  data: QuantitativeData.discreteQuantityData(
+    dateFrom: DateTime(2022, 7, 7, 15),
+    dateTo: DateTime(2022, 7, 7, 15),
+    value: 94.49400329589844,
+    dataType: 'HealthDataType.WEIGHT',
+    unit: 'HealthDataUnit.KILOGRAMS',
+  ),
+);
+
+final testMeasurementEntry = MeasurementEntry(
+  meta: Metadata(
+    id: 'c4824b56-2d4e-4ac0-92b7-08e69dae0d5a',
+    createdAt: DateTime(2022, 7, 7, 17),
+    dateFrom: DateTime(2022, 7, 7, 17),
+    dateTo: DateTime(2022, 7, 7, 17),
+    updatedAt: DateTime(2022, 7, 7, 17),
+    starred: false,
+    private: true,
+  ),
+  data: MeasurementData(
+    value: 100,
+    dataTypeId: measurableChocolate.id,
+    dateTo: DateTime(2022, 7, 7, 17),
+    dateFrom: DateTime(2022, 7, 7, 17),
+  ),
+);
+
+final testMeasuredCoverageEntry = MeasurementEntry(
+  meta: Metadata(
+    id: '2c6ffac2-a4b7-4b00-9ff3-ae696971fede',
+    createdAt: DateTime(2022, 7, 7, 17),
+    dateFrom: DateTime(2022, 7, 7, 17),
+    dateTo: DateTime(2022, 7, 7, 17),
+    updatedAt: DateTime(2022, 7, 7, 17),
+    starred: false,
+    private: false,
+  ),
+  data: MeasurementData(
+    value: 42,
+    dataTypeId: measurableCoverage.id,
+    dateTo: DateTime(2022, 7, 7, 17),
+    dateFrom: DateTime(2022, 7, 7, 17),
+  ),
 );
