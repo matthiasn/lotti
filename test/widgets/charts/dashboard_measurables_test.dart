@@ -37,7 +37,7 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets(
-        'page is rendered with measurement entry, aggregation sum by day',
+        'chart is rendered with measurement entry, aggregation sum by day',
         (tester) async {
       when(
         () => mockJournalDb.watchMeasurementsByType(
@@ -80,7 +80,7 @@ void main() {
       );
     });
 
-    testWidgets('page is rendered with measurement entry, aggregation none',
+    testWidgets('chart is rendered with measurement entry, aggregation none',
         (tester) async {
       when(
         () => mockJournalDb.watchMeasurementsByType(
@@ -124,7 +124,7 @@ void main() {
     });
 
     testWidgets(
-        'page is rendered with measurement entry, aggregation daily max',
+        'chart is rendered with measurement entry, aggregation daily max',
         (tester) async {
       when(
         () => mockJournalDb.watchMeasurementsByType(

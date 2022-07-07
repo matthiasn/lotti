@@ -165,6 +165,42 @@ final testWeightEntry = QuantitativeEntry(
   ),
 );
 
+final testBpSystolicEntry = QuantitativeEntry(
+  meta: Metadata(
+    id: '4dd10110-9c38-5f65-a260-1f371cecf038',
+    createdAt: DateTime(2022, 7, 7, 8),
+    dateFrom: DateTime(2022, 7, 7, 8),
+    dateTo: DateTime(2022, 7, 7, 8),
+    updatedAt: DateTime(2022, 7, 7, 8),
+    starred: false,
+  ),
+  data: QuantitativeData.discreteQuantityData(
+    dateFrom: DateTime(2022, 7, 7, 8),
+    dateTo: DateTime(2022, 7, 7, 8),
+    value: 122,
+    dataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+    unit: 'HealthDataUnit.MILLIMETER_OF_MERCURY',
+  ),
+);
+
+final testBpDiastolicEntry = QuantitativeEntry(
+  meta: Metadata(
+    id: '4dd10110-9c38-5f65-a260-1f371cecf038',
+    createdAt: DateTime(2022, 7, 7, 8),
+    dateFrom: DateTime(2022, 7, 7, 8),
+    dateTo: DateTime(2022, 7, 7, 8),
+    updatedAt: DateTime(2022, 7, 7, 8),
+    starred: false,
+  ),
+  data: QuantitativeData.discreteQuantityData(
+    dateFrom: DateTime(2022, 7, 7, 8),
+    dateTo: DateTime(2022, 7, 7, 8),
+    value: 122,
+    dataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+    unit: 'HealthDataUnit.MILLIMETER_OF_MERCURY',
+  ),
+);
+
 final testMeasurementChocolateEntry = MeasurementEntry(
   meta: Metadata(
     id: 'c4824b56-2d4e-4ac0-92b7-08e69dae0d5a',
