@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 
 class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {

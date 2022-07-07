@@ -4,7 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 
 class ImapConfigActions extends StatelessWidget {

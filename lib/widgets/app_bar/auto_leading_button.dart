@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 
 class TestDetectingAutoLeadingButton extends StatelessWidget {
   const TestDetectingAutoLeadingButton({

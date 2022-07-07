@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 
 class SettingsCard extends StatelessWidget {
   const SettingsCard({

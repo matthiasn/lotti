@@ -7,7 +7,7 @@ import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 

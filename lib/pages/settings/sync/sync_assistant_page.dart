@@ -12,7 +12,7 @@ import 'package:lotti/pages/settings/sync/sync_assistant_slide_intro_2.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_intro_3.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_qr_code.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_success.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class SyncAssistantPage extends StatefulWidget {

@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/vu_meter.dart';
 
 const double iconSize = 64;

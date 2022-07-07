@@ -4,7 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/app_bar_version.dart';
 import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 import 'package:lotti/widgets/tasks/linked_duration.dart';

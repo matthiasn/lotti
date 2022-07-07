@@ -9,10 +9,10 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/location.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/location.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
 

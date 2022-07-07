@@ -5,7 +5,7 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/sync_config_service.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class MaintenancePage extends StatefulWidget {

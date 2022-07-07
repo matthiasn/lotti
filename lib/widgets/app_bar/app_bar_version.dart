@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 import 'package:package_info_plus/package_info_plus.dart';

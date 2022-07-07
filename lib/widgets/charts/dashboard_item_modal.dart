@@ -2,7 +2,7 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/theme.dart';
+import 'package:lotti/themes/theme.dart';
 
 class DashboardItemModal extends StatelessWidget {
   const DashboardItemModal({
