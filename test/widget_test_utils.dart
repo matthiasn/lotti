@@ -21,6 +21,33 @@ Widget makeTestableWidget(Widget child) {
   );
 }
 
+Widget makeTestableWidgetWithScaffold(Widget child) {
+  return MediaQuery(
+    data: const MediaQueryData(),
+    child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        FormBuilderLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1500,
+              maxWidth: 800,
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 class ContainerByColorFinder extends MatchFinder {
   ContainerByColorFinder(this.color, {super.skipOffstage});
 
