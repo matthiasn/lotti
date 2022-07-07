@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Tests for database and persistence logic
 - Tests for journal page
+- Tests for tasks page
 
 ## [0.8.91] - 2022-07-05
 ### Added:
