@@ -35,12 +35,7 @@ platform :mac do
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
       export_method: "developer-id",
-      output_directory: "../build/export",
-      export_options: {
-        provisioningProfiles: {
-          "com.matthiasnehlsen.lotti" => "Lotti Developer ID Application"
-        }
-      }
+      output_directory: "../build/export"
     )
   end
 end
