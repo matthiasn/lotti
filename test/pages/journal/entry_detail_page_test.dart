@@ -23,10 +23,9 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../data/test_data.dart';
+import '../../mocks.dart';
 import '../../test_data.dart';
 import '../../widget_test_utils.dart';
-import '../settings/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

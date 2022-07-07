@@ -8,7 +8,7 @@ import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_actions.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../pages/settings/mocks.dart';
+import '../../mocks.dart';
 import '../../widget_test_utils.dart';
 import '../sync_config_test_data.dart';
 import '../sync_config_test_mocks.dart';
