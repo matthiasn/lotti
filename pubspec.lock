@@ -98,7 +98,7 @@ packages:
       name: auto_route
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.2.0"
+    version: "4.2.1"
   auto_route_generator:
     dependency: "direct dev"
     description:
@@ -126,7 +126,7 @@ packages:
       name: basic_utils
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.2.2"
+    version: "4.3.0"
   bloc:
     dependency: "direct main"
     description:
@@ -925,7 +925,7 @@ packages:
       name: freezed
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.3+1"
+    version: "2.0.4"
   freezed_annotation:
     dependency: "direct main"
     description:
@@ -1858,7 +1858,7 @@ packages:
       name: sqflite
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.2+1"
+    version: "2.0.3"
   sqflite_common:
     dependency: transitive
     description:
