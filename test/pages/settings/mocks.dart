@@ -5,6 +5,8 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -45,6 +47,10 @@ class MockAppRouter extends Mock implements AppRouter {}
 class MockTimeService extends Mock implements TimeService {}
 
 class MockLoggingDb extends Mock implements LoggingDb {}
+
+class MockEditorStateService extends Mock implements EditorStateService {}
+
+class MockLinkService extends Mock implements LinkService {}
 
 class FakeDashboardDefinition extends Fake implements DashboardDefinition {}
 

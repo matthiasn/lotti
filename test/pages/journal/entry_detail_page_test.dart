@@ -10,8 +10,11 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/pages/journal/journal_page.dart';
 import 'package:lotti/routes/router.gr.dart';
+import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/themes.dart';
@@ -32,7 +35,7 @@ void main() {
   var mockPersistenceLogic = MockPersistenceLogic();
   var mockAppRouter = MockAppRouter();
 
-  group('JournalPage Widget Tests - ', () {
+  group('EntryDetailPage Widget Tests - ', () {
     setUpAll(() {
       registerFallbackValue(FakeMeasurementData());
     });
@@ -49,10 +52,13 @@ void main() {
 
       final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();
+      final mockEditorStateService = MockEditorStateService();
 
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<LinkService>(MockLinkService())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -102,9 +108,59 @@ void main() {
       );
 
       when(
+        () => mockJournalDb.watchLinkedEntityIds(testTextEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<List<String>>.fromIterable([]),
+      );
+
+      when(
+        () => mockJournalDb.watchLinkedEntityIds(testTask.meta.id),
+      ).thenAnswer(
+        (_) => Stream<List<String>>.fromIterable([]),
+      );
+
+      when(
+        () => mockJournalDb.watchLinkedToEntities(
+          linkedTo: testTextEntry.meta.id,
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([]),
+      );
+
+      when(
+        () => mockJournalDb.watchLinkedToEntities(linkedTo: testTask.meta.id),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([]),
+      );
+
+      when(
         () => mockJournalDb.watchEntityById(testTask.meta.id),
       ).thenAnswer(
         (_) => Stream<JournalEntity>.fromIterable([testTask]),
+      );
+
+      when(
+        () => mockJournalDb.watchEntityById(testTextEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([testTextEntry]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(
+          testTextEntry.meta.id,
+          any(),
+        ),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(
+          testTask.meta.id,
+          any(),
+        ),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
       );
 
       when(
@@ -146,7 +202,7 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('page is rendered with text and task entries', (tester) async {
+    testWidgets('Text Entry is rendered', (tester) async {
       Future<MeasurementEntry?> mockCreateMeasurementEntry() {
         return mockPersistenceLogic.createMeasurementEntry(
           data: any(named: 'data'),
@@ -160,7 +216,9 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPage(),
+            child: EntryDetailPage(
+              itemId: testTextEntry.meta.id,
+            ),
           ),
         ),
       );
@@ -186,8 +244,34 @@ void main() {
         (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
         darkTheme.starredGold,
       );
+    });
 
-      // task entry displays expected date
+    testWidgets('Task Entry is rendered', (tester) async {
+      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
+        return mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+        );
+      }
+
+      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: EntryDetailPage(
+              itemId: testTask.meta.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // TODO: test that entry text is rendered
+
+      // test entry displays expected date
       expect(
         find.text(df.format(testTask.meta.dateFrom)),
         findsOneWidget,
@@ -203,7 +287,19 @@ void main() {
       // test task title is displayed
       expect(
         find.text(testTask.data.title),
+        findsNWidgets(2),
+      );
+
+      // task entry duration is rendered
+      expect(
+        find.text('2:00:00'),
         findsOneWidget,
+      );
+
+      // test task is starred
+      expect(
+        (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
+        darkTheme.starredGold,
       );
     });
   });
