@@ -130,7 +130,9 @@ void main() {
 
       // finds log elements
       expect(
-          find.text(testLogEntry.createdAt.substring(0, 23)), findsOneWidget);
+        find.text(testLogEntry.createdAt.substring(0, 23)),
+        findsOneWidget,
+      );
       expect(find.text(testLogEntry.level), findsOneWidget);
       expect(find.text(testLogEntry.domain), findsOneWidget);
       expect(find.text('${testLogEntry.subDomain}'), findsOneWidget);
