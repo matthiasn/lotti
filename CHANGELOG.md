@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Tests for measurement in journal
+- Tests for health entry in journal
+- Tests for dashboards measurement charts
+- Tests for dashboards health charts
+- Tests for dashboards workout charts
+
+## [0.8.95] - 2022-07-07
 ### Changed:
 - Refactoring (no UI changes)
 

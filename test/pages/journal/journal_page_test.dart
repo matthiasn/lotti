@@ -20,10 +20,9 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../data/test_data.dart';
+import '../../mocks.dart';
 import '../../test_data.dart';
 import '../../widget_test_utils.dart';
-import '../settings/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -60,8 +59,7 @@ void main() {
         ..registerSingleton<AppRouter>(mockAppRouter);
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+        () => mockJournalDb.getMeasurableDataTypeById(measurableWater.id),
       ).thenAnswer((_) async => measurableWater);
 
       when(
@@ -85,23 +83,6 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.watchJournalEntities(
-          types: defaultTypes.toList(),
-          starredStatuses: [true, false],
-          privateStatuses: [true, false],
-          flaggedStatuses: [1, 0],
-          ids: null,
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [
-            testTextEntry,
-            testTask,
-          ]
-        ]),
-      );
-
-      when(
         () => mockJournalDb.watchEntityById(testTask.meta.id),
       ).thenAnswer(
         (_) => Stream<JournalEntity>.fromIterable([testTask]),
@@ -119,34 +100,10 @@ void main() {
 
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
-      when(
-        () => mockJournalDb.watchMeasurableDataTypeById(
-          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurableWater,
-        ]),
-      );
-
-      when(
-        () => mockJournalDb.watchMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
-      );
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(any()),
-      ).thenAnswer((_) async => measurableWater);
     });
     tearDown(getIt.reset);
 
-    testWidgets('page is rendered with text and task entries', (tester) async {
+    testWidgets('page is rendered with text entry', (tester) async {
       Future<MeasurementEntry?> mockCreateMeasurementEntry() {
         return mockPersistenceLogic.createMeasurementEntry(
           data: any(named: 'data'),
@@ -154,6 +111,20 @@ void main() {
       }
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      when(
+        () => mockJournalDb.watchJournalEntities(
+          types: defaultTypes.toList(),
+          starredStatuses: [true, false],
+          privateStatuses: [true, false],
+          flaggedStatuses: [1, 0],
+          ids: null,
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testTextEntry]
+        ]),
+      );
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -186,6 +157,42 @@ void main() {
         (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
         darkTheme.starredGold,
       );
+    });
+
+    testWidgets('page is rendered with task entry', (tester) async {
+      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
+        return mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+        );
+      }
+
+      when(
+        () => mockJournalDb.watchJournalEntities(
+          types: defaultTypes.toList(),
+          starredStatuses: [true, false],
+          privateStatuses: [true, false],
+          flaggedStatuses: [1, 0],
+          ids: null,
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testTask]
+        ]),
+      );
+
+      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: const JournalPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
 
       // task entry displays expected date
       expect(
@@ -205,6 +212,245 @@ void main() {
         find.text(testTask.data.title),
         findsOneWidget,
       );
+
+      // test task is starred
+      expect(
+        (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
+        darkTheme.starredGold,
+      );
+    });
+
+    testWidgets('page is rendered with weight entry', (tester) async {
+      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
+        return mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+        );
+      }
+
+      when(
+        () => mockJournalDb.watchJournalEntities(
+          types: defaultTypes.toList(),
+          starredStatuses: [true, false],
+          privateStatuses: [true, false],
+          flaggedStatuses: [1, 0],
+          ids: null,
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testWeightEntry]
+        ]),
+      );
+
+      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: const JournalPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // task entry displays expected date
+      expect(
+        find.text(df.format(testWeightEntry.meta.dateFrom)),
+        findsOneWidget,
+      );
+
+      // weight entry displays expected measurement data
+      expect(
+        find.text('WEIGHT: 94.49 KILOGRAMS'),
+        findsOneWidget,
+      );
+
+      // weight task is neither starred nor private (icons invisible)
+      expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
+      expect(find.byIcon(MdiIcons.security).hitTestable(), findsNothing);
+    });
+
+    testWidgets(
+        'page is rendered with measurement entry, aggregation sum by day',
+        (tester) async {
+      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
+        return mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+        );
+      }
+
+      when(
+        () => mockJournalDb.watchMeasurableDataTypeById(
+          measurableChocolate.id,
+        ),
+      ).thenAnswer(
+        (_) => Stream<MeasurableDataType>.fromIterable([
+          measurableChocolate,
+        ]),
+      );
+
+      when(
+        () => mockJournalDb.watchMeasurementsByType(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+          type: measurableChocolate.id,
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
+      );
+
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(any()),
+      ).thenAnswer((_) async => measurableChocolate);
+
+      when(
+        () => mockJournalDb.watchJournalEntities(
+          types: defaultTypes.toList(),
+          starredStatuses: [true, false],
+          privateStatuses: [true, false],
+          flaggedStatuses: [1, 0],
+          ids: null,
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testMeasurementChocolateEntry]
+        ]),
+      );
+
+      when(
+        () => mockJournalDb.watchMeasurableDataTypeById(
+          measurableChocolate.id,
+        ),
+      ).thenAnswer(
+        (_) => Stream<MeasurableDataType>.fromIterable([
+          measurableChocolate,
+        ]),
+      );
+
+      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: const JournalPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // measurement entry displays expected date
+      expect(
+        find.text(df.format(testMeasurementChocolateEntry.meta.dateFrom)),
+        findsOneWidget,
+      );
+
+      // measurement entry displays expected measurement data
+      expect(
+        find.text(
+          '${measurableChocolate.displayName}: '
+          '${testMeasurementChocolateEntry.data.value} '
+          '${measurableChocolate.unitName}',
+        ),
+        findsOneWidget,
+      );
+
+      // test measurement is not starred (icon invisible)
+      expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
+
+      // test measurement is private (icon visible & red)
+      expect(find.byIcon(MdiIcons.security).hitTestable(), findsOneWidget);
+      expect(
+        (tester.firstWidget(find.byIcon(MdiIcons.security)) as Icon).color,
+        darkTheme.error,
+      );
+    });
+
+    testWidgets('page is rendered with measurement entry, aggregation none',
+        (tester) async {
+      when(
+        () => mockJournalDb.watchMeasurableDataTypeById(
+          measurableCoverage.id,
+        ),
+      ).thenAnswer(
+        (_) => Stream<MeasurableDataType>.fromIterable([
+          measurableCoverage,
+        ]),
+      );
+
+      when(
+        () => mockJournalDb.watchMeasurementsByType(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+          type: measurableCoverage.id,
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
+      );
+
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(any()),
+      ).thenAnswer((_) async => measurableCoverage);
+
+      when(
+        () => mockJournalDb.watchJournalEntities(
+          types: defaultTypes.toList(),
+          starredStatuses: [true, false],
+          privateStatuses: [true, false],
+          flaggedStatuses: [1, 0],
+          ids: null,
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testMeasuredCoverageEntry]
+        ]),
+      );
+
+      when(
+        () => mockJournalDb.watchMeasurableDataTypeById(
+          measurableCoverage.id,
+        ),
+      ).thenAnswer(
+        (_) => Stream<MeasurableDataType>.fromIterable([
+          measurableCoverage,
+        ]),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+            lazy: false,
+            child: const JournalPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // measurement entry displays expected date
+      expect(
+        find.text(df.format(testMeasurementChocolateEntry.meta.dateFrom)),
+        findsOneWidget,
+      );
+
+      // measurement entry displays expected measurement data
+      expect(
+        find.text(
+          '${measurableCoverage.displayName}: '
+          '${testMeasuredCoverageEntry.data.value} '
+          '${measurableCoverage.unitName}',
+        ),
+        findsOneWidget,
+      );
+
+      // test measurement is neither starred nor private (icons invisible)
+      expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
+      expect(find.byIcon(MdiIcons.security).hitTestable(), findsNothing);
     });
   });
 }
