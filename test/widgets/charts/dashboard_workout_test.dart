@@ -29,7 +29,8 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('workout chart is rendered', (tester) async {
+    testWidgets('workout chart for running distance is rendered',
+        (tester) async {
       when(
         () => mockJournalDb.watchWorkouts(
           rangeEnd: any(named: 'rangeEnd'),
@@ -52,7 +53,7 @@ void main() {
             chartConfig: DashboardWorkoutItem(
               valueType: WorkoutValueType.distance,
               color: '#00FF00',
-              displayName: 'Running',
+              displayName: 'Running distance',
               workoutType: testWorkoutRunning.data.workoutType,
             ),
           ),
@@ -63,7 +64,86 @@ void main() {
 
       // chart displays expected title
       expect(
-        find.text('Running'),
+        find.text('Running distance'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('workout chart for running energy is rendered', (tester) async {
+      when(
+        () => mockJournalDb.watchWorkouts(
+          rangeEnd: any(named: 'rangeEnd'),
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testWorkoutRunning]
+        ]),
+      );
+
+      when(mockHealthImport.getWorkoutsHealthDataDelta)
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DashboardWorkoutChart(
+            rangeStart: DateTime(2022),
+            rangeEnd: DateTime(2023),
+            chartConfig: DashboardWorkoutItem(
+              valueType: WorkoutValueType.energy,
+              color: '#00FF00',
+              displayName: 'Running calories',
+              workoutType: testWorkoutRunning.data.workoutType,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // chart displays expected title
+      expect(
+        find.text('Running calories'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('workout chart for running duration is rendered',
+        (tester) async {
+      when(
+        () => mockJournalDb.watchWorkouts(
+          rangeEnd: any(named: 'rangeEnd'),
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testWorkoutRunning]
+        ]),
+      );
+
+      when(mockHealthImport.getWorkoutsHealthDataDelta)
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DashboardWorkoutChart(
+            rangeStart: DateTime(2022),
+            rangeEnd: DateTime(2023),
+            chartConfig: DashboardWorkoutItem(
+              valueType: WorkoutValueType.duration,
+              color: '#00FF00',
+              displayName: 'Running Duration',
+              workoutType: testWorkoutRunning.data.workoutType,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // chart displays expected title
+      expect(
+        find.text('Running Duration'),
         findsOneWidget,
       );
     });

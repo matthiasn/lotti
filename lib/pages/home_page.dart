@@ -62,9 +62,6 @@ class HomePage extends StatelessWidget {
             const JournalRouter(),
             if (showTasks) const TasksRouter(),
             const DashboardsRouter(),
-            // ignore: flutter_style_todos
-            // TODO: bring back or remove
-            // MyDayRouter(),
             const SettingsRouter(),
             //TutorialRouter(),
           ],
@@ -139,12 +136,6 @@ class HomePage extends StatelessWidget {
                     icon: const Icon(Icons.dashboard_outlined),
                     label: AppLocalizations.of(context)!.navTabTitleInsights,
                   ),
-                  // ignore: flutter_style_todos
-                  // TODO: bring back or remove
-                  // const BottomNavigationBarItem(
-                  //   icon: Icon(Icons.calendar_today),
-                  //   label: 'My Day',
-                  // ),
                   BottomNavigationBarItem(
                     icon: OutboxBadgeIcon(
                       icon: const Icon(Icons.settings_outlined),
