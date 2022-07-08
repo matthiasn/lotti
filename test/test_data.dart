@@ -165,6 +165,42 @@ final testWeightEntry = QuantitativeEntry(
   ),
 );
 
+final testWeightEntry2 = QuantitativeEntry(
+  meta: Metadata(
+    id: '3db0fc34-07d0-4a6e-b9cd-b1a64f56c977',
+    createdAt: DateTime(2022, 6, 7, 15),
+    dateFrom: DateTime(2022, 6, 7, 15),
+    dateTo: DateTime(2022, 6, 7, 15),
+    updatedAt: DateTime(2022, 6, 7, 15),
+    starred: false,
+  ),
+  data: QuantitativeData.discreteQuantityData(
+    dateFrom: DateTime(2022, 6, 7, 15),
+    dateTo: DateTime(2022, 6, 7, 15),
+    value: 99.2,
+    dataType: 'HealthDataType.WEIGHT',
+    unit: 'HealthDataUnit.KILOGRAMS',
+  ),
+);
+
+final testHeightEntry = QuantitativeEntry(
+  meta: Metadata(
+    id: '21621a9f-a2b9-5ad1-a530-2d73f9e4bb92',
+    createdAt: DateTime(2022, 1, 1, 15),
+    dateFrom: DateTime(2022, 1, 1, 15),
+    dateTo: DateTime(2022, 1, 1, 15),
+    updatedAt: DateTime(2022, 1, 1, 15),
+    starred: false,
+  ),
+  data: QuantitativeData.discreteQuantityData(
+    dateFrom: DateTime(2022, 1, 1, 15),
+    dateTo: DateTime(2022, 1, 1, 15),
+    value: 1.86,
+    dataType: 'HealthDataType.HEIGHT',
+    unit: 'HealthDataUnit.METERS',
+  ),
+);
+
 final testBpSystolicEntry = QuantitativeEntry(
   meta: Metadata(
     id: '4dd10110-9c38-5f65-a260-1f371cecf038',

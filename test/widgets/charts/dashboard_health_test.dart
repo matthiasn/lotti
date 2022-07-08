@@ -115,5 +115,91 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('BMI chart is rendered', (tester) async {
+      when(
+        () => mockJournalDb.watchQuantitativeByType(
+          type: testHeightEntry.data.dataType,
+          rangeEnd: any(named: 'rangeEnd'),
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testHeightEntry]
+        ]),
+      );
+
+      when(
+        () => mockJournalDb.watchQuantitativeByType(
+          type: testWeightEntry.data.dataType,
+          rangeEnd: any(named: 'rangeEnd'),
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [
+            testWeightEntry,
+            testWeightEntry2,
+          ]
+        ]),
+      );
+
+      when(
+        () => mockJournalDb.watchQuantitativeByTypes(
+          types: [
+            'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+            'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+          ],
+          rangeEnd: any(named: 'rangeEnd'),
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer((_) {
+        return Stream<List<JournalEntity>>.fromIterable([
+          [
+            testBpSystolicEntry,
+            testBpDiastolicEntry,
+          ]
+        ]);
+      });
+
+      const healthType = 'BODY_MASS_INDEX';
+
+      when(
+        () => mockHealthImport.fetchHealthDataDelta(healthType),
+      ).thenAnswer((_) async {});
+
+      when(
+        () => mockHealthImport.fetchHealthData(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          types: any(named: 'types'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DashboardHealthChart(
+            rangeStart: DateTime(2022),
+            rangeEnd: DateTime(2023),
+            chartConfig: DashboardHealthItem(
+              color: '#0000FF',
+              healthType: healthType,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // chart displays expected title
+      expect(
+        find.text('Weight vs. Body Mass Index'),
+        findsOneWidget,
+      );
+
+      // chart displays expected min and max weights
+      expect(find.text('Min: 94.5 kg'), findsOneWidget);
+      expect(find.text('Max: 99.2 kg'), findsOneWidget);
+    });
   });
 }

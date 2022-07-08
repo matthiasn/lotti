@@ -318,14 +318,14 @@ class BmiChartInfoWidget extends StatelessWidget {
                       if (selected == null) ...[
                         const SizedBox(width: 8),
                         Text(
-                          'Min: ${NumberFormat('#,###.#').format(minInRange)} kg ',
+                          'Min: ${NumberFormat('#,###.#').format(minInRange)} kg',
                           style: chartTitleStyle().copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Max: ${NumberFormat('#,###.#').format(maxInRange)} kg ',
+                          'Max: ${NumberFormat('#,###.#').format(maxInRange)} kg',
                           style: chartTitleStyle().copyWith(
                             fontWeight: FontWeight.bold,
                           ),
