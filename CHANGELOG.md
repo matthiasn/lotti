@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests for dashboards measurement charts
 - Tests for dashboards health charts
 - Tests for dashboards workout charts
+- Tests for logging page
 
 ## [0.8.95] - 2022-07-07
 ### Changed:
