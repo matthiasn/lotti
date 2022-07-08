@@ -202,7 +202,11 @@ class SyncInboxService {
 
         final sequence = MessageSequence(isUidSequence: true)
           ..addRangeToLast(lastReadUid + 1);
-        debugPrint('_fetchInbox sequence: $sequence');
+
+        _loggingDb.captureEvent(
+          '_fetchInbox() sequence: $sequence',
+          domain: 'INBOX_CUBIT',
+        );
 
         if (imapClient != null) {
           final fetchResult =

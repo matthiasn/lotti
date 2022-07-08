@@ -33,7 +33,11 @@ Future<ImapClient?> createImapClient(SyncConfig? syncConfig) async {
       }
 
       imapClient.eventBus.on<ImapEvent>().listen((ImapEvent imapEvent) async {
-        loggingDb.captureEvent(imapEvent, domain: 'IMAP_CLIENT');
+        loggingDb.captureEvent(
+          imapEvent,
+          domain: 'IMAP_CLIENT',
+          subDomain: 'eventBus',
+        );
       });
 
       return imapClient;
@@ -41,6 +45,8 @@ Future<ImapClient?> createImapClient(SyncConfig? syncConfig) async {
       throw Exception('missing IMAP config');
     }
   } catch (e, stackTrace) {
+    debugPrint('IMAP_CLIENT createImapClient: $e\n\n$stackTrace\n');
+
     loggingDb.captureException(
       e,
       domain: 'IMAP_CLIENT',
