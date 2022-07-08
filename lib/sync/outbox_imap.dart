@@ -76,7 +76,7 @@ Future<ImapClient?> persistImap({
   ImapClient? imapClient;
   try {
     final transaction = _loggingDb.startTransaction('saveImap()', 'task');
-    if (prevImapClient != null) {
+    if (prevImapClient != null && prevImapClient.isConnected) {
       imapClient = prevImapClient;
     } else {
       final syncConfigService = getIt<SyncConfigService>();

@@ -538,6 +538,13 @@ class JournalDb extends _$JournalDb {
         status: false,
       ),
     );
+    await insertFlagIfNotExists(
+      ConfigFlag(
+        name: allowInvalidCertConfigFlag,
+        description: 'Allow invalid certificate? (not recommended)',
+        status: false,
+      ),
+    );
     if (Platform.isMacOS) {
       await insertFlagIfNotExists(
         ConfigFlag(

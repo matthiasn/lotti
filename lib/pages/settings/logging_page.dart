@@ -146,9 +146,9 @@ class LogDetailPage extends StatelessWidget {
               ? logDetailStyle().copyWith(
                   color: colorConfig().error,
                   fontWeight: FontWeight.bold,
-                  fontSize: 20,
+                  fontSize: 16,
                 )
-              : logDetailStyle().copyWith(fontSize: 20);
+              : logDetailStyle().copyWith(fontSize: 16);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(8),
