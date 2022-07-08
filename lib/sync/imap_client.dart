@@ -22,7 +22,7 @@ Future<ImapClient?> createImapClient(
   try {
     if (syncConfig != null) {
       final allowInvalidCert =
-          await getIt<JournalDb>().getConfigFlag(allowInvalidCertConfigFlag);
+          await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
       final imapClient = allowInvalidCert
           ? ImapClient(
               onBadCertificate: (X509Certificate cert) => true,

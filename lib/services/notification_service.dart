@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:timezone/standalone.dart' as tz;
 
@@ -71,7 +72,7 @@ class NotificationService {
   }
 
   Future<void> updateBadge() async {
-    final notifyEnabled = await _db.getConfigFlag('enable_notifications');
+    final notifyEnabled = await _db.getConfigFlag(enableNotificationsFlag);
 
     if (Platform.isWindows || Platform.isLinux) {
       return;

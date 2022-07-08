@@ -12,6 +12,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
@@ -92,7 +93,7 @@ class _JournalPageState extends State<JournalPage> {
     configFlagsStream.listen((Set<ConfigFlag> configFlags) {
       setState(() {
         for (final flag in configFlags) {
-          if (flag.name == 'private') {
+          if (flag.name == privateFlag) {
             showPrivateEntriesSwitch = flag.status;
           }
         }

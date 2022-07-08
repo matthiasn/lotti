@@ -52,7 +52,7 @@ class SyncInboxService {
     debugPrint('SyncInboxService init');
 
     final enableSyncInbox =
-        await getIt<JournalDb>().getConfigFlag(enableSyncInboxConfigFlag);
+        await getIt<JournalDb>().getConfigFlag(enableSyncInboxFlag);
 
     if (!enableSyncInbox) {
       return;

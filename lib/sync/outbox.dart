@@ -77,7 +77,7 @@ class OutboxService {
     final syncConfig = await _syncConfigService.getSyncConfig();
 
     final enableSyncOutbox =
-        await getIt<JournalDb>().getConfigFlag(enableSyncOutboxConfigFlag);
+        await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
 
     if (syncConfig != null && enableSyncOutbox) {
       _b64Secret = syncConfig.sharedSecret;

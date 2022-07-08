@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes_service.dart';
@@ -46,12 +45,7 @@ class _ColorThemeRefreshState extends State<ColorThemeRefresh> {
       stream: getIt<ThemesService>().getLastUpdateStream(),
       builder: (context, snapshot) {
         final key = '${widget.keyPrefix}-${snapshot.data}';
-
-        getIt<LoggingDb>().captureEvent(
-          'ColorThemeRefresh $key',
-          domain: 'ColorThemeRefresh',
-        );
-
+        debugPrint('ColorThemeRefresh $key');
         return Container(
           key: Key(key),
           child: widget.child,
