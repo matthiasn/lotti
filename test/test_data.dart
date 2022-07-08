@@ -290,3 +290,24 @@ final testMeasuredPullUpsEntry = MeasurementEntry(
     dateFrom: DateTime(2022, 7, 7, 20),
   ),
 );
+
+final testWorkoutRunning = WorkoutEntry(
+  meta: Metadata(
+    id: '20CDE5C9-5B56-4C93-A217-FB08908EF5BA',
+    createdAt: DateTime(2022, 7, 1, 20),
+    dateFrom: DateTime(2022, 7, 1, 20),
+    dateTo: DateTime(2022, 7, 1, 21),
+    updatedAt: DateTime(2022, 7, 1, 21),
+    starred: false,
+    private: false,
+  ),
+  data: WorkoutData(
+    distance: 5629.194772059913,
+    dateFrom: DateTime(2022, 7, 1, 20),
+    dateTo: DateTime(2022, 7, 1, 21),
+    workoutType: 'running',
+    energy: 632.0180571495033,
+    id: '20CDE5C9-5B56-4C93-A217-FB08908EF5BA',
+    source: '',
+  ),
+);
