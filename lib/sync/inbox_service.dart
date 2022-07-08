@@ -20,6 +20,7 @@ import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox_read.dart';
 import 'package:lotti/sync/inbox_save_attachments.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mutex/mutex.dart';
 
@@ -49,6 +50,14 @@ class SyncInboxService {
 
   Future<void> init() async {
     debugPrint('SyncInboxService init');
+
+    final enableSyncInbox =
+        await getIt<JournalDb>().getConfigFlag(enableSyncInboxConfigFlag);
+
+    if (!enableSyncInbox) {
+      return;
+    }
+
     if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
         _loggingDb.captureEvent(event, domain: 'INBOX_CUBIT');

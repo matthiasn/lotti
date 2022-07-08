@@ -42,7 +42,7 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   ConfigFlag(
-    name: showThemeConfigFlagName,
+    name: showThemeConfigFlag,
     description: 'Show Theme Config UI?',
     status: false,
   ),
@@ -102,10 +102,10 @@ void main() {
           expectedActiveFlagNames,
         );
 
-        await db?.toggleConfigFlag(showBrightSchemeFlagName);
+        await db?.toggleConfigFlag(showBrightSchemeFlag);
 
         expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlagName),
+          await db?.getConfigFlagByName(showBrightSchemeFlag),
           ConfigFlag(
             name: 'show_bright_scheme',
             description: 'Show Bright ☀️ scheme?',
@@ -115,13 +115,13 @@ void main() {
 
         expect(
           await db?.watchActiveConfigFlagNames().first,
-          expectedActiveFlagNames.union({showBrightSchemeFlagName}),
+          expectedActiveFlagNames.union({showBrightSchemeFlag}),
         );
 
-        await db?.toggleConfigFlag(showBrightSchemeFlagName);
+        await db?.toggleConfigFlag(showBrightSchemeFlag);
 
         expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlagName),
+          await db?.getConfigFlagByName(showBrightSchemeFlag),
           ConfigFlag(
             name: 'show_bright_scheme',
             description: 'Show Bright ☀️ scheme?',
@@ -140,7 +140,7 @@ void main() {
       'ConfigFlag can be retrieved by name',
       () async {
         expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlagName),
+          await db?.getConfigFlagByName(showBrightSchemeFlag),
           ConfigFlag(
             name: 'show_bright_scheme',
             description: 'Show Bright ☀️ scheme?',
@@ -148,10 +148,10 @@ void main() {
           ),
         );
 
-        await db?.toggleConfigFlag(showBrightSchemeFlagName);
+        await db?.toggleConfigFlag(showBrightSchemeFlag);
 
         expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlagName),
+          await db?.getConfigFlagByName(showBrightSchemeFlag),
           ConfigFlag(
             name: 'show_bright_scheme',
             description: 'Show Bright ☀️ scheme?',

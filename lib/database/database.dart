@@ -533,7 +533,7 @@ class JournalDb extends _$JournalDb {
     );
     await insertFlagIfNotExists(
       ConfigFlag(
-        name: showBrightSchemeFlagName,
+        name: showBrightSchemeFlag,
         description: 'Show Bright ☀️ scheme?',
         status: false,
       ),
@@ -543,6 +543,20 @@ class JournalDb extends _$JournalDb {
         name: allowInvalidCertConfigFlag,
         description: 'Allow invalid certificate? (not recommended)',
         status: false,
+      ),
+    );
+    await insertFlagIfNotExists(
+      ConfigFlag(
+        name: enableSyncInboxConfigFlag,
+        description: 'Enable sync inbox? (requires restart)',
+        status: true,
+      ),
+    );
+    await insertFlagIfNotExists(
+      ConfigFlag(
+        name: enableSyncOutboxConfigFlag,
+        description: 'Enable sync outbox? (requires restart)',
+        status: true,
       ),
     );
     if (Platform.isMacOS) {
@@ -564,7 +578,7 @@ class JournalDb extends _$JournalDb {
     if (isDesktop) {
       await insertFlagIfNotExists(
         ConfigFlag(
-          name: showThemeConfigFlagName,
+          name: showThemeConfigFlag,
           description: 'Show Theme Config UI?',
           status: false,
         ),

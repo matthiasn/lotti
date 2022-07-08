@@ -49,7 +49,7 @@ class _ColorThemeRefreshState extends State<ColorThemeRefresh> {
 
         getIt<LoggingDb>().captureEvent(
           'ColorThemeRefresh $key',
-          domain: 'INBOX_CUBIT',
+          domain: 'ColorThemeRefresh',
         );
 
         return Container(

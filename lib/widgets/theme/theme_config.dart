@@ -150,7 +150,7 @@ class ThemeConfigWrapper extends StatelessWidget {
       stream: _db.watchActiveConfigFlagNames(),
       builder: (context, snapshot) {
         final showThemeConfig = snapshot.data != null &&
-            snapshot.data!.contains(showThemeConfigFlagName) &&
+            snapshot.data!.contains(showThemeConfigFlag) &&
             isDesktop;
 
         if (!showThemeConfig) {
