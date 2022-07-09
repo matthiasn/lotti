@@ -19,7 +19,6 @@ class LoggingPage extends StatefulWidget {
 
 class _LoggingPageState extends State<LoggingPage> {
   final LoggingDb _db = getIt<LoggingDb>();
-  late Stream<List<LogEntry>> stream = _db.watchLogEntries();
 
   @override
   void initState() {
@@ -34,7 +33,7 @@ class _LoggingPageState extends State<LoggingPage> {
       backgroundColor: colorConfig().bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsLogsTitle),
       body: StreamBuilder<List<LogEntry>>(
-        stream: stream,
+        stream: _db.watchLogEntries(),
         builder: (
           BuildContext context,
           AsyncSnapshot<List<LogEntry>> snapshot,

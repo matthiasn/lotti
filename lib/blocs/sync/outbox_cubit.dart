@@ -2,26 +2,32 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/outbox.dart';
+import 'package:lotti/utils/consts.dart';
 
 class OutboxCubit extends Cubit<OutboxState> {
   OutboxCubit() : super(OutboxState.initial()) {
     _outbox.init();
+
+    getIt<JournalDb>()
+        .watchConfigFlag(enableSyncOutboxFlag)
+        .listen((enabled) async {
+      if (enabled) {
+        emit(OutboxState.online());
+        await _outbox.startPolling();
+      } else {
+        emit(OutboxState.disabled());
+        await _outbox.stopPolling();
+      }
+    });
   }
 
   final OutboxService _outbox = getIt<OutboxService>();
 
   Future<void> toggleStatus() async {
-    if (state is OutboxDisabled) {
-      _outbox.enabled = true;
-      emit(OutboxState.online());
-      await _outbox.startPolling();
-    } else {
-      _outbox.enabled = false;
-      emit(OutboxState.disabled());
-      await _outbox.stopPolling();
-    }
+    await getIt<JournalDb>().toggleConfigFlag(enableSyncOutboxFlag);
   }
 
   @override

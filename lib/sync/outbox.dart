@@ -64,7 +64,6 @@ class OutboxService {
   final sendMutex = Mutex();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   String? _b64Secret;
-  bool enabled = true;
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
 
@@ -107,9 +106,14 @@ class OutboxService {
   }
 
   Future<void> sendNext({ImapClient? imapClient}) async {
-    _loggingDb.captureEvent('sendNext()', domain: 'OUTBOX_CUBIT');
+    final enableSyncOutbox =
+        await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
 
-    if (!enabled) return;
+    if (!enableSyncOutbox) {
+      return;
+    }
+
+    _loggingDb.captureEvent('sendNext()', domain: 'OUTBOX_CUBIT');
 
     final transaction = _loggingDb.startTransaction('sendNext()', 'task');
     try {
@@ -209,6 +213,12 @@ class OutboxService {
 
   Future<void> startPolling() async {
     final syncConfig = await _syncConfigService.getSyncConfig();
+    final enableSyncOutbox =
+        await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
+
+    if (!enableSyncOutbox) {
+      return;
+    }
 
     if (syncConfig == null) {
       _loggingDb.captureEvent(
