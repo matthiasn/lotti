@@ -31,7 +31,7 @@ void main() {
 
       db.insertFlagIfNotExists(
         ConfigFlag(
-          name: showBrightSchemeFlagName,
+          name: showBrightSchemeFlag,
           description: 'Show Bright ☀️ scheme?',
           status: false,
         ),

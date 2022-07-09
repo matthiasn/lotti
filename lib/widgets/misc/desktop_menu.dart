@@ -130,33 +130,31 @@ class DesktopMenuWrapper extends StatelessWidget {
                   PlatformMenuItemGroup(
                     members: [
                       PlatformMenuItem(
-                        label:
-                            snapshot.data?.contains(showBrightSchemeFlagName) ??
-                                    false
-                                ? localizations.viewMenuDisableBrightTheme
-                                : localizations.viewMenuEnableBrightTheme,
+                        label: snapshot.data?.contains(showBrightSchemeFlag) ??
+                                false
+                            ? localizations.viewMenuDisableBrightTheme
+                            : localizations.viewMenuEnableBrightTheme,
                         shortcut: const SingleActivator(
                           LogicalKeyboardKey.keyS,
                           meta: true,
                           alt: true,
                         ),
                         onSelected: () async {
-                          await _db.toggleConfigFlag(showBrightSchemeFlagName);
+                          await _db.toggleConfigFlag(showBrightSchemeFlag);
                         },
                       ),
                       PlatformMenuItem(
-                        label:
-                            snapshot.data?.contains(showThemeConfigFlagName) ??
-                                    false
-                                ? localizations.viewMenuHideThemeConfig
-                                : localizations.viewMenuShowThemeConfig,
+                        label: snapshot.data?.contains(showThemeConfigFlag) ??
+                                false
+                            ? localizations.viewMenuHideThemeConfig
+                            : localizations.viewMenuShowThemeConfig,
                         shortcut: const SingleActivator(
                           LogicalKeyboardKey.keyS,
                           meta: true,
                           alt: true,
                         ),
                         onSelected: () async {
-                          await _db.toggleConfigFlag(showThemeConfigFlagName);
+                          await _db.toggleConfigFlag(showThemeConfigFlag);
                         },
                       ),
                     ],

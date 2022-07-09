@@ -25,9 +25,7 @@ class ThemesService {
       _colorMapController = StreamController<Map<String, dynamic>>.broadcast();
       _updateController = StreamController<DateTime>.broadcast();
       publishLastUpdated();
-      getIt<JournalDb>()
-          .watchConfigFlag(showBrightSchemeFlagName)
-          .listen((bright) {
+      getIt<JournalDb>().watchConfigFlag(showBrightSchemeFlag).listen((bright) {
         current = bright ? brightTheme : darkTheme;
         publishColorConfig();
       });
@@ -87,10 +85,9 @@ class ThemesService {
   }
 
   Future<void> saveColorConfig() async {
-    final theme =
-        await getIt<JournalDb>().getConfigFlag(showBrightSchemeFlagName)
-            ? 'bright'
-            : 'dark';
+    final theme = await getIt<JournalDb>().getConfigFlag(showBrightSchemeFlag)
+        ? 'bright'
+        : 'dark';
     final imageFileName = '${DateTime.now().toIso8601String()}.json';
 
     if (saveThemeAsJson) {

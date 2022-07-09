@@ -11,6 +11,7 @@ import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/sync/outbox_imap.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:mutex/mutex.dart';
@@ -62,7 +64,6 @@ class OutboxService {
   final sendMutex = Mutex();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   String? _b64Secret;
-  bool enabled = true;
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
 
@@ -74,7 +75,10 @@ class OutboxService {
     debugPrint('OutboxService init');
     final syncConfig = await _syncConfigService.getSyncConfig();
 
-    if (syncConfig != null) {
+    final enableSyncOutbox =
+        await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
+
+    if (syncConfig != null && enableSyncOutbox) {
       _b64Secret = syncConfig.sharedSecret;
       await startPolling();
     }
@@ -102,9 +106,14 @@ class OutboxService {
   }
 
   Future<void> sendNext({ImapClient? imapClient}) async {
-    _loggingDb.captureEvent('sendNext()', domain: 'OUTBOX_CUBIT');
+    final enableSyncOutbox =
+        await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
 
-    if (!enabled) return;
+    if (!enableSyncOutbox) {
+      return;
+    }
+
+    _loggingDb.captureEvent('sendNext()', domain: 'OUTBOX_CUBIT');
 
     final transaction = _loggingDb.startTransaction('sendNext()', 'task');
     try {
@@ -160,6 +169,8 @@ class OutboxService {
                 );
                 if (unprocessed.length > 1) {
                   await sendNext(imapClient: successfulClient);
+                } else {
+                  await successfulClient.disconnect();
                 }
               }
             } catch (e) {
@@ -204,6 +215,12 @@ class OutboxService {
 
   Future<void> startPolling() async {
     final syncConfig = await _syncConfigService.getSyncConfig();
+    final enableSyncOutbox =
+        await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
+
+    if (!enableSyncOutbox) {
+      return;
+    }
 
     if (syncConfig == null) {
       _loggingDb.captureEvent(

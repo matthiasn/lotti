@@ -76,11 +76,12 @@ Future<ImapClient?> persistImap({
   ImapClient? imapClient;
   try {
     final transaction = _loggingDb.startTransaction('saveImap()', 'task');
-    if (prevImapClient != null) {
+    if (prevImapClient != null && prevImapClient.isConnected) {
       imapClient = prevImapClient;
     } else {
       final syncConfigService = getIt<SyncConfigService>();
       final syncConfig = await syncConfigService.getSyncConfig();
+      await prevImapClient?.disconnect();
       imapClient = await createImapClient(syncConfig);
     }
 
@@ -125,6 +126,7 @@ Future<ImapClient?> persistImap({
       domain: 'OUTBOX_IMAP persistImap',
       stackTrace: stackTrace,
     );
+    await prevImapClient?.disconnect();
     rethrow;
   } finally {}
 }

@@ -88,7 +88,7 @@ TextStyle choiceLabelStyle() => TextStyle(
 TextStyle logDetailStyle() => TextStyle(
       color: colorConfig().entryTextColor,
       fontFamily: 'ShareTechMono',
-      fontSize: 10,
+      fontSize: 14,
     );
 
 TextStyle appBarTextStyle() => TextStyle(

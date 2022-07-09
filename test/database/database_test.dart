@@ -6,56 +6,75 @@ import 'package:lotti/utils/consts.dart';
 
 final expectedActiveFlagNames = Platform.isMacOS
     ? {
-        'private',
-        'hide_for_screenshot',
-        'listen_to_global_screenshot_hotkey',
+        privateFlag,
+        hideForScreenshotFlag,
+        listenToScreenshotHotkeyFlag,
+        enableSyncInboxFlag,
+        enableSyncOutboxFlag,
       }
     : {
-        'private',
-        'hide_for_screenshot',
+        privateFlag,
+        hideForScreenshotFlag,
+        enableSyncInboxFlag,
+        enableSyncOutboxFlag,
       };
 
 final expectedFlags = <ConfigFlag>{
   ConfigFlag(
-    name: 'private',
+    name: privateFlag,
     description: 'Show private entries?',
     status: true,
   ),
   ConfigFlag(
-    name: 'notify_exceptions',
+    name: notifyExceptionsFlag,
     description: 'Notify when exceptions occur?',
     status: false,
   ),
   ConfigFlag(
-    name: 'hide_for_screenshot',
+    name: hideForScreenshotFlag,
     description: 'Hide Lotti when taking screenshots?',
     status: true,
   ),
   ConfigFlag(
-    name: 'show_tasks_tab',
+    name: showTasksTabFlag,
     description: 'Show Tasks tab?',
     status: false,
   ),
   ConfigFlag(
-    name: 'show_bright_scheme',
+    name: showBrightSchemeFlag,
     description: 'Show Bright ☀️ scheme?',
     status: false,
   ),
   ConfigFlag(
-    name: showThemeConfigFlagName,
+    name: showThemeConfigFlag,
     description: 'Show Theme Config UI?',
     status: false,
+  ),
+  ConfigFlag(
+    name: allowInvalidCertFlag,
+    description: 'Allow invalid certificate? (not recommended)',
+    status: false,
+  ),
+  ConfigFlag(
+    name: enableSyncInboxFlag,
+    description: 'Enable sync inbox? (requires restart)',
+    status: true,
+  ),
+  ConfigFlag(
+    name: enableSyncOutboxFlag,
+    description: 'Enable sync outbox? (requires restart)',
+    status: true,
   ),
 };
 
 final expectedMacFlags = <ConfigFlag>{
   ConfigFlag(
-    name: 'listen_to_global_screenshot_hotkey',
+    name: listenToScreenshotHotkeyFlag,
     description: 'Listen to global screenshot hotkey?',
     status: true,
   ),
   ConfigFlag(
-    name: 'enable_notifications',
+    name: enableNotificationsFlag,
     description: 'Enable desktop notifications?',
     status: false,
   ),
@@ -102,12 +121,12 @@ void main() {
           expectedActiveFlagNames,
         );
 
-        await db?.toggleConfigFlag(showBrightSchemeFlagName);
+        await db?.toggleConfigFlag(showBrightSchemeFlag);
 
         expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlagName),
+          await db?.getConfigFlagByName(showBrightSchemeFlag),
           ConfigFlag(
-            name: 'show_bright_scheme',
+            name: showBrightSchemeFlag,
             description: 'Show Bright ☀️ scheme?',
             status: true,
           ),
@@ -115,15 +134,15 @@ void main() {
 
         expect(
           await db?.watchActiveConfigFlagNames().first,
-          expectedActiveFlagNames.union({showBrightSchemeFlagName}),
+          expectedActiveFlagNames.union({showBrightSchemeFlag}),
         );
 
-        await db?.toggleConfigFlag(showBrightSchemeFlagName);
+        await db?.toggleConfigFlag(showBrightSchemeFlag);
 
         expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlagName),
+          await db?.getConfigFlagByName(showBrightSchemeFlag),
           ConfigFlag(
-            name: 'show_bright_scheme',
+            name: showBrightSchemeFlag,
             description: 'Show Bright ☀️ scheme?',
             status: false,
           ),
@@ -140,20 +159,20 @@ void main() {
       'ConfigFlag can be retrieved by name',
       () async {
         expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlagName),
+          await db?.getConfigFlagByName(showBrightSchemeFlag),
           ConfigFlag(
-            name: 'show_bright_scheme',
+            name: showBrightSchemeFlag,
             description: 'Show Bright ☀️ scheme?',
             status: false,
           ),
         );
 
-        await db?.toggleConfigFlag(showBrightSchemeFlagName);
+        await db?.toggleConfigFlag(showBrightSchemeFlag);
 
         expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlagName),
+          await db?.getConfigFlagByName(showBrightSchemeFlag),
           ConfigFlag(
-            name: 'show_bright_scheme',
+            name: showBrightSchemeFlag,
             description: 'Show Bright ☀️ scheme?',
             status: true,
           ),

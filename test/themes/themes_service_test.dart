@@ -17,7 +17,7 @@ void main() {
 
       db.insertFlagIfNotExists(
         ConfigFlag(
-          name: showBrightSchemeFlagName,
+          name: showBrightSchemeFlag,
           description: 'Show Bright ☀️ scheme?',
           status: false,
         ),
@@ -35,7 +35,7 @@ void main() {
         darkTheme.bodyBgColor,
       );
 
-      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlagName);
+      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlag);
 
       expect(
         await themesService.watchColorByKey('bodyBgColor').first,
@@ -48,14 +48,14 @@ void main() {
       final themesService = ThemesService();
 
       await getIt<JournalDb>()
-          .setConfigFlag(showBrightSchemeFlagName, value: false);
+          .setConfigFlag(showBrightSchemeFlag, value: false);
 
       expect(
         await themesService.getColorConfigStream().first,
         darkTheme,
       );
 
-      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlagName);
+      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlag);
 
       expect(
         await themesService.getColorConfigStream().first,
@@ -67,7 +67,7 @@ void main() {
       final themesService = ThemesService();
 
       await getIt<JournalDb>()
-          .setConfigFlag(showBrightSchemeFlagName, value: false);
+          .setConfigFlag(showBrightSchemeFlag, value: false);
 
       expect(
         await themesService.getColorConfigStream().first,
@@ -91,10 +91,10 @@ void main() {
       final themesService = ThemesService();
 
       await getIt<JournalDb>()
-          .setConfigFlag(showBrightSchemeFlagName, value: false);
+          .setConfigFlag(showBrightSchemeFlag, value: false);
 
-      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlagName);
-      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlagName);
+      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlag);
+      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlag);
 
       expect(
         await themesService.watchColorByKey('bodyBgColor').first,
@@ -127,9 +127,9 @@ void main() {
       final themesService = ThemesService();
 
       await getIt<JournalDb>()
-          .setConfigFlag(showBrightSchemeFlagName, value: false);
+          .setConfigFlag(showBrightSchemeFlag, value: false);
 
-      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlagName);
+      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlag);
 
       expect(
         (await themesService.getLastUpdateStream().first)
@@ -137,7 +137,7 @@ void main() {
         greaterThan(start.millisecondsSinceEpoch),
       );
 
-      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlagName);
+      await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlag);
 
       expect(
         (await themesService.getLastUpdateStream().first)

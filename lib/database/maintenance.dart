@@ -1,3 +1,4 @@
+import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -6,6 +7,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/sync/outbox_service.dart';
 
 class Maintenance {
   final JournalDb _db = getIt<JournalDb>();
@@ -56,6 +58,38 @@ class Maintenance {
           );
         }
       }
+    }
+  }
+
+  Future<void> syncDefinitions() async {
+    final outboxService = getIt<OutboxService>();
+    final tags = await _db.watchTags().first;
+    final measurables = await _db.watchMeasurableDataTypes().first;
+    final dashboards = await _db.watchDashboards().first;
+
+    for (final tag in tags) {
+      await outboxService.enqueueMessage(
+        SyncMessage.tagEntity(
+          tagEntity: tag,
+          status: SyncEntryStatus.update,
+        ),
+      );
+    }
+    for (final measurable in measurables) {
+      await outboxService.enqueueMessage(
+        SyncMessage.entityDefinition(
+          entityDefinition: measurable,
+          status: SyncEntryStatus.update,
+        ),
+      );
+    }
+    for (final dashboard in dashboards) {
+      await outboxService.enqueueMessage(
+        SyncMessage.entityDefinition(
+          entityDefinition: dashboard,
+          status: SyncEntryStatus.update,
+        ),
+      );
     }
   }
 

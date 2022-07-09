@@ -10,6 +10,7 @@ import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
@@ -30,7 +31,7 @@ class HomePage extends StatelessWidget {
     return StreamBuilder<Set<String>>(
       stream: _db.watchActiveConfigFlagNames(),
       builder: (context, snapshot) {
-        final showTasks = snapshot.data?.contains('show_tasks_tab');
+        final showTasks = snapshot.data?.contains(showTasksTabFlag);
 
         if (showTasks == null) {
           return const CircularProgressIndicator();

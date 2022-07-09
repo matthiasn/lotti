@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -14,7 +15,7 @@ final JournalDb db = getIt<JournalDb>();
 final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
 Future<ImageData> takeScreenshotMac() async {
-  final hide = await db.getConfigFlag('hide_for_screenshot');
+  final hide = await db.getConfigFlag(hideForScreenshotFlag);
   final id = uuid.v1();
   final filename = '$id.screenshot.jpg';
   final created = DateTime.now();
@@ -76,8 +77,7 @@ Future<void> registerScreenshotHotkey() async {
     await hotKeyManager.register(
       screenshotKey,
       keyDownHandler: (hotKey) async {
-        final enabled =
-            await db.getConfigFlag('listen_to_global_screenshot_hotkey');
+        final enabled = await db.getConfigFlag(listenToScreenshotHotkeyFlag);
 
         if (enabled) {
           await takeScreenshotWithLinked();

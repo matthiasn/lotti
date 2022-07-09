@@ -505,50 +505,71 @@ class JournalDb extends _$JournalDb {
   Future<void> initConfigFlags() async {
     await insertFlagIfNotExists(
       ConfigFlag(
-        name: 'private',
+        name: privateFlag,
         description: 'Show private entries?',
         status: true,
       ),
     );
     await insertFlagIfNotExists(
       ConfigFlag(
-        name: 'notify_exceptions',
+        name: notifyExceptionsFlag,
         description: 'Notify when exceptions occur?',
         status: false,
       ),
     );
     await insertFlagIfNotExists(
       ConfigFlag(
-        name: 'hide_for_screenshot',
+        name: hideForScreenshotFlag,
         description: 'Hide Lotti when taking screenshots?',
         status: true,
       ),
     );
     await insertFlagIfNotExists(
       ConfigFlag(
-        name: 'show_tasks_tab',
+        name: showTasksTabFlag,
         description: 'Show Tasks tab?',
         status: false,
       ),
     );
     await insertFlagIfNotExists(
       ConfigFlag(
-        name: showBrightSchemeFlagName,
+        name: showBrightSchemeFlag,
         description: 'Show Bright ☀️ scheme?',
         status: false,
+      ),
+    );
+    await insertFlagIfNotExists(
+      ConfigFlag(
+        name: allowInvalidCertFlag,
+        description: 'Allow invalid certificate? (not recommended)',
+        status: false,
+      ),
+    );
+    await insertFlagIfNotExists(
+      ConfigFlag(
+        name: enableSyncInboxFlag,
+        description: 'Enable sync inbox? (requires restart)',
+        status: true,
+      ),
+    );
+    await insertFlagIfNotExists(
+      ConfigFlag(
+        name: enableSyncOutboxFlag,
+        description: 'Enable sync outbox? (requires restart)',
+        status: true,
       ),
     );
     if (Platform.isMacOS) {
       await insertFlagIfNotExists(
         ConfigFlag(
-          name: 'listen_to_global_screenshot_hotkey',
+          name: listenToScreenshotHotkeyFlag,
           description: 'Listen to global screenshot hotkey?',
           status: true,
         ),
       );
       await insertFlagIfNotExists(
         ConfigFlag(
-          name: 'enable_notifications',
+          name: enableNotificationsFlag,
           description: 'Enable desktop notifications?',
           status: false,
         ),
@@ -557,7 +578,7 @@ class JournalDb extends _$JournalDb {
     if (isDesktop) {
       await insertFlagIfNotExists(
         ConfigFlag(
-          name: showThemeConfigFlagName,
+          name: showThemeConfigFlag,
           description: 'Show Theme Config UI?',
           status: false,
         ),

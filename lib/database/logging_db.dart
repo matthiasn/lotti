@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 part 'logging_db.g.dart';
@@ -107,7 +108,7 @@ class LoggingDb extends _$LoggingDb {
       ),
     );
 
-    final notifyEnabled = await _journalDb.getConfigFlag('notify_exceptions');
+    final notifyEnabled = await _journalDb.getConfigFlag(notifyExceptionsFlag);
     if (notifyEnabled) {
       final title = 'Exception in $domain $subDomain';
       await getIt<NotificationService>().showNotification(

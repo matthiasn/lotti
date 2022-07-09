@@ -4,6 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class FlagsPage extends StatefulWidget {
@@ -75,15 +76,15 @@ class ConfigFlagCard extends StatelessWidget {
 
     String getLocalizedDescription(ConfigFlag flag) {
       switch (flag.name) {
-        case 'private':
+        case privateFlag:
           return localizations.configFlagPrivate;
-        case 'notify_exceptions':
+        case notifyExceptionsFlag:
           return localizations.configFlagNotifyExceptions;
-        case 'hide_for_screenshot':
+        case hideForScreenshotFlag:
           return localizations.configFlagHideForScreenshot;
-        case 'enable_notifications':
+        case enableNotificationsFlag:
           return localizations.configFlagEnableNotifications;
-        case 'listen_to_global_screenshot_hotkey':
+        case listenToScreenshotHotkeyFlag:
           return localizations.configFlagGlobalScreenshotHotkey;
         default:
           return item.description;
