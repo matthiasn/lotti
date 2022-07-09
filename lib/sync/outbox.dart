@@ -169,6 +169,8 @@ class OutboxService {
                 );
                 if (unprocessed.length > 1) {
                   await sendNext(imapClient: successfulClient);
+                } else {
+                  await successfulClient.disconnect();
                 }
               }
             } catch (e) {
