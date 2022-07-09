@@ -20,8 +20,6 @@ void main() {
       mockOutboxService = MockOutboxService();
 
       when(mockOutboxService.init).thenAnswer((_) async {});
-      when(mockOutboxService.startPolling).thenAnswer((_) async {});
-      when(mockOutboxService.stopPolling).thenAnswer((_) async {});
 
       getIt
         ..registerSingleton<OutboxService>(mockOutboxService)
@@ -40,7 +38,6 @@ void main() {
       ],
       verify: (c) {
         verify(() => mockOutboxService.init()).called(1);
-        verify(() => mockOutboxService.stopPolling()).called(1);
       },
     );
 

@@ -16,10 +16,8 @@ class OutboxCubit extends Cubit<OutboxState> {
         .listen((enabled) async {
       if (enabled) {
         emit(OutboxState.online());
-        await _outbox.startPolling();
       } else {
         emit(OutboxState.disabled());
-        await _outbox.stopPolling();
       }
     });
   }

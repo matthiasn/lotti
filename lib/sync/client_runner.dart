@@ -6,7 +6,7 @@ import 'dart:async';
 /// generic, and the callback will be called with the request.
 class ClientRunner<T> {
   /// Construct a ClientRunner with provided [callback] method that accepts a [T].
-  ClientRunner(this.callback) {
+  ClientRunner({required this.callback}) {
     _start();
   }
 

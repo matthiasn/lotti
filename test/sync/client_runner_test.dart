@@ -10,11 +10,13 @@ void main() {
         const delayMs = 10;
         var lastCalled = 0;
         const n = 10;
-        final runner = ClientRunner<int>((event) async {
-          debugPrint('Request #$event');
-          lastCalled = event;
-          await Future<void>.delayed(const Duration(milliseconds: delayMs));
-        });
+        final runner = ClientRunner<int>(
+          callback: (event) async {
+            debugPrint('Request #$event');
+            lastCalled = event;
+            await Future<void>.delayed(const Duration(milliseconds: delayMs));
+          },
+        );
         for (var i = 1; i <= n; i++) {
           runner.enqueueRequest(i);
         }
