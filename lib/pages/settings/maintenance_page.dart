@@ -73,6 +73,10 @@ class _MaintenancePageState extends State<MaintenancePage> {
                     onTap: _maintenance.recreateStoryAssignment,
                   ),
                   MaintenanceCard(
+                    title: localizations.maintenanceSyncDefinitions,
+                    onTap: _maintenance.syncDefinitions,
+                  ),
+                  MaintenanceCard(
                     title: localizations.maintenancePurgeDeleted,
                     onTap: _db.purgeDeleted,
                   ),
