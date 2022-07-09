@@ -13,7 +13,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/outbox.dart';
+import 'package:lotti/sync/outbox_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/file_utils.dart';

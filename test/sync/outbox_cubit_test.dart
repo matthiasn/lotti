@@ -4,7 +4,7 @@ import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/sync/outbox.dart';
+import 'package:lotti/sync/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'sync_config_test_data.dart';
