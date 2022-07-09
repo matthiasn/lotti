@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Longer IMAP timeouts for better support of flaky connections
+- Fix toggle outbound sync in outbox monitor
+- Config flags for enabling inbox and outbox
+- Config flag for allowing invalid certificate (useful for testing, e.g. with [Toxiproxy](https://github.com/Shopify/toxiproxy))
 
 ## [0.8.96] - 2022-07-08
 ### Added:

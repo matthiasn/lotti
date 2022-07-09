@@ -15,6 +15,8 @@ final expectedActiveFlagNames = Platform.isMacOS
     : {
         privateFlag,
         hideForScreenshotFlag,
+        enableSyncInboxFlag,
+        enableSyncOutboxFlag,
       };
 
 final expectedFlags = <ConfigFlag>{
