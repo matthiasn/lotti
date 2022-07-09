@@ -30,7 +30,6 @@ class OutboxService {
   OutboxService() {
     _clientRunner = ClientRunner<int>(
       callback: (event) async {
-        debugPrint('Request #$event');
         await sendNext();
       },
     );
@@ -45,6 +44,7 @@ class OutboxService {
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   String? _b64Secret;
   late final StreamSubscription<FGBGType> fgBgSubscription;
+  ImapClient? prevImapClient;
 
   void dispose() {
     fgBgSubscription.cancel();
@@ -83,7 +83,7 @@ class OutboxService {
       });
     }
 
-    Timer.periodic(const Duration(minutes: 2), (timer) async {
+    Timer.periodic(const Duration(minutes: 1), (timer) async {
       final unprocessed = await getNextItems();
       if (unprocessed.isNotEmpty) {
         await enqueueNextSendRequest();
@@ -112,7 +112,7 @@ class OutboxService {
     return _syncDatabase.oldestOutboxItems(10);
   }
 
-  Future<void> sendNext({ImapClient? imapClient}) async {
+  Future<void> sendNext() async {
     final enableSyncOutbox =
         await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
 
@@ -120,21 +120,27 @@ class OutboxService {
       return;
     }
 
-    _loggingDb.captureEvent('sendNext()', domain: 'OUTBOX_v2');
+    _loggingDb.captureEvent('sendNext() start', domain: 'OUTBOX_v2');
 
     try {
       _connectivityResult = await Connectivity().checkConnectivity();
       if (_connectivityResult == ConnectivityResult.none) {
         await reportConnectivity();
+        await enqueueNextSendRequest(delay: const Duration(seconds: 15));
         return;
       }
 
       if (_b64Secret != null) {
         // ignore: flutter_style_todos
         // TODO: check why not working reliably on macOS - workaround
-        final isConnected = _connectivityResult != ConnectivityResult.none;
+        final networkConnected = _connectivityResult != ConnectivityResult.none;
+        final clientConnected = prevImapClient?.isConnected ?? false;
 
-        if (isConnected) {
+        if (!clientConnected) {
+          prevImapClient = null;
+        }
+
+        if (networkConnected) {
           final unprocessed = await getNextItems();
           if (unprocessed.isNotEmpty) {
             final nextPending = unprocessed.first;
@@ -160,7 +166,7 @@ class OutboxService {
                 encryptedFilePath: encryptedFilePath,
                 subject: nextPending.subject,
                 encryptedMessage: encryptedMessage,
-                prevImapClient: imapClient,
+                prevImapClient: prevImapClient,
               );
               if (successfulClient != null) {
                 await _syncDatabase.updateOutboxItem(
@@ -173,7 +179,12 @@ class OutboxService {
                 if (unprocessed.length > 1) {
                   await enqueueNextSendRequest();
                 }
+              } else {
+                await enqueueNextSendRequest(
+                  delay: const Duration(seconds: 15),
+                );
               }
+              prevImapClient = successfulClient;
               _loggingDb.captureEvent('sendNext() done', domain: 'OUTBOX_v2');
             } catch (e) {
               await _syncDatabase.updateOutboxItem(
@@ -188,6 +199,9 @@ class OutboxService {
                   updatedAt: Value(DateTime.now()),
                 ),
               );
+              await prevImapClient?.disconnect();
+              // ignore: unnecessary_statements
+              prevImapClient == null;
               await enqueueNextSendRequest(delay: const Duration(seconds: 15));
             }
           }
@@ -200,6 +214,9 @@ class OutboxService {
         subDomain: 'sendNext',
         stackTrace: stackTrace,
       );
+      await prevImapClient?.disconnect();
+      // ignore: unnecessary_statements
+      prevImapClient == null;
       await enqueueNextSendRequest(delay: const Duration(seconds: 15));
     }
   }
@@ -228,8 +245,10 @@ class OutboxService {
     }
 
     unawaited(
-      Future<void>.delayed(delay).then((_) =>
-          _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch)),
+      Future<void>.delayed(delay).then(
+        (_) =>
+            _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch),
+      ),
     );
 
     _loggingDb.captureEvent('enqueueRequest() done', domain: 'OUTBOX_v2');

@@ -17,7 +17,6 @@ Future<ImapClient?> createImapClient(
 }) async {
   final clientId = uuid.v1();
   final loggingDb = getIt<LoggingDb>();
-  final transaction = loggingDb.startTransaction('createImapClient()', 'task');
 
   try {
     if (syncConfig != null) {
@@ -66,14 +65,6 @@ Future<ImapClient?> createImapClient(
         await imapClient.selectMailboxByPath(imapConfig.folder);
       }
 
-      imapClient.eventBus.on<ImapEvent>().listen((ImapEvent imapEvent) async {
-        loggingDb.captureEvent(
-          imapEvent,
-          domain: 'IMAP_CLIENT $clientId',
-          subDomain: 'eventBus',
-        );
-      });
-
       return imapClient;
     } else {
       throw Exception('missing IMAP config');
@@ -88,6 +79,6 @@ Future<ImapClient?> createImapClient(
       stackTrace: stackTrace,
     );
   }
-  await transaction.finish();
+
   return null;
 }
