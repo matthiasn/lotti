@@ -763,7 +763,7 @@ packages:
       name: flutter_local_notifications
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "9.6.1"
+    version: "9.7.0"
   flutter_local_notifications_linux:
     dependency: transitive
     description:
@@ -817,7 +817,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.3"
+    version: "5.0.4"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1175,7 +1175,7 @@ packages:
       name: json_serializable
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.3.0"
+    version: "6.3.1"
   just_audio:
     dependency: "direct main"
     description:
@@ -1301,7 +1301,7 @@ packages:
       name: material_design_icons_flutter
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.6595"
+    version: "5.0.6996"
   material_floating_search_bar:
     dependency: "direct main"
     description:
