@@ -12,9 +12,9 @@ import 'package:lotti/widgets/sync/imap_config_mobile.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../mocks/sync_config_test_mocks.dart';
+import '../../test_data/sync_config_test_data.dart';
 import '../../widget_test_utils.dart';
-import '../sync_config_test_data.dart';
-import '../sync_config_test_mocks.dart';
 
 void main() {
   var mock = MockSyncConfigService();

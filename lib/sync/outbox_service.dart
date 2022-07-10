@@ -17,55 +17,34 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/sync/outbox_imap.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:mutex/mutex.dart';
 import 'package:path_provider/path_provider.dart';
 
 class OutboxService {
   OutboxService() {
+    _clientRunner = ClientRunner<int>(
+      callback: (event) async {
+        await sendNext();
+      },
+    );
+
     init();
-
-    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      _connectivityResult = result;
-      debugPrint('Connectivity onConnectivityChanged $result');
-      _loggingDb.captureEvent(
-        'OUTBOX: Connectivity onConnectivityChanged $result',
-        domain: 'OUTBOX_CUBIT',
-      );
-
-      if (result == ConnectivityResult.none) {
-        stopPolling();
-      } else {
-        startPolling();
-      }
-    });
-
-    if (isMobile) {
-      fgBgSubscription = FGBGEvents.stream.listen((event) {
-        _loggingDb.captureEvent(event, domain: 'OUTBOX_CUBIT');
-        if (event == FGBGType.foreground) {
-          startPolling();
-        }
-        if (event == FGBGType.background) {
-          stopPolling();
-        }
-      });
-    }
   }
 
+  late final ClientRunner<int> _clientRunner;
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   ConnectivityResult? _connectivityResult;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
-  final sendMutex = Mutex();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   String? _b64Secret;
   late final StreamSubscription<FGBGType> fgBgSubscription;
-  Timer? timer;
+  ImapClient? prevImapClient;
 
   void dispose() {
     fgBgSubscription.cancel();
@@ -80,14 +59,43 @@ class OutboxService {
 
     if (syncConfig != null && enableSyncOutbox) {
       _b64Secret = syncConfig.sharedSecret;
-      await startPolling();
+      await enqueueNextSendRequest();
     }
+    debugPrint('OutboxService init $syncConfig $enableSyncOutbox');
+
+    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      _connectivityResult = result;
+      debugPrint('Connectivity onConnectivityChanged $result');
+      _loggingDb.captureEvent(
+        'Connectivity onConnectivityChanged $result',
+        domain: 'OUTBOX',
+      );
+
+      if (result != ConnectivityResult.none) {
+        enqueueNextSendRequest();
+      }
+    });
+
+    if (isMobile) {
+      fgBgSubscription = FGBGEvents.stream.listen((event) {
+        if (event == FGBGType.foreground) {
+          enqueueNextSendRequest();
+        }
+      });
+    }
+
+    Timer.periodic(const Duration(minutes: 1), (timer) async {
+      final unprocessed = await getNextItems();
+      if (unprocessed.isNotEmpty) {
+        await enqueueNextSendRequest();
+      }
+    });
   }
 
   Future<void> reportConnectivity() async {
     _loggingDb.captureEvent(
       'reportConnectivity: $_connectivityResult',
-      domain: 'OUTBOX_CUBIT',
+      domain: 'OUTBOX',
     );
   }
 
@@ -105,7 +113,8 @@ class OutboxService {
     return _syncDatabase.oldestOutboxItems(10);
   }
 
-  Future<void> sendNext({ImapClient? imapClient}) async {
+  Future<void> sendNext() async {
+    debugPrint('sendNext');
     final enableSyncOutbox =
         await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
 
@@ -113,27 +122,29 @@ class OutboxService {
       return;
     }
 
-    _loggingDb.captureEvent('sendNext()', domain: 'OUTBOX_CUBIT');
+    _loggingDb.captureEvent('sendNext() start', domain: 'OUTBOX');
 
-    final transaction = _loggingDb.startTransaction('sendNext()', 'task');
     try {
       _connectivityResult = await Connectivity().checkConnectivity();
       if (_connectivityResult == ConnectivityResult.none) {
         await reportConnectivity();
-        await stopPolling();
+        await enqueueNextSendRequest(delay: const Duration(seconds: 15));
         return;
       }
 
       if (_b64Secret != null) {
         // ignore: flutter_style_todos
         // TODO: check why not working reliably on macOS - workaround
-        final isConnected = _connectivityResult != ConnectivityResult.none;
+        final networkConnected = _connectivityResult != ConnectivityResult.none;
+        final clientConnected = prevImapClient?.isConnected ?? false;
 
-        if (isConnected && !sendMutex.isLocked) {
+        if (!clientConnected) {
+          prevImapClient = null;
+        }
+
+        if (networkConnected) {
           final unprocessed = await getNextItems();
           if (unprocessed.isNotEmpty) {
-            await sendMutex.acquire();
-
             final nextPending = unprocessed.first;
             try {
               final encryptedMessage = await encryptString(
@@ -157,7 +168,7 @@ class OutboxService {
                 encryptedFilePath: encryptedFilePath,
                 subject: nextPending.subject,
                 encryptedMessage: encryptedMessage,
-                prevImapClient: imapClient,
+                prevImapClient: prevImapClient,
               );
               if (successfulClient != null) {
                 await _syncDatabase.updateOutboxItem(
@@ -168,11 +179,15 @@ class OutboxService {
                   ),
                 );
                 if (unprocessed.length > 1) {
-                  await sendNext(imapClient: successfulClient);
-                } else {
-                  await successfulClient.disconnect();
+                  await enqueueNextSendRequest();
                 }
+              } else {
+                await enqueueNextSendRequest(
+                  delay: const Duration(seconds: 15),
+                );
               }
+              prevImapClient = successfulClient;
+              _loggingDb.captureEvent('sendNext() done', domain: 'OUTBOX');
             } catch (e) {
               await _syncDatabase.updateOutboxItem(
                 OutboxCompanion(
@@ -186,18 +201,13 @@ class OutboxService {
                   updatedAt: Value(DateTime.now()),
                 ),
               );
-              await stopPolling();
-            } finally {
-              if (sendMutex.isLocked) {
-                sendMutex.release();
-              }
+              await prevImapClient?.disconnect();
+              // ignore: unnecessary_statements
+              prevImapClient == null;
+              await enqueueNextSendRequest(delay: const Duration(seconds: 15));
             }
-          } else {
-            await stopPolling();
           }
         }
-      } else {
-        await stopPolling();
       }
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -206,80 +216,66 @@ class OutboxService {
         subDomain: 'sendNext',
         stackTrace: stackTrace,
       );
-      if (sendMutex.isLocked) {
-        sendMutex.release();
-      }
+      await prevImapClient?.disconnect();
+      // ignore: unnecessary_statements
+      prevImapClient == null;
+      await enqueueNextSendRequest(delay: const Duration(seconds: 15));
     }
-    await transaction.finish();
   }
 
-  Future<void> startPolling() async {
+  Future<void> enqueueNextSendRequest({
+    Duration delay = const Duration(milliseconds: 1),
+  }) async {
+    debugPrint('enqueueNextSendRequest');
     final syncConfig = await _syncConfigService.getSyncConfig();
     final enableSyncOutbox =
         await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
 
     if (!enableSyncOutbox) {
+      _loggingDb.captureEvent(
+        'Sync not enabled -> not enqueued',
+        domain: 'OUTBOX',
+      );
       return;
     }
 
     if (syncConfig == null) {
       _loggingDb.captureEvent(
-        'Sync config missing -> polling not started',
-        domain: 'OUTBOX_CUBIT',
+        'Sync config missing -> not enqueued',
+        domain: 'OUTBOX',
       );
       return;
     }
 
-    _loggingDb.captureEvent('startPolling()', domain: 'OUTBOX_CUBIT');
+    unawaited(
+      Future<void>.delayed(delay).then(
+        (_) =>
+            _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch),
+      ),
+    );
 
-    if (timer != null && timer!.isActive) {
-      return;
-    }
-
-    await sendNext();
-    timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      _connectivityResult = await Connectivity().checkConnectivity();
-      _loggingDb.captureEvent(
-        '_connectivityResult: $_connectivityResult',
-        domain: 'OUTBOX_CUBIT',
-      );
-
-      final unprocessed = await getNextItems();
-
-      if (_connectivityResult == ConnectivityResult.none ||
-          unprocessed.isEmpty) {
-        timer.cancel();
-        _loggingDb.captureEvent('timer cancelled', domain: 'OUTBOX_CUBIT');
-      } else {
-        await sendNext();
-      }
-    });
-  }
-
-  Future<void> stopPolling() async {
-    if (timer != null) {
-      _loggingDb.captureEvent('stopPolling()', domain: 'OUTBOX_CUBIT');
-
-      timer?.cancel();
-      timer = null;
-    }
+    _loggingDb.captureEvent('enqueueRequest() done', domain: 'OUTBOX');
   }
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
-    if (syncMessage is SyncJournalEntity) {
-      final transaction =
-          _loggingDb.startTransaction('enqueueMessage()', 'task');
-      try {
-        final journalEntity = syncMessage.journalEntity;
-        final jsonString = json.encode(syncMessage);
-        final docDir = await getApplicationDocumentsDirectory();
-        final vectorClockService = getIt<VectorClockService>();
+    try {
+      final vectorClockService = getIt<VectorClockService>();
+      final hostHash = await vectorClockService.getHostHash();
+      final host = await vectorClockService.getHost();
+      final jsonString = json.encode(syncMessage);
+      final docDir = await getApplicationDocumentsDirectory();
 
+      final commonFields = OutboxCompanion(
+        status: Value(OutboxStatus.pending.index),
+        message: Value(jsonString),
+        createdAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      );
+
+      if (syncMessage is SyncJournalEntity) {
+        final journalEntity = syncMessage.journalEntity;
         File? attachment;
-        final host = await vectorClockService.getHost();
-        final hostHash = await vectorClockService.getHostHash();
         final localCounter = journalEntity.meta.vectorClock?.vclock[host];
-        final subject = '$hostHash:$localCounter';
 
         journalEntity.maybeMap(
           journalAudio: (JournalAudio journalAudio) {
@@ -298,124 +294,49 @@ class OutboxService {
 
         final fileLength = attachment?.lengthSync() ?? 0;
         await _syncDatabase.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.pending.index),
+          commonFields.copyWith(
             filePath: Value(
               (fileLength > 0) ? getRelativeAssetPath(attachment!.path) : null,
             ),
-            subject: Value(subject),
-            message: Value(jsonString),
-            createdAt: Value(DateTime.now()),
-            updatedAt: Value(DateTime.now()),
+            subject: Value('$hostHash:$localCounter'),
           ),
         );
-
-        await transaction.finish();
-        await startPolling();
-      } catch (exception, stackTrace) {
-        _loggingDb.captureException(
-          exception,
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
-          stackTrace: stackTrace,
-        );
       }
-    }
 
-    if (syncMessage is SyncEntityDefinition) {
-      final transaction =
-          _loggingDb.startTransaction('enqueueMessage()', 'task');
-      try {
-        final jsonString = json.encode(syncMessage);
-        final vectorClockService = getIt<VectorClockService>();
-        final host = await vectorClockService.getHost();
-        final hostHash = await vectorClockService.getHostHash();
+      if (syncMessage is SyncEntityDefinition) {
         final localCounter =
             syncMessage.entityDefinition.vectorClock?.vclock[host];
-        final subject = '$hostHash:$localCounter';
 
         await _syncDatabase.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.pending.index),
-            subject: Value(subject),
-            message: Value(jsonString),
-            createdAt: Value(DateTime.now()),
-            updatedAt: Value(DateTime.now()),
+          commonFields.copyWith(
+            subject: Value('$hostHash:$localCounter'),
           ),
         );
-
-        await transaction.finish();
-        await startPolling();
-      } catch (exception, stackTrace) {
-        _loggingDb.captureException(
-          exception,
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
-          stackTrace: stackTrace,
-        );
       }
-    }
 
-    if (syncMessage is SyncEntryLink) {
-      final transaction =
-          _loggingDb.startTransaction('enqueueMessage()', 'link');
-      try {
-        final jsonString = json.encode(syncMessage);
-        final vectorClockService = getIt<VectorClockService>();
-        final hostHash = await vectorClockService.getHostHash();
-        final subject = '$hostHash:link';
-
+      if (syncMessage is SyncEntryLink) {
         await _syncDatabase.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.pending.index),
-            subject: Value(subject),
-            message: Value(jsonString),
-            createdAt: Value(DateTime.now()),
-            updatedAt: Value(DateTime.now()),
-          ),
-        );
-
-        await transaction.finish();
-        await startPolling();
-      } catch (exception, stackTrace) {
-        _loggingDb.captureException(
-          exception,
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
-          stackTrace: stackTrace,
+          commonFields.copyWith(subject: Value('$hostHash:link')),
         );
       }
-    }
 
-    if (syncMessage is SyncTagEntity) {
-      final transaction =
-          _loggingDb.startTransaction('enqueueMessage()', 'tag');
-      try {
-        final jsonString = json.encode(syncMessage);
-        final vectorClockService = getIt<VectorClockService>();
-        final hostHash = await vectorClockService.getHostHash();
-        final subject = '$hostHash:tag';
-
+      if (syncMessage is SyncTagEntity) {
         await _syncDatabase.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.pending.index),
-            subject: Value(subject),
-            message: Value(jsonString),
-            createdAt: Value(DateTime.now()),
-            updatedAt: Value(DateTime.now()),
+          commonFields.copyWith(
+            subject: Value('$hostHash:tag'),
           ),
         );
-
-        await transaction.finish();
-        await startPolling();
-      } catch (exception, stackTrace) {
-        _loggingDb.captureException(
-          exception,
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
-          stackTrace: stackTrace,
-        );
       }
+
+      await enqueueNextSendRequest();
+    } catch (exception, stackTrace) {
+      debugPrint('enqueueMessage $exception \n$stackTrace');
+      _loggingDb.captureException(
+        exception,
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+        stackTrace: stackTrace,
+      );
     }
   }
 }

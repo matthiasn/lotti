@@ -13,12 +13,6 @@ Future<void> waitSeconds(int s) async {
   }
 }
 
-Future<void> waitMilliseconds(int ms) async {
-  if (debug) {
-    await Future.delayed(Duration(milliseconds: ms), () {});
-  }
-}
-
 void main() {
   app.main();
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

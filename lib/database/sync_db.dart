@@ -88,6 +88,10 @@ class SyncDatabase extends _$SyncDatabase {
         .map((res) => res.length);
   }
 
+  Future<int> deleteOutboxItems() {
+    return (delete(outbox)).go();
+  }
+
   @override
   int get schemaVersion => 1;
 }

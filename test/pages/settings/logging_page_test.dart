@@ -7,7 +7,7 @@ import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mocks.dart';
+import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
 void main() {

@@ -19,14 +19,10 @@ Future<GenericImapResult> saveImapMessage(
   final syncConfig = await syncConfigService.getSyncConfig();
 
   try {
-    final transaction = loggingDb.startTransaction('saveImapMessage()', 'task');
-
     final inbox = await imapClient
         .selectMailboxByPath(syncConfig?.imapConfig.folder ?? 'INBOX');
 
     final builder = MessageBuilder.prepareMultipartAlternativeMessage()
-      ..from = [MailAddress('Sync', 'sender@domain.com')]
-      ..to = [MailAddress('Sync', 'recipient@domain.com')]
       ..subject = subject
       ..addTextPlain(encryptedMessage);
 
@@ -49,7 +45,6 @@ Future<GenericImapResult> saveImapMessage(
     debugPrint(
       'saveImapMessage responseCode ${res.responseCode} details ${res.details}',
     );
-    await transaction.finish();
     return res;
   } catch (exception, stackTrace) {
     loggingDb.captureException(
@@ -65,7 +60,6 @@ Future<GenericImapResult> saveImapMessage(
 const String sharedSecretKey = 'sharedSecret';
 const String imapConfigKey = 'imapConfig';
 const String lastReadUidKey = 'lastReadUid';
-final LoggingDb _loggingDb = getIt<LoggingDb>();
 
 Future<ImapClient?> persistImap({
   required String encryptedMessage,
@@ -73,9 +67,10 @@ Future<ImapClient?> persistImap({
   String? encryptedFilePath,
   ImapClient? prevImapClient,
 }) async {
+  final loggingDb = getIt<LoggingDb>();
+
   ImapClient? imapClient;
   try {
-    final transaction = _loggingDb.startTransaction('saveImap()', 'task');
     if (prevImapClient != null && prevImapClient.isConnected) {
       imapClient = prevImapClient;
     } else {
@@ -106,10 +101,9 @@ Future<ImapClient?> persistImap({
         );
       }
     }
-    await transaction.finish();
 
     final resDetails = res?.details;
-    _loggingDb.captureEvent(
+    loggingDb.captureEvent(
       resDetails ?? 'no result details',
       domain: 'OUTBOX_IMAP',
     );
@@ -121,12 +115,13 @@ Future<ImapClient?> persistImap({
       return null;
     }
   } catch (exception, stackTrace) {
-    _loggingDb.captureException(
+    loggingDb.captureException(
       exception,
       domain: 'OUTBOX_IMAP persistImap',
       stackTrace: stackTrace,
     );
     await prevImapClient?.disconnect();
+    imapClient = null;
     rethrow;
-  } finally {}
+  }
 }
