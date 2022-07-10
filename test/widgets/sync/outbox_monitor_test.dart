@@ -9,8 +9,8 @@ import 'package:lotti/pages/settings/outbox/outbox_monitor.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../mocks/sync_config_test_mocks.dart';
 import '../../widget_test_utils.dart';
-import '../sync_config_test_mocks.dart';
 
 void main() {
   var syncDatabaseMock = MockSyncDatabase();

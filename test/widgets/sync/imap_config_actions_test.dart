@@ -9,9 +9,9 @@ import 'package:lotti/widgets/sync/imap_config_actions.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks.dart';
+import '../../mocks/sync_config_test_mocks.dart';
+import '../../test_data/sync_config_test_data.dart';
 import '../../widget_test_utils.dart';
-import '../sync_config_test_data.dart';
-import '../sync_config_test_mocks.dart';
 
 void main() {
   group('SyncConfig Imap Config Actions Widgets Tests - ', () {

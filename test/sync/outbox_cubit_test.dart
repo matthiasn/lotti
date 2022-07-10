@@ -7,8 +7,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'sync_config_test_data.dart';
-import 'sync_config_test_mocks.dart';
+import '../mocks/sync_config_test_mocks.dart';
+import '../test_data/sync_config_test_data.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
