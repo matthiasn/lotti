@@ -462,11 +462,14 @@ void main() {
       expect(find.text(testDashboardDescription), findsOneWidget);
     });
 
-    testWidgets('dashboard list page is displayed with one test item',
+    testWidgets('dashboard list page is displayed with two test dashboard',
         (tester) async {
       when(mockJournalDb.watchDashboards).thenAnswer(
         (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [testDashboardConfig],
+          [
+            testDashboardConfig,
+            emptyTestDashboardConfig,
+          ],
         ]),
       );
 
@@ -489,6 +492,43 @@ void main() {
       // finds text in dashboard card
       expect(find.text(testDashboardName), findsOneWidget);
       expect(find.text(testDashboardDescription), findsOneWidget);
+    });
+
+    testWidgets(
+        'dashboard page is displayed directly when there is only one '
+        'dashboard defined', (tester) async {
+      when(mockJournalDb.watchDashboards).thenAnswer(
+        (_) => Stream<List<DashboardDefinition>>.fromIterable([
+          [emptyTestDashboardConfig],
+        ]),
+      );
+
+      when(() => mockJournalDb.watchDashboardById(emptyTestDashboardConfig.id))
+          .thenAnswer(
+        (_) => Stream<List<DashboardDefinition>>.fromIterable([
+          [emptyTestDashboardConfig],
+        ]),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
+            ),
+            child: const DashboardsListPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      verify(mockJournalDb.watchDashboards).called(1);
+
+      // finds text in dashboard card
+      expect(find.text(emptyTestDashboardConfig.name), findsOneWidget);
+      expect(find.text(emptyTestDashboardConfig.description), findsOneWidget);
     });
   });
 }

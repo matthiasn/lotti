@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/sort.dart';
@@ -27,27 +28,33 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: colorConfig().bodyBgColor,
-      appBar: const DashboardsAppBar(),
-      body: StreamBuilder<List<DashboardDefinition>>(
-        stream: stream,
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<List<DashboardDefinition>> snapshot,
-        ) {
-          if (snapshot.data == null) {
-            return const LoadingDashboards();
-          }
+    return StreamBuilder<List<DashboardDefinition>>(
+      stream: stream,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<DashboardDefinition>> snapshot,
+      ) {
+        if (snapshot.data == null) {
+          return const LoadingDashboards();
+        }
 
-          final dashboards =
-              filteredSortedDashboards(snapshot.data ?? [], match);
+        final dashboards = filteredSortedDashboards(snapshot.data ?? [], match);
 
-          if (dashboards.isEmpty) {
-            return const EmptyDashboards();
-          }
+        if (dashboards.isEmpty) {
+          return const EmptyDashboards();
+        }
 
-          return ListView(
+        if (dashboards.length == 1) {
+          return DashboardPage(
+            dashboardId: dashboards[0].id,
+            showBackIcon: false,
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: colorConfig().bodyBgColor,
+          appBar: const DashboardsAppBar(),
+          body: ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.all(8),
             children: List.generate(
@@ -59,9 +66,9 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
                 );
               },
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

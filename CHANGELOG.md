@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Show single dashboard directly without dashboards list page
+
+## [0.8.99] - 2022-07-10
+### Changed:
 - Show bottom navigation bar in dashboard page
 
 ## [0.8.98] - 2022-07-10
