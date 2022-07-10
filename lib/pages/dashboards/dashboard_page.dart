@@ -22,9 +22,11 @@ class DashboardPage extends StatefulWidget {
   const DashboardPage({
     super.key,
     @PathParam() required this.dashboardId,
+    this.showBackIcon = true,
   });
 
   final String dashboardId;
+  final bool showBackIcon;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -106,7 +108,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
           return Scaffold(
             backgroundColor: colorConfig().bodyBgColor,
-            appBar: DashboardAppBar(dashboard),
+            appBar: DashboardAppBar(
+              dashboard,
+              showBackIcon: widget.showBackIcon,
+            ),
             body: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(8),
