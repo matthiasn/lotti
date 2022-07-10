@@ -61,13 +61,14 @@ class OutboxService {
       _b64Secret = syncConfig.sharedSecret;
       await enqueueNextSendRequest();
     }
+    debugPrint('OutboxService init $syncConfig $enableSyncOutbox');
 
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
       _connectivityResult = result;
       debugPrint('Connectivity onConnectivityChanged $result');
       _loggingDb.captureEvent(
         'Connectivity onConnectivityChanged $result',
-        domain: 'OUTBOX_v2',
+        domain: 'OUTBOX',
       );
 
       if (result != ConnectivityResult.none) {
@@ -94,7 +95,7 @@ class OutboxService {
   Future<void> reportConnectivity() async {
     _loggingDb.captureEvent(
       'reportConnectivity: $_connectivityResult',
-      domain: 'OUTBOX_v2',
+      domain: 'OUTBOX',
     );
   }
 
@@ -113,6 +114,7 @@ class OutboxService {
   }
 
   Future<void> sendNext() async {
+    debugPrint('sendNext');
     final enableSyncOutbox =
         await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
 
@@ -120,7 +122,7 @@ class OutboxService {
       return;
     }
 
-    _loggingDb.captureEvent('sendNext() start', domain: 'OUTBOX_v2');
+    _loggingDb.captureEvent('sendNext() start', domain: 'OUTBOX');
 
     try {
       _connectivityResult = await Connectivity().checkConnectivity();
@@ -185,7 +187,7 @@ class OutboxService {
                 );
               }
               prevImapClient = successfulClient;
-              _loggingDb.captureEvent('sendNext() done', domain: 'OUTBOX_v2');
+              _loggingDb.captureEvent('sendNext() done', domain: 'OUTBOX');
             } catch (e) {
               await _syncDatabase.updateOutboxItem(
                 OutboxCompanion(
@@ -210,7 +212,7 @@ class OutboxService {
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
-        domain: 'OUTBOX_v2',
+        domain: 'OUTBOX',
         subDomain: 'sendNext',
         stackTrace: stackTrace,
       );
@@ -224,6 +226,7 @@ class OutboxService {
   Future<void> enqueueNextSendRequest({
     Duration delay = const Duration(milliseconds: 1),
   }) async {
+    debugPrint('enqueueNextSendRequest');
     final syncConfig = await _syncConfigService.getSyncConfig();
     final enableSyncOutbox =
         await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
@@ -231,7 +234,7 @@ class OutboxService {
     if (!enableSyncOutbox) {
       _loggingDb.captureEvent(
         'Sync not enabled -> not enqueued',
-        domain: 'OUTBOX_v2',
+        domain: 'OUTBOX',
       );
       return;
     }
@@ -239,7 +242,7 @@ class OutboxService {
     if (syncConfig == null) {
       _loggingDb.captureEvent(
         'Sync config missing -> not enqueued',
-        domain: 'OUTBOX_v2',
+        domain: 'OUTBOX',
       );
       return;
     }
@@ -251,13 +254,14 @@ class OutboxService {
       ),
     );
 
-    _loggingDb.captureEvent('enqueueRequest() done', domain: 'OUTBOX_v2');
+    _loggingDb.captureEvent('enqueueRequest() done', domain: 'OUTBOX');
   }
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     try {
       final vectorClockService = getIt<VectorClockService>();
       final hostHash = await vectorClockService.getHostHash();
+      final host = await vectorClockService.getHost();
       final jsonString = json.encode(syncMessage);
       final docDir = await getApplicationDocumentsDirectory();
 
@@ -271,7 +275,6 @@ class OutboxService {
       if (syncMessage is SyncJournalEntity) {
         final journalEntity = syncMessage.journalEntity;
         File? attachment;
-        final host = await vectorClockService.getHost();
         final localCounter = journalEntity.meta.vectorClock?.vclock[host];
 
         journalEntity.maybeMap(
@@ -301,7 +304,6 @@ class OutboxService {
       }
 
       if (syncMessage is SyncEntityDefinition) {
-        final host = await vectorClockService.getHost();
         final localCounter =
             syncMessage.entityDefinition.vectorClock?.vclock[host];
 
@@ -314,9 +316,7 @@ class OutboxService {
 
       if (syncMessage is SyncEntryLink) {
         await _syncDatabase.addOutboxItem(
-          commonFields.copyWith(
-            subject: Value('$hostHash:link'),
-          ),
+          commonFields.copyWith(subject: Value('$hostHash:link')),
         );
       }
 
@@ -330,9 +330,10 @@ class OutboxService {
 
       await enqueueNextSendRequest();
     } catch (exception, stackTrace) {
+      debugPrint('enqueueMessage $exception \n$stackTrace');
       _loggingDb.captureException(
         exception,
-        domain: 'OUTBOX_v2',
+        domain: 'OUTBOX',
         subDomain: 'enqueueMessage',
         stackTrace: stackTrace,
       );
