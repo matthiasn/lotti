@@ -68,7 +68,6 @@ class HomePage extends StatelessWidget {
           ],
           bottomNavigationBuilder: (_, TabsRouter tabsRouter) {
             final hideBottomNavRoutes = <String>{
-              DashboardRoute.name,
               EntryDetailRoute.name,
               LoggingRoute.name,
               LogDetailRoute.name,
