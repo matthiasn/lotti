@@ -372,6 +372,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               physics: const NeverScrollableScrollPhysics(),
                               onReorder: (int oldIndex, int newIndex) {
                                 setState(() {
+                                  dirty = true;
                                   dashboardItems = dashboardItems;
                                   final movedItem =
                                       dashboardItems.removeAt(oldIndex);
