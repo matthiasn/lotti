@@ -45,6 +45,12 @@ TextStyle textStyleLarger() => textStyle().copyWith(
       fontWeight: FontWeight.normal,
     );
 
+TextStyle textStyleLargerUnderlined() => textStyle().copyWith(
+      fontSize: 18,
+      fontWeight: FontWeight.w100,
+      decoration: TextDecoration.underline,
+    );
+
 TextStyle labelStyleLarger() => textStyleLarger().copyWith(
       fontSize: 18,
       fontWeight: FontWeight.w300,

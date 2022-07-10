@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Show duration
+
+## [0.8.100] - 2022-07-10
+### Changed:
 - Show single dashboard directly without dashboards list page
 
 ## [0.8.99] - 2022-07-10
