@@ -112,14 +112,12 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       },
                       child: Text(
                         df.format(dateFrom),
-                        style: textStyleLarger(),
+                        style: textStyleLargerUnderlined(),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(
-                  height: 8,
-                ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     SizedBox(
@@ -143,7 +141,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       },
                       child: Text(
                         df.format(dateTo),
-                        style: textStyleLarger(),
+                        style: textStyleLargerUnderlined(),
                       ),
                     ),
                     TextButton(
@@ -154,7 +152,30 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       },
                       child: Text(
                         localizations.journalDateNowButton,
-                        style: textStyleLarger(),
+                        style: textStyleLarger()
+                            .copyWith(decoration: TextDecoration.underline),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        localizations.journalDurationLabel,
+                        textAlign: TextAlign.end,
+                        style: labelStyleLarger(),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Text(
+                        formatDuration(dateFrom.difference(dateTo)),
+                        style: textStyleLarger().copyWith(
+                          fontWeight: FontWeight.w100,
+                        ),
                       ),
                     ),
                   ],
@@ -179,7 +200,9 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                           },
                           child: Text(
                             localizations.journalDateSaveButton,
-                            style: textStyleLarger(),
+                            style: textStyleLarger().copyWith(
+                              decoration: TextDecoration.underline,
+                            ),
                           ),
                         ),
                       ),
