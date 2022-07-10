@@ -5,7 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/measurables/measurables_page.dart';
 import 'package:lotti/themes/themes_service.dart';
 
-import '../../../mocks.dart';
+import '../../../mocks/mocks.dart';
 import '../../../test_data.dart';
 import '../../../widget_test_utils.dart';
 

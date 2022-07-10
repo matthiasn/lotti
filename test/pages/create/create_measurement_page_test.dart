@@ -10,7 +10,7 @@ import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mocks.dart';
+import '../../mocks/mocks.dart';
 import '../../test_data.dart';
 import '../../widget_test_utils.dart';
 

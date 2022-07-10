@@ -20,7 +20,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/path_provider.dart';
-import '../mocks.dart';
+import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
 import '../test_data.dart';
 import '../test_data/sync_config_test_data.dart';
