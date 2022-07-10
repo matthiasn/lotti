@@ -102,6 +102,20 @@ final testDashboardConfig = DashboardDefinition(
   id: '',
 );
 
+final emptyTestDashboardConfig = DashboardDefinition(
+  items: [],
+  name: 'Test Dashboard #2 - empty',
+  description: 'testDashboardDescription #2',
+  createdAt: testEpochDateTime,
+  updatedAt: testEpochDateTime,
+  vectorClock: null,
+  private: false,
+  version: '',
+  lastReviewed: testEpochDateTime,
+  active: true,
+  id: '',
+);
+
 final testStoryTagReading = StoryTag(
   id: '27bbabc6-f323-11ec-b939-0242ac120002',
   tag: 'Reading',
