@@ -5,11 +5,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
-import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/entry_links.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/sync_message.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
@@ -17,16 +12,11 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/imap_client.dart';
-import 'package:lotti/sync/inbox_read.dart';
-import 'package:lotti/sync/inbox_save_attachments.dart';
+import 'package:lotti/sync/inbox/process_message.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:mutex/mutex.dart';
-
-const String sharedSecretKey = 'sharedSecret';
-const String imapConfigKey = 'imapConfig';
-const String lastReadUidKey = 'lastReadUid';
 
 class SyncInboxService {
   SyncInboxService() {
@@ -41,7 +31,6 @@ class SyncInboxService {
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
   final fetchMutex = Mutex();
-  final JournalDb _journalDb = getIt<JournalDb>();
   final LoggingDb _loggingDb = getIt<LoggingDb>();
 
   void dispose() {
@@ -90,74 +79,6 @@ class SyncInboxService {
     await _observeInbox();
   }
 
-  Future<void> processMessage(MimeMessage message) async {
-    final transaction = _loggingDb.startTransaction('processMessage()', 'task');
-    try {
-      final encryptedMessage = readMessage(message);
-      final syncConfig = await _syncConfigService.getSyncConfig();
-
-      if (syncConfig != null) {
-        final b64Secret = syncConfig.sharedSecret;
-
-        final syncMessage =
-            await decryptMessage(encryptedMessage, message, b64Secret);
-
-        await syncMessage?.when(
-          journalEntity:
-              (JournalEntity journalEntity, SyncEntryStatus status) async {
-            await saveJournalEntityJson(journalEntity);
-
-            await journalEntity.maybeMap(
-              journalAudio: (JournalAudio journalAudio) async {
-                if (syncMessage.status == SyncEntryStatus.initial) {
-                  await saveAudioAttachment(message, journalAudio, b64Secret);
-                }
-              },
-              journalImage: (JournalImage journalImage) async {
-                if (syncMessage.status == SyncEntryStatus.initial) {
-                  await saveImageAttachment(message, journalImage, b64Secret);
-                }
-              },
-              orElse: () {},
-            );
-
-            if (status == SyncEntryStatus.update) {
-              await persistenceLogic.updateDbEntity(journalEntity);
-            } else {
-              await persistenceLogic.createDbEntity(journalEntity);
-            }
-          },
-          entryLink: (EntryLink entryLink, SyncEntryStatus _) {
-            _journalDb.upsertEntryLink(entryLink);
-          },
-          entityDefinition: (
-            EntityDefinition entityDefinition,
-            SyncEntryStatus status,
-          ) {
-            _journalDb.upsertEntityDefinition(entityDefinition);
-          },
-          tagEntity: (
-            TagEntity tagEntity,
-            SyncEntryStatus status,
-          ) {
-            _journalDb.upsertTagEntity(tagEntity);
-          },
-        );
-      } else {
-        throw Exception('missing IMAP config');
-      }
-    } catch (e, stackTrace) {
-      _loggingDb.captureException(
-        e,
-        domain: 'INBOX_SERVICE',
-        subDomain: 'processMessage',
-        stackTrace: stackTrace,
-      );
-    }
-
-    await transaction.finish();
-  }
-
   Future<void> _startPeriodicFetching() async {
     final syncConfig = await _syncConfigService.getSyncConfig();
 
@@ -184,11 +105,6 @@ class SyncInboxService {
       timer!.cancel();
       timer = null;
     }
-  }
-
-  bool validSubject(String subject) {
-    final validSubject = RegExp('[a-z0-9]{40}:[a-z0-9]+');
-    return validSubject.hasMatch(subject);
   }
 
   Future<void> _fetchInbox() async {

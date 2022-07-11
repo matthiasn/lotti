@@ -6,7 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
-import 'package:lotti/sync/inbox_service.dart';
+import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/outbox_service.dart';
 
 part 'sync_config_cubit.freezed.dart';

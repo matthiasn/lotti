@@ -5,8 +5,8 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/imap_client.dart';
-import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/sync/utils.dart';
 
 class SyncConfigService {
   final sharedSecretKey = 'sharedSecret';
