@@ -40,12 +40,16 @@ Future<ImapClient?> createImapClient(
         timeout: connectionTimeout,
       );
 
+      debugPrint('ImapClient created');
+
       loggingDb.captureEvent(
         'ImapClient created',
         domain: 'IMAP_CLIENT $clientId',
       );
 
       await imapClient.login(imapConfig.userName, imapConfig.password);
+
+      debugPrint('ImapClient logged in');
 
       loggingDb.captureEvent(
         'ImapClient logged in',

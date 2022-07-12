@@ -11,27 +11,31 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox/process_message.dart';
-import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:mutex/mutex.dart';
 
 class SyncInboxService {
   SyncInboxService() {
-    _vectorClockService = getIt<VectorClockService>();
+    _clientRunner = ClientRunner<int>(
+      callback: (event) async {
+        await _fetchInbox();
+      },
+    );
+
     init();
   }
 
+  late final ClientRunner<int> _clientRunner;
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-  late final VectorClockService _vectorClockService;
+  final VectorClockService _vectorClockService = getIt<VectorClockService>();
   MailClient? _observingClient;
   late final StreamSubscription<FGBGType> fgBgSubscription;
-  Timer? timer;
-  final fetchMutex = Mutex();
   final LoggingDb _loggingDb = getIt<LoggingDb>();
+  ImapClient? imapClient;
 
   void dispose() {
     fgBgSubscription.cancel();
@@ -39,203 +43,118 @@ class SyncInboxService {
 
   Future<void> init() async {
     debugPrint('SyncInboxService init');
+    final syncConfig = await _syncConfigService.getSyncConfig();
 
     final enableSyncInbox =
         await getIt<JournalDb>().getConfigFlag(enableSyncInboxFlag);
 
-    if (!enableSyncInbox) {
+    if (!enableSyncInbox || syncConfig == null) {
       return;
     }
 
     if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
-        _loggingDb.captureEvent(event, domain: 'INBOX_CUBIT');
-
         if (event == FGBGType.foreground) {
-          _startPeriodicFetching();
+          enqueueNextFetchRequest();
           _observeInbox();
-        }
-        if (event == FGBGType.background) {
-          _stopPeriodicFetching();
         }
       });
     }
 
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      _loggingDb.captureEvent(
-        'INBOX: Connectivity onConnectivityChanged $result',
-        domain: 'INBOX_SERVICE',
-      );
+      _loggingDb.captureEvent('onConnectivityChanged $result', domain: 'INBOX');
 
-      if (result == ConnectivityResult.none) {
-        _stopPeriodicFetching();
-      } else {
-        _startPeriodicFetching();
+      if (result != ConnectivityResult.none) {
+        enqueueNextFetchRequest();
         _observeInbox();
       }
     });
 
-    await _startPeriodicFetching();
+    enqueueNextFetchRequest();
+    Timer.periodic(
+      const Duration(seconds: 15),
+      (timer) async {
+        final isObserving = _observingClient?.isPolling() ?? false;
+        if (!isObserving) {
+          enqueueNextFetchRequest();
+        }
+      },
+    );
+
     await _observeInbox();
   }
 
-  Future<void> _startPeriodicFetching() async {
-    final syncConfig = await _syncConfigService.getSyncConfig();
-
-    if (syncConfig == null) {
-      _loggingDb.captureEvent(
-        'Sync config missing -> periodic fetching not started',
-        domain: 'OUTBOX_CUBIT',
-      );
-      return;
-    } else {
-      timer?.cancel();
-      await _fetchInbox();
-      timer = Timer.periodic(
-        const Duration(seconds: 15),
-        (timer) async {
-          await _fetchInbox();
-        },
-      );
-    }
-  }
-
-  Future<void> _stopPeriodicFetching() async {
-    if (timer != null) {
-      timer!.cancel();
-      timer = null;
-    }
+  void enqueueNextFetchRequest() {
+    _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
   }
 
   Future<void> _fetchInbox() async {
-    final transaction = _loggingDb.startTransaction('_fetchInbox()', 'task');
-    ImapClient? imapClient;
+    try {
+      final syncConfig = await _syncConfigService.getSyncConfig();
+      imapClient ??= await createImapClient(syncConfig);
+      final lastReadUid = await getLastReadUid();
 
-    _loggingDb.captureEvent('_fetchInbox()', domain: 'INBOX_CUBIT');
+      final sequence = MessageSequence(isUidSequence: true)
+        ..addRangeToLast(lastReadUid + 1);
 
-    if (!fetchMutex.isLocked) {
-      await fetchMutex.acquire();
+      if (imapClient != null) {
+        final fetchResult =
+            await imapClient!.uidFetchMessages(sequence, 'ENVELOPE');
 
-      try {
-        final syncConfig = await _syncConfigService.getSyncConfig();
-        imapClient = await createImapClient(syncConfig);
-
-        final lastReadUidValue =
-            await getIt<SecureStorage>().read(key: lastReadUidKey);
-        final lastReadUid =
-            lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
-
-        final sequence = MessageSequence(isUidSequence: true)
-          ..addRangeToLast(lastReadUid + 1);
-
-        _loggingDb.captureEvent(
-          '_fetchInbox() sequence: $sequence',
-          domain: 'INBOX_CUBIT',
-        );
-
-        if (imapClient != null) {
-          final fetchResult =
-              await imapClient.uidFetchMessages(sequence, 'ENVELOPE');
-
-          for (final msg in fetchResult.messages) {
-            final lastReadUidValue =
-                await getIt<SecureStorage>().read(key: lastReadUidKey);
-            final lastReadUid =
-                lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
-            final current = msg.uid;
-            final subject = '${msg.decodeSubject()}';
-            if (lastReadUid != current) {
+        for (final msg in fetchResult.messages.take(1)) {
+          final lastReadUid = await getLastReadUid();
+          final current = msg.uid;
+          final subject = '${msg.decodeSubject()}';
+          if (lastReadUid != current) {
+            _loggingDb.captureEvent(
+              'lastReadUid $lastReadUid current $current',
+              domain: 'INBOX',
+              subDomain: 'fetch',
+            );
+            if (!validSubject(subject)) {
+              debugPrint('_fetchInbox ignoring invalid email: $current');
               _loggingDb.captureEvent(
-                '_fetchInbox lastReadUid $lastReadUid current $current',
-                domain: 'INBOX_CUBIT',
-                subDomain: '_fetchInbox',
+                '_fetchInbox ignoring invalid email: $current',
+                domain: 'INBOX',
               );
-              if (!validSubject(subject)) {
-                debugPrint('_fetchInbox ignoring invalid email: $current');
-                _loggingDb.captureEvent(
-                  '_fetchInbox ignoring invalid email: $current',
-                  domain: 'INBOX_CUBIT',
-                );
-                await _setLastReadUid(current);
-              } else if (subject
-                  .contains(await _vectorClockService.getHostHash())) {
-                debugPrint('_fetchInbox ignoring from same host: $current');
-                _loggingDb.captureEvent(
-                  '_fetchInbox ignoring from same host: $current',
-                  domain: 'INBOX_CUBIT',
-                );
-                await _setLastReadUid(current);
-              } else {
-                await _fetchByUid(uid: current, imapClient: imapClient);
-              }
+              await setLastReadUid(current);
+            } else if (subject
+                .contains(await _vectorClockService.getHostHash())) {
+              debugPrint('_fetchInbox ignoring from same host: $current');
+              _loggingDb.captureEvent(
+                '_fetchInbox ignoring from same host: $current',
+                domain: 'INBOX',
+              );
+              await setLastReadUid(current);
+            } else {
+              await fetchByUid(uid: current, imapClient: imapClient);
             }
           }
-          fetchMutex.release();
-        }
-      } on MailException catch (e, stackTrace) {
-        debugPrint('High level API failed with $e');
-        _loggingDb.captureException(
-          e,
-          domain: 'INBOX_SERVICE',
-          subDomain: '_fetchInbox',
-          stackTrace: stackTrace,
-        );
-      } catch (e, stackTrace) {
-        debugPrint('Exception $e');
-        _loggingDb.captureException(
-          e,
-          domain: 'INBOX_SERVICE',
-          subDomain: '_fetchInbox',
-          stackTrace: stackTrace,
-        );
-      } finally {
-        await imapClient?.disconnect();
-        if (fetchMutex.isLocked) {
-          fetchMutex.release();
+          if (fetchResult.messages.length > 1) {
+            enqueueNextFetchRequest();
+          }
         }
       }
+    } on MailException catch (e, stackTrace) {
+      debugPrint('High level API failed with $e');
+      _loggingDb.captureException(
+        e,
+        domain: 'INBOX',
+        subDomain: '_fetchInbox',
+        stackTrace: stackTrace,
+      );
+      imapClient = null;
+    } catch (e, stackTrace) {
+      debugPrint('Exception $e');
+      _loggingDb.captureException(
+        e,
+        domain: 'INBOX',
+        subDomain: '_fetchInbox',
+        stackTrace: stackTrace,
+      );
+
+      imapClient = null;
     }
-    await transaction.finish();
-  }
-
-  Future<void> _setLastReadUid(int? uid) async {
-    await getIt<SecureStorage>().write(key: lastReadUidKey, value: '$uid');
-  }
-
-  Future<void> _fetchByUid({
-    int? uid,
-    ImapClient? imapClient,
-  }) async {
-    final transaction = _loggingDb.startTransaction('_fetchByUid()', 'task');
-    if (uid != null) {
-      try {
-        if (imapClient != null) {
-          // odd workaround, prevents intermittent failures on macOS
-          await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
-          final res = await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
-
-          for (final message in res.messages) {
-            await processMessage(message);
-          }
-          await _setLastReadUid(uid);
-        }
-      } on MailException catch (e) {
-        debugPrint('High level API failed with $e');
-        _loggingDb.captureException(
-          e,
-          domain: 'INBOX_SERVICE',
-          subDomain: '_fetchByUid',
-        );
-      } catch (e, stackTrace) {
-        _loggingDb.captureException(
-          e,
-          domain: 'INBOX_SERVICE',
-          subDomain: '_fetchByUid',
-          stackTrace: stackTrace,
-        );
-      } finally {}
-    }
-    await transaction.finish();
   }
 
   Future<void> _observeInbox() async {
@@ -243,10 +162,8 @@ class SyncInboxService {
       final syncConfig = await _syncConfigService.getSyncConfig();
 
       if (syncConfig != null) {
-        await _observingClient?.disconnect();
-        _observingClient = null;
-
         final imapConfig = syncConfig.imapConfig;
+
         final account = MailAccount.fromManualSettings(
           'sync',
           imapConfig.userName,
@@ -255,17 +172,23 @@ class SyncInboxService {
           imapConfig.password,
         );
 
-        _observingClient = MailClient(account);
+        _observingClient ??= MailClient(account);
 
-        await _observingClient!.connect();
-        await _observingClient!.selectMailboxByPath(imapConfig.folder);
+        if (_observingClient == null) {
+          return;
+        }
 
-        _observingClient!.eventBus
+        if (_observingClient?.isConnected ?? false) {
+          return;
+        }
+
+        await _observingClient?.connect();
+        await _observingClient?.selectMailboxByPath(imapConfig.folder);
+
+        _observingClient?.eventBus
             .on<MailLoadEvent>()
             .listen((MailLoadEvent event) async {
-          if (!fetchMutex.isLocked) {
-            await _fetchInbox();
-          }
+          await fetchByUid(uid: event.message.uid, imapClient: imapClient);
         });
 
         _observingClient?.eventBus
@@ -273,7 +196,7 @@ class SyncInboxService {
             .listen((MailConnectionLostEvent event) async {
           _loggingDb.captureEvent(
             event,
-            domain: 'INBOX_SERVICE',
+            domain: 'INBOX',
           );
 
           try {
@@ -282,7 +205,7 @@ class SyncInboxService {
           } catch (e, stackTrace) {
             _loggingDb.captureException(
               e,
-              domain: 'INBOX_SERVICE',
+              domain: 'INBOX',
               subDomain: '_observeInbox',
               stackTrace: stackTrace,
             );
@@ -291,7 +214,7 @@ class SyncInboxService {
           _loggingDb.captureEvent(
             'isConnected: ${_observingClient?.isConnected} '
             'isPolling: ${_observingClient?.isPolling()}',
-            domain: 'INBOX_SERVICE',
+            domain: 'INBOX',
           );
         });
 
@@ -301,12 +224,13 @@ class SyncInboxService {
       debugPrint('High level API failed with $e');
       _loggingDb.captureException(
         e,
-        domain: 'INBOX_SERVICE',
+        domain: 'INBOX',
+        stackTrace: e.stackTrace,
       );
     } catch (e, stackTrace) {
       _loggingDb.captureException(
         e,
-        domain: 'INBOX_SERVICE',
+        domain: 'INBOX',
         subDomain: '_observeInbox',
         stackTrace: stackTrace,
       );

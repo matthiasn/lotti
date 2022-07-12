@@ -51,7 +51,6 @@ class OutboxService {
   }
 
   Future<void> init() async {
-    debugPrint('OutboxService init');
     final syncConfig = await _syncConfigService.getSyncConfig();
 
     final enableSyncOutbox =
@@ -61,7 +60,7 @@ class OutboxService {
       _b64Secret = syncConfig.sharedSecret;
       await enqueueNextSendRequest();
     }
-    debugPrint('OutboxService init $syncConfig $enableSyncOutbox');
+    debugPrint('OutboxService init $enableSyncOutbox');
 
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
       _connectivityResult = result;
@@ -114,7 +113,6 @@ class OutboxService {
   }
 
   Future<void> sendNext() async {
-    debugPrint('sendNext');
     final enableSyncOutbox =
         await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
 
@@ -226,7 +224,6 @@ class OutboxService {
   Future<void> enqueueNextSendRequest({
     Duration delay = const Duration(milliseconds: 1),
   }) async {
-    debugPrint('enqueueNextSendRequest');
     final syncConfig = await _syncConfigService.getSyncConfig();
     final enableSyncOutbox =
         await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);

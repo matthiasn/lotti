@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:enough_mail/enough_mail.dart';
+import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox/read_decrypt.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
+import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 Future<void> processMessage(MimeMessage message) async {
@@ -21,7 +23,6 @@ Future<void> processMessage(MimeMessage message) async {
   final _journalDb = getIt<JournalDb>();
   final _loggingDb = getIt<LoggingDb>();
 
-  final transaction = _loggingDb.startTransaction('processMessage()', 'task');
   try {
     final encryptedMessage = readMessage(message);
     final syncConfig = await _syncConfigService.getSyncConfig();
@@ -84,6 +85,40 @@ Future<void> processMessage(MimeMessage message) async {
       stackTrace: stackTrace,
     );
   }
+}
 
-  await transaction.finish();
+Future<void> fetchByUid({
+  int? uid,
+  ImapClient? imapClient,
+}) async {
+  if (uid != null) {
+    final _loggingDb = getIt<LoggingDb>();
+
+    try {
+      if (imapClient != null) {
+        // odd workaround, prevents intermittent failures on macOS
+        await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+        final res = await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+
+        for (final message in res.messages) {
+          await processMessage(message);
+        }
+        await setLastReadUid(uid);
+      }
+    } on MailException catch (e) {
+      debugPrint('High level API failed with $e');
+      _loggingDb.captureException(
+        e,
+        domain: 'INBOX_SERVICE',
+        subDomain: '_fetchByUid',
+      );
+    } catch (e, stackTrace) {
+      _loggingDb.captureException(
+        e,
+        domain: 'INBOX_SERVICE',
+        subDomain: '_fetchByUid',
+        stackTrace: stackTrace,
+      );
+    }
+  }
 }
