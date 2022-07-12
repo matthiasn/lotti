@@ -19,11 +19,11 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/encryption.dart';
+import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/outbox_imap.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:path_provider/path_provider.dart';
 
 class OutboxService {
@@ -39,6 +39,7 @@ class OutboxService {
 
   late final ClientRunner<int> _clientRunner;
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
+  final FgBgService _fgBgService = getIt<FgBgService>();
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
@@ -68,13 +69,11 @@ class OutboxService {
       }
     });
 
-    if (isMobile) {
-      fgBgSubscription = FGBGEvents.stream.listen((event) {
-        if (event == FGBGType.foreground) {
-          enqueueNextSendRequest();
-        }
-      });
-    }
+    _fgBgService.fgBgStream.listen((foreground) {
+      if (foreground) {
+        enqueueNextSendRequest();
+      }
+    });
 
     Timer.periodic(const Duration(minutes: 1), (timer) async {
       final unprocessed = await getNextItems();

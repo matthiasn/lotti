@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/connectivity.dart';
+import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox/process_message.dart';
 import 'package:lotti/sync/utils.dart';
@@ -30,6 +30,7 @@ class InboxService {
 
   late final ClientRunner<int> _clientRunner;
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
+  final FgBgService _fgBgService = getIt<FgBgService>();
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final VectorClockService _vectorClockService = getIt<VectorClockService>();
@@ -53,14 +54,12 @@ class InboxService {
       return;
     }
 
-    if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) {
-      fgBgSubscription = FGBGEvents.stream.listen((event) {
-        if (event == FGBGType.foreground) {
-          enqueueNextFetchRequest();
-          _observeInbox();
-        }
-      });
-    }
+    _fgBgService.fgBgStream.listen((foreground) {
+      if (foreground) {
+        enqueueNextFetchRequest();
+        _observeInbox();
+      }
+    });
 
     _connectivityService.connectedStream.listen((connected) {
       if (connected) {
