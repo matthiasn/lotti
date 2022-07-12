@@ -219,43 +219,34 @@ class JournalImageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
-      builder: (BuildContext context, AudioPlayerState state) {
-        return Card(
-          color: colorConfig().entryCardColor,
-          elevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: GFListTile(
-              margin: EdgeInsets.zero,
-              padding: const EdgeInsets.only(right: 8),
-              avatar: LimitedBox(
-                maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
-                child: CardImageWidget(
-                  journalImage: item,
-                  height: 160,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              title: SizedBox(
-                height: 160,
-                child: JournalCardTitle(item: item),
-              ),
-              onTap: () {
-                item.mapOrNull(
-                  journalAudio: (JournalAudio audioNote) {
-                    context.read<AudioPlayerCubit>().setAudioNote(audioNote);
-                  },
-                );
-                pushNamedRoute('/journal/${item.meta.id}');
-              },
+    return Card(
+      color: colorConfig().entryCardColor,
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: GFListTile(
+          margin: EdgeInsets.zero,
+          padding: const EdgeInsets.only(right: 8),
+          avatar: LimitedBox(
+            maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
+            child: CardImageWidget(
+              journalImage: item,
+              height: 160,
+              fit: BoxFit.cover,
             ),
           ),
-        );
-      },
+          title: SizedBox(
+            height: 160,
+            child: JournalCardTitle(item: item),
+          ),
+          onTap: () {
+            pushNamedRoute('/journal/${item.meta.id}');
+          },
+        ),
+      ),
     );
   }
 }
