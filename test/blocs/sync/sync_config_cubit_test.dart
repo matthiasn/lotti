@@ -27,7 +27,7 @@ void main() {
 
       getIt
         ..registerSingleton<OutboxService>(mockOutboxService)
-        ..registerSingleton<SyncInboxService>(mockInboxService);
+        ..registerSingleton<InboxService>(mockInboxService);
     });
     tearDown(getIt.reset);
 

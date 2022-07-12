@@ -31,7 +31,7 @@ void main() {
 
       getIt
         ..registerSingleton<OutboxService>(mockOutboxService)
-        ..registerSingleton<SyncInboxService>(mockInboxService)
+        ..registerSingleton<InboxService>(mockInboxService)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
     });
     tearDown(getIt.reset);

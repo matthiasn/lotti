@@ -10,7 +10,7 @@ import 'package:mocktail/mocktail.dart';
 
 class MockSyncConfigService extends Mock implements SyncConfigService {}
 
-class MockSyncInboxService extends Mock implements SyncInboxService {}
+class MockSyncInboxService extends Mock implements InboxService {}
 
 class MockOutboxService extends Mock implements OutboxService {}
 

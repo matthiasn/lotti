@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
@@ -12,13 +11,14 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/client_runner.dart';
+import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox/process_message.dart';
 import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/consts.dart';
 
-class SyncInboxService {
-  SyncInboxService() {
+class InboxService {
+  InboxService() {
     _clientRunner = ClientRunner<int>(
       callback: (event) async {
         await _fetchInbox();
@@ -29,6 +29,7 @@ class SyncInboxService {
   }
 
   late final ClientRunner<int> _clientRunner;
+  final ConnectivityService _connectivityService = getIt<ConnectivityService>();
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final VectorClockService _vectorClockService = getIt<VectorClockService>();
@@ -61,10 +62,8 @@ class SyncInboxService {
       });
     }
 
-    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      _loggingDb.captureEvent('onConnectivityChanged $result', domain: 'INBOX');
-
-      if (result != ConnectivityResult.none) {
+    _connectivityService.connectedStream.listen((connected) {
+      if (connected) {
         enqueueNextFetchRequest();
         _observeInbox();
       }

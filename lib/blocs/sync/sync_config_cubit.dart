@@ -46,7 +46,7 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     await testConnection();
 
     if (imapConfig != null && sharedSecret != null) {
-      await getIt<SyncInboxService>().init();
+      await getIt<InboxService>().init();
       await getIt<OutboxService>().init();
     }
   }

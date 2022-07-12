@@ -13,6 +13,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -62,6 +63,8 @@ class MockHealthImport extends Mock implements HealthImport {}
 class MockSecureStorage extends Mock implements SecureStorage {}
 
 class MockVectorClockService extends Mock implements VectorClockService {}
+
+class MockConnectivityService extends Mock implements ConnectivityService {}
 
 class MockNavService extends Mock implements NavService {}
 

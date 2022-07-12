@@ -9,6 +9,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/outbox_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -29,6 +30,12 @@ void main() {
     final mockVectorClockService = MockVectorClockService();
     final mockJournalDb = MockJournalDb();
 
+    final mockConnectivityService = MockConnectivityService();
+    when(() => mockConnectivityService.connectedStream).thenAnswer(
+      (_) => Stream<bool>.fromIterable([true]),
+    );
+    when(mockConnectivityService.isConnected).thenAnswer((_) async => true);
+
     setUpAll(() async {
       setFakeDocumentsPath();
 
@@ -42,6 +49,7 @@ void main() {
           SyncDatabase(inMemoryDatabase: true),
           dispose: (db) async => db.close(),
         )
+        ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<VectorClockService>(mockVectorClockService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
