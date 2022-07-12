@@ -15,7 +15,9 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/inbox_service.dart';
+import 'package:lotti/sync/connectivity.dart';
+import 'package:lotti/sync/fg_bg.dart';
+import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/outbox_service.dart';
 import 'package:lotti/themes/themes_service.dart';
 
@@ -24,6 +26,8 @@ final getIt = GetIt.instance;
 void registerSingletons() {
   getIt
     ..registerSingleton<JournalDb>(JournalDb())
+    ..registerSingleton<ConnectivityService>(ConnectivityService())
+    ..registerSingleton<FgBgService>(FgBgService())
     ..registerSingleton<ThemesService>(ThemesService())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
@@ -36,7 +40,7 @@ void registerSingletons() {
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
     ..registerSingleton<HealthImport>(HealthImport())
-    ..registerSingleton<SyncInboxService>(SyncInboxService())
+    ..registerSingleton<InboxService>(InboxService())
     ..registerSingleton<LinkService>(LinkService())
     ..registerSingleton<NotificationService>(NotificationService())
     ..registerSingleton<Maintenance>(Maintenance())

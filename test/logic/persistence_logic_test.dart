@@ -13,6 +13,8 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/sync/connectivity.dart';
+import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/outbox_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/themes/themes_service.dart';
@@ -30,9 +32,19 @@ void main() {
   final secureStorageMock = MockSecureStorage();
   setFakeDocumentsPath();
   final mockNotificationService = MockNotificationService();
+  final mockConnectivityService = MockConnectivityService();
+  final mockFgBgService = MockFgBgService();
 
   group('Database Tests - ', () {
     var vcMockNext = '1';
+
+    when(() => mockConnectivityService.connectedStream).thenAnswer(
+      (_) => Stream<bool>.fromIterable([true]),
+    );
+
+    when(() => mockFgBgService.fgBgStream).thenAnswer(
+      (_) => Stream<bool>.fromIterable([true]),
+    );
 
     setUpAll(() async {
       final journalDb = JournalDb(inMemoryDatabase: true);
@@ -56,6 +68,8 @@ void main() {
       when(mockNotificationService.updateBadge).thenAnswer((_) async {});
 
       getIt
+        ..registerSingleton<ConnectivityService>(mockConnectivityService)
+        ..registerSingleton<FgBgService>(mockFgBgService)
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(journalDb)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))

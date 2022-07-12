@@ -4,13 +4,13 @@ import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/services/sync_config_service.dart';
-import 'package:lotti/sync/inbox_service.dart';
+import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSyncConfigService extends Mock implements SyncConfigService {}
 
-class MockSyncInboxService extends Mock implements SyncInboxService {}
+class MockSyncInboxService extends Mock implements InboxService {}
 
 class MockOutboxService extends Mock implements OutboxService {}
 

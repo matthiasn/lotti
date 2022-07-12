@@ -43,9 +43,6 @@ Future<void> saveImageAttachment(
   JournalImage? journalImage,
   String? b64Secret,
 ) async {
-  final loggingDb = getIt<LoggingDb>();
-  final transaction =
-      loggingDb.startTransaction('saveImageAttachment()', 'task');
   final attachments = message.findContentInfo();
 
   for (final attachment in attachments) {
@@ -62,7 +59,6 @@ Future<void> saveImageAttachment(
       await decryptFile(encrypted, File(filePath), b64Secret);
     }
   }
-  await transaction.finish();
 }
 
 Future<void> writeToFile(Uint8List? data, String filePath) async {

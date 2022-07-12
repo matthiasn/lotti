@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
@@ -18,12 +17,13 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/client_runner.dart';
+import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/encryption.dart';
+import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/outbox_imap.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:path_provider/path_provider.dart';
 
 class OutboxService {
@@ -38,8 +38,9 @@ class OutboxService {
   }
 
   late final ClientRunner<int> _clientRunner;
+  final ConnectivityService _connectivityService = getIt<ConnectivityService>();
+  final FgBgService _fgBgService = getIt<FgBgService>();
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
-  ConnectivityResult? _connectivityResult;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   String? _b64Secret;
@@ -51,7 +52,6 @@ class OutboxService {
   }
 
   Future<void> init() async {
-    debugPrint('OutboxService init');
     final syncConfig = await _syncConfigService.getSyncConfig();
 
     final enableSyncOutbox =
@@ -61,28 +61,19 @@ class OutboxService {
       _b64Secret = syncConfig.sharedSecret;
       await enqueueNextSendRequest();
     }
-    debugPrint('OutboxService init $syncConfig $enableSyncOutbox');
+    debugPrint('OutboxService init $enableSyncOutbox');
 
-    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      _connectivityResult = result;
-      debugPrint('Connectivity onConnectivityChanged $result');
-      _loggingDb.captureEvent(
-        'Connectivity onConnectivityChanged $result',
-        domain: 'OUTBOX',
-      );
-
-      if (result != ConnectivityResult.none) {
+    _connectivityService.connectedStream.listen((connected) {
+      if (connected) {
         enqueueNextSendRequest();
       }
     });
 
-    if (isMobile) {
-      fgBgSubscription = FGBGEvents.stream.listen((event) {
-        if (event == FGBGType.foreground) {
-          enqueueNextSendRequest();
-        }
-      });
-    }
+    _fgBgService.fgBgStream.listen((foreground) {
+      if (foreground) {
+        enqueueNextSendRequest();
+      }
+    });
 
     Timer.periodic(const Duration(minutes: 1), (timer) async {
       final unprocessed = await getNextItems();
@@ -90,13 +81,6 @@ class OutboxService {
         await enqueueNextSendRequest();
       }
     });
-  }
-
-  Future<void> reportConnectivity() async {
-    _loggingDb.captureEvent(
-      'reportConnectivity: $_connectivityResult',
-      domain: 'OUTBOX',
-    );
   }
 
   // Inserts a fault 25% of the time, where an exception would
@@ -114,7 +98,6 @@ class OutboxService {
   }
 
   Future<void> sendNext() async {
-    debugPrint('sendNext');
     final enableSyncOutbox =
         await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
 
@@ -125,17 +108,10 @@ class OutboxService {
     _loggingDb.captureEvent('sendNext() start', domain: 'OUTBOX');
 
     try {
-      _connectivityResult = await Connectivity().checkConnectivity();
-      if (_connectivityResult == ConnectivityResult.none) {
-        await reportConnectivity();
-        await enqueueNextSendRequest(delay: const Duration(seconds: 15));
-        return;
-      }
-
       if (_b64Secret != null) {
         // ignore: flutter_style_todos
         // TODO: check why not working reliably on macOS - workaround
-        final networkConnected = _connectivityResult != ConnectivityResult.none;
+        final networkConnected = await _connectivityService.isConnected();
         final clientConnected = prevImapClient?.isConnected ?? false;
 
         if (!clientConnected) {
@@ -226,7 +202,6 @@ class OutboxService {
   Future<void> enqueueNextSendRequest({
     Duration delay = const Duration(milliseconds: 1),
   }) async {
-    debugPrint('enqueueNextSendRequest');
     final syncConfig = await _syncConfigService.getSyncConfig();
     final enableSyncOutbox =
         await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);

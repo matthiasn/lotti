@@ -23,6 +23,7 @@ class CardImageWidget extends StatefulWidget {
 
 class _CardImageWidgetState extends State<CardImageWidget> {
   Directory? docDir;
+  int retries = 0;
 
   @override
   void initState() {
@@ -38,10 +39,23 @@ class _CardImageWidgetState extends State<CardImageWidget> {
   @override
   Widget build(BuildContext context) {
     if (docDir != null) {
-      final  file =
+      final file =
           File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
 
+      if (retries < 10 && !file.existsSync()) {
+        Future<void>.delayed(const Duration(milliseconds: 200)).then((_) {
+          setState(() {
+            retries++;
+          });
+        });
+      }
+
+      if (!file.existsSync()) {
+        return Container();
+      }
+
       return Container(
+        key: Key('${file.path}-$retries'),
         color: Colors.black,
         height: widget.height.toDouble(),
         child: Image.file(
