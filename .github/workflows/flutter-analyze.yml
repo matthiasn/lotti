@@ -1,4 +1,4 @@
-name: Flutter Test
+name: Flutter Analyze
 
 on:
   push:
@@ -17,7 +17,5 @@ jobs:
         with:
           flutter-version: '3.0.2'
           channel: 'stable'
-      - name: Run Flutter tests
-        run: make clean_test
-      - name: Run Flutter bundle
-        run: make bundle
+      - name: Run Flutter Analyze
+        run: make clean_build_analyze
