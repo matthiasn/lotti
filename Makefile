@@ -234,7 +234,10 @@ viz:
 	open classes.viz.png
 
 .PHONY: clean_test
-clean_test: clean deps l10n build_runner test analyze
+clean_test: clean deps l10n build_runner test
+
+.PHONY: clean_build_analyze
+clean_build_analyze: clean deps l10n build_runner analyze
 
 .PHONY: clean_integration_test
 clean_integration_test: clean deps build_runner integration_test
