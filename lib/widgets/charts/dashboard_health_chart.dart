@@ -183,6 +183,11 @@ class HealthChartInfoWidget extends StatelessWidget {
     return BlocBuilder<HealthChartInfoCubit, HealthChartInfoState>(
       builder: (BuildContext context, HealthChartInfoState state) {
         final selected = state.selected;
+        final healthType = healthTypes[chartConfig.healthType];
+
+        final valueLabel = healthType?.hoursMinutes ?? false
+            ? hoursToHhMm(selected?.value ?? 0)
+            : ' ${NumberFormat('#,###.##').format(selected?.value ?? 0)}';
 
         return Positioned(
           top: -1,
@@ -195,8 +200,7 @@ class HealthChartInfoWidget extends StatelessWidget {
                 children: [
                   const Spacer(),
                   Text(
-                    healthTypes[chartConfig.healthType]?.displayName ??
-                        chartConfig.healthType,
+                    healthType?.displayName ?? chartConfig.healthType,
                     style: chartTitleStyle(),
                   ),
                   if (selected != null) ...[
@@ -210,7 +214,7 @@ class HealthChartInfoWidget extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      ' ${NumberFormat('#,###.##').format(selected.value)}',
+                      ' $valueLabel',
                       style: chartTitleStyle().copyWith(
                         fontWeight: FontWeight.bold,
                       ),
