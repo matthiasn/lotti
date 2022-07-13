@@ -82,6 +82,8 @@
   "journalTagsRemoveHint": "Remove tag",
   "journalToolbarSaveHint": "Save entry",
   "journalUnlinkText": "Unlink entry",
+  "journalUnlinkQuestion": "Are you sure you want to unlink this entry?",
+  "journalUnlinkConfirm": "YES, UNLINK ENTRY",
   "maintenanceCancelNotifications": "Cancel all notifications",
   "maintenanceDeleteEditorDb": "Delete editor drafts database",
   "maintenanceDeleteLoggingDb": "Delete logging database",

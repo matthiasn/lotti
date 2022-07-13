@@ -1,3 +1,4 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
@@ -55,15 +56,36 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                 (int index) {
                   final itemId = itemIds.elementAt(index);
 
-                  void onDismissed(DismissDirection _) {
-                    final fromId = widget.itemId;
-                    final toId = itemId;
-                    _db.removeLink(fromId: fromId, toId: toId);
+                  Future<void> onDismissed(DismissDirection _) async {
+                    await _db.removeLink(
+                      fromId: widget.itemId,
+                      toId: itemId,
+                    );
+                  }
+
+                  Future<bool> confirmDismiss(DismissDirection _) async {
+                    const unlinkKey = 'unlinkKey';
+                    final result = await showModalActionSheet<String>(
+                      context: context,
+                      title: localizations.journalUnlinkQuestion,
+                      actions: [
+                        SheetAction(
+                          icon: Icons.warning,
+                          label: localizations.journalUnlinkConfirm,
+                          key: unlinkKey,
+                          isDestructiveAction: true,
+                          isDefaultAction: true,
+                        ),
+                      ],
+                    );
+
+                    return result == unlinkKey;
                   }
 
                   return Dismissible(
                     key: ValueKey('Dismissible-$itemId'),
                     onDismissed: onDismissed,
+                    confirmDismiss: confirmDismiss,
                     background: ColoredBox(
                       color: colorConfig().error,
                       child: Row(
