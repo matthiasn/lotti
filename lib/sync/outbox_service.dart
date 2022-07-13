@@ -43,7 +43,6 @@ class OutboxService {
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
-  String? _b64Secret;
   late final StreamSubscription<FGBGType> fgBgSubscription;
   ImapClient? prevImapClient;
 
@@ -58,7 +57,6 @@ class OutboxService {
         await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
 
     if (syncConfig != null && enableSyncOutbox) {
-      _b64Secret = syncConfig.sharedSecret;
       await enqueueNextSendRequest();
     }
     debugPrint('OutboxService init $enableSyncOutbox');
@@ -98,90 +96,103 @@ class OutboxService {
   }
 
   Future<void> sendNext() async {
+    final syncConfig = await _syncConfigService.getSyncConfig();
+    final b64Secret = syncConfig?.sharedSecret;
+
     final enableSyncOutbox =
         await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
 
     if (!enableSyncOutbox) {
+      _loggingDb.captureEvent(
+        'sync not enabled',
+        domain: 'OUTBOX',
+        subDomain: 'sendNext()',
+      );
+      return;
+    }
+
+    if (b64Secret == null) {
+      _loggingDb.captureEvent(
+        'sync config does not exist',
+        domain: 'OUTBOX',
+        subDomain: 'sendNext()',
+      );
       return;
     }
 
     _loggingDb.captureEvent('sendNext() start', domain: 'OUTBOX');
 
     try {
-      if (_b64Secret != null) {
-        // ignore: flutter_style_todos
-        // TODO: check why not working reliably on macOS - workaround
-        final networkConnected = await _connectivityService.isConnected();
-        final clientConnected = prevImapClient?.isConnected ?? false;
+      final networkConnected = await _connectivityService.isConnected();
+      final clientConnected = prevImapClient?.isConnected ?? false;
 
-        if (!clientConnected) {
-          prevImapClient = null;
-        }
+      if (!clientConnected) {
+        prevImapClient = null;
+      }
 
-        if (networkConnected) {
-          final unprocessed = await getNextItems();
-          if (unprocessed.isNotEmpty) {
-            final nextPending = unprocessed.first;
-            try {
-              final encryptedMessage = await encryptString(
-                b64Secret: _b64Secret!,
-                plainText: nextPending.message,
-              );
+      if (networkConnected) {
+        final unprocessed = await getNextItems();
+        if (unprocessed.isNotEmpty) {
+          final nextPending = unprocessed.first;
+          try {
+            final encryptedMessage = await encryptString(
+              b64Secret: b64Secret,
+              plainText: nextPending.message,
+            );
 
-              final filePath = nextPending.filePath;
-              String? encryptedFilePath;
+            final filePath = nextPending.filePath;
+            String? encryptedFilePath;
 
-              if (filePath != null) {
-                final docDir = await getApplicationDocumentsDirectory();
-                final encryptedFile =
-                    File('${docDir.path}${nextPending.filePath}.aes');
-                final attachment = File(insertFault('${docDir.path}$filePath'));
-                await encryptFile(attachment, encryptedFile, _b64Secret!);
-                encryptedFilePath = encryptedFile.path;
-              }
+            if (filePath != null) {
+              final docDir = await getApplicationDocumentsDirectory();
+              final encryptedFile =
+                  File('${docDir.path}${nextPending.filePath}.aes');
+              final attachment = File(insertFault('${docDir.path}$filePath'));
+              await encryptFile(attachment, encryptedFile, b64Secret);
+              encryptedFilePath = encryptedFile.path;
+            }
 
-              final successfulClient = await persistImap(
-                encryptedFilePath: encryptedFilePath,
-                subject: nextPending.subject,
-                encryptedMessage: encryptedMessage,
-                prevImapClient: prevImapClient,
-              );
-              if (successfulClient != null) {
-                await _syncDatabase.updateOutboxItem(
-                  OutboxCompanion(
-                    id: Value(nextPending.id),
-                    status: Value(OutboxStatus.sent.index),
-                    updatedAt: Value(DateTime.now()),
-                  ),
-                );
-                if (unprocessed.length > 1) {
-                  await enqueueNextSendRequest();
-                }
-              } else {
-                await enqueueNextSendRequest(
-                  delay: const Duration(seconds: 15),
-                );
-              }
-              prevImapClient = successfulClient;
-              _loggingDb.captureEvent('sendNext() done', domain: 'OUTBOX');
-            } catch (e) {
+            final successfulClient = await persistImap(
+              encryptedFilePath: encryptedFilePath,
+              subject: nextPending.subject,
+              encryptedMessage: encryptedMessage,
+              prevImapClient: prevImapClient,
+            );
+            if (successfulClient != null) {
               await _syncDatabase.updateOutboxItem(
                 OutboxCompanion(
                   id: Value(nextPending.id),
-                  status: Value(
-                    nextPending.retries < 10
-                        ? OutboxStatus.pending.index
-                        : OutboxStatus.error.index,
-                  ),
-                  retries: Value(nextPending.retries + 1),
+                  status: Value(OutboxStatus.sent.index),
                   updatedAt: Value(DateTime.now()),
                 ),
               );
-              await prevImapClient?.disconnect();
-              // ignore: unnecessary_statements
-              prevImapClient == null;
-              await enqueueNextSendRequest(delay: const Duration(seconds: 15));
+              if (unprocessed.length > 1) {
+                await enqueueNextSendRequest();
+              }
+            } else {
+              await enqueueNextSendRequest(
+                delay: const Duration(seconds: 15),
+              );
             }
+            prevImapClient = successfulClient;
+            _loggingDb.captureEvent('sendNext() done', domain: 'OUTBOX');
+          } catch (e) {
+            await _syncDatabase.updateOutboxItem(
+              OutboxCompanion(
+                id: Value(nextPending.id),
+                status: Value(
+                  nextPending.retries < 10
+                      ? OutboxStatus.pending.index
+                      : OutboxStatus.error.index,
+                ),
+                retries: Value(nextPending.retries + 1),
+                updatedAt: Value(DateTime.now()),
+              ),
+            );
+            await prevImapClient?.disconnect();
+            // ignore: unnecessary_statements
+            prevImapClient == null;
+            await enqueueNextSendRequest(delay: const Duration(seconds: 15));
           }
         }
       }
