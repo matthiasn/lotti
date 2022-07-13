@@ -1,10 +1,9 @@
 import 'dart:core';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-List<Observation> aggregateStoryDailyTimeSum(
+List<MeasuredObservation> aggregateStoryDailyTimeSum(
   List<JournalEntity?> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
@@ -29,10 +28,10 @@ List<Observation> aggregateStoryDailyTimeSum(
     minutesByDay[dayString] = n + duration;
   }
 
-  final aggregated = <Observation>[];
+  final aggregated = <MeasuredObservation>[];
   for (final dayString in minutesByDay.keys) {
     final day = DateTime.parse(dayString);
-    aggregated.add(Observation(day, minutesByDay[dayString] ?? 0));
+    aggregated.add(MeasuredObservation(day, minutesByDay[dayString] ?? 0));
   }
 
   return aggregated;

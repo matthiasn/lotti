@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Improved time chart
+
+## [0.8.102] - 2022-07-12
+### Changed:
 - Simplified & cleaner Inbox Service
 
 ## [0.8.101] - 2022-07-11
