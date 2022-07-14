@@ -120,7 +120,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
                       domainAxis: timeSeriesAxis,
                       primaryMeasureAxis: const charts.NumericAxisSpec(
                         tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
-                          hoursToHhMm,
+                          minutesToHhMm,
                         ),
                         tickProviderSpec: charts.BasicNumericTickProviderSpec(
                           zeroBound: true,
@@ -155,7 +155,7 @@ class InfoWidget extends StatelessWidget {
     return BlocBuilder<StoryChartInfoCubit, StoryChartInfoState>(
       builder: (BuildContext context, StoryChartInfoState state) {
         final selected = state.selected;
-        final duration = hoursToHhMm(selected?.value ?? 0);
+        final duration = minutesToHhMm(selected?.value ?? 0);
 
         return Positioned(
           top: 0,

@@ -5,8 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Duration display as absolute value
+
+## [0.8.105] - 2022-07-14
 ### Added:
 - Confirmation dialog when unlinking entry
+
+## [0.8.104] - 2022-07-13
+### Changed:
+- Improved logging in sync
 
 ## [0.8.103] - 2022-07-13
 ### Changed:
