@@ -1,9 +1,8 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -119,13 +118,28 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
             child: IconButton(
               padding: const EdgeInsets.all(48),
               onPressed: () {
-                getIt<AppRouter>().pop();
+                Navigator.of(context, rootNavigator: true).pop();
                 focusNode.requestFocus();
               },
-              icon: const Icon(
-                MdiIcons.close,
-                size: 48,
-                color: Colors.red,
+              icon: Stack(
+                children: [
+                  ImageFiltered(
+                    imageFilter: ImageFilter.blur(
+                      sigmaX: 12,
+                      sigmaY: 12,
+                    ),
+                    child: const Icon(
+                      MdiIcons.close,
+                      size: 32,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const Icon(
+                    MdiIcons.close,
+                    size: 32,
+                    color: Colors.white,
+                  ),
+                ],
               ),
             ),
           ),
