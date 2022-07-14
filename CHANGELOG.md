@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Close photo button closes fullscreen photo
+
+### Changed:
+- Better close photo icon, in white with black shadow
+
+## [0.8.106] - 2022-07-14
+### Fixed:
 - Duration display as absolute value
 
 ## [0.8.105] - 2022-07-14
