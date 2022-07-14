@@ -156,6 +156,11 @@ class DashboardItem with _$DashboardItem {
     required String color,
   }) = DashboardStoryTimeItem;
 
+  factory DashboardItem.wildcardStoryTimeChart({
+    required String storySubstring,
+    required String color,
+  }) = WildcardStoryTimeItem;
+
   factory DashboardItem.fromJson(Map<String, dynamic> json) =>
       _$DashboardItemFromJson(json);
 }

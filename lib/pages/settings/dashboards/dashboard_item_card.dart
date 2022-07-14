@@ -52,6 +52,9 @@ class DashboardItemCard extends StatelessWidget {
         final tagEntity = tagsService.getTagById(item.storyTagId);
         return tagEntity?.tag ?? item.storyTagId;
       },
+      wildcardStoryTimeChart: (WildcardStoryTimeItem value) {
+        return value.storySubstring;
+      },
     );
 
     return Card(
@@ -111,6 +114,11 @@ class DashboardItemCard extends StatelessWidget {
           ),
           storyTimeChart: (_) => Icon(
             MdiIcons.bookOutline,
+            size: 32,
+            color: colorConfig().entryTextColor,
+          ),
+          wildcardStoryTimeChart: (_) => Icon(
+            MdiIcons.bookshelf,
             size: 32,
             color: colorConfig().entryTextColor,
           ),
