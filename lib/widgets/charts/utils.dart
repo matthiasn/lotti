@@ -163,11 +163,13 @@ String formatDuration(Duration dur) {
 }
 
 String minutesToHhMm(num? minutes) {
-  final dur = Duration(minutes: minutes?.ceil() ?? 0);
+  final value = minutes ?? 0;
+  final seconds = value * 60;
+  final dur = Duration(seconds: seconds.floor());
   return formatDuration(dur);
 }
 
 String hoursToHhMm(num? hours) {
-  final minutes = hours != null ? (hours * 60).ceil() : 0;
-  return minutesToHhMm(minutes);
+  final value = hours ?? 0;
+  return minutesToHhMm(value * 60);
 }
