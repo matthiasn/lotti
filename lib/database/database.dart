@@ -306,6 +306,20 @@ class JournalDb extends _$JournalDb {
     ).watch().where(makeDuplicateFilter()).map(entityStreamMapper);
   }
 
+  Stream<List<JournalEntity>> watchJournalByTagIds({
+    required List<String> tagIds,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    int limit = 10000,
+  }) {
+    return filteredByTaggedWithIds(
+      tagIds,
+      rangeStart,
+      rangeEnd,
+      limit,
+    ).watch().where(makeDuplicateFilter()).map(entityStreamMapper);
+  }
+
   Stream<List<JournalEntity>> watchTasks({
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
@@ -755,6 +769,16 @@ class JournalDb extends _$JournalDb {
     return (await matchingTagEntities('%$match%', inactive, limit).get())
         .map(fromTagDbEntity)
         .toList();
+  }
+
+  Stream<List<TagEntity>> watchMatchingTags(
+    String match, {
+    int limit = 10,
+    bool inactive = false,
+  }) {
+    return matchingTagEntities('%$match%', inactive, limit).watch().map(
+          (dbEntities) => dbEntities.map(fromTagDbEntity).toList(),
+        );
   }
 
   Future<int> resolveConflict(Conflict conflict) {

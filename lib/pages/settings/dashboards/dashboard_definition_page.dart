@@ -25,6 +25,7 @@ import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -126,6 +127,19 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
         });
       }
     }
+  }
+
+  void addWildcardStoryItem(String storySubstring) {
+    setState(() {
+      dashboardItems.add(
+        WildcardStoryTimeItem(
+          storySubstring: storySubstring,
+          color: '#0000FF',
+        ),
+      );
+
+      dirty = true;
+    });
   }
 
   void updateItem(DashboardItem item, int index) {
@@ -248,6 +262,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
               workoutChart: (_) {},
               surveyChart: (_) {},
               storyTimeChart: (_) {},
+              wildcardStoryTimeChart: (_) {},
             );
           }
           await Clipboard.setData(
@@ -449,6 +464,50 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             title: localizations.dashboardAddStoryTitle,
                             buttonText: localizations.dashboardAddStoryButton,
                             iconData: MdiIcons.watch,
+                          ),
+                          const SizedBox(height: 16),
+                          Button(
+                            'Add story containing substring',
+                            onPressed: () {
+                              showModalBottomSheet<void>(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: colorConfig().bodyBgColor,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(16),
+                                  ),
+                                ),
+                                clipBehavior: Clip.antiAliasWithSaveLayer,
+                                builder: (BuildContext context) {
+                                  final controller = TextEditingController();
+                                  return Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 2,
+                                          horizontal: 32,
+                                        ),
+                                        child: TextField(
+                                          controller: controller,
+                                          style: TextStyle(
+                                            color: colorConfig().entryTextColor,
+                                          ),
+                                        ),
+                                      ),
+                                      Button(
+                                        'Add story match',
+                                        onPressed: () async {
+                                          addWildcardStoryItem(controller.text);
+                                          await context.router.pop();
+                                        },
+                                      )
+                                    ],
+                                  );
+                                },
+                              );
+                            },
                           ),
                           Padding(
                             padding: const EdgeInsets.only(top: 16),

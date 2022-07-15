@@ -12,10 +12,11 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/dashboard_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
-import 'package:lotti/widgets/charts/dashboard_story_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
+import 'package:lotti/widgets/charts/stories/dashboard_story_chart.dart';
+import 'package:lotti/widgets/charts/stories/wildcard_story_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -144,6 +145,14 @@ class _DashboardPageState extends State<DashboardPage> {
                         },
                         storyTimeChart: (DashboardStoryTimeItem storyChart) {
                           return DashboardStoryChart(
+                            chartConfig: storyChart,
+                            rangeStart: rangeStart,
+                            rangeEnd: rangeEnd,
+                          );
+                        },
+                        wildcardStoryTimeChart:
+                            (WildcardStoryTimeItem storyChart) {
+                          return WildcardStoryChart(
                             chartConfig: storyChart,
                             rangeStart: rangeStart,
                             rangeEnd: rangeEnd,
