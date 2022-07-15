@@ -186,7 +186,7 @@ class InboxService {
         _observingClient?.eventBus
             .on<MailLoadEvent>()
             .listen((MailLoadEvent event) async {
-          await fetchByUid(uid: event.message.uid, imapClient: imapClient);
+          enqueueNextFetchRequest();
         });
 
         _observingClient?.eventBus
