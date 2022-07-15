@@ -82,12 +82,17 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
           return const SizedBox.shrink();
         }
 
-        return Container(
-          height: 200,
+        return ColoredBox(
           color: colorConfig().bodyBgColor,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 24,
+              bottom: 40,
+            ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Row(
                   children: [
