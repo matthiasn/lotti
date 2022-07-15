@@ -15,11 +15,13 @@ Future<void> saveAudioAttachment(
   JournalAudio? journalAudio,
   String? b64Secret,
 ) async {
-  final loggingDb = getIt<LoggingDb>();
-
-  final transaction =
-      loggingDb.startTransaction('saveAudioAttachment()', 'task');
   final attachments = message.findContentInfo();
+
+  getIt<LoggingDb>().captureEvent(
+    'start',
+    domain: 'INBOX',
+    subDomain: 'saveAudioAttachment',
+  );
 
   for (final attachment in attachments) {
     final attachmentMimePart = message.getPart(attachment.fetchId);
@@ -31,11 +33,24 @@ Future<void> saveAudioAttachment(
       await File(filePath).parent.create(recursive: true);
       final encrypted = File('$filePath.aes');
       debugPrint('saveAttachment $filePath');
+
+      getIt<LoggingDb>().captureEvent(
+        'saving $filePath',
+        domain: 'INBOX',
+        subDomain: 'saveAudioAttachment',
+      );
+
       await writeToFile(bytes, encrypted.path);
+
+      getIt<LoggingDb>().captureEvent(
+        'wrote $filePath',
+        domain: 'INBOX',
+        subDomain: 'saveAudioAttachment',
+      );
+
       await decryptFile(encrypted, File(filePath), b64Secret);
     }
   }
-  await transaction.finish();
 }
 
 Future<void> saveImageAttachment(
@@ -44,6 +59,12 @@ Future<void> saveImageAttachment(
   String? b64Secret,
 ) async {
   final attachments = message.findContentInfo();
+
+  getIt<LoggingDb>().captureEvent(
+    'start',
+    domain: 'INBOX',
+    subDomain: 'saveImageAttachment',
+  );
 
   for (final attachment in attachments) {
     final attachmentMimePart = message.getPart(attachment.fetchId);
@@ -55,7 +76,21 @@ Future<void> saveImageAttachment(
       await File(filePath).parent.create(recursive: true);
       final encrypted = File('$filePath.aes');
       debugPrint('saveAttachment $filePath');
+
+      getIt<LoggingDb>().captureEvent(
+        'saving $filePath',
+        domain: 'INBOX',
+        subDomain: 'saveImageAttachment',
+      );
+
       await writeToFile(bytes, encrypted.path);
+
+      getIt<LoggingDb>().captureEvent(
+        'wrote $filePath',
+        domain: 'INBOX',
+        subDomain: 'saveImageAttachment',
+      );
+
       await decryptFile(encrypted, File(filePath), b64Secret);
     }
   }
@@ -66,5 +101,11 @@ Future<void> writeToFile(Uint8List? data, String filePath) async {
     await File(filePath).writeAsBytes(data);
   } else {
     debugPrint('No bytes for $filePath');
+
+    getIt<LoggingDb>().captureEvent(
+      'No bytes for $filePath',
+      domain: 'INBOX',
+      subDomain: 'writeToFile',
+    );
   }
 }
