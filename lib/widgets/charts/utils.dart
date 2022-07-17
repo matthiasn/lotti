@@ -3,7 +3,10 @@ import 'dart:math';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 
 class MeasuredObservation {
   MeasuredObservation(this.dateTime, this.value);
@@ -158,18 +161,40 @@ String padLeft(num value) {
   return value.toString().padLeft(2, '0');
 }
 
-String formatDuration(Duration dur) {
+String formatHhMm(Duration dur) {
   return '${padLeft(dur.inHours)}:${padLeft(dur.inMinutes.remainder(60))}';
 }
 
-String minutesToHhMm(num? minutes) {
+String formatHhMmSs(Duration dur) {
+  return '${padLeft(dur.inHours)}:'
+      '${padLeft(dur.inMinutes.remainder(60))}:'
+      '${padLeft(dur.inSeconds.remainder(60))}';
+}
+
+Duration durationFromMinutes(num? minutes) {
   final value = minutes ?? 0;
   final seconds = value * 60;
-  final dur = Duration(seconds: seconds.floor());
-  return formatDuration(dur);
+  return Duration(seconds: seconds.floor());
+}
+
+String minutesToHhMm(num? minutes) {
+  return formatHhMm(durationFromMinutes(minutes));
+}
+
+String minutesToHhMmSs(num? minutes) {
+  return formatHhMmSs(durationFromMinutes(minutes));
 }
 
 String hoursToHhMm(num? hours) {
   final value = hours ?? 0;
   return minutesToHhMm(value * 60);
+}
+
+String formatDailyAggregate(
+  DashboardWorkoutItem chartConfig,
+  Observation selected,
+) {
+  return chartConfig.displayName.contains('time')
+      ? minutesToHhMmSs(selected.value)
+      : NumberFormat('#,###').format(selected.value);
 }

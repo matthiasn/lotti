@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/widgets/charts/dashboard_health_data.dart';
+import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 void main() {
@@ -63,6 +65,33 @@ void main() {
       expect(
         minutesToHhMm(null),
         '00:00',
+      );
+    });
+
+    test('Minutes are nullable, returning 00:00:00', () {
+      expect(
+        minutesToHhMmSs(null),
+        '00:00:00',
+      );
+    });
+
+    test('formatDailyAggregate for time type', () {
+      expect(
+        formatDailyAggregate(
+          workoutTypes['walking.duration']!,
+          Observation(DateTime(2022, 07, 17), 42.1),
+        ),
+        '00:42:06',
+      );
+    });
+
+    test('formatDailyAggregate for other type', () {
+      expect(
+        formatDailyAggregate(
+          workoutTypes['walking.calories']!,
+          Observation(DateTime(2022, 07, 17), 42.1),
+        ),
+        '42',
       );
     });
   });

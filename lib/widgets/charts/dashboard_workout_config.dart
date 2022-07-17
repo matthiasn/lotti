@@ -4,7 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 
 Map<String, DashboardWorkoutItem> workoutTypes = {
   'walking.duration': DashboardWorkoutItem(
-    displayName: 'Walking minutes',
+    displayName: 'Walking time',
     workoutType: 'walking',
     color: '#0000FF',
     valueType: WorkoutValueType.duration,
@@ -16,13 +16,13 @@ Map<String, DashboardWorkoutItem> workoutTypes = {
     valueType: WorkoutValueType.energy,
   ),
   'walking.distance': DashboardWorkoutItem(
-    displayName: 'Walking distance/km',
+    displayName: 'Walking distance/m',
     workoutType: 'walking',
     color: '#0000FF',
     valueType: WorkoutValueType.distance,
   ),
   'running.duration': DashboardWorkoutItem(
-    displayName: 'Running minutes',
+    displayName: 'Running time',
     workoutType: 'running',
     color: '#0000FF',
     valueType: WorkoutValueType.duration,
@@ -34,13 +34,13 @@ Map<String, DashboardWorkoutItem> workoutTypes = {
     valueType: WorkoutValueType.energy,
   ),
   'running.distance': DashboardWorkoutItem(
-    displayName: 'Running distance/km',
+    displayName: 'Running distance/m',
     workoutType: 'running',
     color: '#0000FF',
     valueType: WorkoutValueType.distance,
   ),
   'swimming.duration': DashboardWorkoutItem(
-    displayName: 'Swimming minutes',
+    displayName: 'Swimming time',
     workoutType: 'swimming',
     color: '#0000FF',
     valueType: WorkoutValueType.duration,
@@ -52,13 +52,13 @@ Map<String, DashboardWorkoutItem> workoutTypes = {
     valueType: WorkoutValueType.energy,
   ),
   'swimming.distance': DashboardWorkoutItem(
-    displayName: 'Swimming distance/km',
+    displayName: 'Swimming distance/m',
     workoutType: 'swimming',
     color: '#0000FF',
     valueType: WorkoutValueType.distance,
   ),
   'functionalStrengthTraining.duration': DashboardWorkoutItem(
-    displayName: 'Functional strength training minutes',
+    displayName: 'Functional strength training time',
     workoutType: 'functionalStrengthTraining',
     color: '#0000FF',
     valueType: WorkoutValueType.duration,
