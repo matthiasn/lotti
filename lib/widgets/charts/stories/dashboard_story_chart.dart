@@ -155,7 +155,7 @@ class InfoWidget extends StatelessWidget {
     return BlocBuilder<StoryChartInfoCubit, StoryChartInfoState>(
       builder: (BuildContext context, StoryChartInfoState state) {
         final selected = state.selected;
-        final duration = minutesToHhMm(selected?.value ?? 0);
+        final duration = minutesToHhMmSs(selected?.value ?? 0);
 
         return Positioned(
           top: 0,

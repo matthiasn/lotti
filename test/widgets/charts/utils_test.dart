@@ -65,5 +65,12 @@ void main() {
         '00:00',
       );
     });
+
+    test('Minutes are nullable, returning 00:00:00', () {
+      expect(
+        minutesToHhMmSs(null),
+        '00:00:00',
+      );
+    });
   });
 }
