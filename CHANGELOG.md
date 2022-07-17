@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Time format hh:mm:ss in time charts for aggregate of selected day
+- Time format hh:mm:ss in workout charts for aggregate of selected day
 
 ## [0.8.110] - 2022-07-15
 ### Added:

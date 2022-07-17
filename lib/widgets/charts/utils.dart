@@ -3,7 +3,10 @@ import 'dart:math';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 
 class MeasuredObservation {
   MeasuredObservation(this.dateTime, this.value);
@@ -185,4 +188,13 @@ String minutesToHhMmSs(num? minutes) {
 String hoursToHhMm(num? hours) {
   final value = hours ?? 0;
   return minutesToHhMm(value * 60);
+}
+
+String formatDailyAggregate(
+  DashboardWorkoutItem chartConfig,
+  Observation selected,
+) {
+  return chartConfig.displayName.contains('time')
+      ? minutesToHhMmSs(selected.value)
+      : NumberFormat('#,###').format(selected.value);
 }

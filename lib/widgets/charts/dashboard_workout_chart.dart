@@ -3,7 +3,6 @@ import 'dart:core';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/blocs/charts/workout_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -176,7 +175,7 @@ class WorkoutChartInfoWidget extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      ' ${NumberFormat('#,###.##').format(selected.value)}',
+                      ' ${formatDailyAggregate(chartConfig, selected)}',
                       style: chartTitleStyle().copyWith(
                         fontWeight: FontWeight.bold,
                       ),
