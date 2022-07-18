@@ -307,16 +307,14 @@ class JournalDb extends _$JournalDb {
   }
 
   Stream<List<JournalEntity>> watchJournalByTagIds({
-    required List<String> tagIds,
+    required String match,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-    int limit = 10000,
   }) {
-    return filteredByTaggedWithIds(
-      tagIds,
+    return filteredByTagMatch(
+      '%$match%',
       rangeStart,
       rangeEnd,
-      limit,
     ).watch().where(makeDuplicateFilter()).map(entityStreamMapper);
   }
 
