@@ -372,6 +372,6 @@ final testDurationEntry5 = JournalEntry(
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
     dateFrom: DateTime(2022, 7, 2, 22),
-    dateTo: DateTime(2022, 7, 3, 1),
+    dateTo: DateTime(2022, 7, 5, 1),
   ),
 );

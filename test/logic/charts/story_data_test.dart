@@ -8,6 +8,86 @@ import '../../journal_test_data/test_data.dart';
 void main() {
   group('Story data tests - ', () {
     test(
+      'daysInRange for range for week',
+      () {
+        expect(
+          daysInRange(DateTime(2022, 7, 1), DateTime(2022, 7, 7)),
+          [
+            '2022-07-01',
+            '2022-07-02',
+            '2022-07-03',
+            '2022-07-04',
+            '2022-07-05',
+            '2022-07-06',
+          ],
+        );
+      },
+    );
+
+    test(
+      'daysInRange for single day',
+      () {
+        expect(
+          daysInRange(DateTime(2022, 7, 1), DateTime(2022, 7, 2, 1)),
+          [
+            '2022-07-01',
+          ],
+        );
+      },
+    );
+
+    test(
+      'daysInRange for longer entry',
+      () {
+        expect(
+          daysInEntryRange(
+            testDurationEntry5.meta.dateFrom,
+            testDurationEntry5.meta.dateTo,
+          ),
+          [
+            '2022-07-02',
+            '2022-07-03',
+            '2022-07-04',
+            '2022-07-05',
+          ],
+        );
+      },
+    );
+
+    test(
+      'durationsByDayInRange for short entry',
+      () {
+        expect(
+          durationsByDayInRange(
+            testDurationEntry1.meta.dateFrom,
+            testDurationEntry1.meta.dateTo,
+          ),
+          {
+            '2022-07-03': 60.0,
+          },
+        );
+      },
+    );
+
+    test(
+      'durationsByDayInRange for longer entry',
+      () {
+        expect(
+          durationsByDayInRange(
+            testDurationEntry5.meta.dateFrom,
+            testDurationEntry5.meta.dateTo,
+          ),
+          {
+            '2022-07-02': 120.0,
+            '2022-07-03': 1440.0,
+            '2022-07-04': 1440.0,
+            '2022-07-05': 60.0
+          },
+        );
+      },
+    );
+
+    test(
       'daily aggregates in range created for empty data',
       () {
         expect(
@@ -63,13 +143,15 @@ void main() {
               testDurationEntry5,
             ],
             rangeStart: DateTime(2022, 7, 1),
-            rangeEnd: DateTime(2022, 7, 4),
+            rangeEnd: DateTime(2022, 7, 6),
             timeframe: AggregationTimeframe.daily,
           ),
           [
             MeasuredObservation(DateTime(2022, 7, 1), 60.0),
             MeasuredObservation(DateTime(2022, 7, 2), 240.0),
-            MeasuredObservation(DateTime(2022, 7, 3), 60.0),
+            MeasuredObservation(DateTime(2022, 7, 3), 1440.0),
+            MeasuredObservation(DateTime(2022, 7, 4), 1440.0),
+            MeasuredObservation(DateTime(2022, 7, 5), 60.0),
           ],
         );
       },
