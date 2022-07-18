@@ -8,9 +8,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/charts/story_data.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/charts/stories/dashboard_story_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class WildcardStoryChart extends StatefulWidget {
@@ -52,19 +52,16 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
           match: subString,
           rangeStart: widget.rangeStart,
           rangeEnd: widget.rangeEnd,
-//              tagIds: tagIds,
         ),
         builder: (
           BuildContext context,
           AsyncSnapshot<List<JournalEntity?>> snapshot,
         ) {
-          final items = snapshot.data ?? [];
-          //debugPrint('$items');
-
-          final data = aggregateStoryDailyTimeSum(
-            items,
+          final data = aggregateStoryTimeSum(
+            snapshot.data ?? [],
             rangeStart: widget.rangeStart,
             rangeEnd: widget.rangeEnd,
+            timeframe: AggregationTimeframe.daily,
           );
 
           final seriesList = [

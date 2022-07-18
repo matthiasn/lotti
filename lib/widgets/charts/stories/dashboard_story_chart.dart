@@ -8,9 +8,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/charts/story_data.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/charts/stories/dashboard_story_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardStoryChart extends StatefulWidget {
@@ -60,10 +60,11 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
         ) {
           final items = snapshot.data ?? [];
 
-          final data = aggregateStoryDailyTimeSum(
+          final data = aggregateStoryTimeSum(
             items,
             rangeStart: widget.rangeStart,
             rangeEnd: widget.rangeEnd,
+            timeframe: AggregationTimeframe.daily,
           );
 
           final seriesList = [
