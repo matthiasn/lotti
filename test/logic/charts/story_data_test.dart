@@ -52,5 +52,27 @@ void main() {
         );
       },
     );
+
+    test(
+      'daily aggregates handle entries stretching multiple days',
+      () {
+        expect(
+          aggregateStoryTimeSum(
+            [
+              testDurationEntry4,
+              testDurationEntry5,
+            ],
+            rangeStart: DateTime(2022, 7, 1),
+            rangeEnd: DateTime(2022, 7, 4),
+            timeframe: AggregationTimeframe.daily,
+          ),
+          [
+            MeasuredObservation(DateTime(2022, 7, 1), 60.0),
+            MeasuredObservation(DateTime(2022, 7, 2), 240.0),
+            MeasuredObservation(DateTime(2022, 7, 3), 60.0),
+          ],
+        );
+      },
+    );
   });
 }

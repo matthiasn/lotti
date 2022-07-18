@@ -1,5 +1,6 @@
 import 'dart:core';
 
+import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -60,6 +61,8 @@ List<MeasuredObservation> aggregateStoryWeeklyTimeSum(
   }
 
   for (final entity in entities) {
+    debugPrint('aggregateStoryWeeklyTimeSum ${entity?.meta.dateFrom}');
+
     final dayString = ymd(entity!.meta.dateFrom);
     final n = minutesByDay[dayString] ?? 0;
     final duration =
