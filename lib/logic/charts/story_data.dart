@@ -1,10 +1,12 @@
 import 'dart:core';
 import 'dart:math';
 
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:week_of_year/week_of_year.dart';
 
 enum AggregationTimeframe {
   daily,
@@ -112,24 +114,63 @@ List<MeasuredObservation> aggregateStoryDailyTimeSum(
   return aggregated;
 }
 
+class WeeklyAggregate extends Equatable {
+  const WeeklyAggregate(this.isoWeek, this.value);
+
+  final String isoWeek;
+  final num value;
+
+  @override
+  String toString() {
+    return '$isoWeek $value';
+  }
+
+  @override
+  List<Object?> get props => [isoWeek, value];
+}
+
+List<WeeklyAggregate> aggregateStoryWeeklyTimeSum(
+  List<JournalEntity?> entities, {
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) {
+  final minutesByWeek = <String, num>{};
+
+  aggregateStoryDailyTimeSum(
+    entities,
+    rangeStart: rangeStart,
+    rangeEnd: rangeEnd,
+  ).forEach((byDay) {
+    final year = byDay.dateTime.year;
+    final weekOfYear = byDay.dateTime.weekOfYear;
+    final isoWeek = '$year-W${padLeft(weekOfYear)}';
+    final prev = minutesByWeek[isoWeek] ?? 0;
+    minutesByWeek[isoWeek] = prev + byDay.value;
+  });
+
+  final aggregated = <WeeklyAggregate>[];
+  minutesByWeek.forEach((isoWeek, value) {
+    aggregated.add(WeeklyAggregate(isoWeek, value));
+  });
+
+  return aggregated;
+}
+
 List<MeasuredObservation> aggregateStoryTimeSum(
   List<JournalEntity?> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
   required AggregationTimeframe timeframe,
 }) {
-  switch (timeframe) {
-    case AggregationTimeframe.daily:
-      return aggregateStoryDailyTimeSum(
-        entities,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
-    case AggregationTimeframe.weekly:
-      return aggregateStoryDailyTimeSum(
-        entities,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
-  }
+  aggregateStoryWeeklyTimeSum(
+    entities,
+    rangeStart: rangeStart,
+    rangeEnd: rangeEnd,
+  );
+
+  return aggregateStoryDailyTimeSum(
+    entities,
+    rangeStart: rangeStart,
+    rangeEnd: rangeEnd,
+  );
 }

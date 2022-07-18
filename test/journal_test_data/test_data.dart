@@ -375,3 +375,13 @@ final testDurationEntry5 = JournalEntry(
     dateTo: DateTime(2022, 7, 5, 1),
   ),
 );
+
+final testDurationEntry6 = JournalEntry(
+  meta: Metadata(
+    id: 'id',
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    dateFrom: DateTime(2022, 6, 1, 22),
+    dateTo: DateTime(2022, 6, 12, 1),
+  ),
+);

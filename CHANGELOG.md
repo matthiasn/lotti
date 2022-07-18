@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Count duration for entries spanning multiple days for each individual day
+- Weekly aggregation in story time charts
 
 ## [0.8.112] - 2022-07-19
 ### Changed:

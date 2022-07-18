@@ -2202,6 +2202,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "7.3.2"
+  week_of_year:
+    dependency: "direct main"
+    description:
+      name: week_of_year
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.0"
   win32:
     dependency: transitive
     description:

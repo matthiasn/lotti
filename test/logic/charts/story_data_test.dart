@@ -205,5 +205,51 @@ void main() {
         );
       },
     );
+
+    test(
+      'weekly aggregates handle entries stretching multiple days',
+      () {
+        expect(
+          aggregateStoryWeeklyTimeSum(
+            [
+              testDurationEntry4,
+              testDurationEntry5,
+              testDurationEntry6,
+            ],
+            rangeStart: DateTime(2022, 6, 1),
+            rangeEnd: DateTime(2022, 7, 15),
+          ),
+          const [
+            WeeklyAggregate('2022-W22', 5880.0),
+            WeeklyAggregate('2022-W23', 8700.0),
+            WeeklyAggregate('2022-W24', 0),
+            WeeklyAggregate('2022-W25', 0),
+            WeeklyAggregate('2022-W26', 1740.0),
+            WeeklyAggregate('2022-W27', 1500.0),
+            WeeklyAggregate('2022-W28', 0)
+          ],
+        );
+      },
+    );
+
+    test(
+      'weekly aggregates handle entries stretching multiple days',
+      () {
+        expect(
+          aggregateStoryWeeklyTimeSum(
+            [],
+            rangeStart: DateTime(2022, 6, 1),
+            rangeEnd: DateTime(2022, 6, 30),
+          ),
+          const [
+            WeeklyAggregate('2022-W22', 0),
+            WeeklyAggregate('2022-W23', 0),
+            WeeklyAggregate('2022-W24', 0),
+            WeeklyAggregate('2022-W25', 0),
+            WeeklyAggregate('2022-W26', 0),
+          ],
+        );
+      },
+    );
   });
 }
