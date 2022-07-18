@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Improved query for substring matched stories
+
+## [0.8.111] - 2022-07-17
+### Changed:
 - Time format hh:mm:ss in time charts for aggregate of selected day
 - Time format hh:mm:ss in workout charts for aggregate of selected day
 

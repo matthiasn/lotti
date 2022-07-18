@@ -254,6 +254,20 @@ SELECT * FROM journal
   ORDER BY date_from DESC
   LIMIT :limit;
 
+filteredByTagMatch:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND id IN
+    (SELECT journal_id FROM tagged WHERE tag_entity_id IN
+      (SELECT id FROM tag_entities WHERE tag LIKE :match
+                AND private IN (0,
+                  (SELECT status FROM config_flags WHERE name = 'private'))
+                AND deleted = false))
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
+  ORDER BY date_from DESC;
+
 filteredTasks:
 SELECT * FROM journal
   WHERE type IN :types

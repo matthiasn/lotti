@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/charts/story_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -46,106 +45,100 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
     final subString = widget.chartConfig.storySubstring;
     final title = subString;
 
-    return StreamBuilder<List<TagEntity>>(
-      stream: _db.watchMatchingTags(subString),
-      builder: (context, tagsSnapshot) {
-        final tags = tagsSnapshot.data ?? [];
-        return BlocProvider<StoryChartInfoCubit>(
-          create: (BuildContext context) => StoryChartInfoCubit(),
-          child: StreamBuilder<List<JournalEntity?>>(
-            stream: _db.watchJournalByTagIds(
-              rangeStart: widget.rangeStart,
-              rangeEnd: widget.rangeEnd,
-              tagIds: tags.map((tag) => tag.id).toList(),
-            ),
-            builder: (
-              BuildContext context,
-              AsyncSnapshot<List<JournalEntity?>> snapshot,
-            ) {
-              final items = snapshot.data ?? [];
+    return BlocProvider<StoryChartInfoCubit>(
+      create: (BuildContext context) => StoryChartInfoCubit(),
+      child: StreamBuilder<List<JournalEntity?>>(
+        stream: _db.watchJournalByTagIds(
+          match: subString,
+          rangeStart: widget.rangeStart,
+          rangeEnd: widget.rangeEnd,
+//              tagIds: tagIds,
+        ),
+        builder: (
+          BuildContext context,
+          AsyncSnapshot<List<JournalEntity?>> snapshot,
+        ) {
+          final items = snapshot.data ?? [];
+          //debugPrint('$items');
 
-              final data = aggregateStoryDailyTimeSum(
-                items,
-                rangeStart: widget.rangeStart,
-                rangeEnd: widget.rangeEnd,
-              );
+          final data = aggregateStoryDailyTimeSum(
+            items,
+            rangeStart: widget.rangeStart,
+            rangeEnd: widget.rangeEnd,
+          );
 
-              final seriesList = [
-                charts.Series<MeasuredObservation, DateTime>(
-                  id: widget.chartConfig.storySubstring,
-                  domainFn: (MeasuredObservation val, _) => val.dateTime,
-                  measureFn: (MeasuredObservation val, _) => val.value,
-                  data: data,
-                )
-              ];
+          final seriesList = [
+            charts.Series<MeasuredObservation, DateTime>(
+              id: widget.chartConfig.storySubstring,
+              domainFn: (MeasuredObservation val, _) => val.dateTime,
+              measureFn: (MeasuredObservation val, _) => val.value,
+              data: data,
+            )
+          ];
 
-              void _infoSelectionModelUpdated(
-                charts.SelectionModel<DateTime> model,
-              ) {
-                if (model.hasDatumSelection) {
-                  final newSelection =
-                      model.selectedDatum.first.datum as MeasuredObservation;
-                  context.read<StoryChartInfoCubit>().setSelected(newSelection);
-                  _chartState.selectionModels[charts.SelectionModelType.info] =
-                      charts.UserManagedSelectionModel(model: model);
-                } else {
-                  context.read<StoryChartInfoCubit>().clearSelected();
-                  _chartState.selectionModels[charts.SelectionModelType.info] =
-                      charts.UserManagedSelectionModel();
-                }
-              }
+          void _infoSelectionModelUpdated(
+            charts.SelectionModel<DateTime> model,
+          ) {
+            if (model.hasDatumSelection) {
+              final newSelection =
+                  model.selectedDatum.first.datum as MeasuredObservation;
+              context.read<StoryChartInfoCubit>().setSelected(newSelection);
+              _chartState.selectionModels[charts.SelectionModelType.info] =
+                  charts.UserManagedSelectionModel(model: model);
+            } else {
+              context.read<StoryChartInfoCubit>().clearSelected();
+              _chartState.selectionModels[charts.SelectionModelType.info] =
+                  charts.UserManagedSelectionModel();
+            }
+          }
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    key: Key('${widget.chartConfig.hashCode}'),
-                    color: Colors.white,
-                    height: 120,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Stack(
-                      children: [
-                        charts.TimeSeriesChart(
-                          seriesList,
-                          animate: false,
-                          defaultRenderer: defaultRenderer,
-                          selectionModels: [
-                            charts.SelectionModelConfig(
-                              updatedListener: _infoSelectionModelUpdated,
-                            )
-                          ],
-                          behaviors: [
-                            chartRangeAnnotation(
-                              widget.rangeStart,
-                              widget.rangeEnd,
-                            )
-                          ],
-                          domainAxis: timeSeriesAxis,
-                          primaryMeasureAxis: const charts.NumericAxisSpec(
-                            tickFormatterSpec:
-                                charts.BasicNumericTickFormatterSpec(
-                              minutesToHhMm,
-                            ),
-                            tickProviderSpec:
-                                charts.BasicNumericTickProviderSpec(
-                              zeroBound: true,
-                              dataIsInWholeNumbers: false,
-                              desiredMinTickCount: 4,
-                              desiredMaxTickCount: 5,
-                            ),
-                          ),
-                        ),
-                        InfoWidget(title),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                key: Key('${widget.chartConfig.hashCode}'),
+                color: Colors.white,
+                height: 120,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Stack(
+                  children: [
+                    charts.TimeSeriesChart(
+                      seriesList,
+                      animate: false,
+                      defaultRenderer: defaultRenderer,
+                      selectionModels: [
+                        charts.SelectionModelConfig(
+                          updatedListener: _infoSelectionModelUpdated,
+                        )
                       ],
+                      behaviors: [
+                        chartRangeAnnotation(
+                          widget.rangeStart,
+                          widget.rangeEnd,
+                        )
+                      ],
+                      domainAxis: timeSeriesAxis,
+                      primaryMeasureAxis: const charts.NumericAxisSpec(
+                        tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
+                          minutesToHhMm,
+                        ),
+                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                          zeroBound: true,
+                          dataIsInWholeNumbers: false,
+                          desiredMinTickCount: 4,
+                          desiredMaxTickCount: 5,
+                        ),
+                      ),
                     ),
-                  ),
+                    InfoWidget(title),
+                  ],
                 ),
-              );
-            },
-          ),
-        );
-      },
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
