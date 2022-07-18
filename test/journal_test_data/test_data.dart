@@ -325,3 +325,33 @@ final testWorkoutRunning = WorkoutEntry(
     source: '',
   ),
 );
+
+final testDurationEntry1 = JournalEntry(
+  meta: Metadata(
+    id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
+    createdAt: DateTime(2022, 7, 3, 13),
+    dateFrom: DateTime(2022, 7, 3, 13),
+    dateTo: DateTime(2022, 7, 3, 14),
+    updatedAt: DateTime(2022, 3, 7, 14),
+  ),
+);
+
+final testDurationEntry2 = JournalEntry(
+  meta: Metadata(
+    id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
+    createdAt: DateTime(2022, 7, 4, 13),
+    dateFrom: DateTime(2022, 7, 4, 13),
+    dateTo: DateTime(2022, 7, 4, 14),
+    updatedAt: DateTime(2022, 4, 7, 14),
+  ),
+);
+
+final testDurationEntry3 = JournalEntry(
+  meta: Metadata(
+    id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
+    createdAt: DateTime(2022, 7, 4, 15),
+    dateFrom: DateTime(2022, 7, 4, 15),
+    dateTo: DateTime(2022, 7, 4, 18, 11, 33),
+    updatedAt: DateTime(2022, 4, 7, 18),
+  ),
+);

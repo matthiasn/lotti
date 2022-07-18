@@ -2,14 +2,15 @@ import 'dart:core';
 import 'dart:math';
 
 import 'package:charts_flutter/flutter.dart' as charts;
+import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 
-class MeasuredObservation {
-  MeasuredObservation(this.dateTime, this.value);
+class MeasuredObservation extends Equatable {
+  const MeasuredObservation(this.dateTime, this.value);
 
   final DateTime dateTime;
   final num value;
@@ -18,6 +19,9 @@ class MeasuredObservation {
   String toString() {
     return '$dateTime $value';
   }
+
+  @override
+  List<Object?> get props => [dateTime, value];
 }
 
 const days = 30;
