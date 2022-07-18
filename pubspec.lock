@@ -308,7 +308,7 @@ packages:
       name: connectivity_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.5"
+    version: "2.3.6"
   connectivity_plus_linux:
     dependency: transitive
     description:
@@ -336,7 +336,7 @@ packages:
       name: connectivity_plus_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.2"
+    version: "1.2.3"
   connectivity_plus_windows:
     dependency: "direct overridden"
     description:
@@ -1155,6 +1155,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.3"
+  jiffy:
+    dependency: "direct main"
+    description:
+      name: jiffy
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "5.0.0"
   js:
     dependency: transitive
     description:
@@ -2195,6 +2202,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "7.3.2"
+  week_of_year:
+    dependency: "direct main"
+    description:
+      name: week_of_year
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.0"
   win32:
     dependency: transitive
     description:

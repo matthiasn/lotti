@@ -325,3 +325,63 @@ final testWorkoutRunning = WorkoutEntry(
     source: '',
   ),
 );
+
+final testDurationEntry1 = JournalEntry(
+  meta: Metadata(
+    id: 'id',
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    dateFrom: DateTime(2022, 7, 3, 13),
+    dateTo: DateTime(2022, 7, 3, 14),
+  ),
+);
+
+final testDurationEntry2 = JournalEntry(
+  meta: Metadata(
+    id: 'id',
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    dateFrom: DateTime(2022, 7, 4, 13),
+    dateTo: DateTime(2022, 7, 4, 14),
+  ),
+);
+
+final testDurationEntry3 = JournalEntry(
+  meta: Metadata(
+    id: 'id',
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    dateFrom: DateTime(2022, 7, 4, 15),
+    dateTo: DateTime(2022, 7, 4, 18, 11, 33),
+  ),
+);
+
+final testDurationEntry4 = JournalEntry(
+  meta: Metadata(
+    id: 'id',
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    dateFrom: DateTime(2022, 7, 1, 23),
+    dateTo: DateTime(2022, 7, 2, 2),
+  ),
+);
+
+final testDurationEntry5 = JournalEntry(
+  meta: Metadata(
+    id: 'id',
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    dateFrom: DateTime(2022, 7, 2, 22),
+    dateTo: DateTime(2022, 7, 5, 1),
+  ),
+);
+
+final testDurationEntry6 = JournalEntry(
+  meta: Metadata(
+    id: 'id',
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    dateFrom: DateTime(2022, 6, 1, 22),
+    dateTo: DateTime(2022, 6, 12, 1),
+  ),
+);
