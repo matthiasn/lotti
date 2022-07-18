@@ -259,7 +259,8 @@ class _WildcardStoryWeeklyChartState extends State<WildcardStoryWeeklyChart> {
               domainFn: (WeeklyAggregate val, _) => val.isoWeek.substring(5),
               measureFn: (WeeklyAggregate val, _) => val.value,
               data: data,
-              labelAccessorFn: (byWeek, _) => minutesToHhMm(byWeek.value),
+              labelAccessorFn: (byWeek, _) =>
+                  byWeek.value > 0 ? minutesToHhMm(byWeek.value) : '',
             ),
           ];
 
