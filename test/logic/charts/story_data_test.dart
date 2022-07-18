@@ -70,6 +70,32 @@ void main() {
     );
 
     test(
+      'durationsByDayInRange for start null',
+      () {
+        expect(
+          durationsByDayInRange(
+            null,
+            testDurationEntry1.meta.dateTo,
+          ),
+          <String, num>{},
+        );
+      },
+    );
+
+    test(
+      'durationsByDayInRange for end null',
+      () {
+        expect(
+          durationsByDayInRange(
+            testDurationEntry1.meta.dateFrom,
+            null,
+          ),
+          <String, num>{},
+        );
+      },
+    );
+
+    test(
       'durationsByDayInRange for longer entry',
       () {
         expect(
@@ -152,6 +178,29 @@ void main() {
             MeasuredObservation(DateTime(2022, 7, 3), 1440.0),
             MeasuredObservation(DateTime(2022, 7, 4), 1440.0),
             MeasuredObservation(DateTime(2022, 7, 5), 60.0),
+          ],
+        );
+      },
+    );
+
+    test(
+      'daily aggregates handle entries stretching multiple days, '
+      'cut off at end of range',
+      () {
+        expect(
+          aggregateStoryTimeSum(
+            [
+              testDurationEntry4,
+              testDurationEntry5,
+            ],
+            rangeStart: DateTime(2022, 7, 1),
+            rangeEnd: DateTime(2022, 7, 4),
+            timeframe: AggregationTimeframe.daily,
+          ),
+          [
+            MeasuredObservation(DateTime(2022, 7, 1), 60.0),
+            MeasuredObservation(DateTime(2022, 7, 2), 240.0),
+            MeasuredObservation(DateTime(2022, 7, 3), 1440.0),
           ],
         );
       },
