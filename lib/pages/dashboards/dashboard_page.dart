@@ -152,10 +152,19 @@ class _DashboardPageState extends State<DashboardPage> {
                         },
                         wildcardStoryTimeChart:
                             (WildcardStoryTimeItem storyChart) {
-                          return WildcardStoryChart(
-                            chartConfig: storyChart,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
+                          return Column(
+                            children: [
+                              WildcardStoryChart(
+                                chartConfig: storyChart,
+                                rangeStart: rangeStart,
+                                rangeEnd: rangeEnd,
+                              ),
+                              WildcardStoryWeeklyChart(
+                                chartConfig: storyChart,
+                                rangeStart: rangeStart,
+                                rangeEnd: rangeEnd,
+                              ),
+                            ],
                           );
                         },
                         surveyChart: (DashboardSurveyItem surveyChart) {
