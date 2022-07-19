@@ -301,7 +301,15 @@ class _WildcardStoryWeeklyChartState extends State<WildcardStoryWeeklyChart> {
                           updatedListener: _infoSelectionModelUpdated,
                         )
                       ],
-                      barRendererDecorator: charts.BarLabelDecorator<String>(),
+                      barRendererDecorator: charts.BarLabelDecorator<String>(
+                        insideLabelStyleSpec: const charts.TextStyleSpec(
+                          fontSize: 8,
+                          color: charts.Color.white,
+                        ),
+                        outsideLabelStyleSpec: const charts.TextStyleSpec(
+                          fontSize: 8,
+                        ),
+                      ),
                       domainAxis: const charts.OrdinalAxisSpec(),
                       primaryMeasureAxis: const charts.NumericAxisSpec(
                         tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
