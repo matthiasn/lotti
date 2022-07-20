@@ -157,7 +157,7 @@ DateTime getRangeStart({
 
 DateTime getRangeEnd({int shiftDays = 0}) {
   final now = DateTime.now();
-  return DateTime(now.year, now.month, now.day, 23, 59, 59)
+  return DateTime(now.year, now.month, now.day + 1)
       .subtract(Duration(days: shiftDays));
 }
 
