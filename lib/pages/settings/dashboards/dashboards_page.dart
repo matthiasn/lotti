@@ -92,8 +92,11 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
           BuildContext context,
           AsyncSnapshot<List<DashboardDefinition>> snapshot,
         ) {
-          final dashboards =
-              filteredSortedDashboards(snapshot.data ?? [], match);
+          final dashboards = filteredSortedDashboards(
+            snapshot.data ?? [],
+            match: match,
+            showAll: true,
+          );
 
           return Stack(
             children: [

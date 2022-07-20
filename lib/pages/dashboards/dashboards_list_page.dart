@@ -38,7 +38,10 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
           return const LoadingDashboards();
         }
 
-        final dashboards = filteredSortedDashboards(snapshot.data ?? [], match);
+        final dashboards = filteredSortedDashboards(
+          snapshot.data ?? [],
+          match: match,
+        );
 
         if (dashboards.isEmpty) {
           return const EmptyDashboards();
@@ -113,7 +116,9 @@ class DashboardCard extends StatelessWidget {
           ),
         ),
         onTap: () {
-          pushNamedRoute('/dashboards/${dashboard.id}');
+          pushNamedRoute(
+            '/dashboards/dashboard/${dashboard.id}',
+          );
         },
       ),
     );

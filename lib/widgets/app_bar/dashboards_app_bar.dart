@@ -25,19 +25,37 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
             localizations.navTabTitleInsights,
             style: appBarTextStyle(),
           ),
-          IconButton(
-            padding: const EdgeInsets.all(4),
-            icon: const Icon(Icons.dashboard_customize_outlined),
-            color: colorConfig().entryTextColor,
-            onPressed: () {
-              final navService = getIt<NavService>();
+          Row(
+            children: [
+              IconButton(
+                padding: const EdgeInsets.all(4),
+                icon: const Icon(Icons.slideshow_outlined),
+                color: colorConfig().entryTextColor,
+                onPressed: () {
+                  final navService = getIt<NavService>();
 
-              navService.tabsRouter
-                  ?.setActiveIndex(navService.routesByIndex.length - 1);
+                  navService.tabsRouter
+                      ?.setActiveIndex(navService.routesByIndex.length - 1);
 
-              Future<void>.delayed(const Duration(milliseconds: 50))
-                  .then((value) => pushNamedRoute('/settings/dashboards/'));
-            },
+                  Future<void>.delayed(const Duration(milliseconds: 50))
+                      .then((value) => pushNamedRoute('/dashboards/carousel'));
+                },
+              ),
+              IconButton(
+                padding: const EdgeInsets.all(4),
+                icon: const Icon(Icons.dashboard_customize_outlined),
+                color: colorConfig().entryTextColor,
+                onPressed: () {
+                  final navService = getIt<NavService>();
+
+                  navService.tabsRouter
+                      ?.setActiveIndex(navService.routesByIndex.length - 1);
+
+                  Future<void>.delayed(const Duration(milliseconds: 50))
+                      .then((value) => pushNamedRoute('/settings/dashboards/'));
+                },
+              ),
+            ],
           ),
         ],
       ),

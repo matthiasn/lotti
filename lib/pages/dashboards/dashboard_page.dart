@@ -113,98 +113,129 @@ class _DashboardPageState extends State<DashboardPage> {
               dashboard,
               showBackIcon: widget.showBackIcon,
             ),
-            body: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  children: [
-                    ...dashboard.items.map((DashboardItem dashboardItem) {
-                      return dashboardItem.map(
-                        measurement: (DashboardMeasurementItem measurement) {
-                          return DashboardMeasurablesChart(
-                            measurableDataTypeId: measurement.id,
-                            aggregationType: measurement.aggregationType,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
-                            enableCreate: true,
-                          );
-                        },
-                        healthChart: (DashboardHealthItem healthChart) {
-                          return DashboardHealthChart(
-                            chartConfig: healthChart,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
-                          );
-                        },
-                        workoutChart: (DashboardWorkoutItem workoutChart) {
-                          return DashboardWorkoutChart(
-                            chartConfig: workoutChart,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
-                          );
-                        },
-                        storyTimeChart: (DashboardStoryTimeItem storyChart) {
-                          return DashboardStoryChart(
-                            chartConfig: storyChart,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
-                          );
-                        },
-                        wildcardStoryTimeChart:
-                            (WildcardStoryTimeItem storyChart) {
-                          return Column(
-                            children: [
-                              WildcardStoryChart(
-                                chartConfig: storyChart,
-                                rangeStart: rangeStart,
-                                rangeEnd: rangeEnd,
-                              ),
-                              WildcardStoryWeeklyChart(
-                                chartConfig: storyChart,
-                                rangeStart: rangeStart,
-                                rangeEnd: rangeEnd,
-                              ),
-                            ],
-                          );
-                        },
-                        surveyChart: (DashboardSurveyItem surveyChart) {
-                          return DashboardSurveyChart(
-                            chartConfig: surveyChart,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
-                          );
-                        },
-                      );
-                    }),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Text(
-                              dashboard.description,
-                              style: formLabelStyle(),
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.dashboard_customize_outlined),
-                          color: colorConfig().entryTextColor,
-                          onPressed: () {
-                            pushNamedRoute(
-                              '/settings/dashboards/${widget.dashboardId}',
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+            body: DashboardWidget(
+              dashboard: dashboard,
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+              dashboardId: widget.dashboardId,
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class DashboardWidget extends StatelessWidget {
+  const DashboardWidget({
+    super.key,
+    required this.dashboard,
+    required this.rangeStart,
+    required this.rangeEnd,
+    required this.dashboardId,
+    this.showTitle = false,
+  });
+
+  final DashboardDefinition dashboard;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
+  final String dashboardId;
+  final bool showTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          children: [
+            if (showTitle)
+              Text(
+                dashboard.name,
+                style: taskTitleStyle(),
+              ),
+            ...dashboard.items.map((DashboardItem dashboardItem) {
+              return dashboardItem.map(
+                measurement: (DashboardMeasurementItem measurement) {
+                  return DashboardMeasurablesChart(
+                    measurableDataTypeId: measurement.id,
+                    aggregationType: measurement.aggregationType,
+                    rangeStart: rangeStart,
+                    rangeEnd: rangeEnd,
+                    enableCreate: true,
+                  );
+                },
+                healthChart: (DashboardHealthItem healthChart) {
+                  return DashboardHealthChart(
+                    chartConfig: healthChart,
+                    rangeStart: rangeStart,
+                    rangeEnd: rangeEnd,
+                  );
+                },
+                workoutChart: (DashboardWorkoutItem workoutChart) {
+                  return DashboardWorkoutChart(
+                    chartConfig: workoutChart,
+                    rangeStart: rangeStart,
+                    rangeEnd: rangeEnd,
+                  );
+                },
+                storyTimeChart: (DashboardStoryTimeItem storyChart) {
+                  return DashboardStoryChart(
+                    chartConfig: storyChart,
+                    rangeStart: rangeStart,
+                    rangeEnd: rangeEnd,
+                  );
+                },
+                wildcardStoryTimeChart: (WildcardStoryTimeItem storyChart) {
+                  return Column(
+                    children: [
+                      WildcardStoryChart(
+                        chartConfig: storyChart,
+                        rangeStart: rangeStart,
+                        rangeEnd: rangeEnd,
+                      ),
+                      WildcardStoryWeeklyChart(
+                        chartConfig: storyChart,
+                        rangeStart: rangeStart,
+                        rangeEnd: rangeEnd,
+                      ),
+                    ],
+                  );
+                },
+                surveyChart: (DashboardSurveyItem surveyChart) {
+                  return DashboardSurveyChart(
+                    chartConfig: surveyChart,
+                    rangeStart: rangeStart,
+                    rangeEnd: rangeEnd,
+                  );
+                },
+              );
+            }),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Text(
+                      dashboard.description,
+                      style: formLabelStyle(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.dashboard_customize_outlined),
+                  color: colorConfig().entryTextColor,
+                  onPressed: () {
+                    pushNamedRoute(
+                      '/settings/dashboards/$dashboardId',
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
