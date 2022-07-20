@@ -79,10 +79,10 @@ class DurationWidget extends StatelessWidget {
                       visible: !isRecording,
                       child: IconButton(
                         padding: const EdgeInsets.only(right: 8),
-                        icon: const Icon(Icons.play_arrow),
+                        icon: const Icon(Icons.fiber_manual_record_sharp),
                         iconSize: 20,
                         tooltip: 'Record',
-                        color: style?.color,
+                        color: colorConfig().timeRecording,
                         onPressed: () {
                           _timeService.start(item);
                         },
