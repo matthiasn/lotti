@@ -126,7 +126,7 @@ packages:
       name: basic_utils
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.3.0"
+    version: "4.4.1"
   bloc:
     dependency: "direct main"
     description:
@@ -569,7 +569,7 @@ packages:
       name: exif
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.1.1"
+    version: "3.1.2"
   extended_image:
     dependency: transitive
     description:
@@ -2138,7 +2138,7 @@ packages:
       name: video_player_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.7"
+    version: "2.3.8"
   video_player_avfoundation:
     dependency: transitive
     description:
