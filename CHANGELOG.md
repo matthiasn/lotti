@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Slideshow for dashboards
+
+## [0.8.113] - 2022-07-20
+### Added:
 - Count duration for entries spanning multiple days for each individual day
 - Weekly aggregation in story time charts
 

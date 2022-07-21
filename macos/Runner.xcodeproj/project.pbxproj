@@ -299,19 +299,17 @@
 			files = (
 			);
 			inputFileListPaths = (
-				Flutter/ephemeral/FlutterInputs.xcfilelist,
 			);
 			inputPaths = (
 				Flutter/ephemeral/tripwire,
 			);
 			outputFileListPaths = (
-				Flutter/ephemeral/FlutterOutputs.xcfilelist,
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"$FLUTTER_ROOT\"/packages/flutter_tools/bin/macos_assemble.sh && touch Flutter/ephemeral/tripwire";
+			shellScript = "\"$FLUTTER_ROOT\"/packages/flutter_tools/bin/macos_assemble.sh && touch Flutter/ephemeral/tripwire\n";
 		};
 		DE97D846130591A46515ED33 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
