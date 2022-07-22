@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
@@ -16,6 +17,7 @@ void main() {
   var mock = MockSyncConfigService();
   var mockInboxService = MockSyncInboxService();
   var mockOutboxService = MockOutboxService();
+  final mockLoggingDb = MockLoggingDb();
 
   group('SyncConfigCubit Tests - ', () {
     setUp(() {
@@ -27,6 +29,7 @@ void main() {
 
       getIt
         ..registerSingleton<OutboxService>(mockOutboxService)
+        ..registerSingleton<LoggingDb>(mockLoggingDb)
         ..registerSingleton<InboxService>(mockInboxService);
     });
     tearDown(getIt.reset);
