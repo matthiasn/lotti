@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
@@ -15,6 +16,8 @@ class MockSyncInboxService extends Mock implements InboxService {}
 class MockOutboxService extends Mock implements OutboxService {}
 
 class MockSyncConfigCubit extends Mock implements SyncConfigCubit {}
+
+class MockLoggingDb extends Mock implements LoggingDb {}
 
 MockSyncConfigCubit mockSyncConfigCubitWithState(SyncConfigState state) {
   final mock = MockSyncConfigCubit();
