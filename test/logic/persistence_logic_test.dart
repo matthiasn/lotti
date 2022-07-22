@@ -17,6 +17,7 @@ import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/outbox_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/sync/utils.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';

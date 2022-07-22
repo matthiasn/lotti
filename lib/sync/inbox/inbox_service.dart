@@ -82,8 +82,15 @@ class InboxService {
     await _observeInbox();
   }
 
-  void enqueueNextFetchRequest() {
-    _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
+  void enqueueNextFetchRequest({
+    Duration delay = const Duration(milliseconds: 1),
+  }) {
+    unawaited(
+      Future<void>.delayed(delay).then(
+        (_) =>
+            _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch),
+      ),
+    );
   }
 
   Future<void> _fetchInbox() async {
@@ -92,10 +99,17 @@ class InboxService {
       imapClient ??= await createImapClient(syncConfig);
       final lastReadUid = await getLastReadUid();
 
+      if (lastReadUid == null) {
+        enqueueNextFetchRequest(delay: const Duration(seconds: 1));
+        return;
+      }
+
       final sequence = MessageSequence(isUidSequence: true)
         ..addRangeToLast(lastReadUid + 1);
 
-      if (imapClient != null) {
+      final hostHash = await _vectorClockService.getHostHash();
+
+      if (imapClient != null && hostHash != null) {
         final fetchResult =
             await imapClient!.uidFetchMessages(sequence, 'ENVELOPE');
 
@@ -116,8 +130,7 @@ class InboxService {
                 domain: 'INBOX',
               );
               await setLastReadUid(current);
-            } else if (subject
-                .contains(await _vectorClockService.getHostHash())) {
+            } else if (subject.contains(hostHash)) {
               debugPrint('_fetchInbox ignoring from same host: $current');
               _loggingDb.captureEvent(
                 '_fetchInbox ignoring from same host: $current',
