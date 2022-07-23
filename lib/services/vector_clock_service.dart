@@ -3,13 +3,22 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/sync/utils.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 
-const String hostKey = 'VC_HOST';
-const String nextAvailableCounterKey = 'VC_NEXT_AVAILABLE_COUNTER';
-
 class VectorClockService {
+  VectorClockService() {
+    init();
+  }
+  late int _nextAvailableCounter;
+  late String _host;
+
+  Future<void> init() async {
+    _host = await getHost() ?? await setNewHost();
+    _nextAvailableCounter = await _getNextAvailableCounter();
+  }
+
   Future<void> increment() async {
     final next = await getNextAvailableCounter() + 1;
     await setNextAvailableCounter(next);
@@ -21,11 +30,8 @@ class VectorClockService {
     return host;
   }
 
-  Future<String> getHost() async {
-    var host = await getIt<SecureStorage>().readValue(hostKey);
-    // ignore: join_return_with_assignment
-    host ??= await setNewHost();
-    return host;
+  Future<String?> getHost() async {
+    return getIt<SecureStorage>().readValue(hostKey);
   }
 
   Future<void> setNextAvailableCounter(int nextAvailableCounter) async {
@@ -33,9 +39,10 @@ class VectorClockService {
       nextAvailableCounterKey,
       nextAvailableCounter.toString(),
     );
+    _nextAvailableCounter = nextAvailableCounter;
   }
 
-  Future<int> getNextAvailableCounter() async {
+  Future<int> _getNextAvailableCounter() async {
     int? nextAvailableCounter;
     final nextAvailableCounterString =
         await getIt<SecureStorage>().readValue(nextAvailableCounterKey);
@@ -49,8 +56,18 @@ class VectorClockService {
     return nextAvailableCounter;
   }
 
-  Future<String> getHostHash() async {
-    final bytes = utf8.encode(await getHost());
+  Future<int> getNextAvailableCounter() async {
+    return _nextAvailableCounter;
+  }
+
+  Future<String?> getHostHash() async {
+    final host = await getHost();
+
+    if (host == null) {
+      return null;
+    }
+
+    final bytes = utf8.encode(host);
     final digest = sha1.convert(bytes);
     return digest.toString();
   }
@@ -58,13 +75,12 @@ class VectorClockService {
   // ignore: flutter_style_todos
   // TODO: only increment after successful insertion
   Future<VectorClock> getNextVectorClock({VectorClock? previous}) async {
-    final host = await getHost();
-    final nextAvailableCounter = await getNextAvailableCounter();
+    final nextAvailableCounter = _nextAvailableCounter;
     await increment();
 
     return VectorClock({
       ...?previous?.vclock,
-      host: nextAvailableCounter,
+      _host: nextAvailableCounter,
     });
   }
 }

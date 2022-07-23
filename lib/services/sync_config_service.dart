@@ -32,7 +32,19 @@ class SyncConfigService {
   Future<void> generateSharedKey() async {
     final key = Key.fromSecureRandom(32);
     final sharedKey = key.base64;
-    await getIt<SecureStorage>().write(key: sharedSecretKey, value: sharedKey);
+    await getIt<SecureStorage>().write(
+      key: sharedSecretKey,
+      value: sharedKey,
+    );
+    final lastReadUid = await getLastReadUid();
+    if (lastReadUid == null) {
+      await setLastReadUid(0);
+    }
+
+    final host = await getIt<VectorClockService>().getHost();
+    if (host == null) {
+      await getIt<VectorClockService>().setNewHost();
+    }
   }
 
   Future<void> setSyncConfig(String configJson) async {
@@ -83,6 +95,7 @@ class SyncConfigService {
 
   Future<void> resetOffset() async {
     await getIt<SecureStorage>().delete(key: lastReadUidKey);
+    await setLastReadUid(0);
     await getIt<VectorClockService>().setNewHost();
   }
 }

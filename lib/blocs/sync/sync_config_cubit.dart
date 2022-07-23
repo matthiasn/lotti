@@ -4,6 +4,7 @@ import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
@@ -97,6 +98,7 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
   }
 
   Future<void> testConnection() async {
+    final loggingDb = getIt<LoggingDb>();
     resetStatus();
 
     if (imapConfig != null) {
@@ -112,8 +114,18 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
       if (valid) {
         isAccountValid = true;
         debugPrint('testConnection valid');
+        loggingDb.captureEvent(
+          'connection valid',
+          domain: 'SYNC_CONFIG_CUBIT',
+          subDomain: 'testConnection()',
+        );
       } else {
         debugPrint('testConnection error');
+        loggingDb.captureEvent(
+          'connection error',
+          domain: 'SYNC_CONFIG_CUBIT',
+          subDomain: 'testConnection()',
+        );
         connectionError = 'Error';
       }
     }
