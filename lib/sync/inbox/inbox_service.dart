@@ -69,13 +69,15 @@ class InboxService {
     });
 
     enqueueNextFetchRequest();
+
     Timer.periodic(
       const Duration(seconds: 15),
       (timer) async {
-        final isObserving = _observingClient?.isPolling() ?? false;
-        if (!isObserving) {
-          enqueueNextFetchRequest();
-        }
+        // final isObserving = _observingClient?.isPolling() ?? false;
+        // if (!isObserving) {
+        //   enqueueNextFetchRequest();
+        // }
+        enqueueNextFetchRequest();
       },
     );
 
@@ -110,8 +112,10 @@ class InboxService {
       final hostHash = await _vectorClockService.getHostHash();
 
       if (imapClient != null && hostHash != null) {
-        final fetchResult =
-            await imapClient!.uidFetchMessages(sequence, 'ENVELOPE');
+        final fetchResult = await imapClient!.uidFetchMessages(
+          sequence,
+          'ENVELOPE',
+        );
 
         for (final msg in fetchResult.messages.take(1)) {
           final lastReadUid = await getLastReadUid();
