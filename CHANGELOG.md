@@ -5,8 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fix:
+- Build errors
+
+## [0.8.115] - 2022-07-25
 ### Fixed:
 - Sync resetting its own offset
+- Polling
 
 ## [0.8.114] - 2022-07-21
 ### Added:
