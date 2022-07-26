@@ -40,7 +40,7 @@ sort_arb_files: enable_arb_tools
 	find lib/l10n/ -type f -exec dart pub global run arb_utils:sort -i {} \;
 
 .PHONY: l10n
-l10n: sort_arb_files
+l10n: #sort_arb_files
 	flutter gen-l10n
 	@echo "Missing translations:"
 	@cat missing_translations.txt
