@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/blocs/sync/sync_config_state.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_nav.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_config.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_intro_1.dart';
