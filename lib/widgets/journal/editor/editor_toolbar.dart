@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:lotti/blocs/journal/entry_cubit.dart';
+import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
@@ -150,17 +153,27 @@ class SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<bool>(
-      stream: editorStateService.getUnsavedStream(id, lastSaved),
-      builder: (context, snapshot) {
-        final unsaved = snapshot.data ?? false;
-        return IconButton(
-          icon: const Icon(Icons.save),
-          color: unsaved ? colorConfig().error : Colors.black,
-          iconSize: toolbarIconSize,
-          tooltip: localizations.journalToolbarSaveHint,
-          // ignore: avoid_dynamic_calls, unnecessary_lambdas
-          onPressed: () => saveFn(),
+    return BlocBuilder<EntryCubit, EntryState>(
+      builder: (
+        context,
+        EntryState snapshot,
+      ) {
+        return StreamBuilder<bool>(
+          stream: editorStateService.getUnsavedStream(id, lastSaved),
+          builder: (context, snapshot) {
+            final unsaved = snapshot.data ?? false;
+            return IconButton(
+              icon: const Icon(Icons.save),
+              color: unsaved ? colorConfig().error : Colors.black,
+              iconSize: toolbarIconSize,
+              tooltip: localizations.journalToolbarSaveHint,
+              // ignore: avoid_dynamic_calls, unnecessary_lambdas
+              onPressed: () {
+                context.read<EntryCubit>().save();
+                saveFn();
+              },
+            );
+          },
         );
       },
     );

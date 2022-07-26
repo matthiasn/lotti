@@ -4,8 +4,10 @@ import 'package:auto_route/annotations.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -116,133 +118,139 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           }
         }
 
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                spreadRadius: 3,
-                blurRadius: 5,
-                offset: const Offset(0, 3), // changes position of shadow
-              ),
-            ],
+        return BlocProvider<EntryCubit>(
+          create: (BuildContext context) => EntryCubit(
+            entryId: widget.itemId,
+            entry: item,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: ColoredBox(
-              color: colorConfig().entryCardColor,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  item.maybeMap(
-                    journalImage: (image) {
-                      return Container(
-                        width: MediaQuery.of(context).size.width,
-                        color: Colors.black,
-                        child: EntryImageWidget(
-                          focusNode: _focusNode,
-                          journalImage: image,
-                        ),
-                      );
-                    },
-                    orElse: () => const SizedBox.shrink(),
-                  ),
-                  EntryDetailHeader(
-                    itemId: widget.itemId,
-                    saveFn: saveText,
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(
-                      left: 8,
-                      right: 8,
-                      bottom: isTask ? 0 : 8,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  spreadRadius: 3,
+                  blurRadius: 5,
+                  offset: const Offset(0, 3), // changes position of shadow
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: ColoredBox(
+                color: colorConfig().entryCardColor,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    item.maybeMap(
+                      journalImage: (image) {
+                        return Container(
+                          width: MediaQuery.of(context).size.width,
+                          color: Colors.black,
+                          child: EntryImageWidget(
+                            focusNode: _focusNode,
+                            journalImage: image,
+                          ),
+                        );
+                      },
+                      orElse: () => const SizedBox.shrink(),
                     ),
-                    child: TagsListWidget(widget.itemId),
-                  ),
-                  item.maybeMap(
-                    task: (_) => const SizedBox.shrink(),
-                    quantitative: (_) => const SizedBox.shrink(),
-                    measurement: (_) => const SizedBox.shrink(),
-                    workout: (_) => const SizedBox.shrink(),
-                    survey: (_) => const SizedBox.shrink(),
-                    orElse: () {
-                      return EditorWidget(
-                        controller: controller,
-                        focusNode: _focusNode,
-                        journalEntity: item,
-                        saveFn: saveText,
-                      );
-                    },
-                  ),
-                  item.map(
-                    journalAudio: (JournalAudio audio) {
-                      return const AudioPlayerWidget();
-                    },
-                    workout: WorkoutSummary.new,
-                    survey: SurveySummary.new,
-                    quantitative: HealthSummary.new,
-                    measurement: MeasurementSummary.new,
-                    task: (Task task) {
-                      final formKey = GlobalKey<FormBuilderState>();
+                    EntryDetailHeader(
+                      itemId: widget.itemId,
+                      saveFn: saveText,
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: 8,
+                        right: 8,
+                        bottom: isTask ? 0 : 8,
+                      ),
+                      child: TagsListWidget(widget.itemId),
+                    ),
+                    item.maybeMap(
+                      task: (_) => const SizedBox.shrink(),
+                      quantitative: (_) => const SizedBox.shrink(),
+                      measurement: (_) => const SizedBox.shrink(),
+                      workout: (_) => const SizedBox.shrink(),
+                      survey: (_) => const SizedBox.shrink(),
+                      orElse: () {
+                        return EditorWidget(
+                          controller: controller,
+                          focusNode: _focusNode,
+                          journalEntity: item,
+                          saveFn: saveText,
+                        );
+                      },
+                    ),
+                    item.map(
+                      journalAudio: (JournalAudio audio) {
+                        return const AudioPlayerWidget();
+                      },
+                      workout: WorkoutSummary.new,
+                      survey: SurveySummary.new,
+                      quantitative: HealthSummary.new,
+                      measurement: MeasurementSummary.new,
+                      task: (Task task) {
+                        final formKey = GlobalKey<FormBuilderState>();
 
-                      void saveText() {
-                        formKey.currentState?.save();
-                        final formData = formKey.currentState?.value;
-                        if (formData == null) {
+                        void saveText() {
+                          formKey.currentState?.save();
+                          final formData = formKey.currentState?.value;
+                          if (formData == null) {
+                            _editorStateService.saveTask(
+                              id: widget.itemId,
+                              controller: controller,
+                              taskData: task.data,
+                            );
+
+                            return;
+                          }
+                          //final DateTime due = formData['due'];
+                          final title = formData['title'] as String;
+                          final dt = formData['estimate'] as DateTime;
+                          final status = formData['status'] as String;
+
+                          final estimate = Duration(
+                            hours: dt.hour,
+                            minutes: dt.minute,
+                          );
+
+                          HapticFeedback.heavyImpact();
+
+                          final updatedData = task.data.copyWith(
+                            title: title,
+                            estimate: estimate,
+                            // due: due,
+                            status: taskStatusFromString(status),
+                          );
+
                           _editorStateService.saveTask(
                             id: widget.itemId,
                             controller: controller,
-                            taskData: task.data,
+                            taskData: updatedData,
                           );
-
-                          return;
                         }
-                        //final DateTime due = formData['due'];
-                        final title = formData['title'] as String;
-                        final dt = formData['estimate'] as DateTime;
-                        final status = formData['status'] as String;
 
-                        final estimate = Duration(
-                          hours: dt.hour,
-                          minutes: dt.minute,
-                        );
-
-                        HapticFeedback.heavyImpact();
-
-                        final updatedData = task.data.copyWith(
-                          title: title,
-                          estimate: estimate,
-                          // due: due,
-                          status: taskStatusFromString(status),
-                        );
-
-                        _editorStateService.saveTask(
-                          id: widget.itemId,
+                        return TaskForm(
                           controller: controller,
-                          taskData: updatedData,
+                          focusNode: _focusNode,
+                          saveFn: saveText,
+                          formKey: formKey,
+                          data: task.data,
+                          task: task,
                         );
-                      }
-
-                      return TaskForm(
-                        controller: controller,
-                        focusNode: _focusNode,
-                        saveFn: saveText,
-                        formKey: formKey,
-                        data: task.data,
-                        task: task,
-                      );
-                    },
-                    habitCompletion: (_) => const SizedBox.shrink(),
-                    journalEntry: (_) => const SizedBox.shrink(),
-                    journalImage: (_) => const SizedBox.shrink(),
-                  ),
-                  EntryDetailFooter(
-                    itemId: widget.itemId,
-                    saveFn: saveText,
-                    popOnDelete: widget.popOnDelete,
-                  ),
-                ],
+                      },
+                      habitCompletion: (_) => const SizedBox.shrink(),
+                      journalEntry: (_) => const SizedBox.shrink(),
+                      journalImage: (_) => const SizedBox.shrink(),
+                    ),
+                    EntryDetailFooter(
+                      itemId: widget.itemId,
+                      saveFn: saveText,
+                      popOnDelete: widget.popOnDelete,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
