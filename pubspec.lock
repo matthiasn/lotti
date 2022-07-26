@@ -7,7 +7,7 @@ packages:
       name: _fe_analyzer_shared
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "42.0.0"
+    version: "43.0.0"
   adaptive_dialog:
     dependency: "direct main"
     description:
@@ -21,7 +21,7 @@ packages:
       name: analyzer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.3.0"
+    version: "4.3.1"
   analyzer_plugin:
     dependency: transitive
     description:
@@ -126,7 +126,7 @@ packages:
       name: basic_utils
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.4.1"
+    version: "4.4.2"
   bloc:
     dependency: "direct main"
     description:
@@ -406,7 +406,7 @@ packages:
       name: dart_code_metrics
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.16.0"
+    version: "4.17.0"
   dart_console:
     dependency: transitive
     description:
@@ -722,13 +722,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.2"
-  flutter_inappwebview:
+  flutter_inappwebview_quill:
     dependency: transitive
     description:
-      name: flutter_inappwebview
+      name: flutter_inappwebview_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.4.3+7"
+    version: "5.4.6"
   flutter_keyboard_visibility:
     dependency: transitive
     description:
@@ -803,7 +803,7 @@ packages:
       name: flutter_native_splash
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.5"
+    version: "2.2.6"
   flutter_native_timezone:
     dependency: "direct main"
     description:
@@ -824,7 +824,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.2.1"
+    version: "5.2.10"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1065,7 +1065,7 @@ packages:
       name: http_client_helper
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.2"
+    version: "2.0.3"
   http_multi_server:
     dependency: transitive
     description:
@@ -1231,7 +1231,7 @@ packages:
       name: lint
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.8.2"
+    version: "1.10.0"
   lints:
     dependency: transitive
     description:
@@ -1949,21 +1949,21 @@ packages:
       name: syncfusion_flutter_calendar
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.2.39"
+    version: "20.2.40"
   syncfusion_flutter_core:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.2.39"
+    version: "20.2.40"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.2.39"
+    version: "20.2.40"
   synchronized:
     dependency: transitive
     description:
@@ -2258,13 +2258,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.1.1"
-  youtube_player_flutter:
+  youtube_player_flutter_quill:
     dependency: transitive
     description:
-      name: youtube_player_flutter
+      name: youtube_player_flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "8.1.0"
+    version: "8.2.2"
 sdks:
   dart: ">=2.17.0 <3.0.0"
   flutter: ">=3.0.0"
