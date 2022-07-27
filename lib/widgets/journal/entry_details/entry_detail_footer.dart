@@ -59,7 +59,6 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                   DurationWidget(
                     item: item,
                     style: textStyle(),
-                    showControls: true,
                   ),
                   Visibility(
                     visible: loc != null && loc.longitude != 0,

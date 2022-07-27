@@ -17,14 +17,12 @@ class DurationWidget extends StatelessWidget {
     super.key,
     required this.item,
     this.style,
-    this.showControls = false,
   });
 
   final TimeService _timeService = getIt<TimeService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final JournalEntity item;
   final TextStyle? style;
-  final bool showControls;
 
   @override
   Widget build(BuildContext context) {
@@ -57,29 +55,16 @@ class DurationWidget extends StatelessWidget {
             final saveFn = context.read<EntryCubit>().save;
 
             return Visibility(
-              visible: entryDuration(displayed).inMilliseconds > 0 ||
-                  (isRecent && showControls),
+              visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
               child: Row(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Icon(
-                      MdiIcons.timerOutline,
-                      color: labelColor,
-                      size: 14,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 56,
-                    child: Text(
-                      formatDuration(entryDuration(displayed)),
-                      style: style?.copyWith(
-                        color: labelColor,
-                      ),
-                    ),
+                  FormattedTime(
+                    labelColor: labelColor,
+                    displayed: displayed,
+                    style: style,
                   ),
                   Visibility(
-                    visible: showControls && isRecent,
+                    visible: isRecent,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -119,6 +104,89 @@ class DurationWidget extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class DurationViewWidget extends StatelessWidget {
+  DurationViewWidget({
+    super.key,
+    required this.item,
+    this.style,
+  });
+
+  final TimeService _timeService = getIt<TimeService>();
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+  final JournalEntity item;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: _timeService.getStream(),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<JournalEntity?> snapshot,
+      ) {
+        final recording = snapshot.data;
+        var displayed = item;
+        var isRecording = false;
+
+        if (recording != null && recording.meta.id == item.meta.id) {
+          displayed = recording;
+          isRecording = true;
+        }
+
+        final labelColor =
+            isRecording ? colorConfig().timeRecording : style?.color;
+
+        return Visibility(
+          visible: entryDuration(displayed).inMilliseconds > 0,
+          child: FormattedTime(
+            labelColor: labelColor,
+            displayed: displayed,
+            style: style,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class FormattedTime extends StatelessWidget {
+  const FormattedTime({
+    super.key,
+    required this.labelColor,
+    required this.displayed,
+    required this.style,
+  });
+
+  final Color? labelColor;
+  final JournalEntity displayed;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: Icon(
+            MdiIcons.timerOutline,
+            color: labelColor,
+            size: 14,
+          ),
+        ),
+        SizedBox(
+          width: 56,
+          child: Text(
+            formatDuration(entryDuration(displayed)),
+            style: style?.copyWith(
+              color: labelColor,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

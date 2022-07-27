@@ -127,7 +127,7 @@ class JournalCardTitle extends StatelessWidget {
           ),
           item.maybeMap(
             task: (_) => const SizedBox.shrink(),
-            orElse: () => DurationWidget(
+            orElse: () => DurationViewWidget(
               item: item,
               style: TextStyle(
                 color: colorConfig().entryTextColor,

@@ -8,7 +8,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:path_provider/path_provider.dart';
@@ -86,17 +85,6 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
           _editorStateService.saveSelection(widget.itemId, selection);
         };
 
-        void saveText() {
-          _editorStateService.saveState(
-            id: widget.itemId,
-            controller: controller,
-            lastSaved: item.meta.updatedAt,
-          );
-
-          if (isMobile) {
-            _focusNode.unfocus();
-          }
-        }
 
         return item.maybeMap(
           journalImage: (JournalImage image) {
