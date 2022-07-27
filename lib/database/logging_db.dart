@@ -142,18 +142,9 @@ class LoggingDb extends _$LoggingDb {
     return logEntryById(id).watch().where(makeDuplicateFilter());
   }
 
-  InsightsSpan startTransaction(String name, String operation) {
-    return InsightsSpan();
-  }
-
   Stream<List<LogEntry>> watchLogEntries({
     int limit = 1000,
   }) {
     return allLogEntries(limit).watch();
   }
-}
-
-class InsightsSpan {
-  Future<void> finish() async {}
-  Future<void> error() async {}
 }

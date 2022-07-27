@@ -10,7 +10,6 @@ import 'package:health/health.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/platform.dart';
@@ -49,10 +48,6 @@ class HealthImport {
     required DateTime dateTo,
   }) async {
     final now = DateTime.now();
-
-    final loggingDb = getIt<LoggingDb>();
-    final transaction =
-        loggingDb.startTransaction('getActivityHealthData()', 'task');
     final accessGranted = await authorizeHealth(activityTypes);
 
     if (!accessGranted) {
@@ -119,7 +114,6 @@ class HealthImport {
 
     await addEntries(stepsByDay, 'cumulative_step_count');
     await addEntries(flightsByDay, 'cumulative_flights_climbed');
-    await transaction.finish();
   }
 
   Future<bool> authorizeHealth(List<HealthDataType> types) async {
@@ -135,8 +129,6 @@ class HealthImport {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
-    final loggingDb = getIt<LoggingDb>();
-    final transaction = loggingDb.startTransaction('fetchHealthData()', 'task');
     final accessWasGranted = await authorizeHealth(types);
 
     if (accessWasGranted) {
@@ -168,7 +160,6 @@ class HealthImport {
         debugPrint('Caught exception in fetchHealthData: $e');
       }
     }
-    await transaction.finish();
   }
 
   Future<void> fetchHealthDataDelta(String type) async {
@@ -224,9 +215,6 @@ class HealthImport {
   }) async {
     final now = DateTime.now();
     final dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
-    final loggingDb = getIt<LoggingDb>();
-    final transaction =
-        loggingDb.startTransaction('getActivityHealthData()', 'task');
     debugPrint('getWorkoutsHealthData $dateFrom - $dateTo');
 
     await FlutterHealthFit().authorize();
@@ -248,8 +236,6 @@ class HealthImport {
       );
       await persistenceLogic.createWorkoutEntry(workoutData);
     });
-
-    await transaction.finish();
   }
 
   Future<void> getWorkoutsHealthDataDelta() async {
