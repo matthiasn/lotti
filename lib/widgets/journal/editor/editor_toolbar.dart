@@ -5,9 +5,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class ToolbarWidget extends StatelessWidget {
@@ -41,10 +39,6 @@ class ToolbarWidget extends StatelessWidget {
           toolbarIconAlignment: toolbarIconAlignment,
           multiRowsDisplay: false,
           children: [
-            SaveButton(
-              toolbarIconSize: toolbarIconSize,
-              localizations: localizations,
-            ),
             ToggleStyleButton(
               attribute: Attribute.bold,
               icon: Icons.format_bold,
@@ -125,41 +119,6 @@ class ToolbarWidget extends StatelessWidget {
               onPressed: () => linkService.linkTo(id),
             ),
           ],
-        );
-      },
-    );
-  }
-}
-
-class SaveButton extends StatelessWidget {
-  SaveButton({
-    super.key,
-    required this.toolbarIconSize,
-    required this.localizations,
-  });
-
-  final EditorStateService editorStateService = getIt<EditorStateService>();
-  final double toolbarIconSize;
-  final AppLocalizations localizations;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<EntryCubit, EntryState>(
-      builder: (
-        context,
-        EntryState state,
-      ) {
-        final unsaved = state.map(
-          dirty: (_) => true,
-          saved: (_) => false,
-        );
-
-        return IconButton(
-          icon: const Icon(Icons.save),
-          color: unsaved ? colorConfig().error : Colors.black,
-          iconSize: toolbarIconSize,
-          tooltip: localizations.journalToolbarSaveHint,
-          onPressed: context.read<EntryCubit>().save,
         );
       },
     );

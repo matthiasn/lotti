@@ -110,6 +110,7 @@
   "outboxMonitorRetries": "retries",
   "outboxMonitorRetry": "retry",
   "outboxMonitorSwitchLabel": "enabled",
+  "saveLabel": "Save",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsConflictsTitle": "Sync Conflicts",
   "settingsDashboardsSearchHint": "Search...",

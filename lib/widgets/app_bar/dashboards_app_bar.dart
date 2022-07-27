@@ -17,63 +17,68 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder<List<DashboardDefinition>>(
-        stream: getIt<JournalDb>().watchDashboards(),
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<List<DashboardDefinition>> snapshot,
-        ) {
-          final dashboards = snapshot.data ?? [];
+      stream: getIt<JournalDb>().watchDashboards(),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<DashboardDefinition>> snapshot,
+      ) {
+        final dashboards = snapshot.data ?? [];
 
-          return AppBar(
-            backgroundColor: colorConfig().headerBgColor,
-            automaticallyImplyLeading: false,
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const SizedBox(width: 40),
-                Text(
-                  localizations.navTabTitleInsights,
-                  style: appBarTextStyle(),
-                ),
-                Row(
-                  children: [
-                    if (dashboards.isNotEmpty)
-                      IconButton(
-                        padding: const EdgeInsets.all(4),
-                        icon: const Icon(Icons.slideshow_outlined),
-                        color: colorConfig().entryTextColor,
-                        onPressed: () {
-                          final navService = getIt<NavService>();
-
-                          navService.tabsRouter?.setActiveIndex(
-                              navService.routesByIndex.length - 1);
-
-                          Future<void>.delayed(const Duration(milliseconds: 50))
-                              .then((value) =>
-                                  pushNamedRoute('/dashboards/carousel'));
-                        },
-                      ),
+        return AppBar(
+          backgroundColor: colorConfig().headerBgColor,
+          automaticallyImplyLeading: false,
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const SizedBox(width: 40),
+              Text(
+                localizations.navTabTitleInsights,
+                style: appBarTextStyle(),
+              ),
+              Row(
+                children: [
+                  if (dashboards.isNotEmpty)
                     IconButton(
                       padding: const EdgeInsets.all(4),
-                      icon: const Icon(Icons.dashboard_customize_outlined),
+                      icon: const Icon(Icons.slideshow_outlined),
                       color: colorConfig().entryTextColor,
                       onPressed: () {
                         final navService = getIt<NavService>();
 
                         navService.tabsRouter?.setActiveIndex(
-                            navService.routesByIndex.length - 1);
+                          navService.routesByIndex.length - 1,
+                        );
 
                         Future<void>.delayed(const Duration(milliseconds: 50))
-                            .then((value) =>
-                                pushNamedRoute('/settings/dashboards/'));
+                            .then(
+                          (value) => pushNamedRoute('/dashboards/carousel'),
+                        );
                       },
                     ),
-                  ],
-                ),
-              ],
-            ),
-            centerTitle: true,
-          );
-        });
+                  IconButton(
+                    padding: const EdgeInsets.all(4),
+                    icon: const Icon(Icons.dashboard_customize_outlined),
+                    color: colorConfig().entryTextColor,
+                    onPressed: () {
+                      final navService = getIt<NavService>();
+
+                      navService.tabsRouter?.setActiveIndex(
+                        navService.routesByIndex.length - 1,
+                      );
+
+                      Future<void>.delayed(const Duration(milliseconds: 50))
+                          .then(
+                        (value) => pushNamedRoute('/settings/dashboards/'),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          centerTitle: true,
+        );
+      },
+    );
   }
 }

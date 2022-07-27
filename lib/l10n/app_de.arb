@@ -90,6 +90,7 @@
   "outboxMonitorLabelSent": "gesendet",
   "outboxMonitorNoAttachment": "kein Attachment",
   "outboxMonitorRetries": "Wiederholung(en)",
+  "saveLabel": "Speichern",
   "settingsAdvancedTitle": "Erweiterte Einstellungen",
   "settingsConflictsTitle": "Konflikte aus Synchronisation",
   "settingsDashboardsSearchHint": "Suche...",
