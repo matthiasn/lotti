@@ -15,11 +15,9 @@ class EntryDetailHeader extends StatefulWidget {
   const EntryDetailHeader({
     super.key,
     required this.itemId,
-    required this.saveFn,
   });
 
   final String itemId;
-  final Function saveFn;
 
   @override
   State<EntryDetailHeader> createState() => _EntryDetailHeaderState();

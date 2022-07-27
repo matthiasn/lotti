@@ -15,18 +15,14 @@ class ToolbarWidget extends StatelessWidget {
     super.key,
     required this.id,
     required this.lastSaved,
-    required this.controller,
-    required this.saveFn,
     this.toolbarIconSize = 20,
     this.iconTheme,
   });
 
   final LinkService linkService = getIt<LinkService>();
-  final QuillController controller;
   final double toolbarIconSize;
   final DateTime lastSaved;
   final String? id;
-  final Function saveFn;
   final WrapAlignment toolbarIconAlignment = WrapAlignment.start;
   final QuillIconTheme? iconTheme;
 
@@ -34,102 +30,110 @@ class ToolbarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return QuillToolbar(
-      key: key,
-      toolbarHeight: toolbarIconSize * 2,
-      toolbarSectionSpacing: 0,
-      toolbarIconAlignment: toolbarIconAlignment,
-      multiRowsDisplay: false,
-      children: [
-        SaveButton(
-          id: id,
-          lastSaved: lastSaved,
-          toolbarIconSize: toolbarIconSize,
-          localizations: localizations,
-          saveFn: saveFn,
-        ),
-        ToggleStyleButton(
-          attribute: Attribute.bold,
-          icon: Icons.format_bold,
-          iconSize: toolbarIconSize,
-          controller: controller,
-          iconTheme: iconTheme,
-        ),
-        ToggleStyleButton(
-          attribute: Attribute.italic,
-          icon: Icons.format_italic,
-          iconSize: toolbarIconSize,
-          controller: controller,
-          iconTheme: iconTheme,
-        ),
-        ToggleStyleButton(
-          attribute: Attribute.underline,
-          icon: Icons.format_underline,
-          iconSize: toolbarIconSize,
-          controller: controller,
-          iconTheme: iconTheme,
-        ),
-        ToggleStyleButton(
-          attribute: Attribute.strikeThrough,
-          icon: Icons.format_strikethrough,
-          iconSize: toolbarIconSize,
-          controller: controller,
-          iconTheme: iconTheme,
-        ),
-        ToggleStyleButton(
-          attribute: Attribute.inlineCode,
-          icon: Icons.code,
-          iconSize: toolbarIconSize,
-          controller: controller,
-          iconTheme: iconTheme,
-        ),
-        SelectHeaderStyleButton(
-          controller: controller,
-          iconSize: toolbarIconSize,
-          iconTheme: iconTheme,
-        ),
-        ToggleStyleButton(
-          attribute: Attribute.ul,
-          controller: controller,
-          icon: Icons.format_list_bulleted,
-          iconSize: toolbarIconSize,
-          iconTheme: iconTheme,
-        ),
-        ToggleStyleButton(
-          attribute: Attribute.ol,
-          controller: controller,
-          icon: Icons.format_list_numbered,
-          iconSize: toolbarIconSize,
-          iconTheme: iconTheme,
-        ),
-        ToggleStyleButton(
-          attribute: Attribute.codeBlock,
-          controller: controller,
-          icon: Icons.code,
-          iconSize: toolbarIconSize,
-          iconTheme: iconTheme,
-        ),
-        ClearFormatButton(
-          icon: Icons.format_clear,
-          iconSize: toolbarIconSize,
-          controller: controller,
-          iconTheme: iconTheme,
-        ),
-        if (id != null)
-          IconButton(
-            icon: const Icon(Icons.add_link),
-            iconSize: toolbarIconSize,
-            tooltip: localizations.journalLinkFromHint,
-            onPressed: () => linkService.linkFrom(id!),
-          ),
-        if (id != null)
-          IconButton(
-            icon: const Icon(MdiIcons.target),
-            iconSize: toolbarIconSize,
-            tooltip: localizations.journalLinkToHint,
-            onPressed: () => linkService.linkTo(id!),
-          ),
-      ],
+    return BlocBuilder<EntryCubit, EntryState>(
+      builder: (
+        context,
+        EntryState snapshot,
+      ) {
+        final controller = context.read<EntryCubit>().controller;
+
+        return QuillToolbar(
+          key: key,
+          toolbarHeight: toolbarIconSize * 2,
+          toolbarSectionSpacing: 0,
+          toolbarIconAlignment: toolbarIconAlignment,
+          multiRowsDisplay: false,
+          children: [
+            SaveButton(
+              id: id,
+              lastSaved: lastSaved,
+              toolbarIconSize: toolbarIconSize,
+              localizations: localizations,
+            ),
+            ToggleStyleButton(
+              attribute: Attribute.bold,
+              icon: Icons.format_bold,
+              iconSize: toolbarIconSize,
+              controller: controller,
+              iconTheme: iconTheme,
+            ),
+            ToggleStyleButton(
+              attribute: Attribute.italic,
+              icon: Icons.format_italic,
+              iconSize: toolbarIconSize,
+              controller: controller,
+              iconTheme: iconTheme,
+            ),
+            ToggleStyleButton(
+              attribute: Attribute.underline,
+              icon: Icons.format_underline,
+              iconSize: toolbarIconSize,
+              controller: controller,
+              iconTheme: iconTheme,
+            ),
+            ToggleStyleButton(
+              attribute: Attribute.strikeThrough,
+              icon: Icons.format_strikethrough,
+              iconSize: toolbarIconSize,
+              controller: controller,
+              iconTheme: iconTheme,
+            ),
+            ToggleStyleButton(
+              attribute: Attribute.inlineCode,
+              icon: Icons.code,
+              iconSize: toolbarIconSize,
+              controller: controller,
+              iconTheme: iconTheme,
+            ),
+            SelectHeaderStyleButton(
+              controller: controller,
+              iconSize: toolbarIconSize,
+              iconTheme: iconTheme,
+            ),
+            ToggleStyleButton(
+              attribute: Attribute.ul,
+              controller: controller,
+              icon: Icons.format_list_bulleted,
+              iconSize: toolbarIconSize,
+              iconTheme: iconTheme,
+            ),
+            ToggleStyleButton(
+              attribute: Attribute.ol,
+              controller: controller,
+              icon: Icons.format_list_numbered,
+              iconSize: toolbarIconSize,
+              iconTheme: iconTheme,
+            ),
+            ToggleStyleButton(
+              attribute: Attribute.codeBlock,
+              controller: controller,
+              icon: Icons.code,
+              iconSize: toolbarIconSize,
+              iconTheme: iconTheme,
+            ),
+            ClearFormatButton(
+              icon: Icons.format_clear,
+              iconSize: toolbarIconSize,
+              controller: controller,
+              iconTheme: iconTheme,
+            ),
+            if (id != null)
+              IconButton(
+                icon: const Icon(Icons.add_link),
+                iconSize: toolbarIconSize,
+                tooltip: localizations.journalLinkFromHint,
+                onPressed: () => linkService.linkFrom(id!),
+              ),
+            if (id != null)
+              IconButton(
+                icon: const Icon(MdiIcons.target),
+                iconSize: toolbarIconSize,
+                tooltip: localizations.journalLinkToHint,
+                onPressed: () => linkService.linkTo(id!),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -141,7 +145,6 @@ class SaveButton extends StatelessWidget {
     required this.lastSaved,
     required this.toolbarIconSize,
     required this.localizations,
-    required this.saveFn,
   });
 
   final EditorStateService editorStateService = getIt<EditorStateService>();
@@ -149,7 +152,6 @@ class SaveButton extends StatelessWidget {
   final DateTime lastSaved;
   final double toolbarIconSize;
   final AppLocalizations localizations;
-  final Function saveFn;
 
   @override
   Widget build(BuildContext context) {
@@ -158,6 +160,8 @@ class SaveButton extends StatelessWidget {
         context,
         EntryState snapshot,
       ) {
+        final saveFn = context.read<EntryCubit>().save;
+
         return StreamBuilder<bool>(
           stream: editorStateService.getUnsavedStream(id, lastSaved),
           builder: (context, snapshot) {
@@ -168,10 +172,7 @@ class SaveButton extends StatelessWidget {
               iconSize: toolbarIconSize,
               tooltip: localizations.journalToolbarSaveHint,
               // ignore: avoid_dynamic_calls, unnecessary_lambdas
-              onPressed: () {
-                context.read<EntryCubit>().save();
-                saveFn();
-              },
+              onPressed: saveFn,
             );
           },
         );

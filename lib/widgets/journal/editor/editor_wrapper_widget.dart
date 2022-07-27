@@ -101,10 +101,10 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
         return item.maybeMap(
           journalImage: (JournalImage image) {
             return EditorWidget(
-              controller: controller,
+              //controller: controller,
               focusNode: _focusNode,
               journalEntity: item,
-              saveFn: saveText,
+              //saveFn: saveText,
             );
           },
           orElse: () {

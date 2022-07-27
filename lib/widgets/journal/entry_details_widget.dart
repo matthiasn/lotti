@@ -3,18 +3,14 @@ import 'dart:io';
 import 'package:auto_route/annotations.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
@@ -106,18 +102,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           );
         });
 
-        void saveText() {
-          _editorStateService.saveState(
-            id: widget.itemId,
-            lastSaved: item.meta.updatedAt,
-            controller: controller,
-          );
-
-          if (isMobile) {
-            _focusNode.unfocus();
-          }
-        }
-
         return BlocProvider<EntryCubit>(
           create: (BuildContext context) => EntryCubit(
             entryId: widget.itemId,
@@ -155,10 +139,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       },
                       orElse: () => const SizedBox.shrink(),
                     ),
-                    EntryDetailHeader(
-                      itemId: widget.itemId,
-                      saveFn: saveText,
-                    ),
+                    EntryDetailHeader(itemId: widget.itemId),
                     Padding(
                       padding: EdgeInsets.only(
                         left: 8,
@@ -175,10 +156,8 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       survey: (_) => const SizedBox.shrink(),
                       orElse: () {
                         return EditorWidget(
-                          controller: controller,
                           focusNode: _focusNode,
                           journalEntity: item,
-                          saveFn: saveText,
                         );
                       },
                     ),
@@ -191,51 +170,8 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       quantitative: HealthSummary.new,
                       measurement: MeasurementSummary.new,
                       task: (Task task) {
-                        final formKey = GlobalKey<FormBuilderState>();
-
-                        void saveText() {
-                          formKey.currentState?.save();
-                          final formData = formKey.currentState?.value;
-                          if (formData == null) {
-                            _editorStateService.saveTask(
-                              id: widget.itemId,
-                              controller: controller,
-                              taskData: task.data,
-                            );
-
-                            return;
-                          }
-                          //final DateTime due = formData['due'];
-                          final title = formData['title'] as String;
-                          final dt = formData['estimate'] as DateTime;
-                          final status = formData['status'] as String;
-
-                          final estimate = Duration(
-                            hours: dt.hour,
-                            minutes: dt.minute,
-                          );
-
-                          HapticFeedback.heavyImpact();
-
-                          final updatedData = task.data.copyWith(
-                            title: title,
-                            estimate: estimate,
-                            // due: due,
-                            status: taskStatusFromString(status),
-                          );
-
-                          _editorStateService.saveTask(
-                            id: widget.itemId,
-                            controller: controller,
-                            taskData: updatedData,
-                          );
-                        }
-
                         return TaskForm(
-                          controller: controller,
                           focusNode: _focusNode,
-                          saveFn: saveText,
-                          formKey: formKey,
                           data: task.data,
                           task: task,
                         );
@@ -246,7 +182,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     ),
                     EntryDetailFooter(
                       itemId: widget.itemId,
-                      saveFn: saveText,
                       popOnDelete: widget.popOnDelete,
                     ),
                   ],

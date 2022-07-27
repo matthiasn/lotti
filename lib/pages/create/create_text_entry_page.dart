@@ -62,9 +62,9 @@ class _CreateTextEntryPageState extends State<CreateTextEntryPage> {
           child: ClipRRect(
             borderRadius: const BorderRadius.all(Radius.circular(8)),
             child: EditorWidget(
-              controller: _controller,
+              //controller: _controller,
               focusNode: _focusNode,
-              saveFn: _save,
+              //saveFn: _save,
               minHeight: 200,
               autoFocus: true,
             ),

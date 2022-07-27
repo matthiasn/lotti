@@ -87,11 +87,11 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: TaskForm(
-                  formKey: formKey,
-                  controller: _controller,
+                  //formKey: formKey,
+                  //controller: _controller,
                   focusNode: _focusNode,
                   focusOnTitle: true,
-                  saveFn: _save,
+                  //saveFn: _save,
                   withOpenDetails: true,
                 ),
               ),

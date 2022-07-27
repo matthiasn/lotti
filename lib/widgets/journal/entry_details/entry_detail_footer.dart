@@ -13,12 +13,10 @@ class EntryDetailFooter extends StatefulWidget {
   const EntryDetailFooter({
     super.key,
     required this.itemId,
-    required this.saveFn,
     required this.popOnDelete,
   });
 
   final String itemId;
-  final Function saveFn;
   final bool popOnDelete;
 
   @override
@@ -62,7 +60,6 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                     item: item,
                     style: textStyle(),
                     showControls: true,
-                    saveFn: widget.saveFn,
                   ),
                   Visibility(
                     visible: loc != null && loc.longitude != 0,
