@@ -1,8 +1,6 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -170,7 +168,7 @@ void main() {
 
       when(
         () => mockEditorStateService.getUnsavedStream(
-          testTextEntry.meta.id,
+          any(),
           any(),
         ),
       ).thenAnswer(
@@ -189,15 +187,6 @@ void main() {
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer((_) => Stream<List<JournalEntity>>.fromIterable([]));
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(
-          testTask.meta.id,
-          any(),
-        ),
-      ).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
 
       when(
         () => mockJournalDb.watchLinkedTotalDuration(
@@ -249,13 +238,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
-            child: EntryDetailPage(
-              itemId: testTextEntry.meta.id,
-            ),
-          ),
+          EntryDetailPage(itemId: testTextEntry.meta.id),
         ),
       );
 
@@ -293,13 +276,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
-            child: EntryDetailPage(
-              itemId: testTask.meta.id,
-            ),
-          ),
+          EntryDetailPage(itemId: testTask.meta.id),
         ),
       );
 
@@ -350,13 +327,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
-            child: EntryDetailPage(
-              itemId: testWeightEntry.meta.id,
-            ),
-          ),
+          EntryDetailPage(itemId: testWeightEntry.meta.id),
         ),
       );
 

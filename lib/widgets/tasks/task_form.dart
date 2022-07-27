@@ -45,7 +45,7 @@ class _TaskFormState extends State<TaskForm> {
         context,
         EntryState snapshot,
       ) {
-        final saveTask = context.read<EntryCubit>().saveTask;
+        final save = context.read<EntryCubit>().save;
         final formKey = context.read<EntryCubit>().formKey;
 
         return Column(
@@ -86,7 +86,7 @@ class _TaskFormState extends State<TaskForm> {
                         fontWeight: FontWeight.w300,
                         fontFamily: 'Oswald',
                       ),
-                      onChanged: (_) => saveTask(),
+                      onChanged: (_) => save(),
                       decoration: InputDecoration(
                         labelText: localizations.taskEstimateLabel,
                         labelStyle: labelStyle(),
@@ -134,7 +134,7 @@ class _TaskFormState extends State<TaskForm> {
                           fontFamily: 'Oswald',
                         ),
                       ),
-                      onChanged: (dynamic _) => saveTask(),
+                      onChanged: (dynamic _) => save(),
                       selectedColor: widget.data?.status != null
                           ? taskColor(widget.data!.status)
                           : colorConfig().unselectedChoiceChipColor,
