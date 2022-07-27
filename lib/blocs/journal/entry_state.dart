@@ -5,9 +5,13 @@ part 'entry_state.freezed.dart';
 
 @freezed
 class EntryState with _$EntryState {
-  factory EntryState({
+  factory EntryState.saved({
     required String entryId,
     required JournalEntity? entry,
-    required bool dirty,
-  }) = _EntryState;
+  }) = _EntryStateSaved;
+
+  factory EntryState.dirty({
+    required String entryId,
+    required JournalEntity? entry,
+  }) = _EntryStateDirty;
 }

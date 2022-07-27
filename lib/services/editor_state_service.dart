@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:easy_debounce/easy_debounce.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/task.dart';
@@ -35,6 +36,8 @@ class EditorStateService {
   }
 
   Stream<bool> getUnsavedStream(String? id, DateTime lastSaved) {
+    debugPrint('getUnsavedStream $id $lastSaved');
+
     final unsavedStreamController = StreamController<bool>();
 
     if (id != null) {
@@ -75,10 +78,9 @@ class EditorStateService {
   void saveTempState({
     required String id,
     required DateTime lastSaved,
-    required QuillController controller,
+    required String json,
   }) {
-    final delta = deltaFromController(controller);
-    final json = quillJsonFromDelta(delta);
+    debugPrint('saveTempState $id');
     editorStateById[id] = json;
     selectionById.remove(id);
 

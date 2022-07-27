@@ -118,7 +118,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       workout: (_) => const SizedBox.shrink(),
                       survey: (_) => const SizedBox.shrink(),
                       orElse: () {
-                        return EditorWidget(journalEntity: item);
+                        return const EditorWidget();
                       },
                     ),
                     item.map(
