@@ -202,7 +202,7 @@ class _TaskFormState extends State<TaskForm> {
                 ),
               ),
             ),
-            EditorWidget(journalEntity: widget.task),
+            const EditorWidget(),
           ],
         );
       },

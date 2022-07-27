@@ -88,7 +88,7 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
 
         return item.maybeMap(
           journalImage: (JournalImage image) {
-            return EditorWidget(journalEntity: item);
+            return const EditorWidget();
           },
           orElse: () {
             return const SizedBox.shrink();

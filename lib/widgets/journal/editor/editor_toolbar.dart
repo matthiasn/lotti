@@ -13,14 +13,12 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class ToolbarWidget extends StatelessWidget {
   ToolbarWidget({
     super.key,
-    required this.id,
     this.toolbarIconSize = 20,
     this.iconTheme,
   });
 
   final LinkService linkService = getIt<LinkService>();
   final double toolbarIconSize;
-  final String? id;
   final WrapAlignment toolbarIconAlignment = WrapAlignment.start;
   final QuillIconTheme? iconTheme;
 
@@ -34,6 +32,7 @@ class ToolbarWidget extends StatelessWidget {
         EntryState snapshot,
       ) {
         final controller = context.read<EntryCubit>().controller;
+        final id = context.read<EntryCubit>().entryId;
 
         return QuillToolbar(
           key: key,
@@ -113,20 +112,18 @@ class ToolbarWidget extends StatelessWidget {
               controller: controller,
               iconTheme: iconTheme,
             ),
-            if (id != null)
-              IconButton(
-                icon: const Icon(Icons.add_link),
-                iconSize: toolbarIconSize,
-                tooltip: localizations.journalLinkFromHint,
-                onPressed: () => linkService.linkFrom(id!),
-              ),
-            if (id != null)
-              IconButton(
-                icon: const Icon(MdiIcons.target),
-                iconSize: toolbarIconSize,
-                tooltip: localizations.journalLinkToHint,
-                onPressed: () => linkService.linkTo(id!),
-              ),
+            IconButton(
+              icon: const Icon(Icons.add_link),
+              iconSize: toolbarIconSize,
+              tooltip: localizations.journalLinkFromHint,
+              onPressed: () => linkService.linkFrom(id),
+            ),
+            IconButton(
+              icon: const Icon(MdiIcons.target),
+              iconSize: toolbarIconSize,
+              tooltip: localizations.journalLinkToHint,
+              onPressed: () => linkService.linkTo(id),
+            ),
           ],
         );
       },

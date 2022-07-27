@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/editor/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor/editor_toolbar.dart';
@@ -13,16 +12,12 @@ import 'package:lotti/widgets/journal/editor/editor_toolbar.dart';
 class EditorWidget extends StatelessWidget {
   const EditorWidget({
     super.key,
-    this.journalEntity,
-    //required this.entryId,
     this.minHeight = 40,
     this.maxHeight = double.maxFinite,
     this.padding = 16,
     this.autoFocus = false,
   });
 
-  final JournalEntity? journalEntity;
-  //final String entryId;
   final double maxHeight;
   final double minHeight;
   final bool autoFocus;
@@ -78,7 +73,7 @@ class EditorWidget extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ToolbarWidget(id: journalEntity?.meta.id),
+                  ToolbarWidget(),
                   Flexible(
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: padding),
