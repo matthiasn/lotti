@@ -60,18 +60,18 @@ class EntryCubit extends Cubit<EntryState> {
     );
 
     if (entry is Task) {
-      saveTask();
+      await saveTask();
     }
   }
 
-  void saveTask() {
+  Future<void> saveTask() async {
     if (entry is Task) {
       final task = entry as Task;
 
       formKey?.currentState?.save();
       final formData = formKey?.currentState?.value;
       if (formData == null) {
-        _editorStateService.saveTask(
+        await _editorStateService.saveTask(
           id: entryId,
           controller: controller,
           taskData: task.data,
@@ -89,7 +89,7 @@ class EntryCubit extends Cubit<EntryState> {
         minutes: dt.minute,
       );
 
-      HapticFeedback.heavyImpact();
+      await HapticFeedback.heavyImpact();
 
       final updatedData = task.data.copyWith(
         title: title,
@@ -98,7 +98,7 @@ class EntryCubit extends Cubit<EntryState> {
         status: taskStatusFromString(status),
       );
 
-      _editorStateService.saveTask(
+      await _editorStateService.saveTask(
         id: entryId,
         controller: controller,
         taskData: updatedData,
@@ -109,6 +109,7 @@ class EntryCubit extends Cubit<EntryState> {
   @override
   Future<void> close() async {
     debugPrint('EntryCubit closing $entryId');
+    await save();
     await super.close();
   }
 }
