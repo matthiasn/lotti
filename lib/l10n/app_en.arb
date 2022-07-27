@@ -102,6 +102,7 @@
   "navTabTitleJournal": "Journal",
   "navTabTitleSettings": "Settings",
   "navTabTitleTasks": "Tasks",
+  "navTabTitleNewMeasurements": "New Measurements",
   "outboxMonitorLabelAll": "all",
   "outboxMonitorLabelError": "error",
   "outboxMonitorLabelPending": "pending",

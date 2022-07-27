@@ -32,8 +32,13 @@ class HomePage extends StatelessWidget {
       stream: _db.watchActiveConfigFlagNames(),
       builder: (context, snapshot) {
         final showTasks = snapshot.data?.contains(showTasksTabFlag);
+        final showNewMeasurements = snapshot.data?.contains(showNewMeasurementsTabFlag);
 
         if (showTasks == null) {
+          return const CircularProgressIndicator();
+        }
+
+        if (showNewMeasurements == null) {
           return const CircularProgressIndicator();
         }
 
@@ -62,6 +67,7 @@ class HomePage extends StatelessWidget {
           routes: [
             const JournalRouter(),
             if (showTasks) const TasksRouter(),
+            if (showNewMeasurements) const NewMeasurementsRouter(),
             const DashboardsRouter(),
             const SettingsRouter(),
             //TutorialRouter(),
@@ -79,6 +85,7 @@ class HomePage extends StatelessWidget {
             final routesByIndex = <String>[
               '/journal',
               if (showTasks) '/tasks',
+              if (showNewMeasurements) '/newmeasurements',
               '/dashboards',
               '/settings',
             ];
@@ -131,6 +138,11 @@ class HomePage extends StatelessWidget {
                     BottomNavigationBarItem(
                       icon: TasksBadgeIcon(),
                       label: AppLocalizations.of(context)!.navTabTitleTasks,
+                    ),
+                  if (showNewMeasurements)
+                    BottomNavigationBarItem(
+                      icon: TasksBadgeIcon(),
+                      label: AppLocalizations.of(context)!.navTabTitleNewMeasurements,
                     ),
                   BottomNavigationBarItem(
                     icon: const Icon(Icons.dashboard_outlined),
