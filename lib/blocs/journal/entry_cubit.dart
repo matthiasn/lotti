@@ -24,12 +24,10 @@ class EntryCubit extends Cubit<EntryState> {
           ),
         ) {
     final lastSaved = entry.meta.updatedAt;
-    debugPrint('EntryCubit $entryId $lastSaved');
 
     _editorStateService
         .getUnsavedStream(entryId, lastSaved)
         .listen((bool dirty) {
-      debugPrint('EntryCubit $entryId getUnsavedStream $dirty');
       if (dirty) {
         emit(EntryState.dirty(entryId: entryId, entry: entry));
       } else {
@@ -73,68 +71,41 @@ class EntryCubit extends Cubit<EntryState> {
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
 
   Future<void> save() async {
-    debugPrint('EntryCubit saving $entryId');
-
-    if (entry is Task) {
-      await saveTask();
-    } else {
-      await _persistenceLogic.updateJournalEntityText(
-        entryId,
-        entryTextFromController(controller),
-      );
-
-      await _editorStateService.entryWasSaved(
-        id: entryId,
-        lastSaved: entry.meta.updatedAt,
-        controller: controller,
-      );
-      emit(
-        EntryState.saved(
-          entryId: entryId,
-          entry: entry,
-        ),
-      );
-    }
-    await HapticFeedback.heavyImpact();
-  }
-
-  Future<void> saveTask() async {
-    debugPrint('EntryCubit saving task $entryId');
-
     if (entry is Task) {
       final task = entry as Task;
-
       formKey?.currentState?.save();
       final formData = formKey?.currentState?.value;
       final title = formData!['title'] as String;
       final dt = formData['estimate'] as DateTime;
       final status = formData['status'] as String;
 
-      final estimate = Duration(
-        hours: dt.hour,
-        minutes: dt.minute,
-      );
-
-      await HapticFeedback.heavyImpact();
-
-      final updatedData = task.data.copyWith(
-        title: title,
-        estimate: estimate,
-        status: taskStatusFromString(status),
-      );
-
       await _persistenceLogic.updateTask(
         entryText: entryTextFromController(controller),
         journalEntityId: entryId,
-        taskData: updatedData,
+        taskData: task.data.copyWith(
+          title: title,
+          estimate: Duration(
+            hours: dt.hour,
+            minutes: dt.minute,
+          ),
+          status: taskStatusFromString(status),
+        ),
       );
-
-      await _editorStateService.entryWasSaved(
-        id: entryId,
-        lastSaved: entry.meta.updatedAt,
-        controller: controller,
+    } else {
+      await _persistenceLogic.updateJournalEntityText(
+        entryId,
+        entryTextFromController(controller),
       );
     }
+
+    await _editorStateService.entryWasSaved(
+      id: entryId,
+      lastSaved: entry.meta.updatedAt,
+      controller: controller,
+    );
+
+    emit(EntryState.saved(entryId: entryId, entry: entry));
+    await HapticFeedback.heavyImpact();
   }
 
   void setDirty(dynamic _) {
@@ -143,7 +114,6 @@ class EntryCubit extends Cubit<EntryState> {
 
   @override
   Future<void> close() async {
-    debugPrint('EntryCubit closing $entryId');
     if (!isTestEnv) {
       await save();
     }
