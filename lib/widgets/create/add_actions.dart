@@ -4,17 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
-import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/screenshots.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
 
@@ -35,8 +31,6 @@ class RadialAddActionButtons extends StatefulWidget {
 }
 
 class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
-  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
-  final TimeService _timeService = getIt<TimeService>();
   DateTime keyDateTime = DateTime.now();
 
   @override
@@ -64,16 +58,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: colorConfig().actionColor,
           onPressed: () async {
             rebuild();
-
-            final imageData = await takeScreenshotMac();
-            final journalEntity = await _persistenceLogic.createImageEntry(
-              imageData,
-              linkedId: widget.linked?.meta.id,
-            );
-
-            if (journalEntity != null) {
-              _persistenceLogic.addGeolocation(journalEntity.meta.id);
-            }
+            await createScreenshot(linkedId: widget.linked?.meta.id);
           },
           child: const Icon(
             MdiIcons.monitorScreenshot,
@@ -148,17 +133,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: colorConfig().actionColor,
           onPressed: () async {
             rebuild();
-
-            final entry = await _persistenceLogic.createTextEntry(
-              EntryText(plainText: ''),
-              id: uuid.v1(),
-              linkedId: widget.linked?.meta.id,
-              started: DateTime.now(),
-            );
-
-            if (widget.linked == null) {
-              pushNamedRoute('/journal/${entry?.meta.id}');
-            }
+            await createTextEntry(linkedId: widget.linked?.meta.id);
           },
           child: const Icon(
             MdiIcons.textLong,
@@ -175,21 +150,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: colorConfig().actionColor,
           onPressed: () async {
             rebuild();
-
-            if (widget.linked != null) {
-              final timerItem = await _persistenceLogic.createTextEntry(
-                EntryText(plainText: ''),
-                id: uuid.v1(),
-                linkedId: widget.linked!.meta.id,
-                started: DateTime.now(),
-              );
-              if (timerItem != null) {
-                await _timeService.start(timerItem);
-              }
-            } else {
-              final linkedId = widget.linked?.meta.id;
-              pushNamedRoute('/journal/create/$linkedId');
-            }
+            await createTimerEntry(linkedId: widget.linked?.meta.id);
           },
           child: const Icon(
             MdiIcons.timerOutline,
@@ -228,11 +189,9 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         heroTag: 'task',
         tooltip: localizations.addActionAddTask,
         backgroundColor: colorConfig().actionColor,
-        onPressed: () {
+        onPressed: () async {
           rebuild();
-
-          final linkedId = widget.linked?.meta.id;
-          pushNamedRoute('/tasks/create/$linkedId');
+          await createTask(linkedId: widget.linked?.meta.id);
         },
         child: const Icon(
           Icons.task_outlined,

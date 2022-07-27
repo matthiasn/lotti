@@ -6,11 +6,11 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/screenshots.dart';
 
 class DesktopMenuWrapper extends StatelessWidget {
   DesktopMenuWrapper(
@@ -71,6 +71,7 @@ class DesktopMenuWrapper extends StatelessWidget {
                     label: localizations.fileMenuNewEntry,
                     onSelected: () async {
                       final linkedId = await getIdFromSavedRoute();
+
                       if (linkedId != null) {
                         await _persistenceLogic.createTextEntry(
                           EntryText(plainText: ''),
@@ -98,7 +99,7 @@ class DesktopMenuWrapper extends StatelessWidget {
                         ),
                         onSelected: () async {
                           final linkedId = await getIdFromSavedRoute();
-                          pushNamedRoute('/tasks/create/$linkedId');
+                          await createTask(linkedId: linkedId);
                         },
                       ),
                       PlatformMenuItem(
@@ -109,7 +110,8 @@ class DesktopMenuWrapper extends StatelessWidget {
                           alt: true,
                         ),
                         onSelected: () async {
-                          await takeScreenshotWithLinked();
+                          final linkedId = await getIdFromSavedRoute();
+                          await createScreenshot(linkedId: linkedId);
                         },
                       ),
                     ],
