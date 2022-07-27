@@ -7,15 +7,17 @@ on:
 
 jobs:
   test:
-    name: Flutter Test on Linux
+    name: Flutter Analyze on Linux
     runs-on: ubuntu-latest
     steps:
+      - name: Update apt-get
+        run: sudo apt-get update
       - name: Install libraries
         run: sudo apt-get install network-manager
       - uses: actions/checkout@v2
       - uses: subosito/flutter-action@v1
         with:
-          flutter-version: '3.0.2'
+          flutter-version: '3.0.5'
           channel: 'stable'
       - name: Run Flutter Analyze
         run: make clean_build_analyze
