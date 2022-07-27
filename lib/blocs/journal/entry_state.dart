@@ -13,5 +13,5 @@ class EntryState with _$EntryState {
   factory EntryState.dirty({
     required String entryId,
     required JournalEntity? entry,
-  }) = _EntryStateDirty;
+  }) = EntryStateDirty;
 }

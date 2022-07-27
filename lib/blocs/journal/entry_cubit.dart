@@ -114,9 +114,10 @@ class EntryCubit extends Cubit<EntryState> {
 
   @override
   Future<void> close() async {
-    if (!isTestEnv) {
+    if (state is EntryStateDirty && !isTestEnv) {
       await save();
     }
+
     await super.close();
   }
 }
