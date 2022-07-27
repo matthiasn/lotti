@@ -113,8 +113,10 @@ class EditorStateService {
   }) async {
     saveSelection(id, controller.selection);
     EasyDebounce.cancel('persistDraftState-$id');
-    final entryText = entryTextFromController(controller);
-    await _persistenceLogic.updateJournalEntityText(id, entryText);
+    await _persistenceLogic.updateJournalEntityText(
+      id,
+      entryTextFromController(controller),
+    );
     await _editorDb.setDraftSaved(entryId: id, lastSaved: lastSaved);
 
     final unsavedStreamController = unsavedStreamById[id];

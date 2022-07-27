@@ -2,6 +2,9 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lotti/blocs/journal/entry_cubit.dart';
+import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -13,11 +16,9 @@ class EntryImageWidget extends StatefulWidget {
   const EntryImageWidget({
     super.key,
     required this.journalImage,
-    required this.focusNode,
   });
 
   final JournalImage journalImage;
-  final FocusNode focusNode;
 
   @override
   State<EntryImageWidget> createState() => _EntryImageWidgetState();
@@ -43,35 +44,42 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
       final file =
           File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
 
-      return GestureDetector(
-        onTap: () {
-          widget.focusNode.unfocus();
-          Navigator.of(context, rootNavigator: true).push(
-            MaterialPageRoute<HeroPhotoViewRouteWrapper>(
-              builder: (_) => HeroPhotoViewRouteWrapper(
-                focusNode: widget.focusNode,
-                imageProvider: FileImage(file),
+      return BlocBuilder<EntryCubit, EntryState>(builder: (
+        context,
+        EntryState snapshot,
+      ) {
+        final focusNode = context.read<EntryCubit>().focusNode;
+
+        return GestureDetector(
+          onTap: () {
+            focusNode.unfocus();
+            Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute<HeroPhotoViewRouteWrapper>(
+                builder: (_) => HeroPhotoViewRouteWrapper(
+                  focusNode: focusNode,
+                  imageProvider: FileImage(file),
+                ),
               ),
-            ),
-          );
-        },
-        child: ColoredBox(
-          color: Colors.black,
-          child: Hero(
-            tag: 'entry_img',
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: isMobile ? 400 : MediaQuery.of(context).size.width,
-              ),
-              child: Image.file(
-                file,
-                width: MediaQuery.of(context).size.width,
-                fit: BoxFit.contain,
+            );
+          },
+          child: ColoredBox(
+            color: Colors.black,
+            child: Hero(
+              tag: 'entry_img',
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: isMobile ? 400 : MediaQuery.of(context).size.width,
+                ),
+                child: Image.file(
+                  file,
+                  width: MediaQuery.of(context).size.width,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
+      });
     } else {
       return Container();
     }

@@ -85,12 +85,11 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
           _editorStateService.saveSelection(widget.itemId, selection);
         };
 
-
         return item.maybeMap(
           journalImage: (JournalImage image) {
             return EditorWidget(
               //controller: controller,
-              focusNode: _focusNode,
+              //focusNode: _focusNode,
               journalEntity: item,
               //saveFn: saveText,
             );
