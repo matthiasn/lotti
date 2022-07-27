@@ -31,7 +31,6 @@ class EditorWrapperWidget extends StatefulWidget {
 
 class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
   final JournalDb _db = getIt<JournalDb>();
-  final FocusNode _focusNode = FocusNode();
   final EditorStateService _editorStateService = getIt<EditorStateService>();
 
   late final Stream<JournalEntity?> _stream =
@@ -87,12 +86,7 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
 
         return item.maybeMap(
           journalImage: (JournalImage image) {
-            return EditorWidget(
-              //controller: controller,
-              //focusNode: _focusNode,
-              journalEntity: item,
-              //saveFn: saveText,
-            );
+            return EditorWidget(journalEntity: item);
           },
           orElse: () {
             return const SizedBox.shrink();

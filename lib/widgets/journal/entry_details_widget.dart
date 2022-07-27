@@ -6,7 +6,6 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
@@ -39,8 +38,6 @@ class EntryDetailWidget extends StatefulWidget {
 
 class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   final JournalDb _db = getIt<JournalDb>();
-  final EditorStateService _editorStateService = getIt<EditorStateService>();
-
   late final Stream<JournalEntity?> _stream =
       _db.watchEntityById(widget.itemId);
 

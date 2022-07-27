@@ -28,7 +28,6 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final formKey = GlobalKey<FormBuilderState>();
   final quill.QuillController _controller = makeController();
-  final FocusNode _focusNode = FocusNode();
   DateTime started = DateTime.now();
 
   @override
@@ -86,12 +85,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: TaskForm(
-                  //formKey: formKey,
-                  //controller: _controller,
-                  //focusNode: _focusNode,
+                child: const TaskForm(
                   focusOnTitle: true,
-                  //saveFn: _save,
                   withOpenDetails: true,
                 ),
               ),

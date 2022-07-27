@@ -13,6 +13,7 @@ import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
@@ -145,18 +146,18 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           heroTag: 'text',
           tooltip: localizations.addActionAddText,
           backgroundColor: colorConfig().actionColor,
-          onPressed: () {
+          onPressed: () async {
             rebuild();
 
-            if (widget.linked != null) {
-              _persistenceLogic.createTextEntry(
-                EntryText(plainText: ''),
-                linkedId: widget.linked!.meta.id,
-                started: DateTime.now(),
-              );
-            } else {
-              final linkedId = widget.linked?.meta.id;
-              pushNamedRoute('/journal/create/$linkedId');
+            final entry = await _persistenceLogic.createTextEntry(
+              EntryText(plainText: ''),
+              id: uuid.v1(),
+              linkedId: widget.linked?.meta.id,
+              started: DateTime.now(),
+            );
+
+            if (widget.linked == null) {
+              pushNamedRoute('/journal/${entry?.meta.id}');
             }
           },
           child: const Icon(
@@ -178,6 +179,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             if (widget.linked != null) {
               final timerItem = await _persistenceLogic.createTextEntry(
                 EntryText(plainText: ''),
+                id: uuid.v1(),
                 linkedId: widget.linked!.meta.id,
                 started: DateTime.now(),
               );

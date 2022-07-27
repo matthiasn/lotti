@@ -47,7 +47,6 @@ class _TaskFormState extends State<TaskForm> {
       ) {
         final saveTask = context.read<EntryCubit>().saveTask;
         final formKey = context.read<EntryCubit>().formKey;
-        final focusNode = context.read<EntryCubit>().focusNode;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

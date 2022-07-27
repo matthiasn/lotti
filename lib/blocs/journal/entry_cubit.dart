@@ -19,12 +19,10 @@ class EntryCubit extends Cubit<EntryState> {
           EntryState(
             entryId: entryId,
             dirty: false,
-            entry: null,
+            entry: entry,
           ),
         ) {
     debugPrint('EntryCubit $entryId');
-
-    focusNode = FocusNode();
 
     if (entry is Task) {
       formKey = GlobalKey<FormBuilderState>();
@@ -50,8 +48,7 @@ class EntryCubit extends Cubit<EntryState> {
 
   late final QuillController controller;
   late final GlobalKey<FormBuilderState>? formKey;
-  late final FocusNode focusNode;
-
+  final FocusNode focusNode = FocusNode();
   final EditorStateService _editorStateService = getIt<EditorStateService>();
 
   Future<void> save() async {
