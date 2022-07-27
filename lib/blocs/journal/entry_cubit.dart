@@ -19,7 +19,7 @@ class EntryCubit extends Cubit<EntryState> {
           EntryState(
             entryId: entryId,
             dirty: false,
-            entry: null,
+            entry: entry,
           ),
         ) {
     debugPrint('EntryCubit $entryId');

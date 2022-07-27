@@ -9,6 +9,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/screenshots.dart';
 
 class DesktopMenuWrapper extends StatelessWidget {
@@ -73,6 +74,7 @@ class DesktopMenuWrapper extends StatelessWidget {
                       if (linkedId != null) {
                         await _persistenceLogic.createTextEntry(
                           EntryText(plainText: ''),
+                          id: uuid.v1(),
                           linkedId: linkedId,
                           started: DateTime.now(),
                         );

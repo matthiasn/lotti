@@ -100,6 +100,7 @@ void main() {
         // create test entry
         final textEntry = await getIt<PersistenceLogic>().createTextEntry(
           EntryText(plainText: testText),
+          id: uuid.v1(),
           started: now,
         );
 
@@ -331,6 +332,7 @@ void main() {
       const updatedTestText = 'updated test comment for task';
       final comment = await getIt<PersistenceLogic>().createTextEntry(
         EntryText(plainText: testText),
+        id: uuid.v1(),
         started: now,
         linkedId: task.meta.id,
       );

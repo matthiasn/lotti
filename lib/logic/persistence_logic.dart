@@ -375,14 +375,12 @@ class PersistenceLogic {
   Future<JournalEntity?> createTextEntry(
     EntryText entryText, {
     required DateTime started,
+    required String id,
     String? linkedId,
   }) async {
-    final transaction =
-        _loggingDb.startTransaction('createTextEntry()', 'task');
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
-      final id = uuid.v1();
 
       final journalEntity = JournalEntity.journalEntry(
         entryText: entryText,
@@ -403,7 +401,6 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
       addGeolocation(journalEntity.meta.id);
-      await transaction.finish();
       return journalEntity;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -412,7 +409,6 @@ class PersistenceLogic {
         subDomain: 'createTextEntry',
         stackTrace: stackTrace,
       );
-      await transaction.error();
       return null;
     }
   }
