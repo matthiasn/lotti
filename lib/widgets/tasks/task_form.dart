@@ -18,14 +18,12 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 class TaskForm extends StatefulWidget {
   const TaskForm({
     super.key,
-    required this.focusNode,
     this.task,
     this.data,
     this.focusOnTitle = false,
     this.withOpenDetails = false,
   });
 
-  final FocusNode focusNode;
   final TaskData? data;
   final Task? task;
   final bool focusOnTitle;
@@ -49,6 +47,7 @@ class _TaskFormState extends State<TaskForm> {
       ) {
         final saveTask = context.read<EntryCubit>().saveTask;
         final formKey = context.read<EntryCubit>().formKey;
+        final focusNode = context.read<EntryCubit>().focusNode;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,10 +203,7 @@ class _TaskFormState extends State<TaskForm> {
                 ),
               ),
             ),
-            EditorWidget(
-              focusNode: widget.focusNode,
-              journalEntity: widget.task,
-            ),
+            EditorWidget(journalEntity: widget.task),
           ],
         );
       },

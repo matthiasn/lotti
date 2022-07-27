@@ -18,7 +18,6 @@ class EditorWidget extends StatelessWidget {
     this.maxHeight = double.maxFinite,
     this.padding = 16,
     this.autoFocus = false,
-    required this.focusNode,
   });
 
   final JournalEntity? journalEntity;
@@ -26,7 +25,6 @@ class EditorWidget extends StatelessWidget {
   final double minHeight;
   final bool autoFocus;
   final double padding;
-  final FocusNode focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +35,7 @@ class EditorWidget extends StatelessWidget {
       ) {
         final saveFn = context.read<EntryCubit>().save;
         final controller = context.read<EntryCubit>().controller;
+        final focusNode = context.read<EntryCubit>().focusNode;
 
         void keyFormatter(
           RawKeyEvent event,

@@ -24,6 +24,8 @@ class EntryCubit extends Cubit<EntryState> {
         ) {
     debugPrint('EntryCubit $entryId');
 
+    focusNode = FocusNode();
+
     if (entry is Task) {
       formKey = GlobalKey<FormBuilderState>();
     }
@@ -48,23 +50,27 @@ class EntryCubit extends Cubit<EntryState> {
 
   late final QuillController controller;
   late final GlobalKey<FormBuilderState>? formKey;
+  late final FocusNode focusNode;
+
   final EditorStateService _editorStateService = getIt<EditorStateService>();
 
   Future<void> save() async {
     debugPrint('EntryCubit saving $entryId');
 
-    await _editorStateService.saveState(
-      id: entryId,
-      lastSaved: entry.meta.updatedAt,
-      controller: controller,
-    );
-
     if (entry is Task) {
       await saveTask();
+    } else {
+      await _editorStateService.saveState(
+        id: entryId,
+        lastSaved: entry.meta.updatedAt,
+        controller: controller,
+      );
     }
   }
 
   Future<void> saveTask() async {
+    debugPrint('EntryCubit saving task $entryId');
+
     if (entry is Task) {
       final task = entry as Task;
 
@@ -79,7 +85,6 @@ class EntryCubit extends Cubit<EntryState> {
 
         return;
       }
-      //final DateTime due = formData['due'];
       final title = formData['title'] as String;
       final dt = formData['estimate'] as DateTime;
       final status = formData['status'] as String;
@@ -94,7 +99,6 @@ class EntryCubit extends Cubit<EntryState> {
       final updatedData = task.data.copyWith(
         title: title,
         estimate: estimate,
-        // due: due,
         status: taskStatusFromString(status),
       );
 

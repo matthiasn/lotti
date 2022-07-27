@@ -89,7 +89,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 child: TaskForm(
                   //formKey: formKey,
                   //controller: _controller,
-                  focusNode: _focusNode,
+                  //focusNode: _focusNode,
                   focusOnTitle: true,
                   //saveFn: _save,
                   withOpenDetails: true,

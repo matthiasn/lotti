@@ -1,10 +1,7 @@
-import 'dart:io';
-
 import 'package:auto_route/annotations.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -12,7 +9,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
-import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_footer.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
@@ -24,8 +20,6 @@ import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:tuple/tuple.dart';
 
 class EntryDetailWidget extends StatefulWidget {
   const EntryDetailWidget({
@@ -45,27 +39,14 @@ class EntryDetailWidget extends StatefulWidget {
 
 class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   final JournalDb _db = getIt<JournalDb>();
-  final FocusNode _focusNode = FocusNode();
   final EditorStateService _editorStateService = getIt<EditorStateService>();
 
   late final Stream<JournalEntity?> _stream =
       _db.watchEntityById(widget.itemId);
 
-  bool showDetails = false;
-  Directory? docDir;
-  double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
-  double imageTextEditorHeight =
-      (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
-
   @override
   void initState() {
     super.initState();
-
-    getApplicationDocumentsDirectory().then((value) {
-      setState(() {
-        docDir = value;
-      });
-    });
   }
 
   @override
@@ -87,20 +68,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         if ((isTask || isAudio) && !widget.showTaskDetails) {
           return JournalCard(item: item);
         }
-
-        final controller = makeController(
-          serializedQuill: _editorStateService.getDelta(widget.itemId) ??
-              item.entryText?.quill,
-          selection: _editorStateService.getSelection(widget.itemId),
-        );
-
-        controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
-          _editorStateService.saveTempState(
-            id: widget.itemId,
-            controller: controller,
-            lastSaved: item.meta.updatedAt,
-          );
-        });
 
         return BlocProvider<EntryCubit>(
           create: (BuildContext context) => EntryCubit(
@@ -132,7 +99,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           width: MediaQuery.of(context).size.width,
                           color: Colors.black,
                           child: EntryImageWidget(
-                            focusNode: _focusNode,
                             journalImage: image,
                           ),
                         );
@@ -155,10 +121,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       workout: (_) => const SizedBox.shrink(),
                       survey: (_) => const SizedBox.shrink(),
                       orElse: () {
-                        return EditorWidget(
-                          focusNode: _focusNode,
-                          journalEntity: item,
-                        );
+                        return EditorWidget(journalEntity: item);
                       },
                     ),
                     item.map(
@@ -171,7 +134,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       measurement: MeasurementSummary.new,
                       task: (Task task) {
                         return TaskForm(
-                          focusNode: _focusNode,
                           data: task.data,
                           task: task,
                         );

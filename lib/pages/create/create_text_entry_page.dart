@@ -63,7 +63,7 @@ class _CreateTextEntryPageState extends State<CreateTextEntryPage> {
             borderRadius: const BorderRadius.all(Radius.circular(8)),
             child: EditorWidget(
               //controller: _controller,
-              focusNode: _focusNode,
+              //focusNode: _focusNode,
               //saveFn: _save,
               minHeight: 200,
               autoFocus: true,
