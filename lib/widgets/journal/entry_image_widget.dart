@@ -44,42 +44,45 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
       final file =
           File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
 
-      return BlocBuilder<EntryCubit, EntryState>(builder: (
-        context,
-        EntryState snapshot,
-      ) {
-        final focusNode = context.read<EntryCubit>().focusNode;
+      return BlocBuilder<EntryCubit, EntryState>(
+        builder: (
+          context,
+          EntryState snapshot,
+        ) {
+          final focusNode = context.read<EntryCubit>().focusNode;
 
-        return GestureDetector(
-          onTap: () {
-            focusNode.unfocus();
-            Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute<HeroPhotoViewRouteWrapper>(
-                builder: (_) => HeroPhotoViewRouteWrapper(
-                  focusNode: focusNode,
-                  imageProvider: FileImage(file),
+          return GestureDetector(
+            onTap: () {
+              focusNode.unfocus();
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute<HeroPhotoViewRouteWrapper>(
+                  builder: (_) => HeroPhotoViewRouteWrapper(
+                    focusNode: focusNode,
+                    imageProvider: FileImage(file),
+                  ),
                 ),
-              ),
-            );
-          },
-          child: ColoredBox(
-            color: Colors.black,
-            child: Hero(
-              tag: 'entry_img',
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: isMobile ? 400 : MediaQuery.of(context).size.width,
-                ),
-                child: Image.file(
-                  file,
-                  width: MediaQuery.of(context).size.width,
-                  fit: BoxFit.contain,
+              );
+            },
+            child: ColoredBox(
+              color: Colors.black,
+              child: Hero(
+                tag: 'entry_img',
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight:
+                        isMobile ? 400 : MediaQuery.of(context).size.width,
+                  ),
+                  child: Image.file(
+                    file,
+                    width: MediaQuery.of(context).size.width,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      });
+          );
+        },
+      );
     } else {
       return Container();
     }

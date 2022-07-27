@@ -25,7 +25,6 @@ class CreateTextEntryPage extends StatefulWidget {
 
 class _CreateTextEntryPageState extends State<CreateTextEntryPage> {
   final QuillController _controller = makeController();
-  final FocusNode _focusNode = FocusNode();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   DateTime started = DateTime.now();
 
@@ -56,15 +55,12 @@ class _CreateTextEntryPageState extends State<CreateTextEntryPage> {
         title: localizations.addEntryTitle,
       ),
       backgroundColor: colorConfig().bodyBgColor,
-      body: SingleChildScrollView(
+      body: const SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           child: ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(8)),
+            borderRadius: BorderRadius.all(Radius.circular(8)),
             child: EditorWidget(
-              //controller: _controller,
-              //focusNode: _focusNode,
-              //saveFn: _save,
               minHeight: 200,
               autoFocus: true,
             ),
