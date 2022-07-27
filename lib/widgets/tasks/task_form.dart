@@ -74,6 +74,7 @@ class _TaskFormState extends State<TaskForm> {
                         fontWeight: FontWeight.normal,
                       ),
                       name: 'title',
+                      onChanged: context.read<EntryCubit>().setDirty,
                     ),
                     FormBuilderCupertinoDateTimePicker(
                       name: 'estimate',

@@ -137,6 +137,10 @@ class EntryCubit extends Cubit<EntryState> {
     }
   }
 
+  void setDirty(dynamic _) {
+    emit(EntryState.dirty(entryId: entryId, entry: entry));
+  }
+
   @override
   Future<void> close() async {
     debugPrint('EntryCubit closing $entryId');
