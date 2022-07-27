@@ -73,9 +73,11 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
         );
 
         controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
+          final delta = deltaFromController(controller);
+
           _editorStateService.saveTempState(
             id: widget.itemId,
-            controller: controller,
+            json: quillJsonFromDelta(delta),
             lastSaved: item.meta.updatedAt,
           );
         });

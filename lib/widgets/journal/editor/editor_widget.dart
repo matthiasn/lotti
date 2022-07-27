@@ -14,6 +14,7 @@ class EditorWidget extends StatelessWidget {
   const EditorWidget({
     super.key,
     this.journalEntity,
+    //required this.entryId,
     this.minHeight = 40,
     this.maxHeight = double.maxFinite,
     this.padding = 16,
@@ -21,6 +22,7 @@ class EditorWidget extends StatelessWidget {
   });
 
   final JournalEntity? journalEntity;
+  //final String entryId;
   final double maxHeight;
   final double minHeight;
   final bool autoFocus;
@@ -33,7 +35,6 @@ class EditorWidget extends StatelessWidget {
         context,
         EntryState snapshot,
       ) {
-        final saveFn = context.read<EntryCubit>().save;
         final controller = context.read<EntryCubit>().controller;
         final focusNode = context.read<EntryCubit>().focusNode;
 
@@ -57,7 +58,7 @@ class EditorWidget extends StatelessWidget {
 
         void saveViaKeyboard(RawKeyEvent event) {
           if (event.data.isMetaPressed && event.character == 's') {
-            saveFn();
+            context.read<EntryCubit>().save();
           }
         }
 
@@ -77,11 +78,7 @@ class EditorWidget extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ToolbarWidget(
-                    id: journalEntity?.meta.id,
-                    lastSaved: journalEntity?.meta.updatedAt ??
-                        DateTime.fromMillisecondsSinceEpoch(0),
-                  ),
+                  ToolbarWidget(id: journalEntity?.meta.id),
                   Flexible(
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: padding),

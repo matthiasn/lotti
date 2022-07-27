@@ -16,13 +16,24 @@ class EntryCubit extends Cubit<EntryState> {
     required this.entryId,
     required this.entry,
   }) : super(
-          EntryState(
+          EntryState.saved(
             entryId: entryId,
-            dirty: false,
             entry: entry,
           ),
         ) {
-    debugPrint('EntryCubit $entryId');
+    final lastSaved = entry.meta.updatedAt;
+    debugPrint('EntryCubit $entryId $lastSaved');
+
+    _editorStateService
+        .getUnsavedStream(entryId, lastSaved)
+        .listen((bool dirty) {
+      debugPrint('EntryCubit $entryId getUnsavedStream $dirty');
+      if (dirty) {
+        emit(EntryState.dirty(entryId: entryId, entry: entry));
+      } else {
+        emit(EntryState.saved(entryId: entryId, entry: entry));
+      }
+    });
 
     if (entry is Task) {
       formKey = GlobalKey<FormBuilderState>();
@@ -35,10 +46,17 @@ class EntryCubit extends Cubit<EntryState> {
     );
 
     controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
+      final delta = deltaFromController(controller);
       _editorStateService.saveTempState(
         id: entryId,
-        controller: controller,
+        json: quillJsonFromDelta(delta),
         lastSaved: entry.meta.updatedAt,
+      );
+      emit(
+        EntryState.dirty(
+          entry: entry,
+          entryId: entryId,
+        ),
       );
     });
   }
@@ -61,6 +79,12 @@ class EntryCubit extends Cubit<EntryState> {
         id: entryId,
         lastSaved: entry.meta.updatedAt,
         controller: controller,
+      );
+      emit(
+        EntryState.saved(
+          entryId: entryId,
+          entry: entry,
+        ),
       );
     }
   }
