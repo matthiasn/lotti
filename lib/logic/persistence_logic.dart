@@ -293,8 +293,6 @@ class PersistenceLogic {
           utcOffset: now.timeZoneOffset.inMinutes,
           flag: EntryFlag.import,
         ),
-        // ignore: flutter_style_todos
-        // TODO: should this be geolocation at capture or insertion?
         geolocation: imageData.geolocation,
       );
       await createDbEntity(

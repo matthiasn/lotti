@@ -7,7 +7,9 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:tuple/tuple.dart';
 
@@ -68,6 +70,7 @@ class EntryCubit extends Cubit<EntryState> {
   late final GlobalKey<FormBuilderState>? formKey;
   final FocusNode focusNode = FocusNode();
   final EditorStateService _editorStateService = getIt<EditorStateService>();
+  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
 
   Future<void> save() async {
     debugPrint('EntryCubit saving $entryId');
@@ -75,7 +78,12 @@ class EntryCubit extends Cubit<EntryState> {
     if (entry is Task) {
       await saveTask();
     } else {
-      await _editorStateService.saveState(
+      await _persistenceLogic.updateJournalEntityText(
+        entryId,
+        entryTextFromController(controller),
+      );
+
+      await _editorStateService.entryWasSaved(
         id: entryId,
         lastSaved: entry.meta.updatedAt,
         controller: controller,
@@ -87,6 +95,7 @@ class EntryCubit extends Cubit<EntryState> {
         ),
       );
     }
+    await HapticFeedback.heavyImpact();
   }
 
   Future<void> saveTask() async {
@@ -97,16 +106,7 @@ class EntryCubit extends Cubit<EntryState> {
 
       formKey?.currentState?.save();
       final formData = formKey?.currentState?.value;
-      if (formData == null) {
-        await _editorStateService.saveTask(
-          id: entryId,
-          controller: controller,
-          taskData: task.data,
-        );
-
-        return;
-      }
-      final title = formData['title'] as String;
+      final title = formData!['title'] as String;
       final dt = formData['estimate'] as DateTime;
       final status = formData['status'] as String;
 
@@ -123,10 +123,16 @@ class EntryCubit extends Cubit<EntryState> {
         status: taskStatusFromString(status),
       );
 
-      await _editorStateService.saveTask(
-        id: entryId,
-        controller: controller,
+      await _persistenceLogic.updateTask(
+        entryText: entryTextFromController(controller),
+        journalEntityId: entryId,
         taskData: updatedData,
+      );
+
+      await _editorStateService.entryWasSaved(
+        id: entryId,
+        lastSaved: entry.meta.updatedAt,
+        controller: controller,
       );
     }
   }
@@ -134,7 +140,9 @@ class EntryCubit extends Cubit<EntryState> {
   @override
   Future<void> close() async {
     debugPrint('EntryCubit closing $entryId');
-    await save();
+    if (!isTestEnv) {
+      await save();
+    }
     await super.close();
   }
 }

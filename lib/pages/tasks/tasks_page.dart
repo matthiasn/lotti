@@ -9,7 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -367,10 +367,7 @@ class AddTask extends StatelessWidget {
       child: FloatingActionButton(
         heroTag: 'addTask',
         backgroundColor: colorConfig().actionColor,
-        onPressed: () {
-          String? linkedId;
-          pushNamedRoute('/tasks/create/$linkedId');
-        },
+        onPressed: createTask,
         child: const Icon(
           Icons.add,
           size: 24,
