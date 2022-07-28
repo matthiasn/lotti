@@ -8,6 +8,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/get_it.dart';
 
+import '../utils/platform.dart';
+
 class EditorStateService {
   EditorStateService() {
     init();
@@ -99,7 +101,7 @@ class EditorStateService {
 
     EasyDebounce.debounce(
       'persistDraftState-$id',
-      const Duration(seconds: 2),
+      Duration(seconds: isTestEnv ? 0 : 2),
       persistDraftState,
     );
   }
