@@ -70,15 +70,15 @@ void main() {
             .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
       ).thenAnswer((_) async => measurableWater);
 
-      when(
-        () => mockJournalDb.watchTags(),
-      ).thenAnswer(
+      when(() => mockJournalDb.watchTags()).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
 
-      when(
-        () => mockJournalDb.watchConfigFlags(),
-      ).thenAnswer(
+      when(() => mockTagsService.stream).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
+      );
+
+      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
           <ConfigFlag>{
             ConfigFlag(

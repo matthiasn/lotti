@@ -63,6 +63,8 @@ void main() {
 
       await tester.tap(warningIconFinder);
       await tester.pumpAndSettle();
+
+      verify(entryCubit.delete).called(1);
     });
 
     testWidgets('calls delete in cubit and pops navigation',
@@ -104,6 +106,9 @@ void main() {
 
       await tester.tap(warningIconFinder);
       await tester.pumpAndSettle();
+
+      verify(entryCubit.delete).called(1);
+      verify(mockAppRouter.pop).called(1);
     });
   });
 }
