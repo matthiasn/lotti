@@ -32,13 +32,13 @@ class HomePage extends StatelessWidget {
       stream: _db.watchActiveConfigFlagNames(),
       builder: (context, snapshot) {
         final showTasks = snapshot.data?.contains(showTasksTabFlag);
-        final showNewMeasurements = snapshot.data?.contains(showNewMeasurementsTabFlag);
+        final showAskMe = snapshot.data?.contains(showAskMeTabFlag);
 
         if (showTasks == null) {
           return const CircularProgressIndicator();
         }
 
-        if (showNewMeasurements == null) {
+        if (showAskMe == null) {
           return const CircularProgressIndicator();
         }
 
@@ -67,7 +67,7 @@ class HomePage extends StatelessWidget {
           routes: [
             const JournalRouter(),
             if (showTasks) const TasksRouter(),
-            if (showNewMeasurements) const NewMeasurementsRouter(),
+            if (showAskMe) const AskMeRouter(),
             const DashboardsRouter(),
             const SettingsRouter(),
             //TutorialRouter(),
@@ -85,7 +85,7 @@ class HomePage extends StatelessWidget {
             final routesByIndex = <String>[
               '/journal',
               if (showTasks) '/tasks',
-              if (showNewMeasurements) '/newmeasurements',
+              if (showAskMe) '/askme',
               '/dashboards',
               '/settings',
             ];
@@ -139,10 +139,12 @@ class HomePage extends StatelessWidget {
                       icon: TasksBadgeIcon(),
                       label: AppLocalizations.of(context)!.navTabTitleTasks,
                     ),
-                  if (showNewMeasurements)
+                  if (showAskMe)
                     BottomNavigationBarItem(
-                      icon: TasksBadgeIcon(),
-                      label: AppLocalizations.of(context)!.navTabTitleNewMeasurements,
+                      icon: OutboxBadgeIcon(
+                        icon: const Icon(Icons.question_answer_outlined),
+                      ),
+                      label: AppLocalizations.of(context)!.navTabTitleAskMe,
                     ),
                   BottomNavigationBarItem(
                     icon: const Icon(Icons.dashboard_outlined),

@@ -545,8 +545,8 @@ class JournalDb extends _$JournalDb {
     );
     await insertFlagIfNotExists(
       ConfigFlag(
-        name: showNewMeasurementsTabFlag,
-        description: 'Show New Measurements tab?',
+        name: showAskMeTabFlag,
+        description: 'Show Ask Me tab?',
         status: false,
       ),
     );

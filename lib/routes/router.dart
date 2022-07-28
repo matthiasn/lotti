@@ -4,7 +4,7 @@ import 'package:lotti/routes/dashboard_routes.dart';
 import 'package:lotti/routes/journal_routes.dart';
 import 'package:lotti/routes/settings_routes.dart';
 import 'package:lotti/routes/task_routes.dart';
-import 'package:lotti/routes/new_measurements_routes.dart';
+import 'package:lotti/routes/ask_me_routes.dart';
 
 @MaterialAutoRouter(
   replaceInRouteName: 'Page,Route',
@@ -15,7 +15,7 @@ import 'package:lotti/routes/new_measurements_routes.dart';
       children: [
         journalRoutes,
         taskRoutes,
-        newMeasurementsRoutes,
+        askMeRoutes,
         dashboardRoutes,
         settingsRoutes,
       ],

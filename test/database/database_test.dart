@@ -41,8 +41,8 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   ConfigFlag(
-    name: showNewMeasurementsTabFlag,
-    description: 'Show New Measurements tab?',
+    name: showAskMeTabFlag,
+    description: 'Show Ask Me tab?',
     status: false,
   ),
   ConfigFlag(
