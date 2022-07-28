@@ -147,6 +147,7 @@ class SwitchIconWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       tooltip: tooltip,
       onPressed: () {
         if (value) {
@@ -158,6 +159,7 @@ class SwitchIconWidget extends StatelessWidget {
       },
       icon: Icon(
         iconData,
+        size: 20,
         color: value ? activeColor : colorConfig().entryTextColor,
       ),
     );

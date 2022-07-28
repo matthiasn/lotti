@@ -7,8 +7,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/get_it.dart';
-
-import '../utils/platform.dart';
+import 'package:lotti/utils/platform.dart';
 
 class EditorStateService {
   EditorStateService() {

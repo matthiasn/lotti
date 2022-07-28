@@ -31,7 +31,10 @@ class SaveButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
                 localizations.saveLabel,
-                style: saveButtonStyle(),
+                style: saveButtonStyle().copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),

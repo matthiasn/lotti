@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Number format for selected measurement in chart
 - Only show dashboard slideshow icon when multiple dashboards are defined
 - Display more obvious entry save button
+- Spacing in entry header
 
 ## [0.8.116] - 2022-07-26
 ### Fix:
