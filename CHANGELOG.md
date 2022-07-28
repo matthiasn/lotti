@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Decoupling of PersistenceLogic and widgets
+
+## [0.8.117] - 2022-07-28
+### Changed:
 - Show unsaved state after changing task title
 - Save entries when navigating away
 - Number format for selected measurement in chart

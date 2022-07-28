@@ -149,5 +149,37 @@ void main() {
       ],
       verify: (c) {},
     );
+
+    blocTest<EntryCubit, EntryState>(
+      'toggle',
+      build: () => EntryCubit(
+        entry: testTextEntry,
+        entryId: testTextEntry.meta.id,
+      ),
+      setUp: () {},
+      act: (c) async {
+        c.controller.document.insert(0, 'foo');
+        await c.save();
+        await c.toggleStarred();
+        await c.toggleFlagged();
+        await c.togglePrivate();
+      },
+      wait: defaultWait,
+      expect: () => <EntryState>[
+        EntryState.saved(
+          entry: testTextEntry,
+          entryId: testTextEntry.meta.id,
+        ),
+        EntryState.dirty(
+          entry: testTextEntry,
+          entryId: testTextEntry.meta.id,
+        ),
+        EntryState.saved(
+          entry: testTextEntry,
+          entryId: testTextEntry.meta.id,
+        ),
+      ],
+      verify: (c) {},
+    );
   });
 }
