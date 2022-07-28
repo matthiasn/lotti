@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:lotti/blocs/journal/entry_cubit.dart';
+import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -22,8 +24,6 @@ class TagAddIconWidget extends StatelessWidget {
 
   final String itemId;
   final JournalDb db = getIt<JournalDb>();
-
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
   final TagsService tagsService = getIt<TagsService>();
   late final Stream<JournalEntity?> stream = db.watchEntityById(itemId);
@@ -41,175 +41,182 @@ class TagAddIconWidget extends StatelessWidget {
         // data in the tags service will already have been updated.
         AsyncSnapshot<List<TagEntity>> _,
       ) {
-        return StreamBuilder<JournalEntity?>(
-          stream: stream,
+        return BlocBuilder<EntryCubit, EntryState>(
           builder: (
-            BuildContext context,
-            AsyncSnapshot<JournalEntity?> snapshot,
+            context,
+            EntryState state,
           ) {
-            final item = snapshot.data;
-            if (item == null) {
-              return const SizedBox.shrink();
-            }
+            final cubit = context.read<EntryCubit>();
 
-            void addTagIds(List<String> addedTagIds) {
-              persistenceLogic.addTags(
-                journalEntityId: itemId,
-                addedTagIds: addedTagIds,
-              );
-            }
+            return StreamBuilder<JournalEntity?>(
+              stream: stream,
+              builder: (
+                BuildContext context,
+                AsyncSnapshot<JournalEntity?> snapshot,
+              ) {
+                final item = snapshot.data;
+                if (item == null) {
+                  return const SizedBox.shrink();
+                }
 
-            void copyTags() {
-              if (item.meta.tagIds != null) {
-                HapticFeedback.heavyImpact();
-                tagsService.setClipboard(item.meta.id);
-              }
-            }
+                void copyTags() {
+                  if (item.meta.tagIds != null) {
+                    HapticFeedback.heavyImpact();
+                    tagsService.setClipboard(item.meta.id);
+                  }
+                }
 
-            Future<void> pasteTags() async {
-              final tagsFromClipboard = await tagsService.getClipboard();
-              addTagIds(tagsFromClipboard);
-              await HapticFeedback.heavyImpact();
-            }
+                Future<void> pasteTags() async {
+                  final tagsFromClipboard = await tagsService.getClipboard();
+                  await cubit.addTagIds(tagsFromClipboard);
+                  await HapticFeedback.heavyImpact();
+                }
 
-            final controller = TextEditingController();
+                final controller = TextEditingController();
 
-            void onTapAdd() {
-              showModalBottomSheet<void>(
-                context: context,
-                isScrollControlled: true,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                ),
-                clipBehavior: Clip.antiAliasWithSaveLayer,
-                builder: (BuildContext context) {
-                  return ColoredBox(
-                    color: colorConfig().entryCardColor,
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        bottom: 160,
-                        top: 8,
+                void onTapAdd() {
+                  showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(16),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TagsListWidget(itemId),
-                          const SizedBox(height: 16),
-                          Row(
+                    ),
+                    clipBehavior: Clip.antiAliasWithSaveLayer,
+                    builder: (BuildContext context) {
+                      return ColoredBox(
+                        color: colorConfig().entryCardColor,
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            left: 16,
+                            right: 16,
+                            bottom: 160,
+                            top: 8,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Text(
-                                  localizations.journalTagsLabel,
-                                  style: formLabelStyle(),
-                                ),
-                              ),
-                              Expanded(
-                                child: TypeAheadField(
-                                  textFieldConfiguration:
-                                      TextFieldConfiguration(
-                                    autocorrect: false,
-                                    controller: controller,
-                                    onSubmitted: (String tag) async {
-                                      tag = tag.trim();
-                                      final tagId = await persistenceLogic
-                                          .addTagDefinition(tag);
-                                      addTagIds([tagId]);
-                                      controller.clear();
-                                    },
-                                    style: DefaultTextStyle.of(context)
-                                        .style
-                                        .copyWith(
-                                          color: colorConfig().entryTextColor,
-                                          fontFamily: 'Oswald',
-                                          fontSize: 16,
-                                        ),
-                                    decoration: InputDecoration(
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
+                              TagsListWidget(itemId),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: Text(
+                                      localizations.journalTagsLabel,
+                                      style: formLabelStyle(),
                                     ),
                                   ),
-                                  suggestionsCallback: (String pattern) async {
-                                    return db.getMatchingTags(
-                                      pattern.trim(),
-                                      limit: isMobile ? 5 : 12,
-                                    );
-                                  },
-                                  suggestionsBoxDecoration:
-                                      SuggestionsBoxDecoration(
-                                    color: colorConfig().entryCardColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  itemBuilder: (context, TagEntity tagEntity) {
-                                    return ListTile(
-                                      title: Text(
-                                        tagEntity.tag,
-                                        style: TextStyle(
-                                          fontFamily: 'Oswald',
-                                          height: 1,
-                                          color: getTagColor(tagEntity),
-                                          fontWeight: FontWeight.normal,
-                                          fontSize: 16,
+                                  Expanded(
+                                    child: TypeAheadField(
+                                      textFieldConfiguration:
+                                          TextFieldConfiguration(
+                                        autocorrect: false,
+                                        controller: controller,
+                                        onSubmitted: (String tag) async {
+                                          tag = tag.trim();
+                                          final tagId =
+                                              await cubit.addTagDefinition(tag);
+                                          await cubit.addTagIds([tagId]);
+                                          controller.clear();
+                                        },
+                                        style: DefaultTextStyle.of(context)
+                                            .style
+                                            .copyWith(
+                                              color:
+                                                  colorConfig().entryTextColor,
+                                              fontFamily: 'Oswald',
+                                              fontSize: 16,
+                                            ),
+                                        decoration: InputDecoration(
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
                                         ),
                                       ),
-                                    );
-                                  },
-                                  onSuggestionSelected:
-                                      (TagEntity tagSuggestion) {
-                                    addTagIds([tagSuggestion.id]);
-                                    controller.clear();
-                                  },
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: copyTags,
-                                padding: const EdgeInsets.only(
-                                  left: 24,
-                                  top: 16,
-                                  bottom: 16,
-                                ),
-                                icon: Icon(
-                                  MdiIcons.contentCopy,
-                                  color: colorConfig().entryTextColor,
-                                ),
-                                tooltip: localizations.journalTagsCopyHint,
-                              ),
-                              IconButton(
-                                onPressed: pasteTags,
-                                padding: const EdgeInsets.only(
-                                  left: 24,
-                                  top: 16,
-                                  bottom: 16,
-                                ),
-                                icon: Icon(
-                                  MdiIcons.contentPaste,
-                                  color: colorConfig().entryTextColor,
-                                ),
-                                tooltip: localizations.journalTagsPasteHint,
+                                      suggestionsCallback:
+                                          (String pattern) async {
+                                        return db.getMatchingTags(
+                                          pattern.trim(),
+                                          limit: isMobile ? 5 : 12,
+                                        );
+                                      },
+                                      suggestionsBoxDecoration:
+                                          SuggestionsBoxDecoration(
+                                        color: colorConfig().entryCardColor,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      itemBuilder:
+                                          (context, TagEntity tagEntity) {
+                                        return ListTile(
+                                          title: Text(
+                                            tagEntity.tag,
+                                            style: TextStyle(
+                                              fontFamily: 'Oswald',
+                                              height: 1,
+                                              color: getTagColor(tagEntity),
+                                              fontWeight: FontWeight.normal,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      onSuggestionSelected:
+                                          (TagEntity tagSuggestion) async {
+                                        await cubit
+                                            .addTagIds([tagSuggestion.id]);
+                                        controller.clear();
+                                      },
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: copyTags,
+                                    padding: const EdgeInsets.only(
+                                      left: 24,
+                                      top: 16,
+                                      bottom: 16,
+                                    ),
+                                    icon: Icon(
+                                      MdiIcons.contentCopy,
+                                      color: colorConfig().entryTextColor,
+                                    ),
+                                    tooltip: localizations.journalTagsCopyHint,
+                                  ),
+                                  IconButton(
+                                    onPressed: pasteTags,
+                                    padding: const EdgeInsets.only(
+                                      left: 24,
+                                      top: 16,
+                                      bottom: 16,
+                                    ),
+                                    icon: Icon(
+                                      MdiIcons.contentPaste,
+                                      color: colorConfig().entryTextColor,
+                                    ),
+                                    tooltip: localizations.journalTagsPasteHint,
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   );
-                },
-              );
-            }
+                }
 
-            return IconButton(
-              onPressed: onTapAdd,
-              icon: Icon(
-                MdiIcons.tagPlusOutline,
-                size: 24,
-                color: colorConfig().entryTextColor,
-              ),
-              tooltip: localizations.journalTagPlusHint,
+                return IconButton(
+                  onPressed: onTapAdd,
+                  icon: Icon(
+                    MdiIcons.tagPlusOutline,
+                    size: 24,
+                    color: colorConfig().entryTextColor,
+                  ),
+                  tooltip: localizations.journalTagPlusHint,
+                );
+              },
             );
           },
         );
@@ -223,7 +230,7 @@ class TagsListWidget extends StatelessWidget {
 
   final String itemId;
   final JournalDb db = getIt<JournalDb>();
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+
   final TagsService tagsService = getIt<TagsService>();
   late final Stream<JournalEntity?> stream = db.watchEntityById(itemId);
 
@@ -238,52 +245,54 @@ class TagsListWidget extends StatelessWidget {
         // data in the tags service will already have been updated.
         AsyncSnapshot<List<TagEntity>> _,
       ) {
-        return StreamBuilder<JournalEntity?>(
-          stream: stream,
+        return BlocBuilder<EntryCubit, EntryState>(
           builder: (
-            BuildContext context,
-            AsyncSnapshot<JournalEntity?> snapshot,
+            context,
+            EntryState state,
           ) {
-            final item = snapshot.data;
-            if (item == null) {
-              return const SizedBox.shrink();
-            }
+            final cubit = context.read<EntryCubit>();
 
-            final tagIds = item.meta.tagIds ?? [];
-            final tagsFromTagIds = <TagEntity>[];
+            return StreamBuilder<JournalEntity?>(
+              stream: stream,
+              builder: (
+                BuildContext context,
+                AsyncSnapshot<JournalEntity?> snapshot,
+              ) {
+                final item = snapshot.data;
+                if (item == null) {
+                  return const SizedBox.shrink();
+                }
 
-            for (final tagId in tagIds) {
-              final tagEntity = tagsService.getTagById(tagId);
-              if (tagEntity != null) {
-                tagsFromTagIds.add(tagEntity);
-              }
-            }
+                final tagIds = item.meta.tagIds ?? [];
+                final tagsFromTagIds = <TagEntity>[];
 
-            void removeTagId(String tagId) {
-              persistenceLogic.removeTag(
-                journalEntityId: itemId,
-                tagId: tagId,
-              );
-            }
+                for (final tagId in tagIds) {
+                  final tagEntity = tagsService.getTagById(tagId);
+                  if (tagEntity != null) {
+                    tagsFromTagIds.add(tagEntity);
+                  }
+                }
 
-            return ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width - 24,
-              ),
-              child: Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: tagsFromTagIds
-                    .map(
-                      (TagEntity tagEntity) => TagWidget(
-                        tagEntity: tagEntity,
-                        onTapRemove: () {
-                          removeTagId(tagEntity.id);
-                        },
-                      ),
-                    )
-                    .toList(),
-              ),
+                return ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width - 24,
+                  ),
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: tagsFromTagIds
+                        .map(
+                          (TagEntity tagEntity) => TagWidget(
+                            tagEntity: tagEntity,
+                            onTapRemove: () {
+                              cubit.removeTagId(tagEntity.id);
+                            },
+                          ),
+                        )
+                        .toList(),
+                  ),
+                );
+              },
             );
           },
         );

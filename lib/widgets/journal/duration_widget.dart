@@ -6,7 +6,6 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -20,7 +19,6 @@ class DurationWidget extends StatelessWidget {
   });
 
   final TimeService _timeService = getIt<TimeService>();
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final JournalEntity item;
   final TextStyle? style;
 
@@ -116,7 +114,6 @@ class DurationViewWidget extends StatelessWidget {
   });
 
   final TimeService _timeService = getIt<TimeService>();
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final JournalEntity item;
   final TextStyle? style;
 

@@ -3,14 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/create_entry.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/utils/file_utils.dart';
 
 class DesktopMenuWrapper extends StatelessWidget {
   DesktopMenuWrapper(
@@ -18,7 +15,6 @@ class DesktopMenuWrapper extends StatelessWidget {
     super.key,
   });
 
-  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   final JournalDb _db = getIt<JournalDb>();
   final Widget body;
 
@@ -71,17 +67,7 @@ class DesktopMenuWrapper extends StatelessWidget {
                     label: localizations.fileMenuNewEntry,
                     onSelected: () async {
                       final linkedId = await getIdFromSavedRoute();
-
-                      if (linkedId != null) {
-                        await _persistenceLogic.createTextEntry(
-                          EntryText(plainText: ''),
-                          id: uuid.v1(),
-                          linkedId: linkedId,
-                          started: DateTime.now(),
-                        );
-                      } else {
-                        pushNamedRoute('/journal/create/$linkedId');
-                      }
+                      await createTextEntry(linkedId: linkedId);
                     },
                     shortcut: const SingleActivator(
                       LogicalKeyboardKey.keyN,

@@ -6,6 +6,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -68,6 +69,7 @@ class EntryCubit extends Cubit<EntryState> {
   late final GlobalKey<FormBuilderState>? formKey;
   final FocusNode focusNode = FocusNode();
   final EditorStateService _editorStateService = getIt<EditorStateService>();
+  final JournalDb _journalDb = getIt<JournalDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
 
   Future<void> save() async {
@@ -107,6 +109,79 @@ class EntryCubit extends Cubit<EntryState> {
 
   void setDirty(dynamic _) {
     emit(EntryState.dirty(entryId: entryId, entry: entry));
+  }
+
+  Future<void> toggleStarred() async {
+    final item = await _journalDb.journalEntityById(entryId);
+    if (item != null) {
+      final prev = item.meta.starred ?? false;
+      await _persistenceLogic.updateJournalEntity(
+        item,
+        item.meta.copyWith(
+          starred: !prev,
+        ),
+      );
+    }
+  }
+
+  Future<void> togglePrivate() async {
+    final item = await _journalDb.journalEntityById(entryId);
+    if (item != null) {
+      final prev = item.meta.private ?? false;
+      await _persistenceLogic.updateJournalEntity(
+        item,
+        item.meta.copyWith(
+          private: !prev,
+        ),
+      );
+    }
+  }
+
+  Future<void> toggleFlagged() async {
+    final item = await _journalDb.journalEntityById(entryId);
+    if (item != null) {
+      await _persistenceLogic.updateJournalEntity(
+        item,
+        item.meta.copyWith(
+          flag: item.meta.flag == EntryFlag.import
+              ? EntryFlag.none
+              : EntryFlag.import,
+        ),
+      );
+    }
+  }
+
+  Future<bool> delete() async {
+    return _persistenceLogic.deleteJournalEntity(entryId);
+  }
+
+  Future<bool> updateFromTo({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
+    return _persistenceLogic.updateJournalEntityDate(
+      entryId,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+    );
+  }
+
+  Future<String> addTagDefinition(String tag) async {
+    return _persistenceLogic.addTagDefinition(tag);
+  }
+
+  Future<void> addTagIds(List<String> addedTagIds) async {
+    await _persistenceLogic.addTags(
+      journalEntityId: entryId,
+      addedTagIds: addedTagIds,
+    );
+  }
+
+  Future<void> removeTagId(String tagId) async {
+    await _persistenceLogic.removeTag(
+      journalEntityId: entryId,
+      tagId: tagId,
+    );
   }
 
   @override

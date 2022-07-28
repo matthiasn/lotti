@@ -84,7 +84,6 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       DeleteIconWidget(
-                        entityId: widget.itemId,
                         popOnDelete: widget.popOnDelete,
                       ),
                       ShareButtonWidget(entityId: widget.itemId),

@@ -1,11 +1,13 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/blocs/journal/entry_cubit.dart';
+import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -25,7 +27,6 @@ class EntryDateTimeModal extends StatefulWidget {
 
 class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
   final JournalDb db = getIt<JournalDb>();
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   late final Stream<JournalEntity?> stream =
       db.watchEntityById(widget.item.meta.id);
 
@@ -71,161 +72,167 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
     final changed = dateFrom != widget.item.meta.dateFrom ||
         dateTo != widget.item.meta.dateTo;
 
-    return StreamBuilder<JournalEntity?>(
-      stream: stream,
+    return BlocBuilder<EntryCubit, EntryState>(
       builder: (
-        BuildContext context,
-        AsyncSnapshot<JournalEntity?> snapshot,
+        context,
+        EntryState state,
       ) {
-        final liveEntity = snapshot.data;
-        if (liveEntity == null) {
-          return const SizedBox.shrink();
-        }
+        final cubit = context.read<EntryCubit>();
 
-        return ColoredBox(
-          color: colorConfig().bodyBgColor,
-          child: Padding(
-            padding: const EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 24,
-              bottom: 40,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: Text(
-                        localizations.journalDateFromLabel,
-                        textAlign: TextAlign.end,
-                        style: labelStyleLarger(),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        showDatePicker(
-                          onConfirm: (DateTime date) {
-                            setState(() {
-                              dateFrom = date;
-                            });
-                          },
-                          currentTime: dateFrom,
-                        );
-                      },
-                      child: Text(
-                        df.format(dateFrom),
-                        style: textStyleLargerUnderlined(),
-                      ),
-                    ),
-                  ],
+        return StreamBuilder<JournalEntity?>(
+          stream: stream,
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<JournalEntity?> snapshot,
+          ) {
+            final liveEntity = snapshot.data;
+            if (liveEntity == null) {
+              return const SizedBox.shrink();
+            }
+
+            return ColoredBox(
+              color: colorConfig().bodyBgColor,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 24,
+                  bottom: 40,
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: Text(
-                        localizations.journalDateToLabel,
-                        textAlign: TextAlign.end,
-                        style: labelStyleLarger(),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        showDatePicker(
-                          onConfirm: (DateTime date) {
-                            setState(() {
-                              dateTo = date;
-                            });
-                          },
-                          currentTime: dateTo,
-                        );
-                      },
-                      child: Text(
-                        df.format(dateTo),
-                        style: textStyleLargerUnderlined(),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          dateTo = DateTime.now();
-                        });
-                      },
-                      child: Text(
-                        localizations.journalDateNowButton,
-                        style: textStyleLarger()
-                            .copyWith(decoration: TextDecoration.underline),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: Text(
-                        localizations.journalDurationLabel,
-                        textAlign: TextAlign.end,
-                        style: labelStyleLarger(),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Text(
-                        formatDuration(dateFrom.difference(dateTo).abs()),
-                        style: textStyleLarger().copyWith(
-                          fontWeight: FontWeight.w100,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 120,
+                          child: Text(
+                            localizations.journalDateFromLabel,
+                            textAlign: TextAlign.end,
+                            style: labelStyleLarger(),
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Visibility(
-                        visible: valid && changed,
-                        child: TextButton(
-                          onPressed: () async {
-                            setState(() {});
-
-                            await persistenceLogic.updateJournalEntityDate(
-                              widget.item.meta.id,
-                              dateFrom: dateFrom,
-                              dateTo: dateTo,
+                        TextButton(
+                          onPressed: () {
+                            showDatePicker(
+                              onConfirm: (DateTime date) {
+                                setState(() {
+                                  dateFrom = date;
+                                });
+                              },
+                              currentTime: dateFrom,
                             );
-                            await context.router.pop();
                           },
                           child: Text(
-                            localizations.journalDateSaveButton,
+                            df.format(dateFrom),
+                            style: textStyleLargerUnderlined(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 120,
+                          child: Text(
+                            localizations.journalDateToLabel,
+                            textAlign: TextAlign.end,
+                            style: labelStyleLarger(),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            showDatePicker(
+                              onConfirm: (DateTime date) {
+                                setState(() {
+                                  dateTo = date;
+                                });
+                              },
+                              currentTime: dateTo,
+                            );
+                          },
+                          child: Text(
+                            df.format(dateTo),
+                            style: textStyleLargerUnderlined(),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              dateTo = DateTime.now();
+                            });
+                          },
+                          child: Text(
+                            localizations.journalDateNowButton,
+                            style: textStyleLarger()
+                                .copyWith(decoration: TextDecoration.underline),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 120,
+                          child: Text(
+                            localizations.journalDurationLabel,
+                            textAlign: TextAlign.end,
+                            style: labelStyleLarger(),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Text(
+                            formatDuration(dateFrom.difference(dateTo).abs()),
                             style: textStyleLarger().copyWith(
-                              decoration: TextDecoration.underline,
+                              fontWeight: FontWeight.w100,
                             ),
                           ),
                         ),
-                      ),
-                      Visibility(
-                        visible: !valid,
-                        child: Text(
-                          localizations.journalDateInvalid,
-                          style: textStyleLarger().copyWith(
-                            color: colorConfig().error,
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Visibility(
+                            visible: valid && changed,
+                            child: TextButton(
+                              onPressed: () async {
+                                await cubit.updateFromTo(
+                                  dateFrom: dateFrom,
+                                  dateTo: dateTo,
+                                );
+                                await context.router.pop();
+                              },
+                              child: Text(
+                                localizations.journalDateSaveButton,
+                                style: textStyleLarger().copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                          Visibility(
+                            visible: !valid,
+                            child: Text(
+                              localizations.journalDateInvalid,
+                              style: textStyleLarger().copyWith(
+                                color: colorConfig().error,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

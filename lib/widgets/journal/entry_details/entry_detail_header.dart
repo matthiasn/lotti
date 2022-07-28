@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/blocs/journal/entry_cubit.dart';
+import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_details/save_button.dart';
@@ -25,11 +27,6 @@ class EntryDetailHeader extends StatefulWidget {
 }
 
 class _EntryDetailHeaderState extends State<EntryDetailHeader> {
-  final JournalDb db = getIt<JournalDb>();
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-
-  late final Stream<JournalEntity?> stream = db.watchEntityById(widget.itemId);
-
   @override
   void initState() {
     super.initState();
@@ -39,89 +36,79 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return StreamBuilder<JournalEntity?>(
-      stream: stream,
+    return BlocBuilder<EntryCubit, EntryState>(
       builder: (
-        BuildContext context,
-        AsyncSnapshot<JournalEntity?> snapshot,
+        context,
+        EntryState state,
       ) {
-        final item = snapshot.data;
-        if (item == null) {
-          return const SizedBox.shrink();
-        }
+        final cubit = context.read<EntryCubit>();
+        return StreamBuilder<JournalEntity?>(
+          stream: getIt<JournalDb>().watchEntityById(widget.itemId),
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<JournalEntity?> snapshot,
+          ) {
+            final item = snapshot.data;
+            if (item == null) {
+              return const SizedBox.shrink();
+            }
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: () {
-                showModalBottomSheet<void>(
-                  context: context,
-                  isScrollControlled: true,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  clipBehavior: Clip.antiAliasWithSaveLayer,
-                  builder: (BuildContext context) {
-                    return EntryDateTimeModal(
-                      item: item,
-                    );
-                  },
-                );
-              },
-              child: Text(
-                df.format(item.meta.dateFrom),
-                style: textStyle(),
-              ),
-            ),
-            Row(
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SwitchIconWidget(
-                  tooltip: localizations.journalFavoriteTooltip,
-                  activeColor: colorConfig().starredGold,
+                TextButton(
                   onPressed: () {
-                    final prev = item.meta.starred ?? false;
-                    final newMeta = item.meta.copyWith(
-                      starred: !prev,
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAliasWithSaveLayer,
+                      builder: (BuildContext context) {
+                        return EntryDateTimeModal(
+                          item: item,
+                        );
+                      },
                     );
-                    persistenceLogic.updateJournalEntity(item, newMeta);
                   },
-                  value: item.meta.starred ?? false,
-                  iconData: MdiIcons.star,
+                  child: Text(
+                    df.format(item.meta.dateFrom),
+                    style: textStyle(),
+                  ),
                 ),
-                SwitchIconWidget(
-                  tooltip: localizations.journalPrivateTooltip,
-                  activeColor: colorConfig().error,
-                  onPressed: () {
-                    final prev = item.meta.private ?? false;
-                    final newMeta = item.meta.copyWith(
-                      private: !prev,
-                    );
-                    persistenceLogic.updateJournalEntity(item, newMeta);
-                  },
-                  value: item.meta.private ?? false,
-                  iconData: MdiIcons.security,
+                Row(
+                  children: [
+                    SwitchIconWidget(
+                      tooltip: localizations.journalFavoriteTooltip,
+                      activeColor: colorConfig().starredGold,
+                      onPressed: cubit.toggleStarred,
+                      value: item.meta.starred ?? false,
+                      iconData: MdiIcons.star,
+                    ),
+                    SwitchIconWidget(
+                      tooltip: localizations.journalPrivateTooltip,
+                      activeColor: colorConfig().error,
+                      onPressed: cubit.togglePrivate,
+                      value: item.meta.private ?? false,
+                      iconData: MdiIcons.security,
+                    ),
+                    SwitchIconWidget(
+                      tooltip: localizations.journalFlaggedTooltip,
+                      activeColor: colorConfig().error,
+                      onPressed: cubit.toggleFlagged,
+                      value: item.meta.flag == EntryFlag.import,
+                      iconData: MdiIcons.flag,
+                    ),
+                    TagAddIconWidget(itemId: widget.itemId),
+                  ],
                 ),
-                SwitchIconWidget(
-                  tooltip: localizations.journalFlaggedTooltip,
-                  activeColor: colorConfig().error,
-                  onPressed: () {
-                    final prev = item.meta.flag == EntryFlag.import;
-                    final newMeta = item.meta.copyWith(
-                      flag: prev ? EntryFlag.none : EntryFlag.import,
-                    );
-                    persistenceLogic.updateJournalEntity(item, newMeta);
-                  },
-                  value: item.meta.flag == EntryFlag.import,
-                  iconData: MdiIcons.flag,
-                ),
-                TagAddIconWidget(itemId: widget.itemId),
+                const SaveButton()
               ],
-            ),
-            const SaveButton()
-          ],
+            );
+          },
         );
       },
     );
