@@ -141,9 +141,7 @@ class HomePage extends StatelessWidget {
                     ),
                   if (showAskMe)
                     BottomNavigationBarItem(
-                      icon: OutboxBadgeIcon(
-                        icon: const Icon(Icons.question_answer_outlined),
-                      ),
+                      icon: const Icon(Icons.question_answer_outlined),
                       label: AppLocalizations.of(context)!.navTabTitleAskMe,
                     ),
                   BottomNavigationBarItem(
