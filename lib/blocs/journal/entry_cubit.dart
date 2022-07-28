@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,12 +30,9 @@ class EntryCubit extends Cubit<EntryState> {
 
     _editorStateService
         .getUnsavedStream(entryId, lastSaved)
-        .listen((bool dirty) {
-      if (dirty) {
-        emit(EntryState.dirty(entryId: entryId, entry: entry));
-      } else {
-        emit(EntryState.saved(entryId: entryId, entry: entry));
-      }
+        .listen((bool dirtyFromEditorDrafts) {
+      dirty = dirtyFromEditorDrafts;
+      emitState();
     });
 
     if (entry is Task) {
@@ -53,20 +52,27 @@ class EntryCubit extends Cubit<EntryState> {
         json: quillJsonFromDelta(delta),
         lastSaved: entry.meta.updatedAt,
       );
-      emit(
-        EntryState.dirty(
-          entry: entry,
-          entryId: entryId,
-        ),
-      );
+      dirty = true;
+      emitState();
+    });
+
+    _entryStream = _journalDb.watchEntityById(entryId);
+    _entryStreamSubscription = _entryStream.listen((updated) {
+      if (updated != null) {
+        entry = updated;
+        emitState();
+      }
     });
   }
 
   String entryId;
   JournalEntity entry;
+  bool dirty = false;
 
   late final QuillController controller;
   late final GlobalKey<FormBuilderState>? formKey;
+  late final Stream<JournalEntity?> _entryStream;
+  late final StreamSubscription<JournalEntity?> _entryStreamSubscription;
   final FocusNode focusNode = FocusNode();
   final EditorStateService _editorStateService = getIt<EditorStateService>();
   final JournalDb _journalDb = getIt<JournalDb>();
@@ -102,13 +108,22 @@ class EntryCubit extends Cubit<EntryState> {
       lastSaved: entry.meta.updatedAt,
       controller: controller,
     );
-
-    emit(EntryState.saved(entryId: entryId, entry: entry));
+    dirty = false;
+    emitState();
     await HapticFeedback.heavyImpact();
   }
 
+  void emitState() {
+    if (dirty) {
+      emit(EntryState.dirty(entryId: entryId, entry: entry));
+    } else {
+      emit(EntryState.saved(entryId: entryId, entry: entry));
+    }
+  }
+
   void setDirty(dynamic _) {
-    emit(EntryState.dirty(entryId: entryId, entry: entry));
+    dirty = true;
+    emitState();
   }
 
   Future<void> toggleStarred() async {
@@ -190,6 +205,7 @@ class EntryCubit extends Cubit<EntryState> {
       await save();
     }
 
+    await _entryStreamSubscription.cancel();
     await super.close();
   }
 }

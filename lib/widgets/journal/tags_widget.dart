@@ -25,9 +25,6 @@ class TagAddIconWidget extends StatelessWidget {
   final String itemId;
   final JournalDb db = getIt<JournalDb>();
 
-  final TagsService tagsService = getIt<TagsService>();
-  late final Stream<JournalEntity?> stream = db.watchEntityById(itemId);
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -46,179 +43,199 @@ class TagAddIconWidget extends StatelessWidget {
             context,
             EntryState state,
           ) {
-            final cubit = context.read<EntryCubit>();
+            final item = state.entry;
 
-            return StreamBuilder<JournalEntity?>(
-              stream: stream,
-              builder: (
-                BuildContext context,
-                AsyncSnapshot<JournalEntity?> snapshot,
-              ) {
-                final item = snapshot.data;
-                if (item == null) {
-                  return const SizedBox.shrink();
-                }
+            if (item == null) {
+              return const SizedBox.shrink();
+            }
 
-                void copyTags() {
-                  if (item.meta.tagIds != null) {
-                    HapticFeedback.heavyImpact();
-                    tagsService.setClipboard(item.meta.id);
-                  }
-                }
+            final controller = TextEditingController();
 
-                Future<void> pasteTags() async {
-                  final tagsFromClipboard = await tagsService.getClipboard();
-                  await cubit.addTagIds(tagsFromClipboard);
-                  await HapticFeedback.heavyImpact();
-                }
-
-                final controller = TextEditingController();
-
-                void onTapAdd() {
-                  showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
-                    ),
-                    clipBehavior: Clip.antiAliasWithSaveLayer,
-                    builder: (BuildContext context) {
-                      return ColoredBox(
-                        color: colorConfig().entryCardColor,
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                            left: 16,
-                            right: 16,
-                            bottom: 160,
-                            top: 8,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              TagsListWidget(itemId),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: Text(
-                                      localizations.journalTagsLabel,
-                                      style: formLabelStyle(),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: TypeAheadField(
-                                      textFieldConfiguration:
-                                          TextFieldConfiguration(
-                                        autocorrect: false,
-                                        controller: controller,
-                                        onSubmitted: (String tag) async {
-                                          tag = tag.trim();
-                                          final tagId =
-                                              await cubit.addTagDefinition(tag);
-                                          await cubit.addTagIds([tagId]);
-                                          controller.clear();
-                                        },
-                                        style: DefaultTextStyle.of(context)
-                                            .style
-                                            .copyWith(
-                                              color:
-                                                  colorConfig().entryTextColor,
-                                              fontFamily: 'Oswald',
-                                              fontSize: 16,
-                                            ),
-                                        decoration: InputDecoration(
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                      ),
-                                      suggestionsCallback:
-                                          (String pattern) async {
-                                        return db.getMatchingTags(
-                                          pattern.trim(),
-                                          limit: isMobile ? 5 : 12,
-                                        );
-                                      },
-                                      suggestionsBoxDecoration:
-                                          SuggestionsBoxDecoration(
-                                        color: colorConfig().entryCardColor,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      itemBuilder:
-                                          (context, TagEntity tagEntity) {
-                                        return ListTile(
-                                          title: Text(
-                                            tagEntity.tag,
-                                            style: TextStyle(
-                                              fontFamily: 'Oswald',
-                                              height: 1,
-                                              color: getTagColor(tagEntity),
-                                              fontWeight: FontWeight.normal,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      onSuggestionSelected:
-                                          (TagEntity tagSuggestion) async {
-                                        await cubit
-                                            .addTagIds([tagSuggestion.id]);
-                                        controller.clear();
-                                      },
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: copyTags,
-                                    padding: const EdgeInsets.only(
-                                      left: 24,
-                                      top: 16,
-                                      bottom: 16,
-                                    ),
-                                    icon: Icon(
-                                      MdiIcons.contentCopy,
-                                      color: colorConfig().entryTextColor,
-                                    ),
-                                    tooltip: localizations.journalTagsCopyHint,
-                                  ),
-                                  IconButton(
-                                    onPressed: pasteTags,
-                                    padding: const EdgeInsets.only(
-                                      left: 24,
-                                      top: 16,
-                                      bottom: 16,
-                                    ),
-                                    icon: Icon(
-                                      MdiIcons.contentPaste,
-                                      color: colorConfig().entryTextColor,
-                                    ),
-                                    tooltip: localizations.journalTagsPasteHint,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }
-
-                return IconButton(
-                  onPressed: onTapAdd,
-                  icon: Icon(
-                    MdiIcons.tagPlusOutline,
-                    size: 24,
-                    color: colorConfig().entryTextColor,
+            void onTapAdd() {
+              showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(16),
                   ),
-                  tooltip: localizations.journalTagPlusHint,
-                );
-              },
+                ),
+                clipBehavior: Clip.antiAliasWithSaveLayer,
+                builder: (BuildContext _) {
+                  return BlocProvider.value(
+                    value: BlocProvider.of<EntryCubit>(context),
+                    child: TagModal(
+                      itemId: itemId,
+                      controller: controller,
+                    ),
+                  );
+                },
+              );
+            }
+
+            return IconButton(
+              onPressed: onTapAdd,
+              icon: Icon(
+                MdiIcons.tagPlusOutline,
+                size: 24,
+                color: colorConfig().entryTextColor,
+              ),
+              tooltip: localizations.journalTagPlusHint,
             );
           },
+        );
+      },
+    );
+  }
+}
+
+class TagModal extends StatelessWidget {
+  TagModal({
+    super.key,
+    required this.itemId,
+    required this.controller,
+  });
+
+  final String itemId;
+  final TextEditingController controller;
+  final JournalDb db = getIt<JournalDb>();
+  final TagsService tagsService = getIt<TagsService>();
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final cubit = context.read<EntryCubit>();
+
+    return BlocBuilder<EntryCubit, EntryState>(
+      builder: (
+        _,
+        EntryState state,
+      ) {
+        final item = state.entry;
+
+        if (item == null) {
+          return const SizedBox.shrink();
+        }
+
+        void copyTags() {
+          if (item.meta.tagIds != null) {
+            HapticFeedback.heavyImpact();
+            tagsService.setClipboard(item.meta.id);
+          }
+        }
+
+        Future<void> pasteTags() async {
+          final tagsFromClipboard = await tagsService.getClipboard();
+          await cubit.addTagIds(tagsFromClipboard);
+          await HapticFeedback.heavyImpact();
+        }
+
+        return ColoredBox(
+          color: colorConfig().entryCardColor,
+          child: Padding(
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: 160,
+              top: 8,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TagsListWidget(itemId),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        localizations.journalTagsLabel,
+                        style: formLabelStyle(),
+                      ),
+                    ),
+                    Expanded(
+                      child: TypeAheadField(
+                        textFieldConfiguration: TextFieldConfiguration(
+                          autocorrect: false,
+                          controller: controller,
+                          onSubmitted: (String tag) async {
+                            tag = tag.trim();
+                            final tagId = await cubit.addTagDefinition(tag);
+                            await cubit.addTagIds([tagId]);
+                            controller.clear();
+                          },
+                          style: DefaultTextStyle.of(context).style.copyWith(
+                                color: colorConfig().entryTextColor,
+                                fontFamily: 'Oswald',
+                                fontSize: 16,
+                              ),
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                        suggestionsCallback: (String pattern) async {
+                          return db.getMatchingTags(
+                            pattern.trim(),
+                            limit: isMobile ? 5 : 12,
+                          );
+                        },
+                        suggestionsBoxDecoration: SuggestionsBoxDecoration(
+                          color: colorConfig().entryCardColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        itemBuilder: (context, TagEntity tagEntity) {
+                          return ListTile(
+                            title: Text(
+                              tagEntity.tag,
+                              style: TextStyle(
+                                fontFamily: 'Oswald',
+                                height: 1,
+                                color: getTagColor(tagEntity),
+                                fontWeight: FontWeight.normal,
+                                fontSize: 16,
+                              ),
+                            ),
+                          );
+                        },
+                        onSuggestionSelected: (TagEntity tagSuggestion) async {
+                          await cubit.addTagIds([tagSuggestion.id]);
+                          controller.clear();
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: copyTags,
+                      padding: const EdgeInsets.only(
+                        left: 24,
+                        top: 16,
+                        bottom: 16,
+                      ),
+                      icon: Icon(
+                        MdiIcons.contentCopy,
+                        color: colorConfig().entryTextColor,
+                      ),
+                      tooltip: localizations.journalTagsCopyHint,
+                    ),
+                    IconButton(
+                      onPressed: pasteTags,
+                      padding: const EdgeInsets.only(
+                        left: 24,
+                        top: 16,
+                        bottom: 16,
+                      ),
+                      icon: Icon(
+                        MdiIcons.contentPaste,
+                        color: colorConfig().entryTextColor,
+                      ),
+                      tooltip: localizations.journalTagsPasteHint,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         );
       },
     );

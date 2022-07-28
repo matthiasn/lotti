@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lotti/blocs/journal/entry_cubit.dart';
+import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
@@ -26,9 +26,6 @@ class EntryDetailFooter extends StatefulWidget {
 class _EntryDetailFooterState extends State<EntryDetailFooter> {
   bool mapVisible = false;
 
-  final JournalDb db = getIt<JournalDb>();
-  late final Stream<JournalEntity?> stream = db.watchEntityById(widget.itemId);
-
   @override
   void initState() {
     super.initState();
@@ -36,13 +33,9 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<JournalEntity?>(
-      stream: stream,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<JournalEntity?> snapshot,
-      ) {
-        final item = snapshot.data;
+    return BlocBuilder<EntryCubit, EntryState>(
+      builder: (context, EntryState state) {
+        final item = state.entry;
         final loc = item?.geolocation;
 
         if (item == null) {

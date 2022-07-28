@@ -65,7 +65,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext _) {
     final localizations = AppLocalizations.of(context)!;
 
     final valid = dateTo.isAfter(dateFrom) || dateTo == dateFrom;
@@ -74,22 +74,21 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
 
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (
-        context,
+        _,
         EntryState state,
       ) {
         final cubit = context.read<EntryCubit>();
+        final liveEntity = state.entry;
+        if (liveEntity == null) {
+          return const SizedBox.shrink();
+        }
 
         return StreamBuilder<JournalEntity?>(
           stream: stream,
           builder: (
-            BuildContext context,
+            BuildContext _,
             AsyncSnapshot<JournalEntity?> snapshot,
           ) {
-            final liveEntity = snapshot.data;
-            if (liveEntity == null) {
-              return const SizedBox.shrink();
-            }
-
             return ColoredBox(
               color: colorConfig().bodyBgColor,
               child: Padding(

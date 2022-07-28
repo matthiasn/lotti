@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Decoupling of PersistenceLogic and widgets
+- Decoupling of JournalDb and widgets
 
 ## [0.8.117] - 2022-07-28
 ### Changed:
