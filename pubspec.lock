@@ -14,7 +14,7 @@ packages:
       name: adaptive_dialog
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.6.4+2"
+    version: "1.7.0"
   analyzer:
     dependency: "direct overridden"
     description:
@@ -126,7 +126,7 @@ packages:
       name: basic_utils
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.4.2"
+    version: "4.4.3"
   bloc:
     dependency: "direct main"
     description:
@@ -301,7 +301,7 @@ packages:
       name: code_builder
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.1.0"
+    version: "4.2.0"
   collection:
     dependency: "direct main"
     description:
@@ -698,7 +698,7 @@ packages:
       name: flutter_form_builder
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.4.0"
+    version: "7.5.0"
   flutter_health_fit:
     dependency: "direct main"
     description:
@@ -824,7 +824,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.2.10"
+    version: "5.2.11"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1128,7 +1128,7 @@ packages:
       name: image_picker_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.5.0"
+    version: "2.6.0"
   integration_test:
     dependency: "direct dev"
     description: flutter
@@ -1287,14 +1287,14 @@ packages:
       name: lottie
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.3.0"
+    version: "1.4.0"
   macos_ui:
     dependency: transitive
     description:
       name: macos_ui
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.7.0"
+    version: "1.7.1"
   matcher:
     dependency: transitive
     description:
@@ -1483,14 +1483,14 @@ packages:
       name: path_provider_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.16"
+    version: "2.0.17"
   path_provider_ios:
     dependency: transitive
     description:
       name: path_provider_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.10"
+    version: "2.0.11"
   path_provider_linux:
     dependency: transitive
     description:
@@ -1893,7 +1893,7 @@ packages:
       name: sqlite3_flutter_libs
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.8"
+    version: "0.5.9"
   sqlparser:
     dependency: transitive
     description:
