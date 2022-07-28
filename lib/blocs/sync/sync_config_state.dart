@@ -1,4 +1,7 @@
-part of 'sync_config_cubit.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/config.dart';
+
+part 'sync_config_state.freezed.dart';
 
 @freezed
 class SyncConfigState with _$SyncConfigState {

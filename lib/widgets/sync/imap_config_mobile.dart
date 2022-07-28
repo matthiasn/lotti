@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/blocs/sync/sync_config_state.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/sync/imap_config_status.dart';

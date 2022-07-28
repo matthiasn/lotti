@@ -1,14 +1,13 @@
 import 'dart:async';
 
 import 'package:easy_debounce/easy_debounce.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/widgets/journal/editor/editor_tools.dart';
+import 'package:lotti/utils/platform.dart';
 
 class EditorStateService {
   EditorStateService() {
@@ -16,7 +15,6 @@ class EditorStateService {
   }
 
   final JournalDb _journalDb = getIt<JournalDb>();
-  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   final EditorDb _editorDb = getIt<EditorDb>();
   final editorStateById = <String, String>{};
   final selectionById = <String, TextSelection>{};
@@ -35,6 +33,8 @@ class EditorStateService {
   }
 
   Stream<bool> getUnsavedStream(String? id, DateTime lastSaved) {
+    debugPrint('getUnsavedStream $id $lastSaved');
+
     final unsavedStreamController = StreamController<bool>();
 
     if (id != null) {
@@ -75,10 +75,9 @@ class EditorStateService {
   void saveTempState({
     required String id,
     required DateTime lastSaved,
-    required QuillController controller,
+    required String json,
   }) {
-    final delta = deltaFromController(controller);
-    final json = quillJsonFromDelta(delta);
+    debugPrint('saveTempState $id');
     editorStateById[id] = json;
     selectionById.remove(id);
 
@@ -101,20 +100,18 @@ class EditorStateService {
 
     EasyDebounce.debounce(
       'persistDraftState-$id',
-      const Duration(seconds: 2),
+      Duration(seconds: isTestEnv ? 0 : 2),
       persistDraftState,
     );
   }
 
-  Future<void> saveState({
+  Future<void> entryWasSaved({
     required String id,
     required DateTime lastSaved,
     required QuillController controller,
   }) async {
     saveSelection(id, controller.selection);
     EasyDebounce.cancel('persistDraftState-$id');
-    final entryText = entryTextFromController(controller);
-    await _persistenceLogic.updateJournalEntityText(id, entryText);
     await _editorDb.setDraftSaved(entryId: id, lastSaved: lastSaved);
 
     final unsavedStreamController = unsavedStreamById[id];
@@ -123,31 +120,5 @@ class EditorStateService {
     if (unsavedStreamController != null) {
       unsavedStreamController.add(false);
     }
-
-    await HapticFeedback.heavyImpact();
-  }
-
-  Future<void> saveTask({
-    required String id,
-    required QuillController controller,
-    required TaskData taskData,
-  }) async {
-    saveSelection(id, controller.selection);
-    EasyDebounce.cancel('persistDraftState-$id');
-
-    await _persistenceLogic.updateTask(
-      entryText: entryTextFromController(controller),
-      journalEntityId: id,
-      taskData: taskData,
-    );
-
-    final unsavedStreamController = unsavedStreamById[id];
-    editorStateById.remove(id);
-
-    if (unsavedStreamController != null) {
-      unsavedStreamController.add(false);
-    }
-
-    await HapticFeedback.heavyImpact();
   }
 }

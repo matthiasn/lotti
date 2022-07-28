@@ -8,7 +8,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:path_provider/path_provider.dart';
@@ -32,7 +31,6 @@ class EditorWrapperWidget extends StatefulWidget {
 
 class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
   final JournalDb _db = getIt<JournalDb>();
-  final FocusNode _focusNode = FocusNode();
   final EditorStateService _editorStateService = getIt<EditorStateService>();
 
   late final Stream<JournalEntity?> _stream =
@@ -75,9 +73,11 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
         );
 
         controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
+          final delta = deltaFromController(controller);
+
           _editorStateService.saveTempState(
             id: widget.itemId,
-            controller: controller,
+            json: quillJsonFromDelta(delta),
             lastSaved: item.meta.updatedAt,
           );
         });
@@ -86,26 +86,9 @@ class _EditorWrapperWidgetState extends State<EditorWrapperWidget> {
           _editorStateService.saveSelection(widget.itemId, selection);
         };
 
-        void saveText() {
-          _editorStateService.saveState(
-            id: widget.itemId,
-            controller: controller,
-            lastSaved: item.meta.updatedAt,
-          );
-
-          if (isMobile) {
-            _focusNode.unfocus();
-          }
-        }
-
         return item.maybeMap(
           journalImage: (JournalImage image) {
-            return EditorWidget(
-              controller: controller,
-              focusNode: _focusNode,
-              journalEntity: item,
-              saveFn: saveText,
-            );
+            return const EditorWidget();
           },
           orElse: () {
             return const SizedBox.shrink();

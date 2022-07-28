@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
+import 'package:lotti/widgets/journal/entry_details/save_button.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -15,11 +16,9 @@ class EntryDetailHeader extends StatefulWidget {
   const EntryDetailHeader({
     super.key,
     required this.itemId,
-    required this.saveFn,
   });
 
   final String itemId;
-  final Function saveFn;
 
   @override
   State<EntryDetailHeader> createState() => _EntryDetailHeaderState();
@@ -121,6 +120,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                 TagAddIconWidget(itemId: widget.itemId),
               ],
             ),
+            const SaveButton()
           ],
         );
       },
@@ -147,6 +147,7 @@ class SwitchIconWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       tooltip: tooltip,
       onPressed: () {
         if (value) {
@@ -158,6 +159,7 @@ class SwitchIconWidget extends StatelessWidget {
       },
       icon: Icon(
         iconData,
+        size: 20,
         color: value ? activeColor : colorConfig().entryTextColor,
       ),
     );

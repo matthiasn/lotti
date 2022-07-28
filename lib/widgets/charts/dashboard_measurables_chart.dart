@@ -4,6 +4,7 @@ import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/blocs/charts/measurables_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -243,7 +244,8 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      ' ${selected.value.floor()} ${measurableDataType.unitName}',
+                      ' ${NumberFormat('#,###.##').format(selected.value)}'
+                      ' ${measurableDataType.unitName}',
                       style: chartTitleStyle()
                           .copyWith(fontWeight: FontWeight.bold),
                     ),

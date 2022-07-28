@@ -462,7 +462,7 @@ void main() {
       expect(find.text(testDashboardDescription), findsOneWidget);
     });
 
-    testWidgets('dashboard list page is displayed with two test dashboard',
+    testWidgets('dashboard list page is displayed with two test dashboards',
         (tester) async {
       when(mockJournalDb.watchDashboards).thenAnswer(
         (_) => Stream<List<DashboardDefinition>>.fromIterable([
@@ -487,7 +487,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      verify(mockJournalDb.watchDashboards).called(1);
+      verify(mockJournalDb.watchDashboards).called(2);
 
       // finds text in dashboard card
       expect(find.text(testDashboardName), findsOneWidget);

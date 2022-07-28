@@ -43,8 +43,6 @@ class PersistenceLogic {
   }
 
   Future<bool> createQuantitativeEntry(QuantitativeData data) async {
-    final transaction =
-        _loggingDb.startTransaction('createQuantitativeEntry()', 'task');
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
@@ -78,13 +76,10 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.finish();
     return true;
   }
 
   Future<WorkoutEntry?> createWorkoutEntry(WorkoutData data) async {
-    final transaction =
-        _loggingDb.startTransaction('createQuantitativeEntry()', 'task');
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
@@ -105,7 +100,6 @@ class PersistenceLogic {
         ),
       );
       await createDbEntity(workout, enqueueSync: true);
-      await transaction.finish();
 
       return workout;
     } catch (exception, stackTrace) {
@@ -117,7 +111,6 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.error();
     return null;
   }
 
@@ -125,8 +118,6 @@ class PersistenceLogic {
     required SurveyData data,
     String? linkedId,
   }) async {
-    final transaction =
-        _loggingDb.startTransaction('createSurveyEntry()', 'task');
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
@@ -161,7 +152,6 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.finish();
     return true;
   }
 
@@ -169,8 +159,6 @@ class PersistenceLogic {
     required MeasurementData data,
     String? linkedId,
   }) async {
-    final transaction =
-        _loggingDb.startTransaction('createMeasurementEntry()', 'task');
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
@@ -200,7 +188,6 @@ class PersistenceLogic {
           data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
         addGeolocation(measurementEntry.meta.id);
       }
-      await transaction.finish();
 
       return measurementEntry;
     } catch (exception, stackTrace) {
@@ -212,7 +199,6 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.error();
     return null;
   }
 
@@ -221,8 +207,6 @@ class PersistenceLogic {
     required EntryText entryText,
     String? linkedId,
   }) async {
-    final transaction =
-        _loggingDb.startTransaction('createMeasurementEntry()', 'task');
     try {
       final now = DateTime.now();
       final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
@@ -250,7 +234,6 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
       addGeolocation(task.meta.id);
-      await transaction.finish();
       return task;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -261,7 +244,6 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.error();
     return null;
   }
 
@@ -269,8 +251,6 @@ class PersistenceLogic {
     ImageData imageData, {
     String? linkedId,
   }) async {
-    final transaction =
-        _loggingDb.startTransaction('createImageEntry()', 'task');
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
@@ -293,8 +273,6 @@ class PersistenceLogic {
           utcOffset: now.timeZoneOffset.inMinutes,
           flag: EntryFlag.import,
         ),
-        // ignore: flutter_style_todos
-        // TODO: should this be geolocation at capture or insertion?
         geolocation: imageData.geolocation,
       );
       await createDbEntity(
@@ -312,7 +290,6 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.finish();
     return null;
   }
 
@@ -320,8 +297,6 @@ class PersistenceLogic {
     AudioNote audioNote, {
     String? linkedId,
   }) async {
-    final transaction =
-        _loggingDb.startTransaction('createImageEntry()', 'task');
     try {
       final audioData = AudioData(
         audioDirectory: audioNote.audioDirectory,
@@ -368,21 +343,18 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.finish();
     return true;
   }
 
   Future<JournalEntity?> createTextEntry(
     EntryText entryText, {
     required DateTime started,
+    required String id,
     String? linkedId,
   }) async {
-    final transaction =
-        _loggingDb.startTransaction('createTextEntry()', 'task');
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
-      final id = uuid.v1();
 
       final journalEntity = JournalEntity.journalEntry(
         entryText: entryText,
@@ -403,7 +375,6 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
       addGeolocation(journalEntity.meta.id);
-      await transaction.finish();
       return journalEntity;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -412,7 +383,6 @@ class PersistenceLogic {
         subDomain: 'createTextEntry',
         stackTrace: stackTrace,
       );
-      await transaction.error();
       return null;
     }
   }
@@ -453,7 +423,6 @@ class PersistenceLogic {
       linked = await _journalDb.journalEntityById(linkedId);
     }
 
-    final transaction = _loggingDb.startTransaction('createDbEntity()', 'task');
     try {
       final linkedTagIds = linked?.meta.tagIds;
       final storyTags = tagsService.getFilteredStoryTagIds(linkedTagIds);
@@ -489,8 +458,6 @@ class PersistenceLogic {
         );
       }
 
-      await transaction.finish();
-
       await getIt<NotificationService>().updateBadge();
 
       return saved;
@@ -510,8 +477,6 @@ class PersistenceLogic {
     String journalEntityId,
     EntryText entryText,
   ) async {
-    final transaction =
-        _loggingDb.startTransaction('updateJournalEntity()', 'task');
     try {
       final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
@@ -581,8 +546,6 @@ class PersistenceLogic {
         stackTrace: stackTrace,
       );
     }
-
-    await transaction.finish();
     return true;
   }
 
@@ -591,7 +554,6 @@ class PersistenceLogic {
     EntryText? entryText,
     required TaskData taskData,
   }) async {
-    final transaction = _loggingDb.startTransaction('updateTask()', 'task');
     try {
       final now = DateTime.now();
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
@@ -634,14 +596,10 @@ class PersistenceLogic {
         stackTrace: stackTrace,
       );
     }
-
-    await transaction.finish();
     return true;
   }
 
   Future<void> addGeolocationAsync(String journalEntityId) async {
-    final transaction =
-        _loggingDb.startTransaction('addGeolocationAsync()', 'task');
     try {
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
       final geolocation = await location?.getCurrentGeoLocation().timeout(
@@ -675,7 +633,6 @@ class PersistenceLogic {
         subDomain: 'addGeolocation',
         stackTrace: stackTrace,
       );
-      await transaction.error();
     }
   }
 
@@ -688,8 +645,6 @@ class PersistenceLogic {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
-    final transaction =
-        _loggingDb.startTransaction('updateJournalEntityDate()', 'task');
     try {
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
@@ -722,8 +677,6 @@ class PersistenceLogic {
         stackTrace: stackTrace,
       );
     }
-
-    await transaction.finish();
     return true;
   }
 
@@ -731,8 +684,6 @@ class PersistenceLogic {
     JournalEntity journalEntity,
     Metadata metadata,
   ) async {
-    final transaction =
-        _loggingDb.startTransaction('updateJournalEntity()', 'task');
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock(
@@ -759,7 +710,6 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.finish();
     return true;
   }
 
@@ -767,7 +717,6 @@ class PersistenceLogic {
     required String journalEntityId,
     required List<String> addedTagIds,
   }) async {
-    final transaction = _loggingDb.startTransaction('addTag()', 'task');
     try {
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
@@ -798,7 +747,6 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.finish();
     return true;
   }
 
@@ -806,7 +754,6 @@ class PersistenceLogic {
     required String journalEntityId,
     required String tagId,
   }) async {
-    final transaction = _loggingDb.startTransaction('addTag()', 'task');
     try {
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
@@ -837,15 +784,12 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.finish();
     return true;
   }
 
   Future<bool> deleteJournalEntity(
     String journalEntityId,
   ) async {
-    final transaction =
-        _loggingDb.startTransaction('updateJournalEntity()', 'task');
     try {
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
 
@@ -877,7 +821,6 @@ class PersistenceLogic {
       );
     }
 
-    await transaction.finish();
     return true;
   }
 
@@ -885,7 +828,6 @@ class PersistenceLogic {
     JournalEntity journalEntity, {
     bool enqueueSync = false,
   }) async {
-    final transaction = _loggingDb.startTransaction('updateDbEntity()', 'task');
     try {
       await _journalDb.updateJournalEntity(journalEntity);
       await saveJournalEntityJson(journalEntity);
@@ -899,7 +841,6 @@ class PersistenceLogic {
           ),
         );
       }
-      await transaction.finish();
 
       await getIt<NotificationService>().updateBadge();
 
