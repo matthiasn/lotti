@@ -75,20 +75,20 @@ class EntryCubit extends Cubit<EntryState> {
       final task = entry as Task;
       formKey?.currentState?.save();
       final formData = formKey?.currentState?.value;
-      final title = formData!['title'] as String;
-      final dt = formData['estimate'] as DateTime;
-      final status = formData['status'] as String;
+      final title = formData?['title'] as String?;
+      final dt = formData?['estimate'] as DateTime?;
+      final status = formData?['status'] as String?;
 
       await _persistenceLogic.updateTask(
         entryText: entryTextFromController(controller),
         journalEntityId: entryId,
         taskData: task.data.copyWith(
-          title: title,
+          title: title ?? '',
           estimate: Duration(
-            hours: dt.hour,
-            minutes: dt.minute,
+            hours: dt?.hour ?? 0,
+            minutes: dt?.minute ?? 0,
           ),
-          status: taskStatusFromString(status),
+          status: taskStatusFromString(status ?? ''),
         ),
       );
     } else {
