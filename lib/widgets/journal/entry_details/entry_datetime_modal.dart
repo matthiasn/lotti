@@ -5,11 +5,10 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-
-import '../../../get_it.dart';
-import '../../../routes/router.gr.dart';
 
 class EntryDateTimeModal extends StatefulWidget {
   const EntryDateTimeModal({

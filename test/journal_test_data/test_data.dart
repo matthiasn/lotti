@@ -1,5 +1,6 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -135,6 +136,12 @@ final testTextEntry = JournalEntry(
     starred: true,
   ),
   entryText: EntryText(plainText: 'test entry text'),
+  geolocation: Geolocation(
+    geohashString: '',
+    longitude: 13.43,
+    latitude: 52.51,
+    createdAt: DateTime(2022, 7, 7, 13),
+  ),
 );
 
 final testImageEntry = JournalImage(

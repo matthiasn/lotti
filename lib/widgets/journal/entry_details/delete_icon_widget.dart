@@ -12,10 +12,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class DeleteIconWidget extends StatelessWidget {
   const DeleteIconWidget({
     super.key,
-    required this.popOnDelete,
   });
-
-  final bool popOnDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -47,9 +44,7 @@ class DeleteIconWidget extends StatelessWidget {
           if (result == deleteKey) {
             await cubit.delete();
 
-            if (popOnDelete) {
-              await getIt<AppRouter>().pop();
-            }
+            await getIt<AppRouter>().pop();
           }
         }
 

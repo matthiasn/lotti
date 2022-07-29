@@ -110,10 +110,12 @@ void main() {
 
       DateTime? modifiedDateTo;
 
-      when(() => entryCubit.updateFromTo(
-            dateFrom: testTextEntry.meta.dateFrom,
-            dateTo: any(named: 'dateTo'),
-          )).thenAnswer((Invocation i) async {
+      when(
+        () => entryCubit.updateFromTo(
+          dateFrom: testTextEntry.meta.dateFrom,
+          dateTo: any(named: 'dateTo'),
+        ),
+      ).thenAnswer((Invocation i) async {
         const dateTo = Symbol('dateTo');
         modifiedDateTo = i.namedArguments[dateTo] as DateTime;
         return true;

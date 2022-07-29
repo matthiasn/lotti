@@ -141,7 +141,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     ),
                     EntryDetailFooter(
                       itemId: widget.itemId,
-                      popOnDelete: widget.popOnDelete,
                     ),
                   ],
                 ),

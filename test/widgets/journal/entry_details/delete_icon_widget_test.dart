@@ -37,60 +37,14 @@ void main() {
         ),
       );
 
-      when(entryCubit.delete).thenAnswer((_) async {
-        return true;
-      });
+      when(mockAppRouter.pop).thenAnswer((_) async => true);
+      when(entryCubit.delete).thenAnswer((_) async => true);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: const DeleteIconWidget(
-              popOnDelete: false,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      final trashIconFinder = find.byIcon(MdiIcons.trashCanOutline);
-      expect(trashIconFinder, findsOneWidget);
-
-      await tester.tap(trashIconFinder);
-      await tester.pumpAndSettle();
-
-      final warningIconFinder = find.byIcon(Icons.warning);
-      expect(warningIconFinder, findsOneWidget);
-
-      await tester.tap(warningIconFinder);
-      await tester.pumpAndSettle();
-
-      verify(entryCubit.delete).called(1);
-    });
-
-    testWidgets('calls delete in cubit and pops navigation',
-        (WidgetTester tester) async {
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testTextEntry.meta.id,
-          entry: testTextEntry,
-        ),
-      );
-
-      when(entryCubit.delete).thenAnswer((_) async {
-        return true;
-      });
-
-      when(mockAppRouter.pop).thenAnswer((_) async {
-        return true;
-      });
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: const DeleteIconWidget(
-              popOnDelete: true,
-            ),
+            child: const DeleteIconWidget(),
           ),
         ),
       );

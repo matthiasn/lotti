@@ -13,11 +13,9 @@ class EntryDetailFooter extends StatefulWidget {
   const EntryDetailFooter({
     super.key,
     required this.itemId,
-    required this.popOnDelete,
   });
 
   final String itemId;
-  final bool popOnDelete;
 
   @override
   State<EntryDetailFooter> createState() => _EntryDetailFooterState();
@@ -75,11 +73,9 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                   ),
                   Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
-                      DeleteIconWidget(
-                        popOnDelete: widget.popOnDelete,
-                      ),
-                      const ShareButtonWidget(),
+                    children: const [
+                      DeleteIconWidget(),
+                      ShareButtonWidget(),
                     ],
                   ),
                 ],
