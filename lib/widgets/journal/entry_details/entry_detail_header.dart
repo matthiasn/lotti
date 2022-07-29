@@ -96,7 +96,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                 TagAddIconWidget(itemId: widget.itemId),
               ],
             ),
-            const SaveButton()
+            const SaveButton(),
           ],
         );
       },

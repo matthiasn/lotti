@@ -322,6 +322,7 @@ final testMeasuredCoverageEntry = MeasurementEntry(
     dateTo: DateTime(2022, 7, 7, 17),
     dateFrom: DateTime(2022, 7, 7, 17),
   ),
+  entryText: EntryText(plainText: 'test measurement comment'),
 );
 
 final testMeasuredPullUpsEntry = MeasurementEntry(

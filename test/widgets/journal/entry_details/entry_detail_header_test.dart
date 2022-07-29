@@ -179,5 +179,58 @@ void main() {
       // updateFromTo called with recent dateTo after tapping now()
       expect(modifiedDateTo?.difference(DateTime.now()).inSeconds, lessThan(2));
     });
+
+    testWidgets('save button invisible when saved/clean',
+        (WidgetTester tester) async {
+      when(() => entryCubit.state).thenAnswer(
+        (_) => EntryState.saved(
+          entryId: testTextEntry.meta.id,
+          entry: testTextEntry,
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<EntryCubit>.value(
+            value: entryCubit,
+            child: EntryDetailHeader(itemId: testTextEntry.meta.id),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final saveButtonFinder = find.text('SAVE');
+      expect(saveButtonFinder, findsNothing);
+    });
+
+    testWidgets('save button tappable when unsaved/dirty',
+        (WidgetTester tester) async {
+      when(() => entryCubit.state).thenAnswer(
+        (_) => EntryState.dirty(
+          entryId: testTextEntry.meta.id,
+          entry: testTextEntry,
+        ),
+      );
+
+      when(entryCubit.save).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<EntryCubit>.value(
+            value: entryCubit,
+            child: EntryDetailHeader(itemId: testTextEntry.meta.id),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final saveButtonFinder = find.text('Save');
+      expect(saveButtonFinder, findsOneWidget);
+
+      await tester.tap(saveButtonFinder);
+      await tester.pumpAndSettle();
+
+      verify(entryCubit.save).called(1);
+    });
   });
 }
