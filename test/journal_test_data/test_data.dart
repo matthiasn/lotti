@@ -317,7 +317,7 @@ final testMeasuredCoverageEntry = MeasurementEntry(
     private: false,
   ),
   data: MeasurementData(
-    value: 42,
+    value: 55,
     dataTypeId: measurableCoverage.id,
     dateTo: DateTime(2022, 7, 7, 17),
     dateFrom: DateTime(2022, 7, 7, 17),
