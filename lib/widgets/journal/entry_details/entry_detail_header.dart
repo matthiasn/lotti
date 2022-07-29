@@ -6,7 +6,7 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
+import 'package:lotti/widgets/journal/entry_details/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_details/save_button.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
