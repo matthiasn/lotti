@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -36,6 +37,10 @@ class ShareButtonWidget extends StatelessWidget {
         }
 
         Future<void> onPressed() async {
+          if (isLinux || isWindows) {
+            return;
+          }
+
           if (item is JournalImage) {
             final filePath = await getFullImagePath(item);
             await Share.shareFiles([filePath]);
