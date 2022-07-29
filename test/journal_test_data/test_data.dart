@@ -137,6 +137,43 @@ final testTextEntry = JournalEntry(
   entryText: EntryText(plainText: 'test entry text'),
 );
 
+final testImageEntry = JournalImage(
+  meta: Metadata(
+    id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
+    createdAt: DateTime(2022, 7, 7, 13),
+    dateFrom: DateTime(2022, 7, 7, 13),
+    dateTo: DateTime(2022, 7, 7, 14),
+    updatedAt: DateTime(2022, 7, 7, 13),
+    starred: true,
+  ),
+  entryText: EntryText(plainText: 'test image entry text'),
+  data: ImageData(
+    imageId: '',
+    imageFile: '',
+    imageDirectory: '',
+    capturedAt: DateTime.now(),
+  ),
+);
+
+final testAudioEntry = JournalAudio(
+  meta: Metadata(
+    id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
+    createdAt: DateTime(2022, 7, 7, 13),
+    dateFrom: DateTime(2022, 7, 7, 13),
+    dateTo: DateTime(2022, 7, 7, 14),
+    updatedAt: DateTime(2022, 7, 7, 13),
+    starred: true,
+  ),
+  entryText: EntryText(plainText: 'test image entry text'),
+  data: AudioData(
+    dateFrom: DateTime(2022, 7, 7, 13),
+    dateTo: DateTime(2022, 7, 7, 14),
+    duration: const Duration(hours: 1),
+    audioFile: '',
+    audioDirectory: '',
+  ),
+);
+
 final testTask = Task(
   data: TaskData(
     status: TaskStatus.open(

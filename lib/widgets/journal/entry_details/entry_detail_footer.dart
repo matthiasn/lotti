@@ -79,7 +79,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                       DeleteIconWidget(
                         popOnDelete: widget.popOnDelete,
                       ),
-                      ShareButtonWidget(entityId: widget.itemId),
+                      const ShareButtonWidget(),
                     ],
                   ),
                 ],

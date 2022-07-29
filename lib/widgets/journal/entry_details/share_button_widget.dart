@@ -13,10 +13,7 @@ import 'package:share_plus/share_plus.dart';
 class ShareButtonWidget extends StatelessWidget {
   const ShareButtonWidget({
     super.key,
-    required this.entityId,
   });
-
-  final String entityId;
 
   @override
   Widget build(BuildContext context) {
