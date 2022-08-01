@@ -6,7 +6,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
-import 'package:lotti/widgets/journal/tags_widget.dart';
+import 'package:lotti/widgets/journal/tags/tag_widget.dart';
 
 class TagsSearchWidget extends StatelessWidget {
   TagsSearchWidget({

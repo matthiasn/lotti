@@ -17,7 +17,7 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/slideshow.dart';
-import 'package:lotti/widgets/journal/tags_search_widget.dart';
+import 'package:lotti/widgets/journal/tags/tags_search_widget.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
 
