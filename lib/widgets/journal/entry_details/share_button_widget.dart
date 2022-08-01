@@ -1,51 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/blocs/journal/entry_cubit.dart';
+import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ShareButtonWidget extends StatelessWidget {
-  ShareButtonWidget({
+  const ShareButtonWidget({
     super.key,
-    required this.entityId,
   });
-
-  final JournalDb db = getIt<JournalDb>();
-  final String entityId;
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return StreamBuilder<JournalEntity?>(
-      stream: db.watchEntityById(entityId),
-      builder: (context, snapshot) {
-        final journalEntity = snapshot.data;
-        if (journalEntity is! JournalImage && journalEntity is! JournalAudio) {
+    return BlocBuilder<EntryCubit, EntryState>(
+      builder: (context, EntryState state) {
+        final item = state.entry;
+        if (item is! JournalImage && item is! JournalAudio) {
           return const SizedBox.shrink();
         }
 
         var tooltip = '';
 
-        if (journalEntity is JournalImage) {
+        if (item is JournalImage) {
           tooltip = localizations.journalSharePhotoHint;
         }
-        if (journalEntity is JournalAudio) {
+        if (item is JournalAudio) {
           tooltip = localizations.journalShareAudioHint;
         }
 
         Future<void> onPressed() async {
-          if (journalEntity is JournalImage) {
-            final filePath = await getFullImagePath(journalEntity);
+          if (isLinux || isWindows) {
+            return;
+          }
+
+          if (item is JournalImage) {
+            final filePath = await getFullImagePath(item);
             await Share.shareFiles([filePath]);
           }
-          if (journalEntity is JournalAudio) {
-            final filePath = await AudioUtils.getFullAudioPath(journalEntity);
+          if (item is JournalAudio) {
+            final filePath = await AudioUtils.getFullAudioPath(item);
             await Share.shareFiles([filePath]);
           }
         }

@@ -1,5 +1,6 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -135,6 +136,49 @@ final testTextEntry = JournalEntry(
     starred: true,
   ),
   entryText: EntryText(plainText: 'test entry text'),
+  geolocation: Geolocation(
+    geohashString: '',
+    longitude: 13.43,
+    latitude: 52.51,
+    createdAt: DateTime(2022, 7, 7, 13),
+  ),
+);
+
+final testImageEntry = JournalImage(
+  meta: Metadata(
+    id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
+    createdAt: DateTime(2022, 7, 7, 13),
+    dateFrom: DateTime(2022, 7, 7, 13),
+    dateTo: DateTime(2022, 7, 7, 14),
+    updatedAt: DateTime(2022, 7, 7, 13),
+    starred: true,
+  ),
+  entryText: EntryText(plainText: 'test image entry text'),
+  data: ImageData(
+    imageId: '',
+    imageFile: '',
+    imageDirectory: '',
+    capturedAt: DateTime.now(),
+  ),
+);
+
+final testAudioEntry = JournalAudio(
+  meta: Metadata(
+    id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
+    createdAt: DateTime(2022, 7, 7, 13),
+    dateFrom: DateTime(2022, 7, 7, 13),
+    dateTo: DateTime(2022, 7, 7, 14),
+    updatedAt: DateTime(2022, 7, 7, 13),
+    starred: true,
+  ),
+  entryText: EntryText(plainText: 'test image entry text'),
+  data: AudioData(
+    dateFrom: DateTime(2022, 7, 7, 13),
+    dateTo: DateTime(2022, 7, 7, 14),
+    duration: const Duration(hours: 1),
+    audioFile: '',
+    audioDirectory: '',
+  ),
 );
 
 final testTask = Task(
@@ -280,11 +324,12 @@ final testMeasuredCoverageEntry = MeasurementEntry(
     private: false,
   ),
   data: MeasurementData(
-    value: 42,
+    value: 55,
     dataTypeId: measurableCoverage.id,
     dateTo: DateTime(2022, 7, 7, 17),
     dateFrom: DateTime(2022, 7, 7, 17),
   ),
+  entryText: EntryText(plainText: 'test measurement comment'),
 );
 
 final testMeasuredPullUpsEntry = MeasurementEntry(

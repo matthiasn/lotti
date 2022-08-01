@@ -5,9 +5,9 @@ import 'package:lotti/get_it.dart';
 class TagsService {
   TagsService() {
     _db = getIt<JournalDb>();
-    _stream = _db.watchTags();
+    stream = _db.watchTags();
 
-    _stream.listen((List<TagEntity> tagEntities) {
+    stream.listen((List<TagEntity> tagEntities) {
       tagsById.clear();
       for (final tagEntity in tagEntities) {
         tagsById[tagEntity.id] = tagEntity;
@@ -16,7 +16,7 @@ class TagsService {
   }
 
   late final JournalDb _db;
-  late final Stream<List<TagEntity>> _stream;
+  late final Stream<List<TagEntity>> stream;
   String? _clipboardCopiedId;
   Map<String, TagEntity> tagsById = {};
 

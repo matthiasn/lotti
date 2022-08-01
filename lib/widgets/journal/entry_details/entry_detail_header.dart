@@ -5,10 +5,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
+import 'package:lotti/widgets/journal/entry_details/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_details/save_button.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
@@ -37,78 +35,69 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
     final localizations = AppLocalizations.of(context)!;
 
     return BlocBuilder<EntryCubit, EntryState>(
-      builder: (
-        context,
-        EntryState state,
-      ) {
+      builder: (context, EntryState state) {
         final cubit = context.read<EntryCubit>();
-        return StreamBuilder<JournalEntity?>(
-          stream: getIt<JournalDb>().watchEntityById(widget.itemId),
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<JournalEntity?> snapshot,
-          ) {
-            final item = snapshot.data;
-            if (item == null) {
-              return const SizedBox.shrink();
-            }
+        final item = state.entry;
 
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(16),
-                        ),
-                      ),
-                      clipBehavior: Clip.antiAliasWithSaveLayer,
-                      builder: (BuildContext context) {
-                        return EntryDateTimeModal(
-                          item: item,
-                        );
-                      },
+        if (item == null) {
+          return const SizedBox.shrink();
+        }
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(
+              onPressed: () {
+                showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAliasWithSaveLayer,
+                  builder: (BuildContext _) {
+                    return BlocProvider.value(
+                      value: BlocProvider.of<EntryCubit>(context),
+                      child: EntryDateTimeModal(item: item),
                     );
                   },
-                  child: Text(
-                    df.format(item.meta.dateFrom),
-                    style: textStyle(),
-                  ),
+                );
+              },
+              child: Text(
+                df.format(item.meta.dateFrom),
+                style: textStyle(),
+              ),
+            ),
+            Row(
+              children: [
+                SwitchIconWidget(
+                  tooltip: localizations.journalFavoriteTooltip,
+                  activeColor: colorConfig().starredGold,
+                  onPressed: cubit.toggleStarred,
+                  value: item.meta.starred ?? false,
+                  iconData: MdiIcons.star,
                 ),
-                Row(
-                  children: [
-                    SwitchIconWidget(
-                      tooltip: localizations.journalFavoriteTooltip,
-                      activeColor: colorConfig().starredGold,
-                      onPressed: cubit.toggleStarred,
-                      value: item.meta.starred ?? false,
-                      iconData: MdiIcons.star,
-                    ),
-                    SwitchIconWidget(
-                      tooltip: localizations.journalPrivateTooltip,
-                      activeColor: colorConfig().error,
-                      onPressed: cubit.togglePrivate,
-                      value: item.meta.private ?? false,
-                      iconData: MdiIcons.security,
-                    ),
-                    SwitchIconWidget(
-                      tooltip: localizations.journalFlaggedTooltip,
-                      activeColor: colorConfig().error,
-                      onPressed: cubit.toggleFlagged,
-                      value: item.meta.flag == EntryFlag.import,
-                      iconData: MdiIcons.flag,
-                    ),
-                    TagAddIconWidget(itemId: widget.itemId),
-                  ],
+                SwitchIconWidget(
+                  tooltip: localizations.journalPrivateTooltip,
+                  activeColor: colorConfig().error,
+                  onPressed: cubit.togglePrivate,
+                  value: item.meta.private ?? false,
+                  iconData: MdiIcons.security,
                 ),
-                const SaveButton()
+                SwitchIconWidget(
+                  tooltip: localizations.journalFlaggedTooltip,
+                  activeColor: colorConfig().error,
+                  onPressed: cubit.toggleFlagged,
+                  value: item.meta.flag == EntryFlag.import,
+                  iconData: MdiIcons.flag,
+                ),
+                TagAddIconWidget(itemId: widget.itemId),
               ],
-            );
-          },
+            ),
+            const SaveButton(),
+          ],
         );
       },
     );

@@ -1,0 +1,534 @@
+{
+  "meta": {
+    "id": "c51b2339-10bd-53f1-a513-24381f8d8c8f",
+    "createdAt": "2022-07-29T09:58:59.644964",
+    "updatedAt": "2022-07-29T09:59:00.122722",
+    "dateFrom": "2022-07-29T09:58:25.014064",
+    "dateTo": "2022-07-29T09:58:59.642736",
+    "tags": null,
+    "tagIds": [],
+    "utcOffset": 120,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "91a458b0-7564-4322-a63f-dbd15ec9f882": 1051
+    },
+    "deletedAt": null,
+    "flag": null,
+    "starred": null,
+    "private": null
+  },
+  "data": {
+    "taskResult": {
+      "identifier": "cfq11SurveyTask",
+      "start_date": "2022-07-29T09:58:25.014064",
+      "end_date": "2022-07-29T09:58:59.642736",
+      "results": {
+        "cfq11Step1": {
+          "identifier": "cfq11Step1",
+          "start_date": "2022-07-29T09:58:26.874873",
+          "end_date": "2022-07-29T09:58:28.642960",
+          "question_title": "Do you have problems with tiredness?",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/green-1.png",
+              "value": 1,
+              "description": "No worse than usual"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-0.png",
+                "value": 0,
+                "description": "Better than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-1.png",
+                "value": 1,
+                "description": "No worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-2.png",
+                "value": 2,
+                "description": "Worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-3.png",
+                "value": 3,
+                "description": "Much worse than usual"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "cfq11Step2": {
+          "identifier": "cfq11Step2",
+          "start_date": "2022-07-29T09:58:29.873928",
+          "end_date": "2022-07-29T09:58:31.026784",
+          "question_title": "Do you need to rest more?",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/green-1.png",
+              "value": 1,
+              "description": "No worse than usual"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-0.png",
+                "value": 0,
+                "description": "Better than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-1.png",
+                "value": 1,
+                "description": "No worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-2.png",
+                "value": 2,
+                "description": "Worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-3.png",
+                "value": 3,
+                "description": "Much worse than usual"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "cfq11Step3": {
+          "identifier": "cfq11Step3",
+          "start_date": "2022-07-29T09:58:32.655058",
+          "end_date": "2022-07-29T09:58:33.894937",
+          "question_title": "Do you feel sleepy or drowsy?",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/green-1.png",
+              "value": 1,
+              "description": "No worse than usual"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-0.png",
+                "value": 0,
+                "description": "Better than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-1.png",
+                "value": 1,
+                "description": "No worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-2.png",
+                "value": 2,
+                "description": "Worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-3.png",
+                "value": 3,
+                "description": "Much worse than usual"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "cfq11Step4": {
+          "identifier": "cfq11Step4",
+          "start_date": "2022-07-29T09:58:35.440030",
+          "end_date": "2022-07-29T09:58:36.459963",
+          "question_title": "Do you have problems starting things?",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/green-1.png",
+              "value": 1,
+              "description": "No worse than usual"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-0.png",
+                "value": 0,
+                "description": "Better than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-1.png",
+                "value": 1,
+                "description": "No worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-2.png",
+                "value": 2,
+                "description": "Worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-3.png",
+                "value": 3,
+                "description": "Much worse than usual"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "cfq11Step5": {
+          "identifier": "cfq11Step5",
+          "start_date": "2022-07-29T09:58:38.054470",
+          "end_date": "2022-07-29T09:58:39.191070",
+          "question_title": "Do you lack energy?",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/green-1.png",
+              "value": 1,
+              "description": "No worse than usual"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-0.png",
+                "value": 0,
+                "description": "Better than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-1.png",
+                "value": 1,
+                "description": "No worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-2.png",
+                "value": 2,
+                "description": "Worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-3.png",
+                "value": 3,
+                "description": "Much worse than usual"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "cfq11Step6": {
+          "identifier": "cfq11Step6",
+          "start_date": "2022-07-29T09:58:41.088057",
+          "end_date": "2022-07-29T09:58:42.429733",
+          "question_title": "Do you have less strength in your muscles?",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/green-1.png",
+              "value": 1,
+              "description": "No worse than usual"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-0.png",
+                "value": 0,
+                "description": "Better than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-1.png",
+                "value": 1,
+                "description": "No worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-2.png",
+                "value": 2,
+                "description": "Worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-3.png",
+                "value": 3,
+                "description": "Much worse than usual"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "cfq11Step7": {
+          "identifier": "cfq11Step7",
+          "start_date": "2022-07-29T09:58:43.670776",
+          "end_date": "2022-07-29T09:58:44.843705",
+          "question_title": "Do you feel weak?",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/green-1.png",
+              "value": 1,
+              "description": "No worse than usual"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-0.png",
+                "value": 0,
+                "description": "Better than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-1.png",
+                "value": 1,
+                "description": "No worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-2.png",
+                "value": 2,
+                "description": "Worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-3.png",
+                "value": 3,
+                "description": "Much worse than usual"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "cfq11Step8": {
+          "identifier": "cfq11Step8",
+          "start_date": "2022-07-29T09:58:46.188862",
+          "end_date": "2022-07-29T09:58:47.424947",
+          "question_title": "Do you have difficulty concentrating?",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/green-1.png",
+              "value": 1,
+              "description": "No worse than usual"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-0.png",
+                "value": 0,
+                "description": "Better than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-1.png",
+                "value": 1,
+                "description": "No worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-2.png",
+                "value": 2,
+                "description": "Worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-3.png",
+                "value": 3,
+                "description": "Much worse than usual"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "cfq11Step9": {
+          "identifier": "cfq11Step9",
+          "start_date": "2022-07-29T09:58:49.271459",
+          "end_date": "2022-07-29T09:58:50.576427",
+          "question_title": "Do you make slips of the tongue when speaking?",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/green-1.png",
+              "value": 1,
+              "description": "No worse than usual"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-0.png",
+                "value": 0,
+                "description": "Better than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-1.png",
+                "value": 1,
+                "description": "No worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-2.png",
+                "value": 2,
+                "description": "Worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-3.png",
+                "value": 3,
+                "description": "Much worse than usual"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "cfq11Step10": {
+          "identifier": "cfq11Step10",
+          "start_date": "2022-07-29T09:58:52.254282",
+          "end_date": "2022-07-29T09:58:53.393829",
+          "question_title": "Do you find it more difficult to find the right word?",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/green-1.png",
+              "value": 1,
+              "description": "No worse than usual"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-0.png",
+                "value": 0,
+                "description": "Better than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-1.png",
+                "value": 1,
+                "description": "No worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-2.png",
+                "value": 2,
+                "description": "Worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-3.png",
+                "value": 3,
+                "description": "Much worse than usual"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "cfq11Step11": {
+          "identifier": "cfq11Step11",
+          "start_date": "2022-07-29T09:58:54.822507",
+          "end_date": "2022-07-29T09:58:56.292768",
+          "question_title": "How is your memory?",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/green-1.png",
+              "value": 1,
+              "description": "No worse than usual"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-0.png",
+                "value": 0,
+                "description": "Better than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/green-1.png",
+                "value": 1,
+                "description": "No worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-2.png",
+                "value": 2,
+                "description": "Worse than usual"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/red-3.png",
+                "value": 3,
+                "description": "Much worse than usual"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        }
+      }
+    },
+    "scoreDefinitions": {
+      "CFQ11": [
+        "cfq11Step1",
+        "cfq11Step2",
+        "cfq11Step3",
+        "cfq11Step4",
+        "cfq11Step5",
+        "cfq11Step6",
+        "cfq11Step7",
+        "cfq11Step8",
+        "cfq11Step9",
+        "cfq11Step10",
+        "cfq11Step11"
+      ]
+    },
+    "calculatedScores": {
+      "CFQ11": 11
+    }
+  },
+  "entryText": null,
+  "geolocation": null,
+  "runtimeType": "survey"
+}
