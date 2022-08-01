@@ -109,7 +109,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         right: 8,
                         bottom: isTask ? 0 : 8,
                       ),
-                      child: TagsListWidget(widget.itemId),
+                      child: TagsListWidget(),
                     ),
                     item.maybeMap(
                       task: (_) => const SizedBox.shrink(),

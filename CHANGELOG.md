@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- Crash in tags modal due to wrong context
+
+## [0.8.120] - 2022-08-01
 ### Changed:
 - Time record icon only on text entries
 
