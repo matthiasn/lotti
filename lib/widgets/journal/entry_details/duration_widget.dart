@@ -34,6 +34,7 @@ class DurationWidget extends StatelessWidget {
             DateTime.now().difference(item.meta.dateFrom).inHours < 12;
 
         final recording = snapshot.data;
+        final showRecordIcon = item is JournalEntry;
         var displayed = item;
         var isRecording = false;
 
@@ -53,7 +54,8 @@ class DurationWidget extends StatelessWidget {
             final saveFn = context.read<EntryCubit>().save;
 
             return Visibility(
-              visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
+              visible: entryDuration(displayed).inMilliseconds > 0 ||
+                  (isRecent && showRecordIcon),
               child: Row(
                 children: [
                   FormattedTime(
@@ -62,7 +64,7 @@ class DurationWidget extends StatelessWidget {
                     style: style,
                   ),
                   Visibility(
-                    visible: isRecent,
+                    visible: isRecent && showRecordIcon,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

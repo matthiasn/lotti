@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Time record icon only on text entries
+
+## [0.8.119] - 2022-07-30
+### Changed:
 - Decoupling of PersistenceLogic and widgets
 - Decoupling of JournalDb and widgets
 
