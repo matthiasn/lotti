@@ -9,7 +9,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_details/save_button.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/journal/tags_widget.dart';
+import 'package:lotti/widgets/journal/tags/tag_add.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class EntryDetailHeader extends StatefulWidget {
@@ -93,7 +93,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                   value: item.meta.flag == EntryFlag.import,
                   iconData: MdiIcons.flag,
                 ),
-                TagAddIconWidget(itemId: widget.itemId),
+                TagAddIconWidget(),
               ],
             ),
             const SaveButton(),

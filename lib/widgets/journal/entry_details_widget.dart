@@ -17,7 +17,7 @@ import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/workout_summary.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
-import 'package:lotti/widgets/journal/tags_widget.dart';
+import 'package:lotti/widgets/journal/tags/tags_list_widget.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
 
 class EntryDetailWidget extends StatefulWidget {
@@ -109,7 +109,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         right: 8,
                         bottom: isTask ? 0 : 8,
                       ),
-                      child: TagsListWidget(widget.itemId),
+                      child: TagsListWidget(),
                     ),
                     item.maybeMap(
                       task: (_) => const SizedBox.shrink(),

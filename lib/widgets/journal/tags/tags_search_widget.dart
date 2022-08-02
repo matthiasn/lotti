@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
-import 'package:lotti/widgets/journal/tags_widget.dart';
+import 'package:lotti/widgets/journal/tags/tag_widget.dart';
 
 class TagsSearchWidget extends StatelessWidget {
   TagsSearchWidget({
@@ -14,14 +13,13 @@ class TagsSearchWidget extends StatelessWidget {
     required this.addTag,
   });
 
-  final JournalDb _db = getIt<JournalDb>();
   final TagsService tagsService = getIt<TagsService>();
   final void Function(String addedTag) addTag;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<TagEntity>>(
-      stream: _db.watchTags(),
+      stream: tagsService.watchTags(),
       builder: (
         BuildContext context,
         // This stream is not used, the StreamBuilder is only here
@@ -48,7 +46,7 @@ class TagsSearchWidget extends StatelessWidget {
               ),
             ),
             suggestionsCallback: (String pattern) async {
-              return _db.getMatchingTags(
+              return tagsService.getMatchingTags(
                 pattern.trim(),
                 inactive: true,
               );
@@ -89,7 +87,6 @@ class SelectedTagsWidget extends StatelessWidget {
     super.key,
   });
 
-  final JournalDb _db = getIt<JournalDb>();
   final TagsService tagsService = getIt<TagsService>();
 
   final List<String> tagIds;
@@ -98,7 +95,7 @@ class SelectedTagsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<TagEntity>>(
-      stream: _db.watchTags(),
+      stream: tagsService.watchTags(),
       builder: (
         BuildContext context,
         // This stream is not used, the StreamBuilder is only here

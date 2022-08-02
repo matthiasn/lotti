@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -14,13 +13,12 @@ class TagsViewWidget extends StatelessWidget {
   });
 
   final TagsService tagsService = getIt<TagsService>();
-  final JournalDb db = getIt<JournalDb>();
   final JournalEntity item;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<TagEntity>>(
-      stream: db.watchTags(),
+      stream: tagsService.watchTags(),
       builder: (
         BuildContext context,
         // This stream is not used, the StreamBuilder is only here

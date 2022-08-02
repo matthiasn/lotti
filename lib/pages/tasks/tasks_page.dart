@@ -14,7 +14,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
-import 'package:lotti/widgets/journal/tags_search_widget.dart';
+import 'package:lotti/widgets/journal/tags/tags_search_widget.dart';
 import 'package:lotti/widgets/misc/tasks_counts.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
