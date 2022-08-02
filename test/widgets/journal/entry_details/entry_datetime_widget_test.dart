@@ -5,7 +5,6 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_datetime_widget.dart';
@@ -13,7 +12,6 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../journal_test_data/test_data.dart';
-import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 class MockEntryCubit extends MockBloc<EntryCubit, EntryState>
@@ -22,16 +20,12 @@ class MockEntryCubit extends MockBloc<EntryCubit, EntryState>
 void main() {
   group('EntryDetailFooter', () {
     final entryCubit = MockEntryCubit();
-    final mockAppRouter = MockAppRouter();
 
     setUpAll(() {
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-        ..registerSingleton<TagsService>(TagsService())
-        ..registerSingleton<AppRouter>(mockAppRouter);
-
-      when(mockAppRouter.pop).thenAnswer((_) async => true);
+        ..registerSingleton<TagsService>(TagsService());
 
       when(() => entryCubit.state).thenAnswer(
         (_) => EntryState.dirty(
@@ -111,8 +105,6 @@ void main() {
 
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
-
-      verify(mockAppRouter.pop).called(1);
 
       // updateFromTo called with recent dateTo after tapping now()
       expect(modifiedDateTo?.difference(DateTime.now()).inSeconds, lessThan(2));
