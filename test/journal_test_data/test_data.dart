@@ -126,6 +126,24 @@ final testStoryTagReading = StoryTag(
   vectorClock: null,
 );
 
+final testPersonTag1 = PersonTag(
+  id: '27bbabc6-f323-11ec-b939-0242ac120002',
+  tag: 'Jane Doe',
+  createdAt: testEpochDateTime,
+  updatedAt: testEpochDateTime,
+  private: false,
+  vectorClock: null,
+);
+
+final testTag1 = GenericTag(
+  id: '27bbabc6-f323-11ec-b939-0242ac120002',
+  tag: 'SomeGenericTag',
+  createdAt: testEpochDateTime,
+  updatedAt: testEpochDateTime,
+  private: false,
+  vectorClock: null,
+);
+
 final testTextEntry = JournalEntry(
   meta: Metadata(
     id: '32ea936e-dfc6-43bd-8722-d816c35eb489',

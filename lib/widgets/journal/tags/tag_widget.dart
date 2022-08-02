@@ -20,19 +20,19 @@ class TagWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return GestureDetector(
-      onDoubleTap: () {
-        pushNamedRoute('/settings/tags/${tagEntity.id}');
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(chipBorderRadius),
-        child: Container(
-          padding: chipPaddingClosable,
-          color: getTagColor(tagEntity),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(chipBorderRadius),
+      child: Container(
+        padding: chipPaddingClosable,
+        color: getTagColor(tagEntity),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              onDoubleTap: () {
+                pushNamedRoute('/settings/tags/${tagEntity.id}');
+              },
+              child: Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
                   tagEntity.tag,
@@ -43,19 +43,19 @@ class TagWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                onPressed: onTapRemove,
-                padding: const EdgeInsets.only(left: 4),
-                constraints: const BoxConstraints(maxHeight: 16, maxWidth: 20),
-                icon: Icon(
-                  MdiIcons.close,
-                  size: 16,
-                  color: colorConfig().tagTextColor,
-                ),
-                tooltip: localizations.journalTagsRemoveHint,
+            ),
+            IconButton(
+              onPressed: onTapRemove,
+              padding: const EdgeInsets.only(left: 4),
+              constraints: const BoxConstraints(maxHeight: 16, maxWidth: 20),
+              icon: Icon(
+                MdiIcons.close,
+                size: 16,
+                color: colorConfig().tagTextColor,
               ),
-            ],
-          ),
+              tooltip: localizations.journalTagsRemoveHint,
+            ),
+          ],
         ),
       ),
     );
