@@ -300,10 +300,7 @@ void main() {
       expect(progressBar.total, const Duration(hours: 3));
 
       // test task title is displayed
-      expect(
-        find.text(testTask.data.title),
-        findsNWidgets(1),
-      );
+      expect(find.text(testTask.data.title), findsOneWidget);
 
       // task entry duration is rendered
       expect(
