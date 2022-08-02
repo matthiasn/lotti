@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/journal/tags/tag_widget.dart';
@@ -11,13 +10,12 @@ import 'package:lotti/widgets/journal/tags/tag_widget.dart';
 class TagsListWidget extends StatelessWidget {
   TagsListWidget({super.key});
 
-  final JournalDb db = getIt<JournalDb>();
   final TagsService tagsService = getIt<TagsService>();
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<TagEntity>>(
-      stream: db.watchTags(),
+      stream: tagsService.watchTags(),
       builder: (
         BuildContext context,
         // This stream is not used, the StreamBuilder is only here

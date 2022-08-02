@@ -4,7 +4,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -12,13 +11,8 @@ import 'package:lotti/widgets/journal/tags/tags_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TagAddIconWidget extends StatelessWidget {
-  TagAddIconWidget({
-    required this.itemId,
-    super.key,
-  });
+  TagAddIconWidget({super.key});
 
-  final String itemId;
-  final JournalDb db = getIt<JournalDb>();
   final TagsService tagsService = getIt<TagsService>();
 
   @override
