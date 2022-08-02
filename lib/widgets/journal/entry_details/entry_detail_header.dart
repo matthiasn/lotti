@@ -6,19 +6,17 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/journal/entry_details/entry_datetime_modal.dart';
+import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/save_button.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
 import 'package:lotti/widgets/journal/tags/tag_add.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class EntryDetailHeader extends StatefulWidget {
   const EntryDetailHeader({
     super.key,
-    required this.itemId,
   });
 
-  final String itemId;
 
   @override
   State<EntryDetailHeader> createState() => _EntryDetailHeaderState();
@@ -46,30 +44,6 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            TextButton(
-              onPressed: () {
-                showModalBottomSheet<void>(
-                  context: context,
-                  isScrollControlled: true,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  clipBehavior: Clip.antiAliasWithSaveLayer,
-                  builder: (BuildContext _) {
-                    return BlocProvider.value(
-                      value: BlocProvider.of<EntryCubit>(context),
-                      child: EntryDateTimeModal(item: item),
-                    );
-                  },
-                );
-              },
-              child: Text(
-                df.format(item.meta.dateFrom),
-                style: textStyle(),
-              ),
-            ),
             Row(
               children: [
                 SwitchIconWidget(
@@ -93,6 +67,8 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                   value: item.meta.flag == EntryFlag.import,
                   iconData: MdiIcons.flag,
                 ),
+                const DeleteIconWidget(),
+                const ShareButtonWidget(),
                 TagAddIconWidget(),
               ],
             ),
@@ -123,7 +99,7 @@ class SwitchIconWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: EdgeInsets.zero,
       tooltip: tooltip,
       onPressed: () {
         if (value) {

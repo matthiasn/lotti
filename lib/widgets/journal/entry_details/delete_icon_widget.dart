@@ -52,11 +52,7 @@ class DeleteIconWidget extends StatelessWidget {
           icon: const Icon(MdiIcons.trashCanOutline),
           iconSize: 24,
           tooltip: localizations.journalDeleteHint,
-          padding: const EdgeInsets.only(
-            left: 16,
-            top: 8,
-            bottom: 8,
-          ),
+          padding: EdgeInsets.zero,
           color: colorConfig().entryTextColor,
           onPressed: onPressed,
         );

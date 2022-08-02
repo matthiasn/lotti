@@ -13,6 +13,7 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_footer.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../journal_test_data/test_data.dart';
@@ -38,6 +39,9 @@ void main() {
 
       when(mockAppRouter.pop).thenAnswer((_) async => true);
 
+      when(mockTimeService.getStream)
+          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+
       when(() => entryCubit.state).thenAnswer(
         (_) => EntryState.dirty(
           entryId: testTextEntry.meta.id,
@@ -46,18 +50,31 @@ void main() {
       );
     });
 
-    testWidgets('tap map icon toggles map display',
-        (WidgetTester tester) async {
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    testWidgets('entry date is visible', (WidgetTester tester) async {
+      when(entryCubit.togglePrivate).thenAnswer((_) async => true);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: EntryDetailFooter(
-              itemId: testTextEntry.meta.id,
-            ),
+            child: const EntryDetailFooter(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final entryDateFromFinder =
+          find.text(df.format(testTextEntry.meta.dateFrom));
+      expect(entryDateFromFinder, findsOneWidget);
+    });
+
+    testWidgets('tap map icon toggles map display',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<EntryCubit>.value(
+            value: entryCubit,
+            child: const EntryDetailFooter(),
           ),
         ),
       );
@@ -83,9 +100,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: EntryDetailFooter(
-              itemId: testTextEntry.meta.id,
-            ),
+            child: const EntryDetailFooter(),
           ),
         ),
       );
@@ -124,9 +139,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: EntryDetailFooter(
-              itemId: testTextEntry.meta.id,
-            ),
+            child: const EntryDetailFooter(),
           ),
         ),
       );
@@ -176,9 +189,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: EntryDetailFooter(
-              itemId: testTextEntry.meta.id,
-            ),
+            child: const EntryDetailFooter(),
           ),
         ),
       );
