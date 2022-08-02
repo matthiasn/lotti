@@ -58,13 +58,10 @@ void main() {
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<AppRouter>(mockAppRouter);
 
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(measurableWater.id),
-      ).thenAnswer((_) async => measurableWater);
+      when(() => mockJournalDb.getMeasurableDataTypeById(measurableWater.id))
+          .thenAnswer((_) async => measurableWater);
 
-      when(
-        () => mockJournalDb.watchTags(),
-      ).thenAnswer(
+      when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
 

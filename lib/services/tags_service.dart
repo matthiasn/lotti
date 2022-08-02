@@ -71,6 +71,18 @@ class TagsService {
     return tags;
   }
 
+  Future<List<TagEntity>> getMatchingTags(
+    String match, {
+    int limit = 10,
+    bool inactive = false,
+  }) async {
+    return _db.getMatchingTags(match, limit: limit, inactive: inactive);
+  }
+
+  Stream<List<TagEntity>> watchTags() {
+    return _db.watchTags();
+  }
+
   // ignore: use_setters_to_change_properties
   void setClipboard(String copiedEntryId) {
     _clipboardCopiedId = copiedEntryId;

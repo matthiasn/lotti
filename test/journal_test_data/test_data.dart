@@ -127,7 +127,7 @@ final testStoryTagReading = StoryTag(
 );
 
 final testPersonTag1 = PersonTag(
-  id: '27bbabc6-f323-11ec-b939-0242ac120002',
+  id: '6de83f4d-74db-43e5-9971-c977fc5a10f7',
   tag: 'Jane Doe',
   createdAt: testEpochDateTime,
   updatedAt: testEpochDateTime,
@@ -136,7 +136,7 @@ final testPersonTag1 = PersonTag(
 );
 
 final testTag1 = GenericTag(
-  id: '27bbabc6-f323-11ec-b939-0242ac120002',
+  id: '614b9c7f-f180-45b5-81e0-8f879bdd5f9f',
   tag: 'SomeGenericTag',
   createdAt: testEpochDateTime,
   updatedAt: testEpochDateTime,

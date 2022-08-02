@@ -93,7 +93,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                   value: item.meta.flag == EntryFlag.import,
                   iconData: MdiIcons.flag,
                 ),
-                TagAddIconWidget(itemId: widget.itemId),
+                TagAddIconWidget(),
               ],
             ),
             const SaveButton(),

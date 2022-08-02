@@ -5,7 +5,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -24,7 +23,6 @@ class TagsModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final db = getIt<JournalDb>();
     final tagsService = getIt<TagsService>();
     final localizations = AppLocalizations.of(context)!;
     final cubit = context.read<EntryCubit>();
@@ -89,7 +87,7 @@ class TagsModal extends StatelessWidget {
                       ),
                     ),
                     suggestionsCallback: (String pattern) async {
-                      return db.getMatchingTags(
+                      return tagsService.getMatchingTags(
                         pattern.trim(),
                         limit: isMobile ? 5 : 12,
                       );
