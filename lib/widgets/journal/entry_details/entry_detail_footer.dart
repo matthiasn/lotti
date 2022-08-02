@@ -3,19 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/duration_widget.dart';
-import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
+import 'package:lotti/widgets/journal/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 
 class EntryDetailFooter extends StatefulWidget {
   const EntryDetailFooter({
     super.key,
-    required this.itemId,
   });
-
-  final String itemId;
 
   @override
   State<EntryDetailFooter> createState() => _EntryDetailFooterState();
@@ -42,44 +38,35 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
 
         return Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 8, right: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  DurationWidget(
-                    item: item,
-                    style: textStyle(),
-                  ),
-                  Visibility(
-                    visible: loc != null && loc.longitude != 0,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Row(
-                        children: [
-                          TextButton(
-                            onPressed: () => setState(() {
-                              mapVisible = !mapVisible;
-                            }),
-                            child: Text(
-                              '📍 ${formatLatLon(loc?.latitude)}, '
-                              '${formatLatLon(loc?.longitude)}',
-                              style: textStyle(),
-                            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const EntryDatetimeWidget(),
+                DurationWidget(
+                  item: item,
+                  style: textStyle(),
+                ),
+                Visibility(
+                  visible: loc != null && loc.longitude != 0,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => setState(() {
+                            mapVisible = !mapVisible;
+                          }),
+                          child: Text(
+                            '📍 ${formatLatLon(loc?.latitude)}, '
+                            '${formatLatLon(loc?.longitude)}',
+                            style: textStyle(),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      DeleteIconWidget(),
-                      ShareButtonWidget(),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
             Visibility(
               visible: mapVisible,

@@ -55,11 +55,7 @@ class ShareButtonWidget extends StatelessWidget {
           icon: const Icon(MdiIcons.shareOutline),
           iconSize: 24,
           tooltip: tooltip,
-          padding: const EdgeInsets.only(
-            left: 12,
-            top: 8,
-            bottom: 8,
-          ),
+          padding: EdgeInsets.zero,
           color: colorConfig().entryTextColor,
           onPressed: onPressed,
         );

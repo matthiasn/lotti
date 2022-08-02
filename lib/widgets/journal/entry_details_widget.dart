@@ -102,7 +102,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       },
                       orElse: () => const SizedBox.shrink(),
                     ),
-                    EntryDetailHeader(itemId: widget.itemId),
+                    const EntryDetailHeader(),
                     Padding(
                       padding: EdgeInsets.only(
                         left: 8,
@@ -139,9 +139,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       journalEntry: (_) => const SizedBox.shrink(),
                       journalImage: (_) => const SizedBox.shrink(),
                     ),
-                    EntryDetailFooter(
-                      itemId: widget.itemId,
-                    ),
+                    const EntryDetailFooter(),
                   ],
                 ),
               ),
