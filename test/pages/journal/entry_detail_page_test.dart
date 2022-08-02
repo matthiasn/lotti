@@ -302,7 +302,7 @@ void main() {
       // test task title is displayed
       expect(
         find.text(testTask.data.title),
-        findsNWidgets(2),
+        findsNWidgets(1),
       );
 
       // task entry duration is rendered

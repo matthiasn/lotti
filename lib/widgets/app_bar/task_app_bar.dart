@@ -55,25 +55,7 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
         } else {
           return AppBar(
             backgroundColor: colorConfig().headerBgColor,
-            title: Stack(
-              children: [
-                Opacity(
-                  opacity: 0.2,
-                  child: LinkedDuration(task: item),
-                ),
-                Positioned(
-                  top: 10,
-                  left: 48,
-                  child: Text(
-                    item.data.title,
-                    style: appBarTextStyle().copyWith(
-                      fontWeight: FontWeight.w300,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            title: LinkedDuration(task: item),
             centerTitle: true,
             leading: const TestDetectingAutoLeadingButton(),
           );
