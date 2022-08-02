@@ -5,8 +5,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -66,6 +64,10 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
     final valid = dateTo.isAfter(dateFrom) || dateTo == dateFrom;
     final changed = dateFrom != widget.item.meta.dateFrom ||
         dateTo != widget.item.meta.dateTo;
+
+    void pop() {
+      Navigator.pop(context);
+    }
 
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (
@@ -195,7 +197,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                               dateFrom: dateFrom,
                               dateTo: dateTo,
                             );
-                            await getIt<AppRouter>().pop();
+                            pop();
                           },
                           child: Text(
                             localizations.journalDateSaveButton,
