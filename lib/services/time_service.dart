@@ -43,6 +43,10 @@ class TimeService {
     }
   }
 
+  JournalEntity? getCurrent() {
+    return _current;
+  }
+
   Future<void> stop() async {
     final persistenceLogic = getIt<PersistenceLogic>();
 

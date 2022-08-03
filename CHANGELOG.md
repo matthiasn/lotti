@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Save running timer progress
+
+## [0.8.122] - 2022-08-02
+### Changed:
 - Entry details layout
 
 ## [0.8.120] - 2022-08-02

@@ -12,6 +12,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:tuple/tuple.dart';
@@ -97,9 +98,12 @@ class EntryCubit extends Cubit<EntryState> {
         ),
       );
     } else {
+      final running = getIt<TimeService>().getCurrent();
+
       await _persistenceLogic.updateJournalEntityText(
         entryId,
         entryTextFromController(controller),
+        running?.meta.id == entryId ? DateTime.now() : entry.meta.dateTo,
       );
     }
 
