@@ -342,6 +342,7 @@ void main() {
         EntryText(
           plainText: updatedTestText,
         ),
+        comment.meta.dateTo,
       );
 
       // expect linked comment entry to appear in stream

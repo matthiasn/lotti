@@ -476,6 +476,7 @@ class PersistenceLogic {
   Future<bool> updateJournalEntityText(
     String journalEntityId,
     EntryText entryText,
+    DateTime dateTo,
   ) async {
     try {
       final now = DateTime.now();
@@ -493,6 +494,7 @@ class PersistenceLogic {
       final newMeta = oldMeta.copyWith(
         updatedAt: now,
         vectorClock: vc,
+        dateTo: dateTo,
       );
 
       if (journalEntity is JournalEntry) {

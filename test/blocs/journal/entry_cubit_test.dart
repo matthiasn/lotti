@@ -10,6 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/sync_config_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
@@ -33,6 +34,7 @@ void main() {
       final secureStorageMock = MockSecureStorage();
       final mockConnectivityService = MockConnectivityService();
       final mockFgBgService = MockFgBgService();
+      final mockTimeService = MockTimeService();
 
       final syncConfigMock = MockSyncConfigService();
       when(syncConfigMock.getSyncConfig)
@@ -68,6 +70,7 @@ void main() {
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<OutboxService>(OutboxService())
+        ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<VectorClockService>(VectorClockService())
         ..registerSingleton<PersistenceLogic>(PersistenceLogic())
         ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
