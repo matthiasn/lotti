@@ -22,7 +22,7 @@ void main() {
         }
         expect(lastCalled, 0);
         await Future.delayed(
-          const Duration(milliseconds: n * delayMs + 100),
+          const Duration(milliseconds: n * delayMs + 1000),
           () {},
         );
         expect(lastCalled, n);
