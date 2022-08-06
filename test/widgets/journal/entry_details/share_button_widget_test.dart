@@ -37,6 +37,7 @@ void main() {
         (_) => EntryState.dirty(
           entryId: testImageEntry.meta.id,
           entry: testImageEntry,
+          showMap: false,
         ),
       );
 
@@ -61,6 +62,7 @@ void main() {
         (_) => EntryState.dirty(
           entryId: testAudioEntry.meta.id,
           entry: testAudioEntry,
+          showMap: false,
         ),
       );
 

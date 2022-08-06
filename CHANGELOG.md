@@ -5,7 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Added:
+### Changed:
+- Add toggle icon button for map visibility in entry header
+- Remove map toggle in entry footer
 
 ## [0.8.123] - 2022-08-05
 ### Changed:

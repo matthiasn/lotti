@@ -8,10 +8,12 @@ class EntryState with _$EntryState {
   factory EntryState.saved({
     required String entryId,
     required JournalEntity? entry,
+    required bool showMap,
   }) = _EntryStateSaved;
 
   factory EntryState.dirty({
     required String entryId,
     required JournalEntity? entry,
+    required bool showMap,
   }) = EntryStateDirty;
 }

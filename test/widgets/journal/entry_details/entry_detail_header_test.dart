@@ -33,10 +33,13 @@ void main() {
 
       when(mockAppRouter.pop).thenAnswer((_) async => true);
 
+      when(() => entryCubit.showMap).thenAnswer((_) => false);
+
       when(() => entryCubit.state).thenAnswer(
         (_) => EntryState.dirty(
           entryId: testTextEntry.meta.id,
           entry: testTextEntry,
+          showMap: false,
         ),
       );
     });
@@ -110,6 +113,7 @@ void main() {
         (_) => EntryState.saved(
           entryId: testTextEntry.meta.id,
           entry: testTextEntry,
+          showMap: false,
         ),
       );
 
@@ -133,6 +137,7 @@ void main() {
         (_) => EntryState.dirty(
           entryId: testTextEntry.meta.id,
           entry: testTextEntry,
+          showMap: false,
         ),
       );
 
@@ -155,6 +160,65 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(entryCubit.save).called(1);
+    });
+
+    testWidgets('map icon invisible when no geolocation exists for entry',
+        (WidgetTester tester) async {
+      when(() => entryCubit.state).thenAnswer(
+        (_) => EntryState.dirty(
+          entryId: testTextEntry.meta.id,
+          entry: testTextEntry.copyWith(geolocation: null),
+          showMap: false,
+        ),
+      );
+
+      when(entryCubit.save).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<EntryCubit>.value(
+            value: entryCubit,
+            child: const EntryDetailHeader(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final mapIconFinder = find.byIcon(MdiIcons.mapOutline);
+      expect(mapIconFinder, findsNothing);
+    });
+
+    testWidgets('map icon tappable when geolocation exists for entry',
+        (WidgetTester tester) async {
+      when(() => entryCubit.state).thenAnswer(
+        (_) => EntryState.dirty(
+          entryId: testTextEntry.meta.id,
+          entry: testTextEntry,
+          showMap: false,
+        ),
+      );
+
+      when(entryCubit.toggleMapVisible).thenAnswer((_) async {});
+
+      when(entryCubit.save).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<EntryCubit>.value(
+            value: entryCubit,
+            child: const EntryDetailHeader(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final mapIconFinder = find.byIcon(MdiIcons.mapOutline);
+      expect(mapIconFinder, findsOneWidget);
+
+      await tester.tap(mapIconFinder);
+      await tester.pumpAndSettle();
+
+      verify(entryCubit.toggleMapVisible).called(1);
     });
   });
 }

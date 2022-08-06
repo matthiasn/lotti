@@ -31,6 +31,7 @@ void main() {
         (_) => EntryState.dirty(
           entryId: testTextEntry.meta.id,
           entry: testTextEntry,
+          showMap: false,
         ),
       );
     });

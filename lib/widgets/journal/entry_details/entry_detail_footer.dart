@@ -5,7 +5,6 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_details/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_datetime_widget.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 
 class EntryDetailFooter extends StatefulWidget {
@@ -18,8 +17,6 @@ class EntryDetailFooter extends StatefulWidget {
 }
 
 class _EntryDetailFooterState extends State<EntryDetailFooter> {
-  bool mapVisible = false;
-
   @override
   void initState() {
     super.initState();
@@ -30,7 +27,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (context, EntryState state) {
         final item = state.entry;
-        final loc = item?.geolocation;
+        final cubit = context.read<EntryCubit>();
 
         if (item == null) {
           return const SizedBox.shrink();
@@ -46,30 +43,10 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                   item: item,
                   style: textStyle(),
                 ),
-                Visibility(
-                  visible: loc != null && loc.longitude != 0,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Row(
-                      children: [
-                        TextButton(
-                          onPressed: () => setState(() {
-                            mapVisible = !mapVisible;
-                          }),
-                          child: Text(
-                            '📍 ${formatLatLon(loc?.latitude)}, '
-                            '${formatLatLon(loc?.longitude)}',
-                            style: textStyle(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ],
             ),
             Visibility(
-              visible: mapVisible,
+              visible: cubit.showMap,
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(8),
