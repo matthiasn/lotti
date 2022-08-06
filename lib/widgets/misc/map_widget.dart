@@ -65,7 +65,7 @@ class _MapWidgetState extends State<MapWidget> {
                   urlTemplate:
                       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                   subdomains: ['a', 'b', 'c'],
-                  tileProvider: const CachedTileProvider(),
+                  tileProvider: CachedTileProvider(),
                 ),
                 MarkerLayerOptions(
                   markers: [
