@@ -12,7 +12,9 @@ class SecureStorage {
   }
 
   Future<void> writeValue(String key, String value) async {
-    const options = IOSOptions(accessibility: IOSAccessibility.first_unlock);
+    const options = IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock,
+    );
     await _storage.write(key: key, value: value, iOptions: options);
     await readValue(key);
   }

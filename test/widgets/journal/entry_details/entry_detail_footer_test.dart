@@ -42,10 +42,13 @@ void main() {
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 
+      when(() => entryCubit.showMap).thenAnswer((_) => false);
+
       when(() => entryCubit.state).thenAnswer(
         (_) => EntryState.dirty(
           entryId: testTextEntry.meta.id,
           entry: testTextEntry,
+          showMap: false,
         ),
       );
     });
@@ -68,8 +71,10 @@ void main() {
       expect(entryDateFromFinder, findsOneWidget);
     });
 
-    testWidgets('tap map icon toggles map display',
+    testWidgets('map is visible when set in cubit',
         (WidgetTester tester) async {
+      when(() => entryCubit.showMap).thenAnswer((_) => true);
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
@@ -79,16 +84,25 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final lonLatFinder = find.text('📍 52.51, 13.43');
-      expect(lonLatFinder, findsOneWidget);
+      final mapFinder = find.byType(FlutterMap);
+      expect(mapFinder, findsOneWidget);
+    });
 
+    testWidgets('map is invisible when not set in cubit',
+        (WidgetTester tester) async {
+      when(() => entryCubit.showMap).thenAnswer((_) => false);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<EntryCubit>.value(
+            value: entryCubit,
+            child: const EntryDetailFooter(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
       final mapFinder = find.byType(FlutterMap);
       expect(mapFinder, findsNothing);
-
-      await tester.tap(lonLatFinder);
-      await tester.pumpAndSettle();
-
-      expect(mapFinder, findsOneWidget);
     });
 
     testWidgets('time record button is not shown for older entry',
@@ -130,6 +144,7 @@ void main() {
         (_) => EntryState.dirty(
           entryId: testEntry.meta.id,
           entry: testEntry,
+          showMap: false,
         ),
       );
       Future<void> mockStartTimer() => mockTimeService.start(testEntry);
@@ -177,6 +192,7 @@ void main() {
         (_) => EntryState.dirty(
           entryId: testEntry.meta.id,
           entry: testEntry,
+          showMap: false,
         ),
       );
 

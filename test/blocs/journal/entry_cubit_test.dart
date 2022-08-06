@@ -94,10 +94,12 @@ void main() {
         EntryState.dirty(
           entry: testTextEntry,
           entryId: testTextEntry.meta.id,
+          showMap: false,
         ),
         EntryState.saved(
           entry: testTextEntry,
           entryId: testTextEntry.meta.id,
+          showMap: false,
         ),
       ],
       verify: (c) {},
@@ -119,10 +121,12 @@ void main() {
         EntryState.dirty(
           entry: testTask,
           entryId: testTask.meta.id,
+          showMap: false,
         ),
         EntryState.saved(
           entry: testTask,
           entryId: testTask.meta.id,
+          showMap: false,
         ),
       ],
       verify: (c) {},
@@ -144,13 +148,55 @@ void main() {
         EntryState.saved(
           entry: testTask,
           entryId: testTask.meta.id,
+          showMap: false,
         ),
         EntryState.dirty(
           entry: testTask,
           entryId: testTask.meta.id,
+          showMap: false,
         ),
       ],
       verify: (c) {},
+    );
+
+    blocTest<EntryCubit, EntryState>(
+      'toggle map visible does nothing for entry without geolocation',
+      build: () => EntryCubit(
+        entry: testTask,
+        entryId: testTask.meta.id,
+      ),
+      setUp: () {},
+      act: (c) {
+        c.toggleMapVisible();
+      },
+      wait: defaultWait,
+      expect: () => <EntryState>[
+        EntryState.dirty(
+          entry: testTask,
+          entryId: testTask.meta.id,
+          showMap: false,
+        ),
+      ],
+    );
+
+    blocTest<EntryCubit, EntryState>(
+      'toggle map visible works for entry with geolocation',
+      build: () => EntryCubit(
+        entry: testTextEntry,
+        entryId: testTextEntry.meta.id,
+      ),
+      setUp: () {},
+      act: (c) {
+        c.toggleMapVisible();
+      },
+      wait: defaultWait,
+      expect: () => <EntryState>[
+        EntryState.saved(
+          entry: testTextEntry,
+          entryId: testTextEntry.meta.id,
+          showMap: true,
+        ),
+      ],
     );
 
     blocTest<EntryCubit, EntryState>(
@@ -172,14 +218,17 @@ void main() {
         EntryState.saved(
           entry: testTextEntry,
           entryId: testTextEntry.meta.id,
+          showMap: false,
         ),
         EntryState.dirty(
           entry: testTextEntry,
           entryId: testTextEntry.meta.id,
+          showMap: false,
         ),
         EntryState.saved(
           entry: testTextEntry,
           entryId: testTextEntry.meta.id,
+          showMap: false,
         ),
       ],
       verify: (c) {},

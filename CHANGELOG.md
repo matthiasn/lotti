@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Add toggle icon button for map visibility in entry header
+- Remove map toggle in entry footer
+
+## [0.8.123] - 2022-08-05
+### Changed:
 - Save running timer progress
 
 ## [0.8.122] - 2022-08-02

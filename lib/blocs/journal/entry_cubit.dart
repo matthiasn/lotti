@@ -25,6 +25,7 @@ class EntryCubit extends Cubit<EntryState> {
           EntryState.saved(
             entryId: entryId,
             entry: entry,
+            showMap: false,
           ),
         ) {
     final lastSaved = entry.meta.updatedAt;
@@ -69,6 +70,7 @@ class EntryCubit extends Cubit<EntryState> {
   String entryId;
   JournalEntity entry;
   bool dirty = false;
+  bool showMap = false;
 
   late final QuillController controller;
   late final GlobalKey<FormBuilderState>? formKey;
@@ -119,9 +121,21 @@ class EntryCubit extends Cubit<EntryState> {
 
   void emitState() {
     if (dirty) {
-      emit(EntryState.dirty(entryId: entryId, entry: entry));
+      emit(
+        EntryState.dirty(
+          entryId: entryId,
+          entry: entry,
+          showMap: showMap,
+        ),
+      );
     } else {
-      emit(EntryState.saved(entryId: entryId, entry: entry));
+      emit(
+        EntryState.saved(
+          entryId: entryId,
+          entry: entry,
+          showMap: showMap,
+        ),
+      );
     }
   }
 
@@ -140,6 +154,13 @@ class EntryCubit extends Cubit<EntryState> {
           starred: !prev,
         ),
       );
+    }
+  }
+
+  void toggleMapVisible() {
+    if (state.entry?.geolocation != null) {
+      showMap = !showMap;
+      emitState();
     }
   }
 

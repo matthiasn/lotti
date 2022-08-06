@@ -17,7 +17,6 @@ class EntryDetailHeader extends StatefulWidget {
     super.key,
   });
 
-
   @override
   State<EntryDetailHeader> createState() => _EntryDetailHeaderState();
 }
@@ -67,6 +66,14 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                   value: item.meta.flag == EntryFlag.import,
                   iconData: MdiIcons.flag,
                 ),
+                if (state.entry?.geolocation != null)
+                  SwitchIconWidget(
+                    tooltip: localizations.journalFlaggedTooltip,
+                    activeColor: colorConfig().starredGold,
+                    onPressed: cubit.toggleMapVisible,
+                    value: cubit.showMap,
+                    iconData: MdiIcons.mapOutline,
+                  ),
                 const DeleteIconWidget(),
                 const ShareButtonWidget(),
                 TagAddIconWidget(),
