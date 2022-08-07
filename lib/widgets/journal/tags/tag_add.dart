@@ -59,14 +59,17 @@ class TagAddIconWidget extends StatelessWidget {
               );
             }
 
-            return IconButton(
-              onPressed: onTapAdd,
-              icon: Icon(
-                MdiIcons.tagPlusOutline,
-                size: 24,
-                color: colorConfig().entryTextColor,
+            return SizedBox(
+              width: 40,
+              child: IconButton(
+                onPressed: onTapAdd,
+                icon: Icon(
+                  MdiIcons.tagPlusOutline,
+                  size: 24,
+                  color: colorConfig().entryTextColor,
+                ),
+                tooltip: localizations.journalTagPlusHint,
               ),
-              tooltip: localizations.journalTagPlusHint,
             );
           },
         );
