@@ -60,9 +60,9 @@ class HomePage extends StatelessWidget {
           },
           backgroundColor: colorConfig().bodyBgColor,
           routes: [
+            const DashboardsRouter(),
             const JournalRouter(),
             if (showTasks) const TasksRouter(),
-            const DashboardsRouter(),
             const SettingsRouter(),
             //TutorialRouter(),
           ],
@@ -124,6 +124,10 @@ class HomePage extends StatelessWidget {
                 unselectedFontSize: 16,
                 items: [
                   BottomNavigationBarItem(
+                    icon: const Icon(Icons.dashboard_outlined),
+                    label: AppLocalizations.of(context)!.navTabTitleInsights,
+                  ),
+                  BottomNavigationBarItem(
                     icon: FlaggedBadgeIcon(),
                     label: AppLocalizations.of(context)!.navTabTitleJournal,
                   ),
@@ -132,10 +136,6 @@ class HomePage extends StatelessWidget {
                       icon: TasksBadgeIcon(),
                       label: AppLocalizations.of(context)!.navTabTitleTasks,
                     ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.dashboard_outlined),
-                    label: AppLocalizations.of(context)!.navTabTitleInsights,
-                  ),
                   BottomNavigationBarItem(
                     icon: OutboxBadgeIcon(
                       icon: const Icon(Icons.settings_outlined),
