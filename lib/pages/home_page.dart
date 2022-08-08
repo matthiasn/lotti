@@ -77,9 +77,9 @@ class HomePage extends StatelessWidget {
             final navService = getIt<NavService>();
 
             final routesByIndex = <String>[
+              '/dashboards',
               '/journal',
               if (showTasks) '/tasks',
-              '/dashboards',
               '/settings',
             ];
 
