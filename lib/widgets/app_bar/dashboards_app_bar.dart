@@ -31,6 +31,9 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Visibility(
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
                 visible: dashboards.isNotEmpty,
                 child: IconButton(
                   padding: const EdgeInsets.all(4),
