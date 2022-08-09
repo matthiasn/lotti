@@ -30,49 +30,47 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SizedBox(width: 40),
+              Visibility(
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                visible: dashboards.isNotEmpty,
+                child: IconButton(
+                  padding: const EdgeInsets.all(4),
+                  icon: const Icon(Icons.slideshow_outlined),
+                  color: colorConfig().entryTextColor,
+                  onPressed: () {
+                    final navService = getIt<NavService>();
+
+                    navService.tabsRouter?.setActiveIndex(
+                      navService.routesByIndex.length - 1,
+                    );
+
+                    Future<void>.delayed(const Duration(milliseconds: 50)).then(
+                      (value) => pushNamedRoute('/dashboards/carousel'),
+                    );
+                  },
+                ),
+              ),
               Text(
                 localizations.navTabTitleInsights,
                 style: appBarTextStyle(),
               ),
-              Row(
-                children: [
-                  if (dashboards.isNotEmpty)
-                    IconButton(
-                      padding: const EdgeInsets.all(4),
-                      icon: const Icon(Icons.slideshow_outlined),
-                      color: colorConfig().entryTextColor,
-                      onPressed: () {
-                        final navService = getIt<NavService>();
+              IconButton(
+                padding: const EdgeInsets.all(4),
+                icon: const Icon(Icons.dashboard_customize_outlined),
+                color: colorConfig().entryTextColor,
+                onPressed: () {
+                  final navService = getIt<NavService>();
 
-                        navService.tabsRouter?.setActiveIndex(
-                          navService.routesByIndex.length - 1,
-                        );
+                  navService.tabsRouter?.setActiveIndex(
+                    navService.routesByIndex.length - 1,
+                  );
 
-                        Future<void>.delayed(const Duration(milliseconds: 50))
-                            .then(
-                          (value) => pushNamedRoute('/dashboards/carousel'),
-                        );
-                      },
-                    ),
-                  IconButton(
-                    padding: const EdgeInsets.all(4),
-                    icon: const Icon(Icons.dashboard_customize_outlined),
-                    color: colorConfig().entryTextColor,
-                    onPressed: () {
-                      final navService = getIt<NavService>();
-
-                      navService.tabsRouter?.setActiveIndex(
-                        navService.routesByIndex.length - 1,
-                      );
-
-                      Future<void>.delayed(const Duration(milliseconds: 50))
-                          .then(
-                        (value) => pushNamedRoute('/settings/dashboards/'),
-                      );
-                    },
-                  ),
-                ],
+                  Future<void>.delayed(const Duration(milliseconds: 50)).then(
+                    (value) => pushNamedRoute('/settings/dashboards/'),
+                  );
+                },
               ),
             ],
           ),

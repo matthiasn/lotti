@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Move dashboards page to left
+- Change dashboards header
+- 
+
+## [0.8.124] - 2022-08-06
+### Changed:
 - Add toggle icon button for map visibility in entry header
 - Remove map toggle in entry footer
 

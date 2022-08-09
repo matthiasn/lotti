@@ -51,13 +51,16 @@ class ShareButtonWidget extends StatelessWidget {
           }
         }
 
-        return IconButton(
-          icon: const Icon(MdiIcons.shareOutline),
-          iconSize: 24,
-          tooltip: tooltip,
-          padding: EdgeInsets.zero,
-          color: colorConfig().entryTextColor,
-          onPressed: onPressed,
+        return SizedBox(
+          width: 40,
+          child: IconButton(
+            icon: const Icon(MdiIcons.shareOutline),
+            iconSize: 24,
+            tooltip: tooltip,
+            padding: EdgeInsets.zero,
+            color: colorConfig().entryTextColor,
+            onPressed: onPressed,
+          ),
         );
       },
     );

@@ -105,21 +105,24 @@ class SwitchIconWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      padding: EdgeInsets.zero,
-      tooltip: tooltip,
-      onPressed: () {
-        if (value) {
-          HapticFeedback.lightImpact();
-        } else {
-          HapticFeedback.heavyImpact();
-        }
-        onPressed();
-      },
-      icon: Icon(
-        iconData,
-        size: 20,
-        color: value ? activeColor : colorConfig().entryTextColor,
+    return SizedBox(
+      width: 40,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        tooltip: tooltip,
+        onPressed: () {
+          if (value) {
+            HapticFeedback.lightImpact();
+          } else {
+            HapticFeedback.heavyImpact();
+          }
+          onPressed();
+        },
+        icon: Icon(
+          iconData,
+          size: 20,
+          color: value ? activeColor : colorConfig().entryTextColor,
+        ),
       ),
     );
   }

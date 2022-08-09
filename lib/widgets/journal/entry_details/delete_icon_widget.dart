@@ -48,13 +48,16 @@ class DeleteIconWidget extends StatelessWidget {
           }
         }
 
-        return IconButton(
-          icon: const Icon(MdiIcons.trashCanOutline),
-          iconSize: 24,
-          tooltip: localizations.journalDeleteHint,
-          padding: EdgeInsets.zero,
-          color: colorConfig().entryTextColor,
-          onPressed: onPressed,
+        return SizedBox(
+          width: 40,
+          child: IconButton(
+            icon: const Icon(MdiIcons.trashCanOutline),
+            iconSize: 24,
+            tooltip: localizations.journalDeleteHint,
+            padding: EdgeInsets.zero,
+            color: colorConfig().entryTextColor,
+            onPressed: onPressed,
+          ),
         );
       },
     );

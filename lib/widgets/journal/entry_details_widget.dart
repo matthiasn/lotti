@@ -72,7 +72,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
             entry: item,
           ),
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
               boxShadow: [
                 BoxShadow(
