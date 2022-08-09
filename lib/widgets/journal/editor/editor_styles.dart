@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:tuple/tuple.dart';
 
 DefaultStyles customEditorStyles({
@@ -48,6 +49,14 @@ DefaultStyles customEditorStyles({
       fontSize: 16,
       color: textColor,
       fontWeight: FontWeight.w900,
+    ),
+    inlineCode: InlineCodeStyle(
+      radius: const Radius.circular(8),
+      style: GoogleFonts.shareTechMono(
+        fontSize: 16,
+        color: textColor,
+      ),
+      backgroundColor: codeBlockBackground,
     ),
     lists: DefaultListBlockStyle(
       GoogleFonts.lato(
@@ -129,6 +138,13 @@ DefaultStyles customTextViewerStyles({
       const Tuple2(0, 0),
       null,
       null,
+    ),
+    inlineCode: InlineCodeStyle(
+      radius: const Radius.circular(8),
+      style: GoogleFonts.shareTechMono(
+        fontSize: 12,
+        color: colorConfig().editorTextColor,
+      ),
     ),
     code: DefaultTextBlockStyle(
       GoogleFonts.shareTechMono(
