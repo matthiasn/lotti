@@ -6,9 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Updated dependencies
+
+## [0.8.124] - 2022-08-08
+### Changed:
 - Move dashboards page to left
 - Change dashboards header
-- 
+- Whitespace tweaks
 
 ## [0.8.124] - 2022-08-06
 ### Changed:
