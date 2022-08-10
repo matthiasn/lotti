@@ -63,6 +63,7 @@ void navigateNamedRoute(String route) {
   persistNamedRoute(route);
   getIt<AppRouter>().navigateNamed(
     route,
+    includePrefixMatches: true,
     onFailure: (_) => getIt<AppRouter>().navigateNamed('/'),
   );
 }
