@@ -102,16 +102,21 @@ class ConfigFlagCard extends StatelessWidget {
           contentPadding:
               const EdgeInsets.only(left: 16, top: 4, bottom: 8, right: 16),
           title: Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                getLocalizedDescription(item),
-                style: TextStyle(
-                  color: colorConfig().entryTextColor,
-                  fontFamily: 'Oswald',
-                  fontSize: 20,
+              Flexible(
+                child: Text(
+                  softWrap: true,
+                  getLocalizedDescription(item),
+                  style: TextStyle(
+                    color: colorConfig().entryTextColor,
+                    fontFamily: 'Oswald',
+                    fontSize: 20,
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               CupertinoSwitch(
                 value: item.status,
                 activeColor: colorConfig().private,

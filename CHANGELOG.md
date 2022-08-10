@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Text wrap in config flags on small screen (e.g. iPhone 12 mini)
+
+## [0.8.127] - 2022-08-11
 ### Changed:
 - Navbar changed to Salomon style
 
