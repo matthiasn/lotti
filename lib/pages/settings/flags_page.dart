@@ -42,7 +42,7 @@ class _FlagsPageState extends State<FlagsPage> {
 
           return ListView(
             shrinkWrap: true,
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             children: List.generate(
               items.length,
               (int index) {

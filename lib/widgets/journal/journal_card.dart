@@ -182,7 +182,12 @@ class JournalCard extends StatelessWidget {
                 },
               );
 
-              pushNamedRoute('/journal/${item.meta.id}');
+              final path = item.maybeMap(
+                task: (_) => '/tasks',
+                orElse: () => '/journal',
+              );
+
+              navigateNamedRoute('$path/${item.meta.id}');
             },
           ),
         );
@@ -243,7 +248,7 @@ class JournalImageCard extends StatelessWidget {
             child: JournalCardTitle(item: item),
           ),
           onTap: () {
-            pushNamedRoute('/journal/${item.meta.id}');
+            navigateNamedRoute('/journal/${item.meta.id}');
           },
         ),
       ),

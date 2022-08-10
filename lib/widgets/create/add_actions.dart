@@ -99,7 +99,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             rebuild();
 
             final linkedId = widget.linked?.meta.id;
-            pushNamedRoute('/journal/fill_survey_linked/$linkedId');
+            navigateNamedRoute('/journal/fill_survey_linked/$linkedId');
           },
           child: const Icon(
             MdiIcons.clipboardOutline,
@@ -170,7 +170,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             rebuild();
 
             final linkedId = widget.linked?.meta.id;
-            pushNamedRoute('/journal/record_audio/$linkedId');
+            navigateNamedRoute('/journal/record_audio/$linkedId');
 
             context.read<AudioRecorderCubit>().record(
                   linkedId: widget.linked?.meta.id,

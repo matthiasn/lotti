@@ -17,7 +17,7 @@ Future<JournalEntity?> createTextEntry({String? linkedId}) async {
   );
 
   if (linkedId == null) {
-    pushNamedRoute('/journal/${entry?.meta.id}');
+    navigateNamedRoute('/journal/${entry?.meta.id}');
   }
   return entry;
 }
@@ -48,7 +48,7 @@ Future<Task?> createTask({String? linkedId}) async {
     linkedId: linkedId,
   );
 
-  pushNamedRoute('/journal/${task?.meta.id}');
+  navigateNamedRoute('/tasks/${task?.meta.id}');
   return task;
 }
 

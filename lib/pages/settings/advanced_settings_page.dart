@@ -21,7 +21,7 @@ class AdvancedSettingsPage extends StatelessWidget {
       body: Container(
         margin: const EdgeInsets.symmetric(
           vertical: 8,
-          horizontal: 8,
+          horizontal: 4,
         ),
         child: ListView(
           children: [
@@ -29,7 +29,7 @@ class AdvancedSettingsPage extends StatelessWidget {
               icon: const SettingsIcon(Icons.sync),
               title: localizations.settingsSyncCfgTitle,
               onTap: () {
-                pushNamedRoute('/settings/sync_settings');
+                navigateNamedRoute('/settings/sync_settings');
               },
             ),
             SettingsCard(
@@ -38,28 +38,28 @@ class AdvancedSettingsPage extends StatelessWidget {
               ),
               title: localizations.settingsSyncOutboxTitle,
               onTap: () {
-                pushNamedRoute('/settings/outbox_monitor');
+                navigateNamedRoute('/settings/outbox_monitor');
               },
             ),
             SettingsCard(
               icon: const SettingsIcon(MdiIcons.emoticonConfusedOutline),
               title: localizations.settingsConflictsTitle,
               onTap: () {
-                pushNamedRoute('/settings/conflicts');
+                navigateNamedRoute('/settings/conflicts');
               },
             ),
             SettingsCard(
               icon: const SettingsIcon(MdiIcons.informationOutline),
               title: localizations.settingsLogsTitle,
               onTap: () {
-                pushNamedRoute('/settings/logging');
+                navigateNamedRoute('/settings/logging');
               },
             ),
             SettingsCard(
               icon: const SettingsIcon(MdiIcons.broom),
               title: localizations.settingsMaintenanceTitle,
               onTap: () {
-                pushNamedRoute('/settings/maintenance');
+                navigateNamedRoute('/settings/maintenance');
               },
             ),
           ],

@@ -166,7 +166,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     cursor: SystemMouseCursors.click,
                                     child: GestureDetector(
                                       onTap: () {
-                                        pushNamedRoute(
+                                        navigateNamedRoute(
                                           '/settings/create_measurable',
                                         );
                                       },
@@ -213,7 +213,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                             const Icon(Icons.settings_outlined),
                                         color: colorConfig().entryTextColor,
                                         onPressed: () {
-                                          pushNamedRoute(
+                                          navigateNamedRoute(
                                             '/settings/measurables/${selected?.id}',
                                           );
                                         },

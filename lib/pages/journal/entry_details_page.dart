@@ -70,7 +70,7 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
       ) {
         final item = snapshot.data;
         if (item == null) {
-          return EmptyScaffoldWithTitle(localizations.dashboardNotFound);
+          return EmptyScaffoldWithTitle(localizations.entryNotFound);
         }
 
         return Scaffold(

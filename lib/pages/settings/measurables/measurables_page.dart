@@ -99,7 +99,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
           floatingActionButton: FloatingActionButton(
             backgroundColor: colorConfig().entryBgColor,
             onPressed: () {
-              pushNamedRoute('/settings/create_measurable');
+              navigateNamedRoute('/settings/create_measurable');
             },
             child: const Icon(MdiIcons.plus, size: 32),
           ),

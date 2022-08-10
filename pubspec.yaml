@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.126+1228
+version: 0.8.127+1231
 
 msix_config:
   display_name: Lotti
@@ -133,6 +133,7 @@ dependencies:
   research_package:
     git: https://github.com/matthiasn/research.package.git
 
+  salomon_bottom_bar: ^3.3.1
   share_plus: ^4.0.4
   sqflite: ^2.0.1
   sqlite3_flutter_libs: ^0.5.2

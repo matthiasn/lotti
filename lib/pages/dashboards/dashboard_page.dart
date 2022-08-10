@@ -102,6 +102,7 @@ class _DashboardPageState extends State<DashboardPage> {
           }
 
           if (dashboard == null) {
+            navigateNamedRoute('/dashboards');
             return EmptyScaffoldWithTitle(
               localizations.dashboardNotFound,
             );
@@ -227,7 +228,7 @@ class DashboardWidget extends StatelessWidget {
                   icon: const Icon(Icons.dashboard_customize_outlined),
                   color: colorConfig().entryTextColor,
                   onPressed: () {
-                    pushNamedRoute(
+                    navigateNamedRoute(
                       '/settings/dashboards/$dashboardId',
                     );
                   },
