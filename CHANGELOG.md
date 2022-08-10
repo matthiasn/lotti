@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Navigation glitch where the bottom nav bar was moving
+- Error handling when page does not exist
+
+## [0.8.126] - 2022-08-08
 ### Changed:
 - Updated dependencies
 - Inline code style in editor

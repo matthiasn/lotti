@@ -81,7 +81,7 @@ class LogLineCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        pushNamedRoute('/settings/logging/${logEntry.id}');
+        navigateNamedRoute('/settings/logging/${logEntry.id}');
       },
       child: Padding(
         padding: const EdgeInsets.all(2),

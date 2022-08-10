@@ -43,42 +43,42 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: const SettingsIcon(MdiIcons.tagOutline),
               title: localizations.settingsTagsTitle,
               onTap: () {
-                pushNamedRoute('/settings/tags');
+                navigateNamedRoute('/settings/tags');
               },
             ),
             SettingsCard(
               icon: const SettingsIcon(Icons.dashboard_customize_outlined),
               title: localizations.settingsDashboardsTitle,
               onTap: () {
-                pushNamedRoute('/settings/dashboards');
+                navigateNamedRoute('/settings/dashboards');
               },
             ),
             SettingsCard(
               icon: const SettingsIcon(Icons.insights),
               title: localizations.settingsMeasurablesTitle,
               onTap: () {
-                pushNamedRoute('/settings/measurables');
+                navigateNamedRoute('/settings/measurables');
               },
             ),
             SettingsCard(
               icon: const SettingsIcon(MdiIcons.heartOutline),
               title: localizations.settingsHealthImportTitle,
               onTap: () {
-                pushNamedRoute('/settings/health_import');
+                navigateNamedRoute('/settings/health_import');
               },
             ),
             SettingsCard(
               icon: const SettingsIcon(MdiIcons.flagOutline),
               title: localizations.settingsFlagsTitle,
               onTap: () {
-                pushNamedRoute('/settings/flags');
+                navigateNamedRoute('/settings/flags');
               },
             ),
             SettingsCard(
               icon: const SettingsIcon(MdiIcons.alertRhombusOutline),
               title: localizations.settingsAdvancedTitle,
               onTap: () {
-                pushNamedRoute('/settings/advanced');
+                navigateNamedRoute('/settings/advanced');
               },
             ),
           ],

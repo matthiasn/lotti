@@ -175,8 +175,9 @@ void main() {
           mockSecureStorage.writeValue(any(), expectedRoute);
       when(mockWriteValue).thenAnswer((_) async {});
 
-      Future<void> mockPushNamed() => mockAppRouter.pushNamed(expectedRoute);
-      when(mockPushNamed).thenAnswer((_) async {});
+      Future<void> mockNavigateNamed() => mockAppRouter
+          .navigateNamed(expectedRoute, onFailure: any(named: 'onFailure'));
+      when(mockNavigateNamed).thenAnswer((_) async {});
 
       final chartTappableFinder = find.byType(GestureDetector).first;
       await tester.tap(chartTappableFinder);
@@ -185,7 +186,7 @@ void main() {
 
       await tester.pumpAndSettle();
       verify(mockWriteValue).called(1);
-      verify(mockPushNamed).called(1);
+      verify(mockNavigateNamed).called(1);
     });
   });
 }

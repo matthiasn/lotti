@@ -116,7 +116,7 @@ class DashboardCard extends StatelessWidget {
           ),
         ),
         onTap: () {
-          pushNamedRoute(
+          navigateNamedRoute(
             '/dashboards/dashboard/${dashboard.id}',
           );
         },

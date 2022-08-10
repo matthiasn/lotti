@@ -67,13 +67,6 @@ class HomePage extends StatelessWidget {
             //TutorialRouter(),
           ],
           bottomNavigationBuilder: (_, TabsRouter tabsRouter) {
-            final hideBottomNavRoutes = <String>{
-              EntryDetailRoute.name,
-              LoggingRoute.name,
-              LogDetailRoute.name,
-              SyncAssistantRoute.name,
-            };
-
             final navService = getIt<NavService>();
 
             final routesByIndex = <String>[
@@ -92,10 +85,6 @@ class HomePage extends StatelessWidget {
               tabsRouter.setActiveIndex(index);
               navService.bottomNavRouteTap(index);
               HapticFeedback.lightImpact();
-            }
-
-            if (hideBottomNavRoutes.contains(tabsRouter.topRoute.name)) {
-              return const SizedBox.shrink();
             }
 
             return DecoratedBox(

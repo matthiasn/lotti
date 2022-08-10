@@ -33,7 +33,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
         return GestureDetector(
           onTap: () {
             final itemId = current.meta.id;
-            pushNamedRoute('/journal/$itemId');
+            navigateNamedRoute('/journal/$itemId');
           },
           child: MouseRegion(
             cursor: SystemMouseCursors.click,

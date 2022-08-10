@@ -47,7 +47,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
                     );
 
                     Future<void>.delayed(const Duration(milliseconds: 50)).then(
-                      (value) => pushNamedRoute('/dashboards/carousel'),
+                      (value) => navigateNamedRoute('/dashboards/carousel'),
                     );
                   },
                 ),
@@ -68,7 +68,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
                   );
 
                   Future<void>.delayed(const Duration(milliseconds: 50)).then(
-                    (value) => pushNamedRoute('/settings/dashboards/'),
+                    (value) => navigateNamedRoute('/settings/dashboards/'),
                   );
                 },
               ),
