@@ -175,8 +175,11 @@ void main() {
           mockSecureStorage.writeValue(any(), expectedRoute);
       when(mockWriteValue).thenAnswer((_) async {});
 
-      Future<void> mockNavigateNamed() => mockAppRouter
-          .navigateNamed(expectedRoute, onFailure: any(named: 'onFailure'));
+      Future<void> mockNavigateNamed() => mockAppRouter.navigateNamed(
+            expectedRoute,
+            includePrefixMatches: true,
+            onFailure: any(named: 'onFailure'),
+          );
       when(mockNavigateNamed).thenAnswer((_) async {});
 
       final chartTappableFinder = find.byType(GestureDetector).first;

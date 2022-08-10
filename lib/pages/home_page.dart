@@ -15,6 +15,7 @@ import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
+import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
@@ -31,6 +32,8 @@ class HomePage extends StatelessWidget {
     return StreamBuilder<Set<String>>(
       stream: _db.watchActiveConfigFlagNames(),
       builder: (context, snapshot) {
+        final localizations = AppLocalizations.of(context)!;
+
         final showTasks = snapshot.data?.contains(showTasksTabFlag);
 
         if (showTasks == null) {
@@ -87,57 +90,50 @@ class HomePage extends StatelessWidget {
               HapticFeedback.lightImpact();
             }
 
-            return DecoratedBox(
-              decoration: const BoxDecoration(
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black54,
-                    blurRadius: 8,
-                    offset: Offset(0, 0.75),
-                  )
-                ],
-              ),
-              child: BottomNavigationBar(
-                type: BottomNavigationBarType.fixed,
-                backgroundColor: colorConfig().bottomNavBackground,
-                unselectedItemColor: colorConfig().bottomNavIconUnselected,
-                selectedItemColor: colorConfig().bottomNavIconSelected,
-                currentIndex: tabsRouter.activeIndex,
-                selectedLabelStyle: bottomNavLabelStyle.copyWith(
-                  fontWeight: FontWeight.normal,
+            return SalomonBottomBar(
+              unselectedItemColor: colorConfig().bottomNavIconUnselected,
+              selectedItemColor: colorConfig().bottomNavIconSelected,
+              currentIndex: tabsRouter.activeIndex,
+              onTap: onTap,
+              items: [
+                SalomonBottomBarItem(
+                  icon: const Icon(Icons.dashboard_outlined),
+                  title: NavTitle(localizations.navTabTitleInsights),
                 ),
-                unselectedLabelStyle: bottomNavLabelStyle,
-                onTap: onTap,
-                enableFeedback: true,
-                selectedFontSize: 18,
-                unselectedFontSize: 16,
-                items: [
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.dashboard_outlined),
-                    label: AppLocalizations.of(context)!.navTabTitleInsights,
+                SalomonBottomBarItem(
+                  icon: FlaggedBadgeIcon(),
+                  title: NavTitle(localizations.navTabTitleJournal),
+                ),
+                if (showTasks)
+                  SalomonBottomBarItem(
+                    icon: TasksBadgeIcon(),
+                    title: NavTitle(localizations.navTabTitleTasks),
                   ),
-                  BottomNavigationBarItem(
-                    icon: FlaggedBadgeIcon(),
-                    label: AppLocalizations.of(context)!.navTabTitleJournal,
+                SalomonBottomBarItem(
+                  icon: OutboxBadgeIcon(
+                    icon: const Icon(Icons.settings_outlined),
                   ),
-                  if (showTasks)
-                    BottomNavigationBarItem(
-                      icon: TasksBadgeIcon(),
-                      label: AppLocalizations.of(context)!.navTabTitleTasks,
-                    ),
-                  BottomNavigationBarItem(
-                    icon: OutboxBadgeIcon(
-                      icon: const Icon(Icons.settings_outlined),
-                    ),
-                    label: AppLocalizations.of(context)!.navTabTitleSettings,
-                  ),
-                ],
-              ),
+                  title: NavTitle(localizations.navTabTitleSettings),
+                ),
+              ],
             );
           },
           navigatorObservers: () => [NavObserver()],
         );
       },
+    );
+  }
+}
+
+class NavTitle extends StatelessWidget {
+  const NavTitle(this.title, {super.key});
+
+  final String title;
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(title),
     );
   }
 }
