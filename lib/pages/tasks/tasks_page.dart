@@ -315,7 +315,7 @@ class _TasksPageState extends State<TasksPage> {
                       Scaffold(
                         backgroundColor: colorConfig().bodyBgColor,
                         body: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
                           child: ListView(
                             children: [
                               SizedBox(height: searchHeaderHeight),

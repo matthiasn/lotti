@@ -21,7 +21,7 @@ class AdvancedSettingsPage extends StatelessWidget {
       body: Container(
         margin: const EdgeInsets.symmetric(
           vertical: 8,
-          horizontal: 8,
+          horizontal: 4,
         ),
         child: ListView(
           children: [
