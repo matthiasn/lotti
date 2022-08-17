@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -75,14 +76,6 @@ class EncryptionQrWidget extends StatelessWidget {
                               passwordLength: 32,
                             );
 
-                            final b64Secret = getIt<SyncConfigService>()
-                                .generateKeyFromPassphrase(randomPassword);
-
-                            final encryptedConfig = await encryptString(
-                              plainText: syncCfgJson,
-                              b64Secret: b64Secret,
-                            );
-
                             void showPassphrase() {
                               showDialog<String>(
                                 context: context,
@@ -131,11 +124,24 @@ class EncryptionQrWidget extends StatelessWidget {
                                   Button(
                                     localizations.settingsSyncCopyButton,
                                     key: const Key('copyButton'),
-                                    onPressed: () {
-                                      Clipboard.setData(
+                                    onPressed: () async {
+                                      final b64Secret =
+                                          getIt<SyncConfigService>()
+                                              .generateKeyFromPassphrase(
+                                        randomPassword,
+                                      );
+
+                                      final encryptedConfig =
+                                          await encryptString(
+                                        plainText: syncCfgJson,
+                                        b64Secret: b64Secret,
+                                      );
+
+                                      await Clipboard.setData(
                                         ClipboardData(text: encryptedConfig),
                                       );
-                                      Navigator.pop(context, 'Copy SyncConfig');
+                                      await context.router.pop();
+                                      //                                Navigator.pop(context, 'Copy SyncConfig');
                                       showPassphrase();
                                     },
                                     primaryColor: Colors.red,
@@ -190,6 +196,7 @@ class EmptyConfigWidget extends StatelessWidget {
           key: const Key('settingsSyncPasteCfg'),
           localizations.settingsSyncPasteCfg,
           onPressed: () {
+            var passphrase = '';
             showDialog<String>(
               context: context,
               builder: (BuildContext context) => AlertDialog(
@@ -197,9 +204,16 @@ class EmptyConfigWidget extends StatelessWidget {
                   localizations.settingsSyncPasteCfg,
                   style: const TextStyle(fontFamily: 'Oswald'),
                 ),
-                content: Text(
-                  localizations.settingsSyncPasteCfgWarning,
-                  style: const TextStyle(fontFamily: 'Lato'),
+                content: Column(
+                  children: [
+                    Text(
+                      localizations.settingsSyncPasteCfgWarning,
+                      style: const TextStyle(fontFamily: 'Lato'),
+                    ),
+                    TextField(
+                      onChanged: (s) => passphrase = s,
+                    ),
+                  ],
                 ),
                 actions: <Widget>[
                   Button(
@@ -218,9 +232,19 @@ class EmptyConfigWidget extends StatelessWidget {
                       final syncConfigCubit = context.read<SyncConfigCubit>();
 
                       final data = await Clipboard.getData('text/plain');
-                      final syncCfg = data?.text;
-                      if (syncCfg != null) {
-                        await syncConfigCubit.setSyncConfig(syncCfg);
+
+                      final b64Secret = getIt<SyncConfigService>()
+                          .generateKeyFromPassphrase(passphrase);
+
+                      final encryptedSyncCfg = data?.text;
+
+                      if (encryptedSyncCfg != null) {
+                        final decryptedConfig = await decryptString(
+                          encrypted: encryptedSyncCfg,
+                          b64Secret: b64Secret,
+                        );
+
+                        await syncConfigCubit.setSyncConfig(decryptedConfig);
                       }
                       navigator.pop('Import SyncConfig');
                     },

@@ -11,7 +11,10 @@ Future<SyncMessage?> decryptMessage(
 ) async {
   if (encryptedMessage != null) {
     if (b64Secret != null) {
-      final decryptedJson = await decryptString(encryptedMessage, b64Secret);
+      final decryptedJson = await decryptString(
+        encrypted: encryptedMessage,
+        b64Secret: b64Secret,
+      );
       return SyncMessage.fromJson(
         json.decode(decryptedJson) as Map<String, dynamic>,
       );

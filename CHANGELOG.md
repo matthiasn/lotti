@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
-- Copy Sync Config to clipboard, encrypted with random one-time password
+- Copy SyncConfig to clipboard, encrypted with random one-time password
+- Paste encrypted SyncConfig from clipboard & decrypt with one-time password
 
 ## [0.8.128] - 2022-08-11
 ### Fixed:

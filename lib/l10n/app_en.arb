@@ -151,7 +151,7 @@
   "settingsSyncOutboxTitle": "Sync Outbox",
   "settingsSyncPasswordLabel": "Password",
   "settingsSyncPasteCfg": "Import SyncConfig from Clipboard?",
-  "settingsSyncPasteCfgWarning": "Do you want to import the SyncConfig from the clipboard? Only proceed when you know what you're doing. ARE YOU SURE?",
+  "settingsSyncPasteCfgWarning": "Do you want to import the SyncConfig from the clipboard? Enter the one-time password below, then proceed.",
   "settingsSyncPortLabel": "Port",
   "settingsSyncReGenKeyButton": "Re-generate Shared Key",
   "settingsSyncSaveButton": "Save IMAP Config",

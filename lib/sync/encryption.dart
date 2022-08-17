@@ -127,7 +127,10 @@ FutureOr<String> decryptStringIsolate(DecryptStringMessage msg) async {
   return utf8.decode(decryptedBytes);
 }
 
-Future<String> decryptString(String encrypted, String b64Secret) async {
+Future<String> decryptString({
+  required String encrypted,
+  required String b64Secret,
+}) async {
   return compute(
     decryptStringIsolate,
     DecryptStringMessage(

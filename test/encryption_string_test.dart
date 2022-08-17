@@ -14,7 +14,10 @@ void main() {
       b64Secret: b64Secret,
       plainText: testString,
     );
-    final decrypted = await decryptString(encryptedMessage, b64Secret);
+    final decrypted = await decryptString(
+      encrypted: encryptedMessage,
+      b64Secret: b64Secret,
+    );
     debugPrint('AES GCM decrypted: $decrypted');
     expect(decrypted, testString);
   });
