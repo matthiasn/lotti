@@ -12,9 +12,12 @@ test:
 analyze:
 	flutter analyze
 
-.PHONY: junit
-junit:
+.PHONY: junit_test
+junit_test:
 	flutter test --coverage --reporter json > TEST-report.jsonl
+
+.PHONY: junit_upload
+junit_upload:
 	dart pub global activate junitreport
 	dart pub global run junitreport:tojunit --input TEST-report.jsonl --output junit.xml
 	./.buildkite/junit_upload.sh
