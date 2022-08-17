@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Copy SyncConfig to clipboard, encrypted with random one-time password
+- Paste encrypted SyncConfig from clipboard & decrypt with one-time password
+
+## [0.8.128] - 2022-08-11
 ### Fixed:
 - Text wrap in config flags on small screen (e.g. iPhone 12 mini)
 
