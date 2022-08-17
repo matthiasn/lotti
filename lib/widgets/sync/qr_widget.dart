@@ -190,6 +190,7 @@ class EmptyConfigWidget extends StatelessWidget {
           key: const Key('settingsSyncPasteCfg'),
           localizations.settingsSyncPasteCfg,
           onPressed: () {
+            var passphrase = '';
             showDialog<String>(
               context: context,
               builder: (BuildContext context) => AlertDialog(
@@ -197,9 +198,16 @@ class EmptyConfigWidget extends StatelessWidget {
                   localizations.settingsSyncPasteCfg,
                   style: const TextStyle(fontFamily: 'Oswald'),
                 ),
-                content: Text(
-                  localizations.settingsSyncPasteCfgWarning,
-                  style: const TextStyle(fontFamily: 'Lato'),
+                content: Column(
+                  children: [
+                    Text(
+                      localizations.settingsSyncPasteCfgWarning,
+                      style: const TextStyle(fontFamily: 'Lato'),
+                    ),
+                    TextField(
+                      onChanged: (s) => passphrase = s,
+                    ),
+                  ],
                 ),
                 actions: <Widget>[
                   Button(
@@ -218,9 +226,19 @@ class EmptyConfigWidget extends StatelessWidget {
                       final syncConfigCubit = context.read<SyncConfigCubit>();
 
                       final data = await Clipboard.getData('text/plain');
-                      final syncCfg = data?.text;
-                      if (syncCfg != null) {
-                        await syncConfigCubit.setSyncConfig(syncCfg);
+
+                      final b64Secret = getIt<SyncConfigService>()
+                          .generateKeyFromPassphrase(passphrase);
+
+                      final encryptedSyncCfg = data?.text;
+
+                      if (encryptedSyncCfg != null) {
+                        final decryptedConfig = await decryptString(
+                          encrypted: encryptedSyncCfg,
+                          b64Secret: b64Secret,
+                        );
+
+                        await syncConfigCubit.setSyncConfig(decryptedConfig);
                       }
                       navigator.pop('Import SyncConfig');
                     },
