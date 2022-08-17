@@ -2,13 +2,6 @@ steps:
   - group: "Codegen & Test"
     key: "codegen_test"
     steps:
-      - label: "🧽 Clean "
-        key: "apple_clean"
-        commands:
-          - "flutter clean"
-        agents:
-          os: "macOS"
-
       - label: "🛠 Dependencies "
         key: "apple_deps"
         depends_on:
