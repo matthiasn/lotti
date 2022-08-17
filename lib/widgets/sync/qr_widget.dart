@@ -11,10 +11,14 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/sync_config_service.dart';
+import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
+import 'package:lotti/widgets/sync/imap_config_status.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:random_password_generator/random_password_generator.dart';
 
 class EncryptionQrWidget extends StatelessWidget {
   const EncryptionQrWidget({super.key});
@@ -64,8 +68,47 @@ class EncryptionQrWidget extends StatelessWidget {
                         ),
                         child: GestureDetector(
                           key: const Key('QrImageGestureDetector'),
-                          onTap: () {
-                            showDialog<String>(
+                          onTap: () async {
+                            final password = RandomPasswordGenerator();
+                            final randomPassword = password.randomPassword(
+                              numbers: true,
+                              passwordLength: 32,
+                            );
+
+                            final b64Secret = getIt<SyncConfigService>()
+                                .generateKeyFromPassphrase(randomPassword);
+
+                            final encryptedConfig = await encryptString(
+                              plainText: syncCfgJson,
+                              b64Secret: b64Secret,
+                            );
+
+                            void showPassphrase() {
+                              showDialog<String>(
+                                context: context,
+                                builder: (BuildContext context) => AlertDialog(
+                                  title: Text(
+                                    randomPassword,
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      fontFamily: 'ShareTechMono',
+                                    ),
+                                  ),
+                                  actions: <Widget>[
+                                    Button(
+                                      localizations.settingsSyncCloseButton,
+                                      key: const Key('closeButton'),
+                                      onPressed: () {
+                                        Navigator.pop(context, 'Close');
+                                      },
+                                      primaryColor: Colors.grey,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            await showDialog<String>(
                               context: context,
                               builder: (BuildContext context) => AlertDialog(
                                 title: Text(
@@ -90,9 +133,10 @@ class EncryptionQrWidget extends StatelessWidget {
                                     key: const Key('copyButton'),
                                     onPressed: () {
                                       Clipboard.setData(
-                                        ClipboardData(text: syncCfgJson),
+                                        ClipboardData(text: encryptedConfig),
                                       );
                                       Navigator.pop(context, 'Copy SyncConfig');
+                                      showPassphrase();
                                     },
                                     primaryColor: Colors.red,
                                   ),
@@ -118,66 +162,77 @@ class EncryptionQrWidget extends StatelessWidget {
                     StatusTextWidget(localizations.settingsSyncLoadingKey),
                 generating: () =>
                     StatusTextWidget(localizations.settingsSyncGenKey),
-                empty: () => Column(
-                  children: [
-                    StatusTextWidget(localizations.settingsSyncNotInitialized),
-                    const SizedBox(height: 32),
-                    Button(
-                      key: const Key('settingsSyncPasteCfg'),
-                      localizations.settingsSyncPasteCfg,
-                      onPressed: () {
-                        showDialog<String>(
-                          context: context,
-                          builder: (BuildContext context) => AlertDialog(
-                            title: Text(
-                              localizations.settingsSyncPasteCfg,
-                              style: const TextStyle(fontFamily: 'Oswald'),
-                            ),
-                            content: Text(
-                              localizations.settingsSyncPasteCfgWarning,
-                              style: const TextStyle(fontFamily: 'Lato'),
-                            ),
-                            actions: <Widget>[
-                              Button(
-                                localizations.settingsSyncCancelButton,
-                                key: const Key('syncCancelButton'),
-                                onPressed: () {
-                                  Navigator.pop(context, 'Cancel');
-                                },
-                                primaryColor: Colors.grey,
-                              ),
-                              Button(
-                                localizations.settingsSyncImportButton,
-                                key: const Key('syncImportButton'),
-                                onPressed: () async {
-                                  final navigator = Navigator.of(context);
-                                  final syncConfigCubit =
-                                      context.read<SyncConfigCubit>();
-
-                                  final data =
-                                      await Clipboard.getData('text/plain');
-                                  final syncCfg = data?.text;
-                                  if (syncCfg != null) {
-                                    await syncConfigCubit
-                                        .setSyncConfig(syncCfg);
-                                  }
-                                  navigator.pop('Import SyncConfig');
-                                },
-                                primaryColor: Colors.red,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      primaryColor: Colors.red,
-                    ),
-                  ],
-                ),
+                empty: () => const EmptyConfigWidget(),
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class EmptyConfigWidget extends StatelessWidget {
+  const EmptyConfigWidget({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        StatusText(localizations.settingsSyncNotInitialized),
+        const SizedBox(height: 8),
+        Button(
+          key: const Key('settingsSyncPasteCfg'),
+          localizations.settingsSyncPasteCfg,
+          onPressed: () {
+            showDialog<String>(
+              context: context,
+              builder: (BuildContext context) => AlertDialog(
+                title: Text(
+                  localizations.settingsSyncPasteCfg,
+                  style: const TextStyle(fontFamily: 'Oswald'),
+                ),
+                content: Text(
+                  localizations.settingsSyncPasteCfgWarning,
+                  style: const TextStyle(fontFamily: 'Lato'),
+                ),
+                actions: <Widget>[
+                  Button(
+                    localizations.settingsSyncCancelButton,
+                    key: const Key('syncCancelButton'),
+                    onPressed: () {
+                      Navigator.pop(context, 'Cancel');
+                    },
+                    primaryColor: Colors.grey,
+                  ),
+                  Button(
+                    localizations.settingsSyncImportButton,
+                    key: const Key('syncImportButton'),
+                    onPressed: () async {
+                      final navigator = Navigator.of(context);
+                      final syncConfigCubit = context.read<SyncConfigCubit>();
+
+                      final data = await Clipboard.getData('text/plain');
+                      final syncCfg = data?.text;
+                      if (syncCfg != null) {
+                        await syncConfigCubit.setSyncConfig(syncCfg);
+                      }
+                      navigator.pop('Import SyncConfig');
+                    },
+                    primaryColor: Colors.red,
+                  ),
+                ],
+              ),
+            );
+          },
+          primaryColor: Colors.red,
+        ),
+      ],
     );
   }
 }

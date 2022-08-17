@@ -29,12 +29,20 @@ class SyncConfigService {
     return null;
   }
 
-  Future<void> generateSharedKey() async {
+  String generateRandomKey() {
     final key = Key.fromSecureRandom(32);
-    final sharedKey = key.base64;
+    return key.base64;
+  }
+
+  String generateKeyFromPassphrase(String passphrase) {
+    final key = Key.fromUtf8(passphrase);
+    return key.base64;
+  }
+
+  Future<void> generateSharedKey() async {
     await getIt<SecureStorage>().write(
       key: sharedSecretKey,
-      value: sharedKey,
+      value: generateRandomKey(),
     );
     final lastReadUid = await getLastReadUid();
     if (lastReadUid == null) {

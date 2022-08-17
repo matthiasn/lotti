@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.129+1242
+version: 0.8.129+1243
 
 msix_config:
   display_name: Lotti
@@ -130,6 +130,7 @@ dependencies:
       ref: 8140fcf
 
   # research_package: ^0.6.7
+  random_password_generator: ^0.2.1
   research_package:
     git: https://github.com/matthiasn/research.package.git
 
