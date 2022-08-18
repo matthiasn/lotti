@@ -24,10 +24,12 @@ class EntryDetailPage extends StatefulWidget {
     super.key,
     @PathParam() required this.itemId,
     this.readOnly = false,
+    this.showBackIcon = true,
   });
 
   final String itemId;
   final bool readOnly;
+  final bool showBackIcon;
 
   @override
   State<EntryDetailPage> createState() => _EntryDetailPageState();

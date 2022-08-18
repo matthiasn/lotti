@@ -68,15 +68,6 @@ class AppScreenState extends State<AppScreen> {
       },
     ),
     BeamerDelegate(
-      initialPath: '/books',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('books')) {
-          return BooksLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-    BeamerDelegate(
       initialPath: '/config_flags',
       locationBuilder: (routeInformation, _) {
         if (routeInformation.location!.contains('config_flags')) {
@@ -91,7 +82,7 @@ class AppScreenState extends State<AppScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final uriString = Beamer.of(context).configuration.location!;
-    currentIndex = uriString.contains('books') ? 0 : 1;
+    currentIndex = uriString.contains('tasks') ? 2 : 0;
   }
 
   @override
@@ -108,7 +99,6 @@ class AppScreenState extends State<AppScreen> {
           Beamer(routerDelegate: routerDelegates[2]),
           Beamer(routerDelegate: routerDelegates[3]),
           Beamer(routerDelegate: routerDelegates[4]),
-          Beamer(routerDelegate: routerDelegates[5]),
         ],
       ),
       bottomNavigationBar: SalomonBottomBar(
@@ -136,17 +126,15 @@ class AppScreenState extends State<AppScreen> {
             title: NavTitle(localizations.navTabTitleSettings),
           ),
           SalomonBottomBarItem(
-            icon: const Icon(Icons.library_books),
-            title: const NavTitle('Books'),
-          ),
-          SalomonBottomBarItem(
             icon: const Icon(Icons.app_settings_alt),
             title: const NavTitle('ConfigFlags'),
           ),
         ],
         onTap: (index) {
           if (index != currentIndex) {
-            setState(() => currentIndex = index);
+            setState(
+              () => currentIndex = index,
+            );
             routerDelegates[currentIndex].update(rebuild: false);
           }
         },
@@ -161,7 +149,7 @@ class MyBeamerApp extends StatelessWidget {
   final JournalDb _db = getIt<JournalDb>();
 
   final routerDelegate = BeamerDelegate(
-    initialPath: '/books',
+    initialPath: '/dashboards',
     locationBuilder: RoutesLocationBuilder(
       routes: {
         '*': (context, state, data) => const AppScreen(),

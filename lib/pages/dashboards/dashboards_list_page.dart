@@ -6,6 +6,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/dashboards_app_bar.dart';
 import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
@@ -116,14 +117,20 @@ class DashboardCard extends StatelessWidget {
             fontWeight: FontWeight.w300,
           ),
         ),
-        onTap: () {
-          context.beamToNamed(
-            '/dashboards/dashboard/${dashboard.id}',
-          );
+        onTap: () async {
+          final beamerNav =
+              await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
 
-          navigateNamedRoute(
-            '/dashboards/dashboard/${dashboard.id}',
-          );
+          if (beamerNav) {
+            // ignore: use_build_context_synchronously
+            context.beamToNamed(
+              '/dashboards/dashboard/${dashboard.id}',
+            );
+          } else {
+            navigateNamedRoute(
+              '/dashboards/dashboard/${dashboard.id}',
+            );
+          }
         },
       ),
     );

@@ -53,7 +53,7 @@ Future<void> main() async {
     };
 
     registerScreenshotHotkey();
-    runApp(LottiNavSwitchApp());
+    runApp(const LottiNavSwitchApp());
   }, (Object error, StackTrace stackTrace) {
     getIt<LoggingDb>().captureException(
       error,
@@ -120,14 +120,12 @@ class LottiApp extends StatelessWidget {
 }
 
 class LottiNavSwitchApp extends StatelessWidget {
-  LottiNavSwitchApp({super.key});
-
-  final _db = getIt<JournalDb>();
+  const LottiNavSwitchApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<bool>(
-      stream: _db.watchConfigFlag(enableBeamerNavFlag),
+      stream: getIt<JournalDb>().watchConfigFlag(enableBeamerNavFlag),
       builder: (context, snapshot) {
         if (snapshot.data ?? false) {
           return MyBeamerApp();

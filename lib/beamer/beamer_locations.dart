@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/pages/dashboards/dashboards_list_page.dart';
+import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/pages/journal/journal_page.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
 import 'package:lotti/pages/settings/settings_page.dart';
@@ -69,54 +70,6 @@ class BooksScreen extends StatelessWidget {
   }
 }
 
-class BookDetailsScreen extends StatelessWidget {
-  const BookDetailsScreen({required this.book, super.key});
-  final Map<String, String> book;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(book['title']!),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Text('Author: ${book['author']}'),
-      ),
-    );
-  }
-}
-
-// LOCATIONS
-class BooksLocation extends BeamLocation<BeamState> {
-  BooksLocation(RouteInformation super.routeInformation);
-
-  @override
-  List<String> get pathPatterns => ['/books/:bookId'];
-
-  @override
-  List<BeamPage> buildPages(BuildContext context, BeamState state) => [
-        const BeamPage(
-          key: ValueKey('books'),
-          title: 'Books',
-          type: BeamPageType.noTransition,
-          child: BooksScreen(),
-        ),
-        if (state.pathParameters.containsKey('bookId'))
-          BeamPage(
-            key: ValueKey('book-${state.pathParameters['bookId']}'),
-            title: books.firstWhere(
-              (book) => book['id'] == state.pathParameters['bookId'],
-            )['title'],
-            child: BookDetailsScreen(
-              book: books.firstWhere(
-                (book) => book['id'] == state.pathParameters['bookId'],
-              ),
-            ),
-          ),
-      ];
-}
-
 class DashboardsLocation extends BeamLocation<BeamState> {
   DashboardsLocation(RouteInformation super.routeInformation);
 
@@ -158,14 +111,10 @@ class JournalLocation extends BeamLocation<BeamState> {
         ),
         if (state.pathParameters.containsKey('entryId'))
           BeamPage(
-            key: ValueKey('articles-${state.pathParameters['articleId']}'),
-            title: articles.firstWhere(
-              (article) => article['id'] == state.pathParameters['articleId'],
-            )['title'],
-            child: BookDetailsScreen(
-              book: articles.firstWhere(
-                (article) => article['id'] == state.pathParameters['articleId'],
-              ),
+            key: ValueKey('journal-${state.pathParameters['entryId']}'),
+            child: EntryDetailPage(
+              itemId: state.pathParameters['entryId']!,
+              showBackIcon: false,
             ),
           ),
       ];
@@ -185,16 +134,12 @@ class TasksLocation extends BeamLocation<BeamState> {
           type: BeamPageType.noTransition,
           child: TasksPage(),
         ),
-        if (state.pathParameters.containsKey('articleId'))
+        if (state.pathParameters.containsKey('taskId'))
           BeamPage(
-            key: ValueKey('articles-${state.pathParameters['articleId']}'),
-            title: articles.firstWhere(
-              (article) => article['id'] == state.pathParameters['articleId'],
-            )['title'],
-            child: BookDetailsScreen(
-              book: articles.firstWhere(
-                (article) => article['id'] == state.pathParameters['articleId'],
-              ),
+            key: ValueKey('tasks-${state.pathParameters['taskId']}'),
+            child: EntryDetailPage(
+              itemId: state.pathParameters['taskId']!,
+              showBackIcon: false,
             ),
           ),
       ];
@@ -214,18 +159,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
           type: BeamPageType.noTransition,
           child: SettingsPage(),
         ),
-        if (state.pathParameters.containsKey('articleId'))
-          BeamPage(
-            key: ValueKey('articles-${state.pathParameters['articleId']}'),
-            title: articles.firstWhere(
-              (article) => article['id'] == state.pathParameters['articleId'],
-            )['title'],
-            child: BookDetailsScreen(
-              book: articles.firstWhere(
-                (article) => article['id'] == state.pathParameters['articleId'],
-              ),
-            ),
-          ),
       ];
 }
 
