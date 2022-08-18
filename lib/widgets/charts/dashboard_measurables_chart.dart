@@ -1,5 +1,6 @@
 import 'dart:core';
 
+import 'package:beamer/beamer.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
@@ -12,12 +13,14 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardMeasurablesChart extends StatefulWidget {
   const DashboardMeasurablesChart({
     super.key,
     required this.measurableDataTypeId,
+    required this.dashboardId,
     required this.rangeStart,
     required this.rangeEnd,
     this.aggregationType,
@@ -25,6 +28,7 @@ class DashboardMeasurablesChart extends StatefulWidget {
   });
 
   final String measurableDataTypeId;
+  final String? dashboardId;
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final bool enableCreate;
@@ -42,6 +46,8 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
   @override
   Widget build(BuildContext context) {
+    void beamToNamed(String path) => context.beamToNamed(path);
+
     return StreamBuilder<MeasurableDataType?>(
       stream: _db.watchMeasurableDataTypeById(widget.measurableDataTypeId),
       builder: (
@@ -82,10 +88,20 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                 defaultRenderer = charts.BarRendererConfig<DateTime>();
               }
 
-              void onDoubleTap() {
+              Future<void> onDoubleTap() async {
                 if (widget.enableCreate) {
                   final id = measurableDataType.id;
-                  navigateNamedRoute('/dashboards/measure/$id');
+
+                  final beamerNav = await getIt<JournalDb>()
+                      .getConfigFlag(enableBeamerNavFlag);
+
+                  if (beamerNav) {
+                    beamToNamed(
+                      '/dashboards/dashboard/${widget.dashboardId}/measure/$id',
+                    );
+                  } else {
+                    navigateNamedRoute('/dashboards/measure/$id');
+                  }
                 }
               }
 

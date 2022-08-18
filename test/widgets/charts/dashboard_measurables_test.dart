@@ -64,6 +64,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DashboardMeasurablesChart(
+            dashboardId: 'dashboardId',
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
             measurableDataTypeId: measurableChocolate.id,
@@ -107,6 +108,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DashboardMeasurablesChart(
+            dashboardId: 'dashboardId',
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
             measurableDataTypeId: measurableCoverage.id,
@@ -151,6 +153,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DashboardMeasurablesChart(
+            dashboardId: 'dashboardId',
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
             measurableDataTypeId: measurablePullUps.id,
