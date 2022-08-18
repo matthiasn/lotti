@@ -1,14 +1,16 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
+import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
+import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
+import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
+import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
+import 'package:lotti/pages/settings/measurables/measurables_page.dart';
 import 'package:lotti/pages/settings/settings_page.dart';
 import 'package:lotti/pages/settings/tags/create_tag_page.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';
-
-import '../../pages/settings/dashboards/create_dashboard_page.dart';
-import '../../pages/settings/dashboards/dashboard_definition_page.dart';
-import '../../pages/settings/dashboards/dashboards_page.dart';
 
 class SettingsLocation extends BeamLocation<BeamState> {
   SettingsLocation(RouteInformation super.routeInformation);
@@ -22,6 +24,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/dashboards',
         '/settings/dashboards/:dashboardId',
         '/settings/dashboards/create',
+        '/settings/measurables',
+        '/settings/measurables/:measurableId',
+        '/settings/measurables/create',
       ];
 
   @override
@@ -87,6 +92,31 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-dashboards-create'),
           child: CreateDashboardPage(),
+        ),
+
+      // Measurables
+      if (pathContains('measurables'))
+        const BeamPage(
+          key: ValueKey('settings-measurables'),
+          child: MeasurablesPage(),
+        ),
+
+      if (pathContains('measurables') &&
+          !pathContains('create') &&
+          pathContainsKey('measurableId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-measurables-${state.pathParameters['measurableId']}',
+          ),
+          child: EditMeasurablePage(
+            measurableId: state.pathParameters['measurableId']!,
+          ),
+        ),
+
+      if (pathContains('measurables/create'))
+        const BeamPage(
+          key: ValueKey('settings-measurables-create'),
+          child: CreateMeasurablePage(),
         ),
     ];
   }
