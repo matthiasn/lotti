@@ -4,8 +4,6 @@ import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/pages/dashboards/dashboards_list_page.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/pages/journal/journal_page.dart';
-import 'package:lotti/pages/settings/flags_page.dart';
-import 'package:lotti/pages/settings/settings_page.dart';
 import 'package:lotti/pages/tasks/tasks_page.dart';
 
 // DATA
@@ -142,39 +140,5 @@ class TasksLocation extends BeamLocation<BeamState> {
               showBackIcon: false,
             ),
           ),
-      ];
-}
-
-class SettingsLocation extends BeamLocation<BeamState> {
-  SettingsLocation(RouteInformation super.routeInformation);
-
-  @override
-  List<String> get pathPatterns => ['/settings/:taskId'];
-
-  @override
-  List<BeamPage> buildPages(BuildContext context, BeamState state) => [
-        const BeamPage(
-          key: ValueKey('settings'),
-          title: 'Settings',
-          type: BeamPageType.noTransition,
-          child: SettingsPage(),
-        ),
-      ];
-}
-
-class ConfigFlagsLocation extends BeamLocation<BeamState> {
-  ConfigFlagsLocation(RouteInformation super.routeInformation);
-
-  @override
-  List<String> get pathPatterns => ['/config_flags/'];
-
-  @override
-  List<BeamPage> buildPages(BuildContext context, BeamState state) => [
-        const BeamPage(
-          key: ValueKey('settings'),
-          title: 'Settings',
-          type: BeamPageType.noTransition,
-          child: FlagsPage(),
-        ),
       ];
 }

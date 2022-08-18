@@ -90,6 +90,8 @@ class DashboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void beamToNamed(String path) => context.beamToNamed(path);
+
     return Card(
       color: colorConfig().entryCardColor,
       elevation: 8,
@@ -122,14 +124,9 @@ class DashboardCard extends StatelessWidget {
               await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
 
           if (beamerNav) {
-            // ignore: use_build_context_synchronously
-            context.beamToNamed(
-              '/dashboards/dashboard/${dashboard.id}',
-            );
+            beamToNamed('/dashboards/dashboard/${dashboard.id}');
           } else {
-            navigateNamedRoute(
-              '/dashboards/dashboard/${dashboard.id}',
-            );
+            navigateNamedRoute('/dashboards/dashboard/${dashboard.id}');
           }
         },
       ),

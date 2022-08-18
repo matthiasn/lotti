@@ -1,3 +1,4 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/create/add_tag_actions.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
@@ -136,6 +138,8 @@ class TagCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void beamToNamed(String path) => context.beamToNamed(path);
+
     return Card(
       color: colorConfig().entryCardColor,
       elevation: 8,
@@ -167,12 +171,17 @@ class TagCard extends StatelessWidget {
               ),
             ],
           ),
-          onTap: () {
-            getIt<AppRouter>().push(
-              EditExistingTagRoute(
-                tagEntityId: tagEntity.id,
-              ),
-            );
+          onTap: () async {
+            final beamerNav =
+                await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
+
+            if (beamerNav) {
+              beamToNamed('/settings/tags/${tagEntity.id}');
+            } else {
+              await getIt<AppRouter>().push(
+                EditExistingTagRoute(tagEntityId: tagEntity.id),
+              );
+            }
           },
         ),
       ),

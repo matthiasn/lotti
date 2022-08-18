@@ -36,6 +36,7 @@ class _TagEditPageState extends State<TagEditPage> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    void maybePop() => Navigator.of(context).maybePop();
 
     Future<void> onSavePressed() async {
       _formKey.currentState!.save();
@@ -92,7 +93,7 @@ class _TagEditPageState extends State<TagEditPage> {
           }
 
           await persistenceLogic.upsertTagEntity(newTagEntity);
-          await getIt<AppRouter>().pop();
+          maybePop();
 
           setState(() {
             dirty = false;

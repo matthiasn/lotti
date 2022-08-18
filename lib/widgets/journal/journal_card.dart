@@ -159,6 +159,8 @@ class JournalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       builder: (BuildContext context, AudioPlayerState state) {
+        void beamToNamed(String path) => context.beamToNamed(path);
+
         return Card(
           color: colorConfig().entryCardColor,
           elevation: 8,
@@ -195,8 +197,7 @@ class JournalCard extends StatelessWidget {
                   await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
 
               if (beamerNav) {
-                // ignore: use_build_context_synchronously
-                context.beamToNamed('$path/${item.meta.id}');
+                beamToNamed('$path/${item.meta.id}');
               } else {
                 navigateNamedRoute('$path/${item.meta.id}');
               }
@@ -236,6 +237,8 @@ class JournalImageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void beamToNamed(String path) => context.beamToNamed(path);
+
     return Card(
       color: colorConfig().entryCardColor,
       elevation: 8,
@@ -264,8 +267,7 @@ class JournalImageCard extends StatelessWidget {
                 await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
 
             if (beamerNav) {
-              // ignore: use_build_context_synchronously
-              context.beamToNamed('/journal/${item.meta.id}');
+              beamToNamed('/journal/${item.meta.id}');
             } else {
               navigateNamedRoute('/journal/${item.meta.id}');
             }
