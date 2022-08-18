@@ -73,19 +73,19 @@ const AutoRoute settingsRoutes = AutoRoute(
       page: EditMeasurablePage,
     ),
     AutoRoute(
-      path: 'outbox_monitor',
+      path: 'advanced/outbox_monitor',
       page: OutboxMonitorPage,
     ),
     AutoRoute(
-      path: 'logging',
+      path: 'advanced/logging',
       page: LoggingPage,
     ),
     AutoRoute(
-      path: 'logging/:logEntryId',
+      path: 'advanced/logging/:logEntryId',
       page: LogDetailPage,
     ),
     AutoRoute(
-      path: 'conflicts',
+      path: 'advanced/conflicts',
       page: ConflictsPage,
     ),
     AutoRoute(
@@ -93,7 +93,7 @@ const AutoRoute settingsRoutes = AutoRoute(
       page: FlagsPage,
     ),
     AutoRoute(
-      path: 'maintenance',
+      path: 'advanced/maintenance',
       page: MaintenancePage,
     ),
     AutoRoute(
