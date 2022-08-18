@@ -571,6 +571,13 @@ class JournalDb extends _$JournalDb {
         status: true,
       ),
     );
+    await insertFlagIfNotExists(
+      ConfigFlag(
+        name: enableBeamerNavFlag,
+        description: 'Show new navigation (in progress)',
+        status: false,
+      ),
+    );
     if (Platform.isMacOS) {
       await insertFlagIfNotExists(
         ConfigFlag(
