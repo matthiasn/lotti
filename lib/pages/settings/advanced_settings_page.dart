@@ -27,7 +27,7 @@ class AdvancedSettingsPage extends StatelessWidget {
             SettingsCard(
               icon: const SettingsIcon(Icons.sync),
               title: localizations.settingsSyncCfgTitle,
-              path: '/settings/sync_settings',
+              path: '/settings/advanced/sync_settings',
             ),
             SettingsCard(
               icon: OutboxBadgeIcon(

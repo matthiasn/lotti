@@ -1,14 +1,20 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/pages/settings/advanced_settings_page.dart';
+import 'package:lotti/pages/settings/conflicts.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
 import 'package:lotti/pages/settings/health_import_page.dart';
+import 'package:lotti/pages/settings/logging_page.dart';
+import 'package:lotti/pages/settings/maintenance_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
 import 'package:lotti/pages/settings/measurables/measurables_page.dart';
+import 'package:lotti/pages/settings/outbox/outbox_monitor.dart';
 import 'package:lotti/pages/settings/settings_page.dart';
+import 'package:lotti/pages/settings/sync/sync_assistant_page.dart';
 import 'package:lotti/pages/settings/tags/create_tag_page.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';
@@ -29,6 +35,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/measurables/:measurableId',
         '/settings/measurables/create',
         '/settings/flags',
+        '/settings/advanced',
+        '/settings/outbox_monitor',
+        '/settings/logging',
+        '/settings/logging/:logEntryId',
+        '/settings/conflicts',
+        '/settings/maintenance',
       ];
 
   @override
@@ -133,6 +145,55 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-health_import'),
           child: HealthImportPage(),
+        ),
+
+      // Advanced Settings
+      if (pathContains('advanced'))
+        const BeamPage(
+          key: ValueKey('settings-advanced'),
+          child: AdvancedSettingsPage(),
+        ),
+
+      if (pathContains('advanced/sync_settings'))
+        const BeamPage(
+          key: ValueKey('settings-sync_settings'),
+          child: SyncAssistantPage(),
+        ),
+
+      if (pathContains('advanced/outbox_monitor'))
+        const BeamPage(
+          key: ValueKey('settings-outbox_monitor'),
+          child: OutboxMonitorPage(
+            leadingIcon: false,
+          ),
+        ),
+
+      if (pathContains('advanced/logging'))
+        const BeamPage(
+          key: ValueKey('settings-logging'),
+          child: LoggingPage(),
+        ),
+
+      if (pathContains('advanced/logging') && pathContainsKey('logEntryId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-logging-${state.pathParameters['logEntryId']}',
+          ),
+          child: EditMeasurablePage(
+            measurableId: state.pathParameters['logEntryId']!,
+          ),
+        ),
+
+      if (pathContains('advanced/conflicts'))
+        const BeamPage(
+          key: ValueKey('settings-conflicts'),
+          child: ConflictsPage(),
+        ),
+
+      if (pathContains('advanced/maintenance'))
+        const BeamPage(
+          key: ValueKey('settings-maintenance'),
+          child: MaintenancePage(),
         ),
     ];
   }

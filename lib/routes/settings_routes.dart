@@ -56,7 +56,7 @@ const AutoRoute settingsRoutes = AutoRoute(
       page: HealthImportPage,
     ),
     AutoRoute(
-      path: 'sync_settings',
+      path: 'advanced/sync_settings',
       //page: SyncSettingsPage,
       page: SyncAssistantPage,
     ),
