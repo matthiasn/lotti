@@ -158,6 +158,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
 
   @override
   Widget build(BuildContext context) {
+    void maybePop() => Navigator.of(context).maybePop();
+
     final formKey = widget.formKey ?? _formKey;
     final localizations = AppLocalizations.of(context)!;
     return StreamBuilder<List<MeasurableDataType>>(
@@ -241,8 +243,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
           setState(() {
             dirty = false;
           });
-
-          await getIt<AppRouter>().pop();
+          maybePop();
         }
 
         Future<void> copyDashboard() async {
