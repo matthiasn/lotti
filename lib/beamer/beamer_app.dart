@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/beamer/beamer_locations.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
@@ -11,8 +12,8 @@ import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/home_page.dart';
-import 'package:lotti/pages/home_page2.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
@@ -31,37 +32,46 @@ class AppScreenState extends State<AppScreen> {
 
   final routerDelegates = [
     BeamerDelegate(
+      initialPath: '/dashboards',
+      locationBuilder: (routeInformation, _) {
+        if (routeInformation.location!.contains('dashboards')) {
+          return DashboardsLocation(routeInformation);
+        }
+        return NotFound(path: routeInformation.location!);
+      },
+    ),
+    BeamerDelegate(
+      initialPath: '/journal',
+      locationBuilder: (routeInformation, _) {
+        if (routeInformation.location!.contains('journal')) {
+          return JournalLocation(routeInformation);
+        }
+        return NotFound(path: routeInformation.location!);
+      },
+    ),
+    BeamerDelegate(
+      initialPath: '/tasks',
+      locationBuilder: (routeInformation, _) {
+        if (routeInformation.location!.contains('tasks')) {
+          return TasksLocation(routeInformation);
+        }
+        return NotFound(path: routeInformation.location!);
+      },
+    ),
+    BeamerDelegate(
+      initialPath: '/settings',
+      locationBuilder: (routeInformation, _) {
+        if (routeInformation.location!.contains('settings')) {
+          return SettingsLocation(routeInformation);
+        }
+        return NotFound(path: routeInformation.location!);
+      },
+    ),
+    BeamerDelegate(
       initialPath: '/books',
       locationBuilder: (routeInformation, _) {
         if (routeInformation.location!.contains('books')) {
           return BooksLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-    BeamerDelegate(
-      initialPath: '/articles',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('articles')) {
-          return ArticlesLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-    BeamerDelegate(
-      initialPath: '/books',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('books')) {
-          return BooksLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-    BeamerDelegate(
-      initialPath: '/articles',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('articles')) {
-          return ArticlesLocation(routeInformation);
         }
         return NotFound(path: routeInformation.location!);
       },
@@ -88,9 +98,12 @@ class AppScreenState extends State<AppScreen> {
           Beamer(routerDelegate: routerDelegates[1]),
           Beamer(routerDelegate: routerDelegates[2]),
           Beamer(routerDelegate: routerDelegates[3]),
+          Beamer(routerDelegate: routerDelegates[4]),
         ],
       ),
       bottomNavigationBar: SalomonBottomBar(
+        unselectedItemColor: colorConfig().bottomNavIconUnselected,
+        selectedItemColor: colorConfig().bottomNavIconSelected,
         currentIndex: currentIndex,
         items: [
           SalomonBottomBarItem(
@@ -111,6 +124,10 @@ class AppScreenState extends State<AppScreen> {
               icon: const Icon(Icons.settings_outlined),
             ),
             title: NavTitle(localizations.navTabTitleSettings),
+          ),
+          SalomonBottomBarItem(
+            icon: const Icon(Icons.library_books),
+            title: const NavTitle('Books'),
           ),
         ],
         onTap: (index) {
@@ -165,6 +182,12 @@ class MyBeamerApp extends StatelessWidget {
           child: DesktopMenuWrapper(
             ThemeConfigWrapper(
               MaterialApp.router(
+                color: colorConfig().bodyBgColor,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: ThemeData(
+                  primarySwatch: Colors.grey,
+                  scaffoldBackgroundColor: colorConfig().bodyBgColor,
+                ),
                 localizationsDelegates: const [
                   AppLocalizations.delegate,
                   FormBuilderLocalizations.delegate,
