@@ -52,6 +52,7 @@ class AudioRecorderWidget extends StatelessWidget {
                   color: colorConfig().inactiveAudioControl,
                   onPressed: () {
                     context.read<AudioRecorderCubit>().stop();
+                    Navigator.of(context).maybePop();
                   },
                 ),
                 Padding(
