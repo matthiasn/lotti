@@ -46,6 +46,9 @@ class AppScreenState extends State<AppScreen> {
         if (routeInformation.location!.contains('journal')) {
           return JournalLocation(routeInformation);
         }
+        if (routeInformation.location!.contains('tasks')) {
+          return TasksLocation(routeInformation);
+        }
         return NotFound(path: routeInformation.location!);
       },
     ),
@@ -82,6 +85,7 @@ class AppScreenState extends State<AppScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final uriString = Beamer.of(context).configuration.location!;
+    debugPrint('didChangeDependencies $uriString');
     currentIndex = uriString.contains('tasks') ? 2 : 0;
   }
 

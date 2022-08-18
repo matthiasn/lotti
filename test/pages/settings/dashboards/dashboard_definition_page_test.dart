@@ -12,6 +12,7 @@ import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/themes_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/sync/imap_config_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -50,6 +51,10 @@ void main() {
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<AppRouter>(mockAppRouter)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
+
+      when(() => mockJournalDb.watchConfigFlag(enableBeamerNavFlag)).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
     });
     tearDown(getIt.reset);
 
