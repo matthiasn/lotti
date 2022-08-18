@@ -112,7 +112,6 @@ class JournalLocation extends BeamLocation<BeamState> {
             key: ValueKey('journal-${state.pathParameters['entryId']}'),
             child: EntryDetailPage(
               itemId: state.pathParameters['entryId']!,
-              showBackIcon: false,
             ),
           ),
       ];
@@ -137,7 +136,6 @@ class TasksLocation extends BeamLocation<BeamState> {
             key: ValueKey('tasks-${state.pathParameters['taskId']}'),
             child: EntryDetailPage(
               itemId: state.pathParameters['taskId']!,
-              showBackIcon: false,
             ),
           ),
       ];

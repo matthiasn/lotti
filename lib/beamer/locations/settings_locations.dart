@@ -4,6 +4,7 @@ import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
+import 'package:lotti/pages/settings/health_import_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
 import 'package:lotti/pages/settings/measurables/measurables_page.dart';
@@ -27,6 +28,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/measurables',
         '/settings/measurables/:measurableId',
         '/settings/measurables/create',
+        '/settings/flags',
       ];
 
   @override
@@ -118,23 +120,20 @@ class SettingsLocation extends BeamLocation<BeamState> {
           key: ValueKey('settings-measurables-create'),
           child: CreateMeasurablePage(),
         ),
-    ];
-  }
-}
 
-class ConfigFlagsLocation extends BeamLocation<BeamState> {
-  ConfigFlagsLocation(RouteInformation super.routeInformation);
-
-  @override
-  List<String> get pathPatterns => ['/config_flags/'];
-
-  @override
-  List<BeamPage> buildPages(BuildContext context, BeamState state) => [
+      // Flags
+      if (pathContains('flags'))
         const BeamPage(
-          key: ValueKey('settings'),
-          title: 'Settings',
-          type: BeamPageType.noTransition,
+          key: ValueKey('settings-flags'),
           child: FlagsPage(),
         ),
-      ];
+
+      // Health Import
+      if (pathContains('health_import'))
+        const BeamPage(
+          key: ValueKey('settings-health_import'),
+          child: HealthImportPage(),
+        ),
+    ];
+  }
 }

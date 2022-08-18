@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Navigation in Settings > Tags using beamer
 - Navigation in Settings > Dashboards using beamer
 - Navigation in Settings > Measurables using beamer
+- Navigation in Settings > Config Flags using beamer
+- Navigation in Settings > Health Import using beamer
 
 ## [0.8.129] - 2022-08-17
 ### Changed:

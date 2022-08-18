@@ -5,7 +5,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/beamer/beamer_locations.dart';
-import 'package:lotti/beamer/locations/settings.dart';
+import 'package:lotti/beamer/locations/settings_locations.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
@@ -71,15 +71,6 @@ class AppScreenState extends State<AppScreen> {
         return NotFound(path: routeInformation.location!);
       },
     ),
-    BeamerDelegate(
-      initialPath: '/config_flags',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('config_flags')) {
-          return ConfigFlagsLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
   ];
 
   @override
@@ -103,12 +94,12 @@ class AppScreenState extends State<AppScreen> {
           Beamer(routerDelegate: routerDelegates[1]),
           Beamer(routerDelegate: routerDelegates[2]),
           Beamer(routerDelegate: routerDelegates[3]),
-          Beamer(routerDelegate: routerDelegates[4]),
         ],
       ),
       bottomNavigationBar: SalomonBottomBar(
         unselectedItemColor: colorConfig().bottomNavIconUnselected,
-        selectedItemColor: colorConfig().bottomNavIconSelected,
+        //selectedItemColor: colorConfig().bottomNavIconSelected,
+        selectedItemColor: Colors.pink,
         currentIndex: currentIndex,
         items: [
           SalomonBottomBarItem(
@@ -129,10 +120,6 @@ class AppScreenState extends State<AppScreen> {
               icon: const Icon(Icons.settings_outlined),
             ),
             title: NavTitle(localizations.navTabTitleSettings),
-          ),
-          SalomonBottomBarItem(
-            icon: const Icon(Icons.app_settings_alt),
-            title: const NavTitle('ConfigFlags'),
           ),
         ],
         onTap: (index) {
