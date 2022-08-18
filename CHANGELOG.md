@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - New navigation using beamer (in progress, available via config flag)
 - Navigation in Settings > Tags using beamer
+- Navigation in Settings > Dashboards using beamer
 
 ## [0.8.129] - 2022-08-17
 ### Changed:
