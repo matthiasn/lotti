@@ -151,6 +151,14 @@ class MyBeamerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ThemeData(
+      primarySwatch: Colors.grey,
+      scaffoldBackgroundColor: colorConfig().bodyBgColor,
+      appBarTheme: AppBarTheme(
+        iconTheme: IconThemeData(color: colorConfig().entryTextColor),
+      ),
+    );
+
     return StreamBuilder<Set<String>>(
       stream: _db.watchActiveConfigFlagNames(),
       builder: (context, snapshot) {
@@ -178,10 +186,7 @@ class MyBeamerApp extends StatelessWidget {
               MaterialApp.router(
                 color: colorConfig().bodyBgColor,
                 supportedLocales: AppLocalizations.supportedLocales,
-                theme: ThemeData(
-                  primarySwatch: Colors.grey,
-                  scaffoldBackgroundColor: colorConfig().bodyBgColor,
-                ),
+                theme: theme,
                 localizationsDelegates: const [
                   AppLocalizations.delegate,
                   FormBuilderLocalizations.delegate,
