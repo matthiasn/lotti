@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Navigation in Settings > Config Flags using beamer
 - Navigation in Settings > Health Import using beamer
 - Navigation in Settings > Advanced using beamer
+- Navigation in Journal using beamer
+- Navigation in Tasks using beamer
+- Navigation in Dashboards using beamer
 
 ## [0.8.129] - 2022-08-17
 ### Changed:

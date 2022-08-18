@@ -23,37 +23,39 @@ class MeasurementSummary extends StatelessWidget {
     final data = measurementEntry.data;
 
     return StreamBuilder<MeasurableDataType?>(
-        stream: _db.watchMeasurableDataTypeById(data.dataTypeId),
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<MeasurableDataType?> typeSnapshot,
-        ) {
-          final dataType = typeSnapshot.data;
+      stream: _db.watchMeasurableDataTypeById(data.dataTypeId),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<MeasurableDataType?> typeSnapshot,
+      ) {
+        final dataType = typeSnapshot.data;
 
-          if (dataType == null) {
-            return const SizedBox.shrink();
-          }
+        if (dataType == null) {
+          return const SizedBox.shrink();
+        }
 
-          return Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (measurementEntry.entryText?.plainText != null)
-                  TextViewerWidget(entryText: measurementEntry.entryText),
-                DashboardMeasurablesChart(
-                  rangeStart: getRangeStart(context: context),
-                  rangeEnd: getRangeEnd(),
-                  measurableDataTypeId: measurementEntry.data.dataTypeId,
-                ),
-                const SizedBox(height: 8),
-                EntryTextWidget(
-                  entryTextForMeasurable(data, dataType),
-                  padding: EdgeInsets.zero,
-                ),
-              ],
-            ),
-          );
-        },);
+        return Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (measurementEntry.entryText?.plainText != null)
+                TextViewerWidget(entryText: measurementEntry.entryText),
+              DashboardMeasurablesChart(
+                dashboardId: null,
+                rangeStart: getRangeStart(context: context),
+                rangeEnd: getRangeEnd(),
+                measurableDataTypeId: measurementEntry.data.dataTypeId,
+              ),
+              const SizedBox(height: 8),
+              EntryTextWidget(
+                entryTextForMeasurable(data, dataType),
+                padding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

@@ -33,6 +33,9 @@ void main() {
         ..registerSingleton<NavService>(MockNavService())
         ..registerSingleton<SecureStorage>(mockSecureStorage)
         ..registerSingleton<AppRouter>(mockAppRouter);
+
+      when(() => mockJournalDb.getConfigFlag(any()))
+          .thenAnswer((_) async => false);
     });
     tearDown(getIt.reset);
 
@@ -64,6 +67,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DashboardMeasurablesChart(
+            dashboardId: 'dashboardId',
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
             measurableDataTypeId: measurableChocolate.id,
@@ -107,6 +111,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DashboardMeasurablesChart(
+            dashboardId: 'dashboardId',
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
             measurableDataTypeId: measurableCoverage.id,
@@ -151,6 +156,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DashboardMeasurablesChart(
+            dashboardId: 'dashboardId',
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
             measurableDataTypeId: measurablePullUps.id,
