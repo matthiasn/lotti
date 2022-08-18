@@ -65,6 +65,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable sync outbox? (requires restart)',
     status: true,
   ),
+  ConfigFlag(
+    name: enableBeamerNavFlag,
+    description: 'Show new navigation (in progress)',
+    status: false,
+  ),
 };
 
 final expectedMacFlags = <ConfigFlag>{

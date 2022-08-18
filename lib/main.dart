@@ -12,12 +12,14 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/theme/theme_config.dart';
@@ -51,9 +53,7 @@ Future<void> main() async {
     };
 
     registerScreenshotHotkey();
-
-    //runApp(LottiApp());
-    runApp(MyBeamerApp());
+    runApp(LottiNavSwitchApp());
   }, (Object error, StackTrace stackTrace) {
     getIt<LoggingDb>().captureException(
       error,
@@ -66,6 +66,7 @@ Future<void> main() async {
 
 class LottiApp extends StatelessWidget {
   LottiApp({super.key});
+
   final router = getIt<AppRouter>();
 
   @override
@@ -92,6 +93,7 @@ class LottiApp extends StatelessWidget {
       child: DesktopMenuWrapper(
         ThemeConfigWrapper(
           MaterialApp.router(
+            scaffoldMessengerKey: GlobalKey(debugLabel: 'LottiApp'),
             localizationsDelegates: const [
               AppLocalizations.delegate,
               FormBuilderLocalizations.delegate,
@@ -113,6 +115,26 @@ class LottiApp extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class LottiNavSwitchApp extends StatelessWidget {
+  LottiNavSwitchApp({super.key});
+
+  final _db = getIt<JournalDb>();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<bool>(
+      stream: _db.watchConfigFlag(enableBeamerNavFlag),
+      builder: (context, snapshot) {
+        if (snapshot.data ?? false) {
+          return MyBeamerApp();
+        } else {
+          return LottiApp();
+        }
+      },
     );
   }
 }

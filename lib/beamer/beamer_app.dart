@@ -76,6 +76,15 @@ class AppScreenState extends State<AppScreen> {
         return NotFound(path: routeInformation.location!);
       },
     ),
+    BeamerDelegate(
+      initialPath: '/config_flags',
+      locationBuilder: (routeInformation, _) {
+        if (routeInformation.location!.contains('config_flags')) {
+          return ConfigFlagsLocation(routeInformation);
+        }
+        return NotFound(path: routeInformation.location!);
+      },
+    ),
   ];
 
   @override
@@ -99,6 +108,7 @@ class AppScreenState extends State<AppScreen> {
           Beamer(routerDelegate: routerDelegates[2]),
           Beamer(routerDelegate: routerDelegates[3]),
           Beamer(routerDelegate: routerDelegates[4]),
+          Beamer(routerDelegate: routerDelegates[5]),
         ],
       ),
       bottomNavigationBar: SalomonBottomBar(
@@ -128,6 +138,10 @@ class AppScreenState extends State<AppScreen> {
           SalomonBottomBarItem(
             icon: const Icon(Icons.library_books),
             title: const NavTitle('Books'),
+          ),
+          SalomonBottomBarItem(
+            icon: const Icon(Icons.app_settings_alt),
+            title: const NavTitle('ConfigFlags'),
           ),
         ],
         onTap: (index) {
@@ -201,6 +215,7 @@ class MyBeamerApp extends StatelessWidget {
                 backButtonDispatcher: BeamerBackButtonDispatcher(
                   delegate: routerDelegate,
                 ),
+                scaffoldMessengerKey: GlobalKey(debugLabel: 'MyBeamerApp'),
               ),
             ),
           ),

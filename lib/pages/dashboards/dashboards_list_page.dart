@@ -1,3 +1,4 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -116,6 +117,10 @@ class DashboardCard extends StatelessWidget {
           ),
         ),
         onTap: () {
+          context.beamToNamed(
+            '/dashboards/dashboard/${dashboard.id}',
+          );
+
           navigateNamedRoute(
             '/dashboards/dashboard/${dashboard.id}',
           );
