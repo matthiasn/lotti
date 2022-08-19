@@ -72,6 +72,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                 onlineStatus: onlineStatus,
                 selectedValue: _selectedValue,
                 onValueChanged: onValueChanged,
+                showBackIcon: widget.leadingIcon,
               ),
               body: ListView(
                 shrinkWrap: true,
@@ -192,11 +193,13 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
     required this.onlineStatus,
     required this.selectedValue,
     required this.onValueChanged,
+    required this.showBackIcon,
   });
 
   final bool onlineStatus;
   final String selectedValue;
   final void Function(String value) onValueChanged;
+  final bool showBackIcon;
 
   @override
   Size get preferredSize => const Size.fromHeight(toolbarHeight);
@@ -273,7 +276,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
       ),
       toolbarHeight: toolbarHeight,
       centerTitle: true,
-      leading: const TestDetectingAutoLeadingButton(),
+      leading: showBackIcon ? const TestDetectingAutoLeadingButton() : null,
     );
   }
 }

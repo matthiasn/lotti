@@ -12,7 +12,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -93,7 +92,8 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
         dirty = false;
       });
 
-      await getIt<AppRouter>().pop();
+      // ignore: use_build_context_synchronously
+      await Navigator.of(context).maybePop();
     }
   }
 
@@ -323,6 +323,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                   const SizedBox(height: 16),
                   if (selected != null)
                     DashboardMeasurablesChart(
+                      dashboardId: null,
                       measurableDataTypeId: selected!.id,
                       rangeStart: getRangeStart(context: context),
                       rangeEnd: getRangeEnd(),

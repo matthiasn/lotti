@@ -25,7 +25,6 @@ class _CreateTagPageState extends State<CreateTagPage> {
     super.initState();
 
     final now = DateTime.now();
-    debugPrint(widget.tagType);
     if (widget.tagType == 'TAG') {
       _tagEntity = TagEntity.genericTag(
         id: uuid.v1(),

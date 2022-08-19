@@ -10,9 +10,11 @@ class VersionAppBar extends StatefulWidget with PreferredSizeWidget {
   const VersionAppBar({
     super.key,
     required this.title,
+    this.showBackIcon = true,
   });
 
   final String title;
+  final bool showBackIcon;
 
   @override
   State<VersionAppBar> createState() => _VersionAppBarState();
@@ -74,7 +76,9 @@ class _VersionAppBarState extends State<VersionAppBar> {
             ],
           ),
           centerTitle: true,
-          leading: const TestDetectingAutoLeadingButton(),
+          leading: widget.showBackIcon
+              ? const TestDetectingAutoLeadingButton()
+              : null,
         );
       },
     );

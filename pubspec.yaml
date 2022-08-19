@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.129+1246
+version: 0.8.130+1263
 
 msix_config:
   display_name: Lotti
@@ -24,6 +24,7 @@ dependencies:
   auto_route: ^4.0.1
   auto_size_text: ^3.0.0
   badges: ^2.0.2
+  beamer: ^1.5.2
   bloc: ^8.0.1
   bloc_test: ^9.0.1
   cached_network_image: ^3.2.0

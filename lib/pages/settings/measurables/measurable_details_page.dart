@@ -36,6 +36,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    void maybePop() => Navigator.of(context).maybePop();
     final localizations = AppLocalizations.of(context)!;
     final item = widget.dataType;
 
@@ -59,7 +60,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
           dirty = false;
         });
 
-        await getIt<AppRouter>().pop();
+        maybePop();
       }
     }
 

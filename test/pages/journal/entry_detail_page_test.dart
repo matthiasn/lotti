@@ -18,6 +18,7 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/themes.dart';
 import 'package:lotti/themes/themes_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -74,6 +75,10 @@ void main() {
         (_) => Stream<List<TagEntity>>.fromIterable([
           [testStoryTagReading]
         ]),
+      );
+
+      when(() => mockJournalDb.watchConfigFlag(enableBeamerNavFlag)).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
       );
 
       when(() => mockTagsService.stream).thenAnswer(

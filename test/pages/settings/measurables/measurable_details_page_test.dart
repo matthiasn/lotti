@@ -7,6 +7,7 @@ import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
 import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/themes_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -32,6 +33,10 @@ void main() {
         measurableChocolate,
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
+
+      when(() => mockJournalDb.watchConfigFlag(enableBeamerNavFlag)).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
 
       mockAppRouter = MockAppRouter();
       when(mockAppRouter.pop).thenAnswer((invocation) async => true);
