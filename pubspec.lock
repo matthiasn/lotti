@@ -210,7 +210,7 @@ packages:
       name: built_value
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "8.4.0"
+    version: "8.4.1"
   cached_network_image:
     dependency: "direct main"
     description:
@@ -569,7 +569,7 @@ packages:
       name: equatable
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.3"
+    version: "2.0.5"
   event_bus:
     dependency: transitive
     description:
@@ -705,7 +705,7 @@ packages:
       name: flutter_form_builder
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.5.0"
+    version: "7.6.0"
   flutter_health_fit:
     dependency: "direct main"
     description:
@@ -777,7 +777,7 @@ packages:
       name: flutter_local_notifications
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "9.7.1"
+    version: "9.8.0+1"
   flutter_local_notifications_linux:
     dependency: transitive
     description:
@@ -817,7 +817,7 @@ packages:
       name: flutter_native_splash
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.7"
+    version: "2.2.8"
   flutter_native_timezone:
     dependency: "direct main"
     description:
@@ -915,7 +915,7 @@ packages:
       name: flutter_svg
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.3"
+    version: "1.1.4"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -1315,7 +1315,7 @@ packages:
       name: macos_ui
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.7.1"
+    version: "1.7.4"
   matcher:
     dependency: transitive
     description:
@@ -1609,7 +1609,7 @@ packages:
       name: photo_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0"
+    version: "2.2.1"
   photo_view:
     dependency: "direct main"
     description:
@@ -1679,7 +1679,7 @@ packages:
       name: proj4dart
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.0"
+    version: "2.1.0"
   provider:
     dependency: transitive
     description:
@@ -1700,7 +1700,7 @@ packages:
       name: pubspec_parse
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.0"
+    version: "1.2.1"
   qr:
     dependency: transitive
     description:
@@ -2187,7 +2187,7 @@ packages:
       name: video_player
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.6"
+    version: "2.4.7"
   video_player_android:
     dependency: transitive
     description:
@@ -2278,7 +2278,7 @@ packages:
       name: window_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.5"
+    version: "0.2.6"
   wkt_parser:
     dependency: transitive
     description:

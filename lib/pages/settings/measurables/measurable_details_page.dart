@@ -154,17 +154,16 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                 labelText: AppLocalizations.of(context)!
                                     .settingsMeasurableAggregationLabel,
                                 labelStyle: formLabelStyle(),
-                              ),
-                              iconEnabledColor: colorConfig().entryTextColor,
-                              clearIcon: Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Icon(
-                                  Icons.close,
-                                  color: colorConfig().entryTextColor,
+                                suffixIcon: Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Icon(
+                                    Icons.close,
+                                    color: colorConfig().entryTextColor,
+                                  ),
                                 ),
                               ),
+                              iconEnabledColor: colorConfig().entryTextColor,
                               style: const TextStyle(fontSize: 40),
-                              allowClear: true,
                               dropdownColor: colorConfig().headerBgColor,
                               items:
                                   AggregationType.values.map((aggregationType) {
