@@ -30,7 +30,7 @@ void main() {
         );
 
       db.insertFlagIfNotExists(
-        ConfigFlag(
+        const ConfigFlag(
           name: showBrightSchemeFlag,
           description: 'Show Bright ☀️ scheme?',
           status: false,

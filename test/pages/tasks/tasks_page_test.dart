@@ -64,7 +64,7 @@ void main() {
       ).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
           <ConfigFlag>{
-            ConfigFlag(
+            const ConfigFlag(
               name: 'private',
               description: 'Show private entries?',
               status: true,

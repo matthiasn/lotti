@@ -20,52 +20,52 @@ final expectedActiveFlagNames = Platform.isMacOS
       };
 
 final expectedFlags = <ConfigFlag>{
-  ConfigFlag(
+  const ConfigFlag(
     name: privateFlag,
     description: 'Show private entries?',
     status: true,
   ),
-  ConfigFlag(
+  const ConfigFlag(
     name: notifyExceptionsFlag,
     description: 'Notify when exceptions occur?',
     status: false,
   ),
-  ConfigFlag(
+  const ConfigFlag(
     name: hideForScreenshotFlag,
     description: 'Hide Lotti when taking screenshots?',
     status: true,
   ),
-  ConfigFlag(
+  const ConfigFlag(
     name: showTasksTabFlag,
     description: 'Show Tasks tab?',
     status: false,
   ),
-  ConfigFlag(
+  const ConfigFlag(
     name: showBrightSchemeFlag,
     description: 'Show Bright ☀️ scheme?',
     status: false,
   ),
-  ConfigFlag(
+  const ConfigFlag(
     name: showThemeConfigFlag,
     description: 'Show Theme Config UI?',
     status: false,
   ),
-  ConfigFlag(
+  const ConfigFlag(
     name: allowInvalidCertFlag,
     description: 'Allow invalid certificate? (not recommended)',
     status: false,
   ),
-  ConfigFlag(
+  const ConfigFlag(
     name: enableSyncInboxFlag,
     description: 'Enable sync inbox? (requires restart)',
     status: true,
   ),
-  ConfigFlag(
+  const ConfigFlag(
     name: enableSyncOutboxFlag,
     description: 'Enable sync outbox? (requires restart)',
     status: true,
   ),
-  ConfigFlag(
+  const ConfigFlag(
     name: enableBeamerNavFlag,
     description: 'Show new navigation (in progress)',
     status: false,
@@ -73,12 +73,12 @@ final expectedFlags = <ConfigFlag>{
 };
 
 final expectedMacFlags = <ConfigFlag>{
-  ConfigFlag(
+  const ConfigFlag(
     name: listenToScreenshotHotkeyFlag,
     description: 'Listen to global screenshot hotkey?',
     status: true,
   ),
-  ConfigFlag(
+  const ConfigFlag(
     name: enableNotificationsFlag,
     description: 'Enable desktop notifications?',
     status: false,
@@ -130,7 +130,7 @@ void main() {
 
         expect(
           await db?.getConfigFlagByName(showBrightSchemeFlag),
-          ConfigFlag(
+          const ConfigFlag(
             name: showBrightSchemeFlag,
             description: 'Show Bright ☀️ scheme?',
             status: true,
@@ -146,7 +146,7 @@ void main() {
 
         expect(
           await db?.getConfigFlagByName(showBrightSchemeFlag),
-          ConfigFlag(
+          const ConfigFlag(
             name: showBrightSchemeFlag,
             description: 'Show Bright ☀️ scheme?',
             status: false,
@@ -165,7 +165,7 @@ void main() {
       () async {
         expect(
           await db?.getConfigFlagByName(showBrightSchemeFlag),
-          ConfigFlag(
+          const ConfigFlag(
             name: showBrightSchemeFlag,
             description: 'Show Bright ☀️ scheme?',
             status: false,
@@ -176,7 +176,7 @@ void main() {
 
         expect(
           await db?.getConfigFlagByName(showBrightSchemeFlag),
-          ConfigFlag(
+          const ConfigFlag(
             name: showBrightSchemeFlag,
             description: 'Show Bright ☀️ scheme?',
             status: true,
