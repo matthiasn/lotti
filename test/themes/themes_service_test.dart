@@ -16,7 +16,7 @@ void main() {
       getIt.registerSingleton<JournalDb>(db);
 
       db.insertFlagIfNotExists(
-        ConfigFlag(
+        const ConfigFlag(
           name: showBrightSchemeFlag,
           description: 'Show Bright ☀️ scheme?',
           status: false,
