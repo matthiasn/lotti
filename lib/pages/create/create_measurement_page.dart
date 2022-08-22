@@ -238,10 +238,8 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       decoration: InputDecoration(
                                         labelText: 'Type',
                                         labelStyle: labelStyle(),
-                                      ),
-                                      hint: Text(
-                                        'Select Measurement Type',
-                                        style: inputStyle(),
+                                        hintStyle: inputStyle(),
+                                        hintText: 'Select Measurement Type',
                                       ),
                                       onChanged: (MeasurableDataType? value) {
                                         setState(() {
