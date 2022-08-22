@@ -37,11 +37,7 @@ class _RecordAudioPageState extends State<RecordAudioPage> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AudioRecorderWidget(
-              linkedId: widget.linkedId,
-            ),
-          ],
+          children: [AudioRecorderWidget(linkedId: widget.linkedId)],
         ),
       ),
     );
