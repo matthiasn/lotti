@@ -1,4 +1,3 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
@@ -18,6 +17,8 @@ class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    void maybePop() => Navigator.of(context).maybePop();
+
     return AppBar(
       backgroundColor: colorConfig().headerBgColor,
       title: Text(
@@ -32,8 +33,7 @@ class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {
                 size: 24,
                 color: colorConfig().entryTextColor,
               ),
-              //onPressed: () => context.beamToNamed('/dashboards'),
-              onPressed: () => context.beamBack(),
+              onPressed: maybePop,
             )
           : null,
     );
