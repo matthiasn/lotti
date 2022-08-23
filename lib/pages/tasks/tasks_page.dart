@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -362,12 +363,19 @@ class AddTask extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void beamToNamed(String path) => context.beamToNamed(path);
+
     return Padding(
       padding: const EdgeInsets.all(4),
       child: FloatingActionButton(
         heroTag: 'addTask',
         backgroundColor: colorConfig().actionColor,
-        onPressed: createTask,
+        onPressed: () async {
+          final task = await createTask();
+          if (task != null) {
+            beamToNamed('/tasks/${task.meta.id}');
+          }
+        },
         child: const Icon(
           Icons.add,
           size: 24,
