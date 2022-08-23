@@ -23,11 +23,11 @@ class DashboardPage extends StatefulWidget {
   const DashboardPage({
     super.key,
     required this.dashboardId,
-    this.showBackIcon = true,
+    this.showBackButton = true,
   });
 
   final String dashboardId;
-  final bool showBackIcon;
+  final bool showBackButton;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -44,7 +44,6 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-
     final int shiftDays = max((horizontalPan / scale).floor(), 0);
 
     final rangeStart = getRangeStart(
@@ -110,7 +109,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
           return Scaffold(
             backgroundColor: colorConfig().bodyBgColor,
-            appBar: DashboardAppBar(dashboard),
+            appBar: DashboardAppBar(
+              dashboard,
+              showBackButton: widget.showBackButton,
+            ),
             body: DashboardWidget(
               dashboard: dashboard,
               rangeStart: rangeStart,

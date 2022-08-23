@@ -1,4 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_fadein/flutter_fadein.dart';
@@ -51,10 +52,11 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
   void initState() {
     super.initState();
 
-    hotKeyManager.register(
-      hotkeyCmdS,
-      keyDownHandler: (hotKey) => saveMeasurement(),
-    );
+    // TODO: bring back
+    // hotKeyManager.register(
+    //   hotkeyCmdS,
+    //   keyDownHandler: (hotKey) => saveMeasurement(),
+    // );
   }
 
   @override
@@ -70,35 +72,36 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
     return false;
   }
 
-  Future<void> saveMeasurement() async {
-    _formKey.currentState!.save();
-    if (validate()) {
-      final formData = _formKey.currentState?.value;
-      if (selected == null) {
-        return;
-      }
-      final measurement = MeasurementData(
-        dataTypeId: selected!.id,
-        dateTo: formData!['date'] as DateTime,
-        dateFrom: formData['date'] as DateTime,
-        value: nf.parse('${formData['value']}'.replaceAll(',', '.')),
-      );
-      await persistenceLogic.createMeasurementEntry(
-        data: measurement,
-        linkedId: widget.linkedId,
-      );
-      setState(() {
-        dirty = false;
-      });
-
-      // ignore: use_build_context_synchronously
-      await Navigator.of(context).maybePop();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    void beamBack() => context.beamBack();
+
+    Future<void> saveMeasurement() async {
+      _formKey.currentState!.save();
+      if (validate()) {
+        final formData = _formKey.currentState?.value;
+        if (selected == null) {
+          return;
+        }
+        final measurement = MeasurementData(
+          dataTypeId: selected!.id,
+          dateTo: formData!['date'] as DateTime,
+          dateFrom: formData['date'] as DateTime,
+          value: nf.parse('${formData['value']}'.replaceAll(',', '.')),
+        );
+        await persistenceLogic.createMeasurementEntry(
+          data: measurement,
+          linkedId: widget.linkedId,
+        );
+        setState(() {
+          dirty = false;
+        });
+
+//        maybePop();
+        beamBack();
+      }
+    }
 
     return StreamBuilder<List<MeasurableDataType>>(
       stream: _db.watchMeasurableDataTypes(),
@@ -331,38 +334,6 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
           ),
         );
       },
-    );
-  }
-}
-
-class CreateMeasurementWithLinkedPage extends StatelessWidget {
-  const CreateMeasurementWithLinkedPage({
-    super.key,
-    this.linkedId,
-  });
-
-  final String? linkedId;
-
-  @override
-  Widget build(BuildContext context) {
-    return CreateMeasurementPage(
-      linkedId: linkedId,
-    );
-  }
-}
-
-class CreateMeasurementWithTypePage extends StatelessWidget {
-  const CreateMeasurementWithTypePage({
-    super.key,
-    this.selectedId,
-  });
-
-  final String? selectedId;
-
-  @override
-  Widget build(BuildContext context) {
-    return CreateMeasurementPage(
-      selectedId: selectedId,
     );
   }
 }

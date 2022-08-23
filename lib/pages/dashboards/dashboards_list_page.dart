@@ -50,7 +50,7 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         if (dashboards.length == 1) {
           return DashboardPage(
             dashboardId: dashboards[0].id,
-            showBackIcon: false,
+            showBackButton: false,
           );
         }
 
@@ -117,7 +117,7 @@ class DashboardCard extends StatelessWidget {
             fontWeight: FontWeight.w300,
           ),
         ),
-        onTap: () => beamToNamed('/dashboards/dashboard/${dashboard.id}'),
+        onTap: () => beamToNamed('/dashboards/${dashboard.id}'),
       ),
     );
   }

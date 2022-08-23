@@ -903,7 +903,7 @@ class PersistenceLogic {
         body: dashboard.name,
         notifyAt: dashboard.reviewAt!,
         notificationId: dashboard.id.hashCode,
-        deepLink: '/dashboards/dashboard/${dashboard.id}',
+        deepLink: '/dashboards/${dashboard.id}',
       );
     }
 

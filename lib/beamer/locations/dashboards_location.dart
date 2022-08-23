@@ -4,51 +4,50 @@ import 'package:lotti/pages/create/create_measurement_page.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/pages/dashboards/dashboards_carousel_page.dart';
 import 'package:lotti/pages/dashboards/dashboards_list_page.dart';
+import 'package:lotti/utils/uuid.dart';
 
 class DashboardsLocation extends BeamLocation<BeamState> {
   DashboardsLocation(RouteInformation super.routeInformation);
 
   @override
   List<String> get pathPatterns => [
-        '/dashboards/dashboard/:dashboardId',
+        '/dashboards',
+        '/dashboards/:dashboardId',
         '/dashboards/carousel',
-        '/dashboards/dashboard/:dashboardId/measure/:selectedId',
+        '/dashboards/:dashboardId/measure/:selectedId',
       ];
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
     bool pathContains(String s) => state.uri.path.contains(s);
-    bool pathContainsKey(String s) => state.pathParameters.containsKey(s);
+    final dashboardId = state.pathParameters['dashboardId'];
+    final selectedId = state.pathParameters['selectedId'];
 
-    return [
+    final pages = [
       const BeamPage(
         key: ValueKey('dashboards'),
         title: 'Dashboards',
         type: BeamPageType.noTransition,
         child: DashboardsListPage(),
       ),
-      if (pathContainsKey('dashboardId'))
+      if (isUuid(dashboardId))
         BeamPage(
-          key: ValueKey('dashboards-${state.pathParameters['dashboardId']}'),
-          child: DashboardPage(
-            dashboardId: state.pathParameters['dashboardId']!,
-            showBackIcon: false,
-          ),
+          key: ValueKey('dashboards-$dashboardId'),
+          child: DashboardPage(dashboardId: dashboardId!),
         ),
       if (pathContains('carousel'))
         const BeamPage(
           key: ValueKey('dashboards-carousel'),
           child: DashboardCarouselPage(),
         ),
-      if (pathContainsKey('selectedId'))
+      if (isUuid(dashboardId) && isUuid(selectedId))
         BeamPage(
-          key: ValueKey(
-            'dashboards-${state.pathParameters['dashboardId']}-measure',
-          ),
-          child: CreateMeasurementWithTypePage(
-            selectedId: state.pathParameters['selectedId'],
-          ),
+          key: ValueKey('dashboards-$dashboardId-measure-$selectedId'),
+          child: CreateMeasurementPage(selectedId: selectedId),
         ),
     ];
+
+    debugPrint('$pages');
+    return pages;
   }
 }

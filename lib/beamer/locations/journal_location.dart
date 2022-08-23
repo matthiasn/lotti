@@ -61,12 +61,12 @@ class JournalLocation extends BeamLocation<BeamState> {
       if (pathContains('measure_linked/'))
         BeamPage(
           key: ValueKey('measure_linked-$linkedId'),
-          child: CreateMeasurementWithLinkedPage(linkedId: linkedId),
+          child: CreateMeasurementPage(linkedId: linkedId),
         ),
       if (pathContains('measure/') && isUuid('selectedId'))
         BeamPage(
           key: ValueKey('journal-measure-$selectedId'),
-          child: CreateMeasurementWithTypePage(selectedId: selectedId),
+          child: CreateMeasurementPage(selectedId: selectedId),
         ),
     ];
   }
