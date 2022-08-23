@@ -1,4 +1,3 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -339,7 +338,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
 class CreateMeasurementWithLinkedPage extends StatelessWidget {
   const CreateMeasurementWithLinkedPage({
     super.key,
-    @PathParam() this.linkedId,
+    this.linkedId,
   });
 
   final String? linkedId;
@@ -355,7 +354,7 @@ class CreateMeasurementWithLinkedPage extends StatelessWidget {
 class CreateMeasurementWithTypePage extends StatelessWidget {
   const CreateMeasurementWithTypePage({
     super.key,
-    @PathParam() this.selectedId,
+    this.selectedId,
   });
 
   final String? selectedId;

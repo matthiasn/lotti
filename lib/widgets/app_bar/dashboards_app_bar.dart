@@ -4,7 +4,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 
 class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
@@ -27,21 +26,10 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
         void beamToNamed(String path) => context.beamToNamed(path);
 
         void onPressSettings() {
-          final navService = getIt<NavService>();
-          navService.tabsRouter?.setActiveIndex(
-            navService.routesByIndex.length - 1,
-          );
-
           beamToNamed('/settings/dashboards');
         }
 
         void onPressCarousel() {
-          final navService = getIt<NavService>();
-
-          navService.tabsRouter?.setActiveIndex(
-            navService.routesByIndex.length - 1,
-          );
-
           beamToNamed('/dashboards/carousel');
         }
 

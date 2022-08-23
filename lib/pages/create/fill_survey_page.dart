@@ -1,7 +1,6 @@
 // modified from https://github.com/cph-cachet/research.package/blob/master/example/lib/linear_survey_page.dart
 import 'dart:convert';
 
-import 'package:auto_route/annotations.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -126,7 +125,7 @@ class FillSurveyPage extends StatelessWidget {
 class FillSurveyWithTypePage extends StatelessWidget {
   const FillSurveyWithTypePage({
     super.key,
-    @PathParam() this.surveyType,
+    this.surveyType,
   });
 
   final String? surveyType;
@@ -142,7 +141,7 @@ class FillSurveyWithTypePage extends StatelessWidget {
 class FillSurveyWithLinkedPage extends StatelessWidget {
   const FillSurveyWithLinkedPage({
     super.key,
-    @PathParam() this.linkedId,
+    this.linkedId,
   });
 
   final String? linkedId;
