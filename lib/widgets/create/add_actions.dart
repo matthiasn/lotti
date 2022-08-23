@@ -125,7 +125,11 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: colorConfig().actionColor,
           onPressed: () async {
             rebuild();
-            await createTextEntry(linkedId: widget.linked?.meta.id);
+            final entry =
+                await createTextEntry(linkedId: widget.linked?.meta.id);
+            if (entry != null) {
+              beamToNamed('/journal/${entry.meta.id}');
+            }
           },
           child: const Icon(
             MdiIcons.textLong,
@@ -182,7 +186,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         backgroundColor: colorConfig().actionColor,
         onPressed: () async {
           rebuild();
-          await createTask(linkedId: widget.linked?.meta.id);
+          final task = await createTask(linkedId: widget.linked?.meta.id);
+          if (task != null) {
+            beamToNamed('/journal/${task.meta.id}');
+          }
         },
         child: const Icon(
           Icons.task_outlined,
