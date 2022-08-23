@@ -84,7 +84,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                 defaultRenderer = charts.BarRendererConfig<DateTime>();
               }
 
-              void onDoubleTap() {
+              void onTapAdd() {
                 if (widget.enableCreate) {
                   showModalBottomSheet<void>(
                     context: context,
@@ -151,21 +151,19 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                   data: data,
                 )
               ];
-              return GestureDetector(
-                onDoubleTap: onDoubleTap,
-                onLongPress: onDoubleTap,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      key: Key(measurableDataType.description),
-                      color: Colors.white,
-                      height: 120,
-                      padding: const EdgeInsets.all(8),
-                      child: Stack(
-                        children: [
-                          charts.TimeSeriesChart(
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    key: Key(measurableDataType.description),
+                    color: Colors.white,
+                    height: 120,
+                    child: Stack(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: charts.TimeSeriesChart(
                             seriesList,
                             animate: false,
                             defaultRenderer: defaultRenderer,
@@ -191,12 +189,29 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                               ),
                             ),
                           ),
-                          MeasurablesChartInfoWidget(
-                            measurableDataType,
-                            aggregationType: aggregationType,
+                        ),
+                        MeasurablesChartInfoWidget(
+                          measurableDataType,
+                          aggregationType: aggregationType,
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: IconButton(
+                            padding: const EdgeInsets.only(
+                              right: 4,
+                              top: 4,
+                              left: 16,
+                              bottom: 16,
+                            ),
+                            onPressed: onTapAdd,
+                            icon: const Icon(
+                              Icons.add_circle_outline,
+                              color: Color.fromRGBO(0, 0, 0, 0.7),
+                            ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -226,7 +241,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
         final selected = state.selected;
 
         return Positioned(
-          top: -4,
+          top: 0,
           left: MediaQuery.of(context).size.width / 4,
           child: SizedBox(
             width: MediaQuery.of(context).size.width / 2,
