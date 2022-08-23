@@ -242,7 +242,7 @@ class _CreateMeasurementModalState extends State<CreateMeasurementModal> {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           SizedBox(
-                            height: 32,
+                            height: 48,
                             child: Visibility(
                               visible: dirty && validate(),
                               child: TextButton(
