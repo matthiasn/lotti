@@ -3,18 +3,15 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class VersionAppBar extends StatefulWidget with PreferredSizeWidget {
   const VersionAppBar({
     super.key,
     required this.title,
-    this.showBackIcon = true,
   });
 
   final String title;
-  final bool showBackIcon;
 
   @override
   State<VersionAppBar> createState() => _VersionAppBarState();
@@ -76,9 +73,6 @@ class _VersionAppBarState extends State<VersionAppBar> {
             ],
           ),
           centerTitle: true,
-          leading: widget.showBackIcon
-              ? const TestDetectingAutoLeadingButton()
-              : null,
         );
       },
     );

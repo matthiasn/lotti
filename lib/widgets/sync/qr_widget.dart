@@ -9,7 +9,6 @@ import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_state.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/encryption.dart';
@@ -267,13 +266,14 @@ class DeleteSyncKeyButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    void maybePop() => Navigator.of(context).maybePop();
 
     return Button(
       localizations.settingsSyncDeleteKeyButton,
       onPressed: () {
         context.read<SyncConfigCubit>().deleteSharedKey();
         persistNamedRoute('/settings/advanced');
-        getIt<AppRouter>().pop();
+        maybePop();
       },
       primaryColor: Colors.red,
     );

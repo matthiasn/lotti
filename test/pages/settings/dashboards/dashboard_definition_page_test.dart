@@ -9,7 +9,6 @@ import 'package:lotti/pages/dashboards/dashboards_list_page.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -27,7 +26,6 @@ void main() {
   var mockTagsService = MockTagsService();
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
-  var mockAppRouter = MockAppRouter();
 
   group('DashboardDefinitionPage Widget Tests - ', () {
     setUpAll(() {
@@ -42,14 +40,10 @@ void main() {
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
 
-      mockAppRouter = MockAppRouter();
-      when(mockAppRouter.pop).thenAnswer((invocation) async => true);
-
       getIt
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<AppRouter>(mockAppRouter)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
 
       when(() => mockJournalDb.watchConfigFlag(enableBeamerNavFlag)).thenAnswer(

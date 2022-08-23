@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/sync/secure_storage.dart';
 
 const String lastRouteKey = 'LAST_ROUTE_KEY';
@@ -34,7 +33,6 @@ class NavService {
     debugPrint('bottomNavRouteTap: currentRoute $currentRoute route $route');
     if ('$currentRoute'.startsWith(route) && route != currentRoute) {
       tabsRouter?.setActiveIndex(index);
-      getIt<AppRouter>().pop();
     }
   }
 }
@@ -58,12 +56,13 @@ void persistNamedRoute(String route) {
   getIt<NavService>().currentRoute = route;
 }
 
+// TODO: remove
 void navigateNamedRoute(String route) {
   debugPrint('navigateNamedRoute: $route');
   persistNamedRoute(route);
-  getIt<AppRouter>().navigateNamed(
-    route,
-    includePrefixMatches: true,
-    onFailure: (_) => getIt<AppRouter>().navigateNamed('/'),
-  );
+  // getIt<AppRouter>().navigateNamed(
+  //   route,
+  //   includePrefixMatches: true,
+  //   onFailure: (_) => getIt<AppRouter>().navigateNamed('/'),
+  // );
 }

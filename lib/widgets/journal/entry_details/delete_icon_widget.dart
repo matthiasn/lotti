@@ -4,8 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -17,6 +15,7 @@ class DeleteIconWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    void maybePop() => Navigator.of(context).maybePop();
 
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (
@@ -43,8 +42,7 @@ class DeleteIconWidget extends StatelessWidget {
 
           if (result == deleteKey) {
             await cubit.delete();
-
-            await getIt<AppRouter>().pop();
+            maybePop();
           }
         }
 

@@ -4,9 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/settings/dashboards/dashboard_definition_card.dart';
@@ -75,16 +73,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
     final localizations = AppLocalizations.of(context)!;
     void beamToNamed(String path) => context.beamToNamed(path);
 
-    Future<void> createDashboard() async {
-      final beamerNav =
-          await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-
-      if (beamerNav) {
-        beamToNamed('/settings/dashboards/create');
-      } else {
-        await getIt<AppRouter>().push(const CreateDashboardRoute());
-      }
-    }
+    void createDashboard() => beamToNamed('/settings/dashboards/create');
 
     return Scaffold(
       backgroundColor: colorConfig().bodyBgColor,

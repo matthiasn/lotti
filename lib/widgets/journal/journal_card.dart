@@ -5,11 +5,7 @@ import 'package:getwidget/components/list_tile/gf_list_tile.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
@@ -181,7 +177,7 @@ class JournalCard extends StatelessWidget {
               orElse: () => null,
             ),
             title: JournalCardTitle(item: item),
-            onTap: () async {
+            onTap: () {
               item.mapOrNull(
                 journalAudio: (JournalAudio audioNote) {
                   context.read<AudioPlayerCubit>().setAudioNote(audioNote);
@@ -193,14 +189,7 @@ class JournalCard extends StatelessWidget {
                 orElse: () => '/journal',
               );
 
-              final beamerNav =
-                  await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-
-              if (beamerNav) {
-                beamToNamed('$path/${item.meta.id}');
-              } else {
-                navigateNamedRoute('$path/${item.meta.id}');
-              }
+              beamToNamed('$path/${item.meta.id}');
             },
           ),
         );
@@ -262,16 +251,7 @@ class JournalImageCard extends StatelessWidget {
             height: 160,
             child: JournalCardTitle(item: item),
           ),
-          onTap: () async {
-            final beamerNav =
-                await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-
-            if (beamerNav) {
-              beamToNamed('/journal/${item.meta.id}');
-            } else {
-              navigateNamedRoute('/journal/${item.meta.id}');
-            }
-          },
+          onTap: () => beamToNamed('/journal/${item.meta.id}'),
         ),
       ),
     );

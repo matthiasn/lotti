@@ -10,7 +10,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/dashboard_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
@@ -112,10 +111,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
           return Scaffold(
             backgroundColor: colorConfig().bodyBgColor,
-            appBar: DashboardAppBar(
-              dashboard,
-              showBackIcon: widget.showBackIcon,
-            ),
+            appBar: DashboardAppBar(dashboard),
             body: DashboardWidget(
               dashboard: dashboard,
               rangeStart: rangeStart,
@@ -232,16 +228,8 @@ class DashboardWidget extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.dashboard_customize_outlined),
                   color: colorConfig().entryTextColor,
-                  onPressed: () async {
-                    final beamerNav = await getIt<JournalDb>()
-                        .getConfigFlag(enableBeamerNavFlag);
-
-                    if (beamerNav) {
-                      beamToNamed('/settings/dashboards/$dashboardId');
-                    } else {
-                      navigateNamedRoute('/settings/dashboards/$dashboardId');
-                    }
-                  },
+                  onPressed: () =>
+                      beamToNamed('/settings/dashboards/$dashboardId'),
                 ),
               ],
             ),

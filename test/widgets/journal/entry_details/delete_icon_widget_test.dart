@@ -5,14 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../journal_test_data/test_data.dart';
-import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 class MockEntryCubit extends MockBloc<EntryCubit, EntryState>
@@ -21,12 +19,9 @@ class MockEntryCubit extends MockBloc<EntryCubit, EntryState>
 void main() {
   group('DeleteIconWidget', () {
     final entryCubit = MockEntryCubit();
-    final mockAppRouter = MockAppRouter();
 
     setUpAll(() {
-      getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
-        ..registerSingleton<AppRouter>(mockAppRouter);
+      getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
     });
 
     testWidgets('calls delete in cubit', (WidgetTester tester) async {
@@ -38,7 +33,6 @@ void main() {
         ),
       );
 
-      when(mockAppRouter.pop).thenAnswer((_) async => true);
       when(entryCubit.delete).thenAnswer((_) async => true);
 
       await tester.pumpWidget(
@@ -63,7 +57,6 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(entryCubit.delete).called(1);
-      verify(mockAppRouter.pop).called(1);
     });
   });
 }

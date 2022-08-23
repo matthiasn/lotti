@@ -5,7 +5,6 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -48,8 +47,6 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
-
-class MockAppRouter extends Mock implements AppRouter {}
 
 class MockTimeService extends Mock implements TimeService {}
 
