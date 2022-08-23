@@ -8,7 +8,6 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/themes_service.dart';
@@ -26,7 +25,6 @@ class MockEntryCubit extends MockBloc<EntryCubit, EntryState>
 void main() {
   group('EntryDetailFooter', () {
     final entryCubit = MockEntryCubit();
-    final mockAppRouter = MockAppRouter();
     final mockTimeService = MockTimeService();
 
     setUpAll(() {
@@ -34,10 +32,7 @@ void main() {
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<TagsService>(TagsService())
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<AppRouter>(mockAppRouter);
-
-      when(mockAppRouter.pop).thenAnswer((_) async => true);
+        ..registerSingleton<TimeService>(mockTimeService);
 
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));

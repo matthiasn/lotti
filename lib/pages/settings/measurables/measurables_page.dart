@@ -4,9 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/settings/measurables/measurable_type_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -80,18 +78,8 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    void beamToNamed(String path) => context.beamToNamed(path);
-
-    Future<void> createMeasurable() async {
-      final beamerNav =
-          await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-
-      if (beamerNav) {
-        beamToNamed('/settings/measurables/create');
-      } else {
-        navigateNamedRoute('/settings/create_measurable');
-      }
-    }
+    void createMeasurable() =>
+        context.beamToNamed('/settings/measurables/create');
 
     return StreamBuilder<List<MeasurableDataType>>(
       stream: stream,

@@ -1,10 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
 
@@ -32,16 +28,8 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
   Widget build(BuildContext context) {
     void beamToNamed(String path) => context.beamToNamed(path);
 
-    Future<void> createTag(String tagType) async {
-      final beamerNav =
-          await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-
-      if (beamerNav) {
+    void createTag(String tagType) =>
         beamToNamed('/settings/tags/create/$tagType');
-      } else {
-        await getIt<AppRouter>().push(CreateTagRoute(tagType: tagType));
-      }
-    }
 
     final items = <Widget>[
       FloatingActionButton(

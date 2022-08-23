@@ -10,7 +10,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -221,7 +220,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                     item.copyWith(deletedAt: DateTime.now()),
                                   );
 
-                                  await getIt<AppRouter>().pop();
+                                  maybePop();
                                 }
                               },
                             ),

@@ -30,10 +30,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     return Scaffold(
       backgroundColor: colorConfig().bodyBgColor,
-      appBar: VersionAppBar(
-        title: localizations.navTabTitleSettings,
-        showBackIcon: false,
-      ),
+      appBar: VersionAppBar(title: localizations.navTabTitleSettings),
       body: Container(
         margin: const EdgeInsets.symmetric(
           vertical: 8,

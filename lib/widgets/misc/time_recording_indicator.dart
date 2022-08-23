@@ -1,12 +1,9 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -19,8 +16,6 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    void beamToNamed(String path) => context.beamToNamed(path);
-
     return StreamBuilder(
       stream: _timeService.getStream(),
       builder: (
@@ -36,18 +31,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
         final durationString = formatDuration(entryDuration(current));
 
         return GestureDetector(
-          onTap: () async {
-            final itemId = current.meta.id;
-
-            final beamerNav =
-                await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-
-            if (beamerNav) {
-              beamToNamed('/journal/$itemId');
-            } else {
-              navigateNamedRoute('/journal/$itemId');
-            }
-          },
+          onTap: () => context.beamToNamed('/journal/${current.meta.id}'),
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             child: ClipRRect(

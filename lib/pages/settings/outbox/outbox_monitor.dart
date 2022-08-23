@@ -8,16 +8,12 @@ import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class OutboxMonitorPage extends StatefulWidget {
   const OutboxMonitorPage({
     super.key,
-    this.leadingIcon = true,
   });
-
-  final bool leadingIcon;
 
   @override
   State<OutboxMonitorPage> createState() => _OutboxMonitorPageState();
@@ -72,7 +68,6 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                 onlineStatus: onlineStatus,
                 selectedValue: _selectedValue,
                 onValueChanged: onValueChanged,
-                showBackIcon: widget.leadingIcon,
               ),
               body: ListView(
                 shrinkWrap: true,
@@ -193,13 +188,11 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
     required this.onlineStatus,
     required this.selectedValue,
     required this.onValueChanged,
-    required this.showBackIcon,
   });
 
   final bool onlineStatus;
   final String selectedValue;
   final void Function(String value) onValueChanged;
-  final bool showBackIcon;
 
   @override
   Size get preferredSize => const Size.fromHeight(toolbarHeight);
@@ -276,7 +269,6 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
       ),
       toolbarHeight: toolbarHeight,
       centerTitle: true,
-      leading: showBackIcon ? const TestDetectingAutoLeadingButton() : null,
     );
   }
 }

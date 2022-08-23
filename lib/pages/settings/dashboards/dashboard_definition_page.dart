@@ -16,7 +16,6 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/dashboards/chart_multi_select.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_item_card.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -557,8 +556,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                               .deleteDashboardDefinition(
                                             widget.dashboard,
                                           );
-
-                                          await getIt<AppRouter>().pop();
+                                          maybePop();
                                         }
                                       },
                                     ),

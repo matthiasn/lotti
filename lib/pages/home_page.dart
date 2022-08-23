@@ -6,7 +6,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/routes/observer.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
@@ -62,11 +61,7 @@ class HomePage extends StatelessWidget {
             );
           },
           backgroundColor: colorConfig().bodyBgColor,
-          routes: [
-            const DashboardsRouter(),
-            const JournalRouter(),
-            if (showTasks) const TasksRouter(),
-            const SettingsRouter(),
+          routes: const [
             //TutorialRouter(),
           ],
           bottomNavigationBuilder: (_, TabsRouter tabsRouter) {

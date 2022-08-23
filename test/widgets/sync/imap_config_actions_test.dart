@@ -4,26 +4,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_actions.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mocks/mocks.dart';
 import '../../mocks/sync_config_test_mocks.dart';
 import '../../test_data/sync_config_test_data.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
   group('SyncConfig Imap Config Actions Widgets Tests - ', () {
-    final mockAppRouter = MockAppRouter();
-
     setUp(() {
-      reset(mockAppRouter);
-      when(mockAppRouter.pop).thenAnswer((_) async => true);
-      getIt
-        ..registerSingleton<AppRouter>(mockAppRouter)
-        ..registerSingleton<ThemesService>(ThemesService(watch: false));
+      getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
     });
     tearDown(getIt.reset);
 
@@ -72,8 +64,6 @@ void main() {
 
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
-
-      verify(mockAppRouter.pop).called(1);
     });
 
     testWidgets('Widget shows save button when status valid', (tester) async {
@@ -127,8 +117,6 @@ void main() {
 
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
-
-      verify(mockAppRouter.pop).called(1);
     });
 
     testWidgets('Widget shows delete button when status invalid',
@@ -159,8 +147,6 @@ void main() {
 
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
-
-      verify(mockAppRouter.pop).called(1);
     });
 
     testWidgets('Widget shows delete button when status testing',
@@ -189,8 +175,6 @@ void main() {
 
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
-
-      verify(mockAppRouter.pop).called(1);
     });
   });
 }

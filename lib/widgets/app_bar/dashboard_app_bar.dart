@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 
 class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {
-  const DashboardAppBar(
-    this.dashboard, {
-    required this.showBackIcon,
-    super.key,
-  });
+  const DashboardAppBar(this.dashboard, {super.key});
 
   final DashboardDefinition dashboard;
-  final bool showBackIcon;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -25,7 +19,6 @@ class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {
         style: appBarTextStyle(),
       ),
       centerTitle: true,
-      leading: showBackIcon ? const TestDetectingAutoLeadingButton() : null,
     );
   }
 }

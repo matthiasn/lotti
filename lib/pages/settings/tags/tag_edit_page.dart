@@ -7,7 +7,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
@@ -239,7 +238,7 @@ class _TagEditPageState extends State<TagEditPage> {
                                   deletedAt: DateTime.now(),
                                 ),
                               );
-                              getIt<AppRouter>().pop();
+                              Navigator.of(context).maybePop();
                             },
                           ),
                         ],

@@ -6,7 +6,6 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -44,7 +43,6 @@ void registerSingletons() {
     ..registerSingleton<LinkService>(LinkService())
     ..registerSingleton<NotificationService>(NotificationService())
     ..registerSingleton<Maintenance>(Maintenance())
-    ..registerSingleton<AppRouter>(AppRouter())
     ..registerSingleton<NavService>(NavService());
 
   getIt<JournalDb>().initConfigFlags();
