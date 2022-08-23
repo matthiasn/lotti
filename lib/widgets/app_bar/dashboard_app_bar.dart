@@ -1,17 +1,17 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 
 class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {
   const DashboardAppBar(
     this.dashboard, {
-    required this.showBackIcon,
     super.key,
+    required this.showBackButton,
   });
 
   final DashboardDefinition dashboard;
-  final bool showBackIcon;
+  final bool showBackButton;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -25,7 +25,17 @@ class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {
         style: appBarTextStyle(),
       ),
       centerTitle: true,
-      leading: showBackIcon ? const TestDetectingAutoLeadingButton() : null,
+      leading: showBackButton
+          ? IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_rounded,
+                size: 24,
+                color: colorConfig().entryTextColor,
+              ),
+              //onPressed: () => context.beamToNamed('/dashboards'),
+              onPressed: () => context.beamBack(),
+            )
+          : null,
     );
   }
 }

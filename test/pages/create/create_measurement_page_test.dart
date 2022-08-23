@@ -1,3 +1,4 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -6,7 +7,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/create_measurement_page.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -20,7 +20,6 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
-  var mockAppRouter = MockAppRouter();
 
   group('CreateMeasurementPage Widget Tests - ', () {
     setUpAll(() {
@@ -34,13 +33,10 @@ void main() {
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
 
-      mockAppRouter = MockAppRouter();
-      when(mockAppRouter.pop).thenAnswer((invocation) async => true);
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<AppRouter>(mockAppRouter);
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       when(
         () => mockJournalDb
@@ -89,16 +85,27 @@ void main() {
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
+      final delegate = BeamerDelegate(
+        locationBuilder: RoutesLocationBuilder(
+          routes: {
+            '/': (context, state, data) => Container(),
+          },
+        ),
+      );
+
       await tester.pumpWidget(
         makeTestableWidget(
-          Material(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1500,
-                maxWidth: 800,
-              ),
-              child: CreateMeasurementPage(
-                selectedId: measurableWater.id,
+          BeamerProvider(
+            routerDelegate: delegate,
+            child: Material(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: 1500,
+                  maxWidth: 800,
+                ),
+                child: CreateMeasurementPage(
+                  selectedId: measurableWater.id,
+                ),
               ),
             ),
           ),

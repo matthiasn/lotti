@@ -1,5 +1,4 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
-import 'package:auto_route/auto_route.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -10,7 +9,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -154,17 +152,16 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                 labelText: AppLocalizations.of(context)!
                                     .settingsMeasurableAggregationLabel,
                                 labelStyle: formLabelStyle(),
-                              ),
-                              iconEnabledColor: colorConfig().entryTextColor,
-                              clearIcon: Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Icon(
-                                  Icons.close,
-                                  color: colorConfig().entryTextColor,
+                                suffixIcon: Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Icon(
+                                    Icons.close,
+                                    color: colorConfig().entryTextColor,
+                                  ),
                                 ),
                               ),
+                              iconEnabledColor: colorConfig().entryTextColor,
                               style: const TextStyle(fontSize: 40),
-                              allowClear: true,
                               dropdownColor: colorConfig().headerBgColor,
                               items:
                                   AggregationType.values.map((aggregationType) {
@@ -222,7 +219,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                     item.copyWith(deletedAt: DateTime.now()),
                                   );
 
-                                  await getIt<AppRouter>().pop();
+                                  maybePop();
                                 }
                               },
                             ),
@@ -244,7 +241,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
 class EditMeasurablePage extends StatelessWidget {
   EditMeasurablePage({
     super.key,
-    @PathParam() required this.measurableId,
+    required this.measurableId,
   });
 
   final JournalDb _db = getIt<JournalDb>();

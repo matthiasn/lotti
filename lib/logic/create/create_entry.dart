@@ -48,7 +48,6 @@ Future<Task?> createTask({String? linkedId}) async {
     linkedId: linkedId,
   );
 
-  navigateNamedRoute('/tasks/${task?.meta.id}');
   return task;
 }
 

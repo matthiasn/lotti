@@ -10,7 +10,6 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/tasks/tasks_page.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/themes_service.dart';
@@ -26,7 +25,6 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
-  var mockAppRouter = MockAppRouter();
 
   group('JournalPage Widget Tests - ', () {
     setUpAll(() {
@@ -40,9 +38,6 @@ void main() {
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
 
-      mockAppRouter = MockAppRouter();
-      when(mockAppRouter.pop).thenAnswer((invocation) async => true);
-
       final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();
 
@@ -52,8 +47,7 @@ void main() {
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<AppRouter>(mockAppRouter);
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
@@ -64,7 +58,7 @@ void main() {
       ).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
           <ConfigFlag>{
-            ConfigFlag(
+            const ConfigFlag(
               name: 'private',
               description: 'Show private entries?',
               status: true,

@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:auto_route/auto_route.dart';
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -10,7 +9,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/dashboard_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
@@ -24,12 +22,12 @@ import 'package:lotti/widgets/charts/utils.dart';
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
     super.key,
-    @PathParam() required this.dashboardId,
-    this.showBackIcon = true,
+    required this.dashboardId,
+    this.showBackButton = true,
   });
 
   final String dashboardId;
-  final bool showBackIcon;
+  final bool showBackButton;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -46,7 +44,6 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-
     final int shiftDays = max((horizontalPan / scale).floor(), 0);
 
     final rangeStart = getRangeStart(
@@ -114,7 +111,7 @@ class _DashboardPageState extends State<DashboardPage> {
             backgroundColor: colorConfig().bodyBgColor,
             appBar: DashboardAppBar(
               dashboard,
-              showBackIcon: widget.showBackIcon,
+              showBackButton: widget.showBackButton,
             ),
             body: DashboardWidget(
               dashboard: dashboard,
@@ -232,16 +229,8 @@ class DashboardWidget extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.dashboard_customize_outlined),
                   color: colorConfig().entryTextColor,
-                  onPressed: () async {
-                    final beamerNav = await getIt<JournalDb>()
-                        .getConfigFlag(enableBeamerNavFlag);
-
-                    if (beamerNav) {
-                      beamToNamed('/settings/dashboards/$dashboardId');
-                    } else {
-                      navigateNamedRoute('/settings/dashboards/$dashboardId');
-                    }
-                  },
+                  onPressed: () =>
+                      beamToNamed('/settings/dashboards/$dashboardId'),
                 ),
               ],
             ),

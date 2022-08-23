@@ -14,12 +14,13 @@ import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/home_page.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
+import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/theme/theme_config.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 
@@ -89,19 +90,24 @@ class AppScreenState extends State<AppScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      body: IndexedStack(
-        index: currentIndex,
+      body: Stack(
         children: [
-          Beamer(routerDelegate: routerDelegates[0]),
-          Beamer(routerDelegate: routerDelegates[1]),
-          Beamer(routerDelegate: routerDelegates[2]),
-          Beamer(routerDelegate: routerDelegates[3]),
+          IndexedStack(
+            index: currentIndex,
+            children: [
+              Beamer(routerDelegate: routerDelegates[0]),
+              Beamer(routerDelegate: routerDelegates[1]),
+              Beamer(routerDelegate: routerDelegates[2]),
+              Beamer(routerDelegate: routerDelegates[3]),
+            ],
+          ),
+          const TimeRecordingIndicator(),
+          const AudioRecordingIndicator(),
         ],
       ),
       bottomNavigationBar: SalomonBottomBar(
         unselectedItemColor: colorConfig().bottomNavIconUnselected,
-        //selectedItemColor: colorConfig().bottomNavIconSelected,
-        selectedItemColor: Colors.pink,
+        selectedItemColor: colorConfig().bottomNavIconSelected,
         currentIndex: currentIndex,
         items: [
           SalomonBottomBarItem(
@@ -208,6 +214,19 @@ class MyBeamerApp extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class NavTitle extends StatelessWidget {
+  const NavTitle(this.title, {super.key});
+
+  final String title;
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(title),
     );
   }
 }

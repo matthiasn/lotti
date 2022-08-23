@@ -1,5 +1,3 @@
-import 'package:auto_route/annotations.dart';
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -23,7 +21,7 @@ import 'package:lotti/widgets/tasks/task_form.dart';
 class EntryDetailWidget extends StatefulWidget {
   const EntryDetailWidget({
     super.key,
-    @PathParam() required this.itemId,
+    required this.itemId,
     required this.popOnDelete,
     this.showTaskDetails = false,
   });

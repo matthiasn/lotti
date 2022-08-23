@@ -5,6 +5,7 @@ import 'package:lotti/pages/create/fill_survey_page.dart';
 import 'package:lotti/pages/create/record_audio_page.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/pages/journal/journal_page.dart';
+import 'package:lotti/utils/uuid.dart';
 
 class JournalLocation extends BeamLocation<BeamState> {
   JournalLocation(RouteInformation super.routeInformation);
@@ -24,6 +25,10 @@ class JournalLocation extends BeamLocation<BeamState> {
     bool pathContains(String s) => state.uri.path.contains(s);
     bool pathContainsKey(String s) => state.pathParameters.containsKey(s);
 
+    final entryId = state.pathParameters['entryId'];
+    final linkedId = state.pathParameters['linkedId'];
+    final selectedId = state.pathParameters['selectedId'];
+
     return [
       const BeamPage(
         key: ValueKey('journal'),
@@ -31,12 +36,10 @@ class JournalLocation extends BeamLocation<BeamState> {
         type: BeamPageType.noTransition,
         child: JournalPage(),
       ),
-      if (pathContainsKey('entryId'))
+      if (isUuid(entryId))
         BeamPage(
-          key: ValueKey('journal-${state.pathParameters['entryId']}'),
-          child: EntryDetailPage(
-            itemId: state.pathParameters['entryId']!,
-          ),
+          key: ValueKey('journal-$entryId'),
+          child: EntryDetailPage(itemId: entryId!),
         ),
       if (pathContains('fill_survey/') && pathContainsKey('surveyType'))
         BeamPage(
@@ -45,36 +48,25 @@ class JournalLocation extends BeamLocation<BeamState> {
             surveyType: state.pathParameters['surveyType'],
           ),
         ),
-      if (pathContains('fill_survey_linked/') && pathContainsKey('linkedId'))
+      if (pathContains('fill_survey_linked/'))
         BeamPage(
-          key: ValueKey(
-            'fill_survey_linked-${state.pathParameters['linkedId']}',
-          ),
-          child: FillSurveyWithLinkedPage(
-            linkedId: state.pathParameters['linkedId'],
-          ),
+          key: ValueKey('fill_survey_linked-$linkedId'),
+          child: FillSurveyWithLinkedPage(linkedId: linkedId),
         ),
-      if (pathContains('record_audio/') && pathContainsKey('linkedId'))
+      if (pathContains('record_audio/'))
         BeamPage(
-          key: ValueKey('journal-${state.pathParameters['linkedId']}'),
-          child: RecordAudioPage(
-            linkedId: state.pathParameters['linkedId'],
-          ),
+          key: ValueKey('journal-$linkedId'),
+          child: RecordAudioPage(linkedId: linkedId),
         ),
-      if (pathContains('measure_linked/') && pathContainsKey('linkedId'))
+      if (pathContains('measure_linked/'))
         BeamPage(
-          key: ValueKey('measure_linked-${state.pathParameters['linkedId']}'),
-          child: CreateMeasurementWithLinkedPage(
-            linkedId: state.pathParameters['linkedId'],
-          ),
+          key: ValueKey('measure_linked-$linkedId'),
+          child: CreateMeasurementPage(linkedId: linkedId),
         ),
-      if (pathContains('measure/') && pathContainsKey('selectedId'))
+      if (pathContains('measure/') && isUuid('selectedId'))
         BeamPage(
-          key:
-              ValueKey('journal-measure-${state.pathParameters['selectedId']}'),
-          child: CreateMeasurementWithTypePage(
-            selectedId: state.pathParameters['selectedId'],
-          ),
+          key: ValueKey('journal-measure-$selectedId'),
+          child: CreateMeasurementPage(selectedId: selectedId),
         ),
     ];
   }

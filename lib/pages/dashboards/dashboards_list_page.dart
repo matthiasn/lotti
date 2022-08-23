@@ -4,9 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/dashboards_app_bar.dart';
 import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
@@ -52,7 +50,7 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         if (dashboards.length == 1) {
           return DashboardPage(
             dashboardId: dashboards[0].id,
-            showBackIcon: false,
+            showBackButton: false,
           );
         }
 
@@ -119,16 +117,7 @@ class DashboardCard extends StatelessWidget {
             fontWeight: FontWeight.w300,
           ),
         ),
-        onTap: () async {
-          final beamerNav =
-              await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-
-          if (beamerNav) {
-            beamToNamed('/dashboards/dashboard/${dashboard.id}');
-          } else {
-            navigateNamedRoute('/dashboards/dashboard/${dashboard.id}');
-          }
-        },
+        onTap: () => beamToNamed('/dashboards/${dashboard.id}'),
       ),
     );
   }

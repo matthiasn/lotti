@@ -1,4 +1,3 @@
-import 'package:auto_route/annotations.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
@@ -8,7 +7,7 @@ import 'package:lotti/utils/file_utils.dart';
 class CreateTagPage extends StatefulWidget {
   const CreateTagPage({
     super.key,
-    @PathParam() required this.tagType,
+    required this.tagType,
   });
 
   final String tagType;

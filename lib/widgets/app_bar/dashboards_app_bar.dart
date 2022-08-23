@@ -4,9 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 
 class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
   const DashboardsAppBar({super.key});
@@ -27,42 +25,12 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
         final dashboards = snapshot.data ?? [];
         void beamToNamed(String path) => context.beamToNamed(path);
 
-        Future<void> onPressSettings() async {
-          final navService = getIt<NavService>();
-
-          navService.tabsRouter?.setActiveIndex(
-            navService.routesByIndex.length - 1,
-          );
-
-          final beamerNav =
-              await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-
-          if (beamerNav) {
-            beamToNamed('/settings/dashboards');
-          } else {
-            await Future<void>.delayed(const Duration(milliseconds: 50)).then(
-              (value) => navigateNamedRoute('/settings/dashboards/'),
-            );
-          }
+        void onPressSettings() {
+          beamToNamed('/settings/dashboards');
         }
 
-        Future<void> onPressCarousel() async {
-          final navService = getIt<NavService>();
-
-          navService.tabsRouter?.setActiveIndex(
-            navService.routesByIndex.length - 1,
-          );
-
-          final beamerNav =
-              await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-
-          if (beamerNav) {
-            beamToNamed('/dashboards/carousel');
-          } else {
-            await Future<void>.delayed(const Duration(milliseconds: 50)).then(
-              (value) => navigateNamedRoute('/dashboards/carousel'),
-            );
-          }
+        void onPressCarousel() {
+          beamToNamed('/dashboards/carousel');
         }
 
         return AppBar(

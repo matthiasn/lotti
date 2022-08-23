@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -16,7 +15,6 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/dashboards/chart_multi_select.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_item_card.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -501,7 +499,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                         'Add story match',
                                         onPressed: () async {
                                           addWildcardStoryItem(controller.text);
-                                          await context.router.pop();
+                                          maybePop();
                                         },
                                       )
                                     ],
@@ -557,8 +555,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                               .deleteDashboardDefinition(
                                             widget.dashboard,
                                           );
-
-                                          await getIt<AppRouter>().pop();
+                                          maybePop();
                                         }
                                       },
                                     ),
@@ -584,7 +581,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
 class EditDashboardPage extends StatelessWidget {
   EditDashboardPage({
     super.key,
-    @PathParam() required this.dashboardId,
+    required this.dashboardId,
   });
 
   final JournalDb _db = getIt<JournalDb>();

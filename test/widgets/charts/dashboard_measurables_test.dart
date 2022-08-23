@@ -1,11 +1,11 @@
+import 'package:beamer/beamer.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/themes/themes_service.dart';
@@ -20,7 +20,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   var mockJournalDb = MockJournalDb();
-  final mockAppRouter = MockAppRouter();
   final mockSecureStorage = MockSecureStorage();
 
   group('DashboardMeasurablesChart Widget Tests - ', () {
@@ -31,8 +30,7 @@ void main() {
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<NavService>(MockNavService())
-        ..registerSingleton<SecureStorage>(mockSecureStorage)
-        ..registerSingleton<AppRouter>(mockAppRouter);
+        ..registerSingleton<SecureStorage>(mockSecureStorage);
 
       when(() => mockJournalDb.getConfigFlag(any()))
           .thenAnswer((_) async => false);
@@ -153,14 +151,25 @@ void main() {
         ]),
       );
 
+      final delegate = BeamerDelegate(
+        locationBuilder: RoutesLocationBuilder(
+          routes: {
+            '/': (context, state, data) => Container(),
+          },
+        ),
+      );
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          DashboardMeasurablesChart(
-            dashboardId: 'dashboardId',
-            rangeStart: DateTime(2022),
-            rangeEnd: DateTime(2023),
-            measurableDataTypeId: measurablePullUps.id,
-            enableCreate: true,
+          BeamerProvider(
+            routerDelegate: delegate,
+            child: DashboardMeasurablesChart(
+              dashboardId: 'dashboardId',
+              rangeStart: DateTime(2022),
+              rangeEnd: DateTime(2023),
+              measurableDataTypeId: measurablePullUps.id,
+              enableCreate: true,
+            ),
           ),
         ),
       );
@@ -173,29 +182,12 @@ void main() {
         findsOneWidget,
       );
 
-      // double tap on chart to trigger navigation to create measurement page
-      const expectedRoute =
-          '/dashboards/measure/22922182-15bf-4f2b-864f-1f546f95cac2';
-
-      Future<void> mockWriteValue() =>
-          mockSecureStorage.writeValue(any(), expectedRoute);
-      when(mockWriteValue).thenAnswer((_) async {});
-
-      Future<void> mockNavigateNamed() => mockAppRouter.navigateNamed(
-            expectedRoute,
-            includePrefixMatches: true,
-            onFailure: any(named: 'onFailure'),
-          );
-      when(mockNavigateNamed).thenAnswer((_) async {});
-
       final chartTappableFinder = find.byType(GestureDetector).first;
       await tester.tap(chartTappableFinder);
       await tester.pump(kDoubleTapMinTime);
       await tester.tap(chartTappableFinder);
 
       await tester.pumpAndSettle();
-      verify(mockWriteValue).called(1);
-      verify(mockNavigateNamed).called(1);
     });
   });
 }

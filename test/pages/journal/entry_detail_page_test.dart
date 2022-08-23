@@ -11,7 +11,6 @@ import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/pages/journal/journal_page.dart';
-import 'package:lotti/routes/router.gr.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -32,7 +31,6 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
-  var mockAppRouter = MockAppRouter();
 
   group('EntryDetailPage Widget Tests - ', () {
     setUpAll(() {
@@ -45,9 +43,6 @@ void main() {
         measurableChocolate,
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
-
-      mockAppRouter = MockAppRouter();
-      when(mockAppRouter.pop).thenAnswer((invocation) async => true);
 
       final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();
@@ -63,8 +58,7 @@ void main() {
         ..registerSingleton<HealthImport>(mockHealthImport)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<AppRouter>(mockAppRouter);
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       when(
         () => mockJournalDb
@@ -88,7 +82,7 @@ void main() {
       when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
           <ConfigFlag>{
-            ConfigFlag(
+            const ConfigFlag(
               name: 'private',
               description: 'Show private entries?',
               status: true,

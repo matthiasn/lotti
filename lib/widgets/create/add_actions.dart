@@ -6,14 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
-import 'package:lotti/routes/router.gr.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
 
@@ -80,18 +75,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           onPressed: () async {
             rebuild();
             final linkedId = widget.linked?.meta.id;
-            final beamerNav =
-                await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-
-            if (beamerNav) {
-              beamToNamed('/journal/measure_linked/$linkedId');
-            } else {
-              await getIt<AppRouter>().push(
-                CreateMeasurementWithLinkedRoute(
-                  linkedId: linkedId,
-                ),
-              );
-            }
+            beamToNamed('/journal/measure_linked/$linkedId');
           },
           child: const Icon(
             Icons.insights,
@@ -104,16 +88,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           heroTag: 'survey',
           tooltip: localizations.addActionAddSurvey,
           backgroundColor: colorConfig().actionColor,
-          onPressed: () async {
+          onPressed: () {
             rebuild();
             final linkedId = widget.linked?.meta.id;
-            final beamerNav =
-                await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-            if (beamerNav) {
-              beamToNamed('/journal/fill_survey_linked/$linkedId');
-            } else {
-              navigateNamedRoute('/journal/fill_survey_linked/$linkedId');
-            }
+            beamToNamed('/journal/fill_survey_linked/$linkedId');
           },
           child: const Icon(
             MdiIcons.clipboardOutline,
@@ -147,7 +125,11 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: colorConfig().actionColor,
           onPressed: () async {
             rebuild();
-            await createTextEntry(linkedId: widget.linked?.meta.id);
+            final entry =
+                await createTextEntry(linkedId: widget.linked?.meta.id);
+            if (entry != null) {
+              beamToNamed('/journal/${entry.meta.id}');
+            }
           },
           child: const Icon(
             MdiIcons.textLong,
@@ -180,20 +162,12 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           heroTag: 'audio',
           tooltip: localizations.addActionAddAudioRecording,
           backgroundColor: colorConfig().actionColor,
-          onPressed: () async {
+          onPressed: () {
             rebuild();
             final linkedId = widget.linked?.meta.id;
+            beamToNamed('/journal/record_audio/$linkedId');
 
-            final beamerNav =
-                await getIt<JournalDb>().getConfigFlag(enableBeamerNavFlag);
-            if (beamerNav) {
-              beamToNamed('/journal/record_audio/$linkedId');
-            } else {
-              navigateNamedRoute('/journal/record_audio/$linkedId');
-            }
-
-            // ignore: use_build_context_synchronously
-            await context.read<AudioRecorderCubit>().record(
+            context.read<AudioRecorderCubit>().record(
                   linkedId: widget.linked?.meta.id,
                 );
           },
@@ -212,7 +186,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         backgroundColor: colorConfig().actionColor,
         onPressed: () async {
           rebuild();
-          await createTask(linkedId: widget.linked?.meta.id);
+          final task = await createTask(linkedId: widget.linked?.meta.id);
+          if (task != null) {
+            beamToNamed('/journal/${task.meta.id}');
+          }
         },
         child: const Icon(
           Icons.task_outlined,

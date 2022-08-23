@@ -1,4 +1,3 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -101,7 +100,7 @@ class LogLineCard extends StatelessWidget {
 class LogDetailPage extends StatelessWidget {
   LogDetailPage({
     super.key,
-    @PathParam() required this.logEntryId,
+    required this.logEntryId,
   });
 
   final LoggingDb _db = getIt<LoggingDb>();

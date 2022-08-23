@@ -77,7 +77,7 @@ void main() {
             const SizedBox(
               width: 500,
               height: 1000,
-              child: OutboxMonitorPage(leadingIcon: false),
+              child: OutboxMonitorPage(),
             ),
           ),
         ),

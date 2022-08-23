@@ -163,9 +163,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
       if (pathContains('advanced/outbox_monitor'))
         const BeamPage(
           key: ValueKey('settings-outbox_monitor'),
-          child: OutboxMonitorPage(
-            leadingIcon: false,
-          ),
+          child: OutboxMonitorPage(),
         ),
 
       if (pathContains('advanced/logging'))

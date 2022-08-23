@@ -5,9 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/app_bar_version.dart';
-import 'package:lotti/widgets/app_bar/auto_leading_button.dart';
 import 'package:lotti/widgets/tasks/linked_duration.dart';
 
 class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
@@ -35,24 +33,16 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
       ) {
         final item = snapshot.data;
         if (item == null || item.meta.deletedAt != null) {
-          return StreamBuilder<Object>(
-            stream: getIt<JournalDb>().watchConfigFlag(enableBeamerNavFlag),
-            builder: (context, configFlagSnapshot) {
-              return AppBar(
-                backgroundColor: colorConfig().headerBgColor,
-                title: FadeIn(
-                  duration: const Duration(milliseconds: 500),
-                  child: Text(
-                    localizations.taskNotFound,
-                    style: appBarTextStyle(),
-                  ),
-                ),
-                centerTitle: true,
-                leading: configFlagSnapshot.data != true
-                    ? const TestDetectingAutoLeadingButton()
-                    : null,
-              );
-            },
+          return AppBar(
+            backgroundColor: colorConfig().headerBgColor,
+            title: FadeIn(
+              duration: const Duration(milliseconds: 500),
+              child: Text(
+                localizations.taskNotFound,
+                style: appBarTextStyle(),
+              ),
+            ),
+            centerTitle: true,
           );
         }
 
@@ -61,18 +51,10 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
         if (!isTask) {
           return const VersionAppBar(title: 'Lotti');
         } else {
-          return StreamBuilder<Object>(
-            stream: getIt<JournalDb>().watchConfigFlag(enableBeamerNavFlag),
-            builder: (context, configFlagSnapshot) {
-              return AppBar(
-                backgroundColor: colorConfig().headerBgColor,
-                title: LinkedDuration(task: item),
-                centerTitle: true,
-                leading: configFlagSnapshot.data != true
-                    ? const TestDetectingAutoLeadingButton()
-                    : null,
-              );
-            },
+          return AppBar(
+            backgroundColor: colorConfig().headerBgColor,
+            title: LinkedDuration(task: item),
+            centerTitle: true,
           );
         }
       },
