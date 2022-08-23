@@ -11,6 +11,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/pages/create/create_measurement_modal.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -88,8 +89,21 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
               void onDoubleTap() {
                 if (widget.enableCreate) {
-                  final id = measurableDataType.id;
-                  beamToNamed('/dashboards/${widget.dashboardId}/measure/$id');
+                  showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAliasWithSaveLayer,
+                    builder: (BuildContext context) {
+                      return CreateMeasurementModal(
+                        selectedId: measurableDataType.id,
+                      );
+                    },
+                  );
                 }
               }
 
