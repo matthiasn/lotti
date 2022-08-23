@@ -1,3 +1,4 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -84,16 +85,27 @@ void main() {
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
+      final delegate = BeamerDelegate(
+        locationBuilder: RoutesLocationBuilder(
+          routes: {
+            '/': (context, state, data) => Container(),
+          },
+        ),
+      );
+
       await tester.pumpWidget(
         makeTestableWidget(
-          Material(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1500,
-                maxWidth: 800,
-              ),
-              child: CreateMeasurementPage(
-                selectedId: measurableWater.id,
+          BeamerProvider(
+            routerDelegate: delegate,
+            child: Material(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: 1500,
+                  maxWidth: 800,
+                ),
+                child: CreateMeasurementPage(
+                  selectedId: measurableWater.id,
+                ),
               ),
             ),
           ),
