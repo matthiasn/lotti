@@ -9,7 +9,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -115,7 +114,12 @@ class _CreateMeasurementModalState extends State<CreateMeasurementModal> {
             Container(
               color: colorConfig().headerBgColor,
               width: MediaQuery.of(context).size.width,
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: 8,
+              ),
               child: FormBuilder(
                 key: _formKey,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -140,20 +144,21 @@ class _CreateMeasurementModalState extends State<CreateMeasurementModal> {
                             ),
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.settings_outlined),
-                          color: colorConfig().entryTextColor,
-                          onPressed: () {
-                            navigateNamedRoute(
-                              '/settings/measurables/${selected?.id}',
-                            );
-                          },
-                        ),
+                        // TODO: fix or remove
+                        // IconButton(
+                        //   icon: const Icon(Icons.settings_outlined),
+                        //   color: colorConfig().entryTextColor,
+                        //   onPressed: () {
+                        //     navigateNamedRoute(
+                        //       '/settings/measurables/${selected?.id}',
+                        //     );
+                        //   },
+                        // ),
                       ],
                     ),
-                    if (selected?.description != null)
+                    if ('${selected?.description}'.isNotEmpty)
                       Text(
-                        selected!.description,
+                        '${selected?.description}',
                         style: TextStyle(
                           color: colorConfig().entryTextColor,
                           fontFamily: 'Oswald',
@@ -236,32 +241,25 @@ class _CreateMeasurementModalState extends State<CreateMeasurementModal> {
                           decimal: true,
                         ),
                       ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 24),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          SizedBox(
-                            height: 32,
-                            child: Visibility(
-                              visible: dirty && validate(),
-                              child: TextButton(
-                                key: const Key('measurement_save'),
-                                onPressed: saveMeasurement,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                  child: Text(
-                                    localizations.addMeasurementSaveButton,
-                                    style: saveButtonStyle(),
-                                  ),
-                                ),
-                              ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Visibility(
+                          maintainSize: true,
+                          maintainAnimation: true,
+                          maintainState: true,
+                          visible: dirty && validate(),
+                          child: TextButton(
+                            key: const Key('measurement_save'),
+                            onPressed: saveMeasurement,
+                            child: Text(
+                              localizations.addMeasurementSaveButton,
+                              style: saveButtonStyle(),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
