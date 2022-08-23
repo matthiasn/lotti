@@ -1,3 +1,6 @@
+import 'package:beamer/beamer.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -148,14 +151,25 @@ void main() {
         ]),
       );
 
+      final delegate = BeamerDelegate(
+        locationBuilder: RoutesLocationBuilder(
+          routes: {
+            '/': (context, state, data) => Container(),
+          },
+        ),
+      );
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          DashboardMeasurablesChart(
-            dashboardId: 'dashboardId',
-            rangeStart: DateTime(2022),
-            rangeEnd: DateTime(2023),
-            measurableDataTypeId: measurablePullUps.id,
-            enableCreate: true,
+          BeamerProvider(
+            routerDelegate: delegate,
+            child: DashboardMeasurablesChart(
+              dashboardId: 'dashboardId',
+              rangeStart: DateTime(2022),
+              rangeEnd: DateTime(2023),
+              measurableDataTypeId: measurablePullUps.id,
+              enableCreate: true,
+            ),
           ),
         ),
       );
@@ -167,6 +181,13 @@ void main() {
         find.text('${measurablePullUps.displayName} [dailyMax]'),
         findsOneWidget,
       );
+
+      final chartTappableFinder = find.byType(GestureDetector).first;
+      await tester.tap(chartTappableFinder);
+      await tester.pump(kDoubleTapMinTime);
+      await tester.tap(chartTappableFinder);
+
+      await tester.pumpAndSettle();
     });
   });
 }
