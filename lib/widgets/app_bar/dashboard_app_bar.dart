@@ -17,8 +17,6 @@ class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    void maybePop() => Navigator.of(context).maybePop();
-
     return AppBar(
       backgroundColor: colorConfig().headerBgColor,
       title: Text(
@@ -26,16 +24,6 @@ class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {
         style: appBarTextStyle(),
       ),
       centerTitle: true,
-      leading: showBackButton
-          ? IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_rounded,
-                size: 24,
-                color: colorConfig().entryTextColor,
-              ),
-              onPressed: maybePop,
-            )
-          : null,
     );
   }
 }
