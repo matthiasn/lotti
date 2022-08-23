@@ -1,6 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -191,11 +191,10 @@ void main() {
         findsOneWidget,
       );
 
-      final chartTappableFinder = find.byType(GestureDetector).first;
-      await tester.tap(chartTappableFinder);
-      await tester.pump(kDoubleTapMinTime);
-      await tester.tap(chartTappableFinder);
-
+      final addIconFinder = find.byIcon(
+        Icons.add_circle_outline,
+      );
+      await tester.tap(addIconFinder);
       await tester.pumpAndSettle();
     });
   });
