@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -500,7 +499,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                         'Add story match',
                                         onPressed: () async {
                                           addWildcardStoryItem(controller.text);
-                                          await context.router.pop();
+                                          maybePop();
                                         },
                                       )
                                     ],
@@ -582,7 +581,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
 class EditDashboardPage extends StatelessWidget {
   EditDashboardPage({
     super.key,
-    @PathParam() required this.dashboardId,
+    required this.dashboardId,
   });
 
   final JournalDb _db = getIt<JournalDb>();

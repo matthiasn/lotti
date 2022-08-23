@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:auto_route/annotations.dart';
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/classes/journal_entities.dart';
@@ -16,7 +14,7 @@ import 'package:tuple/tuple.dart';
 class EditorWrapperWidget extends StatefulWidget {
   const EditorWrapperWidget({
     super.key,
-    @PathParam() required this.itemId,
+    required this.itemId,
     required this.popOnDelete,
     this.showTaskDetails = false,
   });

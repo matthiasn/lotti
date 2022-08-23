@@ -14,7 +14,6 @@ import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/home_page.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
@@ -108,8 +107,7 @@ class AppScreenState extends State<AppScreen> {
       ),
       bottomNavigationBar: SalomonBottomBar(
         unselectedItemColor: colorConfig().bottomNavIconUnselected,
-        //selectedItemColor: colorConfig().bottomNavIconSelected,
-        selectedItemColor: Colors.pink,
+        selectedItemColor: colorConfig().bottomNavIconSelected,
         currentIndex: currentIndex,
         items: [
           SalomonBottomBarItem(
@@ -216,6 +214,19 @@ class MyBeamerApp extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class NavTitle extends StatelessWidget {
+  const NavTitle(this.title, {super.key});
+
+  final String title;
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(title),
     );
   }
 }

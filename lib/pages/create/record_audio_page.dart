@@ -1,4 +1,3 @@
-import 'package:auto_route/annotations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/themes/theme.dart';
@@ -8,7 +7,7 @@ import 'package:lotti/widgets/audio/audio_recorder.dart';
 class RecordAudioPage extends StatefulWidget {
   const RecordAudioPage({
     super.key,
-    @PathParam() this.linkedId,
+    this.linkedId,
   });
   final String? linkedId;
 
