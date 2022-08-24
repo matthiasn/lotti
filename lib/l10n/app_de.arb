@@ -6,6 +6,7 @@
   "addActionAddSurvey": "Fragebogen ausfüllen",
   "addActionAddTask": "Aufgabe hinzufügen",
   "addActionAddText": "Texteintrag hinzufügen",
+  "addMeasurementCancelButton": "Abbrechen",
   "addMeasurementNoneDefined": "Messbaren Datentyp hinzufügen",
   "addMeasurementSaveButton": "Speichern",
   "addMeasurementTitle": "Messbare Daten erfassen",

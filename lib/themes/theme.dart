@@ -138,6 +138,13 @@ TextStyle saveButtonStyle() => TextStyle(
       color: colorConfig().error,
     );
 
+TextStyle cancelButtonStyle() => TextStyle(
+      fontSize: 20,
+      fontFamily: 'Oswald',
+      fontWeight: FontWeight.w100,
+      color: colorConfig().entryTextColor,
+    );
+
 const segmentItemStyle = TextStyle(
   fontFamily: 'Oswald',
   fontSize: 14,
