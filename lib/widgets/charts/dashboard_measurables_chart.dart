@@ -199,14 +199,15 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                           top: 0,
                           child: IconButton(
                             padding: const EdgeInsets.only(
-                              right: 4,
-                              top: 4,
+                              right: 6,
+                              top: 48,
                               left: 16,
-                              bottom: 16,
+                              bottom: 48,
                             ),
                             onPressed: onTapAdd,
                             icon: const Icon(
                               Icons.add_circle_outline,
+                              size: 28,
                               color: Color.fromRGBO(0, 0, 0, 0.7),
                             ),
                           ),

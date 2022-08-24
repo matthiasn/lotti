@@ -43,7 +43,7 @@ class DashboardSurveyChart extends StatelessWidget {
       ) {
         final items = snapshot.data ?? [];
 
-        Future<void> onDoubleTap() async {
+        void onTapAdd() {
           if (chartConfig.surveyType == 'cfq11SurveyTask') {
             runCfq11(context: context);
           }
@@ -52,21 +52,19 @@ class DashboardSurveyChart extends StatelessWidget {
           }
         }
 
-        return GestureDetector(
-          onDoubleTap: onDoubleTap,
-          onLongPress: onDoubleTap,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                key: Key('${chartConfig.hashCode}'),
-                color: Colors.white,
-                height: 120,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Stack(
-                  children: [
-                    charts.TimeSeriesChart(
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              key: Key('${chartConfig.hashCode}'),
+              color: Colors.white,
+              height: 120,
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: charts.TimeSeriesChart(
                       surveySeries(
                         entities: items,
                         dashboardSurveyItem: chartConfig,
@@ -84,24 +82,42 @@ class DashboardSurveyChart extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: 0,
-                      left: MediaQuery.of(context).size.width / 4,
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width / 2,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              chartConfig.surveyName,
-                              style: chartTitleStyle(),
-                            ),
-                          ],
-                        ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    left: MediaQuery.of(context).size.width / 4,
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width / 2,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            chartConfig.surveyName,
+                            style: chartTitleStyle(),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: IconButton(
+                      padding: const EdgeInsets.only(
+                        right: 6,
+                        top: 48,
+                        left: 16,
+                        bottom: 48,
+                      ),
+                      onPressed: onTapAdd,
+                      icon: const Icon(
+                        Icons.add_circle_outline,
+                        size: 28,
+                        color: Color.fromRGBO(0, 0, 0, 0.7),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
