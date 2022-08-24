@@ -1,6 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/pages/create/create_measurement_page.dart';
+import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/pages/dashboards/dashboards_carousel_page.dart';
 import 'package:lotti/pages/dashboards/dashboards_list_page.dart';
@@ -22,6 +22,7 @@ class DashboardsLocation extends BeamLocation<BeamState> {
     bool pathContains(String s) => state.uri.path.contains(s);
     final dashboardId = state.pathParameters['dashboardId'];
     final selectedId = state.pathParameters['selectedId'];
+    debugPrint('DashboardsLocation buildPages $dashboardId $selectedId');
 
     final pages = [
       const BeamPage(
@@ -42,8 +43,19 @@ class DashboardsLocation extends BeamLocation<BeamState> {
         ),
       if (isUuid(dashboardId) && isUuid(selectedId))
         BeamPage(
-          key: ValueKey('dashboards-$dashboardId-measure-$selectedId'),
-          child: CreateMeasurementPage(selectedId: selectedId),
+          routeBuilder: (
+            BuildContext context,
+            RouteSettings settings,
+            Widget child,
+          ) {
+            return DialogRoute<void>(
+              context: context,
+              builder: (context) => child,
+              settings: settings,
+            );
+          },
+          key: ValueKey('measure-$selectedId'),
+          child: MeasurementDialog(selectedId: selectedId),
         ),
     ];
 

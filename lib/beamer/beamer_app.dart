@@ -32,7 +32,7 @@ class AppScreen extends StatefulWidget {
 }
 
 class AppScreenState extends State<AppScreen> {
-  late int currentIndex;
+  int currentIndex = 0;
 
   final routerDelegates = [
     BeamerDelegate(
@@ -76,16 +76,18 @@ class AppScreenState extends State<AppScreen> {
     ),
   ];
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final uriString = Beamer.of(context).configuration.location!;
-    debugPrint('didChangeDependencies $uriString');
-    currentIndex = uriString.contains('tasks') ? 2 : 0;
-  }
+  // @override
+  // void didChangeDependencies() {
+  //   super.didChangeDependencies();
+  //   final uriString = Beamer.of(context).configuration.location!;
+  //   debugPrint('didChangeDependencies $uriString');
+  //   // currentIndex = uriString.contains('tasks') ? 2 : 0;
+  // }
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('AppScreenState build');
+
     const showTasks = true;
     final localizations = AppLocalizations.of(context)!;
 
@@ -159,6 +161,7 @@ class MyBeamerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('MyBeamerApp build');
     final theme = ThemeData(
       primarySwatch: Colors.grey,
       scaffoldBackgroundColor: colorConfig().bodyBgColor,

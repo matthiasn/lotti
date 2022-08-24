@@ -1,5 +1,6 @@
 import 'dart:core';
 
+import 'package:beamer/beamer.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +46,8 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
   @override
   Widget build(BuildContext context) {
+    void beamToNamed(String path) => context.beamToNamed(path);
+
     return StreamBuilder<MeasurableDataType?>(
       stream: _db.watchMeasurableDataTypeById(widget.measurableDataTypeId),
       builder: (
@@ -86,7 +89,11 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
 
               void onTapAdd() {
-                if (widget.enableCreate) {
+                beamToNamed(
+                  '/dashboards/${widget.dashboardId}'
+                  '/measure/${widget.measurableDataTypeId}',
+                );
+                if (false && widget.enableCreate) {
                   showModalBottomSheet<void>(
                     context: context,
                     isScrollControlled: true,
