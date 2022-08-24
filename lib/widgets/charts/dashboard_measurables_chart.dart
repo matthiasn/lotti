@@ -5,12 +5,12 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/blocs/charts/measurables_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/create/create_measurement_modal.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -45,6 +45,8 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
   @override
   Widget build(BuildContext context) {
+    //void beamToNamed(String path) => context.beamToNamed(path);
+
     return StreamBuilder<MeasurableDataType?>(
       stream: _db.watchMeasurableDataTypeById(widget.measurableDataTypeId),
       builder: (
@@ -86,24 +88,10 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
 
               void onTapAdd() {
-                if (widget.enableCreate) {
-                  showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
-                    ),
-                    clipBehavior: Clip.antiAliasWithSaveLayer,
-                    isDismissible: false,
-                    builder: (BuildContext context) {
-                      return CreateMeasurementModal(
-                        selectedId: measurableDataType.id,
-                      );
-                    },
-                  );
-                }
+                routerDelegates[0].beamToNamed(
+                  '/dashboards/${widget.dashboardId}'
+                  '/measure/${widget.measurableDataTypeId}',
+                );
               }
 
               List<MeasuredObservation> data;

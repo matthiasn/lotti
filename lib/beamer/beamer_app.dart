@@ -31,61 +31,79 @@ class AppScreen extends StatefulWidget {
   AppScreenState createState() => AppScreenState();
 }
 
-class AppScreenState extends State<AppScreen> {
-  late int currentIndex;
+final routerDelegates = [
+  BeamerDelegate(
+    initialPath: '/dashboards',
+    locationBuilder: (routeInformation, _) {
+      if (routeInformation.location!.contains('dashboards')) {
+        return DashboardsLocation(routeInformation);
+      }
+      return NotFound(path: routeInformation.location!);
+    },
+  ),
+  BeamerDelegate(
+    initialPath: '/journal',
+    locationBuilder: (routeInformation, _) {
+      if (routeInformation.location!.contains('journal')) {
+        return JournalLocation(routeInformation);
+      }
+      if (routeInformation.location!.contains('tasks')) {
+        return TasksLocation(routeInformation);
+      }
+      return NotFound(path: routeInformation.location!);
+    },
+  ),
+  BeamerDelegate(
+    initialPath: '/tasks',
+    locationBuilder: (routeInformation, _) {
+      if (routeInformation.location!.contains('tasks')) {
+        return TasksLocation(routeInformation);
+      }
+      return NotFound(path: routeInformation.location!);
+    },
+  ),
+  BeamerDelegate(
+    initialPath: '/settings',
+    locationBuilder: (routeInformation, _) {
+      if (routeInformation.location!.contains('settings')) {
+        return SettingsLocation(routeInformation);
+      }
+      return NotFound(path: routeInformation.location!);
+    },
+  ),
+];
 
-  final routerDelegates = [
-    BeamerDelegate(
-      initialPath: '/dashboards',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('dashboards')) {
-          return DashboardsLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-    BeamerDelegate(
-      initialPath: '/journal',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('journal')) {
-          return JournalLocation(routeInformation);
-        }
-        if (routeInformation.location!.contains('tasks')) {
-          return TasksLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-    BeamerDelegate(
-      initialPath: '/tasks',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('tasks')) {
-          return TasksLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-    BeamerDelegate(
-      initialPath: '/settings',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('settings')) {
-          return SettingsLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-  ];
+class AppScreenState extends State<AppScreen> {
+  int currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final uriString = Beamer.of(context).configuration.location!;
     debugPrint('didChangeDependencies $uriString');
-    currentIndex = uriString.contains('tasks') ? 2 : 0;
+    if (uriString.contains('/dashboards')) {
+      currentIndex = 0;
+    }
+    if (uriString.contains('/journal')) {
+      currentIndex = 1;
+    }
+    if (uriString.contains('/tasks')) {
+      currentIndex = 2;
+    }
+    if (uriString.contains('/settings')) {
+      currentIndex = 3;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('AppScreenState build');
+
     const showTasks = true;
     final localizations = AppLocalizations.of(context)!;
 
@@ -152,13 +170,14 @@ class MyBeamerApp extends StatelessWidget {
     initialPath: '/dashboards',
     locationBuilder: RoutesLocationBuilder(
       routes: {
-        '*': (context, state, data) => const AppScreen(),
+        '*': (context, state, data) => const AppScreen(key: Key('value')),
       },
     ),
   );
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('MyBeamerApp build');
     final theme = ThemeData(
       primarySwatch: Colors.grey,
       scaffoldBackgroundColor: colorConfig().bodyBgColor,
