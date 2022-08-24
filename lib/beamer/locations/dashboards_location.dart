@@ -15,6 +15,7 @@ class DashboardsLocation extends BeamLocation<BeamState> {
         '/dashboards',
         '/dashboards/:dashboardId',
         '/dashboards/carousel',
+        '/dashboards/carousel/measure/:selectedId',
         '/dashboards/:dashboardId/measure/:selectedId',
       ];
 
@@ -41,7 +42,8 @@ class DashboardsLocation extends BeamLocation<BeamState> {
           key: ValueKey('dashboards-carousel'),
           child: DashboardCarouselPage(),
         ),
-      if (isUuid(dashboardId) && isUuid(selectedId))
+      if ((isUuid(dashboardId) || pathContains('carousel')) &&
+          isUuid(selectedId))
         BeamPage(
           routeBuilder: (
             BuildContext context,
@@ -63,7 +65,6 @@ class DashboardsLocation extends BeamLocation<BeamState> {
         ),
     ];
 
-    debugPrint('$pages');
     return pages;
   }
 }

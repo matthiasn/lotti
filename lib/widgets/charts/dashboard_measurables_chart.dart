@@ -1,5 +1,6 @@
 import 'dart:core';
 
+import 'package:beamer/beamer.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
@@ -86,9 +87,16 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
 
               void onTapAdd() {
-                routerDelegates[0].beamToNamed(
-                  '/dashboards/${widget.dashboardId}'
-                  '/measure/${widget.measurableDataTypeId}',
+                final delegate = routerDelegates[0];
+                final beamState =
+                    delegate.currentBeamLocation.state as BeamState;
+
+                final id = beamState.uri.path.contains('carousel')
+                    ? 'carousel'
+                    : widget.dashboardId;
+
+                delegate.beamToNamed(
+                  '/dashboards/$id/measure/${widget.measurableDataTypeId}',
                 );
               }
 
@@ -182,24 +190,25 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                           measurableDataType,
                           aggregationType: aggregationType,
                         ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: IconButton(
-                            padding: EdgeInsets.only(
-                              right: isDesktop ? 6 : 0,
-                              top: 48,
-                              left: 16,
-                              bottom: 48,
-                            ),
-                            onPressed: onTapAdd,
-                            icon: const Icon(
-                              Icons.add_circle_outline,
-                              size: 28,
-                              color: Color.fromRGBO(0, 0, 0, 0.7),
+                        if (widget.enableCreate)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: IconButton(
+                              padding: EdgeInsets.only(
+                                right: isDesktop ? 6 : 0,
+                                top: 48,
+                                left: 16,
+                                bottom: 48,
+                              ),
+                              onPressed: onTapAdd,
+                              icon: const Icon(
+                                Icons.add_circle_outline,
+                                size: 28,
+                                color: Color.fromRGBO(0, 0, 0, 0.7),
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),
