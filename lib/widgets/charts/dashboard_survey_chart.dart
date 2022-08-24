@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/surveys/run_surveys.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -103,8 +104,8 @@ class DashboardSurveyChart extends StatelessWidget {
                     right: 0,
                     top: 0,
                     child: IconButton(
-                      padding: const EdgeInsets.only(
-                        right: 6,
+                      padding: EdgeInsets.only(
+                        right: isDesktop ? 6 : 0,
                         top: 48,
                         left: 16,
                         bottom: 48,

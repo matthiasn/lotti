@@ -144,6 +144,11 @@ class _CreateMeasurementModalState extends State<CreateMeasurementModal> {
                             ),
                           ),
                         ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          color: colorConfig().entryTextColor,
+                          onPressed: maybePop,
+                        ),
                         // TODO: fix or remove
                         // IconButton(
                         //   icon: const Icon(Icons.settings_outlined),

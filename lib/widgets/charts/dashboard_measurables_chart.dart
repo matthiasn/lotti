@@ -12,6 +12,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/create/create_measurement_modal.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardMeasurablesChart extends StatefulWidget {
@@ -95,6 +96,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                       ),
                     ),
                     clipBehavior: Clip.antiAliasWithSaveLayer,
+                    isDismissible: false,
                     builder: (BuildContext context) {
                       return CreateMeasurementModal(
                         selectedId: measurableDataType.id,
@@ -198,8 +200,8 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                           right: 0,
                           top: 0,
                           child: IconButton(
-                            padding: const EdgeInsets.only(
-                              right: 6,
+                            padding: EdgeInsets.only(
+                              right: isDesktop ? 6 : 0,
                               top: 48,
                               left: 16,
                               bottom: 48,
