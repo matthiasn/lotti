@@ -40,15 +40,38 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
     scope: HotKeyScope.inapp,
   );
 
+  final beamBack = routerDelegates[0].beamBack;
+
+  Future<void> saveMeasurement() async {
+    _formKey.currentState!.save();
+    if (validate()) {
+      final formData = _formKey.currentState?.value;
+      if (selected == null) {
+        return;
+      }
+      final measurement = MeasurementData(
+        dataTypeId: selected!.id,
+        dateTo: formData!['date'] as DateTime,
+        dateFrom: formData['date'] as DateTime,
+        value: nf.parse('${formData['value']}'.replaceAll(',', '.')),
+      );
+      await persistenceLogic.createMeasurementEntry(data: measurement);
+      setState(() {
+        dirty = false;
+      });
+
+      beamBack();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
-    // TODO: bring back
-    // hotKeyManager.register(
-    //   hotkeyCmdS,
-    //   keyDownHandler: (hotKey) => saveMeasurement(),
-    // );
+    hotKeyManager.register(
+      hotkeyCmdS,
+      keyDownHandler: (hotKey) => saveMeasurement(),
+    );
   }
 
   @override
@@ -67,29 +90,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final beamBack = routerDelegates[0].beamBack;
-
-    Future<void> saveMeasurement() async {
-      _formKey.currentState!.save();
-      if (validate()) {
-        final formData = _formKey.currentState?.value;
-        if (selected == null) {
-          return;
-        }
-        final measurement = MeasurementData(
-          dataTypeId: selected!.id,
-          dateTo: formData!['date'] as DateTime,
-          dateFrom: formData['date'] as DateTime,
-          value: nf.parse('${formData['value']}'.replaceAll(',', '.')),
-        );
-        await persistenceLogic.createMeasurementEntry(data: measurement);
-        setState(() {
-          dirty = false;
-        });
-
-        beamBack();
-      }
-    }
 
     return StreamBuilder<List<MeasurableDataType>>(
       stream: _db.watchMeasurableDataTypes(),
