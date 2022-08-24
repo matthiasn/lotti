@@ -23,7 +23,6 @@ class DashboardsLocation extends BeamLocation<BeamState> {
     bool pathContains(String s) => state.uri.path.contains(s);
     final dashboardId = state.pathParameters['dashboardId'];
     final selectedId = state.pathParameters['selectedId'];
-    debugPrint('DashboardsLocation buildPages $dashboardId $selectedId');
 
     final pages = [
       const BeamPage(

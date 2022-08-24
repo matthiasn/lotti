@@ -170,14 +170,13 @@ class MyBeamerApp extends StatelessWidget {
     initialPath: '/dashboards',
     locationBuilder: RoutesLocationBuilder(
       routes: {
-        '*': (context, state, data) => const AppScreen(key: Key('value')),
+        '*': (context, state, data) => const AppScreen(),
       },
     ),
   );
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('MyBeamerApp build');
     final theme = ThemeData(
       primarySwatch: Colors.grey,
       scaffoldBackgroundColor: colorConfig().bodyBgColor,

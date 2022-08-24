@@ -45,8 +45,6 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
   @override
   Widget build(BuildContext context) {
-    //void beamToNamed(String path) => context.beamToNamed(path);
-
     return StreamBuilder<MeasurableDataType?>(
       stream: _db.watchMeasurableDataTypeById(widget.measurableDataTypeId),
       builder: (
