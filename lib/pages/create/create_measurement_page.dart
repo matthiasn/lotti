@@ -2,7 +2,6 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
-import 'package:flutter_fadein/flutter_fadein.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -140,196 +139,187 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
             ],
           ),
           backgroundColor: colorConfig().bodyBgColor,
-          body: FadeIn(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      color: colorConfig().headerBgColor,
-                      width: MediaQuery.of(context).size.width,
-                      padding: const EdgeInsets.all(32),
-                      child: FormBuilder(
-                        key: _formKey,
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        onChanged: () {
-                          setState(() {
-                            dirty = true;
-                          });
-                        },
-                        child: Column(
-                          children: <Widget>[
-                            if (snapshot.hasData && items.isEmpty)
-                              Row(
-                                children: [
-                                  MouseRegion(
-                                    cursor: SystemMouseCursors.click,
-                                    child: GestureDetector(
-                                      onTap: () {
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    color: colorConfig().headerBgColor,
+                    width: MediaQuery.of(context).size.width,
+                    padding: const EdgeInsets.all(32),
+                    child: FormBuilder(
+                      key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      onChanged: () {
+                        setState(() {
+                          dirty = true;
+                        });
+                      },
+                      child: Column(
+                        children: <Widget>[
+                          if (snapshot.hasData && items.isEmpty)
+                            Row(
+                              children: [
+                                MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      navigateNamedRoute(
+                                        '/settings/create_measurable',
+                                      );
+                                    },
+                                    child: SizedBox(
+                                      width: MediaQuery.of(context).size.width -
+                                          100,
+                                      child: AutoSizeText(
+                                        localizations.addMeasurementNoneDefined,
+                                        style: titleStyle().copyWith(
+                                          decoration: TextDecoration.underline,
+                                          color: colorConfig().entryTextColor,
+                                        ),
+                                        wrapWords: false,
+                                        maxLines: 3,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (items.isNotEmpty)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        selected?.displayName ?? '',
+                                        style: TextStyle(
+                                          color: colorConfig().entryTextColor,
+                                          fontFamily: 'Oswald',
+                                          fontSize: 24,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.settings_outlined),
+                                      color: colorConfig().entryTextColor,
+                                      onPressed: () {
                                         navigateNamedRoute(
-                                          '/settings/create_measurable',
+                                          '/settings/measurables/${selected?.id}',
                                         );
                                       },
-                                      child: SizedBox(
-                                        width:
-                                            MediaQuery.of(context).size.width -
-                                                100,
-                                        child: AutoSizeText(
-                                          localizations
-                                              .addMeasurementNoneDefined,
-                                          style: titleStyle().copyWith(
-                                            decoration:
-                                                TextDecoration.underline,
-                                            color: colorConfig().entryTextColor,
-                                          ),
-                                          wrapWords: false,
-                                          maxLines: 3,
-                                        ),
-                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (selected?.description != null)
+                                  Text(
+                                    selected!.description,
+                                    style: TextStyle(
+                                      color: colorConfig().entryTextColor,
+                                      fontFamily: 'Oswald',
+                                      fontWeight: FontWeight.w300,
+                                      fontSize: 14,
                                     ),
                                   ),
-                                ],
-                              ),
-                            if (items.isNotEmpty)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          selected?.displayName ?? '',
-                                          style: TextStyle(
-                                            color: colorConfig().entryTextColor,
-                                            fontFamily: 'Oswald',
-                                            fontSize: 24,
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon:
-                                            const Icon(Icons.settings_outlined),
-                                        color: colorConfig().entryTextColor,
-                                        onPressed: () {
-                                          navigateNamedRoute(
-                                            '/settings/measurables/${selected?.id}',
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                  if (selected?.description != null)
-                                    Text(
-                                      selected!.description,
-                                      style: TextStyle(
-                                        color: colorConfig().entryTextColor,
-                                        fontFamily: 'Oswald',
-                                        fontWeight: FontWeight.w300,
-                                        fontSize: 14,
-                                      ),
+                                if (selected == null)
+                                  FormBuilderDropdown<MeasurableDataType>(
+                                    dropdownColor: colorConfig().headerBgColor,
+                                    name: 'type',
+                                    decoration: InputDecoration(
+                                      labelText: 'Type',
+                                      labelStyle: labelStyle(),
+                                      hintStyle: inputStyle(),
+                                      hintText: 'Select Measurement Type',
                                     ),
-                                  if (selected == null)
-                                    FormBuilderDropdown<MeasurableDataType>(
-                                      dropdownColor:
-                                          colorConfig().headerBgColor,
-                                      name: 'type',
-                                      decoration: InputDecoration(
-                                        labelText: 'Type',
-                                        labelStyle: labelStyle(),
-                                        hintStyle: inputStyle(),
-                                        hintText: 'Select Measurement Type',
-                                      ),
-                                      onChanged: (MeasurableDataType? value) {
-                                        setState(() {
-                                          selected = value;
-                                        });
-                                      },
-                                      validator: FormBuilderValidators.compose(
-                                        [FormBuilderValidators.required()],
-                                      ),
-                                      items: items
-                                          .map(
-                                            (MeasurableDataType item) =>
-                                                DropdownMenuItem(
-                                              value: item,
-                                              child: Text(
-                                                item.displayName,
-                                                style: inputStyle(),
-                                              ),
+                                    onChanged: (MeasurableDataType? value) {
+                                      setState(() {
+                                        selected = value;
+                                      });
+                                    },
+                                    validator: FormBuilderValidators.compose(
+                                      [FormBuilderValidators.required()],
+                                    ),
+                                    items: items
+                                        .map(
+                                          (MeasurableDataType item) =>
+                                              DropdownMenuItem(
+                                            value: item,
+                                            child: Text(
+                                              item.displayName,
+                                              style: inputStyle(),
                                             ),
-                                          )
-                                          .toList(),
+                                          ),
+                                        )
+                                        .toList(),
+                                  ),
+                                if (selected != null)
+                                  FormBuilderCupertinoDateTimePicker(
+                                    name: 'date',
+                                    alwaysUse24HourFormat: true,
+                                    format: DateFormat(
+                                      "EEEE, MMMM d, yyyy 'at' HH:mm",
                                     ),
-                                  if (selected != null)
-                                    FormBuilderCupertinoDateTimePicker(
-                                      name: 'date',
-                                      alwaysUse24HourFormat: true,
-                                      format: DateFormat(
-                                        "EEEE, MMMM d, yyyy 'at' HH:mm",
-                                      ),
-                                      style: inputStyle(),
-                                      decoration: InputDecoration(
-                                        labelText: 'Measurement taken',
-                                        labelStyle: labelStyle(),
-                                      ),
-                                      initialValue: DateTime.now(),
-                                      theme: DatePickerTheme(
-                                        headerColor:
-                                            colorConfig().headerBgColor,
-                                        backgroundColor:
-                                            colorConfig().bodyBgColor,
-                                        itemStyle: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                        ),
-                                        doneStyle: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                        ),
-                                      ),
+                                    style: inputStyle(),
+                                    decoration: InputDecoration(
+                                      labelText: 'Measurement taken',
+                                      labelStyle: labelStyle(),
                                     ),
-                                  if (selected != null)
-                                    FormBuilderTextField(
-                                      initialValue: '',
-                                      key: const Key('measurement_value_field'),
-                                      decoration: InputDecoration(
-                                        labelText: '${selected?.displayName} '
-                                            '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
-                                        labelStyle: labelStyle(),
+                                    initialValue: DateTime.now(),
+                                    theme: DatePickerTheme(
+                                      headerColor: colorConfig().headerBgColor,
+                                      backgroundColor:
+                                          colorConfig().bodyBgColor,
+                                      itemStyle: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
                                       ),
-                                      keyboardAppearance: Brightness.dark,
-                                      style: inputStyle(),
-                                      autofocus: true,
-                                      validator:
-                                          FormBuilderValidators.required(),
-                                      name: 'value',
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                        decimal: true,
+                                      doneStyle: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
                                       ),
                                     ),
-                                ],
-                              ),
-                          ],
-                        ),
+                                  ),
+                                if (selected != null)
+                                  FormBuilderTextField(
+                                    initialValue: '',
+                                    key: const Key('measurement_value_field'),
+                                    decoration: InputDecoration(
+                                      labelText: '${selected?.displayName} '
+                                          '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
+                                      labelStyle: labelStyle(),
+                                    ),
+                                    keyboardAppearance: Brightness.dark,
+                                    style: inputStyle(),
+                                    autofocus: true,
+                                    validator: FormBuilderValidators.required(),
+                                    name: 'value',
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  if (selected != null)
-                    DashboardMeasurablesChart(
-                      dashboardId: null,
-                      measurableDataTypeId: selected!.id,
-                      rangeStart: getRangeStart(context: context),
-                      rangeEnd: getRangeEnd(),
-                    ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 16),
+                if (selected != null)
+                  DashboardMeasurablesChart(
+                    dashboardId: null,
+                    measurableDataTypeId: selected!.id,
+                    rangeStart: getRangeStart(context: context),
+                    rangeEnd: getRangeEnd(),
+                  ),
+              ],
             ),
           ),
         );

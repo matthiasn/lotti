@@ -1,4 +1,3 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
@@ -25,17 +24,6 @@ class DashboardAppBar extends StatelessWidget with PreferredSizeWidget {
         style: appBarTextStyle(),
       ),
       centerTitle: true,
-      leading: showBackButton
-          ? IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_rounded,
-                size: 24,
-                color: colorConfig().entryTextColor,
-              ),
-              //onPressed: () => context.beamToNamed('/dashboards'),
-              onPressed: () => context.beamBack(),
-            )
-          : null,
     );
   }
 }

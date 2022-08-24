@@ -1,11 +1,11 @@
 import 'package:beamer/beamer.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/themes/themes_service.dart';
@@ -21,6 +21,7 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   final mockSecureStorage = MockSecureStorage();
+  final mockPersistenceLogic = MockPersistenceLogic();
 
   group('DashboardMeasurablesChart Widget Tests - ', () {
     setUp(() {
@@ -29,11 +30,18 @@ void main() {
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<NavService>(MockNavService())
         ..registerSingleton<SecureStorage>(mockSecureStorage);
 
       when(() => mockJournalDb.getConfigFlag(any()))
           .thenAnswer((_) async => false);
+
+      when(mockJournalDb.watchMeasurableDataTypes).thenAnswer(
+        (_) => Stream<List<MeasurableDataType>>.fromIterable([
+          [measurableWater]
+        ]),
+      );
     });
     tearDown(getIt.reset);
 
@@ -182,11 +190,10 @@ void main() {
         findsOneWidget,
       );
 
-      final chartTappableFinder = find.byType(GestureDetector).first;
-      await tester.tap(chartTappableFinder);
-      await tester.pump(kDoubleTapMinTime);
-      await tester.tap(chartTappableFinder);
-
+      final addIconFinder = find.byIcon(
+        Icons.add_circle_outline,
+      );
+      await tester.tap(addIconFinder);
       await tester.pumpAndSettle();
     });
   });
