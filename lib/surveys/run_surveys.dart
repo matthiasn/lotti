@@ -19,6 +19,7 @@ Future<void> runSurvey({
       ),
     ),
     clipBehavior: Clip.antiAliasWithSaveLayer,
+    useRootNavigator: true,
     builder: (BuildContext context) {
       return SurveyWidget(task, resultCallback);
     },

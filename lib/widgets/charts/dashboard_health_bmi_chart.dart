@@ -136,7 +136,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                     key: Key('${widget.chartConfig.hashCode}'),
                     color: Colors.white,
                     height: 320,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Stack(
                       children: [
                         charts.TimeSeriesChart(

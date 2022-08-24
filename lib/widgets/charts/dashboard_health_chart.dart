@@ -125,7 +125,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                 key: Key('${widget.chartConfig.hashCode}'),
                 color: Colors.white,
                 height: 120,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Stack(
                   children: [
                     charts.TimeSeriesChart(
