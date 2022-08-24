@@ -31,50 +31,55 @@ class AppScreen extends StatefulWidget {
   AppScreenState createState() => AppScreenState();
 }
 
+final routerDelegates = [
+  BeamerDelegate(
+    initialPath: '/dashboards',
+    locationBuilder: (routeInformation, _) {
+      if (routeInformation.location!.contains('dashboards')) {
+        return DashboardsLocation(routeInformation);
+      }
+      return NotFound(path: routeInformation.location!);
+    },
+  ),
+  BeamerDelegate(
+    initialPath: '/journal',
+    locationBuilder: (routeInformation, _) {
+      if (routeInformation.location!.contains('journal')) {
+        return JournalLocation(routeInformation);
+      }
+      if (routeInformation.location!.contains('tasks')) {
+        return TasksLocation(routeInformation);
+      }
+      return NotFound(path: routeInformation.location!);
+    },
+  ),
+  BeamerDelegate(
+    initialPath: '/tasks',
+    locationBuilder: (routeInformation, _) {
+      if (routeInformation.location!.contains('tasks')) {
+        return TasksLocation(routeInformation);
+      }
+      return NotFound(path: routeInformation.location!);
+    },
+  ),
+  BeamerDelegate(
+    initialPath: '/settings',
+    locationBuilder: (routeInformation, _) {
+      if (routeInformation.location!.contains('settings')) {
+        return SettingsLocation(routeInformation);
+      }
+      return NotFound(path: routeInformation.location!);
+    },
+  ),
+];
+
 class AppScreenState extends State<AppScreen> {
   int currentIndex = 0;
 
-  final routerDelegates = [
-    BeamerDelegate(
-      initialPath: '/dashboards',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('dashboards')) {
-          return DashboardsLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-    BeamerDelegate(
-      initialPath: '/journal',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('journal')) {
-          return JournalLocation(routeInformation);
-        }
-        if (routeInformation.location!.contains('tasks')) {
-          return TasksLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-    BeamerDelegate(
-      initialPath: '/tasks',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('tasks')) {
-          return TasksLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-    BeamerDelegate(
-      initialPath: '/settings',
-      locationBuilder: (routeInformation, _) {
-        if (routeInformation.location!.contains('settings')) {
-          return SettingsLocation(routeInformation);
-        }
-        return NotFound(path: routeInformation.location!);
-      },
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+  }
 
   // @override
   // void didChangeDependencies() {
@@ -154,7 +159,7 @@ class MyBeamerApp extends StatelessWidget {
     initialPath: '/dashboards',
     locationBuilder: RoutesLocationBuilder(
       routes: {
-        '*': (context, state, data) => const AppScreen(),
+        '*': (context, state, data) => const AppScreen(key: Key('value')),
       },
     ),
   );

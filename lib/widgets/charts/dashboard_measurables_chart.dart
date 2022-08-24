@@ -1,11 +1,11 @@
 import 'dart:core';
 
-import 'package:beamer/beamer.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/blocs/charts/measurables_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -46,7 +46,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
   @override
   Widget build(BuildContext context) {
-    void beamToNamed(String path) => context.beamToNamed(path);
+    //void beamToNamed(String path) => context.beamToNamed(path);
 
     return StreamBuilder<MeasurableDataType?>(
       stream: _db.watchMeasurableDataTypeById(widget.measurableDataTypeId),
@@ -89,10 +89,15 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
 
               void onTapAdd() {
+                final beamToNamed =
+//                    getIt<List<BeamerDelegate>>()[0].beamToNamed;
+                    //              final beamToNamed =
+                    routerDelegates[0].beamToNamed;
                 beamToNamed(
                   '/dashboards/${widget.dashboardId}'
                   '/measure/${widget.measurableDataTypeId}',
                 );
+
                 if (false && widget.enableCreate) {
                   showModalBottomSheet<void>(
                     context: context,
