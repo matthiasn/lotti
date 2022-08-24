@@ -21,5 +21,4 @@ jobs:
           channel: 'stable'
       - name: Run Flutter tests
         run: make clean_test
-      - name: Run Flutter bundle
-        run: make bundle
+      - uses: codecov/codecov-action@v3
