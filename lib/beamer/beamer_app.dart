@@ -17,6 +17,7 @@ import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
@@ -78,54 +79,60 @@ class AppScreen extends StatelessWidget {
       context.read<NavCubit>().setIndex(index);
     }
 
-    return BlocBuilder<NavCubit, NavState>(
-      builder: (
-        context,
-        NavState state,
-      ) {
-        return Scaffold(
-          body: Stack(
-            children: [
-              IndexedStack(
-                index: state.index,
+    return StreamBuilder<int>(
+      stream: getIt<NavService>().getIndexStream(),
+      builder: (context, snapshot) {
+        return BlocBuilder<NavCubit, NavState>(
+          builder: (
+            context,
+            NavState state,
+          ) {
+            final index = snapshot.data ?? 0;
+            return Scaffold(
+              body: Stack(
                 children: [
-                  Beamer(routerDelegate: state.beamerDelegates[0]),
-                  Beamer(routerDelegate: state.beamerDelegates[1]),
-                  Beamer(routerDelegate: state.beamerDelegates[2]),
-                  Beamer(routerDelegate: state.beamerDelegates[3]),
+                  IndexedStack(
+                    index: index,
+                    children: [
+                      Beamer(routerDelegate: state.beamerDelegates[0]),
+                      Beamer(routerDelegate: state.beamerDelegates[1]),
+                      Beamer(routerDelegate: state.beamerDelegates[2]),
+                      Beamer(routerDelegate: state.beamerDelegates[3]),
+                    ],
+                  ),
+                  const TimeRecordingIndicator(),
+                  const AudioRecordingIndicator(),
                 ],
               ),
-              const TimeRecordingIndicator(),
-              const AudioRecordingIndicator(),
-            ],
-          ),
-          bottomNavigationBar: SalomonBottomBar(
-            unselectedItemColor: colorConfig().bottomNavIconUnselected,
-            selectedItemColor: colorConfig().bottomNavIconSelected,
-            currentIndex: state.index,
-            items: [
-              SalomonBottomBarItem(
-                icon: const Icon(Icons.dashboard_outlined),
-                title: NavTitle(localizations.navTabTitleInsights),
+              bottomNavigationBar: SalomonBottomBar(
+                unselectedItemColor: colorConfig().bottomNavIconUnselected,
+                selectedItemColor: colorConfig().bottomNavIconSelected,
+                currentIndex: index,
+                items: [
+                  SalomonBottomBarItem(
+                    icon: const Icon(Icons.dashboard_outlined),
+                    title: NavTitle(localizations.navTabTitleInsights),
+                  ),
+                  SalomonBottomBarItem(
+                    icon: FlaggedBadgeIcon(),
+                    title: NavTitle(localizations.navTabTitleJournal),
+                  ),
+                  if (showTasks)
+                    SalomonBottomBarItem(
+                      icon: TasksBadgeIcon(),
+                      title: NavTitle(localizations.navTabTitleTasks),
+                    ),
+                  SalomonBottomBarItem(
+                    icon: OutboxBadgeIcon(
+                      icon: const Icon(Icons.settings_outlined),
+                    ),
+                    title: NavTitle(localizations.navTabTitleSettings),
+                  ),
+                ],
+                onTap: changeTab,
               ),
-              SalomonBottomBarItem(
-                icon: FlaggedBadgeIcon(),
-                title: NavTitle(localizations.navTabTitleJournal),
-              ),
-              if (showTasks)
-                SalomonBottomBarItem(
-                  icon: TasksBadgeIcon(),
-                  title: NavTitle(localizations.navTabTitleTasks),
-                ),
-              SalomonBottomBarItem(
-                icon: OutboxBadgeIcon(
-                  icon: const Icon(Icons.settings_outlined),
-                ),
-                title: NavTitle(localizations.navTabTitleSettings),
-              ),
-            ],
-            onTap: changeTab,
-          ),
+            );
+          },
         );
       },
     );

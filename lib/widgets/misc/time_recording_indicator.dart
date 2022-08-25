@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/nav/nav_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -32,9 +31,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
         final durationString = formatDuration(entryDuration(current));
 
         return GestureDetector(
-          onTap: () => context
-              .read<NavCubit>()
-              .beamToNamed('/journal/${current.meta.id}'),
+          onTap: () => beamToNamed('/journal/${current.meta.id}'),
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             child: ClipRRect(
