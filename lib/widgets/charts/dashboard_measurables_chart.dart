@@ -6,7 +6,7 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/blocs/charts/measurables_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -87,8 +87,8 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
 
               void onTapAdd() {
-                final beamState =
-                    dashboardsDelegate.currentBeamLocation.state as BeamState;
+                final beamState = dashboardsBeamerDelegate
+                    .currentBeamLocation.state as BeamState;
 
                 final id = beamState.uri.path.contains('carousel')
                     ? 'carousel'

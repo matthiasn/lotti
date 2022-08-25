@@ -1,6 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/pages/dashboards/dashboards_carousel_page.dart';
@@ -59,7 +59,7 @@ class DashboardsLocation extends BeamLocation<BeamState> {
           key: ValueKey('measure-$selectedId'),
           child: MeasurementDialog(selectedId: selectedId),
           onPopPage: (context, delegate, _, page) {
-            dashboardsDelegate.beamBack();
+            dashboardsBeamerDelegate.beamBack();
             return false;
           },
         ),
