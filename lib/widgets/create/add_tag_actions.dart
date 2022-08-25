@@ -1,5 +1,6 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lotti/blocs/nav/nav_cubit.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
@@ -26,7 +27,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
 
   @override
   Widget build(BuildContext context) {
-    void beamToNamed(String path) => context.beamToNamed(path);
+    void beamToNamed(String path) => context.read<NavCubit>().beamToNamed(path);
 
     void createTag(String tagType) =>
         beamToNamed('/settings/tags/create/$tagType');

@@ -59,7 +59,7 @@ class DashboardsLocation extends BeamLocation<BeamState> {
           key: ValueKey('measure-$selectedId'),
           child: MeasurementDialog(selectedId: selectedId),
           onPopPage: (context, delegate, _, page) {
-            routerDelegates[0].beamBack();
+            dashboardsDelegate.beamBack();
             return false;
           },
         ),

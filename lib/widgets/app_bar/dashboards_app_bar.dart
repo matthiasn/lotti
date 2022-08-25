@@ -1,6 +1,7 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/blocs/nav/nav_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -23,7 +24,8 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
         AsyncSnapshot<List<DashboardDefinition>> snapshot,
       ) {
         final dashboards = snapshot.data ?? [];
-        void beamToNamed(String path) => context.beamToNamed(path);
+        void beamToNamed(String path) =>
+            context.read<NavCubit>().beamToNamed(path);
 
         void onPressSettings() {
           beamToNamed('/settings/dashboards');

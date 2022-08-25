@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/blocs/nav/nav_cubit.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -30,7 +31,9 @@ class TagWidget extends StatelessWidget {
           children: [
             GestureDetector(
               onDoubleTap: () {
-                navigateNamedRoute('/settings/tags/${tagEntity.id}');
+                context
+                    .read<NavCubit>()
+                    .beamToNamed('/settings/tags/${tagEntity.id}');
               },
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 2),
