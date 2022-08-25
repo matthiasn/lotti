@@ -1,9 +1,9 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:getwidget/components/list_tile/gf_list_tile.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
+import 'package:lotti/blocs/nav/nav_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
@@ -155,7 +155,22 @@ class JournalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       builder: (BuildContext context, AudioPlayerState state) {
-        void beamToNamed(String path) => context.beamToNamed(path);
+        void onTap() {
+          item.mapOrNull(
+            journalAudio: (JournalAudio audioNote) {
+              context.read<AudioPlayerCubit>().setAudioNote(audioNote);
+            },
+          );
+
+          final path = item.maybeMap(
+            task: (_) => '/tasks',
+            orElse: () => '/journal',
+          );
+
+          context.read<NavCubit>().beamToNamed(
+                '$path/${item.meta.id}',
+              );
+        }
 
         return Card(
           color: colorConfig().entryCardColor,
@@ -177,20 +192,7 @@ class JournalCard extends StatelessWidget {
               orElse: () => null,
             ),
             title: JournalCardTitle(item: item),
-            onTap: () {
-              item.mapOrNull(
-                journalAudio: (JournalAudio audioNote) {
-                  context.read<AudioPlayerCubit>().setAudioNote(audioNote);
-                },
-              );
-
-              final path = item.maybeMap(
-                task: (_) => '/tasks',
-                orElse: () => '/journal',
-              );
-
-              beamToNamed('$path/${item.meta.id}');
-            },
+            onTap: onTap,
           ),
         );
       },
@@ -226,7 +228,9 @@ class JournalImageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    void beamToNamed(String path) => context.beamToNamed(path);
+    void onTap() {
+      context.read<NavCubit>().beamToNamed('/journal/${item.meta.id}');
+    }
 
     return Card(
       color: colorConfig().entryCardColor,
@@ -251,7 +255,7 @@ class JournalImageCard extends StatelessWidget {
             height: 160,
             child: JournalCardTitle(item: item),
           ),
-          onTap: () => beamToNamed('/journal/${item.meta.id}'),
+          onTap: onTap,
         ),
       ),
     );
