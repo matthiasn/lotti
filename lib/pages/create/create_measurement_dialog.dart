@@ -136,12 +136,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                 style: cancelButtonStyle(),
               ),
             ),
-            Visibility(
-              maintainSize: true,
-              maintainAnimation: true,
-              maintainState: true,
-              visible: dirty && validate(),
-              child: TextButton(
+            if (dirty && validate())
+              TextButton(
                 key: const Key('measurement_save'),
                 onPressed: saveMeasurement,
                 child: Text(
@@ -149,7 +145,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   style: saveButtonStyle(),
                 ),
               ),
-            ),
           ],
           content: FormBuilder(
             key: _formKey,
