@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/blocs/nav/nav_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -72,8 +71,6 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    void beamToNamed(String path) => context.read<NavCubit>().beamToNamed(path);
-
     void createDashboard() => beamToNamed('/settings/dashboards/create');
 
     return Scaffold(

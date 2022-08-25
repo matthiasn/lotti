@@ -8,11 +8,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/blocs/charts/measurables_chart_info_cubit.dart';
-import 'package:lotti/blocs/nav/nav_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -94,9 +94,9 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                     ? 'carousel'
                     : widget.dashboardId;
 
-                context.read<NavCubit>().beamToNamed(
-                      '/dashboards/$id/measure/${widget.measurableDataTypeId}',
-                    );
+                beamToNamed(
+                  '/dashboards/$id/measure/${widget.measurableDataTypeId}',
+                );
               }
 
               List<MeasuredObservation> data;

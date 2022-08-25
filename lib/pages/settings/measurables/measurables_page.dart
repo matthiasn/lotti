@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/blocs/nav/nav_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/settings/measurables/measurable_type_card.dart';
@@ -79,8 +78,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    void createMeasurable() =>
-        context.read<NavCubit>().beamToNamed('/settings/measurables/create');
+    void createMeasurable() => beamToNamed('/settings/measurables/create');
 
     return StreamBuilder<List<MeasurableDataType>>(
       stream: stream,

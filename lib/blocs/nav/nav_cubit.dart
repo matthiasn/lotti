@@ -2,6 +2,8 @@ import 'package:beamer/beamer.dart';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lotti/blocs/nav/nav_state.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 
 class NavCubit extends Cubit<NavState> {
   NavCubit({
@@ -54,10 +56,12 @@ class NavCubit extends Cubit<NavState> {
     debugPrint('setIndex $index');
     beamerDelegates[index].update(rebuild: false);
     emitState();
+    getIt<NavService>().setIndex(newIndex);
   }
 
   void beamToNamed(String path) {
     setPath(path);
     beamerDelegates[index].beamToNamed(path);
+    getIt<NavService>().beamToNamed(path);
   }
 }

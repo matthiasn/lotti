@@ -1,12 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/blocs/nav/nav_cubit.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -137,8 +136,6 @@ class TagCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    void beamToNamed(String path) => context.read<NavCubit>().beamToNamed(path);
-
     return Card(
       color: colorConfig().entryCardColor,
       elevation: 8,
