@@ -19,6 +19,7 @@ class DashboardDefinitionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final id = dashboard.id;
     void onTap() => beamToNamed('/settings/dashboards/$id');
+    void onTapView() => beamToNamed('/dashboards/$id');
 
     return Card(
       color: colorConfig().headerBgColor,
@@ -42,13 +43,26 @@ class DashboardDefinitionCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Visibility(
-                visible: dashboard.private,
-                child: Icon(
-                  MdiIcons.security,
-                  color: colorConfig().error,
-                  size: settingsIconSize,
-                ),
+              Row(
+                children: [
+                  Visibility(
+                    visible: dashboard.private,
+                    child: Icon(
+                      MdiIcons.security,
+                      color: colorConfig().error,
+                      size: settingsIconSize,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: onTapView,
+                    icon: Icon(
+                      MdiIcons.eyeOutline,
+                      color: colorConfig().entryTextColor,
+                      size: settingsIconSize,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
