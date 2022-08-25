@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Measurements captured in alert dialog, not modal
+
+## [0.8.131] - 2022-08-24
+### Changed:
 - Plus icon for adding measurement from dashboard instead of double tab
 - Plus icon for filling survey from dashboard instead of double tab
 

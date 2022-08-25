@@ -1,17 +1,19 @@
 import 'dart:core';
 
+import 'package:beamer/beamer.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/blocs/charts/measurables_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/create/create_measurement_modal.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardMeasurablesChart extends StatefulWidget {
@@ -85,23 +87,17 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
 
               void onTapAdd() {
-                if (widget.enableCreate) {
-                  showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
-                    ),
-                    clipBehavior: Clip.antiAliasWithSaveLayer,
-                    builder: (BuildContext context) {
-                      return CreateMeasurementModal(
-                        selectedId: measurableDataType.id,
-                      );
-                    },
-                  );
-                }
+                final delegate = routerDelegates[0];
+                final beamState =
+                    delegate.currentBeamLocation.state as BeamState;
+
+                final id = beamState.uri.path.contains('carousel')
+                    ? 'carousel'
+                    : widget.dashboardId;
+
+                delegate.beamToNamed(
+                  '/dashboards/$id/measure/${widget.measurableDataTypeId}',
+                );
               }
 
               List<MeasuredObservation> data;
@@ -194,24 +190,25 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                           measurableDataType,
                           aggregationType: aggregationType,
                         ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: IconButton(
-                            padding: const EdgeInsets.only(
-                              right: 6,
-                              top: 48,
-                              left: 16,
-                              bottom: 48,
-                            ),
-                            onPressed: onTapAdd,
-                            icon: const Icon(
-                              Icons.add_circle_outline,
-                              size: 28,
-                              color: Color.fromRGBO(0, 0, 0, 0.7),
+                        if (widget.enableCreate)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: IconButton(
+                              padding: EdgeInsets.only(
+                                right: isDesktop ? 6 : 0,
+                                top: 48,
+                                left: 16,
+                                bottom: 48,
+                              ),
+                              onPressed: onTapAdd,
+                              icon: Icon(
+                                Icons.add_circle_outline,
+                                size: 28,
+                                color: colorConfig().bodyBgColor.withAlpha(192),
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),

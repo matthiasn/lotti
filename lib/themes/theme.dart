@@ -126,7 +126,7 @@ TextStyle multiSelectStyle() => TextStyle(
 TextStyle chartTitleStyle() => TextStyle(
       fontFamily: 'Oswald',
       fontSize: 14,
-      color: colorConfig().entryTextColor,
+      color: colorConfig().bodyBgColor.withAlpha(192),
       fontWeight: FontWeight.w300,
     );
 
@@ -136,6 +136,13 @@ TextStyle saveButtonStyle() => TextStyle(
       fontSize: 20,
       fontFamily: 'Oswald',
       color: colorConfig().error,
+    );
+
+TextStyle cancelButtonStyle() => TextStyle(
+      fontSize: 20,
+      fontFamily: 'Oswald',
+      fontWeight: FontWeight.w100,
+      color: colorConfig().entryTextColor,
     );
 
 const segmentItemStyle = TextStyle(
