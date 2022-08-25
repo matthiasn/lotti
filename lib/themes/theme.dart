@@ -126,7 +126,7 @@ TextStyle multiSelectStyle() => TextStyle(
 TextStyle chartTitleStyle() => TextStyle(
       fontFamily: 'Oswald',
       fontSize: 14,
-      color: colorConfig().entryTextColor,
+      color: colorConfig().bodyBgColor.withAlpha(192),
       fontWeight: FontWeight.w300,
     );
 

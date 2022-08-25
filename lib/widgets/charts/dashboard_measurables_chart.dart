@@ -202,10 +202,10 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                                 bottom: 48,
                               ),
                               onPressed: onTapAdd,
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.add_circle_outline,
                                 size: 28,
-                                color: Color.fromRGBO(0, 0, 0, 0.7),
+                                color: colorConfig().bodyBgColor.withAlpha(192),
                               ),
                             ),
                           ),
