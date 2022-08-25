@@ -1,9 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/beamer/beamer_app.dart';
-import 'package:lotti/blocs/nav/nav_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -175,24 +172,12 @@ void main() {
         makeTestableWidgetWithScaffold(
           BeamerProvider(
             routerDelegate: delegate,
-            child: BlocProvider<NavCubit>(
-              create: (BuildContext context) => NavCubit(
-                index: 0,
-                path: '/dashboards',
-                beamerDelegates: [
-                  dashboardsDelegate,
-                  journalDelegate,
-                  tasksDelegate,
-                  settingsDelegate,
-                ],
-              ),
-              child: DashboardMeasurablesChart(
-                dashboardId: 'dashboardId',
-                rangeStart: DateTime(2022),
-                rangeEnd: DateTime(2023),
-                measurableDataTypeId: measurablePullUps.id,
-                enableCreate: true,
-              ),
+            child: DashboardMeasurablesChart(
+              dashboardId: 'dashboardId',
+              rangeStart: DateTime(2022),
+              rangeEnd: DateTime(2023),
+              measurableDataTypeId: measurablePullUps.id,
+              enableCreate: true,
             ),
           ),
         ),

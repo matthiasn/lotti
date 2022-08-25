@@ -5,7 +5,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -41,7 +41,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
     scope: HotKeyScope.inapp,
   );
 
-  final beamBack = dashboardsDelegate.beamBack;
+  final beamBack = dashboardsBeamerDelegate.beamBack;
 
   Future<void> saveMeasurement() async {
     _formKey.currentState!.save();

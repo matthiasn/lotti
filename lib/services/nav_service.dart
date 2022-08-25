@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/widgets.dart';
-import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/secure_storage.dart';
 
@@ -10,36 +10,29 @@ const String lastRouteKey = 'LAST_ROUTE_KEY';
 
 class NavService {
   NavService() {
-    restoreRoute();
+    // TODO: fix and bring back
+    // restoreRoute();
   }
 
   String currentPath = '/dashboards';
-  final indexStreamController = StreamController<int>();
-
-  Future<void> restoreRoute() async {
-    final route = await getSavedRoute();
-
-    if (route != null) {
-      currentPath = route;
-    }
-
-    // if (route != null) {
-    //   Timer(const Duration(milliseconds: 1), () {
-    //     navigateNamedRoute(route);
-    //     debugPrint('restoreRoute: $route');
-    //   });
-    // }
-  }
+  final indexStreamController = StreamController<int>.broadcast();
 
   int index = 0;
-  List<BeamerDelegate> beamerDelegates = [
-    dashboardsDelegate,
-    journalDelegate,
-    tasksDelegate,
-    settingsDelegate,
-  ];
+  final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
+  final BeamerDelegate journalDelegate = journalBeamerDelegate;
+  final BeamerDelegate tasksDelegate = tasksBeamerDelegate;
+  final BeamerDelegate settingsDelegate = settingsBeamerDelegate;
 
-  void emitState() {}
+  Future<void> restoreRoute() async {
+    final path = await getSavedRoute();
+    if (path != null) {
+      beamToNamed(path);
+    }
+  }
+
+  void emitState() {
+    indexStreamController.add(index);
+  }
 
   void setPath(String path) {
     debugPrint('setPath $path');
@@ -61,11 +54,23 @@ class NavService {
     emitState();
   }
 
+  BeamerDelegate delegateByIndex(int index) {
+    final beamerDelegates = <BeamerDelegate>[
+      dashboardsDelegate,
+      journalDelegate,
+      tasksBeamerDelegate,
+      settingsBeamerDelegate,
+    ];
+
+    return beamerDelegates[index];
+  }
+
   void setIndex(int newIndex) {
-    index = newIndex;
-    beamerDelegates[index].update(rebuild: false);
-    indexStreamController.add(index);
-    emitState();
+    if (index != newIndex) {
+      index = newIndex;
+      delegateByIndex(index).update(rebuild: false);
+      emitState();
+    }
   }
 
   Stream<int> getIndexStream() {
@@ -75,7 +80,7 @@ class NavService {
   void beamToNamed(String path) {
     setPath(path);
     persistNamedRoute(path);
-    beamerDelegates[index].beamToNamed(path);
+    delegateByIndex(index).beamToNamed(path);
   }
 }
 

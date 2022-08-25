@@ -4,14 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
-import 'package:lotti/beamer/locations/dashboards_location.dart';
-import 'package:lotti/beamer/locations/journal_location.dart';
-import 'package:lotti/beamer/locations/settings_location.dart';
-import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
-import 'package:lotti/blocs/nav/nav_cubit.dart';
-import 'package:lotti/blocs/nav/nav_state.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/database.dart';
@@ -27,112 +21,68 @@ import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/theme/theme_config.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 
-final dashboardsDelegate = BeamerDelegate(
-  initialPath: '/dashboards',
-  locationBuilder: (routeInformation, _) {
-    if (routeInformation.location!.contains('dashboards')) {
-      return DashboardsLocation(routeInformation);
-    }
-    return NotFound(path: routeInformation.location!);
-  },
-);
-
-final journalDelegate = BeamerDelegate(
-  initialPath: '/journal',
-  locationBuilder: (routeInformation, _) {
-    if (routeInformation.location!.contains('journal')) {
-      return JournalLocation(routeInformation);
-    }
-    return NotFound(path: routeInformation.location!);
-  },
-);
-
-final tasksDelegate = BeamerDelegate(
-  initialPath: '/tasks',
-  locationBuilder: (routeInformation, _) {
-    if (routeInformation.location!.contains('tasks')) {
-      return TasksLocation(routeInformation);
-    }
-    return NotFound(path: routeInformation.location!);
-  },
-);
-
-final settingsDelegate = BeamerDelegate(
-  initialPath: '/settings',
-  locationBuilder: (routeInformation, _) {
-    if (routeInformation.location!.contains('settings')) {
-      return SettingsLocation(routeInformation);
-    }
-    return NotFound(path: routeInformation.location!);
-  },
-);
-
-class AppScreen extends StatelessWidget {
+class AppScreen extends StatefulWidget {
   const AppScreen({super.key});
+
+  @override
+  State<AppScreen> createState() => _AppScreenState();
+}
+
+class _AppScreenState extends State<AppScreen> {
+  final navService = getIt<NavService>();
 
   @override
   Widget build(BuildContext context) {
     const showTasks = true;
     final localizations = AppLocalizations.of(context)!;
 
-    void changeTab(int index) {
-      context.read<NavCubit>().setIndex(index);
-    }
-
     return StreamBuilder<int>(
-      stream: getIt<NavService>().getIndexStream(),
+      stream: navService.getIndexStream(),
       builder: (context, snapshot) {
-        return BlocBuilder<NavCubit, NavState>(
-          builder: (
-            context,
-            NavState state,
-          ) {
-            final index = snapshot.data ?? 0;
-            return Scaffold(
-              body: Stack(
+        final index = snapshot.data ?? 0;
+        return Scaffold(
+          body: Stack(
+            children: [
+              IndexedStack(
+                index: index,
                 children: [
-                  IndexedStack(
-                    index: index,
-                    children: [
-                      Beamer(routerDelegate: state.beamerDelegates[0]),
-                      Beamer(routerDelegate: state.beamerDelegates[1]),
-                      Beamer(routerDelegate: state.beamerDelegates[2]),
-                      Beamer(routerDelegate: state.beamerDelegates[3]),
-                    ],
-                  ),
-                  const TimeRecordingIndicator(),
-                  const AudioRecordingIndicator(),
+                  Beamer(routerDelegate: navService.dashboardsDelegate),
+                  Beamer(routerDelegate: navService.journalDelegate),
+                  Beamer(routerDelegate: navService.tasksDelegate),
+                  Beamer(routerDelegate: navService.settingsDelegate),
                 ],
               ),
-              bottomNavigationBar: SalomonBottomBar(
-                unselectedItemColor: colorConfig().bottomNavIconUnselected,
-                selectedItemColor: colorConfig().bottomNavIconSelected,
-                currentIndex: index,
-                items: [
-                  SalomonBottomBarItem(
-                    icon: const Icon(Icons.dashboard_outlined),
-                    title: NavTitle(localizations.navTabTitleInsights),
-                  ),
-                  SalomonBottomBarItem(
-                    icon: FlaggedBadgeIcon(),
-                    title: NavTitle(localizations.navTabTitleJournal),
-                  ),
-                  if (showTasks)
-                    SalomonBottomBarItem(
-                      icon: TasksBadgeIcon(),
-                      title: NavTitle(localizations.navTabTitleTasks),
-                    ),
-                  SalomonBottomBarItem(
-                    icon: OutboxBadgeIcon(
-                      icon: const Icon(Icons.settings_outlined),
-                    ),
-                    title: NavTitle(localizations.navTabTitleSettings),
-                  ),
-                ],
-                onTap: changeTab,
+              const TimeRecordingIndicator(),
+              const AudioRecordingIndicator(),
+            ],
+          ),
+          bottomNavigationBar: SalomonBottomBar(
+            unselectedItemColor: colorConfig().bottomNavIconUnselected,
+            selectedItemColor: colorConfig().bottomNavIconSelected,
+            currentIndex: index,
+            items: [
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.dashboard_outlined),
+                title: NavTitle(localizations.navTabTitleInsights),
               ),
-            );
-          },
+              SalomonBottomBarItem(
+                icon: FlaggedBadgeIcon(),
+                title: NavTitle(localizations.navTabTitleJournal),
+              ),
+              if (showTasks)
+                SalomonBottomBarItem(
+                  icon: TasksBadgeIcon(),
+                  title: NavTitle(localizations.navTabTitleTasks),
+                ),
+              SalomonBottomBarItem(
+                icon: OutboxBadgeIcon(
+                  icon: const Icon(Icons.settings_outlined),
+                ),
+                title: NavTitle(localizations.navTabTitleSettings),
+              ),
+            ],
+            onTap: navService.setIndex,
+          ),
         );
       },
     );
@@ -145,7 +95,7 @@ class MyBeamerApp extends StatelessWidget {
   final JournalDb _db = getIt<JournalDb>();
 
   final routerDelegate = BeamerDelegate(
-    initialPath: '/dashboards',
+    initialPath: getIt<NavService>().currentPath,
     locationBuilder: RoutesLocationBuilder(
       routes: {'*': (context, state, data) => const AppScreen()},
     ),
@@ -181,18 +131,6 @@ class MyBeamerApp extends StatelessWidget {
             ),
             BlocProvider<AudioPlayerCubit>(
               create: (BuildContext context) => AudioPlayerCubit(),
-            ),
-            BlocProvider<NavCubit>(
-              create: (BuildContext context) => NavCubit(
-                index: 0,
-                path: '/dashboards',
-                beamerDelegates: [
-                  dashboardsDelegate,
-                  journalDelegate,
-                  tasksDelegate,
-                  settingsDelegate,
-                ],
-              ),
             ),
           ],
           child: DesktopMenuWrapper(
