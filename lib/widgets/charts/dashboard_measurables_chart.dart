@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/blocs/charts/measurables_chart_info_cubit.dart';
+import 'package:lotti/blocs/nav/nav_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -41,7 +42,6 @@ class DashboardMeasurablesChart extends StatefulWidget {
 
 class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
   final _chartState = charts.UserManagedState<DateTime>();
-
   final JournalDb _db = getIt<JournalDb>();
 
   @override
@@ -87,17 +87,16 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
 
               void onTapAdd() {
-                final delegate = routerDelegates[0];
                 final beamState =
-                    delegate.currentBeamLocation.state as BeamState;
+                    dashboardsDelegate.currentBeamLocation.state as BeamState;
 
                 final id = beamState.uri.path.contains('carousel')
                     ? 'carousel'
                     : widget.dashboardId;
 
-                delegate.beamToNamed(
-                  '/dashboards/$id/measure/${widget.measurableDataTypeId}',
-                );
+                context.read<NavCubit>().beamToNamed(
+                      '/dashboards/$id/measure/${widget.measurableDataTypeId}',
+                    );
               }
 
               List<MeasuredObservation> data;
