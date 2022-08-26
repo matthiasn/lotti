@@ -10,8 +10,8 @@ import 'package:lotti/widgets/journal/tags/tag_add.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../journal_test_data/test_data.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../entry_details/delete_icon_widget_test.dart';
 

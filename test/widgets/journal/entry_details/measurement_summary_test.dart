@@ -8,8 +8,8 @@ import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../journal_test_data/test_data.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {

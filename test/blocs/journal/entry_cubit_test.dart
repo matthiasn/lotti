@@ -19,10 +19,10 @@ import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/utils.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../journal_test_data/test_data.dart';
 import '../../mocks/mocks.dart';
 import '../../mocks/sync_config_test_mocks.dart';
 import '../../test_data/sync_config_test_data.dart';
+import '../../test_data/test_data.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
