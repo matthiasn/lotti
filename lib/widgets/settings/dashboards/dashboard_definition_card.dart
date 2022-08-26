@@ -1,6 +1,6 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -18,9 +18,8 @@ class DashboardDefinitionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final id = dashboard.id;
-    void beamToNamed(String path) => context.beamToNamed(path);
-
     void onTap() => beamToNamed('/settings/dashboards/$id');
+    void onTapView() => beamToNamed('/dashboards/$id');
 
     return Card(
       color: colorConfig().headerBgColor,
@@ -44,13 +43,26 @@ class DashboardDefinitionCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Visibility(
-                visible: dashboard.private,
-                child: Icon(
-                  MdiIcons.security,
-                  color: colorConfig().error,
-                  size: settingsIconSize,
-                ),
+              Row(
+                children: [
+                  Visibility(
+                    visible: dashboard.private,
+                    child: Icon(
+                      MdiIcons.security,
+                      color: colorConfig().error,
+                      size: settingsIconSize,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: onTapView,
+                    icon: Icon(
+                      MdiIcons.eyeOutline,
+                      color: colorConfig().entryTextColor,
+                      size: settingsIconSize,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

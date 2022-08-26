@@ -11,7 +11,7 @@ import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../journal_test_data/test_data.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
 class MockEntryCubit extends MockBloc<EntryCubit, EntryState>

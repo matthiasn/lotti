@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/create_entry.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -363,8 +363,6 @@ class AddTask extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    void beamToNamed(String path) => context.beamToNamed(path);
-
     return Padding(
       padding: const EdgeInsets.all(4),
       child: FloatingActionButton(

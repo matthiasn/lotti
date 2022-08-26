@@ -29,9 +29,7 @@ class TagWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             GestureDetector(
-              onDoubleTap: () {
-                navigateNamedRoute('/settings/tags/${tagEntity.id}');
-              },
+              onDoubleTap: () => beamToNamed('/settings/tags/${tagEntity.id}'),
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(

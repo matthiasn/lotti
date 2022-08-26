@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
+import 'package:beamer/beamer.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/secure_storage.dart';
 
@@ -8,22 +9,76 @@ const String lastRouteKey = 'LAST_ROUTE_KEY';
 
 class NavService {
   NavService() {
-    restoreRoute();
+    // TODO: fix and bring back
+    // restoreRoute();
   }
 
-  String? currentRoute;
-  List<String> routesByIndex = [];
+  String currentPath = '/dashboards';
+  final indexStreamController = StreamController<int>.broadcast();
+
+  int index = 0;
+  final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
+  final BeamerDelegate journalDelegate = journalBeamerDelegate;
+  final BeamerDelegate tasksDelegate = tasksBeamerDelegate;
+  final BeamerDelegate settingsDelegate = settingsBeamerDelegate;
 
   Future<void> restoreRoute() async {
-    final route = await getSavedRoute();
-    currentRoute = route;
-
-    if (route != null) {
-      Timer(const Duration(milliseconds: 1), () {
-        navigateNamedRoute(route);
-        debugPrint('restoreRoute: $route');
-      });
+    final path = await getSavedRoute();
+    if (path != null) {
+      beamToNamed(path);
     }
+  }
+
+  void emitState() {
+    indexStreamController.add(index);
+  }
+
+  void setPath(String path) {
+    currentPath = path;
+
+    if (path.startsWith('/dashboards')) {
+      setIndex(0);
+    }
+    if (path.startsWith('/journal')) {
+      setIndex(1);
+    }
+    if (path.startsWith('/tasks')) {
+      setIndex(2);
+    }
+    if (path.startsWith('/settings')) {
+      setIndex(3);
+    }
+
+    emitState();
+  }
+
+  BeamerDelegate delegateByIndex(int index) {
+    final beamerDelegates = <BeamerDelegate>[
+      dashboardsDelegate,
+      journalDelegate,
+      tasksBeamerDelegate,
+      settingsBeamerDelegate,
+    ];
+
+    return beamerDelegates[index];
+  }
+
+  void setIndex(int newIndex) {
+    if (index != newIndex) {
+      index = newIndex;
+      delegateByIndex(index).update(rebuild: false);
+      emitState();
+    }
+  }
+
+  Stream<int> getIndexStream() {
+    return indexStreamController.stream;
+  }
+
+  void beamToNamed(String path) {
+    setPath(path);
+    persistNamedRoute(path);
+    delegateByIndex(index).beamToNamed(path);
   }
 }
 
@@ -41,18 +96,10 @@ Future<String?> getIdFromSavedRoute() async {
 }
 
 void persistNamedRoute(String route) {
-  debugPrint('persistNamedRoute: $route');
   getIt<SecureStorage>().writeValue(lastRouteKey, route);
-  getIt<NavService>().currentRoute = route;
+  getIt<NavService>().currentPath = route;
 }
 
-// TODO: remove
-void navigateNamedRoute(String route) {
-  debugPrint('navigateNamedRoute: $route');
-  persistNamedRoute(route);
-  // getIt<AppRouter>().navigateNamed(
-  //   route,
-  //   includePrefixMatches: true,
-  //   onFailure: (_) => getIt<AppRouter>().navigateNamed('/'),
-  // );
+void beamToNamed(String path) {
+  getIt<NavService>().beamToNamed(path);
 }

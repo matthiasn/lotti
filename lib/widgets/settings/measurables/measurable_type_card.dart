@@ -1,6 +1,6 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -18,7 +18,7 @@ class MeasurableTypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    void onTap() => context.beamToNamed('/settings/measurables/${item.id}');
+    void onTap() => beamToNamed('/settings/measurables/${item.id}');
 
     return Padding(
       padding: const EdgeInsets.all(4),

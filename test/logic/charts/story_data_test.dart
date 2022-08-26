@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/logic/charts/story_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-import '../../journal_test_data/test_data.dart';
+import '../../test_data/test_data.dart';
 
 void main() {
   group('Story data tests - ', () {

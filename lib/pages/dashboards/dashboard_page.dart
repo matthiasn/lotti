@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -101,7 +100,7 @@ class _DashboardPageState extends State<DashboardPage> {
           }
 
           if (dashboard == null) {
-            navigateNamedRoute('/dashboards');
+            beamToNamed('/dashboards');
             return EmptyScaffoldWithTitle(
               localizations.dashboardNotFound,
             );
@@ -144,8 +143,6 @@ class DashboardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    void beamToNamed(String path) => context.beamToNamed(path);
-
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(8),

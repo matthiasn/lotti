@@ -17,10 +17,10 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/path_provider.dart';
-import '../journal_test_data/test_data.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
 import '../test_data/sync_config_test_data.dart';
+import '../test_data/test_data.dart';
 import '../utils/wait.dart';
 
 void main() {
@@ -95,7 +95,7 @@ void main() {
     test('SyncMessage with TagDefinition is enqueued into database', () async {
       final outboxService = getIt<OutboxService>();
       final message = SyncMessage.tagEntity(
-        tagEntity: testStoryTagReading,
+        tagEntity: testStoryTag1,
         status: SyncEntryStatus.initial,
       );
 

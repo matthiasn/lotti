@@ -87,7 +87,7 @@ final testDashboardConfig = DashboardDefinition(
       surveyName: 'PANAS',
     ),
     DashboardStoryTimeItem(
-      storyTagId: testStoryTagReading.id,
+      storyTagId: testStoryTag1.id,
       color: '#00FF00',
     ),
   ],
@@ -117,7 +117,7 @@ final emptyTestDashboardConfig = DashboardDefinition(
   id: '',
 );
 
-final testStoryTagReading = StoryTag(
+final testStoryTag1 = StoryTag(
   id: '27bbabc6-f323-11ec-b939-0242ac120002',
   tag: 'Reading',
   createdAt: testEpochDateTime,

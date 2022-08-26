@@ -17,7 +17,7 @@ Future<JournalEntity?> createTextEntry({String? linkedId}) async {
   );
 
   if (linkedId == null) {
-    navigateNamedRoute('/journal/${entry?.meta.id}');
+    beamToNamed('/journal/${entry?.meta.id}');
   }
   return entry;
 }

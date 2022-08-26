@@ -80,7 +80,7 @@ class LogLineCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        navigateNamedRoute('/settings/advanced/logging/${logEntry.id}');
+        beamToNamed('/settings/advanced/logging/${logEntry.id}');
       },
       child: Padding(
         padding: const EdgeInsets.all(2),

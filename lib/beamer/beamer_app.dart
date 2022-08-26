@@ -4,10 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
-import 'package:lotti/beamer/locations/dashboards_location.dart';
-import 'package:lotti/beamer/locations/journal_location.dart';
-import 'package:lotti/beamer/locations/settings_location.dart';
-import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
@@ -15,6 +11,7 @@ import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
@@ -28,135 +25,66 @@ class AppScreen extends StatefulWidget {
   const AppScreen({super.key});
 
   @override
-  AppScreenState createState() => AppScreenState();
+  State<AppScreen> createState() => _AppScreenState();
 }
 
-final routerDelegates = [
-  BeamerDelegate(
-    initialPath: '/dashboards',
-    locationBuilder: (routeInformation, _) {
-      if (routeInformation.location!.contains('dashboards')) {
-        return DashboardsLocation(routeInformation);
-      }
-      return NotFound(path: routeInformation.location!);
-    },
-  ),
-  BeamerDelegate(
-    initialPath: '/journal',
-    locationBuilder: (routeInformation, _) {
-      if (routeInformation.location!.contains('journal')) {
-        return JournalLocation(routeInformation);
-      }
-      if (routeInformation.location!.contains('tasks')) {
-        return TasksLocation(routeInformation);
-      }
-      return NotFound(path: routeInformation.location!);
-    },
-  ),
-  BeamerDelegate(
-    initialPath: '/tasks',
-    locationBuilder: (routeInformation, _) {
-      if (routeInformation.location!.contains('tasks')) {
-        return TasksLocation(routeInformation);
-      }
-      return NotFound(path: routeInformation.location!);
-    },
-  ),
-  BeamerDelegate(
-    initialPath: '/settings',
-    locationBuilder: (routeInformation, _) {
-      if (routeInformation.location!.contains('settings')) {
-        return SettingsLocation(routeInformation);
-      }
-      return NotFound(path: routeInformation.location!);
-    },
-  ),
-];
-
-class AppScreenState extends State<AppScreen> {
-  int currentIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final uriString = Beamer.of(context).configuration.location!;
-    debugPrint('didChangeDependencies $uriString');
-    if (uriString.contains('/dashboards')) {
-      currentIndex = 0;
-    }
-    if (uriString.contains('/journal')) {
-      currentIndex = 1;
-    }
-    if (uriString.contains('/tasks')) {
-      currentIndex = 2;
-    }
-    if (uriString.contains('/settings')) {
-      currentIndex = 3;
-    }
-  }
+class _AppScreenState extends State<AppScreen> {
+  final navService = getIt<NavService>();
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('AppScreenState build');
-
     const showTasks = true;
     final localizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          IndexedStack(
-            index: currentIndex,
+    return StreamBuilder<int>(
+      stream: navService.getIndexStream(),
+      builder: (context, snapshot) {
+        final index = snapshot.data ?? 0;
+        return Scaffold(
+          body: Stack(
             children: [
-              Beamer(routerDelegate: routerDelegates[0]),
-              Beamer(routerDelegate: routerDelegates[1]),
-              Beamer(routerDelegate: routerDelegates[2]),
-              Beamer(routerDelegate: routerDelegates[3]),
+              IndexedStack(
+                index: index,
+                children: [
+                  Beamer(routerDelegate: navService.dashboardsDelegate),
+                  Beamer(routerDelegate: navService.journalDelegate),
+                  Beamer(routerDelegate: navService.tasksDelegate),
+                  Beamer(routerDelegate: navService.settingsDelegate),
+                ],
+              ),
+              const TimeRecordingIndicator(),
+              const AudioRecordingIndicator(),
             ],
           ),
-          const TimeRecordingIndicator(),
-          const AudioRecordingIndicator(),
-        ],
-      ),
-      bottomNavigationBar: SalomonBottomBar(
-        unselectedItemColor: colorConfig().bottomNavIconUnselected,
-        selectedItemColor: colorConfig().bottomNavIconSelected,
-        currentIndex: currentIndex,
-        items: [
-          SalomonBottomBarItem(
-            icon: const Icon(Icons.dashboard_outlined),
-            title: NavTitle(localizations.navTabTitleInsights),
+          bottomNavigationBar: SalomonBottomBar(
+            unselectedItemColor: colorConfig().bottomNavIconUnselected,
+            selectedItemColor: colorConfig().bottomNavIconSelected,
+            currentIndex: index,
+            items: [
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.dashboard_outlined),
+                title: NavTitle(localizations.navTabTitleInsights),
+              ),
+              SalomonBottomBarItem(
+                icon: FlaggedBadgeIcon(),
+                title: NavTitle(localizations.navTabTitleJournal),
+              ),
+              if (showTasks)
+                SalomonBottomBarItem(
+                  icon: TasksBadgeIcon(),
+                  title: NavTitle(localizations.navTabTitleTasks),
+                ),
+              SalomonBottomBarItem(
+                icon: OutboxBadgeIcon(
+                  icon: const Icon(Icons.settings_outlined),
+                ),
+                title: NavTitle(localizations.navTabTitleSettings),
+              ),
+            ],
+            onTap: navService.setIndex,
           ),
-          SalomonBottomBarItem(
-            icon: FlaggedBadgeIcon(),
-            title: NavTitle(localizations.navTabTitleJournal),
-          ),
-          if (showTasks)
-            SalomonBottomBarItem(
-              icon: TasksBadgeIcon(),
-              title: NavTitle(localizations.navTabTitleTasks),
-            ),
-          SalomonBottomBarItem(
-            icon: OutboxBadgeIcon(
-              icon: const Icon(Icons.settings_outlined),
-            ),
-            title: NavTitle(localizations.navTabTitleSettings),
-          ),
-        ],
-        onTap: (index) {
-          if (index != currentIndex) {
-            setState(
-              () => currentIndex = index,
-            );
-            routerDelegates[currentIndex].update(rebuild: false);
-          }
-        },
-      ),
+        );
+      },
     );
   }
 }
@@ -167,11 +95,9 @@ class MyBeamerApp extends StatelessWidget {
   final JournalDb _db = getIt<JournalDb>();
 
   final routerDelegate = BeamerDelegate(
-    initialPath: '/dashboards',
+    initialPath: getIt<NavService>().currentPath,
     locationBuilder: RoutesLocationBuilder(
-      routes: {
-        '*': (context, state, data) => const AppScreen(),
-      },
+      routes: {'*': (context, state, data) => const AppScreen()},
     ),
   );
 
@@ -226,7 +152,6 @@ class MyBeamerApp extends StatelessWidget {
                 backButtonDispatcher: BeamerBackButtonDispatcher(
                   delegate: routerDelegate,
                 ),
-                scaffoldMessengerKey: GlobalKey(debugLabel: 'MyBeamerApp'),
               ),
             ),
           ),
