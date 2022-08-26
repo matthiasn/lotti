@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/blocs/audio/recorder_cubit.dart';
+import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -457,6 +460,141 @@ void main() {
 
         await tester.tap(addScreenIconFinder);
         await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'add audio icon is not shown when not on mobile',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const RadialAddActionButtons(radius: 150),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final addIconFinder = find.byIcon(Icons.add);
+        expect(addIconFinder, findsOneWidget);
+
+        final addAudioIconFinder = find.byIcon(MdiIcons.microphone);
+
+        await tester.tap(addIconFinder);
+        await tester.pumpAndSettle();
+
+        expect(addAudioIconFinder, findsNothing);
+      },
+    );
+
+    testWidgets(
+      'add audio icon is visible and tappable on iOS',
+      (tester) async {
+        final mockAudioRecorderCubit = MockAudioRecorderCubit();
+
+        when(() => mockAudioRecorderCubit.stream).thenAnswer(
+          (_) => Stream<AudioRecorderState>.fromIterable([initialState]),
+        );
+
+        when(mockAudioRecorderCubit.record).thenAnswer(
+          (_) async {},
+        );
+
+        when(mockAudioRecorderCubit.close).thenAnswer(
+          (_) async {},
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BlocProvider<AudioRecorderCubit>(
+              create: (BuildContext context) => mockAudioRecorderCubit,
+              child: const RadialAddActionButtons(
+                radius: 150,
+                isIOS: true,
+              ),
+            ),
+          ),
+        );
+
+        when(
+          () => mockJournalDb.getConfigFlag(any()),
+        ).thenAnswer((_) async => true);
+
+        await tester.pumpAndSettle();
+
+        final addIconFinder = find.byIcon(Icons.add);
+        expect(addIconFinder, findsOneWidget);
+
+        final addAudioIconFinder = find.byIcon(MdiIcons.microphone);
+
+        await tester.tap(addIconFinder);
+        await tester.pumpAndSettle();
+
+        expect(addAudioIconFinder, findsOneWidget);
+
+        await tester.tap(addAudioIconFinder);
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockNavService.beamToNamed('/journal/record_audio/null'),
+        ).called(1);
+
+        verify(mockAudioRecorderCubit.record).called(1);
+      },
+    );
+
+    testWidgets(
+      'add audio icon is visible and tappable on Android',
+      (tester) async {
+        final mockAudioRecorderCubit = MockAudioRecorderCubit();
+
+        when(() => mockAudioRecorderCubit.stream).thenAnswer(
+          (_) => Stream<AudioRecorderState>.fromIterable([initialState]),
+        );
+
+        when(mockAudioRecorderCubit.record).thenAnswer(
+          (_) async {},
+        );
+
+        when(mockAudioRecorderCubit.close).thenAnswer(
+          (_) async {},
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BlocProvider<AudioRecorderCubit>(
+              create: (BuildContext context) => mockAudioRecorderCubit,
+              child: const RadialAddActionButtons(
+                radius: 150,
+                isAndroid: true,
+              ),
+            ),
+          ),
+        );
+
+        when(
+          () => mockJournalDb.getConfigFlag(any()),
+        ).thenAnswer((_) async => true);
+
+        await tester.pumpAndSettle();
+
+        final addIconFinder = find.byIcon(Icons.add);
+        expect(addIconFinder, findsOneWidget);
+
+        final addAudioIconFinder = find.byIcon(MdiIcons.microphone);
+
+        await tester.tap(addIconFinder);
+        await tester.pumpAndSettle();
+
+        expect(addAudioIconFinder, findsOneWidget);
+
+        await tester.tap(addAudioIconFinder);
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockNavService.beamToNamed('/journal/record_audio/null'),
+        ).called(1);
+
+        verify(mockAudioRecorderCubit.record).called(1);
       },
     );
   });

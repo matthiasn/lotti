@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -19,12 +17,16 @@ class RadialAddActionButtons extends StatefulWidget {
     this.linked,
     required this.radius,
     this.isMacOS = false,
+    this.isIOS = false,
+    this.isAndroid = false,
   });
 
   final GlobalKey? navigatorKey;
   final JournalEntity? linked;
   final double radius;
   final bool isMacOS;
+  final bool isIOS;
+  final bool isAndroid;
 
   @override
   State<RadialAddActionButtons> createState() => _RadialAddActionButtonsState();
@@ -155,7 +157,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       );
     }
 
-    if (Platform.isIOS || Platform.isAndroid) {
+    if (widget.isIOS || widget.isAndroid) {
       items.add(
         FloatingActionButton(
           heroTag: 'audio',

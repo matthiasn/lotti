@@ -1,3 +1,4 @@
+import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -68,6 +69,8 @@ class MockVectorClockService extends Mock implements VectorClockService {}
 class MockConnectivityService extends Mock implements ConnectivityService {}
 
 class MockFgBgService extends Mock implements FgBgService {}
+
+class MockAudioRecorderCubit extends Mock implements AudioRecorderCubit {}
 
 class MockNavService extends Mock implements NavService {}
 
