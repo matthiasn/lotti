@@ -36,14 +36,14 @@ class NotificationService {
 
   Future<void> onSelectNotification(String? payload) async {
     if (payload != null) {
-      navigateNamedRoute(payload);
+      beamToNamed(payload);
     }
 
     final details =
         await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
 
     if (details?.payload != null) {
-      navigateNamedRoute('${details?.payload}');
+      beamToNamed('${details?.payload}');
     }
   }
 

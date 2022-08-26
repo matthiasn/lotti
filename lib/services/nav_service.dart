@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:beamer/beamer.dart';
-import 'package:flutter/widgets.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/secure_storage.dart';
@@ -35,7 +34,6 @@ class NavService {
   }
 
   void setPath(String path) {
-    debugPrint('setPath $path');
     currentPath = path;
 
     if (path.startsWith('/dashboards')) {
@@ -98,18 +96,10 @@ Future<String?> getIdFromSavedRoute() async {
 }
 
 void persistNamedRoute(String route) {
-  debugPrint('persistNamedRoute: $route');
   getIt<SecureStorage>().writeValue(lastRouteKey, route);
   getIt<NavService>().currentPath = route;
 }
 
-// TODO: remove
-void navigateNamedRoute(String route) {
-  debugPrint('navigateNamedRoute: $route');
-  persistNamedRoute(route);
-}
-
 void beamToNamed(String path) {
-  debugPrint('beamToNamed: $path');
   getIt<NavService>().beamToNamed(path);
 }

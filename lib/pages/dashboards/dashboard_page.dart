@@ -100,7 +100,7 @@ class _DashboardPageState extends State<DashboardPage> {
           }
 
           if (dashboard == null) {
-            navigateNamedRoute('/dashboards');
+            beamToNamed('/dashboards');
             return EmptyScaffoldWithTitle(
               localizations.dashboardNotFound,
             );

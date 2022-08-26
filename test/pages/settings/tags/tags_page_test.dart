@@ -49,7 +49,7 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
-      when(() => mockJournalDb.watchTags()).thenAnswer(
+      when(mockJournalDb.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([
           [
             testStoryTag1,
