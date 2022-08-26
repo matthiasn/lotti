@@ -79,6 +79,7 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
           floatingActionButton: RadialAddActionButtons(
             linked: item,
             radius: isMobile ? 180 : 120,
+            isMacOS: Platform.isMacOS,
           ),
           body: SingleChildScrollView(
             physics: const ClampingScrollPhysics(),

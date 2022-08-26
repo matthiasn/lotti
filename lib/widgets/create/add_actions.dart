@@ -18,11 +18,13 @@ class RadialAddActionButtons extends StatefulWidget {
     this.navigatorKey,
     this.linked,
     required this.radius,
+    this.isMacOS = false,
   });
 
   final GlobalKey? navigatorKey;
   final JournalEntity? linked;
   final double radius;
+  final bool isMacOS;
 
   @override
   State<RadialAddActionButtons> createState() => _RadialAddActionButtonsState();
@@ -47,7 +49,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
     final localizations = AppLocalizations.of(context)!;
     final items = <Widget>[];
 
-    if (Platform.isMacOS) {
+    if (widget.isMacOS) {
       items.add(
         FloatingActionButton(
           heroTag: 'screenshot',

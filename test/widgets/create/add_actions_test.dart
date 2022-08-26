@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -23,11 +24,13 @@ void main() {
     final mockNavService = MockNavService();
     final mockPersistenceLogic = MockPersistenceLogic();
     final mockTimeService = MockTimeService();
+    final mockJournalDb = MockJournalDb();
 
     setUp(() {
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<NavService>(mockNavService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
     });
@@ -398,6 +401,62 @@ void main() {
           () => mockNavService
               .beamToNamed('/tasks/79ef5021-12df-4651-ac6e-c9a5b58a859c'),
         ).called(1);
+      },
+    );
+
+    testWidgets(
+      'add screenshot icon is not shown when not on mac',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const RadialAddActionButtons(radius: 150),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final addIconFinder = find.byIcon(Icons.add);
+        expect(addIconFinder, findsOneWidget);
+
+        final addScreenIconFinder = find.byIcon(MdiIcons.monitorScreenshot);
+
+        await tester.tap(addIconFinder);
+        await tester.pumpAndSettle();
+
+        expect(addScreenIconFinder, findsNothing);
+      },
+    );
+
+    testWidgets(
+      'add screenshot icon is visible and tappable on mac',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const RadialAddActionButtons(
+              radius: 150,
+              isMacOS: true,
+            ),
+          ),
+        );
+
+        when(
+          () => mockJournalDb.getConfigFlag(any()),
+        ).thenAnswer((_) async => true);
+
+        await tester.pumpAndSettle();
+
+        final addIconFinder = find.byIcon(Icons.add);
+        expect(addIconFinder, findsOneWidget);
+
+        final addScreenIconFinder = find.byIcon(MdiIcons.monitorScreenshot);
+
+        await tester.tap(addIconFinder);
+        await tester.pumpAndSettle();
+
+        expect(addScreenIconFinder, findsOneWidget);
+
+        await tester.tap(addScreenIconFinder);
+        await tester.pumpAndSettle();
       },
     );
   });
