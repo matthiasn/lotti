@@ -124,9 +124,9 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: colorConfig().actionColor,
           onPressed: () async {
             rebuild();
-            final entry =
-                await createTextEntry(linkedId: widget.linked?.meta.id);
-            if (entry != null) {
+            final linkedId = widget.linked?.meta.id;
+            final entry = await createTextEntry(linkedId: linkedId);
+            if (entry != null && linkedId == null) {
               beamToNamed('/journal/${entry.meta.id}');
             }
           },
@@ -145,7 +145,11 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: colorConfig().actionColor,
           onPressed: () async {
             rebuild();
-            await createTimerEntry(linkedId: widget.linked?.meta.id);
+            final linkedId = widget.linked?.meta.id;
+            final entry = await createTimerEntry(linkedId: linkedId);
+            if (entry != null && linkedId == null) {
+              beamToNamed('/journal/${entry.meta.id}');
+            }
           },
           child: const Icon(
             MdiIcons.timerOutline,
@@ -165,7 +169,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             rebuild();
             final linkedId = widget.linked?.meta.id;
             beamToNamed('/journal/record_audio/$linkedId');
-
             context.read<AudioRecorderCubit>().record(
                   linkedId: widget.linked?.meta.id,
                 );
@@ -185,7 +188,8 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         backgroundColor: colorConfig().actionColor,
         onPressed: () async {
           rebuild();
-          final task = await createTask(linkedId: widget.linked?.meta.id);
+          final linkedId = widget.linked?.meta.id;
+          final task = await createTask(linkedId: linkedId);
           if (task != null) {
             beamToNamed('/journal/${task.meta.id}');
           }
