@@ -107,11 +107,6 @@ void persistNamedRoute(String route) {
 void navigateNamedRoute(String route) {
   debugPrint('navigateNamedRoute: $route');
   persistNamedRoute(route);
-  // getIt<AppRouter>().navigateNamed(
-  //   route,
-  //   includePrefixMatches: true,
-  //   onFailure: (_) => getIt<AppRouter>().navigateNamed('/'),
-  // );
 }
 
 void beamToNamed(String path) {
