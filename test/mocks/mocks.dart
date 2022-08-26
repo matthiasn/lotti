@@ -72,4 +72,6 @@ class MockNotificationService extends Mock implements NotificationService {}
 
 class FakeDashboardDefinition extends Fake implements DashboardDefinition {}
 
+class FakeTagEntity extends Fake implements TagEntity {}
+
 class FakeMeasurementData extends Fake implements MeasurementData {}

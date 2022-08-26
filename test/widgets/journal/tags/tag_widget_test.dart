@@ -62,7 +62,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           TagWidget(
             onTapRemove: testMock.onTapRemove,
-            tagEntity: testStoryTagReading,
+            tagEntity: testStoryTag1,
           ),
         ),
       );
@@ -70,7 +70,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // displays expected tag text
-      expect(find.text(testStoryTagReading.tag), findsOneWidget);
+      expect(find.text(testStoryTag1.tag), findsOneWidget);
 
       // tag has expected color
       expect(

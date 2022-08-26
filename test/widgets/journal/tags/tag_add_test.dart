@@ -19,18 +19,18 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('TagAddIconWidget Tests -', () {
-    final mockTagsService = mockTagsServiceWithTags([testStoryTagReading]);
+    final mockTagsService = mockTagsServiceWithTags([testStoryTag1]);
     final entryCubit = MockEntryCubit();
 
     when(() => mockTagsService.stream).thenAnswer(
       (_) => Stream<List<TagEntity>>.fromIterable([
-        [testStoryTagReading]
+        [testStoryTag1]
       ]),
     );
 
     when(mockTagsService.watchTags).thenAnswer(
       (_) => Stream<List<TagEntity>>.fromIterable([
-        [testStoryTagReading]
+        [testStoryTag1]
       ]),
     );
 

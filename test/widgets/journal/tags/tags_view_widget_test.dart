@@ -20,7 +20,7 @@ void main() {
       (_) => Stream<List<TagEntity>>.fromIterable([
         [
           testTag1,
-          testStoryTagReading,
+          testStoryTag1,
           testPersonTag1,
         ]
       ]),
@@ -34,8 +34,8 @@ void main() {
       (_) => testPersonTag1,
     );
 
-    when(() => mockTagsService.getTagById(testStoryTagReading.id)).thenAnswer(
-      (_) => testStoryTagReading,
+    when(() => mockTagsService.getTagById(testStoryTag1.id)).thenAnswer(
+      (_) => testStoryTag1,
     );
 
     setUpAll(() {
@@ -52,7 +52,7 @@ void main() {
               meta: testTextEntry.meta.copyWith(
                 tagIds: [
                   testTag1.id,
-                  testStoryTagReading.id,
+                  testStoryTag1.id,
                   testPersonTag1.id,
                 ],
               ),
@@ -66,7 +66,7 @@ void main() {
       // displays expected tag texts
       expect(find.text(testTag1.tag), findsOneWidget);
       expect(find.text(testPersonTag1.tag), findsOneWidget);
-      expect(find.text(testStoryTagReading.tag), findsOneWidget);
+      expect(find.text(testStoryTag1.tag), findsOneWidget);
 
       await tester.pump();
     });

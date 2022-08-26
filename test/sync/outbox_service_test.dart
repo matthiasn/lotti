@@ -95,7 +95,7 @@ void main() {
     test('SyncMessage with TagDefinition is enqueued into database', () async {
       final outboxService = getIt<OutboxService>();
       final message = SyncMessage.tagEntity(
-        tagEntity: testStoryTagReading,
+        tagEntity: testStoryTag1,
         status: SyncEntryStatus.initial,
       );
 

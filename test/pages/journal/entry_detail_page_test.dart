@@ -67,7 +67,7 @@ void main() {
 
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([
-          [testStoryTagReading]
+          [testStoryTag1]
         ]),
       );
 
