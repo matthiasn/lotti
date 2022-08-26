@@ -1,5 +1,9 @@
+import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -66,6 +70,8 @@ class MockConnectivityService extends Mock implements ConnectivityService {}
 
 class MockFgBgService extends Mock implements FgBgService {}
 
+class MockAudioRecorderCubit extends Mock implements AudioRecorderCubit {}
+
 class MockNavService extends Mock implements NavService {}
 
 class MockNotificationService extends Mock implements NotificationService {}
@@ -73,5 +79,11 @@ class MockNotificationService extends Mock implements NotificationService {}
 class FakeDashboardDefinition extends Fake implements DashboardDefinition {}
 
 class FakeTagEntity extends Fake implements TagEntity {}
+
+class FakeEntryText extends Fake implements EntryText {}
+
+class FakeTaskData extends Fake implements TaskData {}
+
+class FakeJournalEntity extends Fake implements JournalEntity {}
 
 class FakeMeasurementData extends Fake implements MeasurementData {}

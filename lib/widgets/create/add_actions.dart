@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -18,11 +16,17 @@ class RadialAddActionButtons extends StatefulWidget {
     this.navigatorKey,
     this.linked,
     required this.radius,
+    this.isMacOS = false,
+    this.isIOS = false,
+    this.isAndroid = false,
   });
 
   final GlobalKey? navigatorKey;
   final JournalEntity? linked;
   final double radius;
+  final bool isMacOS;
+  final bool isIOS;
+  final bool isAndroid;
 
   @override
   State<RadialAddActionButtons> createState() => _RadialAddActionButtonsState();
@@ -47,7 +51,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
     final localizations = AppLocalizations.of(context)!;
     final items = <Widget>[];
 
-    if (Platform.isMacOS) {
+    if (widget.isMacOS) {
       items.add(
         FloatingActionButton(
           heroTag: 'screenshot',
@@ -124,11 +128,8 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: colorConfig().actionColor,
           onPressed: () async {
             rebuild();
-            final entry =
-                await createTextEntry(linkedId: widget.linked?.meta.id);
-            if (entry != null) {
-              beamToNamed('/journal/${entry.meta.id}');
-            }
+            final linkedId = widget.linked?.meta.id;
+            await createTextEntry(linkedId: linkedId);
           },
           child: const Icon(
             MdiIcons.textLong,
@@ -145,7 +146,8 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: colorConfig().actionColor,
           onPressed: () async {
             rebuild();
-            await createTimerEntry(linkedId: widget.linked?.meta.id);
+            final linkedId = widget.linked?.meta.id;
+            await createTimerEntry(linkedId: linkedId);
           },
           child: const Icon(
             MdiIcons.timerOutline,
@@ -155,7 +157,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       );
     }
 
-    if (Platform.isIOS || Platform.isAndroid) {
+    if (widget.isIOS || widget.isAndroid) {
       items.add(
         FloatingActionButton(
           heroTag: 'audio',
@@ -165,7 +167,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             rebuild();
             final linkedId = widget.linked?.meta.id;
             beamToNamed('/journal/record_audio/$linkedId');
-
             context.read<AudioRecorderCubit>().record(
                   linkedId: widget.linked?.meta.id,
                 );
@@ -185,9 +186,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         backgroundColor: colorConfig().actionColor,
         onPressed: () async {
           rebuild();
-          final task = await createTask(linkedId: widget.linked?.meta.id);
+          final linkedId = widget.linked?.meta.id;
+          final task = await createTask(linkedId: linkedId);
           if (task != null) {
-            beamToNamed('/journal/${task.meta.id}');
+            beamToNamed('/tasks/${task.meta.id}');
           }
         },
         child: const Icon(

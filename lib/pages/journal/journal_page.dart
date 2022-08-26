@@ -438,6 +438,9 @@ class _JournalPageState extends State<JournalPage> {
                         ),
                         floatingActionButton: RadialAddActionButtons(
                           radius: isMobile ? 180 : 120,
+                          isMacOS: Platform.isMacOS,
+                          isIOS: Platform.isIOS,
+                          isAndroid: Platform.isAndroid,
                         ),
                       ),
                       if (showSlideshow) SlideShowWidget(items),
