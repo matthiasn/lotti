@@ -125,10 +125,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           onPressed: () async {
             rebuild();
             final linkedId = widget.linked?.meta.id;
-            final entry = await createTextEntry(linkedId: linkedId);
-            if (entry != null && linkedId == null) {
-              beamToNamed('/journal/${entry.meta.id}');
-            }
+            await createTextEntry(linkedId: linkedId);
           },
           child: const Icon(
             MdiIcons.textLong,
@@ -146,10 +143,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           onPressed: () async {
             rebuild();
             final linkedId = widget.linked?.meta.id;
-            final entry = await createTimerEntry(linkedId: linkedId);
-            if (entry != null && linkedId == null) {
-              beamToNamed('/journal/${entry.meta.id}');
-            }
+            await createTimerEntry(linkedId: linkedId);
           },
           child: const Icon(
             MdiIcons.timerOutline,
@@ -191,7 +185,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           final linkedId = widget.linked?.meta.id;
           final task = await createTask(linkedId: linkedId);
           if (task != null) {
-            beamToNamed('/journal/${task.meta.id}');
+            beamToNamed('/tasks/${task.meta.id}');
           }
         },
         child: const Icon(
