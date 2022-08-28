@@ -113,7 +113,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       task: (_) => const SizedBox.shrink(),
                       quantitative: (_) => const SizedBox.shrink(),
                       workout: (_) => const SizedBox.shrink(),
-                      survey: (_) => const SizedBox.shrink(),
                       orElse: () {
                         return const EditorWidget();
                       },
