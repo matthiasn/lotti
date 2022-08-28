@@ -112,9 +112,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     item.maybeMap(
                       task: (_) => const SizedBox.shrink(),
                       quantitative: (_) => const SizedBox.shrink(),
-                      measurement: (_) => const SizedBox.shrink(),
                       workout: (_) => const SizedBox.shrink(),
-                      survey: (_) => const SizedBox.shrink(),
                       orElse: () {
                         return const EditorWidget();
                       },

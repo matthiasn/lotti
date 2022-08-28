@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Allow adding text in measurable entries
+- Allow adding text in survey entries
+
+## [0.8.132] - 2022-08-26
+### Changed:
 - Measurements captured in alert dialog, not modal
 - Cross-tab navigation
 - Navigate to dashboard from settings
