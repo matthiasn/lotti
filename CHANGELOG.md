@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Allow adding text in measurable entries
 
 ## [0.8.132] - 2022-08-26
 ### Changed:
