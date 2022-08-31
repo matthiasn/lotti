@@ -140,31 +140,6 @@ void main() {
     });
 
     testWidgets(
-        'create measurement page is displayed with empty measurable type',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          Material(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1500,
-                maxWidth: 800,
-              ),
-              child: const MeasurementDialog(),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Select Measurement Type'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets(
         'create measurement page is displayed with selected measurable type '
         'if only one exists', (tester) async {
       when(mockJournalDb.watchMeasurableDataTypes).thenAnswer(
@@ -180,7 +155,9 @@ void main() {
               maxHeight: 600,
               maxWidth: 800,
             ),
-            child: const MeasurementDialog(),
+            child: MeasurementDialog(
+              selectedId: measurableWater.id,
+            ),
           ),
         ),
       );

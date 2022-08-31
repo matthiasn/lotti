@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ## Changed:
 - Upgraded dependencies
+- Capture text with adding a measurement
 
 ## [0.8.133] - 2022-08-29
 ### Changed:

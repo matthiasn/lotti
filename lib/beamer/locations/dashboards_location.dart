@@ -43,6 +43,7 @@ class DashboardsLocation extends BeamLocation<BeamState> {
           child: DashboardCarouselPage(),
         ),
       if ((isUuid(dashboardId) || pathContains('carousel')) &&
+          selectedId != null &&
           isUuid(selectedId))
         BeamPage(
           routeBuilder: (

@@ -10,6 +10,7 @@
   "addAudioTitle": "Add Audio Recording",
   "addEntryTitle": "Add Text Entry",
   "addMeasurementCancelButton": "Cancel",
+  "addMeasurementCommentLabel": "Comment",
   "addMeasurementNoneDefined": "Add Measurable Data Type",
   "addMeasurementSaveButton": "Save",
   "addMeasurementTitle": "Add Measurement",
