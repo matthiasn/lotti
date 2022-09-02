@@ -19,6 +19,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/outbox_service.dart';
+import 'package:lotti/utils/entry_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:lotti/utils/timezone.dart';
@@ -158,6 +159,7 @@ class PersistenceLogic {
   Future<MeasurementEntry?> createMeasurementEntry({
     required MeasurementData data,
     String? linkedId,
+    String? comment,
   }) async {
     try {
       final now = DateTime.now();
@@ -176,6 +178,7 @@ class PersistenceLogic {
           timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
+        entryText: entryTextFromPlain(comment),
       );
 
       await createDbEntity(

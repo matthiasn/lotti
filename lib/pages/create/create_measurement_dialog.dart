@@ -18,10 +18,10 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 class MeasurementDialog extends StatefulWidget {
   const MeasurementDialog({
     super.key,
-    this.selectedId,
+    required this.selectedId,
   });
 
-  final String? selectedId;
+  final String selectedId;
 
   @override
   State<MeasurementDialog> createState() => _MeasurementDialogState();
@@ -56,7 +56,12 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
         dateFrom: formData['date'] as DateTime,
         value: nf.parse('${formData['value']}'.replaceAll(',', '.')),
       );
-      await persistenceLogic.createMeasurementEntry(data: measurement);
+
+      await persistenceLogic.createMeasurementEntry(
+        data: measurement,
+        comment: formData['comment'] as String,
+      );
+
       setState(() {
         dirty = false;
       });
@@ -171,7 +176,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       ),
                     ),
                     const Spacer(),
-                    // TODO: fix or remove
                     IconButton(
                       icon: const Icon(Icons.settings_outlined),
                       color: colorConfig().entryTextColor,
@@ -191,81 +195,60 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       fontSize: 14,
                     ),
                   ),
-                if (selected == null)
-                  FormBuilderDropdown<MeasurableDataType>(
-                    dropdownColor: colorConfig().headerBgColor,
-                    name: 'type',
-                    decoration: InputDecoration(
-                      labelText: 'Type',
-                      labelStyle: labelStyle(),
-                      hintStyle: inputStyle(),
-                      hintText: 'Select Measurement Type',
-                    ),
-                    onChanged: (MeasurableDataType? value) {
-                      setState(() {
-                        selected = value;
-                      });
-                    },
-                    validator: FormBuilderValidators.compose(
-                      [FormBuilderValidators.required()],
-                    ),
-                    items: items
-                        .map(
-                          (MeasurableDataType item) => DropdownMenuItem(
-                            value: item,
-                            child: Text(
-                              item.displayName,
-                              style: inputStyle(),
-                            ),
-                          ),
-                        )
-                        .toList(),
+                FormBuilderCupertinoDateTimePicker(
+                  name: 'date',
+                  alwaysUse24HourFormat: true,
+                  format: DateFormat(
+                    "EEEE, MMMM d, yyyy 'at' HH:mm",
                   ),
-                if (selected != null)
-                  FormBuilderCupertinoDateTimePicker(
-                    name: 'date',
-                    alwaysUse24HourFormat: true,
-                    format: DateFormat(
-                      "EEEE, MMMM d, yyyy 'at' HH:mm",
+                  style: inputStyle(),
+                  decoration: InputDecoration(
+                    labelText: 'Measurement taken',
+                    labelStyle: labelStyle(),
+                  ),
+                  initialValue: DateTime.now(),
+                  theme: DatePickerTheme(
+                    headerColor: colorConfig().headerBgColor,
+                    backgroundColor: colorConfig().bodyBgColor,
+                    itemStyle: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
-                    style: inputStyle(),
-                    decoration: InputDecoration(
-                      labelText: 'Measurement taken',
-                      labelStyle: labelStyle(),
-                    ),
-                    initialValue: DateTime.now(),
-                    theme: DatePickerTheme(
-                      headerColor: colorConfig().headerBgColor,
-                      backgroundColor: colorConfig().bodyBgColor,
-                      itemStyle: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                      doneStyle: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
+                    doneStyle: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
                     ),
                   ),
-                if (selected != null)
-                  FormBuilderTextField(
-                    initialValue: '',
-                    key: const Key('measurement_value_field'),
-                    decoration: InputDecoration(
-                      labelText: '${selected?.displayName} '
-                          '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
-                      labelStyle: labelStyle(),
-                    ),
-                    keyboardAppearance: Brightness.dark,
-                    style: inputStyle(),
-                    autofocus: true,
-                    validator: FormBuilderValidators.required(),
-                    name: 'value',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
+                ),
+                FormBuilderTextField(
+                  initialValue: '',
+                  key: const Key('measurement_value_field'),
+                  decoration: InputDecoration(
+                    labelText: '${selected?.displayName} '
+                        '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
+                    labelStyle: labelStyle(),
                   ),
+                  keyboardAppearance: Brightness.dark,
+                  style: inputStyle(),
+                  autofocus: true,
+                  validator: FormBuilderValidators.numeric(),
+                  name: 'value',
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                ),
+                FormBuilderTextField(
+                  initialValue: '',
+                  key: const Key('measurement_comment_field'),
+                  decoration: InputDecoration(
+                    labelText: localizations.addMeasurementCommentLabel,
+                    labelStyle: labelStyle(),
+                  ),
+                  keyboardAppearance: Brightness.dark,
+                  style: inputStyle(),
+                  name: 'comment',
+                ),
               ],
             ),
           ),
