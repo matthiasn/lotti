@@ -134,7 +134,7 @@ class MyBeamerApp extends StatelessWidget {
             ),
           ],
           child: DesktopMenuWrapper(
-            ThemeConfigWrapper(
+            child: ThemeConfigWrapper(
               MaterialApp.router(
                 color: colorConfig().bodyBgColor,
                 supportedLocales: AppLocalizations.supportedLocales,

@@ -37,7 +37,7 @@ Widget makeTestableWidgetWithScaffold(Widget child) {
         body: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: const BoxConstraints(
-              maxHeight: 1500,
+              maxHeight: 800,
               maxWidth: 800,
             ),
             child: child,

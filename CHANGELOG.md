@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ## Changed:
 - Upgraded dependencies
+- Added tests for Audio Player widget
+- Added tests for Audio Recorder widget
+
+## [0.8.134] - 2022-09-02
+## Changed:
+- Upgraded dependencies
 - Capture text with adding a measurement
 
 ## [0.8.133] - 2022-08-29

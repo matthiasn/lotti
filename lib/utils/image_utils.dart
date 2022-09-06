@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:exif/exif.dart';
 import 'package:flutter/foundation.dart';

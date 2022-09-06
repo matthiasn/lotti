@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
