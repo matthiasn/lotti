@@ -5,13 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-## Changed:
+### Changed:
+- Navigation: tap on open tab navigates to tab root
+
+## [0.8.136] - 2022-09-05
+### Changed:
 - Upgraded dependencies
 - Added tests for Audio Player widget
 - Added tests for Audio Recorder widget
 
 ## [0.8.134] - 2022-09-02
-## Changed:
+### Changed:
 - Upgraded dependencies
 - Capture text with adding a measurement
 

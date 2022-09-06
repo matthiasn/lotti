@@ -63,11 +63,34 @@ class NavService {
     return beamerDelegates[index];
   }
 
+  void setIndex2(int newIndex) {
+    if (index == newIndex) {
+      if (index == 0) {
+        beamToNamed('/dashboards');
+      }
+      if (index == 1) {
+        beamToNamed('/journal');
+      }
+      if (index == 2) {
+        beamToNamed('/tasks');
+      }
+      if (index == 3) {
+        beamToNamed('/settings');
+      }
+    }
+  }
+
   void setIndex(int newIndex) {
+    index = newIndex;
+    delegateByIndex(index).update(rebuild: false);
+    emitState();
+  }
+
+  void tapIndex(int newIndex) {
     if (index != newIndex) {
-      index = newIndex;
-      delegateByIndex(index).update(rebuild: false);
-      emitState();
+      setIndex(newIndex);
+    } else {
+      setIndex2(newIndex);
     }
   }
 
