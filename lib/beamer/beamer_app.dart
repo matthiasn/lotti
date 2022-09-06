@@ -81,7 +81,7 @@ class _AppScreenState extends State<AppScreen> {
                 title: NavTitle(localizations.navTabTitleSettings),
               ),
             ],
-            onTap: navService.setIndex,
+            onTap: navService.tapIndex,
           ),
         );
       },
