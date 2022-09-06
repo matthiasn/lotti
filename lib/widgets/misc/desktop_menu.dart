@@ -10,18 +10,18 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 
 class DesktopMenuWrapper extends StatelessWidget {
-  DesktopMenuWrapper(
-    this.body, {
+  DesktopMenuWrapper({
+    required this.child,
     super.key,
   });
 
   final JournalDb _db = getIt<JournalDb>();
-  final Widget body;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     if (!Platform.isMacOS) {
-      return body;
+      return child;
     }
 
     return MaterialApp(
@@ -33,7 +33,6 @@ class DesktopMenuWrapper extends StatelessWidget {
           final localizations = AppLocalizations.of(context)!;
 
           return PlatformMenuBar(
-            body: body,
             menus: <MenuItem>[
               const PlatformMenu(
                 label: 'Lotti',
@@ -152,6 +151,7 @@ class DesktopMenuWrapper extends StatelessWidget {
                 ],
               ),
             ],
+            child: child,
           );
         },
       ),
