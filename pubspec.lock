@@ -7,7 +7,7 @@ packages:
       name: _fe_analyzer_shared
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "47.0.0"
+    version: "46.0.0"
   adaptive_dialog:
     dependency: "direct main"
     description:
@@ -16,12 +16,12 @@ packages:
     source: hosted
     version: "1.8.0+1"
   analyzer:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: analyzer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.7.0"
+    version: "4.6.0"
   analyzer_plugin:
     dependency: transitive
     description:
@@ -338,7 +338,7 @@ packages:
     source: hosted
     version: "1.2.3"
   connectivity_plus_windows:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: connectivity_plus_windows
       url: "https://pub.dartlang.org"
@@ -358,13 +358,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.5.0"
-  cross_file:
-    dependency: transitive
-    description:
-      name: cross_file
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.3.3+1"
   crypto:
     dependency: "direct main"
     description:
@@ -432,8 +425,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "0ed09ed"
-      resolved-ref: "0ed09ed4fa9061ea4fa0654f50ef8a1b0a70fcdc"
+      ref: be47a76
+      resolved-ref: be47a76ab161a583d6453e10aed80712be922cdb
       url: "https://github.com/matthiasn/delta_markdown.git"
     source: git
     version: "0.7.0"
@@ -715,13 +708,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.4"
-  flutter_inappwebview_quill:
-    dependency: transitive
-    description:
-      name: flutter_inappwebview_quill
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "5.4.6"
   flutter_keyboard_visibility:
     dependency: transitive
     description:
@@ -790,13 +776,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.2.0"
-  flutter_math_fork:
-    dependency: transitive
-    description:
-      name: flutter_math_fork
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.6.3+1"
   flutter_native_splash:
     dependency: "direct dev"
     description:
@@ -811,20 +790,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.0"
-  flutter_plugin_android_lifecycle:
-    dependency: transitive
-    description:
-      name: flutter_plugin_android_lifecycle
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.0.7"
   flutter_quill:
     dependency: "direct main"
     description:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.4.2"
+    version: "6.0.0"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -952,13 +924,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  gallery_saver:
-    dependency: transitive
-    description:
-      name: gallery_saver
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.3.2"
   geoclue:
     dependency: "direct main"
     description:
@@ -1031,13 +996,6 @@ packages:
       url: "https://github.com/matthiasn/flutter-plugins"
     source: git
     version: "3.4.4"
-  holding_gesture:
-    dependency: transitive
-    description:
-      name: holding_gesture
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.1.0"
   hotkey_manager:
     dependency: "direct main"
     description:
@@ -1101,41 +1059,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.2.0"
-  image_picker:
-    dependency: transitive
-    description:
-      name: image_picker
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.8.5+3"
-  image_picker_android:
-    dependency: transitive
-    description:
-      name: image_picker_android
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.8.5+2"
-  image_picker_for_web:
-    dependency: transitive
-    description:
-      name: image_picker_for_web
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.1.8"
-  image_picker_ios:
-    dependency: transitive
-    description:
-      name: image_picker_ios
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.8.6"
-  image_picker_platform_interface:
-    dependency: transitive
-    description:
-      name: image_picker_platform_interface
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.6.1"
   integration_test:
     dependency: "direct dev"
     description: flutter
@@ -1330,20 +1253,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.3.7"
-  math_expressions:
-    dependency: transitive
-    description:
-      name: math_expressions
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.3.1"
-  math_keyboard:
-    dependency: transitive
-    description:
-      name: math_keyboard
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.1.7"
   meta:
     dependency: transitive
     description:
@@ -1776,7 +1685,7 @@ packages:
       name: share_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.10+1"
+    version: "4.1.0"
   share_plus_linux:
     dependency: transitive
     description:
@@ -1964,13 +1873,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.1"
-  string_validator:
-    dependency: transitive
-    description:
-      name: string_validator
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.3.0"
   sync_http:
     dependency: transitive
     description:
@@ -1984,21 +1886,21 @@ packages:
       name: syncfusion_flutter_calendar
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.2.46"
+    version: "20.2.48"
   syncfusion_flutter_core:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.2.46"
+    version: "20.2.48"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.2.46"
+    version: "20.2.48"
   synchronized:
     dependency: transitive
     description:
@@ -2096,7 +1998,7 @@ packages:
       name: url_launcher_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.17"
+    version: "6.0.18"
   url_launcher_ios:
     dependency: transitive
     description:
@@ -2278,7 +2180,7 @@ packages:
       name: xml
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.4.1"
+    version: "6.1.0"
   yaml:
     dependency: "direct main"
     description:
@@ -2286,13 +2188,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.1.1"
-  youtube_player_flutter_quill:
-    dependency: transitive
-    description:
-      name: youtube_player_flutter_quill
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "8.2.2"
 sdks:
   dart: ">=2.18.0 <3.0.0"
   flutter: ">=3.3.0"
