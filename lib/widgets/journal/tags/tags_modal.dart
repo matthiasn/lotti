@@ -89,7 +89,7 @@ class TagsModal extends StatelessWidget {
                     suggestionsCallback: (String pattern) async {
                       return tagsService.getMatchingTags(
                         pattern.trim(),
-                        limit: isMobile ? 5 : 12,
+                        limit: isMobile ? 5 : 10,
                       );
                     },
                     suggestionsBoxDecoration: SuggestionsBoxDecoration(
@@ -144,6 +144,7 @@ class TagsModal extends StatelessWidget {
                 ),
               ],
             ),
+            SizedBox(height: isMobile ? 130 : 340),
           ],
         ),
       ),
