@@ -7,7 +7,7 @@ packages:
       name: _fe_analyzer_shared
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "47.0.0"
+    version: "46.0.0"
   adaptive_dialog:
     dependency: "direct main"
     description:
@@ -16,12 +16,12 @@ packages:
     source: hosted
     version: "1.8.0+1"
   analyzer:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: analyzer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.7.0"
+    version: "4.6.0"
   analyzer_plugin:
     dependency: transitive
     description:
@@ -338,7 +338,7 @@ packages:
     source: hosted
     version: "1.2.3"
   connectivity_plus_windows:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: connectivity_plus_windows
       url: "https://pub.dartlang.org"
