@@ -1,4 +1,3 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -11,11 +10,9 @@ import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
-
-class MockEntryCubit extends MockBloc<EntryCubit, EntryState>
-    implements EntryCubit {}
 
 void main() {
   group('EntryDetailHeader', () {

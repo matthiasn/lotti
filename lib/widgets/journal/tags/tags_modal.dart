@@ -68,6 +68,7 @@ class TagsModal extends StatelessWidget {
                   child: TypeAheadField(
                     textFieldConfiguration: TextFieldConfiguration(
                       autocorrect: false,
+                      //autofocus: true,
                       controller: controller,
                       onSubmitted: (String tag) async {
                         tag = tag.trim();
