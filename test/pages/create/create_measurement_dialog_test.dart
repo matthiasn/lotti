@@ -80,6 +80,7 @@ void main() {
       Future<MeasurementEntry?> mockCreateMeasurementEntry() {
         return mockPersistenceLogic.createMeasurementEntry(
           data: any(named: 'data'),
+          comment: any(named: 'comment'),
         );
       }
 
@@ -100,7 +101,7 @@ void main() {
             child: Material(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
-                  maxHeight: 1500,
+                  maxHeight: 800,
                   maxWidth: 800,
                 ),
                 child: MeasurementDialog(
