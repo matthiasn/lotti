@@ -162,6 +162,15 @@ final testTextEntry = JournalEntry(
   ),
 );
 
+final testTextEntryWithTags = testTextEntry.copyWith(
+  meta: testTextEntry.meta.copyWith(
+    tagIds: [
+      testStoryTag1.id,
+      testPersonTag1.id,
+    ],
+  ),
+);
+
 final testImageEntry = JournalImage(
   meta: Metadata(
     id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
