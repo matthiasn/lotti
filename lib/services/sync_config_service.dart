@@ -11,6 +11,7 @@ import 'package:lotti/sync/utils.dart';
 class SyncConfigService {
   final sharedSecretKey = 'sharedSecret';
   final imapConfigKey = 'imapConfig';
+  SyncConfig? _syncConfig;
 
   Future<String?> getSharedKey() async {
     return getIt<SecureStorage>().read(key: sharedSecretKey);
@@ -21,12 +22,12 @@ class SyncConfigService {
     final imapConfig = await getImapConfig();
 
     if (sharedKey != null && imapConfig != null) {
-      return SyncConfig(
+      _syncConfig = SyncConfig(
         imapConfig: imapConfig,
         sharedSecret: sharedKey,
       );
     }
-    return null;
+    return _syncConfig;
   }
 
   String generateRandomKey() {

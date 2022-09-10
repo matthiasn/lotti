@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Flutter version upgrade
-- upgraded dependencies
+- Upgraded dependencies
+- Sync reliability improvements
 
 ## [0.8.140] - 2022-09-08
 ### Fixed:
