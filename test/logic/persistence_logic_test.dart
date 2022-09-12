@@ -569,5 +569,15 @@ void main() {
         {measurableWater},
       );
     });
+
+    test('create and retrieve tag', () async {
+      const testTag = 'test-tag';
+      await getIt<PersistenceLogic>().addTagDefinition(testTag);
+
+      final createdTag =
+          (await getIt<JournalDb>().getMatchingTags(testTag)).first;
+
+      expect(createdTag.tag, testTag);
+    });
   });
 }
