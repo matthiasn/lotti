@@ -287,12 +287,6 @@ void main() {
 
       await getIt<PersistenceLogic>().upsertTagEntity(testStoryTag);
 
-      // add tag to task
-      await getIt<PersistenceLogic>().addTags(
-        journalEntityId: task.meta.id,
-        addedTagIds: [testTagId],
-      );
-
       // expect tag in database when queried
       expect(
         await getIt<JournalDb>().getMatchingTags(testStoryTag.tag),
@@ -312,6 +306,22 @@ void main() {
         [testStoryTag],
       );
 
+      // create linked comment entry
+      const testText = 'test comment for task';
+      const updatedTestText = 'updated test comment for task';
+      final comment = await getIt<PersistenceLogic>().createTextEntry(
+        EntryText(plainText: testText),
+        id: uuid.v1(),
+        started: now,
+        linkedId: task.meta.id,
+      );
+
+      // add tag to task
+      await getIt<PersistenceLogic>().addTagsWithLinked(
+        journalEntityId: task.meta.id,
+        addedTagIds: [testStoryTag.id],
+      );
+
       // expect tagged entry in journal by tag query
       expect(
         (await getIt<JournalDb>()
@@ -321,20 +331,24 @@ void main() {
                   rangeEnd: DateTime(2100),
                 )
                 .first)
-            .first
-            .meta
-            .id,
-        (await getIt<JournalDb>().journalEntityById(task.meta.id))?.meta.id,
+            .map((entity) => entity.meta.id)
+            .toSet()
+            .contains(task.meta.id),
+        true,
       );
 
-      // create linked comment entry
-      const testText = 'test comment for task';
-      const updatedTestText = 'updated test comment for task';
-      final comment = await getIt<PersistenceLogic>().createTextEntry(
-        EntryText(plainText: testText),
-        id: uuid.v1(),
-        started: now,
-        linkedId: task.meta.id,
+      expect(
+        (await getIt<JournalDb>()
+                .watchJournalEntitiesByTag(
+                  tagId: testTagId,
+                  rangeStart: DateTime(0),
+                  rangeEnd: DateTime(2100),
+                )
+                .first)
+            .map((entity) => entity.meta.id)
+            .toSet()
+            .contains(comment?.meta.id),
+        true,
       );
 
       await getIt<PersistenceLogic>().updateJournalEntityText(
@@ -448,6 +462,35 @@ void main() {
       );
     });
 
+    test('create and retrieve QuantitativeEntry', () async {
+      final entry = await getIt<PersistenceLogic>().createQuantitativeEntry(
+        testWeightEntry.data,
+      );
+      expect(entry?.data, testWeightEntry.data);
+
+      // workout is retrieved as latest workout
+      expect(
+        (await getIt<JournalDb>()
+                .latestQuantitativeByType('HealthDataType.WEIGHT'))
+            ?.data,
+        testWeightEntry.data,
+      );
+
+      // workout is retrieved on workout watch stream
+      expect(
+        ((await getIt<JournalDb>()
+                    .watchQuantitativeByType(
+                      rangeStart: DateTime(0),
+                      rangeEnd: DateTime(2100),
+                      type: 'HealthDataType.WEIGHT',
+                    )
+                    .first)
+                .first as QuantitativeEntry)
+            .data,
+        testWeightEntry.data,
+      );
+    });
+
     test('create and retrieve measurement entry', () async {
       // create test data types
       await getIt<JournalDb>().upsertMeasurableDataType(measurableWater);
@@ -525,6 +568,41 @@ void main() {
         (await getIt<JournalDb>().watchMeasurableDataTypes().first).toSet(),
         {measurableWater},
       );
+    });
+
+    test('create and retrieve tag', () async {
+      const testTag = 'test-tag';
+      await getIt<PersistenceLogic>().addTagDefinition(testTag);
+
+      final createdTag =
+          (await getIt<JournalDb>().getMatchingTags(testTag)).first;
+
+      expect(createdTag.tag, testTag);
+    });
+
+    test('create, retrieve and delete dashboard', () async {
+      await getIt<PersistenceLogic>()
+          .upsertDashboardDefinition(testDashboardConfig);
+
+      final created = (await getIt<JournalDb>()
+              .watchDashboardById(testDashboardConfig.id)
+              .first)
+          .first;
+
+      expect(created, testDashboardConfig);
+
+      when(() => mockNotificationService.cancelNotification(any()))
+          .thenAnswer((_) async {});
+
+      await getIt<PersistenceLogic>()
+          .deleteDashboardDefinition(testDashboardConfig);
+
+      final count = (await getIt<JournalDb>()
+              .watchDashboardById(testDashboardConfig.id)
+              .first)
+          .length;
+
+      expect(count, 0);
     });
   });
 }

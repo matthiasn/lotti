@@ -211,7 +211,7 @@ class EntryCubit extends Cubit<EntryState> {
   }
 
   Future<void> addTagIds(List<String> addedTagIds) async {
-    await _persistenceLogic.addTags(
+    await _persistenceLogic.addTagsWithLinked(
       journalEntityId: entryId,
       addedTagIds: addedTagIds,
     );

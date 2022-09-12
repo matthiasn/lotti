@@ -43,7 +43,9 @@ class PersistenceLogic {
     }
   }
 
-  Future<bool> createQuantitativeEntry(QuantitativeData data) async {
+  Future<QuantitativeEntry?> createQuantitativeEntry(
+    QuantitativeData data,
+  ) async {
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
@@ -54,7 +56,7 @@ class PersistenceLogic {
       final dateFrom = data.dateFrom;
       final dateTo = data.dateTo;
 
-      final journalEntity = JournalEntity.quantitative(
+      final journalEntity = QuantitativeEntry(
         data: data,
         meta: Metadata(
           createdAt: now,
@@ -68,6 +70,7 @@ class PersistenceLogic {
         ),
       );
       await createDbEntity(journalEntity, enqueueSync: true);
+      return journalEntity;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -77,7 +80,7 @@ class PersistenceLogic {
       );
     }
 
-    return true;
+    return null;
   }
 
   Future<WorkoutEntry?> createWorkoutEntry(WorkoutData data) async {
@@ -748,6 +751,41 @@ class PersistenceLogic {
         exception,
         domain: 'persistence_logic',
         subDomain: 'addTags',
+        stackTrace: stackTrace,
+      );
+    }
+
+    return true;
+  }
+
+  Future<bool?> addTagsWithLinked({
+    required String journalEntityId,
+    required List<String> addedTagIds,
+  }) async {
+    try {
+      await addTags(
+        journalEntityId: journalEntityId,
+        addedTagIds: addedTagIds,
+      );
+
+      final tagsService = getIt<TagsService>();
+      final storyTags = tagsService.getFilteredStoryTagIds(addedTagIds);
+
+      final linkedEntities = await _journalDb.getLinkedEntities(
+        journalEntityId,
+      );
+
+      for (final linked in linkedEntities) {
+        await addTags(
+          journalEntityId: linked.meta.id,
+          addedTagIds: storyTags,
+        );
+      }
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'addTagsWithLinked',
         stackTrace: stackTrace,
       );
     }
