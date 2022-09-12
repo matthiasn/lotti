@@ -579,5 +579,30 @@ void main() {
 
       expect(createdTag.tag, testTag);
     });
+
+    test('create, retrieve and delete dashboard', () async {
+      await getIt<PersistenceLogic>()
+          .upsertDashboardDefinition(testDashboardConfig);
+
+      final created = (await getIt<JournalDb>()
+              .watchDashboardById(testDashboardConfig.id)
+              .first)
+          .first;
+
+      expect(created, testDashboardConfig);
+
+      when(() => mockNotificationService.cancelNotification(any()))
+          .thenAnswer((_) async {});
+
+      await getIt<PersistenceLogic>()
+          .deleteDashboardDefinition(testDashboardConfig);
+
+      final count = (await getIt<JournalDb>()
+              .watchDashboardById(testDashboardConfig.id)
+              .first)
+          .length;
+
+      expect(count, 0);
+    });
   });
 }
