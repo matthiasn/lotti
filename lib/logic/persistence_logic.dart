@@ -43,7 +43,9 @@ class PersistenceLogic {
     }
   }
 
-  Future<bool> createQuantitativeEntry(QuantitativeData data) async {
+  Future<QuantitativeEntry?> createQuantitativeEntry(
+    QuantitativeData data,
+  ) async {
     try {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
@@ -54,7 +56,7 @@ class PersistenceLogic {
       final dateFrom = data.dateFrom;
       final dateTo = data.dateTo;
 
-      final journalEntity = JournalEntity.quantitative(
+      final journalEntity = QuantitativeEntry(
         data: data,
         meta: Metadata(
           createdAt: now,
@@ -68,6 +70,7 @@ class PersistenceLogic {
         ),
       );
       await createDbEntity(journalEntity, enqueueSync: true);
+      return journalEntity;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -77,7 +80,7 @@ class PersistenceLogic {
       );
     }
 
-    return true;
+    return null;
   }
 
   Future<WorkoutEntry?> createWorkoutEntry(WorkoutData data) async {

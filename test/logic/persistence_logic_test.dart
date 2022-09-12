@@ -462,6 +462,35 @@ void main() {
       );
     });
 
+    test('create and retrieve QuantitativeEntry', () async {
+      final entry = await getIt<PersistenceLogic>().createQuantitativeEntry(
+        testWeightEntry.data,
+      );
+      expect(entry?.data, testWeightEntry.data);
+
+      // workout is retrieved as latest workout
+      expect(
+        (await getIt<JournalDb>()
+                .latestQuantitativeByType('HealthDataType.WEIGHT'))
+            ?.data,
+        testWeightEntry.data,
+      );
+
+      // workout is retrieved on workout watch stream
+      expect(
+        ((await getIt<JournalDb>()
+                    .watchQuantitativeByType(
+                      rangeStart: DateTime(0),
+                      rangeEnd: DateTime(2100),
+                      type: 'HealthDataType.WEIGHT',
+                    )
+                    .first)
+                .first as QuantitativeEntry)
+            .data,
+        testWeightEntry.data,
+      );
+    });
+
     test('create and retrieve measurement entry', () async {
       // create test data types
       await getIt<JournalDb>().upsertMeasurableDataType(measurableWater);

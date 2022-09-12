@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded dependencies
 - Assign story tag to comment entries as well
 
+### Added:
+- More tests for persistence logic
+
 ## [0.8.141] - 2022-09-12
 ### Changed:
 - Flutter version upgrade
