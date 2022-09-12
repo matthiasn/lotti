@@ -287,12 +287,6 @@ void main() {
 
       await getIt<PersistenceLogic>().upsertTagEntity(testStoryTag);
 
-      // add tag to task
-      await getIt<PersistenceLogic>().addTags(
-        journalEntityId: task.meta.id,
-        addedTagIds: [testTagId],
-      );
-
       // expect tag in database when queried
       expect(
         await getIt<JournalDb>().getMatchingTags(testStoryTag.tag),
@@ -312,6 +306,22 @@ void main() {
         [testStoryTag],
       );
 
+      // create linked comment entry
+      const testText = 'test comment for task';
+      const updatedTestText = 'updated test comment for task';
+      final comment = await getIt<PersistenceLogic>().createTextEntry(
+        EntryText(plainText: testText),
+        id: uuid.v1(),
+        started: now,
+        linkedId: task.meta.id,
+      );
+
+      // add tag to task
+      await getIt<PersistenceLogic>().addTagsWithLinked(
+        journalEntityId: task.meta.id,
+        addedTagIds: [testStoryTag.id],
+      );
+
       // expect tagged entry in journal by tag query
       expect(
         (await getIt<JournalDb>()
@@ -321,20 +331,24 @@ void main() {
                   rangeEnd: DateTime(2100),
                 )
                 .first)
-            .first
-            .meta
-            .id,
-        (await getIt<JournalDb>().journalEntityById(task.meta.id))?.meta.id,
+            .map((entity) => entity.meta.id)
+            .toSet()
+            .contains(task.meta.id),
+        true,
       );
 
-      // create linked comment entry
-      const testText = 'test comment for task';
-      const updatedTestText = 'updated test comment for task';
-      final comment = await getIt<PersistenceLogic>().createTextEntry(
-        EntryText(plainText: testText),
-        id: uuid.v1(),
-        started: now,
-        linkedId: task.meta.id,
+      expect(
+        (await getIt<JournalDb>()
+                .watchJournalEntitiesByTag(
+                  tagId: testTagId,
+                  rangeStart: DateTime(0),
+                  rangeEnd: DateTime(2100),
+                )
+                .first)
+            .map((entity) => entity.meta.id)
+            .toSet()
+            .contains(comment?.meta.id),
+        true,
       );
 
       await getIt<PersistenceLogic>().updateJournalEntityText(

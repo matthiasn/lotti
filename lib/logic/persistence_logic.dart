@@ -755,6 +755,41 @@ class PersistenceLogic {
     return true;
   }
 
+  Future<bool?> addTagsWithLinked({
+    required String journalEntityId,
+    required List<String> addedTagIds,
+  }) async {
+    try {
+      await addTags(
+        journalEntityId: journalEntityId,
+        addedTagIds: addedTagIds,
+      );
+
+      final tagsService = getIt<TagsService>();
+      final storyTags = tagsService.getFilteredStoryTagIds(addedTagIds);
+
+      final linkedEntities = await _journalDb.getLinkedEntities(
+        journalEntityId,
+      );
+
+      for (final linked in linkedEntities) {
+        await addTags(
+          journalEntityId: linked.meta.id,
+          addedTagIds: storyTags,
+        );
+      }
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'addTagsWithLinked',
+        stackTrace: stackTrace,
+      );
+    }
+
+    return true;
+  }
+
   Future<bool?> removeTag({
     required String journalEntityId,
     required String tagId,

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Upgraded dependencies
+- Assign story tag to comment entries as well
 
 ## [0.8.141] - 2022-09-12
 ### Changed:
