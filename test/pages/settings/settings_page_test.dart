@@ -49,8 +49,6 @@ void main() {
       expect(find.text('Health Import'), findsOneWidget);
       expect(find.text('Config Flags'), findsOneWidget);
       expect(find.text('Advanced Settings'), findsOneWidget);
-
-      verify(mockJournalDb.watchJournalCount).called(1);
     });
   });
 }

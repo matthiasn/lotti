@@ -113,6 +113,7 @@
   "outboxMonitorRetry": "retry",
   "outboxMonitorSwitchLabel": "enabled",
   "saveLabel": "Save",
+  "settingsAboutTitle": "About Lotti",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsConflictsTitle": "Sync Conflicts",
   "settingsDashboardsSearchHint": "Search...",

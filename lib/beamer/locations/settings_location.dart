@@ -1,5 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/pages/settings/about_page.dart';
 import 'package:lotti/pages/settings/advanced_settings_page.dart';
 import 'package:lotti/pages/settings/conflicts.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
@@ -170,6 +171,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-logging'),
           child: LoggingPage(),
+        ),
+
+      if (pathContains('advanced/about'))
+        const BeamPage(
+          key: ValueKey('settings-about'),
+          child: AboutPage(),
         ),
 
       if (pathContains('advanced/logging') && pathContainsKey('logEntryId'))

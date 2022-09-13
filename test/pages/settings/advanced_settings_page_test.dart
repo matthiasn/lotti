@@ -58,11 +58,7 @@ void main() {
       expect(find.text('Logs'), findsOneWidget);
       expect(find.text('Maintenance'), findsOneWidget);
 
-      expect(find.byIcon(Icons.sync), findsOneWidget);
       expect(find.byIcon(MdiIcons.mailboxOutline), findsOneWidget);
-      expect(find.byIcon(MdiIcons.emoticonConfusedOutline), findsOneWidget);
-      expect(find.byIcon(MdiIcons.informationOutline), findsOneWidget);
-      expect(find.byIcon(MdiIcons.broom), findsOneWidget);
 
       // Check outbox badge count
       expect(find.text('$n'), findsOneWidget);

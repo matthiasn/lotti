@@ -23,7 +23,6 @@ class AdvancedSettingsPage extends StatelessWidget {
         child: ListView(
           children: [
             SettingsCard(
-              icon: const SettingsIcon(Icons.sync),
               title: localizations.settingsSyncCfgTitle,
               path: '/settings/advanced/sync_settings',
             ),
@@ -37,21 +36,23 @@ class AdvancedSettingsPage extends StatelessWidget {
             ),
             const SettingsDivider(),
             SettingsCard(
-              icon: const SettingsIcon(MdiIcons.emoticonConfusedOutline),
               title: localizations.settingsConflictsTitle,
               path: '/settings/advanced/conflicts',
             ),
             const SettingsDivider(),
             SettingsCard(
-              icon: const SettingsIcon(MdiIcons.informationOutline),
               title: localizations.settingsLogsTitle,
               path: '/settings/advanced/logging',
             ),
             const SettingsDivider(),
             SettingsCard(
-              icon: const SettingsIcon(MdiIcons.broom),
               title: localizations.settingsMaintenanceTitle,
               path: '/settings/advanced/maintenance',
+            ),
+            const SettingsDivider(),
+            SettingsCard(
+              title: localizations.settingsAboutTitle,
+              path: '/settings/advanced/about',
             ),
           ],
         ),
