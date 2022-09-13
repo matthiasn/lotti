@@ -133,10 +133,11 @@ TextStyle multiSelectStyle() => TextStyle(
       fontSize: 24,
     );
 
-TextStyle chartTitleStyle() => TextStyle(
+TextStyle chartTitleStyle() => const TextStyle(
       fontFamily: mainFont,
       fontSize: 14,
-      color: colorConfig().bodyBgColor.withAlpha(192),
+      //color: colorConfig().bodyBgColor.withAlpha(192),
+      color: Colors.black,
       fontWeight: FontWeight.w300,
     );
 

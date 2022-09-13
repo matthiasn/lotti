@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - White background in Settings
 - White background in Dashboards List
 - White background in Dashboards
+- Chart title in black
 
 ## [0.8.142] - 2022-09-13
 ### Changed:
