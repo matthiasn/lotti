@@ -119,8 +119,9 @@ TextStyle titleStyle() => TextStyle(
       fontWeight: FontWeight.w300,
     );
 
-TextStyle taskTitleStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+TextStyle taskTitleStyle() => const TextStyle(
+      //color: colorConfig().entryTextColor,
+      color: Colors.black,
       fontFamily: mainFont,
       fontSize: 24,
     );

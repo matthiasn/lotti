@@ -107,7 +107,8 @@ class _DashboardPageState extends State<DashboardPage> {
           }
 
           return Scaffold(
-            backgroundColor: colorConfig().bodyBgColor,
+            // backgroundColor: colorConfig().bodyBgColor,
+            backgroundColor: Colors.white,
             appBar: DashboardAppBar(
               dashboard,
               showBackButton: widget.showBackButton,
@@ -219,13 +220,14 @@ class DashboardWidget extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 8),
                     child: Text(
                       dashboard.description,
-                      style: formLabelStyle(),
+                      style: formLabelStyle().copyWith(color: Colors.black),
                     ),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.dashboard_customize_outlined),
-                  color: colorConfig().entryTextColor,
+                  // color: colorConfig().entryTextColor,
+                  color: Colors.black,
                   onPressed: () =>
                       beamToNamed('/settings/dashboards/$dashboardId'),
                 ),

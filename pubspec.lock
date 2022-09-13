@@ -1065,7 +1065,7 @@ packages:
     source: sdk
     version: "0.0.0"
   intersperse:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: intersperse
       url: "https://pub.dartlang.org"

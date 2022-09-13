@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.143+1343
+version: 0.8.143+1344
 
 msix_config:
   display_name: Lotti
@@ -98,6 +98,7 @@ dependencies:
       ref: bfa66d6
 
   hotkey_manager: ^0.1.6
+  intersperse: ^2.0.0
   intl: ^0.17.0
   jiffy: ^5.0.0
   json_annotation: ^4.6.0

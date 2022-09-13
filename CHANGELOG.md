@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typography: use PlusJakartaSans in bottom navigation
 - Hide icons in Settings
 - White background in Settings
+- White background in Dashboards List
+- White background in Dashboards
 
 ## [0.8.142] - 2022-09-13
 ### Changed:
