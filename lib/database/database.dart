@@ -583,7 +583,7 @@ class JournalDb extends _$JournalDb {
         const ConfigFlag(
           name: listenToScreenshotHotkeyFlag,
           description: 'Listen to global screenshot hotkey?',
-          status: true,
+          status: false,
         ),
       );
       await insertFlagIfNotExists(
