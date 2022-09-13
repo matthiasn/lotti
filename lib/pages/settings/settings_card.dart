@@ -5,12 +5,12 @@ import 'package:lotti/themes/theme.dart';
 class SettingsCard extends StatelessWidget {
   const SettingsCard({
     super.key,
-    required this.icon,
+    this.icon,
     required this.title,
     required this.path,
   });
 
-  final Widget icon;
+  final Widget? icon;
   final String title;
   final String path;
 
