@@ -13,6 +13,7 @@ class AppTheme {
 }
 
 const double chipBorderRadius = 8;
+const mainFont = 'PlusJakartaSans';
 
 const chipPadding = EdgeInsets.symmetric(
   vertical: 2,
@@ -35,7 +36,7 @@ TextStyle inputStyle() => TextStyle(
 
 TextStyle textStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontWeight: FontWeight.w400,
       fontSize: 16,
     );
@@ -69,25 +70,25 @@ TextStyle pickerMonoTextStyle() => textStyle().copyWith(
 
 TextStyle formLabelStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontSize: 16,
     );
 
 TextStyle buttonLabelStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontSize: 16,
     );
 
 TextStyle settingsLabelStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontSize: 16,
     );
 
 TextStyle choiceLabelStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontSize: 16,
     );
 
@@ -99,32 +100,39 @@ TextStyle logDetailStyle() => TextStyle(
 
 TextStyle appBarTextStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
-      fontSize: 20,
+      fontFamily: mainFont,
+      fontSize: 22,
+      fontWeight: FontWeight.bold,
+    );
+
+TextStyle settingsCardTextStyle() => TextStyle(
+      color: colorConfig().entryTextColor,
+      fontFamily: mainFont,
+      fontSize: 22,
     );
 
 TextStyle titleStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontSize: 32,
       fontWeight: FontWeight.w300,
     );
 
 TextStyle taskTitleStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontSize: 24,
     );
 
 TextStyle multiSelectStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontWeight: FontWeight.w100,
       fontSize: 24,
     );
 
 TextStyle chartTitleStyle() => TextStyle(
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontSize: 14,
       color: colorConfig().bodyBgColor.withAlpha(192),
       fontWeight: FontWeight.w300,
@@ -134,43 +142,43 @@ const taskFormFieldStyle = TextStyle(color: Colors.black87);
 
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: 20,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       color: colorConfig().error,
     );
 
 TextStyle cancelButtonStyle() => TextStyle(
       fontSize: 20,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontWeight: FontWeight.w100,
       color: colorConfig().entryTextColor,
     );
 
 const segmentItemStyle = TextStyle(
-  fontFamily: 'Oswald',
+  fontFamily: mainFont,
   fontSize: 14,
 );
 
 const badgeStyle = TextStyle(
-  fontFamily: 'Oswald',
+  fontFamily: mainFont,
   fontWeight: FontWeight.w300,
   fontSize: 12,
 );
 
 const bottomNavLabelStyle = TextStyle(
-  fontFamily: 'Oswald',
+  fontFamily: mainFont,
   fontWeight: FontWeight.w300,
 );
 
 TextStyle definitionCardTitleStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontSize: 24,
       height: 1.2,
     );
 
 TextStyle definitionCardSubtitleStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
+      fontFamily: mainFont,
       fontWeight: FontWeight.w200,
       fontSize: 16,
     );

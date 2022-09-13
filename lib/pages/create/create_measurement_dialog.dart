@@ -171,7 +171,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       selected?.displayName ?? '',
                       style: TextStyle(
                         color: colorConfig().entryTextColor,
-                        fontFamily: 'Oswald',
+                        fontFamily: mainFont,
                         fontSize: 24,
                       ),
                     ),
@@ -190,7 +190,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     '${selected?.description}',
                     style: TextStyle(
                       color: colorConfig().entryTextColor,
-                      fontFamily: 'Oswald',
+                      fontFamily: mainFont,
                       fontWeight: FontWeight.w300,
                       fontSize: 14,
                     ),

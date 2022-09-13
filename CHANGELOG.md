@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Typography: use PlusJakartaSans in Settings
+- Typography: use PlusJakartaSans in Settings > Tags
+- Typography: use PlusJakartaSans in Settings > Dashboards
+- Typography: use PlusJakartaSans in Settings > Advanced
+- Typography: use PlusJakartaSans in Settings > Advanced > Maintenance
+- Typography: use PlusJakartaSans in Settings > Config Flags
+- Typography: use PlusJakartaSans in app bar
+- Typography: use PlusJakartaSans in bottom navigation
+
+## [0.8.142] - 2022-09-13
+### Changed:
 - Upgraded dependencies
 - Assign story tag to comment entries as well
 

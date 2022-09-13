@@ -153,7 +153,7 @@ class TagCard extends StatelessWidget {
                 tagEntity.tag,
                 style: TextStyle(
                   color: getTagColor(tagEntity),
-                  fontFamily: 'Oswald',
+                  fontFamily: mainFont,
                   fontSize: 20,
                 ),
               ),

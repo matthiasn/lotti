@@ -109,11 +109,7 @@ class ConfigFlagCard extends StatelessWidget {
                 child: Text(
                   softWrap: true,
                   getLocalizedDescription(item),
-                  style: TextStyle(
-                    color: colorConfig().entryTextColor,
-                    fontFamily: 'Oswald',
-                    fontSize: 20,
-                  ),
+                  style: settingsCardTextStyle(),
                 ),
               ),
               const SizedBox(width: 8),

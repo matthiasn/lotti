@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.143+1338
+version: 0.8.143+1341
 
 msix_config:
   display_name: Lotti
@@ -218,6 +218,22 @@ flutter:
         - asset: assets/fonts/Lato/Lato-Italic.ttf
         - asset: assets/fonts/Lato/Lato-BoldItalic.ttf
         - asset: assets/fonts/Lato/Lato-BlackItalic.ttf
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Bold.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-BoldItalic.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-ExtraBold.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-ExtraBoldItalic.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-ExtraLight.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-ExtraLightItalic.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Italic.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Light.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-LightItalic.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Medium.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-MediumItalic.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-SemiBold.ttf
+        - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-SemiBoldItalic.ttf
     - family: ShareTechMono
       fonts:
         - asset: assets/fonts/ShareTechMono-Regular.ttf

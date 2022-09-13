@@ -101,7 +101,7 @@ class DashboardCard extends StatelessWidget {
           dashboard.name,
           style: TextStyle(
             color: colorConfig().entryTextColor,
-            fontFamily: 'Oswald',
+            fontFamily: mainFont,
             fontSize: 24,
             fontWeight: FontWeight.w300,
           ),
@@ -110,7 +110,7 @@ class DashboardCard extends StatelessWidget {
           dashboard.description,
           style: TextStyle(
             color: colorConfig().entryTextColor,
-            fontFamily: 'Oswald',
+            fontFamily: mainFont,
             fontSize: 16,
             fontWeight: FontWeight.w300,
           ),
