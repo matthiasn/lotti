@@ -125,9 +125,10 @@ class DashboardItemCard extends StatelessWidget {
         ),
         title: Text(
           itemName,
+          softWrap: true,
           style: TextStyle(
             color: colorConfig().entryTextColor,
-            fontFamily: 'Oswald',
+            fontFamily: mainFont,
             fontSize: 20,
           ),
         ),

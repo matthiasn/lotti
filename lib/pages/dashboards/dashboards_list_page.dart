@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
+import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/sort.dart';
@@ -55,20 +57,24 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         }
 
         return Scaffold(
-          backgroundColor: colorConfig().bodyBgColor,
+          // backgroundColor: colorConfig().bodyBgColor,
+          backgroundColor: Colors.white,
           appBar: const DashboardsAppBar(),
           body: ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.all(8),
-            children: List.generate(
-              dashboards.length,
-              (int index) {
-                return DashboardCard(
-                  dashboard: dashboards.elementAt(index),
-                  index: index,
-                );
-              },
-            ),
+            children: intersperse(
+              const SettingsDivider(),
+              List.generate(
+                dashboards.length,
+                (int index) {
+                  return DashboardCard(
+                    dashboard: dashboards.elementAt(index),
+                    index: index,
+                  );
+                },
+              ),
+            ).toList(),
           ),
         );
       },
@@ -89,32 +95,40 @@ class DashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: colorConfig().entryCardColor,
-      elevation: 8,
+      // color: colorConfig().entryCardColor,
+      color: Colors.white,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.only(left: 16, top: 8, bottom: 20, right: 16),
+        contentPadding: const EdgeInsets.only(
+          left: 16,
+          top: 8,
+          bottom: 8,
+          right: 16,
+        ),
         title: Text(
           dashboard.name,
-          style: TextStyle(
-            color: colorConfig().entryTextColor,
-            fontFamily: 'Oswald',
+          style: const TextStyle(
+            //color: colorConfig().entryTextColor,
+            color: Colors.black,
+            fontFamily: mainFont,
             fontSize: 24,
             fontWeight: FontWeight.w300,
           ),
         ),
-        subtitle: Text(
-          dashboard.description,
-          style: TextStyle(
-            color: colorConfig().entryTextColor,
-            fontFamily: 'Oswald',
-            fontSize: 16,
-            fontWeight: FontWeight.w300,
-          ),
-        ),
+        subtitle: dashboard.description.isNotEmpty
+            ? Text(
+                dashboard.description,
+                style: TextStyle(
+                  color: colorConfig().entryTextColor,
+                  fontFamily: mainFont,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w300,
+                ),
+              )
+            : null,
         onTap: () => beamToNamed('/dashboards/${dashboard.id}'),
       ),
     );

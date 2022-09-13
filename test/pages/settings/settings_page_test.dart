@@ -4,7 +4,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/settings_page.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -43,13 +42,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Settings'), findsOneWidget);
-
-      expect(find.byIcon(MdiIcons.tagOutline), findsOneWidget);
-      expect(find.byIcon(Icons.dashboard_customize_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.insights), findsOneWidget);
-      expect(find.byIcon(MdiIcons.heartOutline), findsOneWidget);
-      expect(find.byIcon(MdiIcons.flagOutline), findsOneWidget);
-      expect(find.byIcon(MdiIcons.alertRhombusOutline), findsOneWidget);
 
       expect(find.text('Tags'), findsOneWidget);
       expect(find.text('Dashboard Management'), findsOneWidget);

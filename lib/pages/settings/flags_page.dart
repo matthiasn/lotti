@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intersperse/intersperse.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -30,7 +32,8 @@ class _FlagsPageState extends State<FlagsPage> {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.settingsFlagsTitle),
-      backgroundColor: colorConfig().bodyBgColor,
+      //backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: Colors.white,
       body: StreamBuilder<Set<ConfigFlag>>(
         stream: stream,
         builder: (
@@ -43,15 +46,18 @@ class _FlagsPageState extends State<FlagsPage> {
           return ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            children: List.generate(
-              items.length,
-              (int index) {
-                return ConfigFlagCard(
-                  item: items.elementAt(index),
-                  index: index,
-                );
-              },
-            ),
+            children: intersperse(
+              const SettingsDivider(),
+              List.generate(
+                items.length,
+                (int index) {
+                  return ConfigFlagCard(
+                    item: items.elementAt(index),
+                    index: index,
+                  );
+                },
+              ),
+            ).toList(),
           );
         },
       ),
@@ -92,15 +98,20 @@ class ConfigFlagCard extends StatelessWidget {
     }
 
     return Card(
-      color: colorConfig().headerBgColor,
-      elevation: 8,
+      // color: colorConfig().headerBgColor,
+      color: Colors.white,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),
       child: SingleChildScrollView(
         child: ListTile(
-          contentPadding:
-              const EdgeInsets.only(left: 16, top: 4, bottom: 8, right: 16),
+          contentPadding: const EdgeInsets.only(
+            left: 24,
+            top: 4,
+            bottom: 8,
+            right: 24,
+          ),
           title: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -109,11 +120,7 @@ class ConfigFlagCard extends StatelessWidget {
                 child: Text(
                   softWrap: true,
                   getLocalizedDescription(item),
-                  style: TextStyle(
-                    color: colorConfig().entryTextColor,
-                    fontFamily: 'Oswald',
-                    fontSize: 20,
-                  ),
+                  style: settingsCardTextStyle(),
                 ),
               ),
               const SizedBox(width: 8),

@@ -169,7 +169,10 @@ class NavTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
-      child: Text(title),
+      child: Text(
+        title,
+        style: const TextStyle(fontFamily: mainFont),
+      ),
     );
   }
 }
