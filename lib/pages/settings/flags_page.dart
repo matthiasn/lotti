@@ -30,7 +30,8 @@ class _FlagsPageState extends State<FlagsPage> {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.settingsFlagsTitle),
-      backgroundColor: colorConfig().bodyBgColor,
+      //backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: Colors.white,
       body: StreamBuilder<Set<ConfigFlag>>(
         stream: stream,
         builder: (
@@ -92,15 +93,20 @@ class ConfigFlagCard extends StatelessWidget {
     }
 
     return Card(
-      color: colorConfig().headerBgColor,
+      // color: colorConfig().headerBgColor,
+      color: Colors.white,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),
       child: SingleChildScrollView(
         child: ListTile(
-          contentPadding:
-              const EdgeInsets.only(left: 16, top: 4, bottom: 8, right: 16),
+          contentPadding: const EdgeInsets.only(
+            left: 16,
+            top: 4,
+            bottom: 8,
+            right: 16,
+          ),
           title: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -105,10 +105,11 @@ TextStyle appBarTextStyle() => TextStyle(
       fontWeight: FontWeight.bold,
     );
 
-TextStyle settingsCardTextStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+TextStyle settingsCardTextStyle() => const TextStyle(
+      //color: colorConfig().entryTextColor,
+      color: Colors.black,
       fontFamily: mainFont,
-      fontSize: 22,
+      fontSize: 24,
     );
 
 TextStyle titleStyle() => TextStyle(

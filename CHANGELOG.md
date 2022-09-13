@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typography: use PlusJakartaSans in app bar
 - Typography: use PlusJakartaSans in bottom navigation
 - Hide icons in Settings
+- White background in Settings
 
 ## [0.8.142] - 2022-09-13
 ### Changed:
