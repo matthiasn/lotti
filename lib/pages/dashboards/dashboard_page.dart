@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -144,9 +145,68 @@ class DashboardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final items = dashboard.items.map((DashboardItem dashboardItem) {
+      return dashboardItem.map(
+        measurement: (DashboardMeasurementItem measurement) {
+          return DashboardMeasurablesChart(
+            measurableDataTypeId: measurement.id,
+            dashboardId: dashboardId,
+            aggregationType: measurement.aggregationType,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+            enableCreate: true,
+          );
+        },
+        healthChart: (DashboardHealthItem healthChart) {
+          return DashboardHealthChart(
+            chartConfig: healthChart,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          );
+        },
+        workoutChart: (DashboardWorkoutItem workoutChart) {
+          return DashboardWorkoutChart(
+            chartConfig: workoutChart,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          );
+        },
+        storyTimeChart: (DashboardStoryTimeItem storyChart) {
+          return DashboardStoryChart(
+            chartConfig: storyChart,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          );
+        },
+        wildcardStoryTimeChart: (WildcardStoryTimeItem storyChart) {
+          return Column(
+            children: [
+              WildcardStoryChart(
+                chartConfig: storyChart,
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ),
+              WildcardStoryWeeklyChart(
+                chartConfig: storyChart,
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ),
+            ],
+          );
+        },
+        surveyChart: (DashboardSurveyItem surveyChart) {
+          return DashboardSurveyChart(
+            chartConfig: surveyChart,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          );
+        },
+      );
+    });
+
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.only(top: 16, right: 8),
         child: Column(
           children: [
             if (showTitle)
@@ -154,64 +214,7 @@ class DashboardWidget extends StatelessWidget {
                 dashboard.name,
                 style: taskTitleStyle(),
               ),
-            ...dashboard.items.map((DashboardItem dashboardItem) {
-              return dashboardItem.map(
-                measurement: (DashboardMeasurementItem measurement) {
-                  return DashboardMeasurablesChart(
-                    measurableDataTypeId: measurement.id,
-                    dashboardId: dashboardId,
-                    aggregationType: measurement.aggregationType,
-                    rangeStart: rangeStart,
-                    rangeEnd: rangeEnd,
-                    enableCreate: true,
-                  );
-                },
-                healthChart: (DashboardHealthItem healthChart) {
-                  return DashboardHealthChart(
-                    chartConfig: healthChart,
-                    rangeStart: rangeStart,
-                    rangeEnd: rangeEnd,
-                  );
-                },
-                workoutChart: (DashboardWorkoutItem workoutChart) {
-                  return DashboardWorkoutChart(
-                    chartConfig: workoutChart,
-                    rangeStart: rangeStart,
-                    rangeEnd: rangeEnd,
-                  );
-                },
-                storyTimeChart: (DashboardStoryTimeItem storyChart) {
-                  return DashboardStoryChart(
-                    chartConfig: storyChart,
-                    rangeStart: rangeStart,
-                    rangeEnd: rangeEnd,
-                  );
-                },
-                wildcardStoryTimeChart: (WildcardStoryTimeItem storyChart) {
-                  return Column(
-                    children: [
-                      WildcardStoryChart(
-                        chartConfig: storyChart,
-                        rangeStart: rangeStart,
-                        rangeEnd: rangeEnd,
-                      ),
-                      WildcardStoryWeeklyChart(
-                        chartConfig: storyChart,
-                        rangeStart: rangeStart,
-                        rangeEnd: rangeEnd,
-                      ),
-                    ],
-                  );
-                },
-                surveyChart: (DashboardSurveyItem surveyChart) {
-                  return DashboardSurveyChart(
-                    chartConfig: surveyChart,
-                    rangeStart: rangeStart,
-                    rangeEnd: rangeEnd,
-                  );
-                },
-              );
-            }),
+            ...intersperse(const SizedBox(height: 16), items),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
