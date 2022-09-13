@@ -109,7 +109,7 @@ TextStyle settingsCardTextStyle() => const TextStyle(
       //color: colorConfig().entryTextColor,
       color: Colors.black,
       fontFamily: mainFont,
-      fontSize: 24,
+      fontSize: 25,
     );
 
 TextStyle titleStyle() => TextStyle(

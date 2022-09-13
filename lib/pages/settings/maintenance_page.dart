@@ -49,9 +49,8 @@ class _MaintenancePageState extends State<MaintenancePage> {
               BuildContext context,
               AsyncSnapshot<int> snapshot,
             ) {
-              return ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(8),
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   MaintenanceCard(
                     title:
@@ -124,12 +123,15 @@ class MaintenanceCard extends StatelessWidget {
       // color: colorConfig().headerBgColor,
       color: Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      margin: EdgeInsets.zero,
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.only(left: 16, top: 4, bottom: 8, right: 16),
+        hoverColor: colorConfig().settingsHoverColor,
+        contentPadding: const EdgeInsets.only(
+          left: 16,
+          top: 4,
+          bottom: 8,
+          right: 16,
+        ),
         title: Text(
           title,
           softWrap: true,

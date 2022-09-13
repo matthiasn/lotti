@@ -29,43 +29,39 @@ class _SettingsPageState extends State<SettingsPage> {
       //backgroundColor: colorConfig().bodyBgColor,
       backgroundColor: Colors.white,
       appBar: TitleAppBar(title: localizations.navTabTitleSettings),
-      body: Container(
-        margin: const EdgeInsets.symmetric(
-          vertical: 8,
-        ),
-        child: ListView(
-          children: [
-            SettingsCard(
-              title: localizations.settingsTagsTitle,
-              path: '/settings/tags',
-            ),
-            const SettingsDivider(),
-            SettingsCard(
-              title: localizations.settingsDashboardsTitle,
-              path: '/settings/dashboards',
-            ),
-            const SettingsDivider(),
-            SettingsCard(
-              title: localizations.settingsMeasurablesTitle,
-              path: '/settings/measurables',
-            ),
-            const SettingsDivider(),
-            SettingsCard(
-              title: localizations.settingsHealthImportTitle,
-              path: '/settings/health_import',
-            ),
-            const SettingsDivider(),
-            SettingsCard(
-              title: localizations.settingsFlagsTitle,
-              path: '/settings/flags',
-            ),
-            const SettingsDivider(),
-            SettingsCard(
-              title: localizations.settingsAdvancedTitle,
-              path: '/settings/advanced',
-            ),
-          ],
-        ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SettingsCard(
+            title: localizations.settingsTagsTitle,
+            path: '/settings/tags',
+          ),
+          const SettingsDivider(),
+          SettingsCard(
+            title: localizations.settingsDashboardsTitle,
+            path: '/settings/dashboards',
+          ),
+          const SettingsDivider(),
+          SettingsCard(
+            title: localizations.settingsMeasurablesTitle,
+            path: '/settings/measurables',
+          ),
+          const SettingsDivider(),
+          SettingsCard(
+            title: localizations.settingsHealthImportTitle,
+            path: '/settings/health_import',
+          ),
+          const SettingsDivider(),
+          SettingsCard(
+            title: localizations.settingsFlagsTitle,
+            path: '/settings/flags',
+          ),
+          const SettingsDivider(),
+          SettingsCard(
+            title: localizations.settingsAdvancedTitle,
+            path: '/settings/advanced',
+          ),
+        ],
       ),
     );
   }
