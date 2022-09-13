@@ -5,7 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/app_bar_version.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/tasks/linked_duration.dart';
 
 class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
@@ -49,7 +49,7 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
         final isTask = item is Task;
 
         if (!isTask) {
-          return const VersionAppBar(title: 'Lotti');
+          return const TitleAppBar(title: 'Lotti');
         } else {
           return AppBar(
             backgroundColor: colorConfig().headerBgColor,

@@ -176,13 +176,11 @@ class FormattedTime extends StatelessWidget {
             size: 14,
           ),
         ),
-        SizedBox(
-          width: 56,
-          child: Text(
-            formatDuration(entryDuration(displayed)),
-            style: style?.copyWith(
-              color: labelColor,
-            ),
+        Text(
+          formatDuration(entryDuration(displayed)),
+          style: style?.copyWith(
+            color: labelColor,
+            fontFamily: 'ShareTechMono',
           ),
         ),
       ],

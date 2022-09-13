@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/settings_card.dart';
-import 'package:lotti/widgets/app_bar/app_bar_version.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
@@ -28,7 +28,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       //backgroundColor: colorConfig().bodyBgColor,
       backgroundColor: Colors.white,
-      appBar: VersionAppBar(title: localizations.navTabTitleSettings),
+      appBar: TitleAppBar(title: localizations.navTabTitleSettings),
       body: Container(
         margin: const EdgeInsets.symmetric(
           vertical: 8,

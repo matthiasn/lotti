@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Move version and entry count to about page
+
+## [0.8.143] - 2022-09-13
+### Changed:
 - Typography: use PlusJakartaSans in Settings
 - Typography: use PlusJakartaSans in Settings > Tags
 - Typography: use PlusJakartaSans in Settings > Dashboards
@@ -19,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - White background in Dashboards List
 - White background in Dashboards
 - Chart title in black
+- Move app version to Settings > About
 
 ## [0.8.142] - 2022-09-13
 ### Changed:

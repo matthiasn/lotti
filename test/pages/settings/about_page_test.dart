@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/settings/settings_page.dart';
+import 'package:lotti/pages/settings/about_page.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -34,21 +34,15 @@ void main() {
               maxHeight: 1000,
               maxWidth: 1000,
             ),
-            child: const SettingsPage(),
+            child: const AboutPage(),
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Settings'), findsOneWidget);
-
-      expect(find.text('Tags'), findsOneWidget);
-      expect(find.text('Dashboard Management'), findsOneWidget);
-      expect(find.text('Measurable Data Types'), findsOneWidget);
-      expect(find.text('Health Import'), findsOneWidget);
-      expect(find.text('Config Flags'), findsOneWidget);
-      expect(find.text('Advanced Settings'), findsOneWidget);
+      expect(find.text('About Lotti'), findsOneWidget);
+      expect(find.text('Entries count: 111'), findsOneWidget);
     });
   });
 }
