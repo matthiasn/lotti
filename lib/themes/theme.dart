@@ -13,6 +13,7 @@ class AppTheme {
 }
 
 const double chipBorderRadius = 8;
+const mainFont = 'PlusJakartaSans';
 
 const chipPadding = EdgeInsets.symmetric(
   vertical: 2,
@@ -99,8 +100,15 @@ TextStyle logDetailStyle() => TextStyle(
 
 TextStyle appBarTextStyle() => TextStyle(
       color: colorConfig().entryTextColor,
-      fontFamily: 'Oswald',
-      fontSize: 20,
+      fontFamily: mainFont,
+      fontSize: 22,
+      fontWeight: FontWeight.bold,
+    );
+
+TextStyle settingsCardTextStyle() => TextStyle(
+      color: colorConfig().entryTextColor,
+      fontFamily: mainFont,
+      fontSize: 22,
     );
 
 TextStyle titleStyle() => TextStyle(

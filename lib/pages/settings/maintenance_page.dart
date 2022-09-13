@@ -119,18 +119,10 @@ class MaintenanceCard extends StatelessWidget {
       child: ListTile(
         contentPadding:
             const EdgeInsets.only(left: 16, top: 4, bottom: 8, right: 16),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: colorConfig().entryTextColor,
-                fontFamily: 'Oswald',
-                fontSize: 20,
-              ),
-            ),
-          ],
+        title: Text(
+          title,
+          softWrap: true,
+          style: settingsCardTextStyle(),
         ),
         onTap: onTap,
       ),
