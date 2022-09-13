@@ -181,6 +181,7 @@ void main() {
         'searchBgColor',
         'selectedChoiceChipColor',
         'selectedChoiceChipTextColor',
+        'settingsHoverColor',
         'starredGold',
         'storyTagColor',
         'tagColor',

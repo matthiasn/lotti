@@ -22,7 +22,9 @@ class SettingsCard extends StatelessWidget {
       //color: colorConfig().entryCardColor,
       color: Colors.white,
       elevation: 0,
+      margin: EdgeInsets.zero,
       child: ListTile(
+        hoverColor: colorConfig().settingsHoverColor,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 32,
           vertical: 8,
@@ -45,9 +47,10 @@ class SettingsDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Divider(
       color: Colors.black,
+      height: 1,
       thickness: 1,
-      indent: 24,
-      endIndent: 24,
+      indent: 0,
+      endIndent: 0,
     );
   }
 }
