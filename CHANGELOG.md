@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Styling: Settings layout
 - Styling: hover in Settings
+- Styling: measurables chart
 
 ## [0.8.144] - 2022-09-13
 ### Changed:

@@ -14,7 +14,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardMeasurablesChart extends StatefulWidget {
@@ -86,19 +85,6 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                 defaultRenderer = charts.BarRendererConfig<DateTime>();
               }
 
-              void onTapAdd() {
-                final beamState = dashboardsBeamerDelegate
-                    .currentBeamLocation.state as BeamState;
-
-                final id = beamState.uri.path.contains('carousel')
-                    ? 'carousel'
-                    : widget.dashboardId;
-
-                beamToNamed(
-                  '/dashboards/$id/measure/${widget.measurableDataTypeId}',
-                );
-              }
-
               List<MeasuredObservation> data;
               if (aggregationType == AggregationType.none) {
                 data = aggregateMeasurementNone(measurements);
@@ -148,16 +134,22 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               ];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    key: Key(measurableDataType.description),
-                    color: Colors.white,
-                    height: 120,
-                    child: Stack(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: SizedBox(
+                  key: Key(measurableDataType.description),
+                  height: 136,
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          top: 24,
+                          left: 10,
+                          right: 10,
+                        ),
+                        child: Container(
+                          color: colorConfig().chartBgColor,
+                          padding: const EdgeInsets.only(
+                            left: 8,
+                          ),
                           child: charts.TimeSeriesChart(
                             seriesList,
                             animate: false,
@@ -185,31 +177,14 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                             ),
                           ),
                         ),
-                        MeasurablesChartInfoWidget(
-                          measurableDataType,
-                          aggregationType: aggregationType,
-                        ),
-                        if (widget.enableCreate)
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: IconButton(
-                              padding: EdgeInsets.only(
-                                right: isDesktop ? 6 : 0,
-                                top: 48,
-                                left: 16,
-                                bottom: 48,
-                              ),
-                              onPressed: onTapAdd,
-                              icon: Icon(
-                                Icons.add_circle_outline,
-                                size: 28,
-                                color: colorConfig().bodyBgColor.withAlpha(192),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
+                      ),
+                      MeasurablesChartInfoWidget(
+                        measurableDataType,
+                        dashboardId: widget.dashboardId,
+                        enableCreate: widget.enableCreate,
+                        aggregationType: aggregationType,
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -224,12 +199,28 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 class MeasurablesChartInfoWidget extends StatelessWidget {
   const MeasurablesChartInfoWidget(
     this.measurableDataType, {
+    required this.dashboardId,
     required this.aggregationType,
+    required this.enableCreate,
     super.key,
   });
 
   final MeasurableDataType measurableDataType;
   final AggregationType aggregationType;
+  final String? dashboardId;
+  final bool enableCreate;
+
+  void onTapAdd() {
+    final beamState =
+        dashboardsBeamerDelegate.currentBeamLocation.state as BeamState;
+
+    final id =
+        beamState.uri.path.contains('carousel') ? 'carousel' : dashboardId;
+
+    beamToNamed(
+      '/dashboards/$id/measure/${measurableDataType.id}',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -238,48 +229,58 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
         final selected = state.selected;
 
         return Positioned(
-          top: 0,
-          left: MediaQuery.of(context).size.width / 4,
+          top: -10,
+          left: 0,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width / 2,
-            child: IgnorePointer(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+            width: MediaQuery.of(context).size.width,
+            child: Row(
+              children: [
+                const SizedBox(width: 10),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width / 2,
+                  ),
+                  child: Text(
+                    '${measurableDataType.displayName}'
+                    '${aggregationType != AggregationType.none ? ' ' : ''}'
+                    '${aggregationLabel(aggregationType)}',
+                    style: chartTitleStyle(),
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                  ),
+                ),
+                if (selected != null) ...[
                   const Spacer(),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width / 2,
-                    ),
+                  Padding(
+                    padding: AppTheme.chartDateHorizontalPadding,
                     child: Text(
-                      '${measurableDataType.displayName}'
-                      '${aggregationType != AggregationType.none ? ' ' : ''}'
-                      '${aggregationLabel(aggregationType)}',
+                      ' ${ymd(selected.dateTime)}',
                       style: chartTitleStyle(),
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
                     ),
                   ),
-                  if (selected != null) ...[
-                    const Spacer(),
-                    Padding(
-                      padding: AppTheme.chartDateHorizontalPadding,
-                      child: Text(
-                        ' ${ymd(selected.dateTime)}',
-                        style: chartTitleStyle(),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      ' ${NumberFormat('#,###.##').format(selected.value)}'
-                      ' ${measurableDataType.unitName}',
-                      style: chartTitleStyle()
-                          .copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ],
                   const Spacer(),
+                  Text(
+                    ' ${NumberFormat('#,###.##').format(selected.value)}'
+                    ' ${measurableDataType.unitName}',
+                    style:
+                        chartTitleStyle().copyWith(fontWeight: FontWeight.bold),
+                  ),
                 ],
-              ),
+                const Spacer(),
+                if (enableCreate)
+                  IconButton(
+                    padding: const EdgeInsets.only(
+                      right: 10,
+                      left: 10,
+                    ),
+                    onPressed: onTapAdd,
+                    icon: const Icon(
+                      Icons.add,
+                      size: 28,
+                      color: Colors.black,
+                    ),
+                  )
+              ],
             ),
           ),
         );

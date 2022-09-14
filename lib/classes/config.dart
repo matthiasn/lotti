@@ -74,6 +74,8 @@ class ColorConfig with _$ColorConfig {
     @ColorConverter() required Color audioMeterBarBackground,
     @ColorConverter() required Color inactiveAudioControl,
     @ColorConverter() required Color settingsHoverColor,
+    @ColorConverter() required Color chartBgColor,
+    @ColorConverter() required Color teal,
   }) = _ColorConfig;
 
   factory ColorConfig.fromJson(Map<String, dynamic> json) =>

@@ -50,6 +50,8 @@ final darkTheme = ColorConfig(
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
   unselectedChoiceChipTextColor: colorFromCssHex('#474b40'),
   settingsHoverColor: colorFromCssHex('#CFF3EA'),
+  chartBgColor: colorFromCssHex('#F5F5F5'),
+  teal: colorFromCssHex('#82E6CE'),
 );
 
 final brightTheme = ColorConfig(
@@ -94,4 +96,6 @@ final brightTheme = ColorConfig(
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
   unselectedChoiceChipTextColor: colorFromCssHex('#474b40'),
   settingsHoverColor: colorFromCssHex('#CFF3EA'),
+  chartBgColor: colorFromCssHex('#F5F5F5'),
+  teal: colorFromCssHex('#82E6CE'),
 );
