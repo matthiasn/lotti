@@ -117,22 +117,21 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
 
         return AlertDialog(
           insetPadding: const EdgeInsets.symmetric(horizontal: 32),
-          contentPadding: const EdgeInsets.only(
-            left: 32,
-            right: 32,
-            top: 16,
-            bottom: 16,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 20,
           ),
-          shape: RoundedRectangleBorder(
-            side: BorderSide(
-              color: colorConfig().bodyBgColor.withAlpha(96),
-              width: 3,
-            ),
-            borderRadius: const BorderRadius.all(Radius.circular(16)),
+          shape: const RoundedRectangleBorder(
+            side: BorderSide(),
+            borderRadius: BorderRadius.all(Radius.circular(1)),
           ),
-          backgroundColor: colorConfig().headerBgColor,
+          backgroundColor: Colors.white,
           actionsAlignment: MainAxisAlignment.spaceBetween,
-          actionsPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+          actionsPadding: const EdgeInsets.only(
+            left: 10,
+            right: 10,
+            bottom: 20,
+          ),
           actions: [
             TextButton(
               key: const Key('measurement_cancel'),
@@ -169,16 +168,16 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   children: [
                     Text(
                       selected?.displayName ?? '',
-                      style: TextStyle(
-                        color: colorConfig().entryTextColor,
+                      style: const TextStyle(
+                        color: Colors.black,
                         fontFamily: mainFont,
-                        fontSize: 24,
+                        fontSize: 20,
                       ),
                     ),
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.settings_outlined),
-                      color: colorConfig().entryTextColor,
+                      color: Colors.black,
                       onPressed: () => beamToNamed(
                         '/settings/measurables/${selected?.id}',
                       ),
@@ -188,8 +187,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                 if ('${selected?.description}'.isNotEmpty)
                   Text(
                     '${selected?.description}',
-                    style: TextStyle(
-                      color: colorConfig().entryTextColor,
+                    style: const TextStyle(
+                      color: Colors.black,
                       fontFamily: mainFont,
                       fontWeight: FontWeight.w300,
                       fontSize: 14,
@@ -199,12 +198,12 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   name: 'date',
                   alwaysUse24HourFormat: true,
                   format: DateFormat(
-                    "EEEE, MMMM d, yyyy 'at' HH:mm",
+                    "MMMM d, yyyy 'at' HH:mm",
                   ),
-                  style: inputStyle(),
+                  style: newInputStyle(),
                   decoration: InputDecoration(
                     labelText: 'Measurement taken',
-                    labelStyle: labelStyle(),
+                    labelStyle: newLabelStyle(),
                   ),
                   initialValue: DateTime.now(),
                   theme: DatePickerTheme(
@@ -227,27 +226,29 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   decoration: InputDecoration(
                     labelText: '${selected?.displayName} '
                         '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
-                    labelStyle: labelStyle(),
+                    labelStyle: newLabelStyle(),
                   ),
-                  keyboardAppearance: Brightness.dark,
-                  style: inputStyle(),
+                  keyboardAppearance: Brightness.light,
+                  style: newInputStyle(),
                   autofocus: true,
                   validator: FormBuilderValidators.numeric(),
                   name: 'value',
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  cursorColor: colorConfig().riptide,
                 ),
                 FormBuilderTextField(
                   initialValue: '',
                   key: const Key('measurement_comment_field'),
                   decoration: InputDecoration(
                     labelText: localizations.addMeasurementCommentLabel,
-                    labelStyle: labelStyle(),
+                    labelStyle: newLabelStyle(),
                   ),
-                  keyboardAppearance: Brightness.dark,
-                  style: inputStyle(),
+                  keyboardAppearance: Brightness.light,
+                  style: newInputStyle(),
                   name: 'comment',
+                  cursorColor: colorConfig().riptide,
                 ),
               ],
             ),

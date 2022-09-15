@@ -34,6 +34,13 @@ TextStyle inputStyle() => TextStyle(
       fontSize: 18,
     );
 
+TextStyle newInputStyle() => const TextStyle(
+      color: Colors.black,
+      fontWeight: FontWeight.bold,
+      fontFamily: 'Lato',
+      fontSize: 18,
+    );
+
 TextStyle textStyle() => TextStyle(
       color: colorConfig().entryTextColor,
       fontFamily: mainFont,
@@ -59,6 +66,12 @@ TextStyle labelStyleLarger() => textStyleLarger().copyWith(
 
 TextStyle labelStyle() => TextStyle(
       color: colorConfig().entryTextColor,
+      fontWeight: FontWeight.w500,
+      fontSize: 18,
+    );
+
+TextStyle newLabelStyle() => const TextStyle(
+      color: Colors.black,
       fontWeight: FontWeight.w500,
       fontSize: 18,
     );
@@ -149,11 +162,11 @@ TextStyle saveButtonStyle() => TextStyle(
       color: colorConfig().error,
     );
 
-TextStyle cancelButtonStyle() => TextStyle(
+TextStyle cancelButtonStyle() => const TextStyle(
       fontSize: 20,
       fontFamily: mainFont,
       fontWeight: FontWeight.w100,
-      color: colorConfig().entryTextColor,
+      color: Colors.black,
     );
 
 const segmentItemStyle = TextStyle(
