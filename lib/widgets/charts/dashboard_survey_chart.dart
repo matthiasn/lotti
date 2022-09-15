@@ -52,74 +52,71 @@ class DashboardSurveyChart extends StatelessWidget {
           }
         }
 
-        return Padding(
+        return Container(
           padding: const EdgeInsets.only(bottom: 5),
-          child: Container(
-            key: Key('${chartConfig.hashCode}'),
-            color: Colors.white,
-            height: 120,
-            child: Stack(
-              children: [
-                Padding(
+          key: Key('${chartConfig.hashCode}'),
+          height: 120,
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 24,
+                  left: 10,
+                  right: 10,
+                ),
+                child: Container(
+                  color: colorConfig().ice,
                   padding: const EdgeInsets.only(
-                    top: 24,
-                    left: 10,
-                    right: 10,
+                    left: 8,
                   ),
-                  child: Container(
-                    color: colorConfig().ice,
-                    padding: const EdgeInsets.only(
-                      left: 8,
+                  child: charts.TimeSeriesChart(
+                    surveySeries(
+                      entities: items,
+                      dashboardSurveyItem: chartConfig,
                     ),
-                    child: charts.TimeSeriesChart(
-                      surveySeries(
-                        entities: items,
-                        dashboardSurveyItem: chartConfig,
-                      ),
-                      animate: false,
-                      behaviors: [
-                        chartRangeAnnotation(rangeStart, rangeEnd),
-                      ],
-                      domainAxis: timeSeriesAxis,
-                      defaultRenderer: defaultRenderer,
-                      primaryMeasureAxis: const charts.NumericAxisSpec(
-                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                          zeroBound: false,
-                          desiredTickCount: 5,
-                        ),
+                    animate: false,
+                    behaviors: [
+                      chartRangeAnnotation(rangeStart, rangeEnd),
+                    ],
+                    domainAxis: timeSeriesAxis,
+                    defaultRenderer: defaultRenderer,
+                    primaryMeasureAxis: const charts.NumericAxisSpec(
+                      tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                        zeroBound: false,
+                        desiredTickCount: 5,
                       ),
                     ),
                   ),
                 ),
-                Positioned(
-                  top: -10,
-                  left: 0,
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const SizedBox(width: 10),
-                        Text(
-                          chartConfig.surveyName,
-                          style: chartTitleStyle(),
+              ),
+              Positioned(
+                top: -10,
+                left: 0,
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(width: 10),
+                      Text(
+                        chartConfig.surveyName,
+                        style: chartTitleStyle(),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        onPressed: onTapAdd,
+                        icon: const Icon(
+                          Icons.add,
+                          size: 28,
+                          color: Colors.black,
                         ),
-                        const Spacer(),
-                        IconButton(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          onPressed: onTapAdd,
-                          icon: const Icon(
-                            Icons.add,
-                            size: 28,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },

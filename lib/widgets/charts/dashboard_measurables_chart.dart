@@ -125,7 +125,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                 charts.Series<MeasuredObservation, DateTime>(
                   id: measurableDataType.displayName,
                   colorFn: (MeasuredObservation val, _) {
-                    return charts.MaterialPalette.blue.shadeDefault;
+                    return charts.Color.fromHex(code: '#82E6CE');
                   },
                   domainFn: (MeasuredObservation val, _) => val.dateTime,
                   measureFn: (MeasuredObservation val, _) => val.value,

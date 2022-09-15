@@ -22,7 +22,7 @@ Map<String, Map<String, Set<String>>> surveyScoreDefinitions = {
 DashboardSurveyItem cfq11SurveyChart = DashboardSurveyItem(
   surveyType: 'cfq11SurveyTask',
   surveyName: 'CFQ11',
-  colorsByScoreKey: {'CFQ11': '#0000FF'},
+  colorsByScoreKey: {'CFQ11': '#82E6CE'},
 );
 
 DashboardSurveyItem panasSurveyChart = DashboardSurveyItem(
