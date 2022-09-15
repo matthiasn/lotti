@@ -49,6 +49,11 @@ final darkTheme = ColorConfig(
   selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
   unselectedChoiceChipTextColor: colorFromCssHex('#474b40'),
+  settingsHoverColor: colorFromCssHex('#CFF3EA'),
+  riptide: colorFromCssHex('#82E6CE'),
+  riplight: colorFromCssHex('#CFF3EA'),
+  alarm: colorFromCssHex('#FF7373'),
+  ice: colorFromCssHex('#F5F5F5'),
 );
 
 final brightTheme = ColorConfig(
@@ -92,4 +97,9 @@ final brightTheme = ColorConfig(
   selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
   unselectedChoiceChipTextColor: colorFromCssHex('#474b40'),
+  settingsHoverColor: colorFromCssHex('#CFF3EA'),
+  riptide: colorFromCssHex('#82E6CE'),
+  riplight: colorFromCssHex('#CFF3EA'),
+  alarm: colorFromCssHex('#FF7373'),
+  ice: colorFromCssHex('#F5F5F5'),
 );

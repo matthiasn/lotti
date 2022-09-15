@@ -7,6 +7,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   dynamic_color
   flutter_secure_storage_windows
   hotkey_manager
+  pasteboard
   permission_handler_windows
   screen_retriever
   sqlite3_flutter_libs

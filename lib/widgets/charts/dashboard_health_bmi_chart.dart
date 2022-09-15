@@ -130,16 +130,20 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    key: Key('${widget.chartConfig.hashCode}'),
-                    color: Colors.white,
-                    height: 320,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Stack(
-                      children: [
-                        charts.TimeSeriesChart(
+                child: SizedBox(
+                  key: Key('${widget.chartConfig.hashCode}'),
+                  height: 320,
+                  child: Stack(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(
+                          top: 24,
+                          left: 10,
+                          right: 10,
+                        ),
+                        color: colorConfig().ice,
+                        padding: const EdgeInsets.only(left: 8),
+                        child: charts.TimeSeriesChart(
                           seriesList,
                           animate: false,
                           behaviors: [
@@ -148,7 +152,6 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                                 widget.rangeStart,
                                 widget.rangeEnd,
                                 charts.RangeAnnotationAxisType.domain,
-                                color: charts.Color.white,
                               ),
                               ...rangeAnnotationSegments,
                             ]),
@@ -169,15 +172,15 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                             ),
                           ),
                         ),
-                        BmiChartInfoWidget(
-                          widget.chartConfig,
-                          height: height,
-                          minInRange: minInRange,
-                          maxInRange: maxInRange,
-                        ),
-                        const BmiRangeLegend(),
-                      ],
-                    ),
+                      ),
+                      BmiChartInfoWidget(
+                        widget.chartConfig,
+                        height: height,
+                        minInRange: minInRange,
+                        maxInRange: maxInRange,
+                      ),
+                      const BmiRangeLegend(),
+                    ],
                   ),
                 ),
               );
@@ -276,63 +279,58 @@ class BmiChartInfoWidget extends StatelessWidget {
         final selected = state.selected;
         final weight = selected?.value;
 
+        final minWeight = '${NumberFormat('#,###.#').format(minInRange)} kg';
+        final maxWeight = '${NumberFormat('#,###.#').format(maxInRange)} kg';
+
         return Positioned(
-          top: -1,
+          top: 0,
           left: 0,
           child: IgnorePointer(
-            child: SizedBox(
+            child: Container(
               width: MediaQuery.of(context).size.width,
+              padding: const EdgeInsets.only(
+                right: 10,
+                left: 10,
+              ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      if (selected == null)
-                        Text(
-                          healthTypes[chartConfig.healthType]?.displayName ??
-                              chartConfig.healthType,
-                          style: chartTitleStyle(),
-                        ),
-                      if (selected != null) ...[
-                        Padding(
-                          padding: AppTheme.chartDateHorizontalPadding,
-                          child: Text(
-                            ' ${ymd(selected.dateTime)}',
-                            style: chartTitleStyle(),
-                          ),
-                        ),
-                        Text(
-                          ' ${NumberFormat('#,###.##').format(selected.value)} kg ',
-                          style: chartTitleStyle().copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          ' BMI: ${NumberFormat('#.#').format(calculateBMI(height!, weight!))}',
-                          style: chartTitleStyle().copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                      if (selected == null) ...[
-                        const SizedBox(width: 8),
-                        Text(
-                          'Min: ${NumberFormat('#,###.#').format(minInRange)} kg',
-                          style: chartTitleStyle().copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Max: ${NumberFormat('#,###.#').format(maxInRange)} kg',
-                          style: chartTitleStyle().copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                  if (selected == null)
+                    Text(
+                      healthTypes[chartConfig.healthType]?.displayName ??
+                          chartConfig.healthType,
+                      style: chartTitleStyle(),
+                    ),
+                  if (selected != null) ...[
+                    Padding(
+                      padding: AppTheme.chartDateHorizontalPadding,
+                      child: Text(
+                        ' ${ymd(selected.dateTime)}',
+                        style: chartTitleStyle(),
+                      ),
+                    ),
+                    Text(
+                      ' ${NumberFormat('#,###.##').format(selected.value)} kg ',
+                      style: chartTitleStyle().copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      ' BMI: ${NumberFormat('#.#').format(calculateBMI(height!, weight!))}',
+                      style: chartTitleStyle().copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                  if (selected == null) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      '$minWeight - $maxWeight',
+                      style: chartTitleStyle().copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

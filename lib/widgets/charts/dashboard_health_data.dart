@@ -13,7 +13,7 @@ Color colorByValue(
   Observation observation,
   HealthTypeConfig? healthTypeConfig,
 ) {
-  final color = charts.MaterialPalette.blue.shadeDefault;
+  final color = charts.Color.fromHex(code: '#82E6CE');
 
   if (healthTypeConfig == null) {
     return color;

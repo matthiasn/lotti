@@ -16,46 +16,42 @@ class AdvancedSettingsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: TitleAppBar(title: localizations.settingsAdvancedTitle),
-      body: Container(
-        margin: const EdgeInsets.symmetric(
-          vertical: 8,
-        ),
-        child: ListView(
-          children: [
-            SettingsCard(
-              title: localizations.settingsSyncCfgTitle,
-              path: '/settings/advanced/sync_settings',
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SettingsCard(
+            title: localizations.settingsSyncCfgTitle,
+            path: '/settings/advanced/sync_settings',
+          ),
+          const SettingsDivider(),
+          SettingsCard(
+            icon: OutboxBadgeIcon(
+              icon: const SettingsIcon(MdiIcons.mailboxOutline),
             ),
-            const SettingsDivider(),
-            SettingsCard(
-              icon: OutboxBadgeIcon(
-                icon: const SettingsIcon(MdiIcons.mailboxOutline),
-              ),
-              title: localizations.settingsSyncOutboxTitle,
-              path: '/settings/advanced/outbox_monitor',
-            ),
-            const SettingsDivider(),
-            SettingsCard(
-              title: localizations.settingsConflictsTitle,
-              path: '/settings/advanced/conflicts',
-            ),
-            const SettingsDivider(),
-            SettingsCard(
-              title: localizations.settingsLogsTitle,
-              path: '/settings/advanced/logging',
-            ),
-            const SettingsDivider(),
-            SettingsCard(
-              title: localizations.settingsMaintenanceTitle,
-              path: '/settings/advanced/maintenance',
-            ),
-            const SettingsDivider(),
-            SettingsCard(
-              title: localizations.settingsAboutTitle,
-              path: '/settings/advanced/about',
-            ),
-          ],
-        ),
+            title: localizations.settingsSyncOutboxTitle,
+            path: '/settings/advanced/outbox_monitor',
+          ),
+          const SettingsDivider(),
+          SettingsCard(
+            title: localizations.settingsConflictsTitle,
+            path: '/settings/advanced/conflicts',
+          ),
+          const SettingsDivider(),
+          SettingsCard(
+            title: localizations.settingsLogsTitle,
+            path: '/settings/advanced/logging',
+          ),
+          const SettingsDivider(),
+          SettingsCard(
+            title: localizations.settingsMaintenanceTitle,
+            path: '/settings/advanced/maintenance',
+          ),
+          const SettingsDivider(),
+          SettingsCard(
+            title: localizations.settingsAboutTitle,
+            path: '/settings/advanced/about',
+          ),
+        ],
       ),
     );
   }

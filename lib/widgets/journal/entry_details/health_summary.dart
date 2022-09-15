@@ -24,7 +24,7 @@ class HealthSummary extends StatelessWidget {
           if (showChart)
             DashboardHealthChart(
               chartConfig: DashboardHealthItem(
-                color: '#0000FF',
+                color: '#82E6CE',
                 healthType: qe.data.dataType,
               ),
               rangeStart: getRangeStart(context: context),

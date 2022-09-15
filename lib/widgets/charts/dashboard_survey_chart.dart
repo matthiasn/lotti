@@ -8,7 +8,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/surveys/run_surveys.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -53,74 +52,67 @@ class DashboardSurveyChart extends StatelessWidget {
           }
         }
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              key: Key('${chartConfig.hashCode}'),
-              color: Colors.white,
-              height: 120,
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: charts.TimeSeriesChart(
-                      surveySeries(
-                        entities: items,
-                        dashboardSurveyItem: chartConfig,
+        return Container(
+          padding: const EdgeInsets.only(bottom: 5),
+          key: Key('${chartConfig.hashCode}'),
+          height: 120,
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 24,
+                  left: 10,
+                  right: 10,
+                ),
+                child: Container(
+                  color: colorConfig().ice,
+                  padding: const EdgeInsets.only(left: 8),
+                  child: charts.TimeSeriesChart(
+                    surveySeries(
+                      entities: items,
+                      dashboardSurveyItem: chartConfig,
+                    ),
+                    animate: false,
+                    behaviors: [chartRangeAnnotation(rangeStart, rangeEnd)],
+                    domainAxis: timeSeriesAxis,
+                    defaultRenderer: defaultRenderer,
+                    primaryMeasureAxis: const charts.NumericAxisSpec(
+                      tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                        zeroBound: false,
+                        desiredTickCount: 5,
                       ),
-                      animate: false,
-                      behaviors: [
-                        chartRangeAnnotation(rangeStart, rangeEnd),
-                      ],
-                      domainAxis: timeSeriesAxis,
-                      defaultRenderer: defaultRenderer,
-                      primaryMeasureAxis: const charts.NumericAxisSpec(
-                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                          zeroBound: false,
-                          desiredTickCount: 5,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: -10,
+                left: 0,
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(width: 10),
+                      Text(
+                        chartConfig.surveyName,
+                        style: chartTitleStyle(),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        onPressed: onTapAdd,
+                        icon: const Icon(
+                          Icons.add,
+                          size: 28,
+                          color: Colors.black,
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                  Positioned(
-                    top: 0,
-                    left: MediaQuery.of(context).size.width / 4,
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width / 2,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            chartConfig.surveyName,
-                            style: chartTitleStyle(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: IconButton(
-                      padding: EdgeInsets.only(
-                        right: isDesktop ? 6 : 0,
-                        top: 48,
-                        left: 16,
-                        bottom: 48,
-                      ),
-                      onPressed: onTapAdd,
-                      icon: Icon(
-                        Icons.add_circle_outline,
-                        size: 28,
-                        color: colorConfig().bodyBgColor.withAlpha(192),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         );
       },

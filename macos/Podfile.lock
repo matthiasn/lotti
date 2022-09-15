@@ -32,6 +32,8 @@ PODS:
     - FlutterMacOS
   - package_info_plus_macos (0.0.1):
     - FlutterMacOS
+  - pasteboard (0.0.1):
+    - FlutterMacOS
   - path_provider_macos (0.0.1):
     - FlutterMacOS
   - photo_manager (2.0.0):
@@ -50,17 +52,14 @@ PODS:
   - sqlite3/common (3.39.3)
   - sqlite3/fts5 (3.39.3):
     - sqlite3/common
-  - sqlite3/json1 (3.39.3):
-    - sqlite3/common
   - sqlite3/perf-threadsafe (3.39.3):
     - sqlite3/common
   - sqlite3/rtree (3.39.3):
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - FlutterMacOS
-    - sqlite3 (~> 3.39.2)
+    - sqlite3 (~> 3.39.3)
     - sqlite3/fts5
-    - sqlite3/json1
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
   - url_launcher_macos (0.0.1):
@@ -83,6 +82,7 @@ DEPENDENCIES:
   - location (from `Flutter/ephemeral/.symlinks/plugins/location/macos`)
   - macos_ui (from `Flutter/ephemeral/.symlinks/plugins/macos_ui/macos`)
   - package_info_plus_macos (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus_macos/macos`)
+  - pasteboard (from `Flutter/ephemeral/.symlinks/plugins/pasteboard/macos`)
   - path_provider_macos (from `Flutter/ephemeral/.symlinks/plugins/path_provider_macos/macos`)
   - photo_manager (from `Flutter/ephemeral/.symlinks/plugins/photo_manager/macos`)
   - screen_retriever (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever/macos`)
@@ -128,6 +128,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/macos_ui/macos
   package_info_plus_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/package_info_plus_macos/macos
+  pasteboard:
+    :path: Flutter/ephemeral/.symlinks/plugins/pasteboard/macos
   path_provider_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/path_provider_macos/macos
   photo_manager:
@@ -162,6 +164,7 @@ SPEC CHECKSUMS:
   location: 7cdb0665bd6577d382b0a343acdadbcb7f964775
   macos_ui: 125c911559d646194386d84c017ad6819122e2db
   package_info_plus_macos: f010621b07802a241d96d01876d6705f15e77c1c
+  pasteboard: 9b69dba6fedbb04866be632205d532fe2f6b1d99
   path_provider_macos: 3c0c3b4b0d4a76d2bf989a913c2de869c5641a19
   photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
@@ -169,7 +172,7 @@ SPEC CHECKSUMS:
   share_plus_macos: 853ee48e7dce06b633998ca0735d482dd671ade4
   sqflite: a5789cceda41d54d23f31d6de539d65bb14100ea
   sqlite3: 50117e9e063a9ef2b865f7bdf2f2601e5d368e9a
-  sqlite3_flutter_libs: a6cde3e3d07ea676a888099c9cd7a6bb439b7822
+  sqlite3_flutter_libs: cfe190df811dcc0a495dc7ab09d3cda5f92740d2
   url_launcher_macos: 597e05b8e514239626bcf4a850fcf9ef5c856ec3
   window_manager: 3a1844359a6295ab1e47659b1a777e36773cd6e8
 

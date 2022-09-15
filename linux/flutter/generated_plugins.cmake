@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   dynamic_color
   flutter_secure_storage_linux
   hotkey_manager
+  pasteboard
   screen_retriever
   sqlite3_flutter_libs
   url_launcher_linux

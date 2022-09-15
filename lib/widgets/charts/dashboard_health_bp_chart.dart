@@ -54,11 +54,7 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
           BuildContext context,
           AsyncSnapshot<List<JournalEntity?>> snapshot,
         ) {
-          final items = snapshot.data;
-
-          if (items == null || items.isEmpty) {
-            return const SizedBox.shrink();
-          }
+          final items = snapshot.data ?? [];
 
           void _infoSelectionModelUpdated(
             charts.SelectionModel<DateTime> model,
@@ -111,17 +107,18 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
           ];
 
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                key: Key('${widget.chartConfig.hashCode}'),
-                color: Colors.white,
-                height: 200,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Stack(
-                  children: [
-                    charts.TimeSeriesChart(
+            padding: const EdgeInsets.only(bottom: 5),
+            child: Container(
+              key: Key('${widget.chartConfig.hashCode}'),
+              height: 200,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Stack(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 24),
+                    color: colorConfig().ice,
+                    padding: const EdgeInsets.only(left: 8),
+                    child: charts.TimeSeriesChart(
                       seriesList,
                       animate: false,
                       behaviors: [
@@ -131,7 +128,6 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
                               widget.rangeStart,
                               widget.rangeEnd,
                               charts.RangeAnnotationAxisType.domain,
-                              color: charts.MaterialPalette.white,
                             ),
                             charts.RangeAnnotationSegment(
                               60,
@@ -174,9 +170,9 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
                         ),
                       ),
                     ),
-                    const BpChartInfoWidget(),
-                  ],
-                ),
+                  ),
+                  const BpChartInfoWidget(),
+                ],
               ),
             ),
           );
@@ -197,15 +193,13 @@ class BpChartInfoWidget extends StatelessWidget {
         final diastolic = state.diastolic;
 
         return Positioned(
-          top: -1,
-          left: MediaQuery.of(context).size.width / 4,
+          top: 0,
+          left: 0,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width / 2,
+            width: MediaQuery.of(context).size.width,
             child: IgnorePointer(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Spacer(),
                   if (systolic == null)
                     Text(
                       'Blood Pressure',

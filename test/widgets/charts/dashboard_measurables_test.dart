@@ -191,9 +191,7 @@ void main() {
         findsOneWidget,
       );
 
-      final addIconFinder = find.byIcon(
-        Icons.add_circle_outline,
-      );
+      final addIconFinder = find.byIcon(Icons.add);
       await tester.tap(addIconFinder);
       await tester.pumpAndSettle();
     });

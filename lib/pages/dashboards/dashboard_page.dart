@@ -206,7 +206,7 @@ class DashboardWidget extends StatelessWidget {
 
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.only(top: 16, right: 8),
+        padding: const EdgeInsets.only(top: 16),
         child: Column(
           children: [
             if (showTitle)

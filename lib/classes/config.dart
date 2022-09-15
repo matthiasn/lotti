@@ -73,6 +73,11 @@ class ColorConfig with _$ColorConfig {
     @ColorConverter() required Color private,
     @ColorConverter() required Color audioMeterBarBackground,
     @ColorConverter() required Color inactiveAudioControl,
+    @ColorConverter() required Color settingsHoverColor,
+    @ColorConverter() required Color riptide,
+    @ColorConverter() required Color riplight,
+    @ColorConverter() required Color alarm,
+    @ColorConverter() required Color ice,
   }) = _ColorConfig;
 
   factory ColorConfig.fromJson(Map<String, dynamic> json) =>

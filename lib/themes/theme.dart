@@ -7,8 +7,8 @@ import 'package:lotti/themes/themes_service.dart';
 class AppTheme {
   static const double bottomNavIconSize = 24;
 
-  static const chartDateHorizontalPadding = EdgeInsets.symmetric(
-    horizontal: 4,
+  static const chartDateHorizontalPadding = EdgeInsets.only(
+    right: 4,
   );
 }
 
@@ -29,6 +29,13 @@ const chipPaddingClosable = EdgeInsets.only(
 
 TextStyle inputStyle() => TextStyle(
       color: colorConfig().entryTextColor,
+      fontWeight: FontWeight.bold,
+      fontFamily: 'Lato',
+      fontSize: 18,
+    );
+
+TextStyle newInputStyle() => const TextStyle(
+      color: Colors.black,
       fontWeight: FontWeight.bold,
       fontFamily: 'Lato',
       fontSize: 18,
@@ -59,6 +66,12 @@ TextStyle labelStyleLarger() => textStyleLarger().copyWith(
 
 TextStyle labelStyle() => TextStyle(
       color: colorConfig().entryTextColor,
+      fontWeight: FontWeight.w500,
+      fontSize: 18,
+    );
+
+TextStyle newLabelStyle() => const TextStyle(
+      color: Colors.black,
       fontWeight: FontWeight.w500,
       fontSize: 18,
     );
@@ -109,7 +122,7 @@ TextStyle settingsCardTextStyle() => const TextStyle(
       //color: colorConfig().entryTextColor,
       color: Colors.black,
       fontFamily: mainFont,
-      fontSize: 24,
+      fontSize: 25,
     );
 
 TextStyle titleStyle() => TextStyle(
@@ -135,7 +148,7 @@ TextStyle multiSelectStyle() => TextStyle(
 
 TextStyle chartTitleStyle() => const TextStyle(
       fontFamily: mainFont,
-      fontSize: 14,
+      fontSize: 15,
       //color: colorConfig().bodyBgColor.withAlpha(192),
       color: Colors.black,
       fontWeight: FontWeight.w300,
@@ -149,11 +162,11 @@ TextStyle saveButtonStyle() => TextStyle(
       color: colorConfig().error,
     );
 
-TextStyle cancelButtonStyle() => TextStyle(
+TextStyle cancelButtonStyle() => const TextStyle(
       fontSize: 20,
       fontFamily: mainFont,
       fontWeight: FontWeight.w100,
-      color: colorConfig().entryTextColor,
+      color: Colors.black,
     );
 
 const segmentItemStyle = TextStyle(

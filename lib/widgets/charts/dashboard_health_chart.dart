@@ -118,17 +118,21 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
             )
           ];
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                key: Key('${widget.chartConfig.hashCode}'),
-                color: Colors.white,
-                height: 120,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Stack(
-                  children: [
-                    charts.TimeSeriesChart(
+            padding: const EdgeInsets.only(bottom: 5),
+            child: SizedBox(
+              key: Key('${widget.chartConfig.hashCode}'),
+              height: 120,
+              child: Stack(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(
+                      top: 20,
+                      left: 10,
+                      right: 10,
+                    ),
+                    color: colorConfig().ice,
+                    padding: const EdgeInsets.only(left: 10),
+                    child: charts.TimeSeriesChart(
                       seriesList,
                       animate: false,
                       behaviors: [
@@ -158,9 +162,9 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                                 : null,
                       ),
                     ),
-                    HealthChartInfoWidget(widget.chartConfig),
-                  ],
-                ),
+                  ),
+                  HealthChartInfoWidget(widget.chartConfig),
+                ],
               ),
             ),
           );
@@ -190,39 +194,33 @@ class HealthChartInfoWidget extends StatelessWidget {
             : ' ${NumberFormat('#,###.##').format(selected?.value ?? 0)}';
 
         return Positioned(
-          top: -1,
-          left: MediaQuery.of(context).size.width / 4,
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width / 2,
-            child: IgnorePointer(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+          top: 0,
+          left: 10,
+          child: IgnorePointer(
+            child: Row(
+              children: [
+                Text(
+                  healthType?.displayName ?? chartConfig.healthType,
+                  style: chartTitleStyle(),
+                ),
+                if (selected != null) ...[
+                  const Spacer(),
+                  Padding(
+                    padding: AppTheme.chartDateHorizontalPadding,
+                    child: Text(
+                      ' ${ymd(selected.dateTime)}',
+                      style: chartTitleStyle(),
+                    ),
+                  ),
                   const Spacer(),
                   Text(
-                    healthType?.displayName ?? chartConfig.healthType,
-                    style: chartTitleStyle(),
+                    ' $valueLabel',
+                    style: chartTitleStyle().copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  if (selected != null) ...[
-                    const Spacer(),
-                    Padding(
-                      padding: AppTheme.chartDateHorizontalPadding,
-                      child: Text(
-                        ' ${ymd(selected.dateTime)}',
-                        style: chartTitleStyle(),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      ' $valueLabel',
-                      style: chartTitleStyle().copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
                 ],
-              ),
+              ],
             ),
           ),
         );
