@@ -198,8 +198,7 @@ void main() {
       );
 
       // chart displays expected min and max weights
-      expect(find.text('Min: 94.5 kg'), findsOneWidget);
-      expect(find.text('Max: 99.2 kg'), findsOneWidget);
+      expect(find.text('94.5 kg - 99.2 kg'), findsOneWidget);
     });
   });
 }

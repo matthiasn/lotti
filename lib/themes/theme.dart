@@ -7,8 +7,8 @@ import 'package:lotti/themes/themes_service.dart';
 class AppTheme {
   static const double bottomNavIconSize = 24;
 
-  static const chartDateHorizontalPadding = EdgeInsets.symmetric(
-    horizontal: 4,
+  static const chartDateHorizontalPadding = EdgeInsets.only(
+    right: 4,
   );
 }
 

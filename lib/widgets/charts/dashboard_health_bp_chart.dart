@@ -107,76 +107,72 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
           ];
 
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                key: Key('${widget.chartConfig.hashCode}'),
-                color: Colors.white,
-                height: 200,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Stack(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 24),
-                      color: colorConfig().ice,
-                      padding: const EdgeInsets.only(left: 8),
-                      child: charts.TimeSeriesChart(
-                        seriesList,
-                        animate: false,
-                        behaviors: [
-                          charts.RangeAnnotation(
-                            [
-                              charts.RangeAnnotationSegment(
-                                widget.rangeStart,
-                                widget.rangeEnd,
-                                charts.RangeAnnotationAxisType.domain,
+            padding: const EdgeInsets.only(bottom: 5),
+            child: Container(
+              key: Key('${widget.chartConfig.hashCode}'),
+              height: 200,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Stack(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 24),
+                    color: colorConfig().ice,
+                    padding: const EdgeInsets.only(left: 8),
+                    child: charts.TimeSeriesChart(
+                      seriesList,
+                      animate: false,
+                      behaviors: [
+                        charts.RangeAnnotation(
+                          [
+                            charts.RangeAnnotationSegment(
+                              widget.rangeStart,
+                              widget.rangeEnd,
+                              charts.RangeAnnotationAxisType.domain,
+                            ),
+                            charts.RangeAnnotationSegment(
+                              60,
+                              80,
+                              charts.RangeAnnotationAxisType.measure,
+                              color: charts.Color(
+                                r: blue.r,
+                                g: blue.g,
+                                b: blue.b,
+                                a: 24,
                               ),
-                              charts.RangeAnnotationSegment(
-                                60,
-                                80,
-                                charts.RangeAnnotationAxisType.measure,
-                                color: charts.Color(
-                                  r: blue.r,
-                                  g: blue.g,
-                                  b: blue.b,
-                                  a: 24,
-                                ),
+                            ),
+                            charts.RangeAnnotationSegment(
+                              90,
+                              130,
+                              charts.RangeAnnotationAxisType.measure,
+                              color: charts.Color(
+                                r: red.r,
+                                g: red.g,
+                                b: red.b,
+                                a: 24,
                               ),
-                              charts.RangeAnnotationSegment(
-                                90,
-                                130,
-                                charts.RangeAnnotationAxisType.measure,
-                                color: charts.Color(
-                                  r: red.r,
-                                  g: red.g,
-                                  b: red.b,
-                                  a: 24,
-                                ),
-                              ),
-                            ],
-                          )
-                        ],
-                        domainAxis: timeSeriesAxis,
-                        defaultRenderer: defaultRenderer,
-                        selectionModels: [
-                          charts.SelectionModelConfig(
-                            updatedListener: _infoSelectionModelUpdated,
-                          ),
-                        ],
-                        primaryMeasureAxis: const charts.NumericAxisSpec(
-                          tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                            zeroBound: false,
-                            dataIsInWholeNumbers: true,
-                            desiredMinTickCount: 11,
-                            desiredMaxTickCount: 15,
-                          ),
+                            ),
+                          ],
+                        )
+                      ],
+                      domainAxis: timeSeriesAxis,
+                      defaultRenderer: defaultRenderer,
+                      selectionModels: [
+                        charts.SelectionModelConfig(
+                          updatedListener: _infoSelectionModelUpdated,
+                        ),
+                      ],
+                      primaryMeasureAxis: const charts.NumericAxisSpec(
+                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                          zeroBound: false,
+                          dataIsInWholeNumbers: true,
+                          desiredMinTickCount: 11,
+                          desiredMaxTickCount: 15,
                         ),
                       ),
                     ),
-                    const BpChartInfoWidget(),
-                  ],
-                ),
+                  ),
+                  const BpChartInfoWidget(),
+                ],
               ),
             ),
           );

@@ -90,16 +90,16 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
             )
           ];
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 5),
             child: Container(
               key: Key('${widget.chartConfig.hashCode}'),
               color: Colors.white,
               height: 120,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Stack(
                 children: [
                   Container(
-                    margin: const EdgeInsets.only(top: 24),
+                    margin: const EdgeInsets.only(top: 20),
                     color: colorConfig().ice,
                     padding: const EdgeInsets.only(left: 8),
                     child: charts.TimeSeriesChart(

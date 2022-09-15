@@ -118,21 +118,20 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
             )
           ];
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Container(
+            padding: const EdgeInsets.only(bottom: 5),
+            child: SizedBox(
               key: Key('${widget.chartConfig.hashCode}'),
-              padding: const EdgeInsets.only(left: 8),
               height: 120,
               child: Stack(
                 children: [
                   Container(
                     margin: const EdgeInsets.only(
-                      top: 24,
+                      top: 20,
                       left: 10,
                       right: 10,
                     ),
                     color: colorConfig().ice,
-                    padding: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.only(left: 10),
                     child: charts.TimeSeriesChart(
                       seriesList,
                       animate: false,

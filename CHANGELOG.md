@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Styling: survey chart
 - Styling: health chart
 - Styling: BP chart
+- Styling: BMI chart
 
 ## [0.8.144] - 2022-09-13
 ### Changed:
