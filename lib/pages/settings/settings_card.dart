@@ -23,7 +23,7 @@ class SettingsCard extends StatelessWidget {
       elevation: 0,
       margin: EdgeInsets.zero,
       child: ListTile(
-        hoverColor: colorConfig().settingsHoverColor,
+        hoverColor: colorConfig().riplight,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 32,
           vertical: 8,

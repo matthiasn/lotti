@@ -133,7 +133,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                 )
               ];
               return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 5),
                 child: SizedBox(
                   key: Key(measurableDataType.description),
                   height: 136,
@@ -146,7 +146,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                           right: 10,
                         ),
                         child: Container(
-                          color: colorConfig().chartBgColor,
+                          color: colorConfig().ice,
                           padding: const EdgeInsets.only(
                             left: 8,
                           ),
@@ -269,10 +269,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                 const Spacer(),
                 if (enableCreate)
                   IconButton(
-                    padding: const EdgeInsets.only(
-                      right: 10,
-                      left: 10,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     onPressed: onTapAdd,
                     icon: const Icon(
                       Icons.add,
