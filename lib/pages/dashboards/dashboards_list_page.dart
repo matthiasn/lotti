@@ -57,12 +57,11 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         }
 
         return Scaffold(
-          // backgroundColor: colorConfig().bodyBgColor,
           backgroundColor: Colors.white,
           appBar: const DashboardsAppBar(),
           body: ListView(
             shrinkWrap: true,
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.only(bottom: 200),
             children: intersperse(
               const SettingsDivider(),
               List.generate(
@@ -95,23 +94,18 @@ class DashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      // color: colorConfig().entryCardColor,
       color: Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      margin: EdgeInsets.zero,
       child: ListTile(
-        contentPadding: const EdgeInsets.only(
-          left: 16,
-          top: 8,
-          bottom: 8,
-          right: 16,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 32,
+          vertical: 8,
         ),
+        hoverColor: colorConfig().settingsHoverColor,
         title: Text(
           dashboard.name,
           style: const TextStyle(
-            //color: colorConfig().entryTextColor,
             color: Colors.black,
             fontFamily: mainFont,
             fontSize: 24,

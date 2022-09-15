@@ -26,7 +26,6 @@ class _SettingsPageState extends State<SettingsPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      //backgroundColor: colorConfig().bodyBgColor,
       backgroundColor: Colors.white,
       appBar: TitleAppBar(title: localizations.navTabTitleSettings),
       body: Column(

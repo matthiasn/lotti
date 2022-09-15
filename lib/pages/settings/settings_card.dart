@@ -19,7 +19,6 @@ class SettingsCard extends StatelessWidget {
     void onTap() => beamToNamed(path);
 
     return Card(
-      //color: colorConfig().entryCardColor,
       color: Colors.white,
       elevation: 0,
       margin: EdgeInsets.zero,
