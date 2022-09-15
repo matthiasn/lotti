@@ -102,7 +102,7 @@ class DashboardCard extends StatelessWidget {
           horizontal: 32,
           vertical: 8,
         ),
-        hoverColor: colorConfig().settingsHoverColor,
+        hoverColor: colorConfig().riplight,
         title: Text(
           dashboard.name,
           style: const TextStyle(
