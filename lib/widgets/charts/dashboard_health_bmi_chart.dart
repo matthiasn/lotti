@@ -130,54 +130,49 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    key: Key('${widget.chartConfig.hashCode}'),
-                    color: Colors.white,
-                    height: 320,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Stack(
-                      children: [
-                        charts.TimeSeriesChart(
-                          seriesList,
-                          animate: false,
-                          behaviors: [
-                            charts.RangeAnnotation([
-                              charts.RangeAnnotationSegment(
-                                widget.rangeStart,
-                                widget.rangeEnd,
-                                charts.RangeAnnotationAxisType.domain,
-                                color: charts.Color.white,
-                              ),
-                              ...rangeAnnotationSegments,
-                            ]),
-                          ],
-                          domainAxis: timeSeriesAxis,
-                          defaultRenderer: defaultRenderer,
-                          selectionModels: [
-                            charts.SelectionModelConfig(
-                              updatedListener: _infoSelectionModelUpdated,
+                child: Container(
+                  key: Key('${widget.chartConfig.hashCode}'),
+                  height: 320,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Stack(
+                    children: [
+                      charts.TimeSeriesChart(
+                        seriesList,
+                        animate: false,
+                        behaviors: [
+                          charts.RangeAnnotation([
+                            charts.RangeAnnotationSegment(
+                              widget.rangeStart,
+                              widget.rangeEnd,
+                              charts.RangeAnnotationAxisType.domain,
+                              color: charts.Color.white,
                             ),
-                          ],
-                          primaryMeasureAxis: charts.NumericAxisSpec(
-                            tickProviderSpec:
-                                charts.BasicNumericTickProviderSpec(
-                              zeroBound: false,
-                              dataIsInWholeNumbers: true,
-                              desiredTickCount: tickCount,
-                            ),
+                            ...rangeAnnotationSegments,
+                          ]),
+                        ],
+                        domainAxis: timeSeriesAxis,
+                        defaultRenderer: defaultRenderer,
+                        selectionModels: [
+                          charts.SelectionModelConfig(
+                            updatedListener: _infoSelectionModelUpdated,
+                          ),
+                        ],
+                        primaryMeasureAxis: charts.NumericAxisSpec(
+                          tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                            zeroBound: false,
+                            dataIsInWholeNumbers: true,
+                            desiredTickCount: tickCount,
                           ),
                         ),
-                        BmiChartInfoWidget(
-                          widget.chartConfig,
-                          height: height,
-                          minInRange: minInRange,
-                          maxInRange: maxInRange,
-                        ),
-                        const BmiRangeLegend(),
-                      ],
-                    ),
+                      ),
+                      BmiChartInfoWidget(
+                        widget.chartConfig,
+                        height: height,
+                        minInRange: minInRange,
+                        maxInRange: maxInRange,
+                      ),
+                      const BmiRangeLegend(),
+                    ],
                   ),
                 ),
               );
@@ -277,14 +272,12 @@ class BmiChartInfoWidget extends StatelessWidget {
         final weight = selected?.value;
 
         return Positioned(
-          top: -1,
+          top: 0,
           left: 0,
           child: IgnorePointer(
             child: SizedBox(
               width: MediaQuery.of(context).size.width,
               child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Row(
                     children: [

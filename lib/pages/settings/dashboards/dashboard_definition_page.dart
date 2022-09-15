@@ -132,7 +132,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
       dashboardItems.add(
         WildcardStoryTimeItem(
           storySubstring: storySubstring,
-          color: '#0000FF',
+          color: '#82E6CE',
         ),
       );
 
@@ -206,7 +206,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
           return MultiSelectItem<DashboardStoryTimeItem>(
             DashboardStoryTimeItem(
               storyTagId: storyTag.id,
-              color: '#0000FF',
+              color: '#82E6CE',
             ),
             storyTag.tag,
           );

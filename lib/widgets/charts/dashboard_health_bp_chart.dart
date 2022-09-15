@@ -54,11 +54,7 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
           BuildContext context,
           AsyncSnapshot<List<JournalEntity?>> snapshot,
         ) {
-          final items = snapshot.data;
-
-          if (items == null || items.isEmpty) {
-            return const SizedBox.shrink();
-          }
+          final items = snapshot.data ?? [];
 
           void _infoSelectionModelUpdated(
             charts.SelectionModel<DateTime> model,
@@ -121,56 +117,60 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Stack(
                   children: [
-                    charts.TimeSeriesChart(
-                      seriesList,
-                      animate: false,
-                      behaviors: [
-                        charts.RangeAnnotation(
-                          [
-                            charts.RangeAnnotationSegment(
-                              widget.rangeStart,
-                              widget.rangeEnd,
-                              charts.RangeAnnotationAxisType.domain,
-                              color: charts.MaterialPalette.white,
-                            ),
-                            charts.RangeAnnotationSegment(
-                              60,
-                              80,
-                              charts.RangeAnnotationAxisType.measure,
-                              color: charts.Color(
-                                r: blue.r,
-                                g: blue.g,
-                                b: blue.b,
-                                a: 24,
+                    Container(
+                      margin: const EdgeInsets.only(top: 24),
+                      color: colorConfig().ice,
+                      padding: const EdgeInsets.only(left: 8),
+                      child: charts.TimeSeriesChart(
+                        seriesList,
+                        animate: false,
+                        behaviors: [
+                          charts.RangeAnnotation(
+                            [
+                              charts.RangeAnnotationSegment(
+                                widget.rangeStart,
+                                widget.rangeEnd,
+                                charts.RangeAnnotationAxisType.domain,
                               ),
-                            ),
-                            charts.RangeAnnotationSegment(
-                              90,
-                              130,
-                              charts.RangeAnnotationAxisType.measure,
-                              color: charts.Color(
-                                r: red.r,
-                                g: red.g,
-                                b: red.b,
-                                a: 24,
+                              charts.RangeAnnotationSegment(
+                                60,
+                                80,
+                                charts.RangeAnnotationAxisType.measure,
+                                color: charts.Color(
+                                  r: blue.r,
+                                  g: blue.g,
+                                  b: blue.b,
+                                  a: 24,
+                                ),
                               ),
-                            ),
-                          ],
-                        )
-                      ],
-                      domainAxis: timeSeriesAxis,
-                      defaultRenderer: defaultRenderer,
-                      selectionModels: [
-                        charts.SelectionModelConfig(
-                          updatedListener: _infoSelectionModelUpdated,
-                        ),
-                      ],
-                      primaryMeasureAxis: const charts.NumericAxisSpec(
-                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                          zeroBound: false,
-                          dataIsInWholeNumbers: true,
-                          desiredMinTickCount: 11,
-                          desiredMaxTickCount: 15,
+                              charts.RangeAnnotationSegment(
+                                90,
+                                130,
+                                charts.RangeAnnotationAxisType.measure,
+                                color: charts.Color(
+                                  r: red.r,
+                                  g: red.g,
+                                  b: red.b,
+                                  a: 24,
+                                ),
+                              ),
+                            ],
+                          )
+                        ],
+                        domainAxis: timeSeriesAxis,
+                        defaultRenderer: defaultRenderer,
+                        selectionModels: [
+                          charts.SelectionModelConfig(
+                            updatedListener: _infoSelectionModelUpdated,
+                          ),
+                        ],
+                        primaryMeasureAxis: const charts.NumericAxisSpec(
+                          tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                            zeroBound: false,
+                            dataIsInWholeNumbers: true,
+                            desiredMinTickCount: 11,
+                            desiredMaxTickCount: 15,
+                          ),
                         ),
                       ),
                     ),
@@ -197,15 +197,13 @@ class BpChartInfoWidget extends StatelessWidget {
         final diastolic = state.diastolic;
 
         return Positioned(
-          top: -1,
-          left: MediaQuery.of(context).size.width / 4,
+          top: 0,
+          left: 0,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width / 2,
+            width: MediaQuery.of(context).size.width,
             child: IgnorePointer(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Spacer(),
                   if (systolic == null)
                     Text(
                       'Blood Pressure',

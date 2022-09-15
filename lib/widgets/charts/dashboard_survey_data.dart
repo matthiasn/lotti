@@ -74,7 +74,7 @@ List<charts.Series<Observation, DateTime>> surveySeries({
   final colorsByScoreKey = dashboardSurveyItem.colorsByScoreKey;
 
   for (final scoreKey in dashboardSurveyItem.colorsByScoreKey.keys) {
-    final color = colorFromCssHex(colorsByScoreKey[scoreKey] ?? '#000000');
+    final color = colorFromCssHex(colorsByScoreKey[scoreKey] ?? '#82E6CE');
     final lineColor = charts.Color(r: color.red, g: color.green, b: color.blue);
 
     seriesList.add(

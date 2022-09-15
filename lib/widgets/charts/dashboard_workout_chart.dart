@@ -91,16 +91,18 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
           ];
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                key: Key('${widget.chartConfig.hashCode}'),
-                color: Colors.white,
-                height: 120,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Stack(
-                  children: [
-                    charts.TimeSeriesChart(
+            child: Container(
+              key: Key('${widget.chartConfig.hashCode}'),
+              color: Colors.white,
+              height: 120,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Stack(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 24),
+                    color: colorConfig().ice,
+                    padding: const EdgeInsets.only(left: 8),
+                    child: charts.TimeSeriesChart(
                       seriesList,
                       animate: false,
                       behaviors: [
@@ -124,9 +126,9 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
                         ),
                       ),
                     ),
-                    WorkoutChartInfoWidget(widget.chartConfig),
-                  ],
-                ),
+                  ),
+                  WorkoutChartInfoWidget(widget.chartConfig),
+                ],
               ),
             ),
           );
@@ -151,15 +153,13 @@ class WorkoutChartInfoWidget extends StatelessWidget {
         final selected = state.selected;
 
         return Positioned(
-          top: -1,
-          left: MediaQuery.of(context).size.width / 4,
+          top: 0,
+          left: 0,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width / 2,
+            width: MediaQuery.of(context).size.width,
             child: IgnorePointer(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Spacer(),
                   Text(
                     chartConfig.displayName,
                     style: chartTitleStyle(),

@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Styling: hover in Settings
 - Styling: measurables chart
 - Styling: survey chart
+- Styling: health chart
+- Styling: BP chart
 
 ## [0.8.144] - 2022-09-13
 ### Changed:

@@ -66,18 +66,14 @@ class DashboardSurveyChart extends StatelessWidget {
                 ),
                 child: Container(
                   color: colorConfig().ice,
-                  padding: const EdgeInsets.only(
-                    left: 8,
-                  ),
+                  padding: const EdgeInsets.only(left: 8),
                   child: charts.TimeSeriesChart(
                     surveySeries(
                       entities: items,
                       dashboardSurveyItem: chartConfig,
                     ),
                     animate: false,
-                    behaviors: [
-                      chartRangeAnnotation(rangeStart, rangeEnd),
-                    ],
+                    behaviors: [chartRangeAnnotation(rangeStart, rangeEnd)],
                     domainAxis: timeSeriesAxis,
                     defaultRenderer: defaultRenderer,
                     primaryMeasureAxis: const charts.NumericAxisSpec(
