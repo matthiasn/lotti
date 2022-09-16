@@ -33,8 +33,10 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
         }
 
         return AppBar(
-          backgroundColor: colorConfig().headerBgColor,
+          backgroundColor: Colors.white,
           automaticallyImplyLeading: false,
+          elevation: 0,
+          scrolledUnderElevation: 10,
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -46,18 +48,18 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
                 child: IconButton(
                   padding: const EdgeInsets.all(4),
                   icon: const Icon(Icons.slideshow_outlined),
-                  color: colorConfig().entryTextColor,
+                  color: Colors.black,
                   onPressed: onPressCarousel,
                 ),
               ),
               Text(
                 localizations.navTabTitleInsights,
-                style: appBarTextStyle(),
+                style: appBarTextStyleNew(),
               ),
               IconButton(
                 padding: const EdgeInsets.all(4),
                 icon: const Icon(Icons.dashboard_customize_outlined),
-                color: colorConfig().entryTextColor,
+                color: Colors.black,
                 onPressed: onPressSettings,
               ),
             ],

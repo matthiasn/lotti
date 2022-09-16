@@ -61,7 +61,7 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
           appBar: const DashboardsAppBar(),
           body: ListView(
             shrinkWrap: true,
-            padding: const EdgeInsets.only(bottom: 200),
+            padding: const EdgeInsets.only(bottom: 200, top: 20),
             children: intersperse(
               const SettingsDivider(),
               List.generate(
