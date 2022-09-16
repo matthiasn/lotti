@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Style: Icon alignment in Settings > Advanced
 - Debug logging for Sync
 - Style: barrier color in new measurement modal
+- Style: add measurement icon
 
 ## [0.8.145] - 2022-09-15
 ### Changed:
