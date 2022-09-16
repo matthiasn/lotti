@@ -96,6 +96,12 @@ class OutboxService {
   }
 
   Future<void> sendNext() async {
+    _loggingDb.captureEvent(
+      'start',
+      domain: 'OUTBOX',
+      subDomain: 'sendNext()',
+    );
+
     final syncConfig = await _syncConfigService.getSyncConfig();
     final b64Secret = syncConfig?.sharedSecret;
 
@@ -125,6 +131,16 @@ class OutboxService {
     try {
       final networkConnected = await _connectivityService.isConnected();
       final clientConnected = prevImapClient?.isConnected ?? false;
+
+      _loggingDb
+        ..captureEvent(
+          'sendNext() networkConnected: $networkConnected ',
+          domain: 'OUTBOX',
+        )
+        ..captureEvent(
+          'sendNext() clientConnected: $clientConnected ',
+          domain: 'OUTBOX',
+        );
 
       if (!clientConnected) {
         prevImapClient = null;
