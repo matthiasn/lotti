@@ -367,7 +367,7 @@ class AddTask extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       child: FloatingActionButton(
         heroTag: 'addTask',
-        backgroundColor: colorConfig().actionColor,
+        backgroundColor: colorConfig().riptide,
         onPressed: () async {
           final task = await createTask();
           if (task != null) {

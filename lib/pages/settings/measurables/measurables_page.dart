@@ -98,7 +98,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
           appBar: TitleAppBar(title: localizations.settingsMeasurablesTitle),
           backgroundColor: colorConfig().bodyBgColor,
           floatingActionButton: FloatingActionButton(
-            backgroundColor: colorConfig().entryBgColor,
+            backgroundColor: colorConfig().riptide,
             onPressed: createMeasurable,
             child: const Icon(MdiIcons.plus, size: 32),
           ),

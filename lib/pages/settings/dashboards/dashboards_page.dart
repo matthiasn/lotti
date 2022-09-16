@@ -77,7 +77,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
       backgroundColor: colorConfig().bodyBgColor,
       appBar: TitleAppBar(title: localizations.settingsDashboardsTitle),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: colorConfig().entryBgColor,
+        backgroundColor: colorConfig().riptide,
         onPressed: createDashboard,
         child: const Icon(MdiIcons.plus, size: 32),
       ),
