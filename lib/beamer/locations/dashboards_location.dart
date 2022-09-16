@@ -55,6 +55,7 @@ class DashboardsLocation extends BeamLocation<BeamState> {
               context: context,
               builder: (context) => child,
               settings: settings,
+              barrierColor: Colors.white54,
             );
           },
           key: ValueKey('measure-$selectedId'),
