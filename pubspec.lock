@@ -569,7 +569,7 @@ packages:
       name: extended_image
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.3.0"
+    version: "6.3.1"
   extended_image_library:
     dependency: transitive
     description:
@@ -796,7 +796,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.3"
+    version: "6.0.4"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1837,7 +1837,7 @@ packages:
       name: sqlite3
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.8.0"
+    version: "1.9.0"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
