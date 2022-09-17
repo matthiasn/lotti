@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
@@ -109,11 +110,15 @@ class LoggingDb extends _$LoggingDb {
     );
 
     final notifyEnabled = await _journalDb.getConfigFlag(notifyExceptionsFlag);
+
     if (notifyEnabled) {
       final title = 'Exception in $domain $subDomain';
+      final body = exception.toString();
+      final shortened = body.substring(0, min(195, body.length - 1));
+
       await getIt<NotificationService>().showNotification(
         title: title,
-        body: exception.toString().substring(0, 195),
+        body: shortened,
         notificationId: title.hashCode,
         deepLink: '/settings/logging',
       );
