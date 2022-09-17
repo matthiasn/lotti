@@ -272,7 +272,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
         return Scaffold(
           backgroundColor: colorConfig().bodyBgColor,
           appBar: TitleAppBar(
-            title: localizations.settingsDashboardsTitle,
+            title: widget.dashboard.name,
             actions: [
               if (dirty)
                 TextButton(
