@@ -70,6 +70,7 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
               id: widget.chartConfig.storySubstring,
               domainFn: (MeasuredObservation val, _) => val.dateTime,
               measureFn: (MeasuredObservation val, _) => val.value,
+              colorFn: (_, __) => charts.Color.fromHex(code: '#82E6CE'),
               data: data,
             )
           ];
@@ -246,6 +247,7 @@ class _WildcardStoryWeeklyChartState extends State<WildcardStoryWeeklyChart> {
               domainFn: (WeeklyAggregate val, _) => val.isoWeek.substring(5),
               measureFn: (WeeklyAggregate val, _) => val.value,
               data: data,
+              colorFn: (_, __) => charts.Color.fromHex(code: '#82E6CE'),
               labelAccessorFn: (byWeek, _) =>
                   byWeek.value > 0 ? minutesToHhMm(byWeek.value) : '',
             ),
@@ -339,7 +341,7 @@ class InfoWidget2 extends StatelessWidget {
                       maxWidth: MediaQuery.of(context).size.width / 2,
                     ),
                     child: Text(
-                      title,
+                      '$title [weekly]',
                       style: chartTitleStyle(),
                       overflow: TextOverflow.ellipsis,
                       softWrap: false,

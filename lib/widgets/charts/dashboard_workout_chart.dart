@@ -82,6 +82,7 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
               id: widget.chartConfig.workoutType,
               domainFn: (Observation val, _) => val.dateTime,
               measureFn: (Observation val, _) => val.value,
+              colorFn: (_, __) => charts.Color.fromHex(code: '#82E6CE'),
               data: aggregateWorkoutDailySum(
                 items,
                 chartConfig: widget.chartConfig,

@@ -186,6 +186,7 @@ class BpChartInfoWidget extends StatelessWidget {
             child: IgnorePointer(
               child: Row(
                 children: [
+                  const SizedBox(width: 10),
                   if (systolic == null)
                     Text(
                       'Blood Pressure',
