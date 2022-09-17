@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -5,6 +7,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 
 final testEpochDateTime = DateTime.fromMillisecondsSinceEpoch(0);
 
@@ -456,4 +459,22 @@ final testDurationEntry6 = JournalEntry(
     dateFrom: DateTime(2022, 6, 1, 22),
     dateTo: DateTime(2022, 6, 12, 1),
   ),
+);
+
+final resolvedConflict = Conflict(
+  id: 'id',
+  createdAt: DateTime.now(),
+  updatedAt: DateTime.now(),
+  serialized: jsonEncode(testTextEntry.toJson()),
+  schemaVersion: 1,
+  status: ConflictStatus.resolved.index,
+);
+
+final unresolvedConflict = Conflict(
+  id: 'id',
+  createdAt: DateTime.now(),
+  updatedAt: DateTime.now(),
+  serialized: jsonEncode(testTextEntry.toJson()),
+  schemaVersion: 1,
+  status: ConflictStatus.unresolved.index,
 );

@@ -2,11 +2,13 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
+import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -45,63 +47,59 @@ class _ConflictsPageState extends State<ConflictsPage> {
         final items = snapshot.data ?? [];
 
         return Scaffold(
-          backgroundColor: colorConfig().bodyBgColor,
-          appBar: TitleAppBar(title: localizations.settingsConflictsTitle),
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                CupertinoSegmentedControl(
-                  selectedColor: colorConfig().entryBgColor,
-                  unselectedColor: colorConfig().headerBgColor,
-                  borderColor: colorConfig().entryBgColor,
-                  groupValue: _selectedValue,
-                  onValueChanged: (String value) {
-                    setState(() {
-                      _selectedValue = value;
-                      if (_selectedValue == 'unresolved') {
-                        stream = _db.watchConflicts(ConflictStatus.unresolved);
-                      }
-                      if (_selectedValue == 'resolved') {
-                        stream = _db.watchConflicts(ConflictStatus.resolved);
-                      }
-                    });
-                  },
-                  children: {
-                    'unresolved': SizedBox(
-                      width: 64,
-                      height: 32,
-                      child: Center(
-                        child: Text(
-                          localizations.conflictsUnresolved,
-                          style: segmentItemStyle,
-                        ),
-                      ),
+          backgroundColor: Colors.white,
+          appBar: TitleAppBar(
+            title: localizations.settingsConflictsTitle,
+            actions: [
+              CupertinoSegmentedControl(
+                selectedColor: colorConfig().riptide,
+                unselectedColor: Colors.white,
+                borderColor: colorConfig().riptide,
+                groupValue: _selectedValue,
+                onValueChanged: (String value) {
+                  setState(() {
+                    _selectedValue = value;
+                    if (_selectedValue == 'unresolved') {
+                      stream = _db.watchConflicts(ConflictStatus.unresolved);
+                    }
+                    if (_selectedValue == 'resolved') {
+                      stream = _db.watchConflicts(ConflictStatus.resolved);
+                    }
+                  });
+                },
+                children: {
+                  'unresolved': Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    child: Text(
+                      localizations.conflictsUnresolved,
+                      style: segmentItemStyle,
                     ),
-                    'resolved': SizedBox(
-                      child: Center(
-                        child: Text(
-                          localizations.conflictsResolved,
-                          style: segmentItemStyle,
-                        ),
-                      ),
-                    ),
-                  },
-                ),
-                ListView(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.all(8),
-                  children: List.generate(
-                    items.length,
-                    (int index) {
-                      return ConflictCard(
-                        conflict: items.elementAt(index),
-                        index: index,
-                      );
-                    },
                   ),
-                ),
-              ],
-            ),
+                  'resolved': Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    child: Text(
+                      localizations.conflictsResolved,
+                      style: segmentItemStyle,
+                    ),
+                  ),
+                },
+              ),
+            ],
+          ),
+          body: ListView(
+            shrinkWrap: true,
+            children: intersperse(
+              const SettingsDivider(),
+              List.generate(
+                items.length,
+                (int index) {
+                  return ConflictCard(
+                    conflict: items.elementAt(index),
+                    index: index,
+                  );
+                },
+              ),
+            ).toList(),
           ),
         );
       },
@@ -126,50 +124,40 @@ class ConflictCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(2),
-      child: Card(
-        elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      child: ListTile(
+        hoverColor: colorConfig().riplight,
+        contentPadding: const EdgeInsets.only(left: 24, right: 24),
+        title: Text(
+          '${df.format(conflict.createdAt)} - ${statusString(conflict)}',
         ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.only(left: 24, right: 24),
-          title: Text(
-            '${df.format(conflict.createdAt)} - ${statusString(conflict)}',
-            style: TextStyle(
-              color: colorConfig().entryTextColor,
-              fontFamily: 'Oswald',
-              fontSize: 16,
-            ),
+        subtitle: Text(
+          '${fromSerialized(conflict.serialized).meta.vectorClock}',
+          style: const TextStyle(
+            fontFamily: 'ShareTechMono',
+            fontWeight: FontWeight.w100,
+            fontSize: 12,
           ),
-          subtitle: Text(
-            '${fromSerialized(conflict.serialized).meta.vectorClock}',
-            style: TextStyle(
-              color: colorConfig().entryTextColor,
-              fontFamily: 'Oswald',
-              fontWeight: FontWeight.w200,
-              fontSize: 16,
-            ),
-          ),
-          onTap: () async {
-            final navigator = Navigator.of(context);
-            final entity = await _db.journalEntityById(conflict.id);
-            if (entity == null) return;
+        ),
+        onTap: () async {
+          final navigator = Navigator.of(context);
+          final entity = await _db.journalEntityById(conflict.id);
+          if (entity == null) return;
 
-            await navigator.push(
-              MaterialPageRoute<DetailRoute>(
-                builder: (BuildContext context) {
-                  return DetailRoute(
-                    local: entity,
-                    conflict: conflict,
-                    index: index,
-                  );
-                },
-              ),
-            );
-          },
-        ),
+          await navigator.push(
+            MaterialPageRoute<DetailRoute>(
+              builder: (BuildContext context) {
+                return DetailRoute(
+                  local: entity,
+                  conflict: conflict,
+                  index: index,
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }

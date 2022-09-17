@@ -2,7 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/pages/settings/about_page.dart';
 import 'package:lotti/pages/settings/advanced_settings_page.dart';
-import 'package:lotti/pages/settings/conflicts.dart';
+import 'package:lotti/pages/settings/conflicts_page.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
