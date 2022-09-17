@@ -28,16 +28,11 @@ import 'package:path_provider/path_provider.dart';
 
 class OutboxService {
   OutboxService() {
-    _clientRunner = ClientRunner<int>(
-      callback: (event) async {
-        await sendNext();
-      },
-    );
-
+    startRunner();
     init();
   }
 
-  late final ClientRunner<int> _clientRunner;
+  late ClientRunner<int> _clientRunner;
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
   final FgBgService _fgBgService = getIt<FgBgService>();
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
@@ -48,6 +43,14 @@ class OutboxService {
 
   void dispose() {
     fgBgSubscription.cancel();
+  }
+
+  void startRunner() {
+    _clientRunner = ClientRunner<int>(
+      callback: (event) async {
+        await sendNext();
+      },
+    );
   }
 
   Future<void> init() async {
@@ -63,12 +66,14 @@ class OutboxService {
 
     _connectivityService.connectedStream.listen((connected) {
       if (connected) {
+        startRunner();
         enqueueNextSendRequest();
       }
     });
 
     _fgBgService.fgBgStream.listen((foreground) {
       if (foreground) {
+        startRunner();
         enqueueNextSendRequest();
       }
     });
@@ -250,13 +255,11 @@ class OutboxService {
     }
 
     unawaited(
-      Future<void>.delayed(delay).then(
-        (_) =>
-            _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch),
-      ),
+      Future<void>.delayed(delay).then((_) {
+        _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
+        _loggingDb.captureEvent('enqueueRequest() done', domain: 'OUTBOX');
+      }),
     );
-
-    _loggingDb.captureEvent('enqueueRequest() done', domain: 'OUTBOX');
   }
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
