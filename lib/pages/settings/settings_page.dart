@@ -27,7 +27,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: TitleAppBar(title: localizations.navTabTitleSettings),
+      appBar: TitleAppBar(
+        title: localizations.navTabTitleSettings,
+        showBackButton: false,
+      ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

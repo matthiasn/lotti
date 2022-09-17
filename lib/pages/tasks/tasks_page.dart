@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:glass/glass.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -367,17 +368,14 @@ class AddTask extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       child: FloatingActionButton(
         heroTag: 'addTask',
-        backgroundColor: colorConfig().actionColor,
+        backgroundColor: colorConfig().riptide,
         onPressed: () async {
           final task = await createTask();
           if (task != null) {
             beamToNamed('/tasks/${task.meta.id}');
           }
         },
-        child: const Icon(
-          Icons.add,
-          size: 24,
-        ),
+        child: SvgPicture.asset('assets/icons/add.svg'),
       ),
     );
   }

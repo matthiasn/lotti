@@ -11,6 +11,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bp_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
@@ -117,56 +118,39 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
               data: aggregateByType(items, dataType),
             )
           ];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 5),
-            child: SizedBox(
-              key: Key('${widget.chartConfig.hashCode}'),
-              height: 120,
-              child: Stack(
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(
-                      top: 20,
-                      left: 10,
-                      right: 10,
-                    ),
-                    color: colorConfig().ice,
-                    padding: const EdgeInsets.only(left: 10),
-                    child: charts.TimeSeriesChart(
-                      seriesList,
-                      animate: false,
-                      behaviors: [
-                        chartRangeAnnotation(
-                          widget.rangeStart,
-                          widget.rangeEnd,
-                        ),
-                      ],
-                      domainAxis: timeSeriesAxis,
-                      defaultRenderer: defaultRenderer,
-                      selectionModels: [
-                        charts.SelectionModelConfig(
-                          updatedListener: _infoSelectionModelUpdated,
-                        ),
-                      ],
-                      primaryMeasureAxis: charts.NumericAxisSpec(
-                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                          zeroBound: isBarChart,
-                          desiredTickCount: 5,
-                          dataIsInWholeNumbers: false,
-                        ),
-                        tickFormatterSpec:
-                            healthType != null && healthType.hoursMinutes
-                                ? const charts.BasicNumericTickFormatterSpec(
-                                    hoursToHhMm,
-                                  )
-                                : null,
-                      ),
-                    ),
-                  ),
-                  HealthChartInfoWidget(widget.chartConfig),
-                ],
+
+          return DashboardChart(
+            chart: charts.TimeSeriesChart(
+              seriesList,
+              animate: false,
+              behaviors: [
+                chartRangeAnnotation(
+                  widget.rangeStart,
+                  widget.rangeEnd,
+                ),
+              ],
+              domainAxis: timeSeriesAxis,
+              defaultRenderer: defaultRenderer,
+              selectionModels: [
+                charts.SelectionModelConfig(
+                  updatedListener: _infoSelectionModelUpdated,
+                ),
+              ],
+              primaryMeasureAxis: charts.NumericAxisSpec(
+                tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                  zeroBound: isBarChart,
+                  desiredTickCount: 5,
+                  dataIsInWholeNumbers: false,
+                ),
+                tickFormatterSpec: healthType != null && healthType.hoursMinutes
+                    ? const charts.BasicNumericTickFormatterSpec(
+                        hoursToHhMm,
+                      )
+                    : null,
               ),
             ),
+            chartHeader: HealthChartInfoWidget(widget.chartConfig),
+            height: 120,
           );
         },
       ),

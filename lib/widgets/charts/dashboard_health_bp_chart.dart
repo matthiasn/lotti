@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -105,76 +106,61 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
               data: diastolicData,
             ),
           ];
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 5),
-            child: Container(
-              key: Key('${widget.chartConfig.hashCode}'),
-              height: 200,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Stack(
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 24),
-                    color: colorConfig().ice,
-                    padding: const EdgeInsets.only(left: 8),
-                    child: charts.TimeSeriesChart(
-                      seriesList,
-                      animate: false,
-                      behaviors: [
-                        charts.RangeAnnotation(
-                          [
-                            charts.RangeAnnotationSegment(
-                              widget.rangeStart,
-                              widget.rangeEnd,
-                              charts.RangeAnnotationAxisType.domain,
-                            ),
-                            charts.RangeAnnotationSegment(
-                              60,
-                              80,
-                              charts.RangeAnnotationAxisType.measure,
-                              color: charts.Color(
-                                r: blue.r,
-                                g: blue.g,
-                                b: blue.b,
-                                a: 24,
-                              ),
-                            ),
-                            charts.RangeAnnotationSegment(
-                              90,
-                              130,
-                              charts.RangeAnnotationAxisType.measure,
-                              color: charts.Color(
-                                r: red.r,
-                                g: red.g,
-                                b: red.b,
-                                a: 24,
-                              ),
-                            ),
-                          ],
-                        )
-                      ],
-                      domainAxis: timeSeriesAxis,
-                      defaultRenderer: defaultRenderer,
-                      selectionModels: [
-                        charts.SelectionModelConfig(
-                          updatedListener: _infoSelectionModelUpdated,
-                        ),
-                      ],
-                      primaryMeasureAxis: const charts.NumericAxisSpec(
-                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                          zeroBound: false,
-                          dataIsInWholeNumbers: true,
-                          desiredMinTickCount: 11,
-                          desiredMaxTickCount: 15,
-                        ),
+          return DashboardChart(
+            chart: charts.TimeSeriesChart(
+              seriesList,
+              animate: false,
+              behaviors: [
+                charts.RangeAnnotation(
+                  [
+                    charts.RangeAnnotationSegment(
+                      widget.rangeStart,
+                      widget.rangeEnd,
+                      charts.RangeAnnotationAxisType.domain,
+                    ),
+                    charts.RangeAnnotationSegment(
+                      60,
+                      80,
+                      charts.RangeAnnotationAxisType.measure,
+                      color: charts.Color(
+                        r: blue.r,
+                        g: blue.g,
+                        b: blue.b,
+                        a: 24,
                       ),
                     ),
-                  ),
-                  const BpChartInfoWidget(),
-                ],
+                    charts.RangeAnnotationSegment(
+                      90,
+                      130,
+                      charts.RangeAnnotationAxisType.measure,
+                      color: charts.Color(
+                        r: red.r,
+                        g: red.g,
+                        b: red.b,
+                        a: 24,
+                      ),
+                    ),
+                  ],
+                )
+              ],
+              domainAxis: timeSeriesAxis,
+              defaultRenderer: defaultRenderer,
+              selectionModels: [
+                charts.SelectionModelConfig(
+                  updatedListener: _infoSelectionModelUpdated,
+                ),
+              ],
+              primaryMeasureAxis: const charts.NumericAxisSpec(
+                tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                  zeroBound: false,
+                  dataIsInWholeNumbers: true,
+                  desiredMinTickCount: 11,
+                  desiredMaxTickCount: 15,
+                ),
               ),
             ),
+            chartHeader: const BpChartInfoWidget(),
+            height: 200,
           );
         },
       ),

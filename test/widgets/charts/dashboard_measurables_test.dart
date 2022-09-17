@@ -191,7 +191,7 @@ void main() {
         findsOneWidget,
       );
 
-      final addIconFinder = find.byIcon(Icons.add);
+      final addIconFinder = find.byType(IconButton);
       await tester.tap(addIconFinder);
       await tester.pumpAndSettle();
     });

@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -89,48 +90,34 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
               ),
             )
           ];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 5),
-            child: Container(
-              key: Key('${widget.chartConfig.hashCode}'),
-              color: Colors.white,
-              height: 120,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Stack(
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 20),
-                    color: colorConfig().ice,
-                    padding: const EdgeInsets.only(left: 8),
-                    child: charts.TimeSeriesChart(
-                      seriesList,
-                      animate: false,
-                      behaviors: [
-                        chartRangeAnnotation(
-                          widget.rangeStart,
-                          widget.rangeEnd,
-                        ),
-                      ],
-                      domainAxis: timeSeriesAxis,
-                      defaultRenderer: defaultRenderer,
-                      selectionModels: [
-                        charts.SelectionModelConfig(
-                          updatedListener: _infoSelectionModelUpdated,
-                        ),
-                      ],
-                      primaryMeasureAxis: const charts.NumericAxisSpec(
-                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                          zeroBound: false,
-                          desiredTickCount: 5,
-                          dataIsInWholeNumbers: true,
-                        ),
-                      ),
-                    ),
-                  ),
-                  WorkoutChartInfoWidget(widget.chartConfig),
-                ],
+
+          return DashboardChart(
+            chart: charts.TimeSeriesChart(
+              seriesList,
+              animate: false,
+              behaviors: [
+                chartRangeAnnotation(
+                  widget.rangeStart,
+                  widget.rangeEnd,
+                ),
+              ],
+              domainAxis: timeSeriesAxis,
+              defaultRenderer: defaultRenderer,
+              selectionModels: [
+                charts.SelectionModelConfig(
+                  updatedListener: _infoSelectionModelUpdated,
+                ),
+              ],
+              primaryMeasureAxis: const charts.NumericAxisSpec(
+                tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                  zeroBound: false,
+                  desiredTickCount: 5,
+                  dataIsInWholeNumbers: true,
+                ),
               ),
             ),
+            chartHeader: WorkoutChartInfoWidget(widget.chartConfig),
+            height: 120,
           );
         },
       ),

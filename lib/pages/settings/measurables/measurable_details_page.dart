@@ -65,7 +65,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
     return Scaffold(
       backgroundColor: colorConfig().bodyBgColor,
       appBar: TitleAppBar(
-        title: localizations.settingsMeasurablesTitle,
+        title: widget.dataType.displayName,
         actions: [
           if (dirty)
             TextButton(

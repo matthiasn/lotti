@@ -9,7 +9,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/dashboard_app_bar.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
@@ -110,8 +110,8 @@ class _DashboardPageState extends State<DashboardPage> {
           return Scaffold(
             // backgroundColor: colorConfig().bodyBgColor,
             backgroundColor: Colors.white,
-            appBar: DashboardAppBar(
-              dashboard,
+            appBar: TitleAppBar(
+              title: dashboard.name,
               showBackButton: widget.showBackButton,
             ),
             body: DashboardWidget(

@@ -28,7 +28,7 @@ class SettingsCard extends StatelessWidget {
           horizontal: 32,
           vertical: 8,
         ),
-        leading: icon,
+        trailing: icon,
         title: Text(
           title,
           style: settingsCardTextStyle(),

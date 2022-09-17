@@ -13,6 +13,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_data.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
@@ -128,61 +129,43 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                 ),
               ];
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: SizedBox(
-                  key: Key('${widget.chartConfig.hashCode}'),
-                  height: 320,
-                  child: Stack(
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(
-                          top: 24,
-                          left: 10,
-                          right: 10,
-                        ),
-                        color: colorConfig().ice,
-                        padding: const EdgeInsets.only(left: 8),
-                        child: charts.TimeSeriesChart(
-                          seriesList,
-                          animate: false,
-                          behaviors: [
-                            charts.RangeAnnotation([
-                              charts.RangeAnnotationSegment(
-                                widget.rangeStart,
-                                widget.rangeEnd,
-                                charts.RangeAnnotationAxisType.domain,
-                              ),
-                              ...rangeAnnotationSegments,
-                            ]),
-                          ],
-                          domainAxis: timeSeriesAxis,
-                          defaultRenderer: defaultRenderer,
-                          selectionModels: [
-                            charts.SelectionModelConfig(
-                              updatedListener: _infoSelectionModelUpdated,
-                            ),
-                          ],
-                          primaryMeasureAxis: charts.NumericAxisSpec(
-                            tickProviderSpec:
-                                charts.BasicNumericTickProviderSpec(
-                              zeroBound: false,
-                              dataIsInWholeNumbers: true,
-                              desiredTickCount: tickCount,
-                            ),
-                          ),
-                        ),
+              return DashboardChart(
+                chart: charts.TimeSeriesChart(
+                  seriesList,
+                  animate: false,
+                  behaviors: [
+                    charts.RangeAnnotation([
+                      charts.RangeAnnotationSegment(
+                        widget.rangeStart,
+                        widget.rangeEnd,
+                        charts.RangeAnnotationAxisType.domain,
                       ),
-                      BmiChartInfoWidget(
-                        widget.chartConfig,
-                        height: height,
-                        minInRange: minInRange,
-                        maxInRange: maxInRange,
-                      ),
-                      const BmiRangeLegend(),
-                    ],
+                      ...rangeAnnotationSegments,
+                    ]),
+                  ],
+                  domainAxis: timeSeriesAxis,
+                  defaultRenderer: defaultRenderer,
+                  selectionModels: [
+                    charts.SelectionModelConfig(
+                      updatedListener: _infoSelectionModelUpdated,
+                    ),
+                  ],
+                  primaryMeasureAxis: charts.NumericAxisSpec(
+                    tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                      zeroBound: false,
+                      dataIsInWholeNumbers: true,
+                      desiredTickCount: tickCount,
+                    ),
                   ),
                 ),
+                chartHeader: BmiChartInfoWidget(
+                  widget.chartConfig,
+                  height: height,
+                  minInRange: minInRange,
+                  maxInRange: maxInRange,
+                ),
+                height: 320,
+                overlay: const BmiRangeLegend(),
               );
             },
           );

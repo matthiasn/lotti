@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Style: Icon alignment in Settings > Advanced
+- Debug logging for Sync
+- Style: barrier color in new measurement modal
+- Style: add measurement icon
+- Style: floating action button color
+- Style: white app bar in dashboards
+- Style: app bar redesign
+- Style: remaining charts
+
+## [0.8.145] - 2022-09-15
+### Changed:
 - Styling: Settings layout
 - Styling: hover in Settings
 - Styling: measurables chart

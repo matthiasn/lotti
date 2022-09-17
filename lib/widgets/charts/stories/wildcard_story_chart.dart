@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/charts/story_data.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class WildcardStoryChart extends StatefulWidget {
@@ -89,50 +90,37 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
             }
           }
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                key: Key('${widget.chartConfig.hashCode}'),
-                color: Colors.white,
-                height: 120,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Stack(
-                  children: [
-                    charts.TimeSeriesChart(
-                      seriesList,
-                      animate: false,
-                      defaultRenderer: defaultRenderer,
-                      selectionModels: [
-                        charts.SelectionModelConfig(
-                          updatedListener: _infoSelectionModelUpdated,
-                        )
-                      ],
-                      behaviors: [
-                        chartRangeAnnotation(
-                          widget.rangeStart,
-                          widget.rangeEnd,
-                        )
-                      ],
-                      domainAxis: timeSeriesAxis,
-                      primaryMeasureAxis: const charts.NumericAxisSpec(
-                        tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
-                          minutesToHhMm,
-                        ),
-                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                          zeroBound: true,
-                          dataIsInWholeNumbers: false,
-                          desiredMinTickCount: 4,
-                          desiredMaxTickCount: 5,
-                        ),
-                      ),
-                    ),
-                    InfoWidget(title),
-                  ],
+          return DashboardChart(
+            chart: charts.TimeSeriesChart(
+              seriesList,
+              animate: false,
+              defaultRenderer: defaultRenderer,
+              selectionModels: [
+                charts.SelectionModelConfig(
+                  updatedListener: _infoSelectionModelUpdated,
+                )
+              ],
+              behaviors: [
+                chartRangeAnnotation(
+                  widget.rangeStart,
+                  widget.rangeEnd,
+                )
+              ],
+              domainAxis: timeSeriesAxis,
+              primaryMeasureAxis: const charts.NumericAxisSpec(
+                tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
+                  minutesToHhMm,
+                ),
+                tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                  zeroBound: true,
+                  dataIsInWholeNumbers: false,
+                  desiredMinTickCount: 4,
+                  desiredMaxTickCount: 5,
                 ),
               ),
             ),
+            chartHeader: InfoWidget(title),
+            height: 120,
           );
         },
       ),
@@ -157,14 +145,13 @@ class InfoWidget extends StatelessWidget {
 
         return Positioned(
           top: 0,
-          left: MediaQuery.of(context).size.width / 4,
+          left: 0,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width / 2,
+            width: MediaQuery.of(context).size.width,
             child: IgnorePointer(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Spacer(),
+                  const SizedBox(width: 10),
                   ConstrainedBox(
                     constraints: BoxConstraints(
                       maxWidth: MediaQuery.of(context).size.width / 2,
@@ -282,52 +269,39 @@ class _WildcardStoryWeeklyChartState extends State<WildcardStoryWeeklyChart> {
             }
           }
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                key: Key('${widget.chartConfig.hashCode}2'),
-                color: Colors.white,
-                height: 120,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Stack(
-                  children: [
-                    charts.BarChart(
-                      seriesList,
-                      animate: false,
-                      selectionModels: [
-                        charts.SelectionModelConfig(
-                          updatedListener: _infoSelectionModelUpdated,
-                        )
-                      ],
-                      barRendererDecorator: charts.BarLabelDecorator<String>(
-                        insideLabelStyleSpec: const charts.TextStyleSpec(
-                          fontSize: 8,
-                          color: charts.Color.white,
-                        ),
-                        outsideLabelStyleSpec: const charts.TextStyleSpec(
-                          fontSize: 8,
-                        ),
-                      ),
-                      domainAxis: const charts.OrdinalAxisSpec(),
-                      primaryMeasureAxis: const charts.NumericAxisSpec(
-                        tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
-                          minutesToHhMm,
-                        ),
-                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                          zeroBound: true,
-                          dataIsInWholeNumbers: false,
-                          desiredMinTickCount: 4,
-                          desiredMaxTickCount: 5,
-                        ),
-                      ),
-                    ),
-                    InfoWidget2(title),
-                  ],
+          return DashboardChart(
+            chart: charts.BarChart(
+              seriesList,
+              animate: false,
+              selectionModels: [
+                charts.SelectionModelConfig(
+                  updatedListener: _infoSelectionModelUpdated,
+                )
+              ],
+              barRendererDecorator: charts.BarLabelDecorator<String>(
+                insideLabelStyleSpec: const charts.TextStyleSpec(
+                  fontSize: 8,
+                  color: charts.Color.white,
+                ),
+                outsideLabelStyleSpec: const charts.TextStyleSpec(
+                  fontSize: 8,
+                ),
+              ),
+              domainAxis: const charts.OrdinalAxisSpec(),
+              primaryMeasureAxis: const charts.NumericAxisSpec(
+                tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
+                  minutesToHhMm,
+                ),
+                tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                  zeroBound: true,
+                  dataIsInWholeNumbers: false,
+                  desiredMinTickCount: 4,
+                  desiredMaxTickCount: 5,
                 ),
               ),
             ),
+            chartHeader: InfoWidget2(title),
+            height: 120,
           );
         },
       ),
@@ -352,14 +326,14 @@ class InfoWidget2 extends StatelessWidget {
 
         return Positioned(
           top: 0,
-          left: MediaQuery.of(context).size.width / 4,
+          left: 0,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width / 2,
+            width: MediaQuery.of(context).size.width,
             child: IgnorePointer(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Spacer(),
+                  const SizedBox(width: 10),
                   ConstrainedBox(
                     constraints: BoxConstraints(
                       maxWidth: MediaQuery.of(context).size.width / 2,

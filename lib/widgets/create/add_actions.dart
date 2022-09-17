@@ -56,7 +56,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'screenshot',
           tooltip: localizations.addActionAddScreenshot,
-          backgroundColor: colorConfig().actionColor,
+          backgroundColor: colorConfig().riptide,
           onPressed: () async {
             rebuild();
             await createScreenshot(linkedId: widget.linked?.meta.id);
@@ -73,7 +73,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       ..add(
         FloatingActionButton(
           heroTag: 'measurement',
-          backgroundColor: colorConfig().actionColor,
+          backgroundColor: colorConfig().riptide,
           tooltip: localizations.addActionAddMeasurable,
           onPressed: () async {
             rebuild();
@@ -90,7 +90,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'survey',
           tooltip: localizations.addActionAddSurvey,
-          backgroundColor: colorConfig().actionColor,
+          backgroundColor: colorConfig().riptide,
           onPressed: () {
             rebuild();
             final linkedId = widget.linked?.meta.id;
@@ -106,7 +106,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'photo',
           tooltip: localizations.addActionAddPhotos,
-          backgroundColor: colorConfig().actionColor,
+          backgroundColor: colorConfig().riptide,
           onPressed: () {
             rebuild();
 
@@ -125,7 +125,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'text',
           tooltip: localizations.addActionAddText,
-          backgroundColor: colorConfig().actionColor,
+          backgroundColor: colorConfig().riptide,
           onPressed: () async {
             rebuild();
             final linkedId = widget.linked?.meta.id;
@@ -143,7 +143,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'timer',
           tooltip: localizations.addActionAddTimeRecording,
-          backgroundColor: colorConfig().actionColor,
+          backgroundColor: colorConfig().riptide,
           onPressed: () async {
             rebuild();
             final linkedId = widget.linked?.meta.id;
@@ -162,7 +162,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         FloatingActionButton(
           heroTag: 'audio',
           tooltip: localizations.addActionAddAudioRecording,
-          backgroundColor: colorConfig().actionColor,
+          backgroundColor: colorConfig().riptide,
           onPressed: () {
             rebuild();
             final linkedId = widget.linked?.meta.id;
@@ -183,7 +183,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       FloatingActionButton(
         heroTag: 'task',
         tooltip: localizations.addActionAddTask,
-        backgroundColor: colorConfig().actionColor,
+        backgroundColor: colorConfig().riptide,
         onPressed: () async {
           rebuild();
           final linkedId = widget.linked?.meta.id;
@@ -203,7 +203,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       radius: items.length * 32,
       useOpacity: true,
       items: items,
-      color: colorConfig().actionColor,
+      color: colorConfig().riptide,
       icon: Icons.add,
       key: Key(keyDateTime.toString()),
       duration: const Duration(milliseconds: 500),
