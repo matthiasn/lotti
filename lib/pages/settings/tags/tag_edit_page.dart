@@ -102,7 +102,7 @@ class _TagEditPageState extends State<TagEditPage> {
 
     return Scaffold(
       appBar: TitleAppBar(
-        title: localizations.settingsTagsTitle,
+        title: widget.tagEntity.tag,
         actions: [
           if (dirty)
             TextButton(

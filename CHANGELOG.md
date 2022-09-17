@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Style: add measurement icon
 - Style: floating action button color
 - Style: white app bar in dashboards
+- Style: app bar redesign
 
 ## [0.8.145] - 2022-09-15
 ### Changed:

@@ -69,7 +69,7 @@ void main() {
         final saveButtonFinder = find.byKey(const Key('tag_save'));
 
         expect(nameFieldFinder, findsOneWidget);
-        expect(find.text('SomeGenericTag'), findsOneWidget);
+        expect(find.text('SomeGenericTag'), findsNWidgets(2));
 
         // save button is invisible - no changes yet
         expect(saveButtonFinder, findsNothing);
@@ -109,7 +109,7 @@ void main() {
         final saveButtonFinder = find.byKey(const Key('tag_save'));
 
         expect(nameFieldFinder, findsOneWidget);
-        expect(find.text('Reading'), findsOneWidget);
+        expect(find.text('Reading'), findsNWidgets(2));
 
         // save button is invisible - no changes yet
         expect(saveButtonFinder, findsNothing);
@@ -149,7 +149,7 @@ void main() {
         final saveButtonFinder = find.byKey(const Key('tag_save'));
 
         expect(nameFieldFinder, findsOneWidget);
-        expect(find.text('Jane Doe'), findsOneWidget);
+        expect(find.text('Jane Doe'), findsNWidgets(2));
 
         // save button is invisible - no changes yet
         expect(saveButtonFinder, findsNothing);
