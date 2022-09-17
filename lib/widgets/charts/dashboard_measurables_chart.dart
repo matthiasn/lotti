@@ -15,6 +15,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardMeasurablesChart extends StatefulWidget {
@@ -133,61 +134,39 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                   data: data,
                 )
               ];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 5),
-                child: SizedBox(
-                  key: Key(measurableDataType.description),
-                  height: 136,
-                  child: Stack(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          top: 24,
-                          left: 10,
-                          right: 10,
-                        ),
-                        child: Container(
-                          color: colorConfig().ice,
-                          padding: const EdgeInsets.only(
-                            left: 8,
-                          ),
-                          child: charts.TimeSeriesChart(
-                            seriesList,
-                            animate: false,
-                            defaultRenderer: defaultRenderer,
-                            selectionModels: [
-                              charts.SelectionModelConfig(
-                                updatedListener: _infoSelectionModelUpdated,
-                              )
-                            ],
-                            behaviors: [
-                              chartRangeAnnotation(
-                                widget.rangeStart,
-                                widget.rangeEnd,
-                              )
-                            ],
-                            domainAxis: timeSeriesAxis,
-                            primaryMeasureAxis: charts.NumericAxisSpec(
-                              tickProviderSpec:
-                                  charts.BasicNumericTickProviderSpec(
-                                zeroBound: !aggregationNone,
-                                dataIsInWholeNumbers: false,
-                                desiredMinTickCount: 4,
-                                desiredMaxTickCount: 5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      MeasurablesChartInfoWidget(
-                        measurableDataType,
-                        dashboardId: widget.dashboardId,
-                        enableCreate: widget.enableCreate,
-                        aggregationType: aggregationType,
-                      ),
-                    ],
+              return DashboardChart(
+                chart: charts.TimeSeriesChart(
+                  seriesList,
+                  animate: false,
+                  defaultRenderer: defaultRenderer,
+                  selectionModels: [
+                    charts.SelectionModelConfig(
+                      updatedListener: _infoSelectionModelUpdated,
+                    )
+                  ],
+                  behaviors: [
+                    chartRangeAnnotation(
+                      widget.rangeStart,
+                      widget.rangeEnd,
+                    )
+                  ],
+                  domainAxis: timeSeriesAxis,
+                  primaryMeasureAxis: charts.NumericAxisSpec(
+                    tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                      zeroBound: !aggregationNone,
+                      dataIsInWholeNumbers: false,
+                      desiredMinTickCount: 4,
+                      desiredMaxTickCount: 5,
+                    ),
                   ),
                 ),
+                chartHeader: MeasurablesChartInfoWidget(
+                  measurableDataType,
+                  dashboardId: widget.dashboardId,
+                  enableCreate: widget.enableCreate,
+                  aggregationType: aggregationType,
+                ),
+                height: 136,
               );
             },
           ),
@@ -273,7 +252,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     onPressed: onTapAdd,
                     icon: SvgPicture.asset('assets/icons/add.svg'),
-                  )
+                  ),
               ],
             ),
           ),

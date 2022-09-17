@@ -153,6 +153,20 @@ void main() {
   );
 
   test(
+    'Workout data is transformed into daily sums',
+    () async {
+      final aggregated = aggregateByType(
+        entities,
+        'HealthDataType.SLEEP_ASLEEP',
+      );
+      expect(aggregated, [
+        Observation(DateTime(2022, 02, 23), 0.1),
+        Observation(DateTime(2022, 02, 24), 0.45),
+      ]);
+    },
+  );
+
+  test(
     'Chart color is generated for observation',
     () async {
       final config = HealthTypeConfig(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -7,7 +8,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/settings/measurables/measurable_type_card.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 const double iconSize = 24;
@@ -100,7 +100,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
           floatingActionButton: FloatingActionButton(
             backgroundColor: colorConfig().riptide,
             onPressed: createMeasurable,
-            child: const Icon(MdiIcons.plus, size: 32),
+            child: SvgPicture.asset('assets/icons/add.svg'),
           ),
           body: Stack(
             children: [
