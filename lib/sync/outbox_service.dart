@@ -28,7 +28,7 @@ import 'package:path_provider/path_provider.dart';
 
 class OutboxService {
   OutboxService() {
-    startRunner();
+    _startRunner();
     init();
   }
 
@@ -45,12 +45,17 @@ class OutboxService {
     fgBgSubscription.cancel();
   }
 
-  void startRunner() {
+  void _startRunner() {
     _clientRunner = ClientRunner<int>(
       callback: (event) async {
         await sendNext();
       },
     );
+  }
+
+  void restartRunner() {
+    _clientRunner.close();
+    _startRunner();
   }
 
   Future<void> init() async {
@@ -66,14 +71,14 @@ class OutboxService {
 
     _connectivityService.connectedStream.listen((connected) {
       if (connected) {
-        startRunner();
+        restartRunner();
         enqueueNextSendRequest();
       }
     });
 
     _fgBgService.fgBgStream.listen((foreground) {
       if (foreground) {
-        startRunner();
+        restartRunner();
         enqueueNextSendRequest();
       }
     });

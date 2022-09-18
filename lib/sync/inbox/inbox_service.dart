@@ -19,16 +19,12 @@ import 'package:lotti/utils/consts.dart';
 
 class InboxService {
   InboxService() {
-    _clientRunner = ClientRunner<int>(
-      callback: (event) async {
-        await _fetchInbox();
-      },
-    );
+    _startRunner();
 
     init();
   }
 
-  late final ClientRunner<int> _clientRunner;
+  late ClientRunner<int> _clientRunner;
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
   final FgBgService _fgBgService = getIt<FgBgService>();
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
@@ -38,9 +34,35 @@ class InboxService {
   late final StreamSubscription<FGBGType> fgBgSubscription;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   ImapClient? imapClient;
+  late Timer _timer;
+
+  void _startRunner() {
+    _clientRunner = ClientRunner<int>(
+      callback: (event) async {
+        await _fetchInbox();
+      },
+    );
+  }
+
+  void restartRunner() {
+    _timer.cancel();
+    _clientRunner.close();
+    _startRunner();
+    _startTimer();
+  }
 
   void dispose() {
     fgBgSubscription.cancel();
+    _clientRunner.close();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(
+      const Duration(seconds: 15),
+      (timer) async {
+        enqueueNextFetchRequest();
+      },
+    );
   }
 
   Future<void> init() async {
@@ -56,6 +78,7 @@ class InboxService {
 
     _fgBgService.fgBgStream.listen((foreground) {
       if (foreground) {
+        restartRunner();
         enqueueNextFetchRequest();
         _observeInbox();
       }
@@ -63,24 +86,14 @@ class InboxService {
 
     _connectivityService.connectedStream.listen((connected) {
       if (connected) {
+        restartRunner();
         enqueueNextFetchRequest();
         _observeInbox();
       }
     });
 
+    _startTimer();
     enqueueNextFetchRequest();
-
-    Timer.periodic(
-      const Duration(seconds: 15),
-      (timer) async {
-        // final isObserving = _observingClient?.isPolling() ?? false;
-        // if (!isObserving) {
-        //   enqueueNextFetchRequest();
-        // }
-        enqueueNextFetchRequest();
-      },
-    );
-
     await _observeInbox();
   }
 

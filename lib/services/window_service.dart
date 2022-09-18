@@ -1,6 +1,8 @@
 import 'dart:ui';
 
 import 'package:lotti/get_it.dart';
+import 'package:lotti/sync/inbox/inbox_service.dart';
+import 'package:lotti/sync/outbox_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -47,7 +49,10 @@ class WindowService implements WindowListener {
   void onWindowEvent(String eventName) {}
 
   @override
-  void onWindowFocus() {}
+  void onWindowFocus() {
+    getIt<OutboxService>().restartRunner();
+    getIt<InboxService>().restartRunner();
+  }
 
   @override
   void onWindowLeaveFullScreen() {}
