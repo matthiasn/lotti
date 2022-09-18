@@ -5,10 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-## [0.8.148] - 2022-09-18
+### Changed:
+- Design tweaks in measurement capture
+- Design tweaks survey capture
+- Replace Lato font
+
+## [0.8.149] - 2022-09-18
 ### Added:
 - Detect when desktop app is resumed in Sync
 
+## [0.8.148] - 2022-09-18
 ### Changed:
 - Dashboard chart header tweaks
 - No hover color on IconButton elements on desktop
