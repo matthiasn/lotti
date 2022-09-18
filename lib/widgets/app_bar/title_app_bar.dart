@@ -44,6 +44,7 @@ class TitleAppBar extends StatelessWidget with PreferredSizeWidget {
           ? IconButton(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               onPressed: onPressed,
+              hoverColor: Colors.transparent,
               icon: SvgPicture.asset('assets/icons/back.svg'),
             )
           : Container(),

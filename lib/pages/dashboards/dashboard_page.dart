@@ -221,17 +221,17 @@ class DashboardWidget extends StatelessWidget {
               children: [
                 Flexible(
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.only(left: 10),
                     child: Text(
                       dashboard.description,
-                      style: formLabelStyle().copyWith(color: Colors.black),
+                      style: chartTitleStyle(),
                     ),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.dashboard_customize_outlined),
-                  // color: colorConfig().entryTextColor,
                   color: Colors.black,
+                  hoverColor: Colors.transparent,
                   onPressed: () =>
                       beamToNamed('/settings/dashboards/$dashboardId'),
                 ),

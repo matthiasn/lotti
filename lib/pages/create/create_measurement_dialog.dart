@@ -178,6 +178,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     IconButton(
                       icon: const Icon(Icons.settings_outlined),
                       color: Colors.black,
+                      hoverColor: Colors.transparent,
                       onPressed: () => beamToNamed(
                         '/settings/measurables/${selected?.id}',
                       ),
