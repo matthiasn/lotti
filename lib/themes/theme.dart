@@ -36,9 +36,7 @@ TextStyle inputStyle() => TextStyle(
 
 TextStyle newInputStyle() => const TextStyle(
       color: Colors.black,
-      fontWeight: FontWeight.bold,
-      fontFamily: 'Lato',
-      fontSize: 18,
+      fontSize: 15,
     );
 
 TextStyle textStyle() => TextStyle(
@@ -72,7 +70,7 @@ TextStyle labelStyle() => TextStyle(
 
 TextStyle newLabelStyle() => const TextStyle(
       color: Colors.black,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w300,
       fontSize: 18,
     );
 
