@@ -25,4 +25,8 @@ class ClientRunner<T> {
   void enqueueRequest(T event) {
     _controller.add(event);
   }
+
+  void close() {
+    _controller.close();
+  }
 }
