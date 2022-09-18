@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
+import 'package:lotti/pages/dashboards/how_to_use_page.dart';
 import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -46,7 +47,7 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         );
 
         if (dashboards.isEmpty) {
-          return const EmptyDashboards();
+          return const HowToUsePage();
         }
 
         if (dashboards.length == 1) {
