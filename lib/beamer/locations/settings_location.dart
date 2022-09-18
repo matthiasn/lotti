@@ -1,8 +1,9 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/pages/settings/about_page.dart';
 import 'package:lotti/pages/settings/advanced_settings_page.dart';
-import 'package:lotti/pages/settings/conflicts.dart';
+import 'package:lotti/pages/settings/conflicts_page.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
@@ -40,7 +41,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/outbox_monitor',
         '/settings/logging',
         '/settings/logging/:logEntryId',
-        '/settings/conflicts',
+        '/settings/advanced/conflicts/:conflictId',
+        '/settings/advanced/conflicts/:conflictId/edit',
+        '/settings/advanced/conflicts',
         '/settings/maintenance',
       ];
 
@@ -193,6 +196,26 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-conflicts'),
           child: ConflictsPage(),
+        ),
+
+      if (pathContains('advanced/conflicts/') && pathContainsKey('conflictId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-conflict-${state.pathParameters['conflictId']}',
+          ),
+          child: ConflictDetailRoute(
+            conflictId: state.pathParameters['conflictId']!,
+          ),
+        ),
+
+      if (pathContains('advanced/conflicts/') &&
+          pathContainsKey('conflictId') &&
+          pathContains('/edit'))
+        BeamPage(
+          key: ValueKey(
+            'settings-conflict-edit-${state.pathParameters['conflictId']}',
+          ),
+          child: EntryDetailPage(itemId: state.pathParameters['conflictId']!),
         ),
 
       if (pathContains('advanced/maintenance'))

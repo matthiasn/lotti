@@ -178,7 +178,7 @@ TextStyle cancelButtonStyle() => const TextStyle(
 
 const segmentItemStyle = TextStyle(
   fontFamily: mainFont,
-  fontSize: 14,
+  fontSize: 12,
 );
 
 const badgeStyle = TextStyle(

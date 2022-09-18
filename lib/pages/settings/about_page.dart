@@ -81,36 +81,3 @@ class _AboutPageState extends State<AboutPage> {
     );
   }
 }
-
-class MaintenanceCard extends StatelessWidget {
-  const MaintenanceCard({
-    super.key,
-    required this.title,
-    required this.onTap,
-  });
-
-  final String title;
-  final void Function()? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      // color: colorConfig().headerBgColor,
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.only(left: 16, top: 4, bottom: 8, right: 16),
-        title: Text(
-          title,
-          softWrap: true,
-          style: settingsCardTextStyle(),
-        ),
-        onTap: onTap,
-      ),
-    );
-  }
-}

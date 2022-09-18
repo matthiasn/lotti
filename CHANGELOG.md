@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Sync Conflicts layout
+- Sync Conflicts resolution UI
+
+## [0.8.146] - 2022-09-17
+### Changed:
 - Style: Icon alignment in Settings > Advanced
 - Debug logging for Sync
 - Style: barrier color in new measurement modal
