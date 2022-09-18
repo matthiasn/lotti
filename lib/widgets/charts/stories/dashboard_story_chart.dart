@@ -73,6 +73,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
               id: widget.chartConfig.storyTagId,
               domainFn: (MeasuredObservation val, _) => val.dateTime,
               measureFn: (MeasuredObservation val, _) => val.value,
+              colorFn: (_, __) => charts.Color.fromHex(code: '#82E6CE'),
               data: data,
             )
           ];
@@ -154,7 +155,7 @@ class InfoWidget extends StatelessWidget {
             child: IgnorePointer(
               child: Row(
                 children: [
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   ConstrainedBox(
                     constraints: BoxConstraints(
                       maxWidth: MediaQuery.of(context).size.width / 2,

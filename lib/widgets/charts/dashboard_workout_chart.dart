@@ -148,6 +148,7 @@ class WorkoutChartInfoWidget extends StatelessWidget {
             child: IgnorePointer(
               child: Row(
                 children: [
+                  const SizedBox(width: 10),
                   Text(
                     chartConfig.displayName,
                     style: chartTitleStyle(),

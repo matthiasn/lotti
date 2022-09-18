@@ -796,7 +796,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.4"
+    version: "6.0.5"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -885,7 +885,7 @@ packages:
       name: flutter_typeahead
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.1.0"
+    version: "4.1.1"
   flutter_web_plugins:
     dependency: transitive
     description: flutter

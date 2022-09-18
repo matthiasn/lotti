@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Dashboard chart header tweaks
+- No hover color on IconButton elements on desktop
+- Chart colors
+
+## [0.8.147] - 2022-09-18
+### Changed:
 - Sync Conflicts layout
 - Sync Conflicts resolution UI
 
