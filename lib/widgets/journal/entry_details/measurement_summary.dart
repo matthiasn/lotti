@@ -40,7 +40,10 @@ class MeasurementSummary extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (measurementEntry.entryText?.plainText != null)
-                TextViewerWidget(entryText: measurementEntry.entryText),
+                TextViewerWidget(
+                  entryText: measurementEntry.entryText,
+                  maxHeight: 120,
+                ),
               DashboardMeasurablesChart(
                 dashboardId: null,
                 rangeStart: getRangeStart(context: context),

@@ -310,6 +310,11 @@ SELECT * FROM conflicts
   ORDER BY created_at DESC
   LIMIT :limit;
 
+conflictsById:
+SELECT * FROM conflicts
+  WHERE id = :id
+  ORDER BY created_at DESC;
+
 activeMeasurableTypes:
 SELECT * FROM measurable_types
   WHERE deleted = false

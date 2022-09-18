@@ -23,9 +23,14 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 const double iconSize = 18;
 
 class JournalCardTitle extends StatelessWidget {
-  const JournalCardTitle({super.key, required this.item});
+  const JournalCardTitle({
+    super.key,
+    required this.item,
+    required this.maxHeight,
+  });
 
   final JournalEntity item;
+  final double? maxHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -91,13 +96,18 @@ class JournalCardTitle extends StatelessWidget {
                   HealthSummary(qe, showChart: false),
               journalAudio: (JournalAudio journalAudio) =>
                   journalAudio.entryText?.plainText != null
-                      ? TextViewerWidget(entryText: journalAudio.entryText)
+                      ? TextViewerWidget(
+                          entryText: journalAudio.entryText,
+                          maxHeight: maxHeight,
+                        )
                       : EntryTextWidget(formatAudio(journalAudio)),
               journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
                 entryText: journalEntry.entryText,
+                maxHeight: maxHeight,
               ),
               journalImage: (JournalImage journalImage) => TextViewerWidget(
                 entryText: journalImage.entryText,
+                maxHeight: maxHeight,
               ),
               survey: SurveySummary.new,
               measurement: MeasurementSummary.new,
@@ -117,7 +127,10 @@ class JournalCardTitle extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     LinkedDuration(task: task),
-                    TextViewerWidget(entryText: task.entryText),
+                    TextViewerWidget(
+                      entryText: task.entryText,
+                      maxHeight: maxHeight,
+                    ),
                   ],
                 );
               },
@@ -147,9 +160,11 @@ class JournalCard extends StatelessWidget {
   const JournalCard({
     super.key,
     required this.item,
+    this.maxHeight = 120,
   });
 
   final JournalEntity item;
+  final double? maxHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +203,10 @@ class JournalCard extends StatelessWidget {
               ),
               orElse: () => null,
             ),
-            title: JournalCardTitle(item: item),
+            title: JournalCardTitle(
+              item: item,
+              maxHeight: maxHeight,
+            ),
             onTap: onTap,
           ),
         );
@@ -248,7 +266,10 @@ class JournalImageCard extends StatelessWidget {
           ),
           title: SizedBox(
             height: 160,
-            child: JournalCardTitle(item: item),
+            child: JournalCardTitle(
+              item: item,
+              maxHeight: 200,
+            ),
           ),
           onTap: onTap,
         ),

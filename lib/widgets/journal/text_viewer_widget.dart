@@ -9,9 +9,11 @@ class TextViewerWidget extends StatelessWidget {
   const TextViewerWidget({
     super.key,
     required this.entryText,
+    required this.maxHeight,
   });
 
   final EntryText? entryText;
+  final double? maxHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +33,7 @@ class TextViewerWidget extends StatelessWidget {
           focusNode: FocusNode(canRequestFocus: false),
           autoFocus: false,
           expands: false,
-          maxHeight: 120,
+          maxHeight: maxHeight,
           padding: const EdgeInsets.only(top: 8, bottom: 16),
           keyboardAppearance: Brightness.dark,
           customStyles: customTextViewerStyles(

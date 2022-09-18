@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:beamer/beamer.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/secure_storage.dart';
@@ -122,5 +123,6 @@ void persistNamedRoute(String route) {
 }
 
 void beamToNamed(String path) {
+  debugPrint('beamToNamed $path');
   getIt<NavService>().beamToNamed(path);
 }

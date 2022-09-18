@@ -738,6 +738,10 @@ class JournalDb extends _$JournalDb {
         .where(makeDuplicateFilter());
   }
 
+  Stream<List<Conflict>> watchConflictById(String id) {
+    return conflictsById(id).watch();
+  }
+
   Stream<List<TagEntity>> watchTags() {
     return allTagEntities()
         .watch()

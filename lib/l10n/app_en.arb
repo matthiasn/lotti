@@ -116,6 +116,7 @@
   "settingsAboutTitle": "About Lotti",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsConflictsTitle": "Sync Conflicts",
+  "settingsConflictsResolutionTitle": "Sync Conflict Resolution",
   "settingsDashboardsSearchHint": "Search...",
   "settingsDashboardsTitle": "Dashboard Management",
   "settingsFlagsTitle": "Config Flags",

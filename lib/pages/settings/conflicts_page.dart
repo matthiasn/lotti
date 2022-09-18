@@ -1,18 +1,23 @@
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intersperse/intersperse.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/journal/entry_details_page.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/settings_card.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/journal_card.dart';
 
 class ConflictsPage extends StatefulWidget {
   const ConflictsPage({super.key});
@@ -112,13 +117,12 @@ String statusString(Conflict conflict) {
 }
 
 class ConflictCard extends StatelessWidget {
-  ConflictCard({
+  const ConflictCard({
     super.key,
     required this.conflict,
     required this.index,
   });
 
-  final JournalDb _db = getIt<JournalDb>();
   final Conflict conflict;
   final int index;
 
@@ -130,8 +134,11 @@ class ConflictCard extends StatelessWidget {
       child: ListTile(
         hoverColor: colorConfig().riplight,
         contentPadding: const EdgeInsets.only(left: 24, right: 24),
-        title: Text(
-          '${df.format(conflict.createdAt)} - ${statusString(conflict)}',
+        title: Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(
+            '${df.format(conflict.createdAt)} - ${statusString(conflict)}',
+          ),
         ),
         subtitle: Text(
           '${fromSerialized(conflict.serialized).meta.vectorClock}',
@@ -141,117 +148,166 @@ class ConflictCard extends StatelessWidget {
             fontSize: 12,
           ),
         ),
-        onTap: () async {
-          final navigator = Navigator.of(context);
-          final entity = await _db.journalEntityById(conflict.id);
-          if (entity == null) return;
-
-          await navigator.push(
-            MaterialPageRoute<DetailRoute>(
-              builder: (BuildContext context) {
-                return DetailRoute(
-                  local: entity,
-                  conflict: conflict,
-                  index: index,
-                );
-              },
-            ),
-          );
+        onTap: () {
+          beamToNamed('/settings/advanced/conflicts/${conflict.id}');
         },
       ),
     );
   }
 }
 
-class DetailRoute extends StatelessWidget {
-  const DetailRoute({
+class ConflictDetailRoute extends StatelessWidget {
+  const ConflictDetailRoute({
     super.key,
-    required this.local,
-    required this.index,
-    required this.conflict,
+    required this.conflictId,
   });
 
-  final int index;
-  final JournalEntity local;
-  final Conflict conflict;
+  final String conflictId;
 
   @override
   Widget build(BuildContext context) {
-    final fromSync = fromSerialized(conflict.serialized);
-    final merged =
-        VectorClock.merge(local.meta.vectorClock, fromSync.meta.vectorClock);
-    final withResolvedVectorClock =
-        local.copyWith(meta: local.meta.copyWith(vectorClock: merged));
+    final _db = getIt<JournalDb>();
+    final localizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          df.format(local.meta.dateFrom),
-          style: TextStyle(
-            color: colorConfig().entryBgColor,
-            fontFamily: 'Oswald',
-          ),
-        ),
-        backgroundColor: colorConfig().headerBgColor,
-      ),
-      backgroundColor: colorConfig().bodyBgColor,
-      body: SingleChildScrollView(
-        child: Container(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Column(
-            children: [
-              Text(
-                'Local: ${local.meta.vectorClock}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'ShareTechMono',
+    final stream = _db.watchConflictById(conflictId);
+
+    return StreamBuilder<List<Conflict>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        final data = snapshot.data ?? [];
+
+        if (data.isEmpty) {
+          return const EmptyScaffoldWithTitle('Conflict not found');
+        }
+
+        final conflict = data.first;
+        final fromSync = fromSerialized(conflict.serialized);
+
+        return StreamBuilder<JournalEntity?>(
+          stream: _db.watchEntityById(conflict.id),
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<JournalEntity?> snapshot,
+          ) {
+            final local = snapshot.data;
+
+            if (local == null) {
+              return const EmptyScaffoldWithTitle('Entry not found');
+            }
+
+            final merged = VectorClock.merge(
+              local.meta.vectorClock,
+              fromSync.meta.vectorClock,
+            );
+
+            final withResolvedVectorClock = local.copyWith(
+              meta: local.meta.copyWith(vectorClock: merged),
+            );
+
+            return Scaffold(
+              appBar: TitleAppBar(
+                title: localizations.settingsConflictsResolutionTitle,
+              ),
+              backgroundColor: Colors.white,
+              body: SingleChildScrollView(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Local:', style: appBarTextStyleNew()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: IgnorePointer(
+                        child: JournalCard(
+                          item: withResolvedVectorClock,
+                          maxHeight: 1000,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            beamToNamed(
+                              '/settings/advanced/conflicts/${conflict.id}/edit',
+                            );
+                          },
+                          child: const Text('Edit'),
+                        ),
+                        TextButton(
+                          clipBehavior: Clip.antiAlias,
+                          onPressed: () {
+                            getIt<PersistenceLogic>().updateJournalEntity(
+                              withResolvedVectorClock,
+                              withResolvedVectorClock.meta,
+                            );
+                            settingsBeamerDelegate.beamBack();
+                          },
+                          child: const Text(
+                            'Resolve with local version',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    Text('From Sync:', style: appBarTextStyleNew()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: IgnorePointer(
+                        child: JournalCard(
+                          item: fromSync,
+                          maxHeight: 1000,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            Clipboard.setData(
+                              ClipboardData(
+                                text: fromSync.entryText?.plainText,
+                              ),
+                            );
+                          },
+                          child: const Text('Copy Text from Sync'),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    Text(
+                      'Local: ${local.meta.vectorClock}',
+                      style: const TextStyle(
+                        fontFamily: 'ShareTechMono',
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'Merged: ${withResolvedVectorClock.meta.vectorClock}',
+                      style: const TextStyle(
+                        fontFamily: 'ShareTechMono',
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'From Sync: ${fromSync.meta.vectorClock}',
+                      style: const TextStyle(
+                        fontFamily: 'ShareTechMono',
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                'Merged: ${withResolvedVectorClock.meta.vectorClock}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'ShareTechMono',
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
-                  child: EntryDetailPage(
-                    itemId: withResolvedVectorClock.meta.id,
-                  ),
-                ),
-              ),
-              Text(
-                'From Sync: ${fromSync.meta.vectorClock}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'ShareTechMono',
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
-                  child: EntryDetailPage(
-                    itemId: fromSync.meta.id,
-                    readOnly: true,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 }
