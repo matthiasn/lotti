@@ -12,6 +12,7 @@ Future<void> runSurvey({
 }) async {
   await showModalBottomSheet<void>(
     context: context,
+    constraints: BoxConstraints(maxHeight: 600),
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(

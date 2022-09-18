@@ -155,11 +155,11 @@ class _JournalPageState extends State<JournalPage> {
       transitionCurve: Curves.easeInOut,
       backgroundColor: colorConfig().appBarFgColor,
       queryStyle: const TextStyle(
-        fontFamily: 'Lato',
+        fontFamily: mainFont,
         fontSize: 24,
       ),
       hintStyle: const TextStyle(
-        fontFamily: 'Lato',
+        fontFamily: mainFont,
         fontSize: 24,
       ),
       physics: const BouncingScrollPhysics(),
@@ -343,7 +343,7 @@ class _JournalPageState extends State<JournalPage> {
                               title: Text(
                                 tagEntity.tag,
                                 style: TextStyle(
-                                  fontFamily: 'Lato',
+                                  fontFamily: mainFont,
                                   color: getTagColor(tagEntity),
                                   fontWeight: FontWeight.normal,
                                   fontSize: 20,

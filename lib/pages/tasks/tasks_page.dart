@@ -126,11 +126,11 @@ class _TasksPageState extends State<TasksPage> {
       transitionCurve: Curves.easeInOut,
       backgroundColor: colorConfig().appBarFgColor,
       queryStyle: const TextStyle(
-        fontFamily: 'Lato',
+        fontFamily: mainFont,
         fontSize: 24,
       ),
       hintStyle: const TextStyle(
-        fontFamily: 'Lato',
+        fontFamily: mainFont,
         fontSize: 24,
       ),
       body: Column(
@@ -253,7 +253,7 @@ class _TasksPageState extends State<TasksPage> {
                               title: Text(
                                 tagEntity.tag,
                                 style: TextStyle(
-                                  fontFamily: 'Lato',
+                                  fontFamily: mainFont,
                                   color: getTagColor(tagEntity),
                                   fontWeight: FontWeight.normal,
                                   fontSize: 20,

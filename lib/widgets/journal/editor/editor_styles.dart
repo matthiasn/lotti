@@ -37,7 +37,7 @@ DefaultStyles customEditorStyles({
       null,
     ),
     paragraph: DefaultTextBlockStyle(
-      GoogleFonts.lato(
+      GoogleFonts.plusJakartaSans(
         fontSize: 16,
         color: textColor,
       ),
@@ -45,7 +45,7 @@ DefaultStyles customEditorStyles({
       const Tuple2(0, 0),
       null,
     ),
-    bold: GoogleFonts.lato(
+    bold: GoogleFonts.plusJakartaSans(
       fontSize: 16,
       color: textColor,
       fontWeight: FontWeight.w900,
@@ -59,7 +59,7 @@ DefaultStyles customEditorStyles({
       backgroundColor: codeBlockBackground,
     ),
     lists: DefaultListBlockStyle(
-      GoogleFonts.lato(
+      GoogleFonts.plusJakartaSans(
         fontSize: 16,
         color: textColor,
       ),
@@ -116,7 +116,7 @@ DefaultStyles customTextViewerStyles({
       null,
     ),
     paragraph: DefaultTextBlockStyle(
-      GoogleFonts.lato(
+      GoogleFonts.plusJakartaSans(
         fontSize: 14,
         color: textColor,
       ),
@@ -124,13 +124,13 @@ DefaultStyles customTextViewerStyles({
       const Tuple2(0, 0),
       null,
     ),
-    bold: GoogleFonts.lato(
+    bold: GoogleFonts.plusJakartaSans(
       fontSize: 14,
       color: textColor,
       fontWeight: FontWeight.w900,
     ),
     lists: DefaultListBlockStyle(
-      GoogleFonts.lato(
+      GoogleFonts.plusJakartaSans(
         fontSize: 12,
         color: textColor,
       ),
