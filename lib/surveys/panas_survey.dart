@@ -6,7 +6,10 @@ RPInstructionStep panasInstructionStep = RPInstructionStep(
       'The Positive and Negative Affect Schedule (PANAS; Watson et al., 1988)',
   text: 'Indicate to what extent you feel this way right now, that is, at the '
       'present moment.\n\n'
-      '1-Very Slightly or Not at All, 2-A Little, 3-Moderately, 4-Quite a Bit, '
+      '1-Very Slightly or Not at All,\n'
+      '2-A Little,\n'
+      '3-Moderately,\n'
+      '4-Quite a Bit,\n'
       '5-Extremely',
   footnote: 'Watson, D., Clark, L. A., & Tellegan, A. (1988). Development and '
       'validation of brief measures of positive and negative affect: The PANAS '

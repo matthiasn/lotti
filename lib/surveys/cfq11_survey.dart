@@ -56,8 +56,10 @@ RPInstructionStep cfq11InstructionStep = RPInstructionStep(
       'If you have been feeling tired for a long while, then compare yourself '
       'to how you felt when you were last well. Please tick only one box per'
       ' line.\n\n'
-      '0—Better than usual, \n1—No worse than usual, \n2—Worse than usual, '
-      '\n3—Much worse than usual\n\n',
+      '0—Better than usual,\n'
+      '1—No worse than usual,\n'
+      '2—Worse than usual,\n'
+      '3—Much worse than usual',
   footnote:
       'Cella, M. and T. Chalder (2010). "Measuring fatigue in clinical and '
       'community settings." J Psychosom Res 69(1): 17-22.',

@@ -45,11 +45,11 @@ class _TagsPageState extends State<TagsPage> {
       backgroundColor: colorConfig().appBarFgColor,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
-        fontFamily: 'Lato',
+        fontFamily: mainFont,
         fontSize: 20,
       ),
       hintStyle: const TextStyle(
-        fontFamily: 'Lato',
+        fontFamily: mainFont,
         fontSize: 20,
       ),
       physics: const BouncingScrollPhysics(),

@@ -31,53 +31,52 @@ class SurveyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 440,
-      child: Flex(
-        direction: Axis.horizontal,
-        children: [
-          Flexible(
-            child: Theme(
-              data: ThemeData(
-                primaryColor: Colors.lightBlue[800],
-                fontFamily: 'Oswald',
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Theme(
+            data: ThemeData(
+              primaryColor: colorConfig().riptide,
+              fontFamily: 'PlusJakartaSans',
 
-                // Define the default `TextTheme`. Use this to specify the default
-                // text styling for headlines, titles, bodies of text, and more.
-                textTheme: TextTheme(
-                  headline3: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  headline5: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w100,
-                  ),
-                  headline6: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.grey[800],
-                  ),
+              // Define the default `TextTheme`. Use this to specify the default
+              // text styling for headlines, titles, bodies of text, and more.
+              textTheme: const TextTheme(
+                headline3: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: RPUITask(
-                  task: task,
-                  onSubmit: resultCallback,
-                  onCancel: (RPTaskResult? result) {
-                    if (result == null) {
-                      debugPrint('No result');
-                    } else {
-                      cancelCallBack(result);
-                    }
-                  },
+                headline5: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w200,
+                ),
+                headline6: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: RPUITask(
+                task: task,
+                onSubmit: resultCallback,
+                onCancel: (RPTaskResult? result) {
+                  if (result == null) {
+                    debugPrint('No result');
+                  } else {
+                    cancelCallBack(result);
+                  }
+                },
+              ),
+            ),
           ),
-        ],
-      ),
+
+          //],
+          //),
+        ),
+      ],
     );
   }
 }
