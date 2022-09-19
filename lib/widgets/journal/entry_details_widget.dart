@@ -92,7 +92,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       journalImage: (image) {
                         return Container(
                           width: MediaQuery.of(context).size.width,
-                          color: Colors.black,
+                          color: colorConfig().coal,
                           child: EntryImageWidget(
                             journalImage: image,
                           ),

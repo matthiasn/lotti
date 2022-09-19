@@ -201,7 +201,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                         style: TextStyle(
                                           color: colorConfig().entryTextColor,
                                           fontFamily: 'Oswald',
-                                          fontSize: 24,
+                                          fontSize: 25,
                                         ),
                                       ),
                                     ),

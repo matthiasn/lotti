@@ -42,10 +42,10 @@ class _AboutPageState extends State<AboutPage> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    const style = TextStyle(
-      color: Colors.black,
+    final style = TextStyle(
+      color: colorConfig().coal,
       fontFamily: mainFont,
-      fontSize: 20,
+      fontSize: 25,
       fontWeight: FontWeight.w300,
     );
 

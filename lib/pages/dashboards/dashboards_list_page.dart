@@ -106,8 +106,8 @@ class DashboardCard extends StatelessWidget {
         hoverColor: colorConfig().riplight,
         title: Text(
           dashboard.name,
-          style: const TextStyle(
-            color: Colors.black,
+          style: TextStyle(
+            color: colorConfig().coal,
             fontFamily: mainFont,
             fontSize: 24,
             fontWeight: FontWeight.w300,

@@ -70,7 +70,7 @@ class _TaskFormState extends State<TaskForm> {
                       maxLines: null,
                       style: inputStyle().copyWith(
                         fontFamily: 'Oswald',
-                        fontSize: 24,
+                        fontSize: 25,
                         fontWeight: FontWeight.normal,
                       ),
                       name: 'title',
@@ -142,7 +142,7 @@ class _TaskFormState extends State<TaskForm> {
                       runSpacing: 6,
                       spacing: 4,
                       labelStyle: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Oswald',
                         color: colorConfig().unselectedChoiceChipColor,

@@ -315,7 +315,7 @@ class _JournalPageState extends State<JournalPage> {
                 tagIds: tagIds.toList(),
               ),
             ],
-          ).asGlass(tintColor: Colors.black),
+          ).asGlass(tintColor: colorConfig().coal),
         ],
       ),
       builder: (context, transition) {

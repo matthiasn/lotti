@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -64,7 +65,7 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
               );
             },
             child: ColoredBox(
-              color: Colors.black,
+              color: colorConfig().coal,
               child: Hero(
                 tag: 'entry_img',
                 child: ConstrainedBox(
@@ -139,10 +140,10 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
                       sigmaX: 12,
                       sigmaY: 12,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       MdiIcons.close,
                       size: 32,
-                      color: Colors.black,
+                      color: colorConfig().coal,
                     ),
                   ),
                   const Icon(

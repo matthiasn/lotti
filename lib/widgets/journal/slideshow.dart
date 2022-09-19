@@ -21,7 +21,7 @@ class SlideShowWidget extends StatelessWidget {
     final imageItems = items.whereType<JournalImage>().toList();
 
     return ColoredBox(
-      color: Colors.black,
+      color: colorConfig().coal,
       child: ImageSlideshow(
         height: double.infinity,
         indicatorColor: colorConfig().bottomNavIconSelected,
@@ -113,7 +113,7 @@ class _CardImageWidgetState extends State<CardImageWidget> {
           File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
 
       return Container(
-        color: Colors.black,
+        color: colorConfig().coal,
         height: widget.height.toDouble(),
         child: Image.file(
           file,

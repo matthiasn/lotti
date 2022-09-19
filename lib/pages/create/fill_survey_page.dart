@@ -41,20 +41,20 @@ class SurveyWidget extends StatelessWidget {
               fontFamily: 'PlusJakartaSans',
               // Define the default `TextTheme`. Use this to specify the default
               // text styling for headlines, titles, bodies of text, and more.
-              textTheme: const TextTheme(
+              textTheme: TextTheme(
                 headline3: TextStyle(
                   fontSize: 24,
-                  color: Colors.black,
+                  color: colorConfig().coal,
                 ),
                 headline5: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w200,
-                  color: Colors.black,
+                  color: colorConfig().coal,
                 ),
                 headline6: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w400,
-                  color: Colors.black,
+                  color: colorConfig().coal,
                 ),
               ),
             ),

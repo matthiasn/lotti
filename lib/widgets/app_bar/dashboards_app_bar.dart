@@ -48,7 +48,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
                 child: IconButton(
                   padding: const EdgeInsets.all(4),
                   icon: const Icon(Icons.slideshow_outlined),
-                  color: Colors.black,
+                  color: colorConfig().coal,
                   hoverColor: Colors.transparent,
                   onPressed: onPressCarousel,
                 ),
@@ -60,7 +60,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
               IconButton(
                 padding: const EdgeInsets.all(4),
                 icon: const Icon(Icons.dashboard_customize_outlined),
-                color: Colors.black,
+                color: colorConfig().coal,
                 hoverColor: Colors.transparent,
                 onPressed: onPressSettings,
               ),
