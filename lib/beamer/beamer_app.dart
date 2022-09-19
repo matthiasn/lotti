@@ -105,7 +105,6 @@ class MyBeamerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = ThemeData(
       primarySwatch: Colors.grey,
-      hoverColor: colorConfig().riptide,
       scaffoldBackgroundColor: colorConfig().bodyBgColor,
       highlightColor: colorConfig().settingsHoverColor,
       appBarTheme: AppBarTheme(

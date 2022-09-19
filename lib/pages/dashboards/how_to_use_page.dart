@@ -17,13 +17,20 @@ class HowToUsePage extends StatefulWidget {
 class _HowToUsePageState extends State<HowToUsePage> {
   bool isHovering = false;
 
+  void onPressed() {
+    launchUrl(
+      Uri.parse(
+        'https://github.com/matthiasn/lotti/blob/main/docs/MANUAL.md',
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colorConfig().negspace,
-      //appBar: const DashboardsAppBar(),
       body: Stack(
         children: [
           Align(
@@ -31,12 +38,7 @@ class _HowToUsePageState extends State<HowToUsePage> {
               onHover: (hovering) => setState(() {
                 isHovering = hovering;
               }),
-              onPressed: () {
-                final uri = Uri.parse(
-                  'https://github.com/matthiasn/lotti/blob/main/docs/MANUAL.md',
-                );
-                launchUrl(uri);
-              },
+              onPressed: onPressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                     isHovering ? colorConfig().riptide : colorConfig().negspace,
