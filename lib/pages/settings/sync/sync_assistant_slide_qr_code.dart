@@ -56,8 +56,8 @@ class SyncAssistantQrCodeSlide extends StatelessWidget {
               Align(
                 child: Padding(
                   padding: EdgeInsets.only(bottom: isMobile ? 250 : 0),
-                  child: SlidingContainer(
-                    child: const EncryptionQrWidget(),
+                  child: const SlidingContainer(
+                    child: EncryptionQrWidget(),
                   ),
                 ),
               )
