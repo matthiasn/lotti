@@ -70,8 +70,7 @@ TextStyle labelStyle() => TextStyle(
 
 TextStyle newLabelStyle() => TextStyle(
       color: colorConfig().coal,
-      fontWeight: FontWeight.w300,
-      fontSize: 18,
+      fontSize: 15,
     );
 
 TextStyle pickerMonoTextStyle() => textStyle().copyWith(
@@ -160,13 +159,13 @@ TextStyle chartTitleStyle() => TextStyle(
 const taskFormFieldStyle = TextStyle(color: Colors.black87);
 
 TextStyle saveButtonStyle() => TextStyle(
-      fontSize: 20,
+      fontSize: 15,
       fontFamily: mainFont,
       color: colorConfig().error,
     );
 
 TextStyle cancelButtonStyle() => TextStyle(
-      fontSize: 20,
+      fontSize: 15,
       fontFamily: mainFont,
       fontWeight: FontWeight.w100,
       color: colorConfig().coal,

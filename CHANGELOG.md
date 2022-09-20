@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Design tweaks survey capture
 - Replace Lato font
 - Empty dashboards page with how to use button
+- Bar chart style
 
 ## [0.8.149] - 2022-09-18
 ### Added:

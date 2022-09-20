@@ -99,9 +99,9 @@ Map<String, HealthTypeConfig> healthTypes = {
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyMax,
     colorByValue: {
-      10000: '#4BB543',
-      6000: '#FCB004',
-      0: '#FC100D',
+      10000: '#82E6CE',
+      6000: '#C4ECE2',
+      0: '#FF9595',
     },
   ),
   'cumulative_flights_climbed': HealthTypeConfig(

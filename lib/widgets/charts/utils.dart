@@ -142,6 +142,14 @@ const timeSeriesAxis = charts.DateTimeAxisSpec(
   ),
 );
 
+final charts.SeriesRendererConfig<DateTime> defaultBarRenderer =
+    charts.BarRendererConfig<DateTime>(
+  cornerStrategy: const charts.NoCornerStrategy(),
+);
+
+final charts.SeriesRendererConfig<DateTime> defaultLineRenderer =
+    charts.LineRendererConfig<DateTime>();
+
 DateTime getRangeStart({
   required BuildContext context,
   double scale = 10,

@@ -21,21 +21,17 @@ class TaskForm extends StatefulWidget {
     this.task,
     this.data,
     this.focusOnTitle = false,
-    this.withOpenDetails = false,
   });
 
   final TaskData? data;
   final Task? task;
   final bool focusOnTitle;
-  final bool withOpenDetails;
 
   @override
   State<TaskForm> createState() => _TaskFormState();
 }
 
 class _TaskFormState extends State<TaskForm> {
-  bool details = false;
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
