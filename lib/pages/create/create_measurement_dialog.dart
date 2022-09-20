@@ -118,30 +118,22 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
         return AlertDialog(
           insetPadding: const EdgeInsets.symmetric(horizontal: 32),
           contentPadding: const EdgeInsets.only(
-            left: 20,
+            left: 30,
             top: 20,
-            bottom: 20,
-          ),
-          shape: const RoundedRectangleBorder(
-            side: BorderSide(),
-            borderRadius: BorderRadius.all(Radius.circular(1)),
-          ),
-          backgroundColor: Colors.white,
-          actionsAlignment: MainAxisAlignment.spaceBetween,
-          actionsPadding: const EdgeInsets.only(
-            left: 10,
             right: 10,
             bottom: 20,
           ),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+          backgroundColor: colorConfig().ice,
+          actionsAlignment: MainAxisAlignment.end,
+          actionsPadding: const EdgeInsets.only(
+            left: 20,
+            right: 20,
+            bottom: 20,
+          ),
           actions: [
-            TextButton(
-              key: const Key('measurement_cancel'),
-              onPressed: beamBack,
-              child: Text(
-                localizations.addMeasurementCancelButton,
-                style: cancelButtonStyle(),
-              ),
-            ),
             if (dirty && validate())
               TextButton(
                 key: const Key('measurement_save'),
@@ -188,16 +180,16 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if ('${selected?.description}'.isNotEmpty)
-                        Text(
-                          '${selected?.description}',
-                          style: TextStyle(
-                            color: colorConfig().coal,
-                            fontFamily: mainFont,
-                            fontWeight: FontWeight.w300,
-                            fontSize: 14,
-                          ),
-                        ),
+                      // if ('${selected?.description}'.isNotEmpty)
+                      //   Text(
+                      //     '${selected?.description}',
+                      //     style: TextStyle(
+                      //       color: colorConfig().coal,
+                      //       fontFamily: mainFont,
+                      //       fontWeight: FontWeight.w300,
+                      //       fontSize: 14,
+                      //     ),
+                      //   ),
                       const SizedBox(height: 10),
                       FormBuilderCupertinoDateTimePicker(
                         name: 'date',
@@ -232,6 +224,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           labelText: '${selected?.displayName} '
                               '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
                           labelStyle: newLabelStyle(),
+                          floatingLabelBehavior: FloatingLabelBehavior.always,
                         ),
                         keyboardAppearance: Brightness.light,
                         style: newInputStyle(),
@@ -241,7 +234,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        cursorColor: colorConfig().riptide,
                       ),
                       FormBuilderTextField(
                         initialValue: '',
@@ -249,11 +241,11 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         decoration: InputDecoration(
                           labelText: localizations.addMeasurementCommentLabel,
                           labelStyle: newLabelStyle(),
+                          floatingLabelBehavior: FloatingLabelBehavior.always,
                         ),
                         keyboardAppearance: Brightness.light,
                         style: newInputStyle(),
                         name: 'comment',
-                        cursorColor: colorConfig().riptide,
                       ),
                     ],
                   ),
