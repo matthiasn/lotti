@@ -106,7 +106,6 @@ class _TaskFormState extends State<TaskForm> {
                       ),
                     ),
                     FormBuilderChoiceChip(
-                      key: Key(widget.task.hashCode.toString()),
                       name: 'status',
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
