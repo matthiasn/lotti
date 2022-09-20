@@ -44,7 +44,7 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
 
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
       builder: (context, SyncConfigState state) {
-        void _onQRViewCreated(QRViewController controller) {
+        void onQRViewCreated(QRViewController controller) {
           this.controller = controller;
 
           controller.scannedDataStream.listen((scanData) {
@@ -68,7 +68,7 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
                     width: camDimension,
                     child: QRView(
                       key: qrKey,
-                      onQRViewCreated: _onQRViewCreated,
+                      onQRViewCreated: onQRViewCreated,
                     ),
                   ),
                 ),

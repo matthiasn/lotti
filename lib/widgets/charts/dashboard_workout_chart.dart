@@ -57,7 +57,7 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
         ) {
           final items = snapshot.data ?? [];
 
-          void _infoSelectionModelUpdated(
+          void infoSelectionModelUpdated(
             charts.SelectionModel<DateTime> model,
           ) {
             if (model.hasDatumSelection) {
@@ -103,7 +103,7 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
               defaultRenderer: defaultBarRenderer,
               selectionModels: [
                 charts.SelectionModelConfig(
-                  updatedListener: _infoSelectionModelUpdated,
+                  updatedListener: infoSelectionModelUpdated,
                 ),
               ],
               primaryMeasureAxis: const charts.NumericAxisSpec(

@@ -57,7 +57,7 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
         ) {
           final items = snapshot.data ?? [];
 
-          void _infoSelectionModelUpdated(
+          void infoSelectionModelUpdated(
             charts.SelectionModel<DateTime> model,
           ) {
             if (model.hasDatumSelection) {
@@ -147,7 +147,7 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
               defaultRenderer: defaultRenderer,
               selectionModels: [
                 charts.SelectionModelConfig(
-                  updatedListener: _infoSelectionModelUpdated,
+                  updatedListener: infoSelectionModelUpdated,
                 ),
               ],
               primaryMeasureAxis: const charts.NumericAxisSpec(

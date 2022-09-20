@@ -74,7 +74,7 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
             )
           ];
 
-          void _infoSelectionModelUpdated(
+          void infoSelectionModelUpdated(
             charts.SelectionModel<DateTime> model,
           ) {
             if (model.hasDatumSelection) {
@@ -97,7 +97,7 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
               defaultRenderer: defaultBarRenderer,
               selectionModels: [
                 charts.SelectionModelConfig(
-                  updatedListener: _infoSelectionModelUpdated,
+                  updatedListener: infoSelectionModelUpdated,
                 )
               ],
               behaviors: [
@@ -252,7 +252,7 @@ class _WildcardStoryWeeklyChartState extends State<WildcardStoryWeeklyChart> {
             ),
           ];
 
-          void _infoSelectionModelUpdated(
+          void infoSelectionModelUpdated(
             charts.SelectionModel<String> model,
           ) {
             if (model.hasDatumSelection) {
@@ -276,7 +276,7 @@ class _WildcardStoryWeeklyChartState extends State<WildcardStoryWeeklyChart> {
               animate: false,
               selectionModels: [
                 charts.SelectionModelConfig(
-                  updatedListener: _infoSelectionModelUpdated,
+                  updatedListener: infoSelectionModelUpdated,
                 )
               ],
               barRendererDecorator: charts.BarLabelDecorator<String>(
