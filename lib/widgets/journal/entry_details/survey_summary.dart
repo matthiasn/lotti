@@ -22,38 +22,36 @@ class SurveySummary extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        ...surveyEntry.data.calculatedScores.entries
-            .map(
-              (mapEntry) => Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
+        ...surveyEntry.data.calculatedScores.entries.map(
+          (mapEntry) => Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 4,
+            ),
+            child: Row(
+              children: [
+                Text(
+                  '${mapEntry.key}:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontFamily: mainFont,
+                    color: colorConfig().entryTextColor,
+                    fontSize: 16,
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      '${mapEntry.key}:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontFamily: mainFont,
-                        color: colorConfig().entryTextColor,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      ' ${mapEntry.value}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w400,
-                        fontSize: 16,
-                        color: colorConfig().entryTextColor,
-                        fontFamily: mainFont,
-                      ),
-                    ),
-                  ],
+                Text(
+                  ' ${mapEntry.value}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w400,
+                    fontSize: 16,
+                    color: colorConfig().entryTextColor,
+                    fontFamily: mainFont,
+                  ),
                 ),
-              ),
-            )
-            .toList(),
+              ],
+            ),
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.all(8),
           child: DashboardSurveyChart(
