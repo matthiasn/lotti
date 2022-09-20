@@ -166,10 +166,10 @@ class ConflictDetailRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _db = getIt<JournalDb>();
+    final db = getIt<JournalDb>();
     final localizations = AppLocalizations.of(context)!;
 
-    final stream = _db.watchConflictById(conflictId);
+    final stream = db.watchConflictById(conflictId);
 
     return StreamBuilder<List<Conflict>>(
       stream: stream,
@@ -184,7 +184,7 @@ class ConflictDetailRoute extends StatelessWidget {
         final fromSync = fromSerialized(conflict.serialized);
 
         return StreamBuilder<JournalEntity?>(
-          stream: _db.watchEntityById(conflict.id),
+          stream: db.watchEntityById(conflict.id),
           builder: (
             BuildContext context,
             AsyncSnapshot<JournalEntity?> snapshot,

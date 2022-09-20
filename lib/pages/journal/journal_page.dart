@@ -196,56 +196,53 @@ class _JournalPageState extends State<JournalPage> {
                   spacing: 4,
                   runSpacing: 4,
                   children: [
-                    ..._items
-                        .map(
-                          (MultiSelectItem<FilterBy?> item) => GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                final typeName = item.value?.typeName;
-                                if (typeName != null) {
-                                  if (types.contains(typeName)) {
-                                    types.remove(typeName);
-                                  } else {
-                                    types.add(typeName);
-                                  }
-                                  resetStream();
-                                  HapticFeedback.heavyImpact();
-                                }
-                              });
-                            },
-                            child: MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: ColoredBox(
-                                  color: types.contains(item.value?.typeName)
-                                      ? colorConfig().selectedChoiceChipColor
-                                      : colorConfig().unselectedChoiceChipColor,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 1,
-                                      horizontal: 8,
-                                    ),
-                                    child: Text(
-                                      item.label,
-                                      style: TextStyle(
-                                        fontFamily: 'Oswald',
-                                        fontSize: 14,
-                                        color: types
-                                                .contains(item.value?.typeName)
-                                            ? colorConfig()
-                                                .selectedChoiceChipTextColor
-                                            : colorConfig()
-                                                .unselectedChoiceChipTextColor,
-                                      ),
-                                    ),
+                    ..._items.map(
+                      (MultiSelectItem<FilterBy?> item) => GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            final typeName = item.value?.typeName;
+                            if (typeName != null) {
+                              if (types.contains(typeName)) {
+                                types.remove(typeName);
+                              } else {
+                                types.add(typeName);
+                              }
+                              resetStream();
+                              HapticFeedback.heavyImpact();
+                            }
+                          });
+                        },
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: ColoredBox(
+                              color: types.contains(item.value?.typeName)
+                                  ? colorConfig().selectedChoiceChipColor
+                                  : colorConfig().unselectedChoiceChipColor,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 1,
+                                  horizontal: 8,
+                                ),
+                                child: Text(
+                                  item.label,
+                                  style: TextStyle(
+                                    fontFamily: 'Oswald',
+                                    fontSize: 14,
+                                    color: types.contains(item.value?.typeName)
+                                        ? colorConfig()
+                                            .selectedChoiceChipTextColor
+                                        : colorConfig()
+                                            .unselectedChoiceChipTextColor,
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        )
-                        .toList(),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -335,26 +332,24 @@ class _JournalPageState extends State<JournalPage> {
                 ) {
                   return Column(
                     children: [
-                      ...?snapshot.data
-                          ?.map(
-                            (tagEntity) => ListTile(
-                              title: Text(
-                                tagEntity.tag,
-                                style: TextStyle(
-                                  fontFamily: mainFont,
-                                  color: getTagColor(tagEntity),
-                                  fontWeight: FontWeight.normal,
-                                  fontSize: 20,
-                                ),
-                              ),
-                              onTap: () {
-                                setState(() {
-                                  addTag(tagEntity.id);
-                                });
-                              },
+                      ...?snapshot.data?.map(
+                        (tagEntity) => ListTile(
+                          title: Text(
+                            tagEntity.tag,
+                            style: TextStyle(
+                              fontFamily: mainFont,
+                              color: getTagColor(tagEntity),
+                              fontWeight: FontWeight.normal,
+                              fontSize: 20,
                             ),
-                          )
-                          .toList(),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              addTag(tagEntity.id);
+                            });
+                          },
+                        ),
+                      ),
                     ],
                   );
                 },

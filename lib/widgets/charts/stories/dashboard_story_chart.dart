@@ -76,7 +76,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
             )
           ];
 
-          void _infoSelectionModelUpdated(
+          void infoSelectionModelUpdated(
             charts.SelectionModel<DateTime> model,
           ) {
             if (model.hasDatumSelection) {
@@ -99,7 +99,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
               defaultRenderer: defaultBarRenderer,
               selectionModels: [
                 charts.SelectionModelConfig(
-                  updatedListener: _infoSelectionModelUpdated,
+                  updatedListener: infoSelectionModelUpdated,
                 )
               ],
               behaviors: [

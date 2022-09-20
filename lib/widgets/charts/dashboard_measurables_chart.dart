@@ -104,7 +104,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                 );
               }
 
-              void _infoSelectionModelUpdated(
+              void infoSelectionModelUpdated(
                 charts.SelectionModel<DateTime> model,
               ) {
                 if (model.hasDatumSelection) {
@@ -141,7 +141,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                   defaultRenderer: defaultRenderer,
                   selectionModels: [
                     charts.SelectionModelConfig(
-                      updatedListener: _infoSelectionModelUpdated,
+                      updatedListener: infoSelectionModelUpdated,
                     )
                   ],
                   behaviors: [

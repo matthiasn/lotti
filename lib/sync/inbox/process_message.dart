@@ -18,14 +18,14 @@ import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 Future<void> processMessage(MimeMessage message) async {
-  final _syncConfigService = getIt<SyncConfigService>();
+  final syncConfigService = getIt<SyncConfigService>();
   final persistenceLogic = getIt<PersistenceLogic>();
-  final _journalDb = getIt<JournalDb>();
-  final _loggingDb = getIt<LoggingDb>();
+  final journalDb = getIt<JournalDb>();
+  final loggingDb = getIt<LoggingDb>();
 
   try {
     final encryptedMessage = readMessage(message);
-    final syncConfig = await _syncConfigService.getSyncConfig();
+    final syncConfig = await syncConfigService.getSyncConfig();
 
     if (syncConfig != null) {
       final b64Secret = syncConfig.sharedSecret;
@@ -59,26 +59,26 @@ Future<void> processMessage(MimeMessage message) async {
           }
         },
         entryLink: (EntryLink entryLink, SyncEntryStatus _) {
-          _journalDb.upsertEntryLink(entryLink);
+          journalDb.upsertEntryLink(entryLink);
         },
         entityDefinition: (
           EntityDefinition entityDefinition,
           SyncEntryStatus status,
         ) {
-          _journalDb.upsertEntityDefinition(entityDefinition);
+          journalDb.upsertEntityDefinition(entityDefinition);
         },
         tagEntity: (
           TagEntity tagEntity,
           SyncEntryStatus status,
         ) {
-          _journalDb.upsertTagEntity(tagEntity);
+          journalDb.upsertTagEntity(tagEntity);
         },
       );
     } else {
       throw Exception('missing IMAP config');
     }
   } catch (e, stackTrace) {
-    _loggingDb.captureException(
+    loggingDb.captureException(
       e,
       domain: 'INBOX_SERVICE',
       subDomain: 'processMessage',
@@ -92,7 +92,7 @@ Future<void> fetchByUid({
   ImapClient? imapClient,
 }) async {
   if (uid != null) {
-    final _loggingDb = getIt<LoggingDb>();
+    final loggingDb = getIt<LoggingDb>();
 
     try {
       if (imapClient != null) {
@@ -107,13 +107,13 @@ Future<void> fetchByUid({
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
-      _loggingDb.captureException(
+      loggingDb.captureException(
         e,
         domain: 'INBOX_SERVICE',
         subDomain: '_fetchByUid',
       );
     } catch (e, stackTrace) {
-      _loggingDb.captureException(
+      loggingDb.captureException(
         e,
         domain: 'INBOX_SERVICE',
         subDomain: '_fetchByUid',

@@ -34,15 +34,13 @@ class WorkoutSummary extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...items
-              .map(
-                (DashboardWorkoutItem item) => DashboardWorkoutChart(
-                  chartConfig: item,
-                  rangeStart: getRangeStart(context: context),
-                  rangeEnd: getRangeEnd(),
-                ),
-              )
-              .toList(),
+          ...items.map(
+            (DashboardWorkoutItem item) => DashboardWorkoutChart(
+              chartConfig: item,
+              rangeStart: getRangeStart(context: context),
+              rangeEnd: getRangeEnd(),
+            ),
+          ),
           const SizedBox(height: 8),
           EntryTextWidget(entryTextForWorkout(data)),
         ],

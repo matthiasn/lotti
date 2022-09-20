@@ -69,7 +69,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
           BuildContext context,
           AsyncSnapshot<List<JournalEntity?>> snapshot,
         ) {
-          void _infoSelectionModelUpdated(
+          void infoSelectionModelUpdated(
             charts.SelectionModel<DateTime> model,
           ) {
             if (model.hasDatumSelection) {
@@ -147,7 +147,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                   defaultRenderer: defaultRenderer,
                   selectionModels: [
                     charts.SelectionModelConfig(
-                      updatedListener: _infoSelectionModelUpdated,
+                      updatedListener: infoSelectionModelUpdated,
                     ),
                   ],
                   primaryMeasureAxis: charts.NumericAxisSpec(

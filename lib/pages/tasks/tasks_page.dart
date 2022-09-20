@@ -149,52 +149,50 @@ class _TasksPageState extends State<TasksPage> {
                   spacing: 4,
                   runSpacing: 4,
                   children: [
-                    ...taskStatuses
-                        .map(
-                          (String status) => GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                if (selectedStatuses.contains(status)) {
-                                  selectedStatuses.remove(status);
-                                } else {
-                                  selectedStatuses.add(status);
-                                }
-                                resetStream();
-                                HapticFeedback.heavyImpact();
-                              });
-                            },
-                            child: MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: ColoredBox(
-                                  color: selectedStatuses.contains(status)
-                                      ? colorConfig().selectedChoiceChipColor
-                                      : colorConfig().unselectedChoiceChipColor,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 4,
-                                      horizontal: 16,
-                                    ),
-                                    child: Text(
-                                      '${localizationLookup[status]}',
-                                      style: TextStyle(
-                                        fontFamily: 'Oswald',
-                                        fontSize: 16,
-                                        color: selectedStatuses.contains(status)
-                                            ? colorConfig()
-                                                .selectedChoiceChipTextColor
-                                            : colorConfig()
-                                                .unselectedChoiceChipTextColor,
-                                      ),
-                                    ),
+                    ...taskStatuses.map(
+                      (String status) => GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            if (selectedStatuses.contains(status)) {
+                              selectedStatuses.remove(status);
+                            } else {
+                              selectedStatuses.add(status);
+                            }
+                            resetStream();
+                            HapticFeedback.heavyImpact();
+                          });
+                        },
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: ColoredBox(
+                              color: selectedStatuses.contains(status)
+                                  ? colorConfig().selectedChoiceChipColor
+                                  : colorConfig().unselectedChoiceChipColor,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                  horizontal: 16,
+                                ),
+                                child: Text(
+                                  '${localizationLookup[status]}',
+                                  style: TextStyle(
+                                    fontFamily: 'Oswald',
+                                    fontSize: 16,
+                                    color: selectedStatuses.contains(status)
+                                        ? colorConfig()
+                                            .selectedChoiceChipTextColor
+                                        : colorConfig()
+                                            .unselectedChoiceChipTextColor,
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        )
-                        .toList(),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -247,26 +245,24 @@ class _TasksPageState extends State<TasksPage> {
                 ) {
                   return Column(
                     children: [
-                      ...?snapshot.data
-                          ?.map(
-                            (tagEntity) => ListTile(
-                              title: Text(
-                                tagEntity.tag,
-                                style: TextStyle(
-                                  fontFamily: mainFont,
-                                  color: getTagColor(tagEntity),
-                                  fontWeight: FontWeight.normal,
-                                  fontSize: 20,
-                                ),
-                              ),
-                              onTap: () {
-                                setState(() {
-                                  addTag(tagEntity.id);
-                                });
-                              },
+                      ...?snapshot.data?.map(
+                        (tagEntity) => ListTile(
+                          title: Text(
+                            tagEntity.tag,
+                            style: TextStyle(
+                              fontFamily: mainFont,
+                              color: getTagColor(tagEntity),
+                              fontWeight: FontWeight.normal,
+                              fontSize: 20,
                             ),
-                          )
-                          .toList(),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              addTag(tagEntity.id);
+                            });
+                          },
+                        ),
+                      ),
                     ],
                   );
                 },
