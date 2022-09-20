@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.150+1389
+version: 0.8.150+1390
 
 msix_config:
   display_name: Lotti
@@ -152,12 +152,6 @@ dependencies:
   yaml: ^3.1.0
 
 dependency_overrides:
-  charts_common:
-    git:
-      url: https://github.com/matthiasn/charts
-      path: charts_common
-      ref: 7a06b2d
-
   device_info_plus: 4.0.3
   rxdart: ^0.27.1
   xml: ^6.1.0
