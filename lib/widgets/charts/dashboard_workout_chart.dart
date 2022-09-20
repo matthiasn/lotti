@@ -44,9 +44,6 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
 
   @override
   Widget build(BuildContext context) {
-    final charts.SeriesRendererConfig<DateTime> defaultRenderer =
-        charts.BarRendererConfig<DateTime>();
-
     return BlocProvider<WorkoutChartInfoCubit>(
       create: (BuildContext context) => WorkoutChartInfoCubit(),
       child: StreamBuilder<List<JournalEntity?>>(
@@ -103,7 +100,7 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
                 ),
               ],
               domainAxis: timeSeriesAxis,
-              defaultRenderer: defaultRenderer,
+              defaultRenderer: defaultBarRenderer,
               selectionModels: [
                 charts.SelectionModelConfig(
                   updatedListener: _infoSelectionModelUpdated,

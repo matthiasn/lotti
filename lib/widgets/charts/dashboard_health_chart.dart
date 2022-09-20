@@ -66,15 +66,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
     }
 
     final healthType = healthTypes[dataType];
-    charts.SeriesRendererConfig<DateTime>? defaultRenderer;
-
     final isBarChart = healthType?.chartType == HealthChartType.barChart;
-
-    if (isBarChart) {
-      defaultRenderer = charts.BarRendererConfig<DateTime>();
-    } else {
-      defaultRenderer = charts.LineRendererConfig<DateTime>();
-    }
 
     return BlocProvider<HealthChartInfoCubit>(
       create: (BuildContext context) => HealthChartInfoCubit(),
@@ -130,7 +122,8 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                 ),
               ],
               domainAxis: timeSeriesAxis,
-              defaultRenderer: defaultRenderer,
+              defaultRenderer:
+                  isBarChart ? defaultBarRenderer : defaultLineRenderer,
               selectionModels: [
                 charts.SelectionModelConfig(
                   updatedListener: _infoSelectionModelUpdated,

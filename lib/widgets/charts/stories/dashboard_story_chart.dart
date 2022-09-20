@@ -42,8 +42,6 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
 
   @override
   Widget build(BuildContext context) {
-    final defaultRenderer = charts.BarRendererConfig<DateTime>();
-
     final storyTagId = widget.chartConfig.storyTagId;
     final title = tagsService.getTagById(storyTagId)?.tag ?? storyTagId;
 
@@ -98,7 +96,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
             chart: charts.TimeSeriesChart(
               seriesList,
               animate: false,
-              defaultRenderer: defaultRenderer,
+              defaultRenderer: defaultBarRenderer,
               selectionModels: [
                 charts.SelectionModelConfig(
                   updatedListener: _infoSelectionModelUpdated,

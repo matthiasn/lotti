@@ -84,7 +84,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               if (aggregationNone) {
                 defaultRenderer = charts.LineRendererConfig<DateTime>();
               } else {
-                defaultRenderer = charts.BarRendererConfig<DateTime>();
+                defaultRenderer = defaultBarRenderer;
               }
 
               List<MeasuredObservation> data;

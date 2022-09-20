@@ -42,7 +42,6 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
 
   @override
   Widget build(BuildContext context) {
-    final defaultRenderer = charts.BarRendererConfig<DateTime>();
     final subString = widget.chartConfig.storySubstring;
     final title = subString;
 
@@ -95,7 +94,7 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
             chart: charts.TimeSeriesChart(
               seriesList,
               animate: false,
-              defaultRenderer: defaultRenderer,
+              defaultRenderer: defaultBarRenderer,
               selectionModels: [
                 charts.SelectionModelConfig(
                   updatedListener: _infoSelectionModelUpdated,
