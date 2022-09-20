@@ -1,7 +1,7 @@
 import 'dart:core';
 import 'dart:math';
 
-import 'package:charts_flutter/flutter.dart' as charts;
+import 'package:charts_flutter/flutter.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
@@ -120,35 +120,36 @@ List<MeasuredObservation> aggregateMeasurementNone(
   return aggregated;
 }
 
-charts.RangeAnnotation<DateTime> chartRangeAnnotation(
+RangeAnnotation<DateTime> chartRangeAnnotation(
   DateTime rangeStart,
   DateTime rangeEnd,
 ) {
-  return charts.RangeAnnotation([
-    charts.RangeAnnotationSegment(
+  return RangeAnnotation([
+    RangeAnnotationSegment(
       rangeStart,
       rangeEnd,
-      charts.RangeAnnotationAxisType.domain,
+      RangeAnnotationAxisType.domain,
     )
   ]);
 }
 
-const timeSeriesAxis = charts.DateTimeAxisSpec(
-  tickProviderSpec: charts.AutoDateTimeTickProviderSpec(),
-  renderSpec: charts.SmallTickRendererSpec(
-    labelStyle: charts.TextStyleSpec(
+const timeSeriesAxis = DateTimeAxisSpec(
+  tickProviderSpec: AutoDateTimeTickProviderSpec(),
+  renderSpec: SmallTickRendererSpec(
+    labelStyle: TextStyleSpec(
       fontSize: 10,
     ),
   ),
 );
 
-final charts.SeriesRendererConfig<DateTime> defaultBarRenderer =
-    charts.BarRendererConfig<DateTime>(
-  cornerStrategy: const charts.NoCornerStrategy(),
+final SeriesRendererConfig<DateTime> defaultBarRenderer =
+    BarRendererConfig<DateTime>(
+  cornerStrategy: const NoCornerStrategy(),
+  layoutPaintOrder: 3,
 );
 
-final charts.SeriesRendererConfig<DateTime> defaultLineRenderer =
-    charts.LineRendererConfig<DateTime>();
+final SeriesRendererConfig<DateTime> defaultLineRenderer =
+    LineRendererConfig<DateTime>(layoutPaintOrder: 4);
 
 DateTime getRangeStart({
   required BuildContext context,
