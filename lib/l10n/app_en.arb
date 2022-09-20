@@ -47,6 +47,7 @@
   "dashboardReviewTimeLabel": "Daily Review Time:",
   "dashboardSaveLabel": "Save",
   "dashboardsEmptyHint": "Nothing to see here yet, please create a new Dashboard in Settings, Dashboard Management. \n\nThe cogs button above will take you there directly.",
+  "dashboardsHowToHint": "How to use Lotti",
   "dashboardsLoadingHint": "Loading...",
   "editMenuTitle": "Edit",
   "entryNotFound": "Entry not found",

@@ -47,7 +47,7 @@ class JournalCardTitle extends StatelessWidget {
                 df.format(item.meta.dateFrom),
                 style: TextStyle(
                   color: colorConfig().entryTextColor,
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: FontWeight.w300,
                   fontFamily: 'Oswald',
                 ),

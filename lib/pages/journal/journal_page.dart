@@ -16,7 +16,6 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
-import 'package:lotti/widgets/journal/slideshow.dart';
 import 'package:lotti/widgets/journal/tags/selected_tags_widget.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
@@ -83,7 +82,6 @@ class _JournalPageState extends State<JournalPage> {
   bool flaggedEntriesOnly = false;
   bool privateEntriesOnly = false;
   bool showPrivateEntriesSwitch = false;
-  bool showSlideshow = false;
 
   @override
   void initState() {
@@ -315,7 +313,7 @@ class _JournalPageState extends State<JournalPage> {
                 tagIds: tagIds.toList(),
               ),
             ],
-          ).asGlass(tintColor: Colors.black),
+          ).asGlass(tintColor: colorConfig().coal),
         ],
       ),
       builder: (context, transition) {
@@ -443,24 +441,7 @@ class _JournalPageState extends State<JournalPage> {
                           isAndroid: Platform.isAndroid,
                         ),
                       ),
-                      if (showSlideshow) SlideShowWidget(items),
-                      if (!showSlideshow) buildFloatingSearchBar(),
-                      if (showSlideshow)
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                showSlideshow = !showSlideshow;
-                                resetStream();
-                              });
-                            },
-                            icon: Icon(
-                              Icons.close,
-                              color: colorConfig().bottomNavIconUnselected,
-                            ),
-                          ),
-                        ),
+                      buildFloatingSearchBar(),
                     ],
                   );
                 }

@@ -168,8 +168,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   children: [
                     Text(
                       selected?.displayName ?? '',
-                      style: const TextStyle(
-                        color: Colors.black,
+                      style: TextStyle(
+                        color: colorConfig().coal,
                         fontFamily: mainFont,
                         fontSize: 20,
                       ),
@@ -177,7 +177,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     IconButton(
                       padding: const EdgeInsets.all(10),
                       icon: SvgPicture.asset('assets/icons/close.svg'),
-                      color: Colors.black,
+                      color: colorConfig().coal,
                       hoverColor: Colors.transparent,
                       onPressed: dashboardsBeamerDelegate.beamBack,
                     ),
@@ -191,8 +191,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       if ('${selected?.description}'.isNotEmpty)
                         Text(
                           '${selected?.description}',
-                          style: const TextStyle(
-                            color: Colors.black,
+                          style: TextStyle(
+                            color: colorConfig().coal,
                             fontFamily: mainFont,
                             fontWeight: FontWeight.w300,
                             fontSize: 14,
@@ -221,7 +221,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           ),
                           doneStyle: const TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: 15,
                           ),
                         ),
                       ),

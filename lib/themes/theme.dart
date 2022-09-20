@@ -34,8 +34,8 @@ TextStyle inputStyle() => TextStyle(
       fontSize: 18,
     );
 
-TextStyle newInputStyle() => const TextStyle(
-      color: Colors.black,
+TextStyle newInputStyle() => TextStyle(
+      color: colorConfig().coal,
       fontSize: 15,
     );
 
@@ -43,7 +43,7 @@ TextStyle textStyle() => TextStyle(
       color: colorConfig().entryTextColor,
       fontFamily: mainFont,
       fontWeight: FontWeight.w400,
-      fontSize: 16,
+      fontSize: 15,
     );
 
 TextStyle textStyleLarger() => textStyle().copyWith(
@@ -68,8 +68,8 @@ TextStyle labelStyle() => TextStyle(
       fontSize: 18,
     );
 
-TextStyle newLabelStyle() => const TextStyle(
-      color: Colors.black,
+TextStyle newLabelStyle() => TextStyle(
+      color: colorConfig().coal,
       fontWeight: FontWeight.w300,
       fontSize: 18,
     );
@@ -116,16 +116,16 @@ TextStyle appBarTextStyle() => TextStyle(
       fontWeight: FontWeight.bold,
     );
 
-TextStyle appBarTextStyleNew() => const TextStyle(
-      color: Colors.black,
+TextStyle appBarTextStyleNew() => TextStyle(
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontSize: 15,
       fontWeight: FontWeight.w400,
     );
 
-TextStyle settingsCardTextStyle() => const TextStyle(
+TextStyle settingsCardTextStyle() => TextStyle(
       //color: colorConfig().entryTextColor,
-      color: Colors.black,
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontSize: 25,
     );
@@ -137,9 +137,8 @@ TextStyle titleStyle() => TextStyle(
       fontWeight: FontWeight.w300,
     );
 
-TextStyle taskTitleStyle() => const TextStyle(
-      //color: colorConfig().entryTextColor,
-      color: Colors.black,
+TextStyle taskTitleStyle() => TextStyle(
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontSize: 24,
     );
@@ -151,11 +150,10 @@ TextStyle multiSelectStyle() => TextStyle(
       fontSize: 24,
     );
 
-TextStyle chartTitleStyle() => const TextStyle(
+TextStyle chartTitleStyle() => TextStyle(
       fontFamily: mainFont,
       fontSize: 15,
-      //color: colorConfig().bodyBgColor.withAlpha(192),
-      color: Colors.black,
+      color: colorConfig().coal,
       fontWeight: FontWeight.w300,
     );
 
@@ -167,11 +165,11 @@ TextStyle saveButtonStyle() => TextStyle(
       color: colorConfig().error,
     );
 
-TextStyle cancelButtonStyle() => const TextStyle(
+TextStyle cancelButtonStyle() => TextStyle(
       fontSize: 20,
       fontFamily: mainFont,
       fontWeight: FontWeight.w100,
-      color: Colors.black,
+      color: colorConfig().coal,
     );
 
 const segmentItemStyle = TextStyle(

@@ -27,9 +27,9 @@ class SyncAssistantConfigSlide extends StatelessWidget {
             index: page,
             pageCount: pageCount,
           ),
-          Align(
+          const Align(
             child: SlidingContainer(
-              child: const ImapConfigWidget(),
+              child: ImapConfigWidget(),
             ),
           ),
         ],
