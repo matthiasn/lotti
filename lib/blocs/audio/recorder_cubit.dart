@@ -50,7 +50,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       await _myRecorder?.openAudioSession();
       emit(state.copyWith(status: AudioRecorderStatus.initialized));
       await _myRecorder
-          ?.setSubscriptionDuration(const Duration(milliseconds: 500));
+          ?.setSubscriptionDuration(const Duration(milliseconds: 100));
       _myRecorder?.onProgress?.listen(updateProgress);
     } catch (exception, stackTrace) {
       _loggingDb.captureException(

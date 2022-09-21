@@ -29,8 +29,21 @@ class AudioRecorderWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
       builder: (context, state) {
+        final cubit = context.read<AudioRecorderCubit>();
+
         return Column(
           children: [
+            GestureDetector(
+              onTap: () => cubit.record(linkedId: linkedId),
+              child: const VuMeterButtonWidget(),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(40),
+              child: Text(
+                formatDuration(state.progress.toString()),
+                style: monospaceTextStyleLarge(),
+              ),
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
@@ -63,14 +76,6 @@ class AudioRecorderWidget extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-            const VuMeterWidget(height: 16, width: 280),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                formatDecibels(state.decibels),
-                style: monospaceTextStyle(),
-              ),
             ),
           ],
         );
