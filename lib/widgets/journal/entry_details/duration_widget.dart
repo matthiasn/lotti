@@ -98,6 +98,7 @@ class DurationWidget extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 10),
                 ],
               ),
             );
@@ -178,9 +179,8 @@ class FormattedTime extends StatelessWidget {
         ),
         Text(
           formatDuration(entryDuration(displayed)),
-          style: style?.copyWith(
+          style: monospaceTextStyle().copyWith(
             color: labelColor,
-            fontFamily: 'ShareTechMono',
           ),
         ),
       ],

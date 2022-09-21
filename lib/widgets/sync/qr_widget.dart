@@ -80,10 +80,7 @@ class EncryptionQrWidget extends StatelessWidget {
                                 builder: (BuildContext context) => AlertDialog(
                                   title: Text(
                                     randomPassword,
-                                    style: const TextStyle(
-                                      fontSize: 32,
-                                      fontFamily: 'ShareTechMono',
-                                    ),
+                                    style: monospaceTextStyleLarge(),
                                   ),
                                   actions: <Widget>[
                                     Button(
@@ -312,10 +309,7 @@ class StatusTextWidget extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: Text(
         label,
-        style: TextStyle(
-          fontFamily: 'ShareTechMono',
-          color: colorConfig().entryTextColor,
-        ),
+        style: monospaceTextStyle(),
       ),
     );
   }

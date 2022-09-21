@@ -50,11 +50,7 @@ class AudioRecordingIndicator extends StatelessWidget {
                             padding: const EdgeInsets.only(left: 4),
                             child: Text(
                               formatDuration(state.progress),
-                              style: TextStyle(
-                                fontFamily: 'ShareTechMono',
-                                fontSize: 18,
-                                color: colorConfig().editorTextColor,
-                              ),
+                              style: monospaceTextStyle(),
                             ),
                           ),
                         ],
