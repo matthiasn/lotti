@@ -53,10 +53,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final micIconFinder = find.byIcon(Icons.mic_rounded);
+      final micIconFinder = find.byKey(const Key('micIcon'));
       expect(micIconFinder, findsOneWidget);
 
-      final stopIconFinder = find.byIcon(Icons.stop);
+      final stopIconFinder = find.byKey(const Key('stopIcon'));
       expect(stopIconFinder, findsOneWidget);
 
       await tester.tap(stopIconFinder);

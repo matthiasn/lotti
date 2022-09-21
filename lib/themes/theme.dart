@@ -75,6 +75,7 @@ TextStyle newLabelStyle() => TextStyle(
 
 TextStyle monospaceTextStyle() => const TextStyle(
       fontFamily: 'Inconsolata',
+      fontWeight: FontWeight.w300,
       fontSize: 15,
     );
 

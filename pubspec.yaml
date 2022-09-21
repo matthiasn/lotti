@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.151+1392
+version: 0.8.151+1394
 
 msix_config:
   display_name: Lotti
@@ -210,6 +210,8 @@ flutter:
     - family: Inconsolata
       fonts:
         - asset: assets/fonts/Inconsolata/Inconsolata-Regular.ttf
+        - asset: assets/fonts/Inconsolata/Inconsolata-Light.ttf
+        - asset: assets/fonts/Inconsolata/Inconsolata-Medium.ttf
     - family: PlusJakartaSans
       fonts:
         - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-Bold.ttf

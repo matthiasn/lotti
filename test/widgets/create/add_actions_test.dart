@@ -537,8 +537,6 @@ void main() {
         verify(
           () => mockNavService.beamToNamed('/journal/record_audio/null'),
         ).called(1);
-
-        verify(mockAudioRecorderCubit.record).called(1);
       },
     );
 
@@ -593,8 +591,6 @@ void main() {
         verify(
           () => mockNavService.beamToNamed('/journal/record_audio/null'),
         ).called(1);
-
-        verify(mockAudioRecorderCubit.record).called(1);
       },
     );
   });
