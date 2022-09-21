@@ -86,11 +86,7 @@ class LogLineCard extends StatelessWidget {
         padding: const EdgeInsets.all(2),
         child: Text(
           '$timestamp: $domain $subDomain $message',
-          style: TextStyle(
-            color: color,
-            fontFamily: 'ShareTechMono',
-            fontSize: 11,
-          ),
+          style: monospaceTextStyleSmall().copyWith(color: color),
         ),
       ),
     );

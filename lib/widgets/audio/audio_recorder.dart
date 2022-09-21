@@ -59,11 +59,7 @@ class AudioRecorderWidget extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   child: Text(
                     formatDuration(state.progress.toString()),
-                    style: TextStyle(
-                      fontFamily: 'ShareTechMono',
-                      fontSize: 32,
-                      color: colorConfig().inactiveAudioControl,
-                    ),
+                    style: monospaceTextStyleLarge(),
                   ),
                 ),
               ],
@@ -73,11 +69,7 @@ class AudioRecorderWidget extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               child: Text(
                 formatDecibels(state.decibels),
-                style: TextStyle(
-                  fontFamily: 'ShareTechMono',
-                  fontSize: 20,
-                  color: colorConfig().inactiveAudioControl,
-                ),
+                style: monospaceTextStyle(),
               ),
             ),
           ],

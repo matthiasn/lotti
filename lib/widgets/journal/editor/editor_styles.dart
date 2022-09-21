@@ -52,7 +52,7 @@ DefaultStyles customEditorStyles({
     ),
     inlineCode: InlineCodeStyle(
       radius: const Radius.circular(8),
-      style: GoogleFonts.shareTechMono(
+      style: GoogleFonts.inconsolata(
         fontSize: 16,
         color: textColor,
       ),
@@ -69,7 +69,7 @@ DefaultStyles customEditorStyles({
       null,
     ),
     code: DefaultTextBlockStyle(
-      GoogleFonts.shareTechMono(
+      GoogleFonts.inconsolata(
         fontSize: 16,
         color: textColor,
       ),
@@ -141,13 +141,13 @@ DefaultStyles customTextViewerStyles({
     ),
     inlineCode: InlineCodeStyle(
       radius: const Radius.circular(8),
-      style: GoogleFonts.shareTechMono(
+      style: GoogleFonts.inconsolata(
         fontSize: 12,
         color: colorConfig().editorTextColor,
       ),
     ),
     code: DefaultTextBlockStyle(
-      GoogleFonts.shareTechMono(
+      GoogleFonts.inconsolata(
         fontSize: 12,
         color: textColor,
       ),

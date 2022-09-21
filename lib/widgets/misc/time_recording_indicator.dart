@@ -54,9 +54,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Text(
                         durationString,
-                        style: TextStyle(
-                          fontFamily: 'ShareTechMono',
-                          fontSize: 18,
+                        style: monospaceTextStyle().copyWith(
                           color: colorConfig().editorTextColor,
                         ),
                       ),
