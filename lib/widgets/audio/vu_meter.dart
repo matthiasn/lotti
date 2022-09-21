@@ -71,23 +71,32 @@ class VuMeterButtonWidget extends StatelessWidget {
         final hot = state.decibels > 130;
         final audioLevel = state.decibels / 160;
 
-        return Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            SvgPicture.asset('assets/icons/mic.svg'),
-            if (!hot)
-              ClipRect(
-                key: Key(state.decibels.toString()),
-                clipper: CustomRect(audioLevel),
-                child: SvgPicture.asset('assets/icons/mic_rec.svg'),
+        return Padding(
+          padding: const EdgeInsets.all(8),
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: SvgPicture.asset('assets/icons/mic.svg'),
               ),
-            if (hot)
-              ClipRect(
-                key: Key(state.decibels.toString()),
-                clipper: CustomRect(audioLevel),
-                child: SvgPicture.asset('assets/icons/mic_hot.svg'),
-              ),
-          ],
+              if (!hot)
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: ClipRect(
+                    key: Key(state.decibels.toString()),
+                    clipper: CustomRect(audioLevel),
+                    child: SvgPicture.asset('assets/icons/mic_rec.svg'),
+                  ),
+                ),
+              if (hot)
+                ClipRect(
+                  key: Key(state.decibels.toString()),
+                  clipper: CustomRect(audioLevel),
+                  child: SvgPicture.asset('assets/icons/mic_hot.svg'),
+                ),
+            ],
+          ),
         );
       },
     );

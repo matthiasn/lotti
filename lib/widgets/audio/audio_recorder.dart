@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
@@ -38,7 +39,7 @@ class AudioRecorderWidget extends StatelessWidget {
               child: const VuMeterButtonWidget(),
             ),
             Padding(
-              padding: const EdgeInsets.all(40),
+              padding: const EdgeInsets.all(30),
               child: Text(
                 formatDuration(state.progress.toString()),
                 style: monospaceTextStyleLarge(),
@@ -48,18 +49,26 @@ class AudioRecorderWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 IconButton(
-                  icon: const Icon(Icons.mic_rounded),
+                  icon: SvgPicture.asset('assets/icons/pause.svg'),
+                  padding: const EdgeInsets.only(
+                    left: 8,
+                    top: 8,
+                    bottom: 8,
+                    right: 29,
+                  ),
                   iconSize: iconSize,
-                  tooltip: 'Record',
-                  color: state.status == AudioRecorderStatus.recording
-                      ? colorConfig().activeAudioControl
-                      : colorConfig().inactiveAudioControl,
-                  onPressed: () => context
-                      .read<AudioRecorderCubit>()
-                      .record(linkedId: linkedId),
+                  tooltip: 'Pause',
+                  color: colorConfig().inactiveAudioControl,
+                  onPressed: () {},
                 ),
                 IconButton(
-                  icon: const Icon(Icons.stop),
+                  icon: SvgPicture.asset('assets/icons/stop.svg'),
+                  padding: const EdgeInsets.only(
+                    left: 29,
+                    top: 8,
+                    bottom: 8,
+                    right: 8,
+                  ),
                   iconSize: iconSize,
                   tooltip: 'Stop',
                   color: colorConfig().inactiveAudioControl,
@@ -67,13 +76,6 @@ class AudioRecorderWidget extends StatelessWidget {
                     context.read<AudioRecorderCubit>().stop();
                     Navigator.of(context).maybePop();
                   },
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Text(
-                    formatDuration(state.progress.toString()),
-                    style: monospaceTextStyleLarge(),
-                  ),
                 ),
               ],
             ),
