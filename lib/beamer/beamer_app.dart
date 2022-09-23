@@ -61,7 +61,7 @@ class _AppScreenState extends State<AppScreen> {
             ],
           ),
           bottomNavigationBar: SalomonBottomBar(
-            unselectedItemColor: colorConfig().ice,
+            unselectedItemColor: colorConfig().iron,
             selectedItemColor: colorConfig().riptide,
             currentIndex: index,
             items: [
