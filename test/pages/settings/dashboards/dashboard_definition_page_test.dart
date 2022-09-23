@@ -458,7 +458,6 @@ void main() {
 
       // finds text in dashboard card
       expect(find.text(testDashboardName), findsOneWidget);
-      expect(find.text(testDashboardDescription), findsOneWidget);
     });
 
     testWidgets('dashboard list page is displayed with two test dashboards',
@@ -527,7 +526,6 @@ void main() {
 
       // finds text in dashboard card
       expect(find.text(emptyTestDashboardConfig.name), findsOneWidget);
-      expect(find.text(emptyTestDashboardConfig.description), findsOneWidget);
     });
   });
 }

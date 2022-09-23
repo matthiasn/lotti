@@ -1,15 +1,16 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/create/add_tag_actions.dart';
+import 'package:lotti/widgets/settings/dashboards/dashboard_definition_card.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 class TagsPage extends StatefulWidget {
@@ -79,7 +80,7 @@ class _TagsPageState extends State<TagsPage> {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.settingsTagsTitle),
-      backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: colorConfig().negspace,
       floatingActionButton: const RadialAddTagButtons(),
       body: StreamBuilder<List<TagEntity>>(
         stream: stream,
@@ -99,20 +100,21 @@ class _TagsPageState extends State<TagsPage> {
               ListView(
                 shrinkWrap: true,
                 padding: const EdgeInsets.only(
-                  left: 8,
-                  right: 8,
                   bottom: 8,
                   top: 64,
                 ),
-                children: List.generate(
-                  filtered.length,
-                  (int index) {
-                    return TagCard(
-                      tagEntity: filtered.elementAt(index),
-                      index: index,
-                    );
-                  },
-                ),
+                children: intersperse(
+                  const SettingsDivider(),
+                  List.generate(
+                    filtered.length,
+                    (int index) {
+                      return TagCard(
+                        tagEntity: filtered.elementAt(index),
+                        index: index,
+                      );
+                    },
+                  ),
+                ).toList(),
               ),
               buildFloatingSearchBar(),
             ],
@@ -136,38 +138,21 @@ class TagCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: colorConfig().entryCardColor,
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+    return DefinitionCard(
+      beamTo: '/settings/tags/${tagEntity.id}',
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(2),
+        child: Container(
+          color: getTagColor(tagEntity),
+          width: 20,
+          height: 20,
+        ),
       ),
-      child: SingleChildScrollView(
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.only(left: 16, top: 4, bottom: 8, right: 16),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                tagEntity.tag,
-                style: TextStyle(
-                  color: getTagColor(tagEntity),
-                  fontFamily: mainFont,
-                  fontSize: 20,
-                ),
-              ),
-              CupertinoSwitch(
-                value: tagEntity.private,
-                activeColor: colorConfig().private,
-                onChanged: (bool private) async {
-                  await persistenceLogic
-                      .upsertTagEntity(tagEntity.copyWith(private: private));
-                },
-              ),
-            ],
-          ),
-          onTap: () => beamToNamed('/settings/tags/${tagEntity.id}'),
+      title: Text(
+        tagEntity.tag,
+        style: const TextStyle(
+          fontFamily: mainFont,
+          fontSize: 20,
         ),
       ),
     );

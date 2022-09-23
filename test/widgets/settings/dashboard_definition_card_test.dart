@@ -45,7 +45,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsNothing);
     });
 
@@ -63,7 +62,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsOneWidget);
     });
 
@@ -84,10 +82,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsOneWidget);
-
-      expect(find.text('07:00'), findsOneWidget);
     });
   });
 }

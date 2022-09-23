@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/sort.dart';
@@ -74,7 +76,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
     void createDashboard() => beamToNamed('/settings/dashboards/create');
 
     return Scaffold(
-      backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: colorConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsDashboardsTitle),
       floatingActionButton: FloatingActionButton(
         backgroundColor: colorConfig().riptide,
@@ -97,21 +99,19 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
             children: [
               ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.only(
-                  left: 8,
-                  right: 8,
-                  bottom: 8,
-                  top: 64,
-                ),
-                children: List.generate(
-                  dashboards.length,
-                  (int index) {
-                    return DashboardDefinitionCard(
-                      dashboard: dashboards.elementAt(index),
-                      index: index,
-                    );
-                  },
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 75),
+                children: intersperse(
+                  const SettingsDivider(),
+                  List.generate(
+                    dashboards.length,
+                    (int index) {
+                      return DashboardDefinitionCard(
+                        dashboard: dashboards.elementAt(index),
+                        index: index,
+                      );
+                    },
+                  ),
+                ).toList(),
               ),
               buildFloatingSearchBar(),
             ],

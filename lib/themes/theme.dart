@@ -199,14 +199,14 @@ const bottomNavLabelStyle = TextStyle(
 );
 
 TextStyle definitionCardTitleStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontSize: 24,
       height: 1.2,
     );
 
 TextStyle definitionCardSubtitleStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontWeight: FontWeight.w200,
       fontSize: 16,
