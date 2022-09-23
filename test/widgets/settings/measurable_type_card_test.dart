@@ -16,7 +16,6 @@ void main() {
 
     const testDescription = 'test description';
     const testUnit = 'ml';
-    const testUnitEmpty = '';
     const testDisplayName = 'Water';
     final testItem = MeasurableDataType(
       description: testDescription,
