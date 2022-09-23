@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Style: Inconsolata as monospace font
+- New color theme in journal and tasks list
+- New color theme in entry details
 
 ## [0.8.150] - 2022-09-20
 ### Fix:

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
@@ -203,19 +202,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           labelStyle: newLabelStyle(),
                         ),
                         initialValue: DateTime.now(),
-                        theme: DatePickerTheme(
-                          headerColor: colorConfig().headerBgColor,
-                          backgroundColor: colorConfig().bodyBgColor,
-                          itemStyle: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                          doneStyle: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                          ),
-                        ),
+                        theme: datePickerTheme(),
                       ),
                       FormBuilderTextField(
                         initialValue: '',

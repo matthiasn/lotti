@@ -76,6 +76,7 @@ class ColorConfig with _$ColorConfig {
     @ColorConverter() required Color settingsHoverColor,
     @ColorConverter() required Color negspace,
     @ColorConverter() required Color coal,
+    @ColorConverter() required Color iron,
     @ColorConverter() required Color riptide,
     @ColorConverter() required Color riplight,
     @ColorConverter() required Color alarm,
