@@ -39,19 +39,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
   }) {
     DatePicker.showDateTimePicker(
       context,
-      theme: DatePickerTheme(
-        headerColor: colorConfig().entryCardColor,
-        backgroundColor: colorConfig().bodyBgColor,
-        itemStyle: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 18,
-        ),
-        doneStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-        ),
-      ),
+      theme: datePickerTheme(),
       onConfirm: onConfirm,
       currentTime: currentTime,
     );
@@ -82,7 +70,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
         }
 
         return ColoredBox(
-          color: colorConfig().bodyBgColor,
+          color: colorConfig().ice,
           child: Padding(
             padding: const EdgeInsets.only(
               left: 16,
@@ -179,6 +167,8 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                         formatDuration(dateFrom.difference(dateTo).abs()),
                         style: textStyleLarger().copyWith(
                           fontWeight: FontWeight.w100,
+                          fontSize: 20,
+                          fontFamily: 'Inconsolata',
                         ),
                       ),
                     ),

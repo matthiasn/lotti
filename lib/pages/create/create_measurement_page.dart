@@ -1,7 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -138,15 +137,15 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                 ),
             ],
           ),
-          backgroundColor: colorConfig().bodyBgColor,
+          backgroundColor: colorConfig().negspace,
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(0),
                   child: Container(
-                    color: colorConfig().headerBgColor,
+                    color: colorConfig().ice,
                     width: MediaQuery.of(context).size.width,
                     padding: const EdgeInsets.all(32),
                     child: FormBuilder(
@@ -228,7 +227,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                   ),
                                 if (selected == null)
                                   FormBuilderDropdown<MeasurableDataType>(
-                                    dropdownColor: colorConfig().headerBgColor,
+                                    dropdownColor: colorConfig().ice,
                                     name: 'type',
                                     decoration: InputDecoration(
                                       labelText: 'Type',
@@ -270,20 +269,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       labelStyle: labelStyle(),
                                     ),
                                     initialValue: DateTime.now(),
-                                    theme: DatePickerTheme(
-                                      headerColor: colorConfig().headerBgColor,
-                                      backgroundColor:
-                                          colorConfig().bodyBgColor,
-                                      itemStyle: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                      ),
-                                      doneStyle: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      ),
-                                    ),
+                                    theme: datePickerTheme(),
                                   ),
                                 if (selected != null)
                                   FormBuilderTextField(
