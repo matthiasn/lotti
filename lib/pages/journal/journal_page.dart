@@ -399,7 +399,7 @@ class _JournalPageState extends State<JournalPage> {
                   return Stack(
                     children: [
                       Scaffold(
-                        backgroundColor: colorConfig().bodyBgColor,
+                        backgroundColor: colorConfig().negspace,
                         body: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           child: ListView(
