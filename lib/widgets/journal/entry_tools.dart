@@ -63,9 +63,7 @@ class InfoText extends StatelessWidget {
     return Text(
       text,
       maxLines: maxLines,
-      style: TextStyle(
-        fontFamily: 'ShareTechMono',
-        fontSize: 14,
+      style: monospaceTextStyle().copyWith(
         color: colorConfig().entryTextColor,
       ),
     );

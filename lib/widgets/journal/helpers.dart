@@ -20,11 +20,9 @@ class EntryTextWidget extends StatelessWidget {
       child: Text(
         text,
         maxLines: maxLines,
-        style: TextStyle(
-          fontFamily: 'ShareTechMono',
+        style: monospaceTextStyle().copyWith(
           color: colorConfig().entryTextColor,
           fontWeight: FontWeight.w300,
-          fontSize: 14,
         ),
       ),
     );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/themes/theme.dart';
@@ -20,33 +20,52 @@ class AudioRecorderWidget extends StatelessWidget {
     return str.substring(0, str.length - 7);
   }
 
-  String formatDecibels(double? decibels) {
-    final f = NumberFormat('###.0#', 'en_US');
-    return (decibels != null) ? '${f.format(decibels)} dB' : '';
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
       builder: (context, state) {
+        final cubit = context.read<AudioRecorderCubit>();
+
         return Column(
           children: [
+            GestureDetector(
+              key: const Key('micIcon'),
+              onTap: () => cubit.record(linkedId: linkedId),
+              child: const VuMeterButtonWidget(),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(30),
+              child: Text(
+                formatDuration(state.progress.toString()),
+                style: monospaceTextStyleLarge(),
+              ),
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 IconButton(
-                  icon: const Icon(Icons.mic_rounded),
+                  key: const Key('pauseIcon'),
+                  icon: SvgPicture.asset('assets/icons/pause.svg'),
+                  padding: const EdgeInsets.only(
+                    left: 8,
+                    top: 8,
+                    bottom: 8,
+                    right: 29,
+                  ),
                   iconSize: iconSize,
-                  tooltip: 'Record',
-                  color: state.status == AudioRecorderStatus.recording
-                      ? colorConfig().activeAudioControl
-                      : colorConfig().inactiveAudioControl,
-                  onPressed: () => context
-                      .read<AudioRecorderCubit>()
-                      .record(linkedId: linkedId),
+                  tooltip: 'Pause',
+                  color: colorConfig().inactiveAudioControl,
+                  onPressed: () {},
                 ),
                 IconButton(
-                  icon: const Icon(Icons.stop),
+                  key: const Key('stopIcon'),
+                  icon: SvgPicture.asset('assets/icons/stop.svg'),
+                  padding: const EdgeInsets.only(
+                    left: 29,
+                    top: 8,
+                    bottom: 8,
+                    right: 8,
+                  ),
                   iconSize: iconSize,
                   tooltip: 'Stop',
                   color: colorConfig().inactiveAudioControl,
@@ -55,30 +74,7 @@ class AudioRecorderWidget extends StatelessWidget {
                     Navigator.of(context).maybePop();
                   },
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Text(
-                    formatDuration(state.progress.toString()),
-                    style: TextStyle(
-                      fontFamily: 'ShareTechMono',
-                      fontSize: 32,
-                      color: colorConfig().inactiveAudioControl,
-                    ),
-                  ),
-                ),
               ],
-            ),
-            const VuMeterWidget(height: 16, width: 280),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                formatDecibels(state.decibels),
-                style: TextStyle(
-                  fontFamily: 'ShareTechMono',
-                  fontSize: 20,
-                  color: colorConfig().inactiveAudioControl,
-                ),
-              ),
             ),
           ],
         );

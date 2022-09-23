@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
@@ -167,9 +165,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             rebuild();
             final linkedId = widget.linked?.meta.id;
             beamToNamed('/journal/record_audio/$linkedId');
-            context.read<AudioRecorderCubit>().record(
-                  linkedId: widget.linked?.meta.id,
-                );
           },
           child: const Icon(
             MdiIcons.microphone,

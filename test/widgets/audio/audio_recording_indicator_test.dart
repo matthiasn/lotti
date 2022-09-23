@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/create/record_audio_page.dart';
 import 'package:lotti/themes/themes_service.dart';
+import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -14,7 +14,7 @@ import '../../widget_test_utils.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('AudioRecorderWidget Widget Tests - ', () {
+  group('AudioRecordingIndicator Widget Tests - ', () {
     setUp(() {
       getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
     });
@@ -22,7 +22,7 @@ void main() {
 
     final mockAudioRecorderCubit = MockAudioRecorderCubit();
 
-    testWidgets('controls are are displayed, stop is tappable', (tester) async {
+    testWidgets('widget is displayed, tapping stops recoder', (tester) async {
       final recordingState = AudioRecorderState(
         status: AudioRecorderStatus.recording,
         decibels: 80,
@@ -46,17 +46,18 @@ void main() {
           BlocProvider<AudioRecorderCubit>(
             create: (_) => mockAudioRecorderCubit,
             lazy: false,
-            child: const RecordAudioPage(),
+            child: Row(
+              children: const [
+                Expanded(child: AudioRecordingIndicator()),
+              ],
+            ),
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      final micIconFinder = find.byKey(const Key('micIcon'));
-      expect(micIconFinder, findsOneWidget);
-
-      final stopIconFinder = find.byKey(const Key('stopIcon'));
+      final stopIconFinder = find.byKey(const Key('audio_recording_indicator'));
       expect(stopIconFinder, findsOneWidget);
 
       await tester.tap(stopIconFinder);

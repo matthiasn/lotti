@@ -53,7 +53,11 @@ class _AppScreenState extends State<AppScreen> {
                 ],
               ),
               const TimeRecordingIndicator(),
-              const AudioRecordingIndicator(),
+              Positioned(
+                right: MediaQuery.of(context).size.width / 2 - 60,
+                bottom: 0,
+                child: const AudioRecordingIndicator(),
+              ),
             ],
           ),
           bottomNavigationBar: SalomonBottomBar(

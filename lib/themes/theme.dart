@@ -73,8 +73,21 @@ TextStyle newLabelStyle() => TextStyle(
       fontSize: 15,
     );
 
-TextStyle pickerMonoTextStyle() => textStyle().copyWith(
-      fontFamily: 'ShareTechMono',
+TextStyle monospaceTextStyle() => const TextStyle(
+      fontFamily: 'Inconsolata',
+      fontWeight: FontWeight.w300,
+      fontSize: 15,
+    );
+
+TextStyle monospaceTextStyleSmall() => monospaceTextStyle().copyWith(
+      fontSize: 11,
+    );
+
+TextStyle monospaceTextStyleLarge() => monospaceTextStyle().copyWith(
+      fontSize: 25,
+    );
+
+TextStyle pickerMonoTextStyle() => monospaceTextStyle().copyWith(
       fontWeight: FontWeight.w100,
     );
 
@@ -102,11 +115,7 @@ TextStyle choiceLabelStyle() => TextStyle(
       fontSize: 16,
     );
 
-TextStyle logDetailStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
-      fontFamily: 'ShareTechMono',
-      fontSize: 14,
-    );
+TextStyle logDetailStyle() => monospaceTextStyle();
 
 TextStyle appBarTextStyle() => TextStyle(
       color: colorConfig().entryTextColor,
