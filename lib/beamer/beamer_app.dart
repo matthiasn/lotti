@@ -61,8 +61,8 @@ class _AppScreenState extends State<AppScreen> {
             ],
           ),
           bottomNavigationBar: SalomonBottomBar(
-            unselectedItemColor: colorConfig().bottomNavIconUnselected,
-            selectedItemColor: colorConfig().bottomNavIconSelected,
+            unselectedItemColor: colorConfig().ice,
+            selectedItemColor: colorConfig().riptide,
             currentIndex: index,
             items: [
               SalomonBottomBarItem(
@@ -109,7 +109,7 @@ class MyBeamerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = ThemeData(
       primarySwatch: Colors.grey,
-      scaffoldBackgroundColor: colorConfig().bodyBgColor,
+      scaffoldBackgroundColor: colorConfig().iron,
       highlightColor: colorConfig().settingsHoverColor,
       appBarTheme: AppBarTheme(
         iconTheme: IconThemeData(color: colorConfig().entryTextColor),
@@ -141,7 +141,7 @@ class MyBeamerApp extends StatelessWidget {
           child: DesktopMenuWrapper(
             child: ThemeConfigWrapper(
               MaterialApp.router(
-                color: colorConfig().bodyBgColor,
+                color: colorConfig().negspace,
                 supportedLocales: AppLocalizations.supportedLocales,
                 theme: theme,
                 localizationsDelegates: const [

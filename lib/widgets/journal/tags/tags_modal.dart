@@ -42,7 +42,7 @@ class TagsModal extends StatelessWidget {
     }
 
     return ColoredBox(
-      color: colorConfig().entryCardColor,
+      color: colorConfig().ice,
       child: Padding(
         padding: const EdgeInsets.only(
           left: 16,

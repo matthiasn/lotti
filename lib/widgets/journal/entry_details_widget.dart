@@ -82,9 +82,9 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(0),
               child: ColoredBox(
-                color: colorConfig().entryCardColor,
+                color: colorConfig().ice,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

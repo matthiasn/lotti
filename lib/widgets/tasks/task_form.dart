@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -91,19 +90,7 @@ class _TaskFormState extends State<TaskForm> {
                         widget.data?.estimate?.inMilliseconds ?? 0,
                         isUtc: true,
                       ),
-                      theme: DatePickerTheme(
-                        headerColor: colorConfig().headerBgColor,
-                        backgroundColor: colorConfig().bodyBgColor,
-                        itemStyle: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                        doneStyle: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
+                      theme: datePickerTheme(),
                     ),
                     FormBuilderChoiceChip(
                       name: 'status',

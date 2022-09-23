@@ -121,7 +121,7 @@ class SwitchIconWidget extends StatelessWidget {
         icon: Icon(
           iconData,
           size: 20,
-          color: value ? activeColor : colorConfig().entryTextColor,
+          color: value ? activeColor : colorConfig().iron,
         ),
       ),
     );

@@ -1,5 +1,6 @@
 // ignore_for_file: equal_keys_in_map
 import 'package:flutter/material.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/themes_service.dart';
@@ -28,7 +29,7 @@ const chipPaddingClosable = EdgeInsets.only(
 );
 
 TextStyle inputStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontWeight: FontWeight.bold,
       fontFamily: mainFont,
       fontSize: 18,
@@ -40,7 +41,7 @@ TextStyle newInputStyle() => TextStyle(
     );
 
 TextStyle textStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontWeight: FontWeight.w400,
       fontSize: 15,
@@ -52,9 +53,10 @@ TextStyle textStyleLarger() => textStyle().copyWith(
     );
 
 TextStyle textStyleLargerUnderlined() => textStyle().copyWith(
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: FontWeight.w100,
       decoration: TextDecoration.underline,
+      fontFamily: 'Inconsolata',
     );
 
 TextStyle labelStyleLarger() => textStyleLarger().copyWith(
@@ -63,7 +65,7 @@ TextStyle labelStyleLarger() => textStyleLarger().copyWith(
     );
 
 TextStyle labelStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontWeight: FontWeight.w500,
       fontSize: 18,
     );
@@ -92,7 +94,7 @@ TextStyle pickerMonoTextStyle() => monospaceTextStyle().copyWith(
     );
 
 TextStyle formLabelStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontSize: 16,
     );
@@ -213,3 +215,20 @@ TextStyle definitionCardSubtitleStyle() => TextStyle(
 const settingsIconSize = 24.0;
 
 ColorConfig colorConfig() => getIt<ThemesService>().current;
+
+DatePickerTheme datePickerTheme() => DatePickerTheme(
+      headerColor: colorConfig().iron,
+      backgroundColor: colorConfig().ice,
+      itemStyle: TextStyle(
+        color: colorConfig().coal,
+        fontSize: 20,
+      ),
+      cancelStyle: TextStyle(
+        color: colorConfig().ice,
+        fontSize: 20,
+      ),
+      doneStyle: TextStyle(
+        color: colorConfig().coal,
+        fontSize: 20,
+      ),
+    );
