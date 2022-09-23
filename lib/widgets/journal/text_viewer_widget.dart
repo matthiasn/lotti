@@ -37,8 +37,8 @@ class TextViewerWidget extends StatelessWidget {
           padding: const EdgeInsets.only(top: 8, bottom: 16),
           keyboardAppearance: Brightness.dark,
           customStyles: customTextViewerStyles(
-            textColor: colorConfig().entryTextColor,
-            codeBlockBackground: colorConfig().bodyBgColor,
+            textColor: colorConfig().coal,
+            codeBlockBackground: colorConfig().riplight,
           ),
         ),
       ),

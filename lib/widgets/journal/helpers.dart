@@ -21,7 +21,7 @@ class EntryTextWidget extends StatelessWidget {
         text,
         maxLines: maxLines,
         style: monospaceTextStyle().copyWith(
-          color: colorConfig().entryTextColor,
+          color: colorConfig().coal,
           fontWeight: FontWeight.w300,
         ),
       ),
