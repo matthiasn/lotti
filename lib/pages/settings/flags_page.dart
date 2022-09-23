@@ -41,7 +41,6 @@ class _FlagsPageState extends State<FlagsPage> {
           AsyncSnapshot<Set<ConfigFlag>> snapshot,
         ) {
           final items = snapshot.data?.toList() ?? [];
-          debugPrint('$items');
 
           return ListView(
             shrinkWrap: true,

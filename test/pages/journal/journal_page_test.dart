@@ -59,9 +59,7 @@ void main() {
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
 
-      when(
-        () => mockJournalDb.watchConfigFlags(),
-      ).thenAnswer(
+      when(mockJournalDb.watchConfigFlags).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
           <ConfigFlag>{
             const ConfigFlag(
