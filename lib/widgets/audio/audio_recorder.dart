@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/themes/theme.dart';
@@ -19,11 +18,6 @@ class AudioRecorderWidget extends StatelessWidget {
 
   String formatDuration(String str) {
     return str.substring(0, str.length - 7);
-  }
-
-  String formatDecibels(double? decibels) {
-    final f = NumberFormat('###.0#', 'en_US');
-    return (decibels != null) ? '${f.format(decibels)} dB' : '';
   }
 
   @override
