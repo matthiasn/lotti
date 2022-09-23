@@ -68,7 +68,9 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                 ),
                 if (state.entry?.geolocation != null)
                   SwitchIconWidget(
-                    tooltip: localizations.journalFlaggedTooltip,
+                    tooltip: state.showMap
+                        ? localizations.journalHideMapHint
+                        : localizations.journalShowMapHint,
                     activeColor: colorConfig().starredGold,
                     onPressed: cubit.toggleMapVisible,
                     value: cubit.showMap,
