@@ -173,31 +173,35 @@ class HealthChartInfoWidget extends StatelessWidget {
         return Positioned(
           top: 0,
           left: 10,
-          child: IgnorePointer(
-            child: Row(
-              children: [
-                Text(
-                  healthType?.displayName ?? chartConfig.healthType,
-                  style: chartTitleStyle(),
-                ),
-                if (selected != null) ...[
-                  const Spacer(),
-                  Padding(
-                    padding: AppTheme.chartDateHorizontalPadding,
-                    child: Text(
-                      ' ${ymd(selected.dateTime)}',
-                      style: chartTitleStyle(),
-                    ),
-                  ),
-                  const Spacer(),
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width - 20,
+            child: IgnorePointer(
+              child: Row(
+                children: [
                   Text(
-                    ' $valueLabel',
-                    style: chartTitleStyle().copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    healthType?.displayName ?? chartConfig.healthType,
+                    style: chartTitleStyle().copyWith(),
                   ),
+                  if (selected != null) ...[
+                    const Spacer(),
+                    Padding(
+                      padding: AppTheme.chartDateHorizontalPadding,
+                      child: Text(
+                        ' ${ymd(selected.dateTime)}',
+                        style: chartTitleStyle(),
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      ' $valueLabel',
+                      style: chartTitleStyle().copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
