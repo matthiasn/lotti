@@ -2,8 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_fadein/flutter_fadein.dart';
 import 'package:lotti/themes/theme.dart';
-
-import '../../utils/platform.dart';
+import 'package:lotti/utils/platform.dart';
 
 class Button extends StatelessWidget {
   const Button(
@@ -77,24 +76,6 @@ class Button2 extends StatelessWidget {
       child: Text(
         label,
         style: buttonLabelStyle(),
-      ),
-    );
-
-    return Padding(
-      padding: padding,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.all(16),
-          backgroundColor: primaryColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        onPressed: onPressed,
-        child: Text(
-          label,
-          style: buttonLabelStyle(),
-        ),
       ),
     );
   }

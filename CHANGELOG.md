@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - DefinitionCard design
+- Design: Settings > Tags
+- Design: Settings > Dashboard Management
+- Design: Settings > Measurables
 
 ### Fixed:
 - Health chart legend on select

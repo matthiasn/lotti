@@ -21,6 +21,23 @@ Widget makeTestableWidget(Widget child) {
   );
 }
 
+Widget makeTestableWidget2(Widget child) {
+  return MediaQuery(
+    data: const MediaQueryData(),
+    child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        FormBuilderLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: child,
+    ),
+  );
+}
+
 Widget makeTestableWidgetWithScaffold(Widget child) {
   return MediaQuery(
     data: const MediaQueryData(),
