@@ -5,6 +5,10 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/themes_service.dart';
 
+const fontSizeSmall = 11.0;
+const fontSizeMedium = 15.0;
+const fontSizeLarge = 25.0;
+
 class AppTheme {
   static const double bottomNavIconSize = 24;
 
@@ -37,14 +41,14 @@ TextStyle inputStyle() => TextStyle(
 
 TextStyle newInputStyle() => TextStyle(
       color: colorConfig().coal,
-      fontSize: 15,
+      fontSize: fontSizeMedium,
     );
 
 TextStyle textStyle() => TextStyle(
       color: colorConfig().coal,
       fontFamily: mainFont,
       fontWeight: FontWeight.w400,
-      fontSize: 15,
+      fontSize: fontSizeMedium,
     );
 
 TextStyle textStyleLarger() => textStyle().copyWith(
@@ -72,21 +76,21 @@ TextStyle labelStyle() => TextStyle(
 
 TextStyle newLabelStyle() => TextStyle(
       color: colorConfig().coal,
-      fontSize: 15,
+      fontSize: fontSizeMedium,
     );
 
 TextStyle monospaceTextStyle() => const TextStyle(
       fontFamily: 'Inconsolata',
       fontWeight: FontWeight.w300,
-      fontSize: 15,
+      fontSize: fontSizeMedium,
     );
 
 TextStyle monospaceTextStyleSmall() => monospaceTextStyle().copyWith(
-      fontSize: 11,
+      fontSize: fontSizeSmall,
     );
 
 TextStyle monospaceTextStyleLarge() => monospaceTextStyle().copyWith(
-      fontSize: 25,
+      fontSize: fontSizeLarge,
     );
 
 TextStyle pickerMonoTextStyle() => monospaceTextStyle().copyWith(
@@ -96,25 +100,25 @@ TextStyle pickerMonoTextStyle() => monospaceTextStyle().copyWith(
 TextStyle formLabelStyle() => TextStyle(
       color: colorConfig().coal,
       fontFamily: mainFont,
-      fontSize: 16,
+      fontSize: fontSizeMedium,
     );
 
 TextStyle buttonLabelStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontFamily: mainFont,
-      fontSize: 16,
+      fontSize: fontSizeMedium,
     );
 
 TextStyle settingsLabelStyle() => TextStyle(
       color: colorConfig().entryTextColor,
       fontFamily: mainFont,
-      fontSize: 16,
+      fontSize: fontSizeMedium,
     );
 
 TextStyle choiceLabelStyle() => TextStyle(
       color: colorConfig().entryTextColor,
       fontFamily: mainFont,
-      fontSize: 16,
+      fontSize: fontSizeMedium,
     );
 
 TextStyle logDetailStyle() => monospaceTextStyle();
@@ -122,14 +126,14 @@ TextStyle logDetailStyle() => monospaceTextStyle();
 TextStyle appBarTextStyle() => TextStyle(
       color: colorConfig().entryTextColor,
       fontFamily: mainFont,
-      fontSize: 22,
+      fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
     );
 
 TextStyle appBarTextStyleNew() => TextStyle(
       color: colorConfig().coal,
       fontFamily: mainFont,
-      fontSize: 15,
+      fontSize: fontSizeMedium,
       fontWeight: FontWeight.w400,
     );
 
@@ -137,32 +141,32 @@ TextStyle settingsCardTextStyle() => TextStyle(
       //color: colorConfig().entryTextColor,
       color: colorConfig().coal,
       fontFamily: mainFont,
-      fontSize: 25,
+      fontSize: fontSizeLarge,
     );
 
 TextStyle titleStyle() => TextStyle(
       color: colorConfig().entryTextColor,
       fontFamily: mainFont,
-      fontSize: 32,
+      fontSize: fontSizeLarge,
       fontWeight: FontWeight.w300,
     );
 
 TextStyle taskTitleStyle() => TextStyle(
       color: colorConfig().coal,
       fontFamily: mainFont,
-      fontSize: 24,
+      fontSize: fontSizeLarge,
     );
 
 TextStyle multiSelectStyle() => TextStyle(
       color: colorConfig().entryTextColor,
       fontFamily: mainFont,
       fontWeight: FontWeight.w100,
-      fontSize: 24,
+      fontSize: fontSizeLarge,
     );
 
 TextStyle chartTitleStyle() => TextStyle(
       fontFamily: mainFont,
-      fontSize: 15,
+      fontSize: fontSizeMedium,
       color: colorConfig().coal,
       fontWeight: FontWeight.w300,
     );
@@ -170,13 +174,13 @@ TextStyle chartTitleStyle() => TextStyle(
 const taskFormFieldStyle = TextStyle(color: Colors.black87);
 
 TextStyle saveButtonStyle() => TextStyle(
-      fontSize: 15,
+      fontSize: fontSizeMedium,
       fontFamily: mainFont,
       color: colorConfig().error,
     );
 
 TextStyle cancelButtonStyle() => TextStyle(
-      fontSize: 15,
+      fontSize: fontSizeMedium,
       fontFamily: mainFont,
       fontWeight: FontWeight.w100,
       color: colorConfig().coal,
@@ -184,13 +188,13 @@ TextStyle cancelButtonStyle() => TextStyle(
 
 const segmentItemStyle = TextStyle(
   fontFamily: mainFont,
-  fontSize: 12,
+  fontSize: fontSizeSmall,
 );
 
 const badgeStyle = TextStyle(
   fontFamily: mainFont,
   fontWeight: FontWeight.w300,
-  fontSize: 12,
+  fontSize: fontSizeSmall,
 );
 
 const bottomNavLabelStyle = TextStyle(
@@ -201,7 +205,7 @@ const bottomNavLabelStyle = TextStyle(
 TextStyle definitionCardTitleStyle() => TextStyle(
       color: colorConfig().coal,
       fontFamily: mainFont,
-      fontSize: 24,
+      fontSize: fontSizeLarge,
       height: 1.2,
     );
 
@@ -209,7 +213,7 @@ TextStyle definitionCardSubtitleStyle() => TextStyle(
       color: colorConfig().coal,
       fontFamily: mainFont,
       fontWeight: FontWeight.w200,
-      fontSize: 16,
+      fontSize: fontSizeMedium,
     );
 
 const settingsIconSize = 24.0;

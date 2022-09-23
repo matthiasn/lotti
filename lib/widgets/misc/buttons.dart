@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_fadein/flutter_fadein.dart';
 import 'package:lotti/themes/theme.dart';
 
+import '../../utils/platform.dart';
+
 class Button extends StatelessWidget {
   const Button(
     this.label, {
@@ -21,6 +23,63 @@ class Button extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Padding(
+      padding: padding,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.all(16),
+          backgroundColor: primaryColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        onPressed: onPressed,
+        child: Text(
+          label,
+          style: buttonLabelStyle(),
+        ),
+      ),
+    );
+  }
+}
+
+class Button2 extends StatelessWidget {
+  const Button2(
+    this.label, {
+    this.primaryColor = CupertinoColors.activeBlue,
+    this.textColor = CupertinoColors.white,
+    this.padding = const EdgeInsets.all(4),
+    required this.onPressed,
+    super.key,
+  });
+
+  final String label;
+  final Color primaryColor;
+  final Color textColor;
+  final void Function() onPressed;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: colorConfig().ice,
+        side: const BorderSide(),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(100),
+        ),
+        padding: EdgeInsets.symmetric(
+          vertical: isMobile ? 20 : 30,
+          horizontal: isMobile ? 30 : 45,
+        ),
+      ),
+      child: Text(
+        label,
+        style: buttonLabelStyle(),
+      ),
+    );
+
     return Padding(
       padding: padding,
       child: ElevatedButton(

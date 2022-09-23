@@ -9,6 +9,8 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
+const spaceBetweenButtons = 10.0;
+
 class HealthImportPage extends StatefulWidget {
   const HealthImportPage({super.key});
 
@@ -41,7 +43,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: colorConfig().negspace,
       appBar: TitleAppBar(
         title: localizations.settingsHealthImportTitle,
       ),
@@ -59,7 +61,8 @@ class _HealthImportPageState extends State<HealthImportPage> {
                 _dateTo,
               ),
             ),
-            Button(
+            const SizedBox(height: 20),
+            Button2(
               'Import Activity Data',
               onPressed: () {
                 _healthImport.getActivityHealthData(
@@ -68,7 +71,8 @@ class _HealthImportPageState extends State<HealthImportPage> {
                 );
               },
             ),
-            Button(
+            const SizedBox(height: spaceBetweenButtons),
+            Button2(
               'Import Sleep Data',
               onPressed: () {
                 _healthImport.fetchHealthData(
@@ -78,7 +82,8 @@ class _HealthImportPageState extends State<HealthImportPage> {
                 );
               },
             ),
-            Button(
+            const SizedBox(height: spaceBetweenButtons),
+            Button2(
               'Import Heart Rate Data',
               onPressed: () {
                 _healthImport.fetchHealthData(
@@ -88,7 +93,8 @@ class _HealthImportPageState extends State<HealthImportPage> {
                 );
               },
             ),
-            Button(
+            const SizedBox(height: spaceBetweenButtons),
+            Button2(
               'Import Blood Pressure Data',
               onPressed: () {
                 _healthImport.fetchHealthData(
@@ -98,7 +104,8 @@ class _HealthImportPageState extends State<HealthImportPage> {
                 );
               },
             ),
-            Button(
+            const SizedBox(height: spaceBetweenButtons),
+            Button2(
               'Import Body Measurement Data',
               onPressed: () {
                 _healthImport.fetchHealthData(
@@ -108,7 +115,8 @@ class _HealthImportPageState extends State<HealthImportPage> {
                 );
               },
             ),
-            Button(
+            const SizedBox(height: spaceBetweenButtons),
+            Button2(
               'Import Workout Data',
               onPressed: () {
                 _healthImport.getWorkoutsHealthData(

@@ -104,12 +104,12 @@ class FillSurveyPage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Button(
+              Button2(
                 'CFQ 11',
                 onPressed: () => runCfq11(linkedId: linkedId, context: context),
                 primaryColor: CupertinoColors.systemOrange,
               ),
-              Button(
+              Button2(
                 'PANAS',
                 onPressed: () => runPanas(linkedId: linkedId, context: context),
                 primaryColor: CupertinoColors.systemOrange,
