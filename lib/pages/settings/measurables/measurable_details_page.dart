@@ -63,7 +63,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
     }
 
     return Scaffold(
-      backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: colorConfig().negspace,
       appBar: TitleAppBar(
         title: widget.dataType.displayName,
         actions: [
@@ -87,9 +87,9 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
           child: Column(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(0),
                 child: Container(
-                  color: colorConfig().headerBgColor,
+                  color: colorConfig().ice,
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [

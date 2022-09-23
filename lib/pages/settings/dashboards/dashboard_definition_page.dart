@@ -269,7 +269,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
         }
 
         return Scaffold(
-          backgroundColor: colorConfig().bodyBgColor,
+          backgroundColor: colorConfig().negspace,
           appBar: TitleAppBar(
             title: widget.dashboard.name,
             actions: [
@@ -293,9 +293,9 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
               child: Column(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(0),
                     child: Container(
-                      color: colorConfig().headerBgColor,
+                      color: colorConfig().ice,
                       padding: const EdgeInsets.all(24),
                       child: Column(
                         children: [
