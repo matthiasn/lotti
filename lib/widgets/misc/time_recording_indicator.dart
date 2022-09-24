@@ -47,7 +47,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                   children: [
                     Icon(
                       MdiIcons.timerOutline,
-                      color: colorConfig().editorTextColor,
+                      color: colorConfig().coal,
                       size: 16,
                     ),
                     Padding(
@@ -55,7 +55,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                       child: Text(
                         durationString,
                         style: monospaceTextStyle().copyWith(
-                          color: colorConfig().editorTextColor,
+                          color: colorConfig().coal,
                         ),
                       ),
                     ),

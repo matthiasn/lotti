@@ -98,7 +98,7 @@ class FillSurveyPage extends StatelessWidget {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.addSurveyTitle),
-      backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: colorConfig().negspace,
       body: Center(
         child: SingleChildScrollView(
           child: Column(

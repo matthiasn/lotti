@@ -43,7 +43,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: colorConfig().appBarFgColor,
+      backgroundColor: colorConfig().ice,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: mainFont,

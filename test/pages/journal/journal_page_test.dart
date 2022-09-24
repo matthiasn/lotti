@@ -355,7 +355,7 @@ void main() {
       expect(find.byIcon(MdiIcons.security).hitTestable(), findsOneWidget);
       expect(
         (tester.firstWidget(find.byIcon(MdiIcons.security)) as Icon).color,
-        darkTheme.error,
+        darkTheme.alarm,
       );
     });
 

@@ -127,7 +127,7 @@ void main() {
             child: Text(
               testText,
               style: TextStyle(
-                color: colorConfig().entryTextColor,
+                color: colorConfig().coal,
               ),
             ),
           ),
@@ -143,14 +143,14 @@ void main() {
 
       expect(
         (tester.firstWidget(find.text(testText)) as Text).style?.color,
-        darkTheme.entryTextColor,
+        darkTheme.coal,
       );
 
       final testColor = colorFromCssHex('#FF0000');
-      getIt<ThemesService>().setColor('entryTextColor', testColor);
+      getIt<ThemesService>().setColor('negspace', testColor);
 
       expect(
-        getIt<ThemesService>().current.entryTextColor,
+        getIt<ThemesService>().current.negspace,
         testColor,
       );
 

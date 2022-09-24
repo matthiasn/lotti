@@ -143,7 +143,7 @@ void main() {
       expect(userFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: colorConfig().error);
+          find.byContainerColor(color: colorConfig().alarm);
 
       final deleteButtonFinder = find.text('Delete Sync Configuration');
       final scannerLabelFinder = find.text('Scanning Shared Secret...');

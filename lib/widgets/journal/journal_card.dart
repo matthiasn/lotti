@@ -59,7 +59,7 @@ class JournalCardTitle extends StatelessWidget {
                     visible: fromNullableBool(item.meta.private),
                     child: Icon(
                       MdiIcons.security,
-                      color: colorConfig().error,
+                      color: colorConfig().alarm,
                       size: iconSize,
                     ),
                   ),
@@ -80,7 +80,7 @@ class JournalCardTitle extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.flag,
-                        color: colorConfig().error,
+                        color: colorConfig().alarm,
                         size: iconSize,
                       ),
                     ),

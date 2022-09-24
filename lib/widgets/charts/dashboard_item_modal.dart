@@ -23,7 +23,7 @@ class DashboardItemModal extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return ColoredBox(
-      color: colorConfig().bodyBgColor,
+      color: colorConfig().iron,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(

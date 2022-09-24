@@ -29,7 +29,7 @@ class DashboardDefinitionCard extends StatelessWidget {
             visible: dashboard.private,
             child: Icon(
               MdiIcons.security,
-              color: colorConfig().error,
+              color: colorConfig().alarm,
               size: settingsIconSize,
             ),
           ),
@@ -58,6 +58,7 @@ class DefinitionCard extends StatelessWidget {
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
+      color: Colors.transparent,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 32,

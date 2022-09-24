@@ -31,7 +31,7 @@ class AlignedNavIcon extends StatelessWidget {
           hoverColor: Colors.transparent,
           icon: Icon(
             iconData,
-            color: colorConfig().entryTextColor,
+            color: colorConfig().iron,
             size: 32,
           ),
           onPressed: onPressed,

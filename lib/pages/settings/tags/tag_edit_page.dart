@@ -230,7 +230,7 @@ class _TagEditPageState extends State<TagEditPage> {
                             icon: const Icon(MdiIcons.trashCanOutline),
                             iconSize: 24,
                             tooltip: localizations.settingsTagsDeleteTooltip,
-                            color: colorConfig().appBarFgColor,
+                            color: colorConfig().ice,
                             onPressed: () {
                               persistenceLogic.upsertTagEntity(
                                 widget.tagEntity.copyWith(

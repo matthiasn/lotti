@@ -110,9 +110,9 @@ class MyBeamerApp extends StatelessWidget {
     final theme = ThemeData(
       primarySwatch: Colors.grey,
       scaffoldBackgroundColor: colorConfig().iron,
-      highlightColor: colorConfig().settingsHoverColor,
+      highlightColor: colorConfig().riplight,
       appBarTheme: AppBarTheme(
-        iconTheme: IconThemeData(color: colorConfig().entryTextColor),
+        iconTheme: IconThemeData(color: colorConfig().coal),
       ),
     );
 

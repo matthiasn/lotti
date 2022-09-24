@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/settings_card.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -26,7 +27,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorConfig().negspace,
       appBar: TitleAppBar(
         title: localizations.navTabTitleSettings,
         showBackButton: false,

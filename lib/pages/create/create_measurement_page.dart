@@ -176,7 +176,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                         localizations.addMeasurementNoneDefined,
                                         style: titleStyle().copyWith(
                                           decoration: TextDecoration.underline,
-                                          color: colorConfig().entryTextColor,
+                                          color: colorConfig().coal,
                                         ),
                                         wrapWords: false,
                                         maxLines: 3,
@@ -198,15 +198,15 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       child: Text(
                                         selected?.displayName ?? '',
                                         style: TextStyle(
-                                          color: colorConfig().entryTextColor,
+                                          color: colorConfig().coal,
                                           fontFamily: 'Oswald',
-                                          fontSize: 25,
+                                          fontSize: fontSizeLarge,
                                         ),
                                       ),
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.settings_outlined),
-                                      color: colorConfig().entryTextColor,
+                                      color: colorConfig().coal,
                                       onPressed: () {
                                         beamToNamed(
                                           '/settings/measurables/${selected?.id}',
@@ -219,10 +219,10 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                   Text(
                                     selected!.description,
                                     style: TextStyle(
-                                      color: colorConfig().entryTextColor,
+                                      color: colorConfig().coal,
                                       fontFamily: 'Oswald',
                                       fontWeight: FontWeight.w300,
-                                      fontSize: 14,
+                                      fontSize: fontSizeMedium,
                                     ),
                                   ),
                                 if (selected == null)

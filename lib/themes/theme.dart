@@ -110,13 +110,13 @@ TextStyle buttonLabelStyle() => TextStyle(
     );
 
 TextStyle settingsLabelStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontSize: fontSizeMedium,
     );
 
 TextStyle choiceLabelStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontSize: fontSizeMedium,
     );
@@ -124,7 +124,7 @@ TextStyle choiceLabelStyle() => TextStyle(
 TextStyle logDetailStyle() => monospaceTextStyle();
 
 TextStyle appBarTextStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
@@ -145,7 +145,7 @@ TextStyle settingsCardTextStyle() => TextStyle(
     );
 
 TextStyle titleStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontSize: fontSizeLarge,
       fontWeight: FontWeight.w300,
@@ -158,7 +158,7 @@ TextStyle taskTitleStyle() => TextStyle(
     );
 
 TextStyle multiSelectStyle() => TextStyle(
-      color: colorConfig().entryTextColor,
+      color: colorConfig().coal,
       fontFamily: mainFont,
       fontWeight: FontWeight.w100,
       fontSize: fontSizeLarge,
@@ -176,7 +176,7 @@ const taskFormFieldStyle = TextStyle(color: Colors.black87);
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontFamily: mainFont,
-      color: colorConfig().error,
+      color: colorConfig().alarm,
     );
 
 TextStyle cancelButtonStyle() => TextStyle(

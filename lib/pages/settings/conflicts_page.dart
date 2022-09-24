@@ -52,13 +52,13 @@ class _ConflictsPageState extends State<ConflictsPage> {
         final items = snapshot.data ?? [];
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colorConfig().negspace,
           appBar: TitleAppBar(
             title: localizations.settingsConflictsTitle,
             actions: [
               CupertinoSegmentedControl(
                 selectedColor: colorConfig().riptide,
-                unselectedColor: Colors.white,
+                unselectedColor: colorConfig().ice,
                 borderColor: colorConfig().riptide,
                 groupValue: _selectedValue,
                 onValueChanged: (String value) {
@@ -204,7 +204,7 @@ class ConflictDetailRoute extends StatelessWidget {
               appBar: TitleAppBar(
                 title: localizations.settingsConflictsResolutionTitle,
               ),
-              backgroundColor: Colors.white,
+              backgroundColor: colorConfig().negspace,
               body: SingleChildScrollView(
                 padding: const EdgeInsets.all(8),
                 child: Column(

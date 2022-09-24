@@ -10,8 +10,8 @@ DefaultStyles customEditorStyles({
 }) {
   return DefaultStyles(
     h1: DefaultTextBlockStyle(
-      GoogleFonts.oswald(
-        fontSize: 24,
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSizeLarge,
         color: textColor,
       ),
       const Tuple2(0, 0),
@@ -19,7 +19,7 @@ DefaultStyles customEditorStyles({
       null,
     ),
     h2: DefaultTextBlockStyle(
-      GoogleFonts.oswald(
+      GoogleFonts.plusJakartaSans(
         fontSize: 20,
         color: textColor,
       ),
@@ -28,7 +28,7 @@ DefaultStyles customEditorStyles({
       null,
     ),
     h3: DefaultTextBlockStyle(
-      GoogleFonts.oswald(
+      GoogleFonts.plusJakartaSans(
         fontSize: 18,
         color: textColor,
       ),
@@ -38,7 +38,7 @@ DefaultStyles customEditorStyles({
     ),
     paragraph: DefaultTextBlockStyle(
       GoogleFonts.plusJakartaSans(
-        fontSize: 16,
+        fontSize: fontSizeMedium,
         color: textColor,
       ),
       const Tuple2(2, 0),
@@ -46,21 +46,21 @@ DefaultStyles customEditorStyles({
       null,
     ),
     bold: GoogleFonts.plusJakartaSans(
-      fontSize: 16,
+      fontSize: fontSizeMedium,
       color: textColor,
       fontWeight: FontWeight.w900,
     ),
     inlineCode: InlineCodeStyle(
       radius: const Radius.circular(8),
       style: GoogleFonts.inconsolata(
-        fontSize: 16,
+        fontSize: fontSizeMedium,
         color: textColor,
       ),
       backgroundColor: codeBlockBackground,
     ),
     lists: DefaultListBlockStyle(
       GoogleFonts.plusJakartaSans(
-        fontSize: 16,
+        fontSize: fontSizeMedium,
         color: textColor,
       ),
       const Tuple2(4, 0),
@@ -70,7 +70,7 @@ DefaultStyles customEditorStyles({
     ),
     code: DefaultTextBlockStyle(
       GoogleFonts.inconsolata(
-        fontSize: 16,
+        fontSize: fontSizeMedium,
         color: textColor,
       ),
       const Tuple2(0, 0),
@@ -89,8 +89,8 @@ DefaultStyles customTextViewerStyles({
 }) {
   return DefaultStyles(
     h1: DefaultTextBlockStyle(
-      GoogleFonts.oswald(
-        fontSize: 16,
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSizeMedium,
         color: textColor,
       ),
       const Tuple2(0, 0),
@@ -98,8 +98,8 @@ DefaultStyles customTextViewerStyles({
       null,
     ),
     h2: DefaultTextBlockStyle(
-      GoogleFonts.oswald(
-        fontSize: 16,
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSizeMedium,
         color: textColor,
       ),
       const Tuple2(0, 0),
@@ -107,8 +107,8 @@ DefaultStyles customTextViewerStyles({
       null,
     ),
     h3: DefaultTextBlockStyle(
-      GoogleFonts.oswald(
-        fontSize: 16,
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSizeMedium,
         color: textColor,
       ),
       const Tuple2(0, 0),
@@ -143,7 +143,7 @@ DefaultStyles customTextViewerStyles({
       radius: const Radius.circular(8),
       style: GoogleFonts.inconsolata(
         fontSize: 12,
-        color: colorConfig().editorTextColor,
+        color: colorConfig().coal,
       ),
     ),
     code: DefaultTextBlockStyle(

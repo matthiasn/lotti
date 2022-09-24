@@ -50,8 +50,7 @@ class _AboutPageState extends State<AboutPage> {
     );
 
     return Scaffold(
-      //backgroundColor: colorConfig().bodyBgColor,
-      backgroundColor: Colors.white,
+      backgroundColor: colorConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsAboutTitle),
       body: StreamBuilder<int>(
         stream: countStream,

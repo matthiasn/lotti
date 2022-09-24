@@ -58,7 +58,7 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         }
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colorConfig().negspace,
           appBar: const DashboardsAppBar(),
           body: ListView(
             shrinkWrap: true,
@@ -109,9 +109,9 @@ class DashboardCard extends StatelessWidget {
           ? Text(
               dashboard.description,
               style: TextStyle(
-                color: colorConfig().entryTextColor,
+                color: colorConfig().coal,
                 fontFamily: mainFont,
-                fontSize: 15,
+                fontSize: fontSizeMedium,
                 fontWeight: FontWeight.w300,
               ),
             )

@@ -32,8 +32,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      //backgroundColor: colorConfig().bodyBgColor,
-      backgroundColor: Colors.white,
+      backgroundColor: colorConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsMaintenanceTitle),
       body: StreamBuilder<Set<ConfigFlag>>(
         stream: stream,
@@ -120,12 +119,11 @@ class MaintenanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      // color: colorConfig().headerBgColor,
-      color: Colors.white,
+      color: Colors.transparent,
       elevation: 0,
       margin: EdgeInsets.zero,
       child: ListTile(
-        hoverColor: colorConfig().settingsHoverColor,
+        hoverColor: colorConfig().riplight,
         contentPadding: const EdgeInsets.only(
           left: 16,
           top: 4,

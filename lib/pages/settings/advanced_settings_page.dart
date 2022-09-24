@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/pages/settings/settings_icon.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -14,7 +15,7 @@ class AdvancedSettingsPage extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsAdvancedTitle),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,

@@ -54,14 +54,14 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                 ),
                 SwitchIconWidget(
                   tooltip: localizations.journalPrivateTooltip,
-                  activeColor: colorConfig().error,
+                  activeColor: colorConfig().alarm,
                   onPressed: cubit.togglePrivate,
                   value: item.meta.private ?? false,
                   iconData: MdiIcons.security,
                 ),
                 SwitchIconWidget(
                   tooltip: localizations.journalFlaggedTooltip,
-                  activeColor: colorConfig().error,
+                  activeColor: colorConfig().alarm,
                   onPressed: cubit.toggleFlagged,
                   value: item.meta.flag == EntryFlag.import,
                   iconData: MdiIcons.flag,

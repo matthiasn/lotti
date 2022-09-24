@@ -124,7 +124,7 @@ class _TasksPageState extends State<TasksPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: colorConfig().appBarFgColor,
+      backgroundColor: colorConfig().ice,
       queryStyle: const TextStyle(
         fontFamily: mainFont,
         fontSize: 24,
@@ -271,7 +271,7 @@ class _TasksPageState extends State<TasksPage> {
           ),
         ).asGlass(
           clipBorderRadius: BorderRadius.circular(8),
-          tintColor: colorConfig().searchBgColor,
+          tintColor: colorConfig().ice,
         );
       },
     );

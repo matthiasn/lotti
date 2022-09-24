@@ -77,9 +77,9 @@ class TagsModal extends StatelessWidget {
                         controller.clear();
                       },
                       style: DefaultTextStyle.of(context).style.copyWith(
-                            color: colorConfig().entryTextColor,
+                            color: colorConfig().coal,
                             fontFamily: 'Oswald',
-                            fontSize: 16,
+                            fontSize: fontSizeMedium,
                           ),
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
@@ -94,7 +94,7 @@ class TagsModal extends StatelessWidget {
                       );
                     },
                     suggestionsBoxDecoration: SuggestionsBoxDecoration(
-                      color: colorConfig().entryCardColor,
+                      color: colorConfig().ice,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     itemBuilder: (context, TagEntity tagEntity) {
@@ -106,7 +106,7 @@ class TagsModal extends StatelessWidget {
                             height: 1,
                             color: getTagColor(tagEntity),
                             fontWeight: FontWeight.normal,
-                            fontSize: 16,
+                            fontSize: fontSizeMedium,
                           ),
                         ),
                       );
@@ -126,7 +126,7 @@ class TagsModal extends StatelessWidget {
                   ),
                   icon: Icon(
                     MdiIcons.contentCopy,
-                    color: colorConfig().entryTextColor,
+                    color: colorConfig().coal,
                   ),
                   tooltip: localizations.journalTagsCopyHint,
                 ),
@@ -139,7 +139,7 @@ class TagsModal extends StatelessWidget {
                   ),
                   icon: Icon(
                     MdiIcons.contentPaste,
-                    color: colorConfig().entryTextColor,
+                    color: colorConfig().coal,
                   ),
                   tooltip: localizations.journalTagsPasteHint,
                 ),

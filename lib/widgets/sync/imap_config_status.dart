@@ -48,7 +48,7 @@ class ImapConfigStatus extends StatelessWidget {
                     StatusIndicator(colorConfig().outboxSuccessColor),
                 imapTesting: (_) =>
                     StatusIndicator(colorConfig().outboxPendingColor),
-                imapInvalid: (_, __) => StatusIndicator(colorConfig().error),
+                imapInvalid: (_, __) => StatusIndicator(colorConfig().alarm),
                 loading: () => const StatusIndicator(Colors.grey),
                 generating: () => const StatusIndicator(Colors.grey),
                 empty: () => const StatusIndicator(Colors.grey),

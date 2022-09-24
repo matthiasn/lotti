@@ -32,8 +32,7 @@ class _FlagsPageState extends State<FlagsPage> {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.settingsFlagsTitle),
-      //backgroundColor: colorConfig().bodyBgColor,
-      backgroundColor: Colors.white,
+      backgroundColor: colorConfig().negspace,
       body: StreamBuilder<Set<ConfigFlag>>(
         stream: stream,
         builder: (
@@ -97,41 +96,36 @@ class ConfigFlagCard extends StatelessWidget {
     }
 
     return Card(
-      // color: colorConfig().headerBgColor,
-      color: Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: SingleChildScrollView(
-        child: ListTile(
-          contentPadding: const EdgeInsets.only(
-            left: 24,
-            top: 4,
-            bottom: 8,
-            right: 24,
-          ),
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  softWrap: true,
-                  getLocalizedDescription(item),
-                  style: settingsCardTextStyle(),
-                ),
+      margin: EdgeInsets.zero,
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: const EdgeInsets.only(
+          left: 24,
+          top: 4,
+          bottom: 8,
+          right: 24,
+        ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: Text(
+                softWrap: true,
+                getLocalizedDescription(item),
+                style: settingsCardTextStyle(),
               ),
-              const SizedBox(width: 8),
-              CupertinoSwitch(
-                value: item.status,
-                activeColor: colorConfig().private,
-                onChanged: (bool status) {
-                  _db.upsertConfigFlag(item.copyWith(status: status));
-                },
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            CupertinoSwitch(
+              value: item.status,
+              activeColor: colorConfig().private,
+              onChanged: (bool status) {
+                _db.upsertConfigFlag(item.copyWith(status: status));
+              },
+            ),
+          ],
         ),
       ),
     );

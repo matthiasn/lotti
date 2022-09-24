@@ -52,7 +52,7 @@ class _LinkedFromEntriesWidgetState extends State<LinkedFromEntriesWidget> {
                 Text(
                   localizations.journalLinkedFromLabel,
                   style: TextStyle(
-                    color: colorConfig().entryTextColor,
+                    color: colorConfig().coal,
                     fontFamily: 'Oswald',
                   ),
                 ),
