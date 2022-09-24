@@ -40,7 +40,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/advanced',
         '/settings/outbox_monitor',
         '/settings/logging',
-        '/settings/logging/:logEntryId',
+        '/settings/advanced/logging/:logEntryId',
         '/settings/advanced/conflicts/:conflictId',
         '/settings/advanced/conflicts/:conflictId/edit',
         '/settings/advanced/conflicts',
@@ -187,8 +187,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
           key: ValueKey(
             'settings-logging-${state.pathParameters['logEntryId']}',
           ),
-          child: EditMeasurablePage(
-            measurableId: state.pathParameters['logEntryId']!,
+          child: LogDetailPage(
+            logEntryId: state.pathParameters['logEntryId']!,
           ),
         ),
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/settings/measurables/measurable_type_card.dart';
+import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 const double iconSize = 24;
@@ -44,7 +46,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: colorConfig().appBarFgColor,
+      backgroundColor: colorConfig().ice,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: mainFont,
@@ -96,7 +98,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
 
         return Scaffold(
           appBar: TitleAppBar(title: localizations.settingsMeasurablesTitle),
-          backgroundColor: colorConfig().bodyBgColor,
+          backgroundColor: colorConfig().negspace,
           floatingActionButton: FloatingActionButton(
             backgroundColor: colorConfig().riptide,
             onPressed: createMeasurable,
@@ -107,20 +109,21 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
               ListView(
                 shrinkWrap: true,
                 padding: const EdgeInsets.only(
-                  left: 8,
-                  right: 8,
                   bottom: 8,
                   top: 64,
                 ),
-                children: List.generate(
-                  filtered.length,
-                  (int index) {
-                    return MeasurableTypeCard(
-                      item: filtered.elementAt(index),
-                      index: index,
-                    );
-                  },
-                ),
+                children: intersperse(
+                  const SettingsDivider(),
+                  List.generate(
+                    filtered.length,
+                    (int index) {
+                      return MeasurableTypeCard(
+                        item: filtered.elementAt(index),
+                        index: index,
+                      );
+                    },
+                  ),
+                ).toList(),
               ),
               buildFloatingSearchBar(),
             ],

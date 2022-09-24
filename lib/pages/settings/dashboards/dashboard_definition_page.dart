@@ -269,7 +269,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
         }
 
         return Scaffold(
-          backgroundColor: colorConfig().bodyBgColor,
+          backgroundColor: colorConfig().negspace,
           appBar: TitleAppBar(
             title: widget.dashboard.name,
             actions: [
@@ -293,9 +293,9 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
               child: Column(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(0),
                     child: Container(
-                      color: colorConfig().headerBgColor,
+                      color: colorConfig().ice,
                       padding: const EdgeInsets.all(24),
                       child: Column(
                         children: [
@@ -452,13 +452,13 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             iconData: MdiIcons.watch,
                           ),
                           const SizedBox(height: 16),
-                          Button(
+                          Button2(
                             'Add story containing substring',
                             onPressed: () {
                               showModalBottomSheet<void>(
                                 context: context,
                                 isScrollControlled: true,
-                                backgroundColor: colorConfig().bodyBgColor,
+                                backgroundColor: colorConfig().ice,
                                 shape: const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.vertical(
                                     top: Radius.circular(16),
@@ -478,7 +478,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                         child: TextField(
                                           controller: controller,
                                           style: TextStyle(
-                                            color: colorConfig().entryTextColor,
+                                            color: colorConfig().coal,
                                           ),
                                         ),
                                       ),
@@ -508,7 +508,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       icon: const Icon(Icons.copy),
                                       iconSize: settingsIconSize,
                                       tooltip: localizations.dashboardCopyHint,
-                                      color: colorConfig().appBarFgColor,
+                                      color: colorConfig().ice,
                                       onPressed: copyDashboard,
                                     ),
                                     IconButton(
@@ -517,7 +517,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       iconSize: settingsIconSize,
                                       tooltip:
                                           localizations.dashboardDeleteHint,
-                                      color: colorConfig().appBarFgColor,
+                                      color: colorConfig().ice,
                                       onPressed: () async {
                                         const deleteKey = 'deleteKey';
                                         final result =

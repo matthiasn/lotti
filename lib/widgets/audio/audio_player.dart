@@ -25,35 +25,35 @@ class AudioPlayerWidget extends StatelessWidget {
                   tooltip: 'Play',
                   color: (state.status == AudioPlayerStatus.playing)
                       ? colorConfig().activeAudioControl
-                      : colorConfig().inactiveAudioControl,
+                      : colorConfig().iron,
                   onPressed: () => context.read<AudioPlayerCubit>().play(),
                 ),
                 IconButton(
                   icon: const Icon(Icons.fast_rewind),
                   iconSize: 32,
                   tooltip: 'Rewind 15s',
-                  color: colorConfig().inactiveAudioControl,
+                  color: colorConfig().iron,
                   onPressed: () => context.read<AudioPlayerCubit>().rew(),
                 ),
                 IconButton(
                   icon: const Icon(Icons.pause),
                   iconSize: 32,
                   tooltip: 'Pause',
-                  color: colorConfig().inactiveAudioControl,
+                  color: colorConfig().iron,
                   onPressed: () => context.read<AudioPlayerCubit>().pause(),
                 ),
                 IconButton(
                   icon: const Icon(Icons.fast_forward),
                   iconSize: 32,
                   tooltip: 'Fast forward 15s',
-                  color: colorConfig().inactiveAudioControl,
+                  color: colorConfig().iron,
                   onPressed: () => context.read<AudioPlayerCubit>().fwd(),
                 ),
                 IconButton(
                   icon: const Icon(Icons.stop),
                   iconSize: 32,
                   tooltip: 'Stop',
-                  color: colorConfig().inactiveAudioControl,
+                  color: colorConfig().iron,
                   onPressed: () => context.read<AudioPlayerCubit>().stopPlay(),
                 ),
                 IconButton(
@@ -64,7 +64,7 @@ class AudioPlayerWidget extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: (state.speed == 1)
                           ? colorConfig().activeAudioControl
-                          : colorConfig().inactiveAudioControl,
+                          : colorConfig().iron,
                     ),
                   ),
                   tooltip: 'Normal speed',
@@ -78,7 +78,7 @@ class AudioPlayerWidget extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: (state.speed == 1.5)
                           ? colorConfig().activeAudioControl
-                          : colorConfig().inactiveAudioControl,
+                          : colorConfig().iron,
                     ),
                   ),
                   tooltip: '1.5x speed',

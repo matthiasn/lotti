@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/settings/dashboards/dashboard_definition_card.dart';
+import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 class DashboardSettingsPage extends StatefulWidget {
@@ -41,7 +43,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: colorConfig().appBarFgColor,
+      backgroundColor: colorConfig().ice,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: mainFont,
@@ -74,7 +76,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
     void createDashboard() => beamToNamed('/settings/dashboards/create');
 
     return Scaffold(
-      backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: colorConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsDashboardsTitle),
       floatingActionButton: FloatingActionButton(
         backgroundColor: colorConfig().riptide,
@@ -97,21 +99,19 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
             children: [
               ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.only(
-                  left: 8,
-                  right: 8,
-                  bottom: 8,
-                  top: 64,
-                ),
-                children: List.generate(
-                  dashboards.length,
-                  (int index) {
-                    return DashboardDefinitionCard(
-                      dashboard: dashboards.elementAt(index),
-                      index: index,
-                    );
-                  },
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 75),
+                children: intersperse(
+                  const SettingsDivider(),
+                  List.generate(
+                    dashboards.length,
+                    (int index) {
+                      return DashboardDefinitionCard(
+                        dashboard: dashboards.elementAt(index),
+                        index: index,
+                      );
+                    },
+                  ),
+                ).toList(),
               ),
               buildFloatingSearchBar(),
             ],

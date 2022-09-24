@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- DefinitionCard design
+- Design: Settings > Tags
+- Design: Settings > Dashboard Management
+- Design: Settings > Measurables
+- Consolidated settings cards
+
 ### Fixed:
 - Health chart legend on select
 

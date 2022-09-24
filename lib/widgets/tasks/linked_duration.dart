@@ -62,7 +62,7 @@ class LinkedDuration extends StatelessWidget {
                         onSeek: (newPosition) {},
                         timeLabelTextStyle: TextStyle(
                           fontFamily: 'Inconsolata',
-                          color: colorConfig().entryTextColor,
+                          color: colorConfig().coal,
                           fontWeight: FontWeight.normal,
                           fontSize: 11,
                         ),

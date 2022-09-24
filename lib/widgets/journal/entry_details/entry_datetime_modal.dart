@@ -202,7 +202,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                         child: Text(
                           localizations.journalDateInvalid,
                           style: textStyleLarger().copyWith(
-                            color: colorConfig().error,
+                            color: colorConfig().alarm,
                           ),
                         ),
                       ),

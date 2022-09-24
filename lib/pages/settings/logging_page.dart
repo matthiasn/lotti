@@ -29,7 +29,7 @@ class _LoggingPageState extends State<LoggingPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: colorConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsLogsTitle),
       body: StreamBuilder<List<LogEntry>>(
         stream: _db.watchLogEntries(),
@@ -74,9 +74,8 @@ class LogLineCard extends StatelessWidget {
     final domain = logEntry.domain;
     final subDomain = logEntry.subDomain;
     final message = logEntry.message;
-    final color = logEntry.level == 'ERROR'
-        ? colorConfig().error
-        : colorConfig().entryTextColor;
+    final color =
+        logEntry.level == 'ERROR' ? colorConfig().alarm : colorConfig().coal;
 
     return GestureDetector(
       onTap: () {
@@ -108,7 +107,7 @@ class LogDetailPage extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: colorConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsLogsTitle),
       body: StreamBuilder(
         stream: _db.watchLogEntryById(logEntryId),
@@ -138,7 +137,7 @@ class LogDetailPage extends StatelessWidget {
 
           final headerStyle = level == 'ERROR'
               ? logDetailStyle().copyWith(
-                  color: colorConfig().error,
+                  color: colorConfig().alarm,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 )
@@ -182,7 +181,7 @@ class LogDetailPage extends StatelessWidget {
                 IconButton(
                   icon: const Icon(MdiIcons.clipboardOutline),
                   iconSize: 48,
-                  color: colorConfig().entryTextColor,
+                  color: colorConfig().coal,
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: clipboardText));
                   },

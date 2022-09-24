@@ -16,7 +16,6 @@ void main() {
 
     const testDescription = 'test description';
     const testUnit = 'ml';
-    const testUnitEmpty = '';
     const testDisplayName = 'Water';
     final testItem = MeasurableDataType(
       description: testDescription,
@@ -42,8 +41,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testDisplayName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
-      expect(find.text('[$testUnit]'), findsOneWidget);
 
       expect(find.byIcon(MdiIcons.star), findsNothing);
       expect(find.byIcon(MdiIcons.security), findsNothing);
@@ -62,8 +59,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testDisplayName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
-      expect(find.text('[$testUnitEmpty]'), findsNothing);
 
       expect(find.byIcon(MdiIcons.star), findsNothing);
       expect(find.byIcon(MdiIcons.security), findsNothing);
@@ -83,8 +78,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testDisplayName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
-      expect(find.text('[$testUnit]'), findsOneWidget);
 
       expect(find.byIcon(MdiIcons.star), findsNothing);
       expect(find.byIcon(MdiIcons.security), findsOneWidget);
@@ -104,8 +97,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testDisplayName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
-      expect(find.text('[$testUnit]'), findsOneWidget);
 
       expect(find.byIcon(MdiIcons.star), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsNothing);
@@ -128,8 +119,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testDisplayName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
-      expect(find.text('[$testUnit]'), findsOneWidget);
 
       expect(find.byIcon(MdiIcons.star), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsOneWidget);
@@ -154,10 +143,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testDisplayName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
-      expect(find.text('[$testUnit]'), findsOneWidget);
-
-      expect(find.text('[dailySum]'), findsOneWidget);
 
       expect(find.byIcon(MdiIcons.star), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsOneWidget);
@@ -182,10 +167,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testDisplayName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
-      expect(find.text('[$testUnit]'), findsOneWidget);
-
-      expect(find.text('[dailyMax]'), findsOneWidget);
 
       expect(find.byIcon(MdiIcons.star), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsOneWidget);
@@ -210,10 +191,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testDisplayName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
-      expect(find.text('[$testUnit]'), findsOneWidget);
-
-      expect(find.text('[dailyAvg]'), findsOneWidget);
 
       expect(find.byIcon(MdiIcons.star), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsOneWidget);
@@ -238,10 +215,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(testDisplayName), findsOneWidget);
-      expect(find.text(testDescription), findsOneWidget);
-      expect(find.text('[$testUnit]'), findsOneWidget);
-
-      expect(find.text('[none]'), findsNothing);
 
       expect(find.byIcon(MdiIcons.star), findsOneWidget);
       expect(find.byIcon(MdiIcons.security), findsOneWidget);

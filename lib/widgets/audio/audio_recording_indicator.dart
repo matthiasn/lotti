@@ -42,7 +42,7 @@ class AudioRecordingIndicator extends StatelessWidget {
                         Icon(
                           Icons.mic,
                           size: 24,
-                          color: colorConfig().editorTextColor,
+                          color: colorConfig().ice,
                         ),
                         Padding(
                           padding: const EdgeInsets.only(left: 4),

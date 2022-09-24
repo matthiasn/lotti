@@ -18,7 +18,7 @@ class EmptyDashboards extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: colorConfig().negspace,
       appBar: const DashboardsAppBar(),
       body: Stack(
         children: [

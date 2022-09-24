@@ -63,7 +63,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             }
 
             return Scaffold(
-              backgroundColor: colorConfig().bodyBgColor,
+              backgroundColor: colorConfig().negspace,
               appBar: OutboxAppBar(
                 onlineStatus: onlineStatus,
                 selectedValue: _selectedValue,
@@ -124,7 +124,7 @@ class OutboxItemCard extends StatelessWidget {
         case OutboxStatus.pending:
           return colorConfig().outboxPendingColor;
         case OutboxStatus.error:
-          return colorConfig().outboxErrorColor;
+          return colorConfig().alarm;
         case OutboxStatus.sent:
           return colorConfig().outboxSuccessColor;
       }
@@ -147,19 +147,19 @@ class OutboxItemCard extends StatelessWidget {
           title: Text(
             '${df.format(item.createdAt)} - $status',
             style: TextStyle(
-              color: colorConfig().entryTextColor,
+              color: colorConfig().coal,
               fontFamily: 'Oswald',
-              fontSize: 16,
+              fontSize: fontSizeMedium,
             ),
           ),
           subtitle: Text(
             '${item.retries} $retriesText - '
             '${item.filePath ?? localizations.outboxMonitorNoAttachment}',
             style: TextStyle(
-              color: colorConfig().entryTextColor,
+              color: colorConfig().coal,
               fontFamily: 'Oswald',
               fontWeight: FontWeight.w200,
-              fontSize: 16,
+              fontSize: fontSizeMedium,
             ),
           ),
           onTap: () {
@@ -202,7 +202,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return AppBar(
-      backgroundColor: colorConfig().headerBgColor,
+      backgroundColor: colorConfig().ice,
       title: Column(
         children: [
           Row(
@@ -231,9 +231,9 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
             ],
           ),
           CupertinoSegmentedControl(
-            selectedColor: colorConfig().entryBgColor,
-            unselectedColor: colorConfig().headerBgColor,
-            borderColor: colorConfig().entryBgColor,
+            selectedColor: colorConfig().coal,
+            unselectedColor: colorConfig().ice,
+            borderColor: colorConfig().coal,
             groupValue: selectedValue,
             onValueChanged: onValueChanged,
             children: {

@@ -118,15 +118,15 @@ class _TagEditPageState extends State<TagEditPage> {
             ),
         ],
       ),
-      backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: colorConfig().negspace,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(0),
               child: Container(
-                color: colorConfig().entryCardColor,
+                color: colorConfig().ice,
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
@@ -230,7 +230,7 @@ class _TagEditPageState extends State<TagEditPage> {
                             icon: const Icon(MdiIcons.trashCanOutline),
                             iconSize: 24,
                             tooltip: localizations.settingsTagsDeleteTooltip,
-                            color: colorConfig().appBarFgColor,
+                            color: colorConfig().ice,
                             onPressed: () {
                               persistenceLogic.upsertTagEntity(
                                 widget.tagEntity.copyWith(

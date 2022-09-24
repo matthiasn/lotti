@@ -31,15 +31,15 @@ void main() {
       final themesService = ThemesService();
 
       expect(
-        await themesService.watchColorByKey('bodyBgColor').first,
-        darkTheme.bodyBgColor,
+        await themesService.watchColorByKey('negspace').first,
+        darkTheme.negspace,
       );
 
       await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlag);
 
       expect(
-        await themesService.watchColorByKey('bodyBgColor').first,
-        brightTheme.bodyBgColor,
+        await themesService.watchColorByKey('negspace').first,
+        brightTheme.negspace,
       );
     });
 
@@ -75,15 +75,15 @@ void main() {
       );
 
       expect(
-        themesService.current.bodyBgColor,
-        darkTheme.bodyBgColor,
+        themesService.current.negspace,
+        darkTheme.negspace,
       );
 
       themesService.setTheme(brightTheme);
 
       expect(
-        themesService.current.bodyBgColor,
-        brightTheme.bodyBgColor,
+        themesService.current.negspace,
+        brightTheme.negspace,
       );
     });
 
@@ -97,25 +97,25 @@ void main() {
       await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlag);
 
       expect(
-        await themesService.watchColorByKey('bodyBgColor').first,
-        darkTheme.bodyBgColor,
+        await themesService.watchColorByKey('negspace').first,
+        darkTheme.negspace,
       );
 
       expect(
-        themesService.current.bodyBgColor,
-        darkTheme.bodyBgColor,
+        themesService.current.negspace,
+        darkTheme.negspace,
       );
 
       final testColor = colorFromCssHex('#FF0000');
-      themesService.setColor('bodyBgColor', testColor);
+      themesService.setColor('negspace', testColor);
 
       expect(
-        themesService.current.bodyBgColor,
+        themesService.current.negspace,
         testColor,
       );
 
       expect(
-        await themesService.watchColorByKey('bodyBgColor').first,
+        await themesService.watchColorByKey('negspace').first,
         testColor,
       );
     });
@@ -153,31 +153,14 @@ void main() {
         'actionColor',
         'activeAudioControl',
         'alarm',
-        'appBarFgColor',
         'audioMeterBar',
         'audioMeterBarBackground',
         'audioMeterPeakedBar',
         'audioMeterTooHotBar',
-        'baseColor',
-        'bodyBgColor',
-        'bottomNavBackground',
-        'bottomNavIconSelected',
-        'bottomNavIconUnselected',
         'coal',
-        'codeBlockBackground',
-        'editorBgColor',
-        'editorTextColor',
-        'entryBgColor',
-        'entryCardColor',
-        'entryTextColor',
-        'error',
-        'headerBgColor',
-        'headerFontColor',
         'ice',
-        'inactiveAudioControl',
         'iron',
         'negspace',
-        'outboxErrorColor',
         'outboxPendingColor',
         'outboxSuccessColor',
         'personTagColor',
@@ -185,10 +168,8 @@ void main() {
         'privateTagColor',
         'riplight',
         'riptide',
-        'searchBgColor',
         'selectedChoiceChipColor',
         'selectedChoiceChipTextColor',
-        'settingsHoverColor',
         'starredGold',
         'storyTagColor',
         'tagColor',

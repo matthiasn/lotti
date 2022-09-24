@@ -195,7 +195,7 @@ void main() {
       expect(labelFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: colorConfig().error);
+          find.byContainerColor(color: colorConfig().alarm);
 
       expect(successIndicatorFinder, findsOneWidget);
     });

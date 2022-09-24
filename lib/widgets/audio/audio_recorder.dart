@@ -54,7 +54,6 @@ class AudioRecorderWidget extends StatelessWidget {
                   ),
                   iconSize: iconSize,
                   tooltip: 'Pause',
-                  color: colorConfig().inactiveAudioControl,
                   onPressed: () {},
                 ),
                 IconButton(
@@ -68,7 +67,6 @@ class AudioRecorderWidget extends StatelessWidget {
                   ),
                   iconSize: iconSize,
                   tooltip: 'Stop',
-                  color: colorConfig().inactiveAudioControl,
                   onPressed: () {
                     context.read<AudioRecorderCubit>().stop();
                     Navigator.of(context).maybePop();

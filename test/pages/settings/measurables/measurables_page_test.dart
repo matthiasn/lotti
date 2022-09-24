@@ -49,9 +49,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(measurableWater.displayName), findsOneWidget);
-      expect(find.text(measurableWater.description), findsOneWidget);
       expect(find.text(measurableChocolate.displayName), findsOneWidget);
-      expect(find.text(measurableChocolate.description), findsOneWidget);
     });
   });
 }

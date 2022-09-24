@@ -151,7 +151,7 @@ class _JournalPageState extends State<JournalPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: colorConfig().appBarFgColor,
+      backgroundColor: colorConfig().ice,
       queryStyle: const TextStyle(
         fontFamily: mainFont,
         fontSize: 24,
@@ -258,7 +258,7 @@ class _JournalPageState extends State<JournalPage> {
                           Text(
                             localizations.journalPrivateTooltip,
                             style: TextStyle(
-                              color: colorConfig().entryTextColor,
+                              color: colorConfig().coal,
                             ),
                           ),
                           CupertinoSwitch(
@@ -276,7 +276,7 @@ class _JournalPageState extends State<JournalPage> {
                     ),
                     Text(
                       localizations.journalFavoriteTooltip,
-                      style: TextStyle(color: colorConfig().entryTextColor),
+                      style: TextStyle(color: colorConfig().coal),
                     ),
                     CupertinoSwitch(
                       value: starredEntriesOnly,
@@ -290,7 +290,7 @@ class _JournalPageState extends State<JournalPage> {
                     ),
                     Text(
                       localizations.journalFlaggedTooltip,
-                      style: TextStyle(color: colorConfig().entryTextColor),
+                      style: TextStyle(color: colorConfig().coal),
                     ),
                     CupertinoSwitch(
                       value: flaggedEntriesOnly,
@@ -358,7 +358,7 @@ class _JournalPageState extends State<JournalPage> {
           ),
         ).asGlass(
           clipBorderRadius: BorderRadius.circular(8),
-          tintColor: colorConfig().searchBgColor,
+          tintColor: colorConfig().ice,
         );
       },
     );

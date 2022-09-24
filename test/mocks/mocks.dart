@@ -10,6 +10,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -96,3 +97,5 @@ class FakeTaskData extends Fake implements TaskData {}
 class FakeJournalEntity extends Fake implements JournalEntity {}
 
 class FakeMeasurementData extends Fake implements MeasurementData {}
+
+class MockMaintenance extends Mock implements Maintenance {}

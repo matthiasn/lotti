@@ -5,12 +5,11 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/pages/dashboards/how_to_use_page.dart';
-import 'package:lotti/pages/settings/settings_card.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/dashboards_app_bar.dart';
 import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
+import 'package:lotti/widgets/settings/settings_card.dart';
 
 class DashboardsListPage extends StatefulWidget {
   const DashboardsListPage({super.key});
@@ -58,7 +57,7 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         }
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colorConfig().negspace,
           appBar: const DashboardsAppBar(),
           body: ListView(
             shrinkWrap: true,
@@ -94,38 +93,9 @@ class DashboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 32,
-          vertical: 8,
-        ),
-        hoverColor: colorConfig().riplight,
-        title: Text(
-          dashboard.name,
-          style: TextStyle(
-            color: colorConfig().coal,
-            fontFamily: mainFont,
-            fontSize: 24,
-            fontWeight: FontWeight.w300,
-          ),
-        ),
-        subtitle: dashboard.description.isNotEmpty
-            ? Text(
-                dashboard.description,
-                style: TextStyle(
-                  color: colorConfig().entryTextColor,
-                  fontFamily: mainFont,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w300,
-                ),
-              )
-            : null,
-        onTap: () => beamToNamed('/dashboards/${dashboard.id}'),
-      ),
+    return SettingsNavCard(
+      path: '/dashboards/${dashboard.id}',
+      title: dashboard.name,
     );
   }
 }

@@ -98,18 +98,18 @@ class FillSurveyPage extends StatelessWidget {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.addSurveyTitle),
-      backgroundColor: colorConfig().bodyBgColor,
+      backgroundColor: colorConfig().negspace,
       body: Center(
         child: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Button(
+              Button2(
                 'CFQ 11',
                 onPressed: () => runCfq11(linkedId: linkedId, context: context),
                 primaryColor: CupertinoColors.systemOrange,
               ),
-              Button(
+              Button2(
                 'PANAS',
                 onPressed: () => runPanas(linkedId: linkedId, context: context),
                 primaryColor: CupertinoColors.systemOrange,
