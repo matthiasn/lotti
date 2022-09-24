@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.152+1411
+version: 0.8.153+1412
 
 msix_config:
   display_name: Lotti

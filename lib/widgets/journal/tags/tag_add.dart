@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -44,6 +46,7 @@ class TagAddIconWidget extends StatelessWidget {
               showModalBottomSheet<void>(
                 context: context,
                 isScrollControlled: true,
+                isDismissible: Platform.isMacOS,
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(16),
