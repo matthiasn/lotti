@@ -24,7 +24,6 @@ final darkTheme = ColorConfig(
   timeRecordingBg: const Color.fromRGBO(255, 44, 44, 0.95),
   outboxSuccessColor: const Color.fromRGBO(50, 120, 50, 1),
   outboxPendingColor: const Color.fromRGBO(200, 120, 0, 1),
-  headerFontColor: const Color.fromRGBO(155, 200, 245, 1),
   activeAudioControl: Colors.red,
   audioMeterBar: Colors.blue,
   audioMeterTooHotBar: Colors.orange,
@@ -32,7 +31,6 @@ final darkTheme = ColorConfig(
   private: Colors.red,
   audioMeterBarBackground:
       TinyColor.fromColor(defaultBaseColor).lighten(30).color,
-  inactiveAudioControl: const Color.fromRGBO(155, 155, 177, 1),
   selectedChoiceChipColor: Colors.lightBlue,
   selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
@@ -62,7 +60,6 @@ final brightTheme = ColorConfig(
   timeRecordingBg: colorFromCssHex('#CF322FEE'),
   outboxSuccessColor: const Color.fromRGBO(50, 120, 50, 1),
   outboxPendingColor: const Color.fromRGBO(200, 120, 0, 1),
-  headerFontColor: const Color.fromRGBO(40, 60, 100, 1),
   activeAudioControl: colorFromCssHex('#CF322F'),
   audioMeterBar: Colors.blue,
   audioMeterTooHotBar: Colors.orange,
@@ -70,7 +67,6 @@ final brightTheme = ColorConfig(
   private: colorFromCssHex('#CF322F'),
   audioMeterBarBackground:
       TinyColor.fromColor(defaultBaseColor).lighten(30).color,
-  inactiveAudioControl: const Color.fromRGBO(155, 155, 177, 1),
   selectedChoiceChipColor: Colors.lightBlue,
   selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
