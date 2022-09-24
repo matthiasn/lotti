@@ -489,7 +489,6 @@ void main() {
 
       // finds text in dashboard card
       expect(find.text(testDashboardName), findsOneWidget);
-      expect(find.text(testDashboardDescription), findsOneWidget);
     });
 
     testWidgets(

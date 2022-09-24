@@ -11,13 +11,13 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
-import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
+import 'package:lotti/widgets/settings/settings_card.dart';
 
 class ConflictsPage extends StatefulWidget {
   const ConflictsPage({super.key});

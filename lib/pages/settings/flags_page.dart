@@ -4,10 +4,10 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/settings/settings_card.dart';
 
 class FlagsPage extends StatefulWidget {
   const FlagsPage({super.key});

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/settings/settings_card.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
@@ -35,32 +35,32 @@ class _SettingsPageState extends State<SettingsPage> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SettingsCard(
+          SettingsNavCard(
             title: localizations.settingsTagsTitle,
             path: '/settings/tags',
           ),
           const SettingsDivider(),
-          SettingsCard(
+          SettingsNavCard(
             title: localizations.settingsDashboardsTitle,
             path: '/settings/dashboards',
           ),
           const SettingsDivider(),
-          SettingsCard(
+          SettingsNavCard(
             title: localizations.settingsMeasurablesTitle,
             path: '/settings/measurables',
           ),
           const SettingsDivider(),
-          SettingsCard(
+          SettingsNavCard(
             title: localizations.settingsHealthImportTitle,
             path: '/settings/health_import',
           ),
           const SettingsDivider(),
-          SettingsCard(
+          SettingsNavCard(
             title: localizations.settingsFlagsTitle,
             path: '/settings/flags',
           ),
           const SettingsDivider(),
-          SettingsCard(
+          SettingsNavCard(
             title: localizations.settingsAdvancedTitle,
             path: '/settings/advanced',
           ),

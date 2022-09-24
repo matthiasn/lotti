@@ -5,12 +5,11 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/pages/dashboards/how_to_use_page.dart';
-import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/dashboards_app_bar.dart';
 import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
-import 'package:lotti/widgets/settings/dashboards/dashboard_definition_card.dart';
+import 'package:lotti/widgets/settings/settings_card.dart';
 
 class DashboardsListPage extends StatefulWidget {
   const DashboardsListPage({super.key});
@@ -94,28 +93,9 @@ class DashboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefinitionCard(
-      beamTo: '/dashboards/${dashboard.id}',
-      title: Text(
-        dashboard.name,
-        style: TextStyle(
-          color: colorConfig().coal,
-          fontFamily: mainFont,
-          fontSize: 25,
-          fontWeight: FontWeight.w300,
-        ),
-      ),
-      subtitle: dashboard.description.isNotEmpty
-          ? Text(
-              dashboard.description,
-              style: TextStyle(
-                color: colorConfig().coal,
-                fontFamily: mainFont,
-                fontSize: fontSizeMedium,
-                fontWeight: FontWeight.w300,
-              ),
-            )
-          : null,
+    return SettingsNavCard(
+      path: '/dashboards/${dashboard.id}',
+      title: dashboard.name,
     );
   }
 }

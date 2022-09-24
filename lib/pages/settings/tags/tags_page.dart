@@ -5,12 +5,11 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/settings/settings_card.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/create/add_tag_actions.dart';
-import 'package:lotti/widgets/settings/dashboards/dashboard_definition_card.dart';
+import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 class TagsPage extends StatefulWidget {
@@ -138,8 +137,8 @@ class TagCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefinitionCard(
-      beamTo: '/settings/tags/${tagEntity.id}',
+    return SettingsNavCard(
+      path: '/settings/tags/${tagEntity.id}',
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(2),
         child: Container(
@@ -148,13 +147,7 @@ class TagCard extends StatelessWidget {
           height: 20,
         ),
       ),
-      title: Text(
-        tagEntity.tag,
-        style: const TextStyle(
-          fontFamily: mainFont,
-          fontSize: 20,
-        ),
-      ),
+      title: tagEntity.tag,
     );
   }
 }

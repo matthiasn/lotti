@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Design: Settings > Tags
 - Design: Settings > Dashboard Management
 - Design: Settings > Measurables
+- Consolidated settings cards
 
 ### Fixed:
 - Health chart legend on select
