@@ -90,8 +90,7 @@ class EditorWidget extends StatelessWidget {
                         keyboardAppearance: Brightness.dark,
                         customStyles: customEditorStyles(
                           textColor: colorConfig().coal,
-                          codeBlockBackground:
-                              colorConfig().codeBlockBackground,
+                          codeBlockBackground: colorConfig().riplight,
                         ),
                       ),
                     ),

@@ -1,7 +1,6 @@
 // ignore_for_file: equal_keys_in_map
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/themes/utils.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
@@ -15,16 +14,11 @@ final darkTheme = ColorConfig(
   personTagColor: const Color.fromRGBO(55, 201, 154, 1),
   storyTagColor: const Color.fromRGBO(200, 120, 0, 1),
   privateTagColor: Colors.red,
-  bottomNavBackground: darken(defaultBaseColor, 10),
-  bottomNavIconUnselected: const Color.fromRGBO(200, 195, 190, 1),
-  bottomNavIconSelected: const Color.fromRGBO(252, 147, 76, 1),
   starredGold: const Color.fromRGBO(255, 215, 0, 1),
-  codeBlockBackground: const Color.fromRGBO(228, 232, 240, 1),
   timeRecording: const Color.fromRGBO(255, 22, 22, 1),
   timeRecordingBg: const Color.fromRGBO(255, 44, 44, 0.95),
   outboxSuccessColor: const Color.fromRGBO(50, 120, 50, 1),
   outboxPendingColor: const Color.fromRGBO(200, 120, 0, 1),
-  headerFontColor: const Color.fromRGBO(155, 200, 245, 1),
   activeAudioControl: Colors.red,
   audioMeterBar: Colors.blue,
   audioMeterTooHotBar: Colors.orange,
@@ -32,7 +26,6 @@ final darkTheme = ColorConfig(
   private: Colors.red,
   audioMeterBarBackground:
       TinyColor.fromColor(defaultBaseColor).lighten(30).color,
-  inactiveAudioControl: const Color.fromRGBO(155, 155, 177, 1),
   selectedChoiceChipColor: Colors.lightBlue,
   selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
@@ -53,16 +46,11 @@ final brightTheme = ColorConfig(
   personTagColor: const Color.fromRGBO(55, 201, 154, 1),
   storyTagColor: colorFromCssHex('#E27930'),
   privateTagColor: colorFromCssHex('#CF322F'),
-  bottomNavBackground: darken(brightBaseColor, 10),
-  bottomNavIconUnselected: colorFromCssHex('#474B40'),
-  bottomNavIconSelected: Colors.white,
   starredGold: const Color.fromRGBO(255, 215, 0, 1),
-  codeBlockBackground: const Color.fromRGBO(228, 232, 240, 1),
   timeRecording: colorFromCssHex('#CF322F'),
   timeRecordingBg: colorFromCssHex('#CF322FEE'),
   outboxSuccessColor: const Color.fromRGBO(50, 120, 50, 1),
   outboxPendingColor: const Color.fromRGBO(200, 120, 0, 1),
-  headerFontColor: const Color.fromRGBO(40, 60, 100, 1),
   activeAudioControl: colorFromCssHex('#CF322F'),
   audioMeterBar: Colors.blue,
   audioMeterTooHotBar: Colors.orange,
@@ -70,7 +58,6 @@ final brightTheme = ColorConfig(
   private: colorFromCssHex('#CF322F'),
   audioMeterBarBackground:
       TinyColor.fromColor(defaultBaseColor).lighten(30).color,
-  inactiveAudioControl: const Color.fromRGBO(155, 155, 177, 1),
   selectedChoiceChipColor: Colors.lightBlue,
   selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
