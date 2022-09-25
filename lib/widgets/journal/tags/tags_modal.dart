@@ -117,6 +117,7 @@ class _TagsModalState extends State<TagsModal> {
                       controller: _controller,
                       onSubmitted: onSubmitted,
                       onChanged: onChanged,
+                      autofocus: true,
                     ),
                   ),
                   IconButton(
