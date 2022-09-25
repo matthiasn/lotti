@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -61,7 +61,7 @@ void main() {
     when(() => mockTagsService.getTagById(testStoryTag1.id))
         .thenAnswer((_) => testStoryTag1);
 
-    when(() => mockTagsService.getMatchingTags('some'))
+    when(() => mockTagsService.getMatchingTags(any()))
         .thenAnswer((_) async => [testTag1]);
 
     when(() => entryCubit.state).thenAnswer(
@@ -124,7 +124,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final searchFieldFinder = find.byType(TextField);
+      final searchFieldFinder = find.byType(CupertinoTextField);
       await tester.enterText(searchFieldFinder, 'some');
       await tester.pumpAndSettle();
 
@@ -176,12 +176,46 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final searchFieldFinder = find.byType(TextField);
+      final searchFieldFinder = find.byType(CupertinoTextField);
       await tester.enterText(searchFieldFinder, newTag.tag);
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       verify(() => entryCubit.addTagDefinition(newTag.tag)).called(1);
+    });
+
+    testWidgets('remove tag', (tester) async {
+      when(mockTagsService.watchTags).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([
+          [
+            testStoryTag1,
+            testPersonTag1,
+            testTag1,
+          ]
+        ]),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<EntryCubit>.value(
+            value: entryCubit,
+            child: TagsModal(
+              controller: controller,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final closeIconFinder = find.byIcon(MdiIcons.close);
+      expect(closeIconFinder, findsNWidgets(2));
+
+      when(() => entryCubit.removeTagId(any())).thenAnswer((_) async {});
+
+      await tester.tap(closeIconFinder.first);
+
+      verify(() => entryCubit.removeTagId(any())).called(1);
     });
   });
 }
