@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Charts hidden in journal cards
 - New bottom navigation
+- Measurement capture dialog style
 
 ### Fixed:
 - Chart header cut off

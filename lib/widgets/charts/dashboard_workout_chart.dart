@@ -139,13 +139,12 @@ class WorkoutChartInfoWidget extends StatelessWidget {
 
         return Positioned(
           top: 0,
-          left: 0,
+          left: 10,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width,
+            width: MediaQuery.of(context).size.width - 20,
             child: IgnorePointer(
               child: Row(
                 children: [
-                  const SizedBox(width: 10),
                   Text(
                     chartConfig.displayName,
                     style: chartTitleStyle(),
