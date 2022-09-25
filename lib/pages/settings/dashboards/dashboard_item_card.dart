@@ -7,6 +7,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
 class DashboardItemCard extends StatelessWidget {
   DashboardItemCard({
@@ -66,9 +67,8 @@ class DashboardItemCard extends StatelessWidget {
       child: ListTile(
         onTap: () {
           if (item is DashboardMeasurementItem) {
-            showModalBottomSheet<void>(
+            showCupertinoModalBottomSheet<void>(
               context: context,
-              isScrollControlled: true,
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(16),

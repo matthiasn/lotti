@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Improve filling surveys by using modal_bottom_sheet lib
+- Use showCupertinoModalBottomSheet instead of showModalBottomSheet
 
 ## [0.8.153] - 2022-09-25
 ### Fixed:
