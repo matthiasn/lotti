@@ -72,7 +72,7 @@ class DashboardSurveyChart extends StatelessWidget {
             ),
           ),
           chartHeader: Positioned(
-            top: -10,
+            top: 0,
             left: 0,
             child: SizedBox(
               width: MediaQuery.of(context).size.width,

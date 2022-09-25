@@ -10,9 +10,11 @@ class SurveySummary extends StatelessWidget {
   const SurveySummary(
     this.surveyEntry, {
     super.key,
+    this.showChart = true,
   });
 
   final SurveyEntry surveyEntry;
+  final bool showChart;
 
   @override
   Widget build(BuildContext context) {
@@ -52,14 +54,15 @@ class SurveySummary extends StatelessWidget {
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: DashboardSurveyChart(
-            chartConfig: chartConfig!,
-            rangeStart: getRangeStart(context: context),
-            rangeEnd: getRangeEnd(),
+        if (showChart)
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: DashboardSurveyChart(
+              chartConfig: chartConfig!,
+              rangeStart: getRangeStart(context: context),
+              rangeEnd: getRangeEnd(),
+            ),
           ),
-        ),
       ],
     );
   }

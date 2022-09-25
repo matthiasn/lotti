@@ -117,23 +117,26 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         return const EditorWidget();
                       },
                     ),
-                    item.map(
-                      journalAudio: (JournalAudio audio) {
-                        return const AudioPlayerWidget();
-                      },
-                      workout: WorkoutSummary.new,
-                      survey: SurveySummary.new,
-                      quantitative: HealthSummary.new,
-                      measurement: MeasurementSummary.new,
-                      task: (Task task) {
-                        return TaskForm(
-                          data: task.data,
-                          task: task,
-                        );
-                      },
-                      habitCompletion: (_) => const SizedBox.shrink(),
-                      journalEntry: (_) => const SizedBox.shrink(),
-                      journalImage: (_) => const SizedBox.shrink(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: item.map(
+                        journalAudio: (JournalAudio audio) {
+                          return const AudioPlayerWidget();
+                        },
+                        workout: WorkoutSummary.new,
+                        survey: SurveySummary.new,
+                        quantitative: HealthSummary.new,
+                        measurement: MeasurementSummary.new,
+                        task: (Task task) {
+                          return TaskForm(
+                            data: task.data,
+                            task: task,
+                          );
+                        },
+                        habitCompletion: (_) => const SizedBox.shrink(),
+                        journalEntry: (_) => const SizedBox.shrink(),
+                        journalImage: (_) => const SizedBox.shrink(),
+                      ),
                     ),
                     const EntryDetailFooter(),
                   ],

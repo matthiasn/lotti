@@ -30,17 +30,18 @@ class WorkoutSummary extends StatelessWidget {
     });
 
     return Padding(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...items.map(
-            (DashboardWorkoutItem item) => DashboardWorkoutChart(
-              chartConfig: item,
-              rangeStart: getRangeStart(context: context),
-              rangeEnd: getRangeEnd(),
+          if (showChart)
+            ...items.map(
+              (DashboardWorkoutItem item) => DashboardWorkoutChart(
+                chartConfig: item,
+                rangeStart: getRangeStart(context: context),
+                rangeEnd: getRangeEnd(),
+              ),
             ),
-          ),
           const SizedBox(height: 8),
           EntryTextWidget(entryTextForWorkout(data)),
         ],

@@ -92,8 +92,10 @@ class JournalCardTitle extends StatelessWidget {
           TagsViewWidget(item: item),
           IgnorePointer(
             child: item.map(
-              quantitative: (QuantitativeEntry qe) =>
-                  HealthSummary(qe, showChart: false),
+              quantitative: (QuantitativeEntry qe) => HealthSummary(
+                qe,
+                showChart: false,
+              ),
               journalAudio: (JournalAudio journalAudio) =>
                   journalAudio.entryText?.plainText != null
                       ? TextViewerWidget(
@@ -109,8 +111,14 @@ class JournalCardTitle extends StatelessWidget {
                 entryText: journalImage.entryText,
                 maxHeight: maxHeight,
               ),
-              survey: SurveySummary.new,
-              measurement: MeasurementSummary.new,
+              survey: (surveyEntry) => SurveySummary(
+                surveyEntry,
+                showChart: false,
+              ),
+              measurement: (measurementEntry) => MeasurementSummary(
+                measurementEntry,
+                showChart: false,
+              ),
               task: (Task task) {
                 final data = task.data;
                 return Column(
@@ -133,7 +141,10 @@ class JournalCardTitle extends StatelessWidget {
                   ],
                 );
               },
-              workout: WorkoutSummary.new,
+              workout: (workout) => WorkoutSummary(
+                workout,
+                showChart: false,
+              ),
               habitCompletion: (_) => const SizedBox.shrink(),
             ),
           ),

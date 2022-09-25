@@ -12,11 +12,13 @@ import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 class MeasurementSummary extends StatelessWidget {
   MeasurementSummary(
     this.measurementEntry, {
+    this.showChart = true,
     super.key,
   });
 
   final JournalDb _db = getIt<JournalDb>();
   final MeasurementEntry measurementEntry;
+  final bool showChart;
 
   @override
   Widget build(BuildContext context) {
@@ -39,17 +41,18 @@ class MeasurementSummary extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (measurementEntry.entryText?.plainText != null)
+              if (measurementEntry.entryText?.plainText != null && !showChart)
                 TextViewerWidget(
                   entryText: measurementEntry.entryText,
                   maxHeight: 120,
                 ),
-              DashboardMeasurablesChart(
-                dashboardId: null,
-                rangeStart: getRangeStart(context: context),
-                rangeEnd: getRangeEnd(),
-                measurableDataTypeId: measurementEntry.data.dataTypeId,
-              ),
+              if (showChart)
+                DashboardMeasurablesChart(
+                  dashboardId: null,
+                  rangeStart: getRangeStart(context: context),
+                  rangeEnd: getRangeEnd(),
+                  measurableDataTypeId: measurementEntry.data.dataTypeId,
+                ),
               const SizedBox(height: 8),
               EntryTextWidget(
                 entryTextForMeasurable(data, dataType),
