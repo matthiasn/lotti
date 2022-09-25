@@ -1,15 +1,16 @@
 import 'package:badges/badges.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TasksBadgeIcon extends StatelessWidget {
-  TasksBadgeIcon({super.key});
+  TasksBadgeIcon({super.key, this.active = false});
 
   final JournalDb _db = getIt<JournalDb>();
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
@@ -31,10 +32,9 @@ class TasksBadgeIcon extends StatelessWidget {
           showBadge: count != 0,
           toAnimate: false,
           elevation: 3,
-          child: const Icon(
-            MdiIcons.checkboxOutline,
-            size: AppTheme.bottomNavIconSize,
-          ),
+          child: active
+              ? SvgPicture.asset('assets/icons/nav_tasks_active.svg')
+              : SvgPicture.asset('assets/icons/nav_tasks.svg'),
         );
       },
     );

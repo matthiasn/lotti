@@ -1,13 +1,15 @@
 import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 
 class FlaggedBadgeIcon extends StatelessWidget {
-  FlaggedBadgeIcon({super.key});
+  FlaggedBadgeIcon({super.key, this.active = false});
 
   final JournalDb _db = getIt<JournalDb>();
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +28,9 @@ class FlaggedBadgeIcon extends StatelessWidget {
           showBadge: count != null && count != 0,
           toAnimate: false,
           elevation: 3,
-          child: const Icon(
-            Icons.home_outlined,
-            size: AppTheme.bottomNavIconSize,
-          ),
+          child: active
+              ? SvgPicture.asset('assets/icons/nav_journal_active.svg')
+              : SvgPicture.asset('assets/icons/nav_journal.svg'),
         );
       },
     );

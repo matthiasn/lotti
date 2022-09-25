@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
@@ -19,7 +20,6 @@ import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/theme/theme_config.dart';
-import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 
 class AppScreen extends StatefulWidget {
   const AppScreen({super.key});
@@ -60,29 +60,44 @@ class _AppScreenState extends State<AppScreen> {
               ),
             ],
           ),
-          bottomNavigationBar: SalomonBottomBar(
-            unselectedItemColor: colorConfig().ice,
+          bottomNavigationBar: BottomNavigationBar(
+            backgroundColor: colorConfig().negspace,
+            unselectedItemColor: colorConfig().coal,
             selectedItemColor: colorConfig().riptide,
+            selectedFontSize: fontSizeSmall,
+            elevation: 8,
+            unselectedFontSize: fontSizeSmall,
+            selectedLabelStyle: const TextStyle(height: 2),
+            unselectedLabelStyle: const TextStyle(height: 2),
+            type: BottomNavigationBarType.fixed,
             currentIndex: index,
             items: [
-              SalomonBottomBarItem(
-                icon: const Icon(Icons.dashboard_outlined),
-                title: NavTitle(localizations.navTabTitleInsights),
+              BottomNavigationBarItem(
+                icon: SvgPicture.asset('assets/icons/nav_home.svg'),
+                activeIcon:
+                    SvgPicture.asset('assets/icons/nav_home_active.svg'),
+                label: localizations.navTabTitleInsights,
               ),
-              SalomonBottomBarItem(
+              BottomNavigationBarItem(
                 icon: FlaggedBadgeIcon(),
-                title: NavTitle(localizations.navTabTitleJournal),
+                activeIcon: FlaggedBadgeIcon(active: true),
+                label: localizations.navTabTitleJournal,
               ),
               if (showTasks)
-                SalomonBottomBarItem(
+                BottomNavigationBarItem(
                   icon: TasksBadgeIcon(),
-                  title: NavTitle(localizations.navTabTitleTasks),
+                  activeIcon: TasksBadgeIcon(active: true),
+                  label: localizations.navTabTitleTasks,
                 ),
-              SalomonBottomBarItem(
+              BottomNavigationBarItem(
                 icon: OutboxBadgeIcon(
-                  icon: const Icon(Icons.settings_outlined),
+                  icon: SvgPicture.asset('assets/icons/nav_settings.svg'),
                 ),
-                title: NavTitle(localizations.navTabTitleSettings),
+                activeIcon: OutboxBadgeIcon(
+                  icon:
+                      SvgPicture.asset('assets/icons/nav_settings_active.svg'),
+                ),
+                label: localizations.navTabTitleSettings,
               ),
             ],
             onTap: navService.tapIndex,
