@@ -31,53 +31,46 @@ class SurveyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          child: Theme(
-            data: ThemeData(
-              primaryColor: colorConfig().riptide,
-              fontFamily: 'PlusJakartaSans',
-              // Define the default `TextTheme`. Use this to specify the default
-              // text styling for headlines, titles, bodies of text, and more.
-              textTheme: TextTheme(
-                headline3: TextStyle(
-                  fontSize: 24,
-                  color: colorConfig().coal,
-                ),
-                headline5: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w200,
-                  color: colorConfig().coal,
-                ),
-                headline6: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w400,
-                  color: colorConfig().coal,
-                ),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: RPUITask(
-                task: task,
-                onSubmit: resultCallback,
-                onCancel: (RPTaskResult? result) {
-                  if (result == null) {
-                    debugPrint('No result');
-                  } else {
-                    cancelCallBack(result);
-                  }
-                },
-              ),
-            ),
+    return Theme(
+      data: ThemeData(
+        primaryColor: colorConfig().riptide,
+        fontFamily: 'PlusJakartaSans',
+        // Define the default `TextTheme`. Use this to specify the default
+        // text styling for headlines, titles, bodies of text, and more.
+        textTheme: TextTheme(
+          headline3: TextStyle(
+            fontSize: 24,
+            color: colorConfig().coal,
           ),
-
-          //],
-          //),
+          headline5: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w200,
+            color: colorConfig().coal,
+          ),
+          headline6: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w400,
+            color: colorConfig().coal,
+          ),
         ),
-      ],
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 600),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: RPUITask(
+            task: task,
+            onSubmit: resultCallback,
+            onCancel: (RPTaskResult? result) {
+              if (result == null) {
+                debugPrint('No result');
+              } else {
+                cancelCallBack(result);
+              }
+            },
+          ),
+        ),
+      ),
     );
   }
 }
