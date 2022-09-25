@@ -62,7 +62,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
               ),
             ),
             const SizedBox(height: 20),
-            Button2(
+            RoundedButton(
               'Import Activity Data',
               onPressed: () {
                 _healthImport.getActivityHealthData(
@@ -72,7 +72,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
               },
             ),
             const SizedBox(height: spaceBetweenButtons),
-            Button2(
+            RoundedButton(
               'Import Sleep Data',
               onPressed: () {
                 _healthImport.fetchHealthData(
@@ -83,7 +83,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
               },
             ),
             const SizedBox(height: spaceBetweenButtons),
-            Button2(
+            RoundedButton(
               'Import Heart Rate Data',
               onPressed: () {
                 _healthImport.fetchHealthData(
@@ -94,7 +94,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
               },
             ),
             const SizedBox(height: spaceBetweenButtons),
-            Button2(
+            RoundedButton(
               'Import Blood Pressure Data',
               onPressed: () {
                 _healthImport.fetchHealthData(
@@ -105,7 +105,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
               },
             ),
             const SizedBox(height: spaceBetweenButtons),
-            Button2(
+            RoundedButton(
               'Import Body Measurement Data',
               onPressed: () {
                 _healthImport.fetchHealthData(
@@ -116,7 +116,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
               },
             ),
             const SizedBox(height: spaceBetweenButtons),
-            Button2(
+            RoundedButton(
               'Import Workout Data',
               onPressed: () {
                 _healthImport.getWorkoutsHealthData(

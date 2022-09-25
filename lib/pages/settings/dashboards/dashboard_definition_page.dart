@@ -24,6 +24,7 @@ import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class DashboardDefinitionPage extends StatefulWidget {
@@ -452,12 +453,11 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             iconData: MdiIcons.watch,
                           ),
                           const SizedBox(height: 16),
-                          Button2(
+                          RoundedButton(
                             'Add story containing substring',
                             onPressed: () {
-                              showModalBottomSheet<void>(
+                              showCupertinoModalBottomSheet<void>(
                                 context: context,
-                                isScrollControlled: true,
                                 backgroundColor: colorConfig().ice,
                                 shape: const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.vertical(

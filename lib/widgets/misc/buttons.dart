@@ -42,8 +42,8 @@ class Button extends StatelessWidget {
   }
 }
 
-class Button2 extends StatelessWidget {
-  const Button2(
+class RoundedButton extends StatelessWidget {
+  const RoundedButton(
     this.label, {
     this.primaryColor = CupertinoColors.activeBlue,
     this.textColor = CupertinoColors.white,

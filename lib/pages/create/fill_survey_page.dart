@@ -31,53 +31,46 @@ class SurveyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          child: Theme(
-            data: ThemeData(
-              primaryColor: colorConfig().riptide,
-              fontFamily: 'PlusJakartaSans',
-              // Define the default `TextTheme`. Use this to specify the default
-              // text styling for headlines, titles, bodies of text, and more.
-              textTheme: TextTheme(
-                headline3: TextStyle(
-                  fontSize: 24,
-                  color: colorConfig().coal,
-                ),
-                headline5: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w200,
-                  color: colorConfig().coal,
-                ),
-                headline6: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w400,
-                  color: colorConfig().coal,
-                ),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: RPUITask(
-                task: task,
-                onSubmit: resultCallback,
-                onCancel: (RPTaskResult? result) {
-                  if (result == null) {
-                    debugPrint('No result');
-                  } else {
-                    cancelCallBack(result);
-                  }
-                },
-              ),
-            ),
+    return Theme(
+      data: ThemeData(
+        primaryColor: colorConfig().riptide,
+        fontFamily: 'PlusJakartaSans',
+        // Define the default `TextTheme`. Use this to specify the default
+        // text styling for headlines, titles, bodies of text, and more.
+        textTheme: TextTheme(
+          headline3: TextStyle(
+            fontSize: 24,
+            color: colorConfig().coal,
           ),
-
-          //],
-          //),
+          headline5: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w200,
+            color: colorConfig().coal,
+          ),
+          headline6: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w400,
+            color: colorConfig().coal,
+          ),
         ),
-      ],
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 600),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: RPUITask(
+            task: task,
+            onSubmit: resultCallback,
+            onCancel: (RPTaskResult? result) {
+              if (result == null) {
+                debugPrint('No result');
+              } else {
+                cancelCallBack(result);
+              }
+            },
+          ),
+        ),
+      ),
     );
   }
 }
@@ -100,22 +93,21 @@ class FillSurveyPage extends StatelessWidget {
       appBar: TitleAppBar(title: localizations.addSurveyTitle),
       backgroundColor: colorConfig().negspace,
       body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Button2(
-                'CFQ 11',
-                onPressed: () => runCfq11(linkedId: linkedId, context: context),
-                primaryColor: CupertinoColors.systemOrange,
-              ),
-              Button2(
-                'PANAS',
-                onPressed: () => runPanas(linkedId: linkedId, context: context),
-                primaryColor: CupertinoColors.systemOrange,
-              ),
-            ],
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            RoundedButton(
+              'CFQ 11',
+              onPressed: () => runCfq11(linkedId: linkedId, context: context),
+              primaryColor: CupertinoColors.systemOrange,
+            ),
+            const SizedBox(height: 20),
+            RoundedButton(
+              'PANAS',
+              onPressed: () => runPanas(linkedId: linkedId, context: context),
+              primaryColor: CupertinoColors.systemOrange,
+            ),
+          ],
         ),
       ),
     );
