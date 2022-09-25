@@ -93,22 +93,21 @@ class FillSurveyPage extends StatelessWidget {
       appBar: TitleAppBar(title: localizations.addSurveyTitle),
       backgroundColor: colorConfig().negspace,
       body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Button2(
-                'CFQ 11',
-                onPressed: () => runCfq11(linkedId: linkedId, context: context),
-                primaryColor: CupertinoColors.systemOrange,
-              ),
-              Button2(
-                'PANAS',
-                onPressed: () => runPanas(linkedId: linkedId, context: context),
-                primaryColor: CupertinoColors.systemOrange,
-              ),
-            ],
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            RoundedButton(
+              'CFQ 11',
+              onPressed: () => runCfq11(linkedId: linkedId, context: context),
+              primaryColor: CupertinoColors.systemOrange,
+            ),
+            const SizedBox(height: 20),
+            RoundedButton(
+              'PANAS',
+              onPressed: () => runPanas(linkedId: linkedId, context: context),
+              primaryColor: CupertinoColors.systemOrange,
+            ),
+          ],
         ),
       ),
     );

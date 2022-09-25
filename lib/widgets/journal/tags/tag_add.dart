@@ -7,6 +7,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/tags/tags_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
@@ -43,6 +44,8 @@ class TagAddIconWidget extends StatelessWidget {
 
             void onTapAdd() {
               showCupertinoModalBottomSheet<void>(
+                duration:
+                    isTestEnv ? Duration.zero : const Duration(seconds: 1),
                 context: context,
                 isDismissible: true,
                 shape: const RoundedRectangleBorder(
