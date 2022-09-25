@@ -9,6 +9,7 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/tags/tags_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
 class TagAddIconWidget extends StatelessWidget {
   TagAddIconWidget({super.key});
@@ -41,9 +42,9 @@ class TagAddIconWidget extends StatelessWidget {
             final controller = TextEditingController();
 
             void onTapAdd() {
-              showModalBottomSheet<void>(
+              showCupertinoModalBottomSheet<void>(
                 context: context,
-                isScrollControlled: true,
+                isDismissible: true,
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(16),
