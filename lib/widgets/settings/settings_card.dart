@@ -10,6 +10,10 @@ class SettingsCard extends StatelessWidget {
     this.subtitle,
     this.leading,
     this.trailing,
+    this.contentPadding = const EdgeInsets.symmetric(
+      horizontal: 32,
+      vertical: 8,
+    ),
   });
 
   final String title;
@@ -17,6 +21,7 @@ class SettingsCard extends StatelessWidget {
   final Widget? subtitle;
   final Widget? leading;
   final Widget? trailing;
+  final EdgeInsets contentPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +30,7 @@ class SettingsCard extends StatelessWidget {
       elevation: 0,
       color: Colors.transparent,
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 32,
-          vertical: 8,
-        ),
+        contentPadding: contentPadding,
         hoverColor: colorConfig().riplight,
         title: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
