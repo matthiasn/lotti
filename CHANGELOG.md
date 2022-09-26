@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Measurement capture dialog style
 - AppBar style with leading text
 - Splash screen color
+- Improved add icons in tasks, dashboards, measurables
 
 ### Fixed:
 - Chart header cut off

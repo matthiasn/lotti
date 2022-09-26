@@ -81,7 +81,10 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: colorConfig().riptide,
         onPressed: createDashboard,
-        child: SvgPicture.asset('assets/icons/add.svg'),
+        child: SvgPicture.asset(
+          'assets/icons/action_add.svg',
+          width: 25,
+        ),
       ),
       body: StreamBuilder<List<DashboardDefinition>>(
         stream: stream,
