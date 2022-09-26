@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intersperse/intersperse.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
@@ -40,47 +42,52 @@ class _DashboardPageState extends State<DashboardPage> {
   double scale = 10;
   double horizontalPan = 0;
   bool zoomInProgress = false;
+  int timeSpanDays = isDesktop ? 30 : 7;
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final int shiftDays = max((horizontalPan / scale).floor(), 0);
 
-    final rangeStart = getRangeStart(
-      context: context,
-      scale: scale,
-      shiftDays: shiftDays,
-    );
+    // TODO: bring back or remove
+    // final rangeStart = getRangeStart(
+    //   context: context,
+    //   scale: scale,
+    //   shiftDays: shiftDays,
+    // );
+
+    final rangeStart = DateTime.now().subtract(Duration(days: timeSpanDays));
 
     final rangeEnd = getRangeEnd(shiftDays: shiftDays);
 
     return GestureDetector(
-      onScaleStart: (_) {
-        setState(() {
-          zoomStartScale = scale;
-          zoomInProgress = true;
-        });
-      },
-      onScaleEnd: (_) {
-        setState(() {
-          zoomInProgress = false;
-        });
-      },
-      onHorizontalDragUpdate: (DragUpdateDetails details) {
-        setState(() {
-          if (!zoomInProgress) {
-            horizontalPan += details.delta.dx;
-          }
-        });
-      },
-      onScaleUpdate: (ScaleUpdateDetails details) {
-        final horizontalScale = details.horizontalScale;
-        setState(() {
-          if (horizontalScale != 1) {
-            scale = zoomStartScale * horizontalScale;
-          }
-        });
-      },
+      // TODO: bring back or remove
+      // onScaleStart: (_) {
+      //   setState(() {
+      //     zoomStartScale = scale;
+      //     zoomInProgress = true;
+      //   });
+      // },
+      // onScaleEnd: (_) {
+      //   setState(() {
+      //     zoomInProgress = false;
+      //   });
+      // },
+      // onHorizontalDragUpdate: (DragUpdateDetails details) {
+      //   setState(() {
+      //     if (!zoomInProgress) {
+      //       horizontalPan += details.delta.dx;
+      //     }
+      //   });
+      // },
+      // onScaleUpdate: (ScaleUpdateDetails details) {
+      //   final horizontalScale = details.horizontalScale;
+      //   setState(() {
+      //     if (horizontalScale != 1) {
+      //       scale = zoomStartScale * horizontalScale;
+      //     }
+      //   });
+      // },
       child: StreamBuilder(
         stream: _db.watchDashboardById(widget.dashboardId),
         builder: (
@@ -107,11 +114,36 @@ class _DashboardPageState extends State<DashboardPage> {
             );
           }
 
+          final landscape =
+              MediaQuery.of(context).orientation == Orientation.landscape;
+
           return Scaffold(
             backgroundColor: colorConfig().negspace,
             appBar: TitleAppBar(
               title: dashboard.name,
               showBackButton: widget.showBackButton,
+              actions: [
+                CupertinoSegmentedControl(
+                  selectedColor: colorConfig().riptide,
+                  unselectedColor: colorConfig().ice,
+                  borderColor: colorConfig().riptide,
+                  groupValue: timeSpanDays,
+                  onValueChanged: (int value) {
+                    setState(() {
+                      timeSpanDays = value;
+                    });
+                  },
+                  children: {
+                    3: const DaysSegment('3'),
+                    7: const DaysSegment('7'),
+                    14: const DaysSegment('14'),
+                    30: const DaysSegment('30'),
+                    90: const DaysSegment('90'),
+                    if (isDesktop || landscape) 180: const DaysSegment('180'),
+                    if (isDesktop) 365: const DaysSegment('365'),
+                  },
+                ),
+              ],
             ),
             body: DashboardWidget(
               dashboard: dashboard,
@@ -121,6 +153,23 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class DaysSegment extends StatelessWidget {
+  const DaysSegment(this.days, {super.key});
+
+  final String days;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      child: Text(
+        days,
+        style: segmentItemStyle,
       ),
     );
   }
