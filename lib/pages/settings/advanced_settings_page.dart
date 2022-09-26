@@ -20,6 +20,7 @@ class AdvancedSettingsPage extends StatelessWidget {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsSyncCfgTitle,
             path: '/settings/advanced/sync_settings',
@@ -52,6 +53,7 @@ class AdvancedSettingsPage extends StatelessWidget {
             title: localizations.settingsAboutTitle,
             path: '/settings/advanced/about',
           ),
+          const SettingsDivider(),
         ],
       ),
     );
