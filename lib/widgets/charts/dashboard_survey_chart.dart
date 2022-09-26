@@ -55,6 +55,7 @@ class DashboardSurveyChart extends StatelessWidget {
         }
 
         return DashboardChart(
+          topMargin: 10,
           chart: charts.TimeSeriesChart(
             surveySeries(
               entities: items,
