@@ -34,6 +34,7 @@ final darkTheme = ColorConfig(
   iron: colorFromCssHex('#909090'),
   riptide: colorFromCssHex('#82E6CE'),
   riplight: colorFromCssHex('#CFF3EA'),
+  ripIce: colorFromCssHex('#EFFFFB'),
   alarm: colorFromCssHex('#FF7373'),
   ice: colorFromCssHex('#F5F5F5'),
 );
@@ -65,6 +66,7 @@ final brightTheme = ColorConfig(
   iron: colorFromCssHex('#909090'),
   riptide: colorFromCssHex('#82E6CE'),
   riplight: colorFromCssHex('#CFF3EA'),
+  ripIce: colorFromCssHex('#EFFFFB'),
   alarm: colorFromCssHex('#FF7373'),
   ice: colorFromCssHex('#F5F5F5'),
 );
