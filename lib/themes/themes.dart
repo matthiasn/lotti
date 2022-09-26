@@ -8,7 +8,6 @@ const defaultBaseColor = Color.fromRGBO(51, 77, 118, 1);
 const brightBaseColor = Color.fromRGBO(244, 187, 41, 1);
 
 final darkTheme = ColorConfig(
-  actionColor: const Color.fromRGBO(155, 200, 245, 1),
   tagColor: const Color.fromRGBO(155, 200, 246, 1),
   tagTextColor: const Color.fromRGBO(51, 51, 51, 1),
   personTagColor: const Color.fromRGBO(55, 201, 154, 1),
@@ -40,7 +39,6 @@ final darkTheme = ColorConfig(
 );
 
 final brightTheme = ColorConfig(
-  actionColor: colorFromCssHex('#E27930'),
   tagColor: colorFromCssHex('#89BE2E'),
   tagTextColor: colorFromCssHex('#474B40'),
   personTagColor: const Color.fromRGBO(55, 201, 154, 1),

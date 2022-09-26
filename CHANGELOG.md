@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New bottom navigation
 - Measurement capture dialog style
 - AppBar style with leading text
+- Splash screen color
 
 ### Fixed:
 - Chart header cut off

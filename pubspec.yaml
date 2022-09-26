@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.155+1422
+version: 0.8.155+1423
 
 msix_config:
   display_name: Lotti
@@ -231,4 +231,4 @@ flutter:
         - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-SemiBoldItalic.ttf
 
 flutter_native_splash:
-  color: "#283c5c"
+  color: "#000000"

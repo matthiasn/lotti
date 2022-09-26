@@ -33,7 +33,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
         }
 
         return AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: colorConfig().negspace,
           automaticallyImplyLeading: false,
           elevation: 0,
           scrolledUnderElevation: 10,

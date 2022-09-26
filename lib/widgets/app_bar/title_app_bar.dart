@@ -24,7 +24,7 @@ class TitleAppBar extends StatelessWidget with PreferredSizeWidget {
     return AppBar(
       actions: actions,
       automaticallyImplyLeading: false,
-      backgroundColor: Colors.white,
+      backgroundColor: colorConfig().negspace,
       elevation: 0,
       scrolledUnderElevation: 10,
       titleSpacing: 0,
