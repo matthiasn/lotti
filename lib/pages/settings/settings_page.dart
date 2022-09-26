@@ -35,6 +35,7 @@ class _SettingsPageState extends State<SettingsPage> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsTagsTitle,
             path: '/settings/tags',
@@ -64,6 +65,7 @@ class _SettingsPageState extends State<SettingsPage> {
             title: localizations.settingsAdvancedTitle,
             path: '/settings/advanced',
           ),
+          const SettingsDivider(),
         ],
       ),
     );

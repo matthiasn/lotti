@@ -7,6 +7,7 @@ class DashboardChart extends StatelessWidget {
     required this.chartHeader,
     required this.height,
     this.overlay,
+    this.topMargin = 0,
     super.key,
   });
 
@@ -14,6 +15,7 @@ class DashboardChart extends StatelessWidget {
   final Widget chartHeader;
   final Widget? overlay;
   final double height;
+  final double topMargin;
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +25,8 @@ class DashboardChart extends StatelessWidget {
       child: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.only(
-              top: 25,
+            padding: EdgeInsets.only(
+              top: 25 + topMargin,
               left: 10,
               right: 10,
             ),

@@ -5,11 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Fixed:
-- Chart header cut off
-
 ### Changed:
 - Charts hidden in journal cards
+- New bottom navigation
+- Measurement capture dialog style
+- AppBar style with leading text
+- Splash screen color
+- Improved add icons in tasks, dashboards, measurables
+- Hide audio recording indicator when on recorder page
+
+### Fixed:
+- Chart header cut off
 
 ## [0.8.155] - 2022-09-25
 ### Changed:

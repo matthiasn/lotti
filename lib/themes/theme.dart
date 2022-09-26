@@ -134,7 +134,7 @@ TextStyle appBarTextStyleNew() => TextStyle(
       color: colorConfig().coal,
       fontFamily: mainFont,
       fontSize: fontSizeMedium,
-      fontWeight: FontWeight.w400,
+      fontWeight: FontWeight.bold,
     );
 
 TextStyle settingsCardTextStyle() => TextStyle(

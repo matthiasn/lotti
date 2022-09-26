@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/audio/audio_recorder.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
@@ -17,6 +18,7 @@ void main() {
   group('AudioRecorderWidget Widget Tests - ', () {
     setUp(() {
       getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
+      VisibilityDetectorController.instance.updateInterval = Duration.zero;
     });
     tearDown(getIt.reset);
 
@@ -27,6 +29,7 @@ void main() {
         status: AudioRecorderStatus.recording,
         decibels: 80,
         progress: Duration.zero,
+        showIndicator: false,
       );
 
       when(() => mockAudioRecorderCubit.stream).thenAnswer(
@@ -69,6 +72,7 @@ void main() {
         status: AudioRecorderStatus.recording,
         decibels: 140,
         progress: Duration.zero,
+        showIndicator: false,
       );
 
       when(() => mockAudioRecorderCubit.stream).thenAnswer(
@@ -111,6 +115,7 @@ void main() {
         status: AudioRecorderStatus.recording,
         decibels: 110,
         progress: Duration.zero,
+        showIndicator: false,
       );
 
       when(() => mockAudioRecorderCubit.stream).thenAnswer(
@@ -153,6 +158,7 @@ void main() {
         status: AudioRecorderStatus.stopped,
         decibels: 110,
         progress: Duration.zero,
+        showIndicator: false,
       );
 
       when(() => mockAudioRecorderCubit.stream).thenAnswer(

@@ -135,6 +135,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                 )
               ];
               return DashboardChart(
+                topMargin: 10,
                 chart: charts.TimeSeriesChart(
                   seriesList,
                   animate: false,
@@ -210,12 +211,11 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
 
         return Positioned(
           top: 0,
-          left: 0,
+          left: 10,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width,
+            width: MediaQuery.of(context).size.width - 20,
             child: Row(
               children: [
-                const SizedBox(width: 10),
                 ConstrainedBox(
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width / 2,

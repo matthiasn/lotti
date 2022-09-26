@@ -123,9 +123,9 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
             bottom: 20,
           ),
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(20)),
+            borderRadius: BorderRadius.all(Radius.circular(50)),
           ),
-          backgroundColor: colorConfig().ice,
+          backgroundColor: colorConfig().riplight,
           actionsAlignment: MainAxisAlignment.end,
           actionsPadding: const EdgeInsets.only(
             left: 20,
@@ -197,10 +197,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           "MMMM d, yyyy 'at' HH:mm",
                         ),
                         style: newInputStyle(),
-                        decoration: InputDecoration(
-                          labelText: 'Measurement taken',
-                          labelStyle: newLabelStyle(),
-                        ),
+                        decoration:
+                            InputDecoration(fillColor: colorConfig().negspace),
                         initialValue: DateTime.now(),
                         theme: datePickerTheme(),
                       ),

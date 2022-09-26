@@ -61,19 +61,23 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
           appBar: const DashboardsAppBar(),
           body: ListView(
             shrinkWrap: true,
-            padding: const EdgeInsets.only(bottom: 200, top: 20),
-            children: intersperse(
+            padding: const EdgeInsets.only(bottom: 200, top: 70),
+            children: [
               const SettingsDivider(),
-              List.generate(
-                dashboards.length,
-                (int index) {
-                  return DashboardCard(
-                    dashboard: dashboards.elementAt(index),
-                    index: index,
-                  );
-                },
+              ...intersperse(
+                const SettingsDivider(),
+                List.generate(
+                  dashboards.length,
+                  (int index) {
+                    return DashboardCard(
+                      dashboard: dashboards.elementAt(index),
+                      index: index,
+                    );
+                  },
+                ),
               ),
-            ).toList(),
+              const SettingsDivider(),
+            ],
           ),
         );
       },

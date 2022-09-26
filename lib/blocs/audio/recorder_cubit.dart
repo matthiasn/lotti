@@ -19,6 +19,7 @@ AudioRecorderState initialState = AudioRecorderState(
   status: AudioRecorderStatus.initializing,
   decibels: 0,
   progress: Duration.zero,
+  showIndicator: false,
 );
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
@@ -66,6 +67,14 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       state.copyWith(
         progress: event.duration,
         decibels: event.decibels ?? 0,
+      ),
+    );
+  }
+
+  void setIndicatorVisible({required bool showIndicator}) {
+    emit(
+      state.copyWith(
+        showIndicator: showIndicator,
       ),
     );
   }

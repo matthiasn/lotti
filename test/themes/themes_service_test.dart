@@ -150,7 +150,6 @@ void main() {
       final themesService = ThemesService();
 
       expect(themesService.colorNames(), [
-        'actionColor',
         'activeAudioControl',
         'alarm',
         'audioMeterBar',

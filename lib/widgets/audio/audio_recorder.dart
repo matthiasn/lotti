@@ -5,6 +5,7 @@ import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/vu_meter.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 const double iconSize = 64;
 
@@ -26,55 +27,63 @@ class AudioRecorderWidget extends StatelessWidget {
       builder: (context, state) {
         final cubit = context.read<AudioRecorderCubit>();
 
-        return Column(
-          children: [
-            GestureDetector(
-              key: const Key('micIcon'),
-              onTap: () => cubit.record(linkedId: linkedId),
-              child: const VuMeterButtonWidget(),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(30),
-              child: Text(
-                formatDuration(state.progress.toString()),
-                style: monospaceTextStyleLarge(),
+        return VisibilityDetector(
+          key: const Key('audio_Recorder'),
+          onVisibilityChanged: (VisibilityInfo info) {
+            cubit.setIndicatorVisible(
+              showIndicator: info.visibleBounds == Rect.zero,
+            );
+          },
+          child: Column(
+            children: [
+              GestureDetector(
+                key: const Key('micIcon'),
+                onTap: () => cubit.record(linkedId: linkedId),
+                child: const VuMeterButtonWidget(),
               ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                IconButton(
-                  key: const Key('pauseIcon'),
-                  icon: SvgPicture.asset('assets/icons/pause.svg'),
-                  padding: const EdgeInsets.only(
-                    left: 8,
-                    top: 8,
-                    bottom: 8,
-                    right: 29,
-                  ),
-                  iconSize: iconSize,
-                  tooltip: 'Pause',
-                  onPressed: () {},
+              Padding(
+                padding: const EdgeInsets.all(30),
+                child: Text(
+                  formatDuration(state.progress.toString()),
+                  style: monospaceTextStyleLarge(),
                 ),
-                IconButton(
-                  key: const Key('stopIcon'),
-                  icon: SvgPicture.asset('assets/icons/stop.svg'),
-                  padding: const EdgeInsets.only(
-                    left: 29,
-                    top: 8,
-                    bottom: 8,
-                    right: 8,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  IconButton(
+                    key: const Key('pauseIcon'),
+                    icon: SvgPicture.asset('assets/icons/pause.svg'),
+                    padding: const EdgeInsets.only(
+                      left: 8,
+                      top: 8,
+                      bottom: 8,
+                      right: 29,
+                    ),
+                    iconSize: iconSize,
+                    tooltip: 'Pause',
+                    onPressed: () {},
                   ),
-                  iconSize: iconSize,
-                  tooltip: 'Stop',
-                  onPressed: () {
-                    context.read<AudioRecorderCubit>().stop();
-                    Navigator.of(context).maybePop();
-                  },
-                ),
-              ],
-            ),
-          ],
+                  IconButton(
+                    key: const Key('stopIcon'),
+                    icon: SvgPicture.asset('assets/icons/stop.svg'),
+                    padding: const EdgeInsets.only(
+                      left: 29,
+                      top: 8,
+                      bottom: 8,
+                      right: 8,
+                    ),
+                    iconSize: iconSize,
+                    tooltip: 'Stop',
+                    onPressed: () {
+                      context.read<AudioRecorderCubit>().stop();
+                      Navigator.of(context).maybePop();
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         );
       },
     );

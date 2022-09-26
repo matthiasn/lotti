@@ -34,7 +34,6 @@ class SyncConfig with _$SyncConfig {
 @freezed
 class ColorConfig with _$ColorConfig {
   factory ColorConfig({
-    @ColorConverter() required Color actionColor,
     @ColorConverter() required Color tagColor,
     @ColorConverter() required Color tagTextColor,
     @ColorConverter() required Color personTagColor,
@@ -55,6 +54,7 @@ class ColorConfig with _$ColorConfig {
     @ColorConverter() required Color audioMeterPeakedBar,
     @ColorConverter() required Color private,
     @ColorConverter() required Color audioMeterBarBackground,
+    // new colors
     @ColorConverter() required Color negspace,
     @ColorConverter() required Color coal,
     @ColorConverter() required Color iron,
