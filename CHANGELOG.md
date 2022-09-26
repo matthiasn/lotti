@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AppBar style with leading text
 - Splash screen color
 - Improved add icons in tasks, dashboards, measurables
+- Hide audio recording indicator when on recorder page
 
 ### Fixed:
 - Chart header cut off

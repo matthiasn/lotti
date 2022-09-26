@@ -147,6 +147,7 @@ dependencies:
   tuple: ^2.0.0
   url_launcher: ^6.1.2
   uuid: ^3.0.4
+  visibility_detector: ^0.3.3
   wechat_assets_picker: ^8.0.0
   week_of_year: ^2.0.0
   window_manager: ^0.2.0

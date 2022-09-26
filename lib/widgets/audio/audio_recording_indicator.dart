@@ -13,7 +13,8 @@ class AudioRecordingIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
       builder: (BuildContext context, AudioRecorderState state) {
-        if (state.status != AudioRecorderStatus.recording) {
+        if (state.status != AudioRecorderStatus.recording ||
+            !state.showIndicator) {
           return const SizedBox.shrink();
         }
 

@@ -60,24 +60,25 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
           backgroundColor: colorConfig().negspace,
           appBar: const DashboardsAppBar(),
           body: ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.only(bottom: 200, top: 70),
-              children: [
+            shrinkWrap: true,
+            padding: const EdgeInsets.only(bottom: 200, top: 70),
+            children: [
+              const SettingsDivider(),
+              ...intersperse(
                 const SettingsDivider(),
-                ...intersperse(
-                  const SettingsDivider(),
-                  List.generate(
-                    dashboards.length,
-                    (int index) {
-                      return DashboardCard(
-                        dashboard: dashboards.elementAt(index),
-                        index: index,
-                      );
-                    },
-                  ),
+                List.generate(
+                  dashboards.length,
+                  (int index) {
+                    return DashboardCard(
+                      dashboard: dashboards.elementAt(index),
+                      index: index,
+                    );
+                  },
                 ),
-                const SettingsDivider(),
-              ]),
+              ),
+              const SettingsDivider(),
+            ],
+          ),
         );
       },
     );

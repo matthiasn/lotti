@@ -27,6 +27,7 @@ void main() {
         status: AudioRecorderStatus.recording,
         decibels: 80,
         progress: Duration.zero,
+        showIndicator: true,
       );
 
       when(() => mockAudioRecorderCubit.stream).thenAnswer(
