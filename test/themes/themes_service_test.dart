@@ -165,6 +165,7 @@ void main() {
         'personTagColor',
         'private',
         'privateTagColor',
+        'ripIce',
         'riplight',
         'riptide',
         'selectedChoiceChipColor',
