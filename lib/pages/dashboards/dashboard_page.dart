@@ -120,34 +120,40 @@ class _DashboardPageState extends State<DashboardPage> {
             appBar: TitleAppBar(
               title: dashboard.name,
               showBackButton: widget.showBackButton,
-              actions: [
-                CupertinoSegmentedControl(
-                  selectedColor: styleConfig().riptide,
-                  unselectedColor: styleConfig().cardBg,
-                  borderColor: styleConfig().riptide,
-                  groupValue: timeSpanDays,
-                  onValueChanged: (int value) {
-                    setState(() {
-                      timeSpanDays = value;
-                    });
-                  },
-                  children: {
-                    3: const DaysSegment('3'),
-                    7: const DaysSegment('7'),
-                    14: const DaysSegment('14'),
-                    30: const DaysSegment('30'),
-                    90: const DaysSegment('90'),
-                    if (isDesktop || landscape) 180: const DaysSegment('180'),
-                    if (isDesktop) 365: const DaysSegment('365'),
-                  },
-                ),
-              ],
             ),
-            body: DashboardWidget(
-              dashboard: dashboard,
-              rangeStart: rangeStart,
-              rangeEnd: rangeEnd,
-              dashboardId: widget.dashboardId,
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 15),
+                  CupertinoSegmentedControl(
+                    selectedColor: styleConfig().riptide,
+                    unselectedColor: styleConfig().negspace,
+                    borderColor: styleConfig().riptide,
+                    groupValue: timeSpanDays,
+                    onValueChanged: (int value) {
+                      setState(() {
+                        timeSpanDays = value;
+                      });
+                    },
+                    children: {
+                      3: const DaysSegment('3'),
+                      7: const DaysSegment('7'),
+                      14: const DaysSegment('14'),
+                      30: const DaysSegment('30'),
+                      90: const DaysSegment('90'),
+                      if (isDesktop || landscape) 180: const DaysSegment('180'),
+                      if (isDesktop) 365: const DaysSegment('365'),
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  DashboardWidget(
+                    dashboard: dashboard,
+                    rangeStart: rangeStart,
+                    rangeEnd: rangeEnd,
+                    dashboardId: widget.dashboardId,
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -251,40 +257,38 @@ class DashboardWidget extends StatelessWidget {
       );
     });
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 16),
-        child: Column(
-          children: [
-            if (showTitle)
-              Text(
-                dashboard.name,
-                style: taskTitleStyle(),
-              ),
-            ...intersperse(const SizedBox(height: 16), items),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 10),
-                    child: Text(
-                      dashboard.description,
-                      style: chartTitleStyle(),
-                    ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        children: [
+          if (showTitle)
+            Text(
+              dashboard.name,
+              style: taskTitleStyle(),
+            ),
+          ...intersperse(const SizedBox(height: 16), items),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: Text(
+                    dashboard.description,
+                    style: chartTitleStyle(),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.dashboard_customize_outlined),
-                  color: styleConfig().primaryTextColor,
-                  hoverColor: Colors.transparent,
-                  onPressed: () =>
-                      beamToNamed('/settings/dashboards/$dashboardId'),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.dashboard_customize_outlined),
+                color: styleConfig().primaryTextColor,
+                hoverColor: Colors.transparent,
+                onPressed: () =>
+                    beamToNamed('/settings/dashboards/$dashboardId'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

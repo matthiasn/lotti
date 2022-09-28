@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Segmented control for dashboard time span
 - Style: dark mode
+- Style: improved segmented control for dashboard time span
 
 ## [0.8.156] - 2022-09-26
 ### Changed:
