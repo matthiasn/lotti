@@ -145,48 +145,5 @@ void main() {
         greaterThan(start.millisecondsSinceEpoch),
       );
     });
-
-    test('sorted color names are returned', () async {
-      final themesService = ThemesService();
-
-      expect(themesService.colorNames(), [
-        'activeAudioControl',
-        'alarm',
-        'audioMeterBar',
-        'audioMeterBarBackground',
-        'audioMeterPeakedBar',
-        'audioMeterTooHotBar',
-        'cardBg',
-        'hover',
-        'navHomeIcon',
-        'navHomeIconActive',
-        'navJournalIcon',
-        'navJournalIconActive',
-        'navSettingsIcon',
-        'navSettingsIconActive',
-        'navTasksIcon',
-        'navTasksIconActive',
-        'negspace',
-        'outboxPendingColor',
-        'outboxSuccessColor',
-        'personTagColor',
-        'primaryTextColor',
-        'private',
-        'privateTagColor',
-        'riplight',
-        'riptide',
-        'secondaryTextColor',
-        'selectedChoiceChipColor',
-        'selectedChoiceChipTextColor',
-        'starredGold',
-        'storyTagColor',
-        'tagColor',
-        'tagTextColor',
-        'timeRecording',
-        'timeRecordingBg',
-        'unselectedChoiceChipColor',
-        'unselectedChoiceChipTextColor',
-      ]);
-    });
   });
 }

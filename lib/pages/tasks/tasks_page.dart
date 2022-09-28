@@ -371,10 +371,7 @@ class AddTask extends StatelessWidget {
             beamToNamed('/tasks/${task.meta.id}');
           }
         },
-        child: SvgPicture.asset(
-          'assets/icons/action_add.svg',
-          width: 25,
-        ),
+        child: SvgPicture.asset(styleConfig().actionAddIcon, width: 25),
       ),
     );
   }

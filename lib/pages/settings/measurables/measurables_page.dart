@@ -102,10 +102,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
           floatingActionButton: FloatingActionButton(
             backgroundColor: styleConfig().riptide,
             onPressed: createMeasurable,
-            child: SvgPicture.asset(
-              'assets/icons/action_add.svg',
-              width: 25,
-            ),
+            child: SvgPicture.asset(styleConfig().actionAddIcon, width: 25),
           ),
           body: Stack(
             children: [

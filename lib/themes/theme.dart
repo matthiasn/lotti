@@ -75,7 +75,7 @@ TextStyle labelStyle() => TextStyle(
     );
 
 TextStyle newLabelStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
+      color: styleConfig().secondaryTextColor,
       fontSize: fontSizeMedium,
     );
 

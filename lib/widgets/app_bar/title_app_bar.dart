@@ -66,7 +66,7 @@ class BackWidget extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(width: 10),
-                SvgPicture.asset('assets/icons/back.svg'),
+                SvgPicture.asset(styleConfig().backIcon),
                 const SizedBox(width: 12),
                 Text(
                   localizations.appBarBack,

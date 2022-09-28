@@ -89,7 +89,7 @@ class DashboardSurveyChart extends StatelessWidget {
                   IconButton(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     onPressed: onTapAdd,
-                    icon: SvgPicture.asset('assets/icons/add.svg'),
+                    icon: SvgPicture.asset(styleConfig().addIcon),
                   ),
                 ],
               ),

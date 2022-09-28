@@ -159,8 +159,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   children: [
                     Text(
                       selected?.displayName ?? '',
-                      style: TextStyle(
-                        color: styleConfig().primaryTextColor,
+                      style: const TextStyle(
+                        color: Colors.black,
                         fontFamily: mainFont,
                         fontSize: 20,
                       ),
@@ -168,7 +168,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     IconButton(
                       padding: const EdgeInsets.all(10),
                       icon: SvgPicture.asset('assets/icons/close.svg'),
-                      color: styleConfig().primaryTextColor,
                       hoverColor: Colors.transparent,
                       onPressed: dashboardsBeamerDelegate.beamBack,
                     ),
@@ -196,7 +195,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         format: DateFormat(
                           "MMMM d, yyyy 'at' HH:mm",
                         ),
-                        style: newInputStyle(),
+                        style: newInputStyle().copyWith(color: Colors.black),
                         decoration:
                             InputDecoration(fillColor: styleConfig().negspace),
                         initialValue: DateTime.now(),
@@ -208,11 +207,12 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         decoration: InputDecoration(
                           labelText: '${selected?.displayName} '
                               '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
-                          labelStyle: newLabelStyle(),
+                          labelStyle:
+                              newLabelStyle().copyWith(color: Colors.black),
                           floatingLabelBehavior: FloatingLabelBehavior.always,
                         ),
                         keyboardAppearance: Brightness.light,
-                        style: newInputStyle(),
+                        style: newInputStyle().copyWith(color: Colors.black),
                         autofocus: true,
                         validator: FormBuilderValidators.numeric(),
                         name: 'value',
@@ -225,11 +225,12 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         key: const Key('measurement_comment_field'),
                         decoration: InputDecoration(
                           labelText: localizations.addMeasurementCommentLabel,
-                          labelStyle: newLabelStyle(),
+                          labelStyle:
+                              newLabelStyle().copyWith(color: Colors.black),
                           floatingLabelBehavior: FloatingLabelBehavior.always,
                         ),
                         keyboardAppearance: Brightness.light,
-                        style: newInputStyle(),
+                        style: newInputStyle().copyWith(color: Colors.black),
                         name: 'comment',
                       ),
                     ],
