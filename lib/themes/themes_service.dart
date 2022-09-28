@@ -21,7 +21,7 @@ class ThemesService {
     current = darkTheme;
 
     if (watch) {
-      _colorConfigController = StreamController<ColorConfig>.broadcast();
+      _colorConfigController = StreamController<StyleConfig>.broadcast();
       _colorMapController = StreamController<Map<String, dynamic>>.broadcast();
       _updateController = StreamController<DateTime>.broadcast();
       publishLastUpdated();
@@ -33,8 +33,8 @@ class ThemesService {
   }
 
   final int debounceSeconds;
-  late ColorConfig current;
-  late final StreamController<ColorConfig> _colorConfigController;
+  late StyleConfig current;
+  late final StreamController<StyleConfig> _colorConfigController;
   late final StreamController<Map<String, dynamic>> _colorMapController;
   late final StreamController<DateTime> _updateController;
   final bool saveThemeAsJson;
@@ -54,7 +54,7 @@ class ThemesService {
     saveColorConfigDebounced();
   }
 
-  Stream<ColorConfig> getColorConfigStream() {
+  Stream<StyleConfig> getStyleConfigStream() {
     return _colorConfigController.stream;
   }
 
@@ -79,7 +79,7 @@ class ThemesService {
     return current.toJson();
   }
 
-  void setTheme(ColorConfig updated) {
+  void setTheme(StyleConfig updated) {
     current = updated;
     publishColorConfig();
   }
@@ -107,6 +107,6 @@ class ThemesService {
 
   void setColor(String colorKey, Color color) {
     final colorsMap = getColorsMap()..[colorKey] = colorToCssHex(color);
-    setTheme(ColorConfig.fromJson(colorsMap));
+    setTheme(StyleConfig.fromJson(colorsMap));
   }
 }

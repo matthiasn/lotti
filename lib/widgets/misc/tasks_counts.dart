@@ -70,7 +70,7 @@ class TasksCountWidget extends StatelessWidget {
             child: Text(
               '$label: ${snapshot.data}',
               style: TextStyle(
-                color: colorConfig().coal,
+                color: styleConfig().primaryTextColor,
                 fontFamily: 'Oswald',
                 fontSize: 12,
                 fontWeight: FontWeight.w100,

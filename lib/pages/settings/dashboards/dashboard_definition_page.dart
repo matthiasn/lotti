@@ -270,7 +270,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
         }
 
         return Scaffold(
-          backgroundColor: colorConfig().negspace,
+          backgroundColor: styleConfig().negspace,
           appBar: TitleAppBar(
             title: widget.dashboard.name,
             actions: [
@@ -296,7 +296,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(0),
                     child: Container(
-                      color: colorConfig().ice,
+                      color: styleConfig().ice,
                       padding: const EdgeInsets.all(24),
                       child: Column(
                         children: [
@@ -333,7 +333,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     localizations.dashboardPrivateLabel,
                                     style: formLabelStyle(),
                                   ),
-                                  activeColor: colorConfig().private,
+                                  activeColor: styleConfig().private,
                                 ),
                                 FormBuilderSwitch(
                                   name: 'active',
@@ -342,7 +342,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     localizations.dashboardActiveLabel,
                                     style: formLabelStyle(),
                                   ),
-                                  activeColor: colorConfig().starredGold,
+                                  activeColor: styleConfig().starredGold,
                                 ),
                                 FormBuilderCupertinoDateTimePicker(
                                   name: 'review_at',
@@ -458,7 +458,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             onPressed: () {
                               showCupertinoModalBottomSheet<void>(
                                 context: context,
-                                backgroundColor: colorConfig().ice,
+                                backgroundColor: styleConfig().ice,
                                 shape: const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.vertical(
                                     top: Radius.circular(16),
@@ -478,7 +478,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                         child: TextField(
                                           controller: controller,
                                           style: TextStyle(
-                                            color: colorConfig().coal,
+                                            color:
+                                                styleConfig().primaryTextColor,
                                           ),
                                         ),
                                       ),
@@ -508,7 +509,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       icon: const Icon(Icons.copy),
                                       iconSize: settingsIconSize,
                                       tooltip: localizations.dashboardCopyHint,
-                                      color: colorConfig().ice,
+                                      color: styleConfig().ice,
                                       onPressed: copyDashboard,
                                     ),
                                     IconButton(
@@ -517,7 +518,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       iconSize: settingsIconSize,
                                       tooltip:
                                           localizations.dashboardDeleteHint,
-                                      color: colorConfig().ice,
+                                      color: styleConfig().ice,
                                       onPressed: () async {
                                         const deleteKey = 'deleteKey';
                                         final result =

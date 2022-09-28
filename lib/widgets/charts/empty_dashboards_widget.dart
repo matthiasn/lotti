@@ -18,7 +18,7 @@ class EmptyDashboards extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       appBar: const DashboardsAppBar(),
       body: Stack(
         children: [
@@ -48,7 +48,7 @@ class EmptyDashboards extends StatelessWidget {
                         localizations.manualLinkText,
                         style: titleStyle().copyWith(
                           decoration: TextDecoration.underline,
-                          color: colorConfig().tagColor,
+                          color: styleConfig().tagColor,
                         ),
                         maxLines: 2,
                       ),

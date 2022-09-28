@@ -170,6 +170,11 @@ DateTime getRangeEnd({int shiftDays = 0}) {
       .subtract(Duration(days: shiftDays));
 }
 
+DateTime getEndOfToday() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day, 23, 59, 59);
+}
+
 String padLeft(num value) {
   return value.toString().padLeft(2, '0');
 }

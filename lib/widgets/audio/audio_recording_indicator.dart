@@ -33,7 +33,7 @@ class AudioRecordingIndicator extends StatelessWidget {
               child: Container(
                 width: 120,
                 height: 32,
-                color: colorConfig().timeRecordingBg,
+                color: styleConfig().timeRecordingBg,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -43,7 +43,7 @@ class AudioRecordingIndicator extends StatelessWidget {
                         Icon(
                           Icons.mic,
                           size: 24,
-                          color: colorConfig().ice,
+                          color: styleConfig().ice,
                         ),
                         Padding(
                           padding: const EdgeInsets.only(left: 4),

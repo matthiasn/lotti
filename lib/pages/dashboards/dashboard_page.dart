@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -47,18 +45,18 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final int shiftDays = max((horizontalPan / scale).floor(), 0);
 
     // TODO: bring back or remove
+    // final int shiftDays = max((horizontalPan / scale).floor(), 0);
     // final rangeStart = getRangeStart(
     //   context: context,
     //   scale: scale,
     //   shiftDays: shiftDays,
     // );
+    // final rangeEnd = getRangeEnd(shiftDays: shiftDays);
 
     final rangeStart = DateTime.now().subtract(Duration(days: timeSpanDays));
-
-    final rangeEnd = getRangeEnd(shiftDays: shiftDays);
+    final rangeEnd = getEndOfToday();
 
     return GestureDetector(
       // TODO: bring back or remove
@@ -118,15 +116,15 @@ class _DashboardPageState extends State<DashboardPage> {
               MediaQuery.of(context).orientation == Orientation.landscape;
 
           return Scaffold(
-            backgroundColor: colorConfig().negspace,
+            backgroundColor: styleConfig().negspace,
             appBar: TitleAppBar(
               title: dashboard.name,
               showBackButton: widget.showBackButton,
               actions: [
                 CupertinoSegmentedControl(
-                  selectedColor: colorConfig().riptide,
-                  unselectedColor: colorConfig().ice,
-                  borderColor: colorConfig().riptide,
+                  selectedColor: styleConfig().riptide,
+                  unselectedColor: styleConfig().ice,
+                  borderColor: styleConfig().riptide,
                   groupValue: timeSpanDays,
                   onValueChanged: (int value) {
                     setState(() {
@@ -278,7 +276,7 @@ class DashboardWidget extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.dashboard_customize_outlined),
-                  color: colorConfig().coal,
+                  color: styleConfig().primaryTextColor,
                   hoverColor: Colors.transparent,
                   onPressed: () =>
                       beamToNamed('/settings/dashboards/$dashboardId'),

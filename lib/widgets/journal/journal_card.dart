@@ -46,7 +46,7 @@ class JournalCardTitle extends StatelessWidget {
               Text(
                 df.format(item.meta.dateFrom),
                 style: TextStyle(
-                  color: colorConfig().coal,
+                  color: styleConfig().primaryTextColor,
                   fontSize: 15,
                   fontWeight: FontWeight.w300,
                   fontFamily: 'Inconsolata',
@@ -59,7 +59,7 @@ class JournalCardTitle extends StatelessWidget {
                     visible: fromNullableBool(item.meta.private),
                     child: Icon(
                       MdiIcons.security,
-                      color: colorConfig().alarm,
+                      color: styleConfig().alarm,
                       size: iconSize,
                     ),
                   ),
@@ -69,7 +69,7 @@ class JournalCardTitle extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.star,
-                        color: colorConfig().starredGold,
+                        color: styleConfig().starredGold,
                         size: iconSize,
                       ),
                     ),
@@ -80,7 +80,7 @@ class JournalCardTitle extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.flag,
-                        color: colorConfig().alarm,
+                        color: styleConfig().alarm,
                         size: iconSize,
                       ),
                     ),
@@ -127,7 +127,7 @@ class JournalCardTitle extends StatelessWidget {
                     Text(
                       data.title,
                       style: TextStyle(
-                        color: colorConfig().coal,
+                        color: styleConfig().primaryTextColor,
                         fontWeight: FontWeight.normal,
                         fontSize: 24,
                       ),
@@ -153,7 +153,7 @@ class JournalCardTitle extends StatelessWidget {
             orElse: () => DurationViewWidget(
               item: item,
               style: TextStyle(
-                color: colorConfig().coal,
+                color: styleConfig().primaryTextColor,
                 fontSize: 15,
                 fontWeight: FontWeight.w300,
               ),
@@ -194,7 +194,7 @@ class JournalCard extends StatelessWidget {
         }
 
         return Card(
-          color: colorConfig().ice,
+          color: styleConfig().ice,
           elevation: 1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(0),
@@ -237,7 +237,7 @@ class LeadingIcon extends StatelessWidget {
     return Icon(
       iconData,
       size: 32,
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
     );
   }
 }
@@ -255,7 +255,7 @@ class JournalImageCard extends StatelessWidget {
     void onTap() => beamToNamed('/journal/${item.meta.id}');
 
     return Card(
-      color: colorConfig().ice,
+      color: styleConfig().ice,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),

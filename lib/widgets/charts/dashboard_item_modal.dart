@@ -24,7 +24,7 @@ class DashboardItemModal extends StatelessWidget {
 
     return Material(
       child: ColoredBox(
-        color: colorConfig().iron,
+        color: styleConfig().secondaryTextColor,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
@@ -61,7 +61,7 @@ class DashboardItemModal extends StatelessWidget {
                       EnumToString.convertToString(aggregationType),
                       style: choiceLabelStyle(),
                     ),
-                    selectedColor: colorConfig().outboxSuccessColor,
+                    selectedColor: styleConfig().outboxSuccessColor,
                     selected: aggregationType == item.aggregationType,
                   );
                 }).toList(),

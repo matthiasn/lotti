@@ -118,7 +118,7 @@ class _TagEditPageState extends State<TagEditPage> {
             ),
         ],
       ),
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -126,7 +126,7 @@ class _TagEditPageState extends State<TagEditPage> {
             ClipRRect(
               borderRadius: BorderRadius.circular(0),
               child: Container(
-                color: colorConfig().ice,
+                color: styleConfig().ice,
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
@@ -153,7 +153,7 @@ class _TagEditPageState extends State<TagEditPage> {
                               localizations.settingsTagsPrivateLabel,
                               style: formLabelStyle(),
                             ),
-                            activeColor: colorConfig().private,
+                            activeColor: styleConfig().private,
                           ),
                           FormBuilderSwitch(
                             name: 'inactive',
@@ -162,7 +162,7 @@ class _TagEditPageState extends State<TagEditPage> {
                               localizations.settingsTagsHideLabel,
                               style: formLabelStyle(),
                             ),
-                            activeColor: colorConfig().private,
+                            activeColor: styleConfig().private,
                           ),
                           FormBuilderChoiceChip<String>(
                             name: 'type',
@@ -230,7 +230,7 @@ class _TagEditPageState extends State<TagEditPage> {
                             icon: const Icon(MdiIcons.trashCanOutline),
                             iconSize: 24,
                             tooltip: localizations.settingsTagsDeleteTooltip,
-                            color: colorConfig().ice,
+                            color: styleConfig().ice,
                             onPressed: () {
                               persistenceLogic.upsertTagEntity(
                                 widget.tagEntity.copyWith(

@@ -30,7 +30,7 @@ class _HowToUsePageState extends State<HowToUsePage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       body: Stack(
         children: [
           Align(
@@ -41,7 +41,7 @@ class _HowToUsePageState extends State<HowToUsePage> {
               onPressed: onPressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor:
-                    isHovering ? colorConfig().riptide : colorConfig().negspace,
+                    isHovering ? styleConfig().riptide : styleConfig().negspace,
                 side: const BorderSide(),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(100),
@@ -54,7 +54,7 @@ class _HowToUsePageState extends State<HowToUsePage> {
               child: AutoSizeText(
                 localizations.dashboardsHowToHint,
                 style: TextStyle(
-                  color: colorConfig().coal,
+                  color: styleConfig().primaryTextColor,
                   fontSize: 25,
                   fontFamily: 'PlusJakartaSans',
                   fontWeight: FontWeight.w400,

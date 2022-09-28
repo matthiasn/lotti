@@ -33,24 +33,24 @@ class SurveyWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Theme(
       data: ThemeData(
-        primaryColor: colorConfig().riptide,
+        primaryColor: styleConfig().riptide,
         fontFamily: 'PlusJakartaSans',
         // Define the default `TextTheme`. Use this to specify the default
         // text styling for headlines, titles, bodies of text, and more.
         textTheme: TextTheme(
           headline3: TextStyle(
             fontSize: 24,
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
           ),
           headline5: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w200,
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
           ),
           headline6: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w400,
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
           ),
         ),
       ),
@@ -91,7 +91,7 @@ class FillSurveyPage extends StatelessWidget {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.addSurveyTitle),
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

@@ -15,7 +15,7 @@ class AdvancedSettingsPage extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsAdvancedTitle),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,

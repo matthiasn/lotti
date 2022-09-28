@@ -17,7 +17,7 @@ class RecordAudioPage extends StatelessWidget {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.addAudioTitle),
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [AudioRecorderWidget(linkedId: linkedId)],

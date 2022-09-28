@@ -31,13 +31,13 @@ class SettingsCard extends StatelessWidget {
       color: Colors.transparent,
       child: ListTile(
         contentPadding: contentPadding,
-        hoverColor: colorConfig().ripIce,
+        hoverColor: styleConfig().hover,
         title: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
           child: Text(
             title,
             style: TextStyle(
-              color: colorConfig().coal,
+              color: styleConfig().primaryTextColor,
               fontFamily: mainFont,
               fontSize: fontSizeLarge,
               fontWeight: FontWeight.w300,
@@ -87,7 +87,7 @@ class SettingsDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Divider(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       height: 1,
       thickness: 1,
       indent: 0,

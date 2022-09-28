@@ -43,14 +43,14 @@ class _AboutPageState extends State<AboutPage> {
     final localizations = AppLocalizations.of(context)!;
 
     final style = TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontSize: 25,
       fontWeight: FontWeight.w300,
     );
 
     return Scaffold(
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsAboutTitle),
       body: StreamBuilder<int>(
         stream: countStream,

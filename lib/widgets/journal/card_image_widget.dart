@@ -57,7 +57,7 @@ class _CardImageWidgetState extends State<CardImageWidget> {
 
       return Container(
         key: Key('${file.path}-$retries'),
-        color: colorConfig().coal,
+        color: styleConfig().primaryTextColor,
         height: widget.height.toDouble(),
         child: Image.file(
           file,

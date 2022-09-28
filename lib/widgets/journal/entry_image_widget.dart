@@ -65,7 +65,7 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
               );
             },
             child: ColoredBox(
-              color: colorConfig().coal,
+              color: styleConfig().primaryTextColor,
               child: Hero(
                 tag: 'entry_img',
                 child: ConstrainedBox(
@@ -143,7 +143,7 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
                     child: Icon(
                       MdiIcons.close,
                       size: 32,
-                      color: colorConfig().coal,
+                      color: styleConfig().primaryTextColor,
                     ),
                   ),
                   const Icon(

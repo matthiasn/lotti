@@ -70,7 +70,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
         }
 
         return ColoredBox(
-          color: colorConfig().ice,
+          color: styleConfig().ice,
           child: Padding(
             padding: const EdgeInsets.only(
               left: 16,
@@ -202,7 +202,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                         child: Text(
                           localizations.journalDateInvalid,
                           style: textStyleLarger().copyWith(
-                            color: colorConfig().alarm,
+                            color: styleConfig().alarm,
                           ),
                         ),
                       ),

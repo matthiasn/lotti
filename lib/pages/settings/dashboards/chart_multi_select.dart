@@ -28,14 +28,14 @@ class ChartMultiSelect<T> extends StatelessWidget {
       ),
       child: MultiSelectDialogField<T?>(
         searchable: true,
-        backgroundColor: colorConfig().iron,
+        backgroundColor: styleConfig().secondaryTextColor,
         items: multiSelectItems,
         initialValue: const [],
         title: Text(
           title,
           style: titleStyle(),
         ),
-        checkColor: colorConfig().coal,
+        checkColor: styleConfig().primaryTextColor,
         selectedColor: Colors.blue,
         decoration: BoxDecoration(
           color: Colors.blue.withOpacity(0.1),
@@ -43,7 +43,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
             Radius.circular(40),
           ),
           border: Border.all(
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
             width: 2,
           ),
         ),
@@ -51,22 +51,22 @@ class ChartMultiSelect<T> extends StatelessWidget {
         selectedItemsTextStyle: multiSelectStyle().copyWith(
           fontWeight: FontWeight.normal,
         ),
-        unselectedColor: colorConfig().coal,
+        unselectedColor: styleConfig().primaryTextColor,
         searchIcon: Icon(
           Icons.search,
           size: 32,
-          color: colorConfig().coal,
+          color: styleConfig().primaryTextColor,
         ),
         searchTextStyle: formLabelStyle(),
         searchHintStyle: formLabelStyle(),
         buttonIcon: Icon(
           iconData,
-          color: colorConfig().coal,
+          color: styleConfig().primaryTextColor,
         ),
         buttonText: Text(
           buttonText,
           style: TextStyle(
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
             fontSize: 16,
           ),
         ),

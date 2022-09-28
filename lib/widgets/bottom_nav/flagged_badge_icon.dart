@@ -29,8 +29,8 @@ class FlaggedBadgeIcon extends StatelessWidget {
           toAnimate: false,
           elevation: 3,
           child: active
-              ? SvgPicture.asset('assets/icons/nav_journal_active.svg')
-              : SvgPicture.asset('assets/icons/nav_journal.svg'),
+              ? SvgPicture.asset(styleConfig().navJournalIconActive)
+              : SvgPicture.asset(styleConfig().navJournalIcon),
         );
       },
     );

@@ -32,7 +32,7 @@ class _FlagsPageState extends State<FlagsPage> {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.settingsFlagsTitle),
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       body: StreamBuilder<Set<ConfigFlag>>(
         stream: stream,
         builder: (
@@ -120,7 +120,7 @@ class ConfigFlagCard extends StatelessWidget {
             const SizedBox(width: 8),
             CupertinoSwitch(
               value: item.status,
-              activeColor: colorConfig().private,
+              activeColor: styleConfig().private,
               onChanged: (bool status) {
                 _db.upsertConfigFlag(item.copyWith(status: status));
               },

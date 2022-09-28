@@ -127,7 +127,7 @@ void main() {
             child: Text(
               testText,
               style: TextStyle(
-                color: colorConfig().coal,
+                color: styleConfig().primaryTextColor,
               ),
             ),
           ),
@@ -143,7 +143,7 @@ void main() {
 
       expect(
         (tester.firstWidget(find.text(testText)) as Text).style?.color,
-        darkTheme.coal,
+        darkTheme.primaryTextColor,
       );
 
       final testColor = colorFromCssHex('#FF0000');
