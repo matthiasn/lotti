@@ -15,6 +15,7 @@ final Color riplight = colorFromCssHex('#CFF3EA');
 final Color ripIce = colorFromCssHex('#EFFFFB');
 final Color alarm = colorFromCssHex('#FF7373');
 final Color ice = colorFromCssHex('#F5F5F5');
+final Color nickel = colorFromCssHex('#B4B2B2');
 
 final darkTheme = StyleConfig(
   tagColor: const Color.fromRGBO(155, 200, 246, 1),
@@ -45,7 +46,8 @@ final darkTheme = StyleConfig(
   riplight: riplight,
   hover: iron,
   alarm: alarm,
-  cardBg: iron,
+  cardBg: colorFromCssHex('#313131'),
+  chartTextColor: nickel,
   navHomeIcon: 'assets/icons/nav_home_dark.svg',
   navHomeIconActive: 'assets/icons/nav_home_active.svg',
   navJournalIcon: 'assets/icons/nav_journal_dark.svg',
@@ -97,6 +99,7 @@ final brightTheme = StyleConfig(
   hover: ripIce,
   alarm: alarm,
   cardBg: ice,
+  chartTextColor: iron,
   navHomeIcon: 'assets/icons/nav_home.svg',
   navHomeIconActive: 'assets/icons/nav_home_active.svg',
   navJournalIcon: 'assets/icons/nav_journal.svg',

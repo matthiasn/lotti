@@ -135,6 +135,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                   desiredTickCount: 5,
                   dataIsInWholeNumbers: false,
                 ),
+                renderSpec: numericRenderSpec,
                 tickFormatterSpec: healthType != null && healthType.hoursMinutes
                     ? const charts.BasicNumericTickFormatterSpec(
                         hoursToHhMm,

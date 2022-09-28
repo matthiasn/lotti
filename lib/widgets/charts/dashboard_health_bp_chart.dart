@@ -151,13 +151,14 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
                   updatedListener: infoSelectionModelUpdated,
                 ),
               ],
-              primaryMeasureAxis: const charts.NumericAxisSpec(
-                tickProviderSpec: charts.BasicNumericTickProviderSpec(
+              primaryMeasureAxis: charts.NumericAxisSpec(
+                tickProviderSpec: const charts.BasicNumericTickProviderSpec(
                   zeroBound: false,
                   dataIsInWholeNumbers: true,
                   desiredMinTickCount: 11,
                   desiredMaxTickCount: 15,
                 ),
+                renderSpec: numericRenderSpec,
               ),
             ),
             chartHeader: const BpChartInfoWidget(),

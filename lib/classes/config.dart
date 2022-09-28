@@ -63,6 +63,7 @@ class StyleConfig with _$StyleConfig {
     @ColorConverter() required Color hover,
     @ColorConverter() required Color alarm,
     @ColorConverter() required Color cardBg,
+    @ColorConverter() required Color chartTextColor,
     required String navHomeIcon,
     required String navHomeIconActive,
     required String navJournalIcon,

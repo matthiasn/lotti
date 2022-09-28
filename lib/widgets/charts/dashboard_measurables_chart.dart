@@ -159,6 +159,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                       desiredMinTickCount: 4,
                       desiredMaxTickCount: 5,
                     ),
+                    renderSpec: numericRenderSpec,
                   ),
                 ),
                 chartHeader: MeasurablesChartInfoWidget(

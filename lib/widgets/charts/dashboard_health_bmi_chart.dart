@@ -157,6 +157,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                       dataIsInWholeNumbers: true,
                       desiredTickCount: tickCount,
                     ),
+                    renderSpec: numericRenderSpec,
                   ),
                 ),
                 chartHeader: BmiChartInfoWidget(

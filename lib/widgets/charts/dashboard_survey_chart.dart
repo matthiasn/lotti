@@ -65,11 +65,12 @@ class DashboardSurveyChart extends StatelessWidget {
             behaviors: [chartRangeAnnotation(rangeStart, rangeEnd)],
             domainAxis: timeSeriesAxis,
             defaultRenderer: defaultRenderer,
-            primaryMeasureAxis: const charts.NumericAxisSpec(
-              tickProviderSpec: charts.BasicNumericTickProviderSpec(
+            primaryMeasureAxis: charts.NumericAxisSpec(
+              tickProviderSpec: const charts.BasicNumericTickProviderSpec(
                 zeroBound: false,
                 desiredTickCount: 5,
               ),
+              renderSpec: numericRenderSpec,
             ),
           ),
           chartHeader: Positioned(
