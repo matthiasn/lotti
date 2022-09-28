@@ -202,7 +202,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return AppBar(
-      backgroundColor: styleConfig().ice,
+      backgroundColor: styleConfig().cardBg,
       title: Column(
         children: [
           Row(
@@ -232,7 +232,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
           ),
           CupertinoSegmentedControl(
             selectedColor: styleConfig().primaryTextColor,
-            unselectedColor: styleConfig().ice,
+            unselectedColor: styleConfig().cardBg,
             borderColor: styleConfig().primaryTextColor,
             groupValue: selectedValue,
             onValueChanged: onValueChanged,

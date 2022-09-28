@@ -139,6 +139,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
                         widget.rangeStart,
                         widget.rangeEnd,
                         charts.RangeAnnotationAxisType.domain,
+                        color: charts.Color.transparent,
                       ),
                       ...rangeAnnotationSegments,
                     ]),
@@ -224,7 +225,8 @@ class BmiRangeLegend extends StatelessWidget {
                           Text(
                             range.name,
                             style: chartTitleStyle().copyWith(
-                              fontSize: 10,
+                              fontSize: 11,
+                              color: Colors.black,
                             ),
                           ),
                         ],

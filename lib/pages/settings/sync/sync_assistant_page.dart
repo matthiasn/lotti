@@ -137,7 +137,7 @@ class _SlidingTutorial extends State<SlidingTutorial> {
       pageCount: widget.pageCount,
       colors: [
         styleConfig().secondaryTextColor,
-        styleConfig().ice,
+        styleConfig().cardBg,
         styleConfig().secondaryTextColor,
       ],
       child: Stack(

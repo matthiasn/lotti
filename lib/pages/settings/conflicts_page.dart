@@ -58,7 +58,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
             actions: [
               CupertinoSegmentedControl(
                 selectedColor: styleConfig().riptide,
-                unselectedColor: styleConfig().ice,
+                unselectedColor: styleConfig().cardBg,
                 borderColor: styleConfig().riptide,
                 groupValue: _selectedValue,
                 onValueChanged: (String value) {

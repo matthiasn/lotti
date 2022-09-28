@@ -129,6 +129,7 @@ RangeAnnotation<DateTime> chartRangeAnnotation(
       rangeStart,
       rangeEnd,
       RangeAnnotationAxisType.domain,
+      color: Color.transparent,
     )
   ]);
 }

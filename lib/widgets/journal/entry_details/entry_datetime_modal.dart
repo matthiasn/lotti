@@ -70,7 +70,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
         }
 
         return ColoredBox(
-          color: styleConfig().ice,
+          color: styleConfig().cardBg,
           child: Padding(
             padding: const EdgeInsets.only(
               left: 16,

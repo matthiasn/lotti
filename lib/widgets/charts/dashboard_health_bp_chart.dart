@@ -117,6 +117,7 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
                       widget.rangeStart,
                       widget.rangeEnd,
                       charts.RangeAnnotationAxisType.domain,
+                      color: charts.Color.transparent,
                     ),
                     charts.RangeAnnotationSegment(
                       60,

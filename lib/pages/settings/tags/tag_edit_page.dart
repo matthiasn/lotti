@@ -126,7 +126,7 @@ class _TagEditPageState extends State<TagEditPage> {
             ClipRRect(
               borderRadius: BorderRadius.circular(0),
               child: Container(
-                color: styleConfig().ice,
+                color: styleConfig().cardBg,
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
@@ -230,7 +230,7 @@ class _TagEditPageState extends State<TagEditPage> {
                             icon: const Icon(MdiIcons.trashCanOutline),
                             iconSize: 24,
                             tooltip: localizations.settingsTagsDeleteTooltip,
-                            color: styleConfig().ice,
+                            color: styleConfig().cardBg,
                             onPressed: () {
                               persistenceLogic.upsertTagEntity(
                                 widget.tagEntity.copyWith(

@@ -42,7 +42,7 @@ class ImapConfigActions extends StatelessWidget {
             imapValid: (_) => FadeInButton(
               key: const Key('settingsSyncSaveButton'),
               localizations.settingsSyncSaveButton,
-              textColor: styleConfig().ice,
+              textColor: styleConfig().cardBg,
               onPressed: syncConfigCubit.saveImapConfig,
             ),
             imapTesting: (_) => FadeInButton(

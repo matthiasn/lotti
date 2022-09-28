@@ -151,7 +151,7 @@ class _JournalPageState extends State<JournalPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: styleConfig().ice,
+      backgroundColor: styleConfig().cardBg,
       queryStyle: const TextStyle(
         fontFamily: mainFont,
         fontSize: 24,
@@ -358,7 +358,7 @@ class _JournalPageState extends State<JournalPage> {
           ),
         ).asGlass(
           clipBorderRadius: BorderRadius.circular(8),
-          tintColor: styleConfig().ice,
+          tintColor: styleConfig().cardBg,
         );
       },
     );

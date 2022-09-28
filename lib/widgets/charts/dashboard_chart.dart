@@ -31,7 +31,7 @@ class DashboardChart extends StatelessWidget {
               right: 10,
             ),
             child: Container(
-              color: styleConfig().ice,
+              color: styleConfig().cardBg,
               padding: const EdgeInsets.only(left: 10),
               child: chart,
             ),

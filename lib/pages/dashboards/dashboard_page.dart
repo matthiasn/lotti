@@ -123,7 +123,7 @@ class _DashboardPageState extends State<DashboardPage> {
               actions: [
                 CupertinoSegmentedControl(
                   selectedColor: styleConfig().riptide,
-                  unselectedColor: styleConfig().ice,
+                  unselectedColor: styleConfig().cardBg,
                   borderColor: styleConfig().riptide,
                   groupValue: timeSpanDays,
                   onValueChanged: (int value) {

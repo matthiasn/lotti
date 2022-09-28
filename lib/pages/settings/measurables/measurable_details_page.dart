@@ -89,7 +89,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(0),
                 child: Container(
-                  color: styleConfig().ice,
+                  color: styleConfig().cardBg,
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
@@ -162,7 +162,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               ),
                               iconEnabledColor: styleConfig().primaryTextColor,
                               style: const TextStyle(fontSize: 40),
-                              dropdownColor: styleConfig().ice,
+                              dropdownColor: styleConfig().cardBg,
                               items:
                                   AggregationType.values.map((aggregationType) {
                                 return DropdownMenuItem(
@@ -195,7 +195,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               iconSize: settingsIconSize,
                               tooltip: AppLocalizations.of(context)!
                                   .settingsMeasurableDeleteTooltip,
-                              color: styleConfig().ice,
+                              color: styleConfig().cardBg,
                               onPressed: () async {
                                 const deleteKey = 'deleteKey';
                                 final result =

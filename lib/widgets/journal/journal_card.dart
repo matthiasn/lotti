@@ -194,7 +194,7 @@ class JournalCard extends StatelessWidget {
         }
 
         return Card(
-          color: styleConfig().ice,
+          color: styleConfig().cardBg,
           elevation: 1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(0),
@@ -255,7 +255,7 @@ class JournalImageCard extends StatelessWidget {
     void onTap() => beamToNamed('/journal/${item.meta.id}');
 
     return Card(
-      color: styleConfig().ice,
+      color: styleConfig().cardBg,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
