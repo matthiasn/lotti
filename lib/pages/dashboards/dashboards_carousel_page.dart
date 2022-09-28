@@ -44,7 +44,7 @@ class _DashboardCarouselPageState extends State<DashboardCarouselPage> {
         final rangeEnd = getRangeEnd();
 
         return Scaffold(
-          backgroundColor: colorConfig().negspace,
+          backgroundColor: styleConfig().negspace,
           appBar: const TitleAppBar(title: 'Dashboards'),
           body: CarouselSlider(
             items: dashboards

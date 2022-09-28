@@ -32,7 +32,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsMaintenanceTitle),
       body: StreamBuilder<Set<ConfigFlag>>(
         stream: stream,

@@ -84,7 +84,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(0),
               child: ColoredBox(
-                color: colorConfig().ice,
+                color: styleConfig().ice,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -92,7 +92,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       journalImage: (image) {
                         return Container(
                           width: MediaQuery.of(context).size.width,
-                          color: colorConfig().coal,
+                          color: styleConfig().primaryTextColor,
                           child: EntryImageWidget(
                             journalImage: image,
                           ),

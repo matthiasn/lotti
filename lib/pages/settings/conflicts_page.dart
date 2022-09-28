@@ -52,14 +52,14 @@ class _ConflictsPageState extends State<ConflictsPage> {
         final items = snapshot.data ?? [];
 
         return Scaffold(
-          backgroundColor: colorConfig().negspace,
+          backgroundColor: styleConfig().negspace,
           appBar: TitleAppBar(
             title: localizations.settingsConflictsTitle,
             actions: [
               CupertinoSegmentedControl(
-                selectedColor: colorConfig().riptide,
-                unselectedColor: colorConfig().ice,
-                borderColor: colorConfig().riptide,
+                selectedColor: styleConfig().riptide,
+                unselectedColor: styleConfig().ice,
+                borderColor: styleConfig().riptide,
                 groupValue: _selectedValue,
                 onValueChanged: (String value) {
                   setState(() {
@@ -132,7 +132,7 @@ class ConflictCard extends StatelessWidget {
       elevation: 0,
       margin: EdgeInsets.zero,
       child: ListTile(
-        hoverColor: colorConfig().riplight,
+        hoverColor: styleConfig().riplight,
         contentPadding: const EdgeInsets.only(left: 24, right: 24),
         title: Padding(
           padding: const EdgeInsets.only(bottom: 4),
@@ -204,7 +204,7 @@ class ConflictDetailRoute extends StatelessWidget {
               appBar: TitleAppBar(
                 title: localizations.settingsConflictsResolutionTitle,
               ),
-              backgroundColor: colorConfig().negspace,
+              backgroundColor: styleConfig().negspace,
               body: SingleChildScrollView(
                 padding: const EdgeInsets.all(8),
                 child: Column(

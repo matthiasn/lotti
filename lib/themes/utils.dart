@@ -15,13 +15,13 @@ Color lighten(Color color, int value) {
 
 Color getTagColor(TagEntity tagEntity) {
   if (tagEntity.private) {
-    return colorConfig().privateTagColor;
+    return styleConfig().privateTagColor;
   }
 
   return tagEntity.maybeMap(
-    personTag: (_) => colorConfig().personTagColor,
-    storyTag: (_) => colorConfig().storyTagColor,
-    orElse: () => colorConfig().tagColor,
+    personTag: (_) => styleConfig().personTagColor,
+    storyTag: (_) => styleConfig().storyTagColor,
+    orElse: () => styleConfig().tagColor,
   );
 }
 

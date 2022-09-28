@@ -98,7 +98,7 @@ class _TaskFormState extends State<TaskForm> {
                         horizontal: 8,
                         vertical: 4,
                       ),
-                      backgroundColor: colorConfig().unselectedChoiceChipColor,
+                      backgroundColor: styleConfig().unselectedChoiceChipColor,
                       initialValue: widget.data?.status.map(
                             open: (_) => 'OPEN',
                             groomed: (_) => 'GROOMED',
@@ -120,7 +120,7 @@ class _TaskFormState extends State<TaskForm> {
                       onChanged: (dynamic _) => save(),
                       selectedColor: widget.data?.status != null
                           ? taskColor(widget.data!.status)
-                          : colorConfig().unselectedChoiceChipColor,
+                          : styleConfig().unselectedChoiceChipColor,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       runSpacing: 6,
                       spacing: 4,
@@ -128,7 +128,7 @@ class _TaskFormState extends State<TaskForm> {
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Oswald',
-                        color: colorConfig().unselectedChoiceChipColor,
+                        color: styleConfig().unselectedChoiceChipColor,
                       ),
                       options: [
                         FormBuilderChipOption<String>(

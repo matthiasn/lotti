@@ -75,7 +75,7 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
           appBar: item is Task
               ? TaskAppBar(itemId: item.meta.id)
               : const TitleAppBar(title: '') as PreferredSizeWidget,
-          backgroundColor: colorConfig().negspace,
+          backgroundColor: styleConfig().negspace,
           floatingActionButton: RadialAddActionButtons(
             linked: item,
             radius: isMobile ? 180 : 120,

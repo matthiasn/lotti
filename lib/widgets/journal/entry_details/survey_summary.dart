@@ -37,7 +37,7 @@ class SurveySummary extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontFamily: mainFont,
-                    color: colorConfig().coal,
+                    color: styleConfig().primaryTextColor,
                     fontSize: fontSizeMedium,
                   ),
                 ),
@@ -46,7 +46,7 @@ class SurveySummary extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w400,
                     fontSize: fontSizeMedium,
-                    color: colorConfig().coal,
+                    color: styleConfig().primaryTextColor,
                     fontFamily: mainFont,
                   ),
                 ),

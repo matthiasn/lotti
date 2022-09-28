@@ -37,7 +37,7 @@ class TaskStatusWidget extends StatelessWidget {
           ),
           style: TextStyle(
             fontFamily: 'Oswald',
-            color: colorConfig().selectedChoiceChipTextColor,
+            color: styleConfig().selectedChoiceChipTextColor,
             fontSize: 11,
           ),
         ),

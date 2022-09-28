@@ -44,7 +44,7 @@ void main() {
       // tag has expected color
       expect(
         (tester.firstWidget(find.byType(Container)) as Container).color,
-        colorConfig().tagColor,
+        styleConfig().tagColor,
       );
 
       // onTapRemove is called
@@ -75,7 +75,7 @@ void main() {
       // tag has expected color
       expect(
         (tester.firstWidget(find.byType(Container)) as Container).color,
-        colorConfig().storyTagColor,
+        styleConfig().storyTagColor,
       );
 
       // onTapRemove is called
@@ -106,7 +106,7 @@ void main() {
       // tag has expected color
       expect(
         (tester.firstWidget(find.byType(Container)) as Container).color,
-        colorConfig().personTagColor,
+        styleConfig().personTagColor,
       );
 
       // onTapRemove is called

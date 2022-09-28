@@ -61,21 +61,23 @@ class _AppScreenState extends State<AppScreen> {
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(
-            backgroundColor: colorConfig().negspace,
-            unselectedItemColor: colorConfig().coal,
-            selectedItemColor: colorConfig().riptide,
+            backgroundColor: styleConfig().negspace,
+            unselectedItemColor: styleConfig().primaryTextColor,
+            selectedItemColor: styleConfig().riptide,
             selectedFontSize: fontSizeSmall,
             elevation: 8,
             unselectedFontSize: fontSizeSmall,
-            selectedLabelStyle: const TextStyle(height: 2),
+            selectedLabelStyle: const TextStyle(
+              height: 2,
+              fontWeight: FontWeight.bold,
+            ),
             unselectedLabelStyle: const TextStyle(height: 2),
             type: BottomNavigationBarType.fixed,
             currentIndex: index,
             items: [
               BottomNavigationBarItem(
-                icon: SvgPicture.asset('assets/icons/nav_home.svg'),
-                activeIcon:
-                    SvgPicture.asset('assets/icons/nav_home_active.svg'),
+                icon: SvgPicture.asset(styleConfig().navHomeIcon),
+                activeIcon: SvgPicture.asset(styleConfig().navHomeIconActive),
                 label: localizations.navTabTitleInsights,
               ),
               BottomNavigationBarItem(
@@ -91,11 +93,10 @@ class _AppScreenState extends State<AppScreen> {
                 ),
               BottomNavigationBarItem(
                 icon: OutboxBadgeIcon(
-                  icon: SvgPicture.asset('assets/icons/nav_settings.svg'),
+                  icon: SvgPicture.asset(styleConfig().navSettingsIcon),
                 ),
                 activeIcon: OutboxBadgeIcon(
-                  icon:
-                      SvgPicture.asset('assets/icons/nav_settings_active.svg'),
+                  icon: SvgPicture.asset(styleConfig().navSettingsIconActive),
                 ),
                 label: localizations.navTabTitleSettings,
               ),
@@ -124,10 +125,10 @@ class MyBeamerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = ThemeData(
       primarySwatch: Colors.grey,
-      scaffoldBackgroundColor: colorConfig().iron,
-      highlightColor: colorConfig().riplight,
+      scaffoldBackgroundColor: styleConfig().secondaryTextColor,
+      highlightColor: styleConfig().riplight,
       appBarTheme: AppBarTheme(
-        iconTheme: IconThemeData(color: colorConfig().coal),
+        iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
       ),
     );
 
@@ -156,7 +157,7 @@ class MyBeamerApp extends StatelessWidget {
           child: DesktopMenuWrapper(
             child: ThemeConfigWrapper(
               MaterialApp.router(
-                color: colorConfig().negspace,
+                color: styleConfig().negspace,
                 supportedLocales: AppLocalizations.supportedLocales,
                 theme: theme,
                 localizationsDelegates: const [

@@ -65,7 +65,7 @@ class EditorWidget extends StatelessWidget {
             saveViaKeyboard(event);
           },
           child: ColoredBox(
-            color: colorConfig().negspace,
+            color: styleConfig().negspace,
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: maxHeight,
@@ -89,8 +89,8 @@ class EditorWidget extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 8, bottom: 16),
                         keyboardAppearance: Brightness.dark,
                         customStyles: customEditorStyles(
-                          textColor: colorConfig().coal,
-                          codeBlockBackground: colorConfig().riplight,
+                          textColor: styleConfig().primaryTextColor,
+                          codeBlockBackground: styleConfig().riplight,
                         ),
                       ),
                     ),

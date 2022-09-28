@@ -80,7 +80,7 @@ class _TagsModalState extends State<TagsModal> {
 
     return Material(
       child: ColoredBox(
-        color: colorConfig().ice,
+        color: styleConfig().ice,
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -129,7 +129,7 @@ class _TagsModalState extends State<TagsModal> {
                     ),
                     icon: Icon(
                       MdiIcons.contentCopy,
-                      color: colorConfig().coal,
+                      color: styleConfig().primaryTextColor,
                     ),
                     tooltip: localizations.journalTagsCopyHint,
                   ),
@@ -142,7 +142,7 @@ class _TagsModalState extends State<TagsModal> {
                     ),
                     icon: Icon(
                       MdiIcons.contentPaste,
-                      color: colorConfig().coal,
+                      color: styleConfig().primaryTextColor,
                     ),
                     tooltip: localizations.journalTagsPasteHint,
                   ),

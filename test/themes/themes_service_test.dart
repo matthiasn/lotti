@@ -51,14 +51,14 @@ void main() {
           .setConfigFlag(showBrightSchemeFlag, value: false);
 
       expect(
-        await themesService.getColorConfigStream().first,
+        await themesService.getStyleConfigStream().first,
         darkTheme,
       );
 
       await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlag);
 
       expect(
-        await themesService.getColorConfigStream().first,
+        await themesService.getStyleConfigStream().first,
         brightTheme,
       );
     });
@@ -70,7 +70,7 @@ void main() {
           .setConfigFlag(showBrightSchemeFlag, value: false);
 
       expect(
-        await themesService.getColorConfigStream().first,
+        await themesService.getStyleConfigStream().first,
         darkTheme,
       );
 
@@ -156,18 +156,18 @@ void main() {
         'audioMeterBarBackground',
         'audioMeterPeakedBar',
         'audioMeterTooHotBar',
-        'coal',
         'ice',
-        'iron',
         'negspace',
         'outboxPendingColor',
         'outboxSuccessColor',
         'personTagColor',
+        'primaryTextColor',
         'private',
         'privateTagColor',
         'ripIce',
         'riplight',
         'riptide',
+        'secondaryTagColor',
         'selectedChoiceChipColor',
         'selectedChoiceChipTextColor',
         'starredGold',

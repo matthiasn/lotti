@@ -60,7 +60,7 @@ class DashboardItemCard extends StatelessWidget {
     );
 
     return Card(
-      color: colorConfig().iron,
+      color: styleConfig().secondaryTextColor,
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -97,39 +97,39 @@ class DashboardItemCard extends StatelessWidget {
           measurement: (_) => Icon(
             Icons.insights,
             size: 32,
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
           ),
           healthChart: (_) => Icon(
             MdiIcons.stethoscope,
             size: 32,
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
           ),
           workoutChart: (_) => Icon(
             Icons.sports_gymnastics,
             size: 32,
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
           ),
           surveyChart: (_) => Icon(
             MdiIcons.clipboardOutline,
             size: 32,
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
           ),
           storyTimeChart: (_) => Icon(
             MdiIcons.bookOutline,
             size: 32,
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
           ),
           wildcardStoryTimeChart: (_) => Icon(
             MdiIcons.bookshelf,
             size: 32,
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
           ),
         ),
         title: Text(
           itemName,
           softWrap: true,
           style: TextStyle(
-            color: colorConfig().coal,
+            color: styleConfig().primaryTextColor,
             fontFamily: mainFont,
             fontSize: 20,
           ),

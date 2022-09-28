@@ -70,7 +70,7 @@ class TagAddIconWidget extends StatelessWidget {
                 icon: Icon(
                   MdiIcons.tagPlusOutline,
                   size: 24,
-                  color: colorConfig().iron,
+                  color: styleConfig().secondaryTextColor,
                 ),
                 tooltip: localizations.journalTagPlusHint,
               ),

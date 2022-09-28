@@ -47,21 +47,21 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
               children: [
                 SwitchIconWidget(
                   tooltip: localizations.journalFavoriteTooltip,
-                  activeColor: colorConfig().starredGold,
+                  activeColor: styleConfig().starredGold,
                   onPressed: cubit.toggleStarred,
                   value: item.meta.starred ?? false,
                   iconData: MdiIcons.star,
                 ),
                 SwitchIconWidget(
                   tooltip: localizations.journalPrivateTooltip,
-                  activeColor: colorConfig().alarm,
+                  activeColor: styleConfig().alarm,
                   onPressed: cubit.togglePrivate,
                   value: item.meta.private ?? false,
                   iconData: MdiIcons.security,
                 ),
                 SwitchIconWidget(
                   tooltip: localizations.journalFlaggedTooltip,
-                  activeColor: colorConfig().alarm,
+                  activeColor: styleConfig().alarm,
                   onPressed: cubit.toggleFlagged,
                   value: item.meta.flag == EntryFlag.import,
                   iconData: MdiIcons.flag,
@@ -71,7 +71,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                     tooltip: state.showMap
                         ? localizations.journalHideMapHint
                         : localizations.journalShowMapHint,
-                    activeColor: colorConfig().starredGold,
+                    activeColor: styleConfig().starredGold,
                     onPressed: cubit.toggleMapVisible,
                     value: cubit.showMap,
                     iconData: MdiIcons.mapOutline,
@@ -123,7 +123,7 @@ class SwitchIconWidget extends StatelessWidget {
         icon: Icon(
           iconData,
           size: 20,
-          color: value ? activeColor : colorConfig().iron,
+          color: value ? activeColor : styleConfig().secondaryTextColor,
         ),
       ),
     );

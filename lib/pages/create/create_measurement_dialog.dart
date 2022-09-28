@@ -125,7 +125,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(50)),
           ),
-          backgroundColor: colorConfig().riplight,
+          backgroundColor: styleConfig().riplight,
           actionsAlignment: MainAxisAlignment.end,
           actionsPadding: const EdgeInsets.only(
             left: 20,
@@ -160,7 +160,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     Text(
                       selected?.displayName ?? '',
                       style: TextStyle(
-                        color: colorConfig().coal,
+                        color: styleConfig().primaryTextColor,
                         fontFamily: mainFont,
                         fontSize: 20,
                       ),
@@ -168,7 +168,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     IconButton(
                       padding: const EdgeInsets.all(10),
                       icon: SvgPicture.asset('assets/icons/close.svg'),
-                      color: colorConfig().coal,
+                      color: styleConfig().primaryTextColor,
                       hoverColor: Colors.transparent,
                       onPressed: dashboardsBeamerDelegate.beamBack,
                     ),
@@ -183,7 +183,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       //   Text(
                       //     '${selected?.description}',
                       //     style: TextStyle(
-                      //       color: colorConfig().coal,
+                      //       color: colorConfig().primaryTextColor,
                       //       fontFamily: mainFont,
                       //       fontWeight: FontWeight.w300,
                       //       fontSize: 14,
@@ -198,7 +198,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         ),
                         style: newInputStyle(),
                         decoration:
-                            InputDecoration(fillColor: colorConfig().negspace),
+                            InputDecoration(fillColor: styleConfig().negspace),
                         initialValue: DateTime.now(),
                         theme: datePickerTheme(),
                       ),

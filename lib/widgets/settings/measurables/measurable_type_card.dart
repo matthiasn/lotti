@@ -27,7 +27,7 @@ class MeasurableTypeCard extends StatelessWidget {
             visible: fromNullableBool(item.private),
             child: Icon(
               MdiIcons.security,
-              color: colorConfig().alarm,
+              color: styleConfig().alarm,
               size: settingsIconSize,
             ),
           ),
@@ -37,7 +37,7 @@ class MeasurableTypeCard extends StatelessWidget {
               padding: const EdgeInsets.only(left: 4),
               child: Icon(
                 MdiIcons.star,
-                color: colorConfig().starredGold,
+                color: styleConfig().starredGold,
                 size: settingsIconSize,
               ),
             ),

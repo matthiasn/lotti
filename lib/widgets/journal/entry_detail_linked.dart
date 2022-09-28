@@ -47,7 +47,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
               Text(
                 localizations.journalLinkedEntriesLabel,
                 style: TextStyle(
-                  color: colorConfig().coal,
+                  color: styleConfig().primaryTextColor,
                   fontFamily: 'Oswald',
                 ),
               ),
@@ -87,7 +87,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                     onDismissed: onDismissed,
                     confirmDismiss: confirmDismiss,
                     background: ColoredBox(
-                      color: colorConfig().alarm,
+                      color: styleConfig().alarm,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -96,7 +96,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                             child: Text(
                               localizations.journalUnlinkText,
                               style: TextStyle(
-                                color: colorConfig().iron,
+                                color: styleConfig().secondaryTextColor,
                                 fontFamily: 'Oswald',
                                 fontWeight: FontWeight.w300,
                                 fontSize: 24,
@@ -108,7 +108,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                             child: Icon(
                               Icons.link_off,
                               size: 32,
-                              color: colorConfig().iron,
+                              color: styleConfig().secondaryTextColor,
                             ),
                           ),
                         ],

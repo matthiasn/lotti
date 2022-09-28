@@ -5,7 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
 - Segmented control for dashboard time span
+- Style: dark mode
 
 ## [0.8.156] - 2022-09-26
 ### Changed:

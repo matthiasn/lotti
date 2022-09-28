@@ -42,7 +42,7 @@ class _TagsPageState extends State<TagsPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: colorConfig().ice,
+      backgroundColor: styleConfig().ice,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: mainFont,
@@ -79,7 +79,7 @@ class _TagsPageState extends State<TagsPage> {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.settingsTagsTitle),
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       floatingActionButton: const RadialAddTagButtons(),
       body: StreamBuilder<List<TagEntity>>(
         stream: stream,
