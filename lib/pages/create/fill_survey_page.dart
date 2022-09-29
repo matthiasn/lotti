@@ -33,26 +33,37 @@ class SurveyWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Theme(
       data: ThemeData(
-        primaryColor: styleConfig().riptide,
+        primaryColor: styleConfig().primaryColor,
+        scaffoldBackgroundColor: styleConfig().cardColor,
         fontFamily: 'PlusJakartaSans',
         // Define the default `TextTheme`. Use this to specify the default
         // text styling for headlines, titles, bodies of text, and more.
-        textTheme: TextTheme(
-          headline3: TextStyle(
-            fontSize: 24,
-            color: styleConfig().primaryTextColor,
-          ),
-          headline5: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w200,
-            color: styleConfig().primaryTextColor,
-          ),
-          headline6: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w400,
-            color: styleConfig().primaryTextColor,
-          ),
-        ),
+
+        textTheme: Theme.of(context)
+            .textTheme
+            .apply(
+              bodyColor: styleConfig().primaryTextColor,
+              displayColor: styleConfig().primaryTextColor,
+            )
+            .copyWith(
+              headline3: TextStyle(
+                fontSize: 24,
+                color: styleConfig().primaryTextColor,
+              ),
+              headline5: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w200,
+                color: styleConfig().primaryTextColor,
+              ),
+              headline6: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w400,
+                color: styleConfig().secondaryTextColor,
+              ),
+              caption: TextStyle(
+                color: styleConfig().secondaryTextColor,
+              ),
+            ),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 600),

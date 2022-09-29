@@ -222,13 +222,13 @@ StyleConfig styleConfig() => getIt<ThemesService>().current;
 
 DatePickerTheme datePickerTheme() => DatePickerTheme(
       headerColor: styleConfig().secondaryTextColor,
-      backgroundColor: styleConfig().cardBg,
+      backgroundColor: styleConfig().cardColor,
       itemStyle: TextStyle(
         color: styleConfig().primaryTextColor,
         fontSize: 20,
       ),
       cancelStyle: TextStyle(
-        color: styleConfig().cardBg,
+        color: styleConfig().cardColor,
         fontSize: 20,
       ),
       doneStyle: TextStyle(

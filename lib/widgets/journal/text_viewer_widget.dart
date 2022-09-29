@@ -38,7 +38,7 @@ class TextViewerWidget extends StatelessWidget {
           keyboardAppearance: Brightness.dark,
           customStyles: customTextViewerStyles(
             textColor: styleConfig().primaryTextColor,
-            codeBlockBackground: styleConfig().riplight,
+            codeBlockBackground: styleConfig().primaryColorLight,
           ),
         ),
       ),

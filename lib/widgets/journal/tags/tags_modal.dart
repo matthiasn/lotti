@@ -80,7 +80,7 @@ class _TagsModalState extends State<TagsModal> {
 
     return Material(
       child: ColoredBox(
-        color: styleConfig().cardBg,
+        color: styleConfig().cardColor,
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(

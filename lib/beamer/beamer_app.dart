@@ -63,7 +63,7 @@ class _AppScreenState extends State<AppScreen> {
           bottomNavigationBar: BottomNavigationBar(
             backgroundColor: styleConfig().negspace,
             unselectedItemColor: styleConfig().primaryTextColor,
-            selectedItemColor: styleConfig().riptide,
+            selectedItemColor: styleConfig().primaryColor,
             selectedFontSize: fontSizeSmall,
             elevation: 8,
             unselectedFontSize: fontSizeSmall,
@@ -126,7 +126,7 @@ class MyBeamerApp extends StatelessWidget {
     final theme = ThemeData(
       primarySwatch: Colors.grey,
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
-      highlightColor: styleConfig().riplight,
+      highlightColor: styleConfig().primaryColorLight,
       appBarTheme: AppBarTheme(
         iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
       ),

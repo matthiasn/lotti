@@ -57,9 +57,9 @@ class _ConflictsPageState extends State<ConflictsPage> {
             title: localizations.settingsConflictsTitle,
             actions: [
               CupertinoSegmentedControl(
-                selectedColor: styleConfig().riptide,
-                unselectedColor: styleConfig().cardBg,
-                borderColor: styleConfig().riptide,
+                selectedColor: styleConfig().primaryColor,
+                unselectedColor: styleConfig().cardColor,
+                borderColor: styleConfig().primaryColor,
                 groupValue: _selectedValue,
                 onValueChanged: (String value) {
                   setState(() {
@@ -132,7 +132,7 @@ class ConflictCard extends StatelessWidget {
       elevation: 0,
       margin: EdgeInsets.zero,
       child: ListTile(
-        hoverColor: styleConfig().riplight,
+        hoverColor: styleConfig().primaryColorLight,
         contentPadding: const EdgeInsets.only(left: 24, right: 24),
         title: Padding(
           padding: const EdgeInsets.only(bottom: 4),

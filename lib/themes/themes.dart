@@ -10,12 +10,13 @@ const brightBaseColor = Color.fromRGBO(244, 187, 41, 1);
 final Color white = colorFromCssHex('#FFFFFF');
 final Color coal = colorFromCssHex('#000000');
 final Color iron = colorFromCssHex('#909090');
-final Color riptide = colorFromCssHex('#82E6CE');
-final Color riplight = colorFromCssHex('#CFF3EA');
+final Color primaryColor = colorFromCssHex('#82E6CE');
+final Color primaryColorLight = colorFromCssHex('#CFF3EA');
 final Color ripIce = colorFromCssHex('#EFFFFB');
 final Color alarm = colorFromCssHex('#FF7373');
 final Color ice = colorFromCssHex('#F5F5F5');
 final Color nickel = colorFromCssHex('#B4B2B2');
+final Color mineShaft = colorFromCssHex('#313131');
 
 final darkTheme = StyleConfig(
   tagColor: const Color.fromRGBO(155, 200, 246, 1),
@@ -42,11 +43,11 @@ final darkTheme = StyleConfig(
   negspace: coal,
   primaryTextColor: white,
   secondaryTextColor: iron,
-  riptide: riptide,
-  riplight: riplight,
+  primaryColor: primaryColor,
+  primaryColorLight: primaryColorLight,
   hover: iron,
   alarm: alarm,
-  cardBg: colorFromCssHex('#313131'),
+  cardColor: mineShaft,
   chartTextColor: nickel,
   navHomeIcon: 'assets/icons/nav_home_dark.svg',
   navHomeIconActive: 'assets/icons/nav_home_active.svg',
@@ -94,11 +95,11 @@ final brightTheme = StyleConfig(
   negspace: white,
   primaryTextColor: coal,
   secondaryTextColor: iron,
-  riptide: riptide,
-  riplight: riplight,
+  primaryColor: primaryColor,
+  primaryColorLight: primaryColorLight,
   hover: ripIce,
   alarm: alarm,
-  cardBg: ice,
+  cardColor: ice,
   chartTextColor: iron,
   navHomeIcon: 'assets/icons/nav_home.svg',
   navHomeIconActive: 'assets/icons/nav_home_active.svg',

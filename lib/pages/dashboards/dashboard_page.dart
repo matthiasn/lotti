@@ -126,9 +126,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 children: [
                   const SizedBox(height: 15),
                   CupertinoSegmentedControl(
-                    selectedColor: styleConfig().riptide,
+                    selectedColor: styleConfig().primaryColor,
                     unselectedColor: styleConfig().negspace,
-                    borderColor: styleConfig().riptide,
+                    borderColor: styleConfig().primaryColor,
                     groupValue: timeSpanDays,
                     onValueChanged: (int value) {
                       setState(() {

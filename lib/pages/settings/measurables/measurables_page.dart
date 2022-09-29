@@ -46,7 +46,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: styleConfig().cardBg,
+      backgroundColor: styleConfig().cardColor,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: mainFont,
@@ -100,7 +100,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
           appBar: TitleAppBar(title: localizations.settingsMeasurablesTitle),
           backgroundColor: styleConfig().negspace,
           floatingActionButton: FloatingActionButton(
-            backgroundColor: styleConfig().riptide,
+            backgroundColor: styleConfig().primaryColor,
             onPressed: createMeasurable,
             child: SvgPicture.asset(styleConfig().actionAddIcon, width: 25),
           ),

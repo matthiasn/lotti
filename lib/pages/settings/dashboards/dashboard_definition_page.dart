@@ -296,7 +296,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(0),
                     child: Container(
-                      color: styleConfig().cardBg,
+                      color: styleConfig().cardColor,
                       padding: const EdgeInsets.all(24),
                       child: Column(
                         children: [
@@ -458,7 +458,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             onPressed: () {
                               showCupertinoModalBottomSheet<void>(
                                 context: context,
-                                backgroundColor: styleConfig().cardBg,
+                                backgroundColor: styleConfig().cardColor,
                                 shape: const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.vertical(
                                     top: Radius.circular(16),
@@ -509,7 +509,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       icon: const Icon(Icons.copy),
                                       iconSize: settingsIconSize,
                                       tooltip: localizations.dashboardCopyHint,
-                                      color: styleConfig().cardBg,
+                                      color: styleConfig().cardColor,
                                       onPressed: copyDashboard,
                                     ),
                                     IconButton(
@@ -518,7 +518,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       iconSize: settingsIconSize,
                                       tooltip:
                                           localizations.dashboardDeleteHint,
-                                      color: styleConfig().cardBg,
+                                      color: styleConfig().cardColor,
                                       onPressed: () async {
                                         const deleteKey = 'deleteKey';
                                         final result =

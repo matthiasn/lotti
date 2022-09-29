@@ -124,7 +124,7 @@ class _TasksPageState extends State<TasksPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: styleConfig().cardBg,
+      backgroundColor: styleConfig().cardColor,
       queryStyle: const TextStyle(
         fontFamily: mainFont,
         fontSize: 24,
@@ -271,7 +271,7 @@ class _TasksPageState extends State<TasksPage> {
           ),
         ).asGlass(
           clipBorderRadius: BorderRadius.circular(8),
-          tintColor: styleConfig().cardBg,
+          tintColor: styleConfig().cardColor,
         );
       },
     );
@@ -364,7 +364,7 @@ class AddTask extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       child: FloatingActionButton(
         heroTag: 'addTask',
-        backgroundColor: styleConfig().riptide,
+        backgroundColor: styleConfig().primaryColor,
         onPressed: () async {
           final task = await createTask();
           if (task != null) {

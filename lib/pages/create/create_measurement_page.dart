@@ -145,7 +145,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(0),
                   child: Container(
-                    color: styleConfig().cardBg,
+                    color: styleConfig().cardColor,
                     width: MediaQuery.of(context).size.width,
                     padding: const EdgeInsets.all(32),
                     child: FormBuilder(
@@ -227,7 +227,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                   ),
                                 if (selected == null)
                                   FormBuilderDropdown<MeasurableDataType>(
-                                    dropdownColor: styleConfig().cardBg,
+                                    dropdownColor: styleConfig().cardColor,
                                     name: 'type',
                                     decoration: InputDecoration(
                                       labelText: 'Type',

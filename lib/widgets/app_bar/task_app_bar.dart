@@ -34,7 +34,7 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
         final item = snapshot.data;
         if (item == null || item.meta.deletedAt != null) {
           return AppBar(
-            backgroundColor: styleConfig().cardBg,
+            backgroundColor: styleConfig().cardColor,
             title: FadeIn(
               duration: const Duration(milliseconds: 500),
               child: Text(
@@ -52,7 +52,7 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
           return const TitleAppBar(title: 'Lotti');
         } else {
           return AppBar(
-            backgroundColor: styleConfig().cardBg,
+            backgroundColor: styleConfig().cardColor,
             title: LinkedDuration(task: item),
             centerTitle: true,
           );
