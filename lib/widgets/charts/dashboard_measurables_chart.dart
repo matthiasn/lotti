@@ -96,6 +96,12 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                   rangeStart: widget.rangeStart,
                   rangeEnd: widget.rangeEnd,
                 );
+              } else if (aggregationType == AggregationType.hourlySum) {
+                data = aggregateSumByHour(
+                  measurements,
+                  rangeStart: widget.rangeStart,
+                  rangeEnd: widget.rangeEnd,
+                );
               } else {
                 data = aggregateSumByDay(
                   measurements,
@@ -146,7 +152,8 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                     )
                   ],
                   behaviors: [
-                    chartRangeAnnotation(
+                    measurablesChartRangeAnnotation(
+                      aggregationType,
                       widget.rangeStart,
                       widget.rangeEnd,
                     )
