@@ -29,6 +29,7 @@ class TasksBadgeIcon extends StatelessWidget {
             '$count',
             style: badgeStyle,
           ),
+          badgeColor: styleConfig().alarm,
           showBadge: count != 0,
           toAnimate: false,
           elevation: 3,

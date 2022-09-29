@@ -21,6 +21,7 @@ class FlaggedBadgeIcon extends StatelessWidget {
       ) {
         final count = snapshot.data;
         return Badge(
+          badgeColor: styleConfig().alarm,
           badgeContent: Text(
             snapshot.data.toString(),
             style: badgeStyle,

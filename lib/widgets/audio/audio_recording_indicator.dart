@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/audio/vu_meter.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class AudioRecordingIndicator extends StatelessWidget {
@@ -31,9 +30,9 @@ class AudioRecordingIndicator extends StatelessWidget {
                 topRight: Radius.circular(8),
               ),
               child: Container(
-                width: 120,
-                height: 32,
-                color: styleConfig().timeRecordingBg,
+                width: 100,
+                height: 25,
+                color: styleConfig().alarm,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -42,19 +41,19 @@ class AudioRecordingIndicator extends StatelessWidget {
                       children: <Widget>[
                         Icon(
                           Icons.mic,
-                          size: 24,
+                          size: 20,
                           color: styleConfig().cardColor,
                         ),
                         Padding(
-                          padding: const EdgeInsets.only(left: 4),
+                          padding: const EdgeInsets.only(left: 4, bottom: 4),
                           child: Text(
                             formatDuration(state.progress),
-                            style: monospaceTextStyle(),
+                            style: monospaceTextStyle()
+                                .copyWith(color: Colors.black),
                           ),
                         ),
                       ],
                     ),
-                    const VuMeterWidget(),
                   ],
                 ),
               ),
