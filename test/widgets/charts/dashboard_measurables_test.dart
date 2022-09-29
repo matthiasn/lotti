@@ -90,6 +90,53 @@ void main() {
       );
     });
 
+    testWidgets(
+        'chart is rendered with measurement entry, aggregation sum by hour',
+        (tester) async {
+      when(
+        () => mockJournalDb.watchMeasurementsByType(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+          type: measurableChocolate.id,
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testMeasurementChocolateEntry]
+        ]),
+      );
+
+      when(
+        () => mockJournalDb.watchMeasurableDataTypeById(
+          measurableChocolate.id,
+        ),
+      ).thenAnswer(
+        (_) => Stream<MeasurableDataType>.fromIterable([
+          measurableChocolate.copyWith(
+            aggregationType: AggregationType.hourlySum,
+          ),
+        ]),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DashboardMeasurablesChart(
+            dashboardId: 'dashboardId',
+            rangeStart: DateTime(2022),
+            rangeEnd: DateTime(2023),
+            measurableDataTypeId: measurableChocolate.id,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // measurement entry displays expected date
+      expect(
+        find.text('${measurableChocolate.displayName} [hourlySum]'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('chart is rendered with measurement entry, aggregation none',
         (tester) async {
       when(

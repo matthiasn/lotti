@@ -33,6 +33,11 @@ String ymd(DateTime day) {
   return day.toIso8601String().substring(0, 10);
 }
 
+String ymdh(DateTime dt) {
+  final beginningOfHour = DateTime(dt.year, dt.month, dt.day, dt.hour);
+  return beginningOfHour.toIso8601String();
+}
+
 List<MeasuredObservation> aggregateSumByDay(
   List<JournalEntity?> entities, {
   required DateTime rangeStart,
@@ -41,7 +46,7 @@ List<MeasuredObservation> aggregateSumByDay(
   final sumsByDay = <String, num>{};
   final range = rangeEnd.difference(rangeStart);
   final dayStrings = List<String>.generate(range.inDays, (days) {
-    final day = rangeStart.add(Duration(days: days));
+    final day = rangeStart.add(Duration(days: days + 1));
     return ymd(day);
   });
 
@@ -59,8 +64,41 @@ List<MeasuredObservation> aggregateSumByDay(
 
   final aggregated = <MeasuredObservation>[];
   for (final dayString in sumsByDay.keys) {
-    final day = DateTime.parse(dayString);
-    aggregated.add(MeasuredObservation(day, sumsByDay[dayString] ?? 0));
+    final midDay = DateTime.parse(dayString).add(const Duration(hours: 12));
+    aggregated.add(MeasuredObservation(midDay, sumsByDay[dayString] ?? 0));
+  }
+
+  return aggregated;
+}
+
+List<MeasuredObservation> aggregateSumByHour(
+  List<JournalEntity?> entities, {
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) {
+  final sumsByHour = <String, num>{};
+  final range = rangeEnd.difference(rangeStart);
+  final hourStrings = List<String>.generate(range.inHours, (hours) {
+    final beginningOfHour = rangeStart.add(Duration(hours: hours));
+    return ymdh(beginningOfHour);
+  });
+
+  for (final beginningOfHour in hourStrings) {
+    sumsByHour[beginningOfHour] = 0;
+  }
+
+  for (final entity in entities) {
+    final beginningOfHour = ymdh(entity!.meta.dateFrom);
+    final n = sumsByHour[beginningOfHour] ?? 0;
+    if (entity is MeasurementEntry) {
+      sumsByHour[beginningOfHour] = n + entity.data.value;
+    }
+  }
+
+  final aggregated = <MeasuredObservation>[];
+  for (final beginningOfHour in sumsByHour.keys) {
+    final dt = DateTime.parse(beginningOfHour);
+    aggregated.add(MeasuredObservation(dt, sumsByHour[beginningOfHour] ?? 0));
   }
 
   return aggregated;
@@ -136,8 +174,26 @@ RangeAnnotation<DateTime> chartRangeAnnotation(
   ]);
 }
 
+RangeAnnotation<DateTime> measurablesChartRangeAnnotation(
+  AggregationType aggregationType,
+  DateTime rangeStart,
+  DateTime rangeEnd,
+) {
+  final shortenRange = aggregationType == AggregationType.dailySum ||
+      aggregationType == AggregationType.dailyMax;
+
+  return RangeAnnotation([
+    RangeAnnotationSegment(
+      shortenRange ? rangeStart.add(const Duration(days: 1)) : rangeStart,
+      shortenRange ? rangeEnd.subtract(const Duration(days: 1)) : rangeEnd,
+      RangeAnnotationAxisType.domain,
+      color: Color.transparent,
+    )
+  ]);
+}
+
 final timeSeriesAxis = DateTimeAxisSpec(
-  tickProviderSpec: const AutoDateTimeTickProviderSpec(),
+  tickProviderSpec: const AutoDateTimeTickProviderSpec(includeTime: false),
   renderSpec: SmallTickRendererSpec(
     labelStyle: TextStyleSpec(
       fontSize: 10,
