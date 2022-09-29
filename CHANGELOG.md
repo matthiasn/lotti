@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Colors adapted for dark mode
 - VU meter in audio recording indicator removed
 
 ## [0.8.157] - 2022-09-29

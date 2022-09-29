@@ -54,7 +54,7 @@ class _AppScreenState extends State<AppScreen> {
               ),
               const TimeRecordingIndicator(),
               Positioned(
-                right: MediaQuery.of(context).size.width / 2 - 60,
+                right: MediaQuery.of(context).size.width / 2 - 50,
                 bottom: 0,
                 child: const AudioRecordingIndicator(),
               ),

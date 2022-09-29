@@ -79,10 +79,11 @@ TextStyle newLabelStyle() => TextStyle(
       fontSize: fontSizeMedium,
     );
 
-TextStyle monospaceTextStyle() => const TextStyle(
+TextStyle monospaceTextStyle() => TextStyle(
       fontFamily: 'Inconsolata',
       fontWeight: FontWeight.w300,
       fontSize: fontSizeMedium,
+      color: styleConfig().primaryTextColor,
     );
 
 TextStyle monospaceTextStyleSmall() => monospaceTextStyle().copyWith(
