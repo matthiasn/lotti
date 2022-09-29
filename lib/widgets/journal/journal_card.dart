@@ -13,7 +13,6 @@ import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/workout_summary.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/journal/helpers.dart';
 import 'package:lotti/widgets/journal/tags/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/tasks/linked_duration.dart';
@@ -102,7 +101,7 @@ class JournalCardTitle extends StatelessWidget {
                           entryText: journalAudio.entryText,
                           maxHeight: maxHeight,
                         )
-                      : EntryTextWidget(formatAudio(journalAudio)),
+                      : null,
               journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
                 entryText: journalEntry.entryText,
                 maxHeight: maxHeight,
