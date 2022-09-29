@@ -159,6 +159,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                       desiredMinTickCount: 4,
                       desiredMaxTickCount: 5,
                     ),
+                    renderSpec: numericRenderSpec,
                   ),
                 ),
                 chartHeader: MeasurablesChartInfoWidget(
@@ -252,7 +253,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     onPressed: onTapAdd,
                     hoverColor: Colors.transparent,
-                    icon: SvgPicture.asset('assets/icons/add.svg'),
+                    icon: SvgPicture.asset(styleConfig().addIcon),
                   ),
               ],
             ),

@@ -58,7 +58,7 @@ class ShareButtonWidget extends StatelessWidget {
             iconSize: 24,
             tooltip: tooltip,
             padding: EdgeInsets.zero,
-            color: colorConfig().iron,
+            color: styleConfig().secondaryTextColor,
             onPressed: onPressed,
           ),
         );

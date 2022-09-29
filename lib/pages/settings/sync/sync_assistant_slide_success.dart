@@ -53,7 +53,7 @@ class SyncAssistantSuccessSlide extends StatelessWidget {
                   persistNamedRoute('/settings/advanced');
                   Navigator.of(context).maybePop();
                 },
-                primaryColor: colorConfig().outboxSuccessColor,
+                primaryColor: styleConfig().outboxSuccessColor,
               ),
             ),
           ),

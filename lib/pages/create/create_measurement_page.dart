@@ -137,7 +137,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                 ),
             ],
           ),
-          backgroundColor: colorConfig().negspace,
+          backgroundColor: styleConfig().negspace,
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -145,7 +145,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(0),
                   child: Container(
-                    color: colorConfig().ice,
+                    color: styleConfig().cardColor,
                     width: MediaQuery.of(context).size.width,
                     padding: const EdgeInsets.all(32),
                     child: FormBuilder(
@@ -176,7 +176,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                         localizations.addMeasurementNoneDefined,
                                         style: titleStyle().copyWith(
                                           decoration: TextDecoration.underline,
-                                          color: colorConfig().coal,
+                                          color: styleConfig().primaryTextColor,
                                         ),
                                         wrapWords: false,
                                         maxLines: 3,
@@ -198,7 +198,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                       child: Text(
                                         selected?.displayName ?? '',
                                         style: TextStyle(
-                                          color: colorConfig().coal,
+                                          color: styleConfig().primaryTextColor,
                                           fontFamily: 'Oswald',
                                           fontSize: fontSizeLarge,
                                         ),
@@ -206,7 +206,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.settings_outlined),
-                                      color: colorConfig().coal,
+                                      color: styleConfig().primaryTextColor,
                                       onPressed: () {
                                         beamToNamed(
                                           '/settings/measurables/${selected?.id}',
@@ -219,7 +219,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                   Text(
                                     selected!.description,
                                     style: TextStyle(
-                                      color: colorConfig().coal,
+                                      color: styleConfig().primaryTextColor,
                                       fontFamily: 'Oswald',
                                       fontWeight: FontWeight.w300,
                                       fontSize: fontSizeMedium,
@@ -227,7 +227,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                   ),
                                 if (selected == null)
                                   FormBuilderDropdown<MeasurableDataType>(
-                                    dropdownColor: colorConfig().ice,
+                                    dropdownColor: styleConfig().cardColor,
                                     name: 'type',
                                     decoration: InputDecoration(
                                       labelText: 'Type',

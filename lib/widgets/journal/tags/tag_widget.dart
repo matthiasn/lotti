@@ -37,7 +37,7 @@ class TagWidget extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Oswald',
-                    color: colorConfig().tagTextColor,
+                    color: styleConfig().tagTextColor,
                   ),
                 ),
               ),
@@ -49,7 +49,7 @@ class TagWidget extends StatelessWidget {
               icon: Icon(
                 MdiIcons.close,
                 size: 16,
-                color: colorConfig().tagTextColor,
+                color: styleConfig().tagTextColor,
               ),
               tooltip: localizations.journalTagsRemoveHint,
             ),

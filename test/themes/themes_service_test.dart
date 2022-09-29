@@ -51,14 +51,14 @@ void main() {
           .setConfigFlag(showBrightSchemeFlag, value: false);
 
       expect(
-        await themesService.getColorConfigStream().first,
+        await themesService.getStyleConfigStream().first,
         darkTheme,
       );
 
       await getIt<JournalDb>().toggleConfigFlag(showBrightSchemeFlag);
 
       expect(
-        await themesService.getColorConfigStream().first,
+        await themesService.getStyleConfigStream().first,
         brightTheme,
       );
     });
@@ -70,7 +70,7 @@ void main() {
           .setConfigFlag(showBrightSchemeFlag, value: false);
 
       expect(
-        await themesService.getColorConfigStream().first,
+        await themesService.getStyleConfigStream().first,
         darkTheme,
       );
 
@@ -144,41 +144,6 @@ void main() {
             .millisecondsSinceEpoch,
         greaterThan(start.millisecondsSinceEpoch),
       );
-    });
-
-    test('sorted color names are returned', () async {
-      final themesService = ThemesService();
-
-      expect(themesService.colorNames(), [
-        'activeAudioControl',
-        'alarm',
-        'audioMeterBar',
-        'audioMeterBarBackground',
-        'audioMeterPeakedBar',
-        'audioMeterTooHotBar',
-        'coal',
-        'ice',
-        'iron',
-        'negspace',
-        'outboxPendingColor',
-        'outboxSuccessColor',
-        'personTagColor',
-        'private',
-        'privateTagColor',
-        'ripIce',
-        'riplight',
-        'riptide',
-        'selectedChoiceChipColor',
-        'selectedChoiceChipTextColor',
-        'starredGold',
-        'storyTagColor',
-        'tagColor',
-        'tagTextColor',
-        'timeRecording',
-        'timeRecordingBg',
-        'unselectedChoiceChipColor',
-        'unselectedChoiceChipTextColor',
-      ]);
     });
   });
 }

@@ -63,7 +63,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             }
 
             return Scaffold(
-              backgroundColor: colorConfig().negspace,
+              backgroundColor: styleConfig().negspace,
               appBar: OutboxAppBar(
                 onlineStatus: onlineStatus,
                 selectedValue: _selectedValue,
@@ -122,11 +122,11 @@ class OutboxItemCard extends StatelessWidget {
     Color cardColor(OutboxStatus status) {
       switch (statusEnum) {
         case OutboxStatus.pending:
-          return colorConfig().outboxPendingColor;
+          return styleConfig().outboxPendingColor;
         case OutboxStatus.error:
-          return colorConfig().alarm;
+          return styleConfig().alarm;
         case OutboxStatus.sent:
-          return colorConfig().outboxSuccessColor;
+          return styleConfig().outboxSuccessColor;
       }
     }
 
@@ -147,7 +147,7 @@ class OutboxItemCard extends StatelessWidget {
           title: Text(
             '${df.format(item.createdAt)} - $status',
             style: TextStyle(
-              color: colorConfig().coal,
+              color: styleConfig().primaryTextColor,
               fontFamily: 'Oswald',
               fontSize: fontSizeMedium,
             ),
@@ -156,7 +156,7 @@ class OutboxItemCard extends StatelessWidget {
             '${item.retries} $retriesText - '
             '${item.filePath ?? localizations.outboxMonitorNoAttachment}',
             style: TextStyle(
-              color: colorConfig().coal,
+              color: styleConfig().primaryTextColor,
               fontFamily: 'Oswald',
               fontWeight: FontWeight.w200,
               fontSize: fontSizeMedium,
@@ -202,7 +202,7 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return AppBar(
-      backgroundColor: colorConfig().ice,
+      backgroundColor: styleConfig().cardColor,
       title: Column(
         children: [
           Row(
@@ -231,9 +231,9 @@ class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
             ],
           ),
           CupertinoSegmentedControl(
-            selectedColor: colorConfig().coal,
-            unselectedColor: colorConfig().ice,
-            borderColor: colorConfig().coal,
+            selectedColor: styleConfig().primaryTextColor,
+            unselectedColor: styleConfig().cardColor,
+            borderColor: styleConfig().primaryTextColor,
             groupValue: selectedValue,
             onValueChanged: onValueChanged,
             children: {

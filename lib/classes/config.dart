@@ -32,8 +32,8 @@ class SyncConfig with _$SyncConfig {
 }
 
 @freezed
-class ColorConfig with _$ColorConfig {
-  factory ColorConfig({
+class StyleConfig with _$StyleConfig {
+  factory StyleConfig({
     @ColorConverter() required Color tagColor,
     @ColorConverter() required Color tagTextColor,
     @ColorConverter() required Color personTagColor,
@@ -56,17 +56,37 @@ class ColorConfig with _$ColorConfig {
     @ColorConverter() required Color audioMeterBarBackground,
     // new colors
     @ColorConverter() required Color negspace,
-    @ColorConverter() required Color coal,
-    @ColorConverter() required Color iron,
-    @ColorConverter() required Color riptide,
-    @ColorConverter() required Color riplight,
-    @ColorConverter() required Color ripIce,
+    @ColorConverter() required Color primaryTextColor,
+    @ColorConverter() required Color secondaryTextColor,
+    @ColorConverter() required Color primaryColor,
+    @ColorConverter() required Color primaryColorLight,
+    @ColorConverter() required Color hover,
     @ColorConverter() required Color alarm,
-    @ColorConverter() required Color ice,
-  }) = _ColorConfig;
+    @ColorConverter() required Color cardColor,
+    @ColorConverter() required Color chartTextColor,
+    required String navHomeIcon,
+    required String navHomeIconActive,
+    required String navJournalIcon,
+    required String navJournalIconActive,
+    required String navTasksIcon,
+    required String navTasksIconActive,
+    required String navSettingsIcon,
+    required String navSettingsIconActive,
+    required String searchIcon,
+    required String actionAddIcon,
+    required String addIcon,
+    required String backIcon,
+    required String closeIcon,
+    required String filterIcon,
+    required String stopIcon,
+    required String pauseIcon,
+    required String micIcon,
+    required String micHotIcon,
+    required String micRecIcon,
+  }) = _StyleConfig;
 
-  factory ColorConfig.fromJson(Map<String, dynamic> json) =>
-      _$ColorConfigFromJson(json);
+  factory StyleConfig.fromJson(Map<String, dynamic> json) =>
+      _$StyleConfigFromJson(json);
 }
 
 class ColorConverter implements JsonConverter<Color, String> {

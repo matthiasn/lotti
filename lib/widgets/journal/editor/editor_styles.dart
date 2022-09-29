@@ -143,13 +143,13 @@ DefaultStyles customTextViewerStyles({
       radius: const Radius.circular(8),
       style: GoogleFonts.inconsolata(
         fontSize: 12,
-        color: colorConfig().coal,
+        color: Colors.black,
       ),
     ),
     code: DefaultTextBlockStyle(
       GoogleFonts.inconsolata(
         fontSize: 12,
-        color: textColor,
+        color: Colors.black,
       ),
       const Tuple2(0, 0),
       const Tuple2(0, 0),

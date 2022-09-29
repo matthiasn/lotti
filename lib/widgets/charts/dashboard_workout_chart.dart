@@ -106,12 +106,13 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
                   updatedListener: infoSelectionModelUpdated,
                 ),
               ],
-              primaryMeasureAxis: const charts.NumericAxisSpec(
-                tickProviderSpec: charts.BasicNumericTickProviderSpec(
+              primaryMeasureAxis: charts.NumericAxisSpec(
+                tickProviderSpec: const charts.BasicNumericTickProviderSpec(
                   zeroBound: false,
                   desiredTickCount: 5,
                   dataIsInWholeNumbers: true,
                 ),
+                renderSpec: numericRenderSpec,
               ),
             ),
             chartHeader: WorkoutChartInfoWidget(widget.chartConfig),

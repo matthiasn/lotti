@@ -124,7 +124,7 @@ class _TasksPageState extends State<TasksPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: colorConfig().ice,
+      backgroundColor: styleConfig().cardColor,
       queryStyle: const TextStyle(
         fontFamily: mainFont,
         fontSize: 24,
@@ -168,8 +168,8 @@ class _TasksPageState extends State<TasksPage> {
                             borderRadius: BorderRadius.circular(8),
                             child: ColoredBox(
                               color: selectedStatuses.contains(status)
-                                  ? colorConfig().selectedChoiceChipColor
-                                  : colorConfig().unselectedChoiceChipColor,
+                                  ? styleConfig().selectedChoiceChipColor
+                                  : styleConfig().unselectedChoiceChipColor,
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 4,
@@ -181,9 +181,9 @@ class _TasksPageState extends State<TasksPage> {
                                     fontFamily: 'Oswald',
                                     fontSize: 16,
                                     color: selectedStatuses.contains(status)
-                                        ? colorConfig()
+                                        ? styleConfig()
                                             .selectedChoiceChipTextColor
-                                        : colorConfig()
+                                        : styleConfig()
                                             .unselectedChoiceChipTextColor,
                                   ),
                                 ),
@@ -271,7 +271,7 @@ class _TasksPageState extends State<TasksPage> {
           ),
         ).asGlass(
           clipBorderRadius: BorderRadius.circular(8),
-          tintColor: colorConfig().ice,
+          tintColor: styleConfig().cardColor,
         );
       },
     );
@@ -311,7 +311,7 @@ class _TasksPageState extends State<TasksPage> {
                   return Stack(
                     children: [
                       Scaffold(
-                        backgroundColor: colorConfig().negspace,
+                        backgroundColor: styleConfig().negspace,
                         body: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           child: ListView(
@@ -364,17 +364,14 @@ class AddTask extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       child: FloatingActionButton(
         heroTag: 'addTask',
-        backgroundColor: colorConfig().riptide,
+        backgroundColor: styleConfig().primaryColor,
         onPressed: () async {
           final task = await createTask();
           if (task != null) {
             beamToNamed('/tasks/${task.meta.id}');
           }
         },
-        child: SvgPicture.asset(
-          'assets/icons/action_add.svg',
-          width: 25,
-        ),
+        child: SvgPicture.asset(styleConfig().actionAddIcon, width: 25),
       ),
     );
   }

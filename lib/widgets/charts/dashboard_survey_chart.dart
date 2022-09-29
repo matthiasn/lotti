@@ -65,11 +65,12 @@ class DashboardSurveyChart extends StatelessWidget {
             behaviors: [chartRangeAnnotation(rangeStart, rangeEnd)],
             domainAxis: timeSeriesAxis,
             defaultRenderer: defaultRenderer,
-            primaryMeasureAxis: const charts.NumericAxisSpec(
-              tickProviderSpec: charts.BasicNumericTickProviderSpec(
+            primaryMeasureAxis: charts.NumericAxisSpec(
+              tickProviderSpec: const charts.BasicNumericTickProviderSpec(
                 zeroBound: false,
                 desiredTickCount: 5,
               ),
+              renderSpec: numericRenderSpec,
             ),
           ),
           chartHeader: Positioned(
@@ -89,7 +90,7 @@ class DashboardSurveyChart extends StatelessWidget {
                   IconButton(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     onPressed: onTapAdd,
-                    icon: SvgPicture.asset('assets/icons/add.svg'),
+                    icon: SvgPicture.asset(styleConfig().addIcon),
                   ),
                 ],
               ),

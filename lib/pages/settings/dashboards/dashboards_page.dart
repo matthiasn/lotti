@@ -43,7 +43,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: colorConfig().ice,
+      backgroundColor: styleConfig().cardColor,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: mainFont,
@@ -76,15 +76,12 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
     void createDashboard() => beamToNamed('/settings/dashboards/create');
 
     return Scaffold(
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsDashboardsTitle),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: colorConfig().riptide,
+        backgroundColor: styleConfig().primaryColor,
         onPressed: createDashboard,
-        child: SvgPicture.asset(
-          'assets/icons/action_add.svg',
-          width: 25,
-        ),
+        child: SvgPicture.asset(styleConfig().actionAddIcon, width: 25),
       ),
       body: StreamBuilder<List<DashboardDefinition>>(
         stream: stream,

@@ -33,19 +33,19 @@ const chipPaddingClosable = EdgeInsets.only(
 );
 
 TextStyle inputStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontWeight: FontWeight.bold,
       fontFamily: mainFont,
       fontSize: 18,
     );
 
 TextStyle newInputStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontSize: fontSizeMedium,
     );
 
 TextStyle textStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontWeight: FontWeight.w400,
       fontSize: fontSizeMedium,
@@ -69,13 +69,13 @@ TextStyle labelStyleLarger() => textStyleLarger().copyWith(
     );
 
 TextStyle labelStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontWeight: FontWeight.w500,
       fontSize: 18,
     );
 
 TextStyle newLabelStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().secondaryTextColor,
       fontSize: fontSizeMedium,
     );
 
@@ -98,25 +98,25 @@ TextStyle pickerMonoTextStyle() => monospaceTextStyle().copyWith(
     );
 
 TextStyle formLabelStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontSize: fontSizeMedium,
     );
 
 TextStyle buttonLabelStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontSize: fontSizeMedium,
     );
 
 TextStyle settingsLabelStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontSize: fontSizeMedium,
     );
 
 TextStyle choiceLabelStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontSize: fontSizeMedium,
     );
@@ -124,14 +124,14 @@ TextStyle choiceLabelStyle() => TextStyle(
 TextStyle logDetailStyle() => monospaceTextStyle();
 
 TextStyle appBarTextStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
     );
 
 TextStyle appBarTextStyleNew() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
@@ -139,26 +139,26 @@ TextStyle appBarTextStyleNew() => TextStyle(
 
 TextStyle settingsCardTextStyle() => TextStyle(
       //color: colorConfig().entryTextColor,
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontSize: fontSizeLarge,
     );
 
 TextStyle titleStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontSize: fontSizeLarge,
       fontWeight: FontWeight.w300,
     );
 
 TextStyle taskTitleStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontSize: fontSizeLarge,
     );
 
 TextStyle multiSelectStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontWeight: FontWeight.w100,
       fontSize: fontSizeLarge,
@@ -167,7 +167,7 @@ TextStyle multiSelectStyle() => TextStyle(
 TextStyle chartTitleStyle() => TextStyle(
       fontFamily: mainFont,
       fontSize: fontSizeMedium,
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontWeight: FontWeight.w300,
     );
 
@@ -176,14 +176,14 @@ const taskFormFieldStyle = TextStyle(color: Colors.black87);
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontFamily: mainFont,
-      color: colorConfig().alarm,
+      color: styleConfig().alarm,
     );
 
 TextStyle cancelButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontFamily: mainFont,
       fontWeight: FontWeight.w100,
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
     );
 
 const segmentItemStyle = TextStyle(
@@ -203,14 +203,14 @@ const bottomNavLabelStyle = TextStyle(
 );
 
 TextStyle definitionCardTitleStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontSize: fontSizeLarge,
       height: 1.2,
     );
 
 TextStyle definitionCardSubtitleStyle() => TextStyle(
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
       fontWeight: FontWeight.w200,
       fontSize: fontSizeMedium,
@@ -218,21 +218,21 @@ TextStyle definitionCardSubtitleStyle() => TextStyle(
 
 const settingsIconSize = 24.0;
 
-ColorConfig colorConfig() => getIt<ThemesService>().current;
+StyleConfig styleConfig() => getIt<ThemesService>().current;
 
 DatePickerTheme datePickerTheme() => DatePickerTheme(
-      headerColor: colorConfig().iron,
-      backgroundColor: colorConfig().ice,
+      headerColor: styleConfig().secondaryTextColor,
+      backgroundColor: styleConfig().cardColor,
       itemStyle: TextStyle(
-        color: colorConfig().coal,
+        color: styleConfig().primaryTextColor,
         fontSize: 20,
       ),
       cancelStyle: TextStyle(
-        color: colorConfig().ice,
+        color: styleConfig().cardColor,
         fontSize: 20,
       ),
       doneStyle: TextStyle(
-        color: colorConfig().coal,
+        color: styleConfig().primaryTextColor,
         fontSize: 20,
       ),
     );

@@ -45,8 +45,6 @@ DateFormat hhMmFormat = DateFormat('HH:mm');
 
 String formatType(String s) => s.replaceAll('HealthDataType.', '');
 String formatUnit(String s) => s.replaceAll('HealthDataUnit.', '');
-String formatAudio(JournalAudio journalAudio) =>
-    'Audio Note: ${journalAudio.data.duration.toString().split('.')[0]}';
 
 class InfoText extends StatelessWidget {
   const InfoText(
@@ -64,7 +62,7 @@ class InfoText extends StatelessWidget {
       text,
       maxLines: maxLines,
       style: monospaceTextStyle().copyWith(
-        color: colorConfig().coal,
+        color: styleConfig().primaryTextColor,
       ),
     );
   }

@@ -14,22 +14,22 @@ RPChoiceAnswerFormat cfq11AnswerFormat = RPChoiceAnswerFormat(
 
 List<RPImageChoice> cfq11Images = [
   RPImageChoice(
-    imageUrl: 'assets/icons/green-0.png',
+    imageUrl: 'assets/icons/gray-0.png',
     value: 0,
     description: 'Better than usual',
   ),
   RPImageChoice(
-    imageUrl: 'assets/icons/green-1.png',
+    imageUrl: 'assets/icons/gray-1.png',
     value: 1,
     description: 'No worse than usual',
   ),
   RPImageChoice(
-    imageUrl: 'assets/icons/red-2.png',
+    imageUrl: 'assets/icons/gray-2.png',
     value: 2,
     description: 'Worse than usual',
   ),
   RPImageChoice(
-    imageUrl: 'assets/icons/red-3.png',
+    imageUrl: 'assets/icons/gray-3.png',
     value: 3,
     description: 'Much worse than usual',
   ),

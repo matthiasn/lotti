@@ -151,7 +151,7 @@ class _JournalPageState extends State<JournalPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: colorConfig().ice,
+      backgroundColor: styleConfig().cardColor,
       queryStyle: const TextStyle(
         fontFamily: mainFont,
         fontSize: 24,
@@ -218,8 +218,8 @@ class _JournalPageState extends State<JournalPage> {
                             borderRadius: BorderRadius.circular(4),
                             child: ColoredBox(
                               color: types.contains(item.value?.typeName)
-                                  ? colorConfig().selectedChoiceChipColor
-                                  : colorConfig().unselectedChoiceChipColor,
+                                  ? styleConfig().selectedChoiceChipColor
+                                  : styleConfig().unselectedChoiceChipColor,
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 1,
@@ -231,9 +231,9 @@ class _JournalPageState extends State<JournalPage> {
                                     fontFamily: 'Oswald',
                                     fontSize: 14,
                                     color: types.contains(item.value?.typeName)
-                                        ? colorConfig()
+                                        ? styleConfig()
                                             .selectedChoiceChipTextColor
-                                        : colorConfig()
+                                        : styleConfig()
                                             .unselectedChoiceChipTextColor,
                                   ),
                                 ),
@@ -258,12 +258,12 @@ class _JournalPageState extends State<JournalPage> {
                           Text(
                             localizations.journalPrivateTooltip,
                             style: TextStyle(
-                              color: colorConfig().coal,
+                              color: styleConfig().primaryTextColor,
                             ),
                           ),
                           CupertinoSwitch(
                             value: privateEntriesOnly,
-                            activeColor: colorConfig().private,
+                            activeColor: styleConfig().private,
                             onChanged: (bool value) {
                               setState(() {
                                 privateEntriesOnly = value;
@@ -276,11 +276,11 @@ class _JournalPageState extends State<JournalPage> {
                     ),
                     Text(
                       localizations.journalFavoriteTooltip,
-                      style: TextStyle(color: colorConfig().coal),
+                      style: TextStyle(color: styleConfig().primaryTextColor),
                     ),
                     CupertinoSwitch(
                       value: starredEntriesOnly,
-                      activeColor: colorConfig().starredGold,
+                      activeColor: styleConfig().starredGold,
                       onChanged: (bool value) {
                         setState(() {
                           starredEntriesOnly = value;
@@ -290,11 +290,11 @@ class _JournalPageState extends State<JournalPage> {
                     ),
                     Text(
                       localizations.journalFlaggedTooltip,
-                      style: TextStyle(color: colorConfig().coal),
+                      style: TextStyle(color: styleConfig().primaryTextColor),
                     ),
                     CupertinoSwitch(
                       value: flaggedEntriesOnly,
-                      activeColor: colorConfig().starredGold,
+                      activeColor: styleConfig().starredGold,
                       onChanged: (bool value) {
                         setState(() {
                           flaggedEntriesOnly = value;
@@ -310,7 +310,7 @@ class _JournalPageState extends State<JournalPage> {
                 tagIds: tagIds.toList(),
               ),
             ],
-          ).asGlass(tintColor: colorConfig().coal),
+          ).asGlass(tintColor: styleConfig().primaryTextColor),
         ],
       ),
       builder: (context, transition) {
@@ -358,7 +358,7 @@ class _JournalPageState extends State<JournalPage> {
           ),
         ).asGlass(
           clipBorderRadius: BorderRadius.circular(8),
-          tintColor: colorConfig().ice,
+          tintColor: styleConfig().cardColor,
         );
       },
     );
@@ -399,7 +399,7 @@ class _JournalPageState extends State<JournalPage> {
                   return Stack(
                     children: [
                       Scaffold(
-                        backgroundColor: colorConfig().negspace,
+                        backgroundColor: styleConfig().negspace,
                         body: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           child: ListView(

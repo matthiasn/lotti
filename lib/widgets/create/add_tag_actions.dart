@@ -33,7 +33,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       FloatingActionButton(
         heroTag: 'tag',
         key: const Key('add_tag_action'),
-        backgroundColor: colorConfig().riptide,
+        backgroundColor: styleConfig().primaryColor,
         onPressed: () => createTag('TAG'),
         child: const Icon(
           MdiIcons.tagPlusOutline,
@@ -42,7 +42,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       ),
       FloatingActionButton(
         heroTag: 'person',
-        backgroundColor: colorConfig().riptide,
+        backgroundColor: styleConfig().primaryColor,
         onPressed: () => createTag('PERSON'),
         child: const Icon(
           MdiIcons.tagFaces,
@@ -51,7 +51,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       ),
       FloatingActionButton(
         heroTag: 'story',
-        backgroundColor: colorConfig().riptide,
+        backgroundColor: styleConfig().primaryColor,
         onPressed: () => createTag('STORY'),
         child: const Icon(
           MdiIcons.book,
@@ -64,7 +64,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       radius: widget.radius,
       useOpacity: true,
       items: items,
-      color: colorConfig().riptide,
+      color: styleConfig().primaryColor,
       icon: Icons.add,
       duration: const Duration(milliseconds: 500),
       curveAnim: Curves.ease,

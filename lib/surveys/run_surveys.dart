@@ -3,6 +3,7 @@ import 'package:lotti/pages/create/fill_survey_page.dart';
 import 'package:lotti/surveys/calculate.dart';
 import 'package:lotti/surveys/cfq11_survey.dart';
 import 'package:lotti/surveys/panas_survey.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:research_package/research_package.dart';
@@ -20,6 +21,7 @@ Future<void> runSurvey({
         top: Radius.circular(16),
       ),
     ),
+    backgroundColor: styleConfig().cardColor,
     clipBehavior: Clip.antiAliasWithSaveLayer,
     useRootNavigator: true,
     builder: (BuildContext context) {

@@ -63,7 +63,7 @@ class RoundedButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: colorConfig().ice,
+        backgroundColor: styleConfig().cardColor,
         side: const BorderSide(),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(100),

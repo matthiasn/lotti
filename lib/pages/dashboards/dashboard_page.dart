@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -47,18 +45,18 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final int shiftDays = max((horizontalPan / scale).floor(), 0);
 
     // TODO: bring back or remove
+    // final int shiftDays = max((horizontalPan / scale).floor(), 0);
     // final rangeStart = getRangeStart(
     //   context: context,
     //   scale: scale,
     //   shiftDays: shiftDays,
     // );
+    // final rangeEnd = getRangeEnd(shiftDays: shiftDays);
 
     final rangeStart = DateTime.now().subtract(Duration(days: timeSpanDays));
-
-    final rangeEnd = getRangeEnd(shiftDays: shiftDays);
+    final rangeEnd = getEndOfToday();
 
     return GestureDetector(
       // TODO: bring back or remove
@@ -118,38 +116,44 @@ class _DashboardPageState extends State<DashboardPage> {
               MediaQuery.of(context).orientation == Orientation.landscape;
 
           return Scaffold(
-            backgroundColor: colorConfig().negspace,
+            backgroundColor: styleConfig().negspace,
             appBar: TitleAppBar(
               title: dashboard.name,
               showBackButton: widget.showBackButton,
-              actions: [
-                CupertinoSegmentedControl(
-                  selectedColor: colorConfig().riptide,
-                  unselectedColor: colorConfig().ice,
-                  borderColor: colorConfig().riptide,
-                  groupValue: timeSpanDays,
-                  onValueChanged: (int value) {
-                    setState(() {
-                      timeSpanDays = value;
-                    });
-                  },
-                  children: {
-                    3: const DaysSegment('3'),
-                    7: const DaysSegment('7'),
-                    14: const DaysSegment('14'),
-                    30: const DaysSegment('30'),
-                    90: const DaysSegment('90'),
-                    if (isDesktop || landscape) 180: const DaysSegment('180'),
-                    if (isDesktop) 365: const DaysSegment('365'),
-                  },
-                ),
-              ],
             ),
-            body: DashboardWidget(
-              dashboard: dashboard,
-              rangeStart: rangeStart,
-              rangeEnd: rangeEnd,
-              dashboardId: widget.dashboardId,
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 15),
+                  CupertinoSegmentedControl(
+                    selectedColor: styleConfig().primaryColor,
+                    unselectedColor: styleConfig().negspace,
+                    borderColor: styleConfig().primaryColor,
+                    groupValue: timeSpanDays,
+                    onValueChanged: (int value) {
+                      setState(() {
+                        timeSpanDays = value;
+                      });
+                    },
+                    children: {
+                      3: const DaysSegment('3'),
+                      7: const DaysSegment('7'),
+                      14: const DaysSegment('14'),
+                      30: const DaysSegment('30'),
+                      90: const DaysSegment('90'),
+                      if (isDesktop || landscape) 180: const DaysSegment('180'),
+                      if (isDesktop) 365: const DaysSegment('365'),
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  DashboardWidget(
+                    dashboard: dashboard,
+                    rangeStart: rangeStart,
+                    rangeEnd: rangeEnd,
+                    dashboardId: widget.dashboardId,
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -253,40 +257,38 @@ class DashboardWidget extends StatelessWidget {
       );
     });
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 16),
-        child: Column(
-          children: [
-            if (showTitle)
-              Text(
-                dashboard.name,
-                style: taskTitleStyle(),
-              ),
-            ...intersperse(const SizedBox(height: 16), items),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 10),
-                    child: Text(
-                      dashboard.description,
-                      style: chartTitleStyle(),
-                    ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        children: [
+          if (showTitle)
+            Text(
+              dashboard.name,
+              style: taskTitleStyle(),
+            ),
+          ...intersperse(const SizedBox(height: 16), items),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: Text(
+                    dashboard.description,
+                    style: chartTitleStyle(),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.dashboard_customize_outlined),
-                  color: colorConfig().coal,
-                  hoverColor: Colors.transparent,
-                  onPressed: () =>
-                      beamToNamed('/settings/dashboards/$dashboardId'),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.dashboard_customize_outlined),
+                color: styleConfig().primaryTextColor,
+                hoverColor: Colors.transparent,
+                onPressed: () =>
+                    beamToNamed('/settings/dashboards/$dashboardId'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

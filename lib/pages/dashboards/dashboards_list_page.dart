@@ -57,7 +57,7 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         }
 
         return Scaffold(
-          backgroundColor: colorConfig().negspace,
+          backgroundColor: styleConfig().negspace,
           appBar: const DashboardsAppBar(),
           body: ListView(
             shrinkWrap: true,

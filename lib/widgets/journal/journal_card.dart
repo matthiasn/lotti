@@ -13,7 +13,6 @@ import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/workout_summary.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/journal/helpers.dart';
 import 'package:lotti/widgets/journal/tags/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/tasks/linked_duration.dart';
@@ -46,7 +45,7 @@ class JournalCardTitle extends StatelessWidget {
               Text(
                 df.format(item.meta.dateFrom),
                 style: TextStyle(
-                  color: colorConfig().coal,
+                  color: styleConfig().primaryTextColor,
                   fontSize: 15,
                   fontWeight: FontWeight.w300,
                   fontFamily: 'Inconsolata',
@@ -59,7 +58,7 @@ class JournalCardTitle extends StatelessWidget {
                     visible: fromNullableBool(item.meta.private),
                     child: Icon(
                       MdiIcons.security,
-                      color: colorConfig().alarm,
+                      color: styleConfig().alarm,
                       size: iconSize,
                     ),
                   ),
@@ -69,7 +68,7 @@ class JournalCardTitle extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.star,
-                        color: colorConfig().starredGold,
+                        color: styleConfig().starredGold,
                         size: iconSize,
                       ),
                     ),
@@ -80,7 +79,7 @@ class JournalCardTitle extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.flag,
-                        color: colorConfig().alarm,
+                        color: styleConfig().alarm,
                         size: iconSize,
                       ),
                     ),
@@ -102,7 +101,7 @@ class JournalCardTitle extends StatelessWidget {
                           entryText: journalAudio.entryText,
                           maxHeight: maxHeight,
                         )
-                      : EntryTextWidget(formatAudio(journalAudio)),
+                      : null,
               journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
                 entryText: journalEntry.entryText,
                 maxHeight: maxHeight,
@@ -127,7 +126,7 @@ class JournalCardTitle extends StatelessWidget {
                     Text(
                       data.title,
                       style: TextStyle(
-                        color: colorConfig().coal,
+                        color: styleConfig().primaryTextColor,
                         fontWeight: FontWeight.normal,
                         fontSize: 24,
                       ),
@@ -153,7 +152,7 @@ class JournalCardTitle extends StatelessWidget {
             orElse: () => DurationViewWidget(
               item: item,
               style: TextStyle(
-                color: colorConfig().coal,
+                color: styleConfig().primaryTextColor,
                 fontSize: 15,
                 fontWeight: FontWeight.w300,
               ),
@@ -194,7 +193,7 @@ class JournalCard extends StatelessWidget {
         }
 
         return Card(
-          color: colorConfig().ice,
+          color: styleConfig().cardColor,
           elevation: 1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(0),
@@ -237,7 +236,7 @@ class LeadingIcon extends StatelessWidget {
     return Icon(
       iconData,
       size: 32,
-      color: colorConfig().coal,
+      color: styleConfig().primaryTextColor,
     );
   }
 }
@@ -255,7 +254,7 @@ class JournalImageCard extends StatelessWidget {
     void onTap() => beamToNamed('/journal/${item.meta.id}');
 
     return Card(
-      color: colorConfig().ice,
+      color: styleConfig().cardColor,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),

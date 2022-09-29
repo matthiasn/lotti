@@ -53,7 +53,7 @@ class DeleteIconWidget extends StatelessWidget {
             iconSize: 24,
             tooltip: localizations.journalDeleteHint,
             padding: EdgeInsets.zero,
-            color: colorConfig().iron,
+            color: styleConfig().secondaryTextColor,
             onPressed: onPressed,
           ),
         );

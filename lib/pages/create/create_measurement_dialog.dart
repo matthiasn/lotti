@@ -125,7 +125,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(50)),
           ),
-          backgroundColor: colorConfig().riplight,
+          backgroundColor: styleConfig().primaryColorLight,
           actionsAlignment: MainAxisAlignment.end,
           actionsPadding: const EdgeInsets.only(
             left: 20,
@@ -159,8 +159,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   children: [
                     Text(
                       selected?.displayName ?? '',
-                      style: TextStyle(
-                        color: colorConfig().coal,
+                      style: const TextStyle(
+                        color: Colors.black,
                         fontFamily: mainFont,
                         fontSize: 20,
                       ),
@@ -168,7 +168,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     IconButton(
                       padding: const EdgeInsets.all(10),
                       icon: SvgPicture.asset('assets/icons/close.svg'),
-                      color: colorConfig().coal,
                       hoverColor: Colors.transparent,
                       onPressed: dashboardsBeamerDelegate.beamBack,
                     ),
@@ -183,7 +182,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       //   Text(
                       //     '${selected?.description}',
                       //     style: TextStyle(
-                      //       color: colorConfig().coal,
+                      //       color: colorConfig().primaryTextColor,
                       //       fontFamily: mainFont,
                       //       fontWeight: FontWeight.w300,
                       //       fontSize: 14,
@@ -196,9 +195,9 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         format: DateFormat(
                           "MMMM d, yyyy 'at' HH:mm",
                         ),
-                        style: newInputStyle(),
+                        style: newInputStyle().copyWith(color: Colors.black),
                         decoration:
-                            InputDecoration(fillColor: colorConfig().negspace),
+                            InputDecoration(fillColor: styleConfig().negspace),
                         initialValue: DateTime.now(),
                         theme: datePickerTheme(),
                       ),
@@ -208,11 +207,12 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         decoration: InputDecoration(
                           labelText: '${selected?.displayName} '
                               '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
-                          labelStyle: newLabelStyle(),
+                          labelStyle:
+                              newLabelStyle().copyWith(color: Colors.black),
                           floatingLabelBehavior: FloatingLabelBehavior.always,
                         ),
                         keyboardAppearance: Brightness.light,
-                        style: newInputStyle(),
+                        style: newInputStyle().copyWith(color: Colors.black),
                         autofocus: true,
                         validator: FormBuilderValidators.numeric(),
                         name: 'value',
@@ -225,11 +225,12 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         key: const Key('measurement_comment_field'),
                         decoration: InputDecoration(
                           labelText: localizations.addMeasurementCommentLabel,
-                          labelStyle: newLabelStyle(),
+                          labelStyle:
+                              newLabelStyle().copyWith(color: Colors.black),
                           floatingLabelBehavior: FloatingLabelBehavior.always,
                         ),
                         keyboardAppearance: Brightness.light,
-                        style: newInputStyle(),
+                        style: newInputStyle().copyWith(color: Colors.black),
                         name: 'comment',
                       ),
                     ],

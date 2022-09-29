@@ -7,7 +7,18 @@ import 'package:tinycolor2/tinycolor2.dart';
 const defaultBaseColor = Color.fromRGBO(51, 77, 118, 1);
 const brightBaseColor = Color.fromRGBO(244, 187, 41, 1);
 
-final darkTheme = ColorConfig(
+final Color white = colorFromCssHex('#FFFFFF');
+final Color coal = colorFromCssHex('#000000');
+final Color iron = colorFromCssHex('#909090');
+final Color primaryColor = colorFromCssHex('#82E6CE');
+final Color primaryColorLight = colorFromCssHex('#CFF3EA');
+final Color ripIce = colorFromCssHex('#EFFFFB');
+final Color alarm = colorFromCssHex('#FF7373');
+final Color ice = colorFromCssHex('#F5F5F5');
+final Color nickel = colorFromCssHex('#B4B2B2');
+final Color mineShaft = colorFromCssHex('#313131');
+
+final darkTheme = StyleConfig(
   tagColor: const Color.fromRGBO(155, 200, 246, 1),
   tagTextColor: const Color.fromRGBO(51, 51, 51, 1),
   personTagColor: const Color.fromRGBO(55, 201, 154, 1),
@@ -29,17 +40,37 @@ final darkTheme = ColorConfig(
   selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
   unselectedChoiceChipTextColor: colorFromCssHex('#474b40'),
-  negspace: colorFromCssHex('#FFFFFF'),
-  coal: colorFromCssHex('#000000'),
-  iron: colorFromCssHex('#909090'),
-  riptide: colorFromCssHex('#82E6CE'),
-  riplight: colorFromCssHex('#CFF3EA'),
-  ripIce: colorFromCssHex('#EFFFFB'),
-  alarm: colorFromCssHex('#FF7373'),
-  ice: colorFromCssHex('#F5F5F5'),
+  negspace: coal,
+  primaryTextColor: white,
+  secondaryTextColor: iron,
+  primaryColor: primaryColor,
+  primaryColorLight: primaryColorLight,
+  hover: iron,
+  alarm: alarm,
+  cardColor: mineShaft,
+  chartTextColor: nickel,
+  navHomeIcon: 'assets/icons/nav_home_dark.svg',
+  navHomeIconActive: 'assets/icons/nav_home_active.svg',
+  navJournalIcon: 'assets/icons/nav_journal_dark.svg',
+  navJournalIconActive: 'assets/icons/nav_journal_active.svg',
+  navTasksIcon: 'assets/icons/nav_tasks_dark.svg',
+  navTasksIconActive: 'assets/icons/nav_tasks_active.svg',
+  navSettingsIcon: 'assets/icons/nav_settings_dark.svg',
+  navSettingsIconActive: 'assets/icons/nav_settings_active.svg',
+  searchIcon: 'assets/icons/search_dark.svg',
+  actionAddIcon: 'assets/icons/action_add_dark.svg',
+  addIcon: 'assets/icons/add_dark.svg',
+  backIcon: 'assets/icons/back_dark.svg',
+  closeIcon: 'assets/icons/close_dark.svg',
+  filterIcon: 'assets/icons/filter_dark.svg',
+  stopIcon: 'assets/icons/stop_dark.svg',
+  pauseIcon: 'assets/icons/pause_dark.svg',
+  micIcon: 'assets/icons/mic_dark.svg',
+  micHotIcon: 'assets/icons/mic_hot_dark.svg',
+  micRecIcon: 'assets/icons/mic_rec_dark.svg',
 );
 
-final brightTheme = ColorConfig(
+final brightTheme = StyleConfig(
   tagColor: colorFromCssHex('#89BE2E'),
   tagTextColor: colorFromCssHex('#474B40'),
   personTagColor: const Color.fromRGBO(55, 201, 154, 1),
@@ -61,12 +92,32 @@ final brightTheme = ColorConfig(
   selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
   unselectedChoiceChipTextColor: colorFromCssHex('#474b40'),
-  negspace: colorFromCssHex('#FFFFFF'),
-  coal: colorFromCssHex('#000000'),
-  iron: colorFromCssHex('#909090'),
-  riptide: colorFromCssHex('#82E6CE'),
-  riplight: colorFromCssHex('#CFF3EA'),
-  ripIce: colorFromCssHex('#EFFFFB'),
-  alarm: colorFromCssHex('#FF7373'),
-  ice: colorFromCssHex('#F5F5F5'),
+  negspace: white,
+  primaryTextColor: coal,
+  secondaryTextColor: iron,
+  primaryColor: primaryColor,
+  primaryColorLight: primaryColorLight,
+  hover: ripIce,
+  alarm: alarm,
+  cardColor: ice,
+  chartTextColor: iron,
+  navHomeIcon: 'assets/icons/nav_home.svg',
+  navHomeIconActive: 'assets/icons/nav_home_active.svg',
+  navJournalIcon: 'assets/icons/nav_journal.svg',
+  navJournalIconActive: 'assets/icons/nav_journal_active.svg',
+  navTasksIcon: 'assets/icons/nav_tasks.svg',
+  navTasksIconActive: 'assets/icons/nav_tasks_active.svg',
+  navSettingsIcon: 'assets/icons/nav_settings.svg',
+  navSettingsIconActive: 'assets/icons/nav_settings_active.svg',
+  searchIcon: 'assets/icons/search.svg',
+  actionAddIcon: 'assets/icons/action_add.svg',
+  addIcon: 'assets/icons/add.svg',
+  backIcon: 'assets/icons/back.svg',
+  closeIcon: 'assets/icons/close.svg',
+  filterIcon: 'assets/icons/filter.svg',
+  stopIcon: 'assets/icons/stop.svg',
+  pauseIcon: 'assets/icons/pause.svg',
+  micIcon: 'assets/icons/mic.svg',
+  micHotIcon: 'assets/icons/mic_hot.svg',
+  micRecIcon: 'assets/icons/mic_rec.svg',
 );

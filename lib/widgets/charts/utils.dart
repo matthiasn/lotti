@@ -7,6 +7,8 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 
 class MeasuredObservation extends Equatable {
@@ -129,16 +131,25 @@ RangeAnnotation<DateTime> chartRangeAnnotation(
       rangeStart,
       rangeEnd,
       RangeAnnotationAxisType.domain,
+      color: Color.transparent,
     )
   ]);
 }
 
-const timeSeriesAxis = DateTimeAxisSpec(
-  tickProviderSpec: AutoDateTimeTickProviderSpec(),
+final timeSeriesAxis = DateTimeAxisSpec(
+  tickProviderSpec: const AutoDateTimeTickProviderSpec(),
   renderSpec: SmallTickRendererSpec(
     labelStyle: TextStyleSpec(
       fontSize: 10,
+      color: Color.fromHex(code: colorToCssHex(styleConfig().chartTextColor)),
     ),
+  ),
+);
+
+final numericRenderSpec = SmallTickRendererSpec<num>(
+  labelStyle: TextStyleSpec(
+    fontSize: 10,
+    color: Color.fromHex(code: colorToCssHex(styleConfig().chartTextColor)),
   ),
 );
 
@@ -168,6 +179,11 @@ DateTime getRangeEnd({int shiftDays = 0}) {
   final now = DateTime.now();
   return DateTime(now.year, now.month, now.day + 1)
       .subtract(Duration(days: shiftDays));
+}
+
+DateTime getEndOfToday() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day, 23, 59, 59);
 }
 
 String padLeft(num value) {

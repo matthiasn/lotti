@@ -46,7 +46,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
-      backgroundColor: colorConfig().ice,
+      backgroundColor: styleConfig().cardColor,
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: mainFont,
@@ -98,14 +98,11 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
 
         return Scaffold(
           appBar: TitleAppBar(title: localizations.settingsMeasurablesTitle),
-          backgroundColor: colorConfig().negspace,
+          backgroundColor: styleConfig().negspace,
           floatingActionButton: FloatingActionButton(
-            backgroundColor: colorConfig().riptide,
+            backgroundColor: styleConfig().primaryColor,
             onPressed: createMeasurable,
-            child: SvgPicture.asset(
-              'assets/icons/action_add.svg',
-              width: 25,
-            ),
+            child: SvgPicture.asset(styleConfig().actionAddIcon, width: 25),
           ),
           body: Stack(
             children: [

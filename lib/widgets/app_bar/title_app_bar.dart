@@ -24,7 +24,7 @@ class TitleAppBar extends StatelessWidget with PreferredSizeWidget {
     return AppBar(
       actions: actions,
       automaticallyImplyLeading: false,
-      backgroundColor: colorConfig().negspace,
+      backgroundColor: styleConfig().negspace,
       elevation: 0,
       scrolledUnderElevation: 10,
       titleSpacing: 0,
@@ -66,7 +66,7 @@ class BackWidget extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(width: 10),
-                SvgPicture.asset('assets/icons/back.svg'),
+                SvgPicture.asset(styleConfig().backIcon),
                 const SizedBox(width: 12),
                 Text(
                   localizations.appBarBack,

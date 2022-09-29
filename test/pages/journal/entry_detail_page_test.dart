@@ -340,7 +340,7 @@ void main() {
       // test weight entry is not starred
       expect(
         (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
-        darkTheme.iron,
+        darkTheme.secondaryTextColor,
       );
     });
   });

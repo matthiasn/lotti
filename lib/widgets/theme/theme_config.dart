@@ -101,7 +101,7 @@ class _AppColorPickerState extends State<AppColorPicker> {
                       expanded
                           ? Icons.keyboard_double_arrow_up
                           : Icons.keyboard_double_arrow_down,
-                      color: colorConfig().coal,
+                      color: styleConfig().primaryTextColor,
                     ),
                   ),
                 ],

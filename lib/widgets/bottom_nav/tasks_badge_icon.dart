@@ -33,8 +33,8 @@ class TasksBadgeIcon extends StatelessWidget {
           toAnimate: false,
           elevation: 3,
           child: active
-              ? SvgPicture.asset('assets/icons/nav_tasks_active.svg')
-              : SvgPicture.asset('assets/icons/nav_tasks.svg'),
+              ? SvgPicture.asset(styleConfig().navTasksIconActive)
+              : SvgPicture.asset(styleConfig().navTasksIcon),
         );
       },
     );
