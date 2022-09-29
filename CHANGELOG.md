@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- VU meter in audio recording indicator removed
+
+## [0.8.157] - 2022-09-29
+### Changed:
 - Segmented control for dashboard time span
 - Style: dark mode
 - Style: improved segmented control for dashboard time span
