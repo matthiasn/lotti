@@ -152,9 +152,10 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                     )
                   ],
                   behaviors: [
-                    measurablesChartRangeAnnotation(
-                      aggregationType,
-                      widget.rangeStart,
+                    chartRangeAnnotation(
+                      aggregationType == AggregationType.hourlySum
+                          ? widget.rangeStart.subtract(const Duration(days: 1))
+                          : widget.rangeStart,
                       widget.rangeEnd,
                     )
                   ],

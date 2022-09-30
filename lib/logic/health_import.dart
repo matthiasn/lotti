@@ -142,11 +142,12 @@ class HealthImport {
         );
 
         for (final dataPoint in dataPoints.reversed) {
+          final dataType = dataPoint.type.toString();
           final discreteQuantity = DiscreteQuantityData(
             dateFrom: dataPoint.dateFrom,
             dateTo: dataPoint.dateTo,
             value: dataPoint.value,
-            dataType: dataPoint.type.toString(),
+            dataType: dataType,
             unit: dataPoint.unit.toString(),
             deviceType: deviceType,
             platformType: platform,
@@ -155,6 +156,22 @@ class HealthImport {
             deviceId: dataPoint.deviceId,
           );
           await persistenceLogic.createQuantitativeEntry(discreteQuantity);
+
+          // Also save more specific sleep types as generic time asleep
+          // for comparability with data from prior to iOS 16 in combination
+          // with watchOS 9
+          if ({
+            'HealthDataType.SLEEP_ASLEEP_CORE',
+            'HealthDataType.SLEEP_ASLEEP_DEEP',
+            'HealthDataType.SLEEP_ASLEEP_REM',
+            'HealthDataType.SLEEP_ASLEEP_UNSPECIFIED',
+          }.contains(dataType)) {
+            await persistenceLogic.createQuantitativeEntry(
+              discreteQuantity.copyWith(
+                dataType: 'HealthDataType.SLEEP_ASLEEP',
+              ),
+            );
+          }
         }
       } catch (e) {
         debugPrint('Caught exception in fetchHealthData: $e');
@@ -252,6 +269,10 @@ class HealthImport {
 List<HealthDataType> sleepTypes = [
   HealthDataType.SLEEP_IN_BED,
   HealthDataType.SLEEP_ASLEEP,
+  HealthDataType.SLEEP_ASLEEP_CORE,
+  HealthDataType.SLEEP_ASLEEP_DEEP,
+  HealthDataType.SLEEP_ASLEEP_REM,
+  HealthDataType.SLEEP_ASLEEP_UNSPECIFIED,
   HealthDataType.SLEEP_AWAKE,
 ];
 

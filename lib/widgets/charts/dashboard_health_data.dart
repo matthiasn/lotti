@@ -107,6 +107,7 @@ List<Observation> aggregateDailySum(List<JournalEntity?> entities) {
   final aggregated = <Observation>[];
   for (final dayString in sumsByDay.keys) {
     final day = DateTime.parse(dayString);
+    // final midDay = day.add(const Duration(hours: 12));
     aggregated.add(Observation(day, sumsByDay[dayString] ?? 0));
   }
 
