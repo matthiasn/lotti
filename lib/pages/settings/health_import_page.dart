@@ -52,7 +52,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             SfDateRangePicker(
-              backgroundColor: Colors.transparent,
+              backgroundColor: styleConfig().cardColor,
               onSelectionChanged: _onSelectionChanged,
               enableMultiView: true,
               selectionMode: DateRangePickerSelectionMode.range,

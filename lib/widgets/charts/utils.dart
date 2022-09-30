@@ -46,7 +46,7 @@ List<MeasuredObservation> aggregateSumByDay(
   final sumsByDay = <String, num>{};
   final range = rangeEnd.difference(rangeStart);
   final dayStrings = List<String>.generate(range.inDays, (days) {
-    final day = rangeStart.add(Duration(days: days + 1));
+    final day = rangeStart.add(Duration(days: days));
     return ymd(day);
   });
 
@@ -64,8 +64,9 @@ List<MeasuredObservation> aggregateSumByDay(
 
   final aggregated = <MeasuredObservation>[];
   for (final dayString in sumsByDay.keys) {
-    final midDay = DateTime.parse(dayString).add(const Duration(hours: 12));
-    aggregated.add(MeasuredObservation(midDay, sumsByDay[dayString] ?? 0));
+    final day = DateTime.parse(dayString);
+    // final midDay = day.add(const Duration(hours: 12));
+    aggregated.add(MeasuredObservation(day, sumsByDay[dayString] ?? 0));
   }
 
   return aggregated;
@@ -166,8 +167,8 @@ RangeAnnotation<DateTime> chartRangeAnnotation(
 ) {
   return RangeAnnotation([
     RangeAnnotationSegment(
-      rangeStart,
-      rangeEnd,
+      rangeStart.add(const Duration(days: 1)),
+      rangeEnd.subtract(const Duration(days: 1)),
       RangeAnnotationAxisType.domain,
       color: Color.transparent,
     )

@@ -123,6 +123,27 @@ Map<String, HealthTypeConfig> healthTypes = {
     aggregationType: HealthAggregationType.dailyTimeSum,
     hoursMinutes: true,
   ),
+  'HealthDataType.SLEEP_ASLEEP_CORE': HealthTypeConfig(
+    displayName: 'Asleep - core',
+    healthType: 'HealthDataType.SLEEP_ASLEEP_CORE',
+    chartType: HealthChartType.barChart,
+    aggregationType: HealthAggregationType.dailyTimeSum,
+    hoursMinutes: true,
+  ),
+  'HealthDataType.SLEEP_ASLEEP_DEEP': HealthTypeConfig(
+    displayName: 'Asleep - deep',
+    healthType: 'HealthDataType.SLEEP_ASLEEP_DEEP',
+    chartType: HealthChartType.barChart,
+    aggregationType: HealthAggregationType.dailyTimeSum,
+    hoursMinutes: true,
+  ),
+  'HealthDataType.SLEEP_ASLEEP_REM': HealthTypeConfig(
+    displayName: 'Asleep - REM',
+    healthType: 'HealthDataType.SLEEP_ASLEEP_REM',
+    chartType: HealthChartType.barChart,
+    aggregationType: HealthAggregationType.dailyTimeSum,
+    hoursMinutes: true,
+  ),
   'HealthDataType.SLEEP_IN_BED': HealthTypeConfig(
     displayName: 'In bed',
     healthType: 'HealthDataType.SLEEP_IN_BED',
