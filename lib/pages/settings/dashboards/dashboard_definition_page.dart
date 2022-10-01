@@ -49,9 +49,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
   final _formKey = GlobalKey<FormBuilderState>();
   bool dirty = false;
 
-  late final Stream<List<MeasurableDataType>> stream =
-      _db.watchMeasurableDataTypes();
-
   late List<DashboardItem> dashboardItems;
 
   @override
@@ -70,6 +67,19 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
               aggregationType:
                   selected.aggregationType ?? AggregationType.dailySum,
             ),
+          );
+          dirty = true;
+        });
+      }
+    }
+  }
+
+  void onConfirmAddHabit(List<HabitDefinition?> selection) {
+    for (final selected in selection) {
+      if (selected != null) {
+        setState(() {
+          dashboardItems.add(
+            DashboardItem.habitChart(habitId: selected.id),
           );
           dirty = true;
         });
@@ -160,406 +170,450 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
 
     final formKey = widget.formKey ?? _formKey;
     final localizations = AppLocalizations.of(context)!;
-    return StreamBuilder<List<MeasurableDataType>>(
-      stream: stream,
+    return StreamBuilder<List<HabitDefinition>>(
+      stream: getIt<JournalDb>().watchHabitDefinitions(),
       builder: (
         BuildContext context,
-        AsyncSnapshot<List<MeasurableDataType>> snapshot,
+        AsyncSnapshot<List<HabitDefinition>> snapshot,
       ) {
-        final measurableDataTypes = snapshot.data ?? [];
-
-        final measurableSelectItems = measurableDataTypes
-            .map(
-              (item) => MultiSelectItem<MeasurableDataType>(
-                item,
-                item.displayName,
-              ),
-            )
-            .toList();
-
-        final healthSelectItems = healthTypes.keys.map((String typeName) {
-          final item = healthTypes[typeName];
-          return MultiSelectItem<HealthTypeConfig>(
-            item!,
-            item.displayName,
-          );
-        }).toList();
-
-        final surveySelectItems = surveyTypes.keys.map((String typeName) {
-          final item = surveyTypes[typeName];
-          return MultiSelectItem<DashboardSurveyItem>(
-            item!,
-            item.surveyName,
-          );
-        }).toList();
-
-        final workoutSelectItems = workoutTypes.keys.map((String typeName) {
-          final item = workoutTypes[typeName];
-          return MultiSelectItem<DashboardWorkoutItem>(
-            item!,
-            item.displayName,
-          );
-        }).toList();
-
-        final storySelectItems =
-            tagsService.getAllStoryTags().map((StoryTag storyTag) {
-          return MultiSelectItem<DashboardStoryTimeItem>(
-            DashboardStoryTimeItem(
-              storyTagId: storyTag.id,
-              color: '#82E6CE',
+        final habitSelectItems = [
+          ...?snapshot.data?.map(
+            (item) => MultiSelectItem<HabitDefinition>(
+              item,
+              item.name,
             ),
-            storyTag.tag,
-          );
-        }).toList();
+          )
+        ];
 
-        Future<DashboardDefinition> saveDashboard() async {
-          formKey.currentState!.save();
-          if (formKey.currentState!.validate()) {
-            final formData = formKey.currentState?.value;
+        return StreamBuilder<List<MeasurableDataType>>(
+          stream: _db.watchMeasurableDataTypes(),
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<List<MeasurableDataType>> snapshot,
+          ) {
+            final measurableDataTypes = snapshot.data ?? [];
 
-            final private = formData?['private'] as bool? ?? false;
-            final active = formData?['active'] as bool? ?? false;
-
-            final dashboard = widget.dashboard.copyWith(
-              name: '${formData!['name']}'.trim(),
-              description: '${formData['description']}'.trim(),
-              private: private,
-              active: active,
-              reviewAt: formData['review_at'] as DateTime?,
-              updatedAt: DateTime.now(),
-              items: dashboardItems,
-            );
-
-            await persistenceLogic.upsertDashboardDefinition(dashboard);
-            return dashboard;
-          }
-          return widget.dashboard;
-        }
-
-        Future<void> saveDashboardPress() async {
-          await saveDashboard();
-          setState(() {
-            dirty = false;
-          });
-          maybePop();
-        }
-
-        Future<void> copyDashboard() async {
-          final dashboard = await saveDashboard();
-          final entityDefinitions = <EntityDefinition>[dashboard];
-
-          for (final item in dashboard.items) {
-            await item.map(
-              measurement: (DashboardMeasurementItem measurementItem) async {
-                final dataType =
-                    await _db.getMeasurableDataTypeById(measurementItem.id);
-                if (dataType != null) {
-                  entityDefinitions.add(dataType);
-                }
-              },
-              healthChart: (_) {},
-              workoutChart: (_) {},
-              surveyChart: (_) {},
-              storyTimeChart: (_) {},
-              wildcardStoryTimeChart: (_) {},
-            );
-          }
-          await Clipboard.setData(
-            ClipboardData(text: json.encode(entityDefinitions)),
-          );
-        }
-
-        return Scaffold(
-          backgroundColor: styleConfig().negspace,
-          appBar: TitleAppBar(
-            title: widget.dashboard.name,
-            actions: [
-              if (dirty)
-                TextButton(
-                  key: const Key('dashboard_save'),
-                  onPressed: saveDashboardPress,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      localizations.dashboardSaveLabel,
-                      style: saveButtonStyle(),
-                    ),
-                  ),
+            final measurableSelectItems = [
+              ...measurableDataTypes.map(
+                (item) => MultiSelectItem<MeasurableDataType>(
+                  item,
+                  item.displayName,
                 ),
-            ],
-          ),
-          body: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(0),
-                    child: Container(
-                      color: styleConfig().cardColor,
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          FormBuilder(
-                            key: formKey,
-                            autovalidateMode:
-                                AutovalidateMode.onUserInteraction,
-                            onChanged: () {
-                              formKey.currentState?.save();
-                              setState(() {
-                                dirty = true;
-                              });
-                            },
-                            child: Column(
-                              children: <Widget>[
-                                FormTextField(
-                                  initialValue: widget.dashboard.name,
-                                  labelText: localizations.dashboardNameLabel,
-                                  name: 'name',
-                                  key: const Key('dashboard_name_field'),
-                                ),
-                                FormTextField(
-                                  initialValue: widget.dashboard.description,
-                                  labelText:
-                                      localizations.dashboardDescriptionLabel,
-                                  name: 'description',
-                                  fieldRequired: false,
-                                  key: const Key('dashboard_description_field'),
-                                ),
-                                FormBuilderSwitch(
-                                  name: 'private',
-                                  initialValue: widget.dashboard.private,
-                                  title: Text(
-                                    localizations.dashboardPrivateLabel,
-                                    style: formLabelStyle(),
-                                  ),
-                                  activeColor: styleConfig().private,
-                                ),
-                                FormBuilderSwitch(
-                                  name: 'active',
-                                  initialValue: widget.dashboard.active,
-                                  title: Text(
-                                    localizations.dashboardActiveLabel,
-                                    style: formLabelStyle(),
-                                  ),
-                                  activeColor: styleConfig().starredGold,
-                                ),
-                                FormBuilderCupertinoDateTimePicker(
-                                  name: 'review_at',
-                                  alwaysUse24HourFormat: true,
-                                  format: hhMmFormat,
-                                  inputType:
-                                      CupertinoDateTimePickerInputType.time,
-                                  style: inputStyle().copyWith(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w300,
-                                    fontFamily: 'Oswald',
-                                  ),
-                                  initialValue: widget.dashboard.reviewAt,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        localizations.dashboardReviewTimeLabel,
-                                    labelStyle: labelStyle(),
-                                  ),
-                                  theme: datePickerTheme(),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Theme(
-                            data: ThemeData(canvasColor: Colors.transparent),
-                            child: ReorderableListView(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              onReorder: (int oldIndex, int newIndex) {
-                                setState(() {
-                                  dirty = true;
-                                  dashboardItems = dashboardItems;
-                                  final movedItem =
-                                      dashboardItems.removeAt(oldIndex);
-                                  final insertionIndex = newIndex > oldIndex
-                                      ? newIndex - 1
-                                      : newIndex;
-                                  dashboardItems.insert(
-                                    insertionIndex,
-                                    movedItem,
-                                  );
-                                });
-                              },
-                              children: List.generate(
-                                dashboardItems.length,
-                                (int index) {
-                                  final items = dashboardItems;
-                                  final item = items.elementAt(index);
+              )
+            ];
 
-                                  return Dismissible(
-                                    onDismissed: (_) {
-                                      dismissItem(index);
-                                    },
-                                    key: Key(
-                                      'dashboard-item-${item.hashCode}-$index',
-                                    ),
-                                    child: DashboardItemCard(
-                                      item: item,
-                                      index: index,
-                                      updateItemFn: updateItem,
-                                      measurableTypes: measurableDataTypes,
-                                    ),
-                                  );
+            final healthSelectItems = healthTypes.keys.map((String typeName) {
+              final item = healthTypes[typeName];
+              return MultiSelectItem<HealthTypeConfig>(
+                item!,
+                item.displayName,
+              );
+            }).toList();
+
+            final surveySelectItems = surveyTypes.keys.map((String typeName) {
+              final item = surveyTypes[typeName];
+              return MultiSelectItem<DashboardSurveyItem>(
+                item!,
+                item.surveyName,
+              );
+            }).toList();
+
+            final workoutSelectItems = workoutTypes.keys.map((String typeName) {
+              final item = workoutTypes[typeName];
+              return MultiSelectItem<DashboardWorkoutItem>(
+                item!,
+                item.displayName,
+              );
+            }).toList();
+
+            final storySelectItems =
+                tagsService.getAllStoryTags().map((StoryTag storyTag) {
+              return MultiSelectItem<DashboardStoryTimeItem>(
+                DashboardStoryTimeItem(
+                  storyTagId: storyTag.id,
+                  color: '#82E6CE',
+                ),
+                storyTag.tag,
+              );
+            }).toList();
+
+            Future<DashboardDefinition> saveDashboard() async {
+              formKey.currentState!.save();
+              if (formKey.currentState!.validate()) {
+                final formData = formKey.currentState?.value;
+
+                final private = formData?['private'] as bool? ?? false;
+                final active = formData?['active'] as bool? ?? false;
+
+                final dashboard = widget.dashboard.copyWith(
+                  name: '${formData!['name']}'.trim(),
+                  description: '${formData['description']}'.trim(),
+                  private: private,
+                  active: active,
+                  reviewAt: formData['review_at'] as DateTime?,
+                  updatedAt: DateTime.now(),
+                  items: dashboardItems,
+                );
+
+                await persistenceLogic.upsertDashboardDefinition(dashboard);
+                return dashboard;
+              }
+              return widget.dashboard;
+            }
+
+            Future<void> saveDashboardPress() async {
+              await saveDashboard();
+              setState(() {
+                dirty = false;
+              });
+              maybePop();
+            }
+
+            Future<void> copyDashboard() async {
+              final dashboard = await saveDashboard();
+              final entityDefinitions = <EntityDefinition>[dashboard];
+
+              for (final item in dashboard.items) {
+                await item.map(
+                  measurement:
+                      (DashboardMeasurementItem measurementItem) async {
+                    final dataType =
+                        await _db.getMeasurableDataTypeById(measurementItem.id);
+                    if (dataType != null) {
+                      entityDefinitions.add(dataType);
+                    }
+                  },
+                  healthChart: (_) {},
+                  workoutChart: (_) {},
+                  surveyChart: (_) {},
+                  storyTimeChart: (_) {},
+                  habitChart: (_) {},
+                  wildcardStoryTimeChart: (_) {},
+                );
+              }
+              await Clipboard.setData(
+                ClipboardData(text: json.encode(entityDefinitions)),
+              );
+            }
+
+            return Scaffold(
+              backgroundColor: styleConfig().negspace,
+              appBar: TitleAppBar(
+                title: widget.dashboard.name,
+                actions: [
+                  if (dirty)
+                    TextButton(
+                      key: const Key('dashboard_save'),
+                      onPressed: saveDashboardPress,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          localizations.dashboardSaveLabel,
+                          style: saveButtonStyle(),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              body: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(0),
+                        child: Container(
+                          color: styleConfig().cardColor,
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            children: [
+                              FormBuilder(
+                                key: formKey,
+                                autovalidateMode:
+                                    AutovalidateMode.onUserInteraction,
+                                onChanged: () {
+                                  formKey.currentState?.save();
+                                  setState(() {
+                                    dirty = true;
+                                  });
                                 },
-                              ),
-                            ),
-                          ),
-                          Text(
-                            localizations.dashboardAddChartsTitle,
-                            style: formLabelStyle(),
-                          ),
-                          if (measurableSelectItems.isNotEmpty)
-                            ChartMultiSelect<MeasurableDataType>(
-                              multiSelectItems: measurableSelectItems,
-                              onConfirm: onConfirmAddMeasurement,
-                              title: localizations.dashboardAddMeasurementTitle,
-                              buttonText:
-                                  localizations.dashboardAddMeasurementButton,
-                              iconData: Icons.insights,
-                            ),
-                          ChartMultiSelect<HealthTypeConfig>(
-                            multiSelectItems: healthSelectItems,
-                            onConfirm: onConfirmAddHealthType,
-                            title: localizations.dashboardAddHealthTitle,
-                            buttonText: localizations.dashboardAddHealthButton,
-                            iconData: MdiIcons.stethoscope,
-                          ),
-                          ChartMultiSelect<DashboardSurveyItem>(
-                            multiSelectItems: surveySelectItems,
-                            onConfirm: onConfirmAddSurveyType,
-                            title: localizations.dashboardAddSurveyTitle,
-                            buttonText: localizations.dashboardAddSurveyButton,
-                            iconData: MdiIcons.clipboardOutline,
-                          ),
-                          ChartMultiSelect<DashboardWorkoutItem>(
-                            multiSelectItems: workoutSelectItems,
-                            onConfirm: onConfirmAddWorkoutType,
-                            title: localizations.dashboardAddWorkoutTitle,
-                            buttonText: localizations.dashboardAddWorkoutButton,
-                            iconData: Icons.sports_gymnastics,
-                          ),
-                          ChartMultiSelect<DashboardStoryTimeItem>(
-                            multiSelectItems: storySelectItems,
-                            onConfirm: onConfirmAddStoryTimeType,
-                            title: localizations.dashboardAddStoryTitle,
-                            buttonText: localizations.dashboardAddStoryButton,
-                            iconData: MdiIcons.watch,
-                          ),
-                          const SizedBox(height: 16),
-                          RoundedButton(
-                            'Add story containing substring',
-                            onPressed: () {
-                              showCupertinoModalBottomSheet<void>(
-                                context: context,
-                                backgroundColor: styleConfig().cardColor,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(16),
-                                  ),
-                                ),
-                                clipBehavior: Clip.antiAliasWithSaveLayer,
-                                builder: (BuildContext context) {
-                                  final controller = TextEditingController();
-                                  return Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 2,
-                                          horizontal: 32,
-                                        ),
-                                        child: TextField(
-                                          controller: controller,
-                                          style: TextStyle(
-                                            color:
-                                                styleConfig().primaryTextColor,
-                                          ),
-                                        ),
+                                child: Column(
+                                  children: <Widget>[
+                                    FormTextField(
+                                      initialValue: widget.dashboard.name,
+                                      labelText:
+                                          localizations.dashboardNameLabel,
+                                      name: 'name',
+                                      key: const Key('dashboard_name_field'),
+                                    ),
+                                    FormTextField(
+                                      initialValue:
+                                          widget.dashboard.description,
+                                      labelText: localizations
+                                          .dashboardDescriptionLabel,
+                                      name: 'description',
+                                      fieldRequired: false,
+                                      key: const Key(
+                                        'dashboard_description_field',
                                       ),
-                                      Button(
-                                        'Add story match',
-                                        onPressed: () async {
-                                          addWildcardStoryItem(controller.text);
-                                          maybePop();
-                                        },
-                                      )
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Spacer(),
-                                const SizedBox(width: 8),
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.copy),
-                                      iconSize: settingsIconSize,
-                                      tooltip: localizations.dashboardCopyHint,
-                                      color: styleConfig().cardColor,
-                                      onPressed: copyDashboard,
                                     ),
-                                    IconButton(
-                                      icon:
-                                          const Icon(MdiIcons.trashCanOutline),
-                                      iconSize: settingsIconSize,
-                                      tooltip:
-                                          localizations.dashboardDeleteHint,
-                                      color: styleConfig().cardColor,
-                                      onPressed: () async {
-                                        const deleteKey = 'deleteKey';
-                                        final result =
-                                            await showModalActionSheet<String>(
-                                          context: context,
-                                          title: localizations
-                                              .dashboardDeleteQuestion,
-                                          actions: [
-                                            SheetAction(
-                                              icon: Icons.warning,
-                                              label: localizations
-                                                  .dashboardDeleteConfirm,
-                                              key: deleteKey,
-                                              isDestructiveAction: true,
-                                              isDefaultAction: true,
-                                            ),
-                                          ],
-                                        );
-
-                                        if (result == deleteKey) {
-                                          await persistenceLogic
-                                              .deleteDashboardDefinition(
-                                            widget.dashboard,
-                                          );
-                                          maybePop();
-                                        }
-                                      },
+                                    FormBuilderSwitch(
+                                      name: 'private',
+                                      initialValue: widget.dashboard.private,
+                                      title: Text(
+                                        localizations.dashboardPrivateLabel,
+                                        style: formLabelStyle(),
+                                      ),
+                                      activeColor: styleConfig().private,
+                                    ),
+                                    FormBuilderSwitch(
+                                      name: 'active',
+                                      initialValue: widget.dashboard.active,
+                                      title: Text(
+                                        localizations.dashboardActiveLabel,
+                                        style: formLabelStyle(),
+                                      ),
+                                      activeColor: styleConfig().starredGold,
+                                    ),
+                                    FormBuilderCupertinoDateTimePicker(
+                                      name: 'review_at',
+                                      alwaysUse24HourFormat: true,
+                                      format: hhMmFormat,
+                                      inputType:
+                                          CupertinoDateTimePickerInputType.time,
+                                      style: inputStyle().copyWith(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w300,
+                                        fontFamily: 'Oswald',
+                                      ),
+                                      initialValue: widget.dashboard.reviewAt,
+                                      decoration: InputDecoration(
+                                        labelText: localizations
+                                            .dashboardReviewTimeLabel,
+                                        labelStyle: labelStyle(),
+                                      ),
+                                      theme: datePickerTheme(),
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(height: 24),
+                              Theme(
+                                data:
+                                    ThemeData(canvasColor: Colors.transparent),
+                                child: ReorderableListView(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  onReorder: (int oldIndex, int newIndex) {
+                                    setState(() {
+                                      dirty = true;
+                                      dashboardItems = dashboardItems;
+                                      final movedItem =
+                                          dashboardItems.removeAt(oldIndex);
+                                      final insertionIndex = newIndex > oldIndex
+                                          ? newIndex - 1
+                                          : newIndex;
+                                      dashboardItems.insert(
+                                        insertionIndex,
+                                        movedItem,
+                                      );
+                                    });
+                                  },
+                                  children: List.generate(
+                                    dashboardItems.length,
+                                    (int index) {
+                                      final items = dashboardItems;
+                                      final item = items.elementAt(index);
+
+                                      return Dismissible(
+                                        onDismissed: (_) {
+                                          dismissItem(index);
+                                        },
+                                        key: Key(
+                                          'dashboard-item-${item.hashCode}-$index',
+                                        ),
+                                        child: DashboardItemCard(
+                                          item: item,
+                                          index: index,
+                                          updateItemFn: updateItem,
+                                          measurableTypes: measurableDataTypes,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                localizations.dashboardAddChartsTitle,
+                                style: formLabelStyle(),
+                              ),
+                              if (measurableSelectItems.isNotEmpty)
+                                ChartMultiSelect<HabitDefinition>(
+                                  multiSelectItems: habitSelectItems,
+                                  onConfirm: onConfirmAddHabit,
+                                  title: localizations.dashboardAddHabitTitle,
+                                  buttonText:
+                                      localizations.dashboardAddHabitButton,
+                                  iconData: Icons.insights,
+                                ),
+                              ChartMultiSelect<MeasurableDataType>(
+                                multiSelectItems: measurableSelectItems,
+                                onConfirm: onConfirmAddMeasurement,
+                                title:
+                                    localizations.dashboardAddMeasurementTitle,
+                                buttonText:
+                                    localizations.dashboardAddMeasurementButton,
+                                iconData: Icons.insights,
+                              ),
+                              ChartMultiSelect<HealthTypeConfig>(
+                                multiSelectItems: healthSelectItems,
+                                onConfirm: onConfirmAddHealthType,
+                                title: localizations.dashboardAddHealthTitle,
+                                buttonText:
+                                    localizations.dashboardAddHealthButton,
+                                iconData: MdiIcons.stethoscope,
+                              ),
+                              ChartMultiSelect<DashboardSurveyItem>(
+                                multiSelectItems: surveySelectItems,
+                                onConfirm: onConfirmAddSurveyType,
+                                title: localizations.dashboardAddSurveyTitle,
+                                buttonText:
+                                    localizations.dashboardAddSurveyButton,
+                                iconData: MdiIcons.clipboardOutline,
+                              ),
+                              ChartMultiSelect<DashboardWorkoutItem>(
+                                multiSelectItems: workoutSelectItems,
+                                onConfirm: onConfirmAddWorkoutType,
+                                title: localizations.dashboardAddWorkoutTitle,
+                                buttonText:
+                                    localizations.dashboardAddWorkoutButton,
+                                iconData: Icons.sports_gymnastics,
+                              ),
+                              ChartMultiSelect<DashboardStoryTimeItem>(
+                                multiSelectItems: storySelectItems,
+                                onConfirm: onConfirmAddStoryTimeType,
+                                title: localizations.dashboardAddStoryTitle,
+                                buttonText:
+                                    localizations.dashboardAddStoryButton,
+                                iconData: MdiIcons.watch,
+                              ),
+                              const SizedBox(height: 16),
+                              RoundedButton(
+                                'Add story containing substring',
+                                onPressed: () {
+                                  showCupertinoModalBottomSheet<void>(
+                                    context: context,
+                                    backgroundColor: styleConfig().cardColor,
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(16),
+                                      ),
+                                    ),
+                                    clipBehavior: Clip.antiAliasWithSaveLayer,
+                                    builder: (BuildContext context) {
+                                      final controller =
+                                          TextEditingController();
+                                      return Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 2,
+                                              horizontal: 32,
+                                            ),
+                                            child: TextField(
+                                              controller: controller,
+                                              style: TextStyle(
+                                                color: styleConfig()
+                                                    .primaryTextColor,
+                                              ),
+                                            ),
+                                          ),
+                                          Button(
+                                            'Add story match',
+                                            onPressed: () async {
+                                              addWildcardStoryItem(
+                                                controller.text,
+                                              );
+                                              maybePop();
+                                            },
+                                          )
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 16),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Spacer(),
+                                    const SizedBox(width: 8),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.copy),
+                                          iconSize: settingsIconSize,
+                                          tooltip:
+                                              localizations.dashboardCopyHint,
+                                          color: styleConfig().cardColor,
+                                          onPressed: copyDashboard,
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            MdiIcons.trashCanOutline,
+                                          ),
+                                          iconSize: settingsIconSize,
+                                          tooltip:
+                                              localizations.dashboardDeleteHint,
+                                          color: styleConfig().cardColor,
+                                          onPressed: () async {
+                                            const deleteKey = 'deleteKey';
+                                            final result =
+                                                await showModalActionSheet<
+                                                    String>(
+                                              context: context,
+                                              title: localizations
+                                                  .dashboardDeleteQuestion,
+                                              actions: [
+                                                SheetAction(
+                                                  icon: Icons.warning,
+                                                  label: localizations
+                                                      .dashboardDeleteConfirm,
+                                                  key: deleteKey,
+                                                  isDestructiveAction: true,
+                                                  isDefaultAction: true,
+                                                ),
+                                              ],
+                                            );
+
+                                            if (result == deleteKey) {
+                                              await persistenceLogic
+                                                  .deleteDashboardDefinition(
+                                                widget.dashboard,
+                                              );
+                                              maybePop();
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

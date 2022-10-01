@@ -22,10 +22,7 @@ class HabitsPage extends StatefulWidget {
 }
 
 class _HabitsPageState extends State<HabitsPage> {
-  final JournalDb _db = getIt<JournalDb>();
   String match = '';
-
-  late final Stream<List<HabitDefinition>> stream = _db.watchHabitDefinitions();
 
   @override
   void initState() {
@@ -82,7 +79,7 @@ class _HabitsPageState extends State<HabitsPage> {
     void createHabit() => beamToNamed('/settings/habits/create');
 
     return StreamBuilder<List<HabitDefinition>>(
-      stream: stream,
+      stream: getIt<JournalDb>().watchHabitDefinitions(),
       builder: (
         BuildContext context,
         AsyncSnapshot<List<HabitDefinition>> snapshot,

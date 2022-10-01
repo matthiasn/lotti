@@ -26,6 +26,8 @@
   "conflictsUnresolved": "unresolved",
   "dashboardActiveLabel": "Active:",
   "dashboardAddChartsTitle": "Add Charts:",
+  "dashboardAddHabitButton": "Habit Charts",
+  "dashboardAddHabitTitle": "Habit Charts",
   "dashboardAddHealthButton": "Health Charts",
   "dashboardAddHealthTitle": "Health Charts",
   "dashboardAddMeasurementButton": "Measurement Charts",

@@ -145,6 +145,10 @@ class DashboardItem with _$DashboardItem {
     required WorkoutValueType valueType,
   }) = DashboardWorkoutItem;
 
+  factory DashboardItem.habitChart({
+    required String habitId,
+  }) = DashboardHabitItem;
+
   factory DashboardItem.surveyChart({
     required Map<String, String> colorsByScoreKey,
     required String surveyType,
