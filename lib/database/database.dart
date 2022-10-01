@@ -770,6 +770,14 @@ class JournalDb extends _$JournalDb {
         .map(habitDefinitionsStreamMapper);
   }
 
+  Stream<HabitDefinition?> watchHabitById(String id) {
+    return habitById(id)
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(habitDefinitionsStreamMapper)
+        .map((List<HabitDefinition> res) => res.firstOrNull);
+  }
+
   Future<List<TagEntity>> getMatchingTags(
     String match, {
     int limit = 10,
