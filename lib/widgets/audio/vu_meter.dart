@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
+import 'package:lotti/themes/theme.dart';
 
 class CustomRect extends CustomClipper<Rect> {
   CustomRect(this.heightFactor);
@@ -40,24 +41,18 @@ class VuMeterButtonWidget extends StatelessWidget {
           child: Stack(
             alignment: Alignment.bottomCenter,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: SvgPicture.asset('assets/icons/mic.svg'),
-              ),
+              SvgPicture.asset(styleConfig().micIcon),
               if (!hot)
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: ClipRect(
-                    key: Key(state.decibels.toString()),
-                    clipper: CustomRect(audioLevel),
-                    child: SvgPicture.asset('assets/icons/mic_rec.svg'),
-                  ),
+                ClipRect(
+                  key: Key(state.decibels.toString()),
+                  clipper: CustomRect(audioLevel),
+                  child: SvgPicture.asset(styleConfig().micRecIcon),
                 ),
               if (hot)
                 ClipRect(
                   key: Key(state.decibels.toString()),
                   clipper: CustomRect(audioLevel),
-                  child: SvgPicture.asset('assets/icons/mic_hot.svg'),
+                  child: SvgPicture.asset(styleConfig().micHotIcon),
                 ),
             ],
           ),

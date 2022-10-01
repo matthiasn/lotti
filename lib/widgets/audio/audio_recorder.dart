@@ -53,7 +53,7 @@ class AudioRecorderWidget extends StatelessWidget {
                 children: <Widget>[
                   IconButton(
                     key: const Key('pauseIcon'),
-                    icon: SvgPicture.asset('assets/icons/pause.svg'),
+                    icon: SvgPicture.asset(styleConfig().pauseIcon),
                     padding: const EdgeInsets.only(
                       left: 8,
                       top: 8,
@@ -66,7 +66,7 @@ class AudioRecorderWidget extends StatelessWidget {
                   ),
                   IconButton(
                     key: const Key('stopIcon'),
-                    icon: SvgPicture.asset('assets/icons/stop.svg'),
+                    icon: SvgPicture.asset(styleConfig().stopIcon),
                     padding: const EdgeInsets.only(
                       left: 29,
                       top: 8,

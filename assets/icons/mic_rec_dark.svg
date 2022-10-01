@@ -1,14 +1,13 @@
-<svg width="172" height="173" viewBox="0 0 172 173" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="86" cy="86" r="86" fill="#82E6CE"/>
-<g clip-path="url(#clip0_171_3201)">
-    <path d="M102.078 60.1039C102.078 50.7618 94.5043 43.1885 85.1622 43.1885C75.8201 43.1885 68.2468 50.7618 68.2468 60.1039V81.9839C68.2468 91.326 75.8201 98.8993 85.1622 98.8993C94.5043 98.8993 102.078 91.326 102.078 81.9839V60.1039Z" stroke="black" stroke-miterlimit="10"/>
-    <path d="M58.4354 82.48C58.4354 97.2403 70.402 109.207 85.1622 109.207C99.9225 109.207 111.889 97.2403 111.889 82.48" stroke="black" stroke-miterlimit="10"/>
-    <path d="M85.1622 109.207V130.374" stroke="black" stroke-miterlimit="10"/>
-    <path d="M111.889 130.285H58.4354" stroke="black" stroke-miterlimit="10"/>
-</g>
-<defs>
-    <clipPath id="clip0_171_3201">
-        <rect width="87.9635" height="87.9635" fill="white" transform="translate(41.6256 42.4109)"/>
-    </clipPath>
-</defs>
+<svg width="172" height="172" viewBox="0 0 172 172" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+        d="M86 169.133C131.913 169.133 169.133 131.913 169.133 86C169.133 40.0868 131.913 2.8667 86 2.8667C40.0868 2.8667 2.8667 40.0868 2.8667 86C2.8667 131.913 40.0868 169.133 86 169.133Z"
+        fill="#82E6CE" />
+    <path
+        d="M86 42.3635C76.7808 42.3635 69.3103 49.7882 69.3103 58.9443V80.3927C69.3103 89.5489 76.7808 96.9735 86 96.9735C95.2192 96.9735 102.69 89.5489 102.69 80.3927V58.9443C102.69 49.7882 95.2192 42.3635 86 42.3635V42.3635Z"
+        stroke="white" stroke-width="2.5" stroke-miterlimit="10" />
+    <path
+        d="M59.6267 83.1045C59.6267 97.6672 71.4316 109.478 86 109.478C100.563 109.478 112.373 97.6729 112.373 83.1045"
+        stroke="white" stroke-width="2.5" stroke-miterlimit="10" />
+    <path d="M86 109.478V129.636" stroke="white" stroke-width="2.5" stroke-miterlimit="10" />
+    <path d="M112.373 129.636H59.6267" stroke="white" stroke-width="2.5" stroke-miterlimit="10" />
 </svg>
