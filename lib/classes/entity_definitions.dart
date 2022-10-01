@@ -48,7 +48,7 @@ class EntityDefinition with _$EntityDefinition {
     required String name,
     required String description,
     required HabitSchedule habitSchedule,
-    required String version,
+    String? version,
     required VectorClock? vectorClock,
     required bool active,
     required bool private,

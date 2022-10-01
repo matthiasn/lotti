@@ -415,6 +415,12 @@ allHabitDefinitions:
 SELECT * FROM habit_definitions
   WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
+habitById:
+SELECT * FROM habit_definitions
+  WHERE deleted = false
+  AND id = :id
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
+
 matchingTagEntities:
 SELECT * FROM tag_entities
   WHERE tag LIKE :match

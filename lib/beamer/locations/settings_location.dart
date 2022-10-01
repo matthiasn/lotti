@@ -8,6 +8,9 @@ import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
+import 'package:lotti/pages/settings/habits/habit_create_page.dart';
+import 'package:lotti/pages/settings/habits/habit_details_page.dart';
+import 'package:lotti/pages/settings/habits/habits_page.dart';
 import 'package:lotti/pages/settings/health_import_page.dart';
 import 'package:lotti/pages/settings/logging_page.dart';
 import 'package:lotti/pages/settings/maintenance_page.dart';
@@ -36,6 +39,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/measurables',
         '/settings/measurables/:measurableId',
         '/settings/measurables/create',
+        '/settings/habits',
+        '/settings/habits/:habitId',
+        '/settings/habits/create',
         '/settings/flags',
         '/settings/advanced',
         '/settings/outbox_monitor',
@@ -135,6 +141,31 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-measurables-create'),
           child: CreateMeasurablePage(),
+        ),
+
+      // Habits
+      if (pathContains('habits'))
+        const BeamPage(
+          key: ValueKey('settings-habits'),
+          child: HabitsPage(),
+        ),
+
+      if (pathContains('habits') &&
+          !pathContains('create') &&
+          pathContainsKey('habitId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-habits-${state.pathParameters['habitId']}',
+          ),
+          child: EditHabitPage(
+            habitId: state.pathParameters['habitId']!,
+          ),
+        ),
+
+      if (pathContains('habits/create'))
+        const BeamPage(
+          key: ValueKey('settings-habits-create'),
+          child: CreateHabitPage(),
         ),
 
       // Flags

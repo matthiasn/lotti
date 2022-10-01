@@ -37,6 +37,11 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           const SettingsDivider(),
           SettingsNavCard(
+            title: localizations.settingsHabitsTitle,
+            path: '/settings/habits',
+          ),
+          const SettingsDivider(),
+          SettingsNavCard(
             title: localizations.settingsTagsTitle,
             path: '/settings/tags',
           ),

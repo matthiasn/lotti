@@ -23,6 +23,18 @@ final measurableWater = MeasurableDataType(
   aggregationType: AggregationType.dailySum,
 );
 
+final habitFlossing = HabitDefinition(
+  id: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+  name: 'Flossing',
+  description: 'Maintain healthy teeth and gums',
+  createdAt: testEpochDateTime,
+  updatedAt: testEpochDateTime,
+  vectorClock: null,
+  habitSchedule: HabitSchedule.daily(requiredCompletions: 1),
+  active: true,
+  private: false,
+);
+
 final measurablePullUps = MeasurableDataType(
   id: '22922182-15bf-4f2b-864f-1f546f95cac2',
   displayName: 'Pull-Ups',

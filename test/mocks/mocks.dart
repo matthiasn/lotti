@@ -53,6 +53,19 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
   return mock;
 }
 
+MockJournalDb mockJournalDbWithHabits(
+  List<HabitDefinition> habitDefinitions,
+) {
+  final mock = MockJournalDb();
+  when(mock.close).thenAnswer((_) async {});
+
+  when(mock.watchHabitDefinitions).thenAnswer(
+    (_) => Stream<List<HabitDefinition>>.fromIterable([habitDefinitions]),
+  );
+
+  return mock;
+}
+
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
