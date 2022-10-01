@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Audio recorder icons in dark mode
+
+## [0.8.162] - 2022-10-01
+### Changed:
 - Active icons in surveys
 
 ## [0.8.161] - 2022-10-01
