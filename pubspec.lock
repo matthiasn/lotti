@@ -1660,8 +1660,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: HEAD
-      resolved-ref: a8c2fb5231e24d0d548fbf780f5d0eab00f8a6d3
+      ref: "9c77e92"
+      resolved-ref: "9c77e92b5911a3c49af4018955de83828e51694e"
       url: "https://github.com/matthiasn/research.package.git"
     source: git
     version: "0.6.6-1"
