@@ -8,6 +8,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/duration_widget.dart';
+import 'package:lotti/widgets/journal/entry_details/habit_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
@@ -144,7 +145,10 @@ class JournalCardTitle extends StatelessWidget {
                 workout,
                 showChart: false,
               ),
-              habitCompletion: (_) => const SizedBox.shrink(),
+              habitCompletion: (habitCompletion) => HabitSummary(
+                habitCompletion,
+                showChart: false,
+              ),
             ),
           ),
           item.maybeMap(
@@ -209,6 +213,7 @@ class JournalCard extends StatelessWidget {
                   orElse: () => MdiIcons.checkboxBlankOutline,
                 ),
               ),
+              habitCompletion: (_) => const LeadingIcon(MdiIcons.lightningBolt),
               orElse: () => null,
             ),
             title: JournalCardTitle(

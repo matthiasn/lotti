@@ -37,7 +37,7 @@ class MeasurementSummary extends StatelessWidget {
         }
 
         return Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.only(top: 5),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
