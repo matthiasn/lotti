@@ -208,6 +208,55 @@ class PersistenceLogic {
     return null;
   }
 
+  Future<HabitCompletionEntry?> createHabitCompletionEntry({
+    required HabitCompletionData data,
+    String? linkedId,
+    String? comment,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final vc = await _vectorClockService.getNextVectorClock();
+      final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
+
+      final habitCompletionEntry = HabitCompletionEntry(
+        data: data,
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+          id: id,
+          vectorClock: vc,
+          timezone: await getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+        entryText: entryTextFromPlain(comment),
+      );
+
+      await createDbEntity(
+        habitCompletionEntry,
+        enqueueSync: true,
+        linkedId: linkedId,
+      );
+
+      if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
+          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
+        addGeolocation(habitCompletionEntry.meta.id);
+      }
+
+      return habitCompletionEntry;
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'createMeasurementEntry',
+        stackTrace: stackTrace,
+      );
+    }
+
+    return null;
+  }
+
   Future<Task?> createTaskEntry({
     required TaskData data,
     required EntryText entryText,

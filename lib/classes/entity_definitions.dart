@@ -112,7 +112,7 @@ class HabitCompletionData with _$HabitCompletionData {
   factory HabitCompletionData({
     required DateTime dateFrom,
     required DateTime dateTo,
-    required num value,
+    num? value,
     required String habitId,
   }) = _HabitCompletionData;
 

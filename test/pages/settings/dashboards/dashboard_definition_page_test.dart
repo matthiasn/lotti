@@ -38,6 +38,13 @@ void main() {
         measurableWater,
         measurableChocolate,
       ]);
+
+      when(mockJournalDb.watchHabitDefinitions).thenAnswer(
+        (_) => Stream<List<HabitDefinition>>.fromIterable([
+          [habitFlossing]
+        ]),
+      );
+
       mockPersistenceLogic = MockPersistenceLogic();
 
       getIt
