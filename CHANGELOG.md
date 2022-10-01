@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Active icons in surveys
+
+## [0.8.161] - 2022-10-01
+### Changed:
 - Launch background color
 
 ## [0.8.160] - 2022-09-30
