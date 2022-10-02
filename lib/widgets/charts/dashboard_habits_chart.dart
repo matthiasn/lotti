@@ -1,6 +1,8 @@
 import 'dart:core';
 
 import 'package:beamer/beamer.dart';
+import 'package:collection/collection.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
@@ -10,7 +12,10 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/themes.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardHabitsChart extends StatefulWidget {
   const DashboardHabitsChart({
@@ -57,25 +62,92 @@ class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
             BuildContext context,
             AsyncSnapshot<List<JournalEntity?>> snapshot,
           ) {
-            debugPrint('habit completions $snapshot');
+            final entities = snapshot.data ?? [];
+
+            final results = habitResultsByDay(
+              entities,
+              rangeStart: widget.rangeStart,
+              rangeEnd: widget.rangeEnd,
+            );
+
+            final days =
+                widget.rangeEnd.difference(widget.rangeStart).inDays + 1;
+
             return DashboardChart(
               topMargin: 10,
-              chart: Container(
-                color: Colors.white,
-                height: 80,
-                width: MediaQuery.of(context).size.width - 20,
+              transparent: true,
+              chart: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const SizedBox(width: 40),
+                  ...results.map((res) {
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: Container(
+                        height: 15,
+                        width: (MediaQuery.of(context).size.width - 200) / days,
+                        color: colorFromCssHex(res.hexColor),
+                      ),
+                    );
+                  }),
+                  const SizedBox(width: 30),
+                ],
               ),
               chartHeader: HabitChartInfoWidget(
                 habitDefinition,
                 dashboardId: widget.dashboardId,
               ),
-              height: 136,
+              height: 50,
             );
           },
         );
       },
     );
   }
+}
+
+class HabitResult extends Equatable {
+  const HabitResult(this.dayString, this.hexColor);
+
+  final String dayString;
+  final String hexColor;
+
+  @override
+  String toString() {
+    return '$dayString $hexColor}';
+  }
+
+  @override
+  List<Object?> get props => [dayString, hexColor];
+}
+
+List<HabitResult> habitResultsByDay(
+  List<JournalEntity?> entities, {
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) {
+  final resultsByDay = <String, String>{};
+  final range = rangeEnd.difference(rangeStart);
+  final dayStrings = List<String>.generate(range.inDays, (days) {
+    final day = rangeStart.add(Duration(days: days));
+    return ymd(day);
+  });
+
+  for (final dayString in dayStrings) {
+    resultsByDay[dayString] = colorToCssHex(alarm);
+  }
+
+  for (final entity in entities) {
+    final dayString = ymd(entity!.meta.dateFrom);
+    resultsByDay[dayString] = colorToCssHex(primaryColor);
+  }
+
+  final aggregated = <HabitResult>[];
+  for (final dayString in resultsByDay.keys.sorted()) {
+    aggregated.add(HabitResult(dayString, resultsByDay[dayString]!));
+  }
+
+  return aggregated;
 }
 
 class HabitChartInfoWidget extends StatelessWidget {
