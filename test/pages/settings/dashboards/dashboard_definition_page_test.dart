@@ -467,6 +467,40 @@ void main() {
       expect(find.text(testDashboardName), findsOneWidget);
     });
 
+    testWidgets('dashboard definitions page is displayed with one test item',
+        (tester) async {
+      when(mockJournalDb.watchDashboards).thenAnswer(
+        (_) => Stream<List<DashboardDefinition>>.fromIterable([
+          [testDashboardConfig],
+        ]),
+      );
+
+      when(
+        () => mockJournalDb.watchDashboardById(testDashboardConfig.id),
+      ).thenAnswer(
+        (_) => Stream<List<DashboardDefinition>>.fromIterable([
+          <DashboardDefinition>[testDashboardConfig]
+        ]),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
+            ),
+            child: EditDashboardPage(dashboardId: testDashboardConfig.id),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // finds text in dashboard card
+      expect(find.text(testDashboardDescription), findsOneWidget);
+    });
+
     testWidgets('dashboard list page is displayed with two test dashboards',
         (tester) async {
       when(mockJournalDb.watchDashboards).thenAnswer(
