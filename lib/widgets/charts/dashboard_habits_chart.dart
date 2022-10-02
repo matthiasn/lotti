@@ -48,15 +48,16 @@ class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
         }
 
         return StreamBuilder<List<JournalEntity?>>(
-          stream: _db.watchMeasurementsByType(
-            type: habitDefinition.id,
+          stream: _db.watchHabitCompletionsByHabitId(
+            habitId: habitDefinition.id,
             rangeStart: widget.rangeStart,
             rangeEnd: widget.rangeEnd,
           ),
           builder: (
             BuildContext context,
-            AsyncSnapshot<List<JournalEntity?>> measurementsSnapshot,
+            AsyncSnapshot<List<JournalEntity?>> snapshot,
           ) {
+            debugPrint('habit completions $snapshot');
             return DashboardChart(
               topMargin: 10,
               chart: Container(

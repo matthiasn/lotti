@@ -595,6 +595,15 @@ class PersistenceLogic {
 
         await updateDbEntity(newEntry, enqueueSync: true);
       }
+
+      if (journalEntity is HabitCompletionEntry) {
+        final newEntry = journalEntity.copyWith(
+          meta: newMeta,
+          entryText: entryText,
+        );
+
+        await updateDbEntity(newEntry, enqueueSync: true);
+      }
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,

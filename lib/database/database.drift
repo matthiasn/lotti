@@ -335,6 +335,15 @@ SELECT * FROM journal
   AND deleted = false
   ORDER BY date_from DESC;
 
+habitCompletionsByHabitId:
+SELECT * FROM journal
+  WHERE type = 'HabitCompletionEntry'
+  AND subtype = :habitId
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
+  AND deleted = false
+  ORDER BY date_from DESC;
+
 quantitativeByType:
 SELECT * FROM journal
   WHERE type = 'QuantitativeEntry'
