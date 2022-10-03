@@ -68,6 +68,7 @@ class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
 
             final results = habitResultsByDay(
               entities,
+              habitDefinition: habitDefinition,
               rangeStart: widget.rangeStart,
               rangeEnd: widget.rangeEnd,
             );
@@ -126,6 +127,7 @@ class HabitResult extends Equatable {
 
 List<HabitResult> habitResultsByDay(
   List<JournalEntity?> entities, {
+  required HabitDefinition habitDefinition,
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
@@ -136,8 +138,16 @@ List<HabitResult> habitResultsByDay(
     return ymd(day);
   });
 
+  final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
+  final activeUntil = habitDefinition.activeUntil ?? DateTime(9999);
+
   for (final dayString in dayStrings) {
-    resultsByDay[dayString] = colorToCssHex(alarm);
+    final day = DateTime.parse(dayString);
+    final color = day.isAfter(activeFrom) && day.isBefore(activeUntil)
+        ? alarm
+        : styleConfig().secondaryTextColor.withOpacity(0.4);
+
+    resultsByDay[dayString] = colorToCssHex(color);
   }
 
   for (final entity in entities) {
@@ -274,6 +284,7 @@ class _HabitChartLineState extends State<HabitChartLine> {
 
             final results = habitResultsByDay(
               entities,
+              habitDefinition: habitDefinition,
               rangeStart: widget.rangeStart,
               rangeEnd: widget.rangeEnd,
             );
