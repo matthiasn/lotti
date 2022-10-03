@@ -1,38 +1,36 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
 
-class MeasurementDialog extends StatefulWidget {
-  const MeasurementDialog({
+class HabitDialog extends StatefulWidget {
+  const HabitDialog({
     super.key,
-    required this.measurableId,
+    required this.habitId,
+    required this.beamerDelegate,
   });
 
-  final String measurableId;
+  final String habitId;
+  final BeamerDelegate beamerDelegate;
 
   @override
-  State<MeasurementDialog> createState() => _MeasurementDialogState();
+  State<HabitDialog> createState() => _HabitDialogState();
 }
 
-class _MeasurementDialogState extends State<MeasurementDialog> {
+class _HabitDialogState extends State<HabitDialog> {
   final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
-  bool dirty = false;
-
-  MeasurableDataType? selected;
+  bool dirty = true;
 
   final hotkeyCmdS = HotKey(
     KeyCode.keyS,
@@ -40,24 +38,19 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
     scope: HotKeyScope.inapp,
   );
 
-  final beamBack = dashboardsBeamerDelegate.beamBack;
-
-  Future<void> saveMeasurement() async {
+  Future<void> saveHabit() async {
     _formKey.currentState!.save();
     if (validate()) {
       final formData = _formKey.currentState?.value;
-      if (selected == null) {
-        return;
-      }
-      final measurement = MeasurementData(
-        dataTypeId: selected!.id,
+
+      final habitCompletion = HabitCompletionData(
+        habitId: widget.habitId,
         dateTo: formData!['date'] as DateTime,
         dateFrom: formData['date'] as DateTime,
-        value: nf.parse('${formData['value']}'.replaceAll(',', '.')),
       );
 
-      await persistenceLogic.createMeasurementEntry(
-        data: measurement,
+      await persistenceLogic.createHabitCompletionEntry(
+        data: habitCompletion,
         comment: formData['comment'] as String,
       );
 
@@ -65,7 +58,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
         dirty = false;
       });
 
-      beamBack();
+      widget.beamerDelegate.beamBack();
     }
   }
 
@@ -75,7 +68,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
 
     hotKeyManager.register(
       hotkeyCmdS,
-      keyDownHandler: (hotKey) => saveMeasurement(),
+      keyDownHandler: (hotKey) => saveHabit(),
     );
   }
 
@@ -96,23 +89,13 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return StreamBuilder<List<MeasurableDataType>>(
-      stream: _db.watchMeasurableDataTypes(),
+    return StreamBuilder<HabitDefinition?>(
+      stream: _db.watchHabitById(widget.habitId),
       builder: (
         BuildContext context,
-        AsyncSnapshot<List<MeasurableDataType>> snapshot,
+        AsyncSnapshot<HabitDefinition?> snapshot,
       ) {
-        final items = snapshot.data ?? [];
-
-        if (items.length == 1) {
-          selected = items.first;
-        }
-
-        for (final dataType in items) {
-          if (dataType.id == widget.measurableId) {
-            selected = dataType;
-          }
-        }
+        final habitDefinition = snapshot.data;
 
         return AlertDialog(
           insetPadding: const EdgeInsets.symmetric(horizontal: 32),
@@ -135,8 +118,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
           actions: [
             if (dirty && validate())
               TextButton(
-                key: const Key('measurement_save'),
-                onPressed: saveMeasurement,
+                key: const Key('habit_save'),
+                onPressed: saveHabit,
                 child: Text(
                   localizations.addMeasurementSaveButton,
                   style: saveButtonStyle(),
@@ -158,7 +141,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      selected?.displayName ?? '',
+                      habitDefinition?.name ?? '',
                       style: const TextStyle(
                         color: Colors.black,
                         fontFamily: mainFont,
@@ -169,7 +152,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       padding: const EdgeInsets.all(10),
                       icon: SvgPicture.asset('assets/icons/close.svg'),
                       hoverColor: Colors.transparent,
-                      onPressed: dashboardsBeamerDelegate.beamBack,
+                      onPressed: widget.beamerDelegate.beamBack,
                     ),
                   ],
                 ),
@@ -178,16 +161,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // if ('${selected?.description}'.isNotEmpty)
-                      //   Text(
-                      //     '${selected?.description}',
-                      //     style: TextStyle(
-                      //       color: colorConfig().primaryTextColor,
-                      //       fontFamily: mainFont,
-                      //       fontWeight: FontWeight.w300,
-                      //       fontSize: 14,
-                      //     ),
-                      //   ),
                       const SizedBox(height: 10),
                       FormBuilderCupertinoDateTimePicker(
                         name: 'date',
@@ -196,35 +169,21 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           "MMMM d, yyyy 'at' HH:mm",
                         ),
                         style: newInputStyle().copyWith(color: Colors.black),
-                        decoration:
-                            InputDecoration(fillColor: styleConfig().negspace),
+                        decoration: InputDecoration(
+                          fillColor: styleConfig().negspace,
+                          labelText: localizations.addHabitDateLabel,
+                          labelStyle:
+                              newLabelStyle().copyWith(color: Colors.black),
+                          floatingLabelBehavior: FloatingLabelBehavior.always,
+                        ),
                         initialValue: DateTime.now(),
                         theme: datePickerTheme(),
                       ),
                       FormBuilderTextField(
                         initialValue: '',
-                        key: const Key('measurement_value_field'),
+                        key: const Key('habit_comment_field'),
                         decoration: InputDecoration(
-                          labelText: '${selected?.displayName} '
-                              '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
-                          labelStyle:
-                              newLabelStyle().copyWith(color: Colors.black),
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
-                        ),
-                        keyboardAppearance: Brightness.light,
-                        style: newInputStyle().copyWith(color: Colors.black),
-                        autofocus: true,
-                        validator: FormBuilderValidators.numeric(),
-                        name: 'value',
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                      ),
-                      FormBuilderTextField(
-                        initialValue: '',
-                        key: const Key('measurement_comment_field'),
-                        decoration: InputDecoration(
-                          labelText: localizations.addMeasurementCommentLabel,
+                          labelText: localizations.addHabitCommentLabel,
                           labelStyle:
                               newLabelStyle().copyWith(color: Colors.black),
                           floatingLabelBehavior: FloatingLabelBehavior.always,

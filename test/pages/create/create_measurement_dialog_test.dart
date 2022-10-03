@@ -105,7 +105,7 @@ void main() {
                   maxWidth: 800,
                 ),
                 child: MeasurementDialog(
-                  selectedId: measurableWater.id,
+                  measurableId: measurableWater.id,
                 ),
               ),
             ),
@@ -157,7 +157,7 @@ void main() {
               maxWidth: 800,
             ),
             child: MeasurementDialog(
-              selectedId: measurableWater.id,
+              measurableId: measurableWater.id,
             ),
           ),
         ),

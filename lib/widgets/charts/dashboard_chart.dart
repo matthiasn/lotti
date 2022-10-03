@@ -8,6 +8,7 @@ class DashboardChart extends StatelessWidget {
     required this.height,
     this.overlay,
     this.topMargin = 0,
+    this.transparent = false,
     super.key,
   });
 
@@ -16,6 +17,7 @@ class DashboardChart extends StatelessWidget {
   final Widget? overlay;
   final double height;
   final double topMargin;
+  final bool transparent;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +33,7 @@ class DashboardChart extends StatelessWidget {
               right: 10,
             ),
             child: Container(
-              color: styleConfig().cardColor,
+              color: transparent ? Colors.transparent : styleConfig().cardColor,
               padding: const EdgeInsets.only(left: 10),
               child: chart,
             ),

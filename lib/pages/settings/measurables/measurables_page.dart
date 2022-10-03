@@ -12,8 +12,6 @@ import 'package:lotti/widgets/settings/measurables/measurable_type_card.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
-const double iconSize = 24;
-
 class MeasurablesPage extends StatefulWidget {
   const MeasurablesPage({super.key});
 

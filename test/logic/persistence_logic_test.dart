@@ -604,5 +604,43 @@ void main() {
 
       expect(count, 0);
     });
+
+    test('create and retrieve habit definition', () async {
+      await getIt<PersistenceLogic>().upsertEntityDefinition(habitFlossing);
+
+      final habitCompletionData = HabitCompletionData(
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+        habitId: habitFlossing.id,
+      );
+
+      final habitCompletion =
+          await getIt<PersistenceLogic>().createHabitCompletionEntry(
+        data: habitCompletionData,
+      );
+
+      expect(habitCompletion?.data, habitCompletionData);
+
+      // habit can be retrieved
+      expect(
+        (await getIt<JournalDb>().watchHabitDefinitions().first).toSet(),
+        {habitFlossing},
+      );
+
+      expect(
+        await getIt<JournalDb>().watchHabitById(habitFlossing.id).first,
+        habitFlossing,
+      );
+
+      // habit can be deleted
+      await getIt<PersistenceLogic>().upsertEntityDefinition(
+        habitFlossing.copyWith(deletedAt: DateTime.now()),
+      );
+
+      expect(
+        await getIt<JournalDb>().watchHabitById(habitFlossing.id).first,
+        null,
+      );
+    });
   });
 }

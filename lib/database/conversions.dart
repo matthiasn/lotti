@@ -15,6 +15,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     survey: (SurveyEntry entry) =>
         entry.data.taskResult.identifier.toLowerCase(),
     workout: (WorkoutEntry entry) => entry.data.workoutType,
+    habitCompletion: (HabitCompletionEntry entry) => entry.data.habitId,
     orElse: () => '',
   );
 

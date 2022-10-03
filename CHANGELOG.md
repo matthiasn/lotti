@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Habits definition in Settings
+- Add habit chart in dashboard
+- Habits tab
 
 ## [0.8.163] - 2022-10-01
 ### Changed:

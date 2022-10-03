@@ -46,6 +46,7 @@ class _AppScreenState extends State<AppScreen> {
               IndexedStack(
                 index: index,
                 children: [
+                  Beamer(routerDelegate: navService.habitsDelegate),
                   Beamer(routerDelegate: navService.dashboardsDelegate),
                   Beamer(routerDelegate: navService.journalDelegate),
                   Beamer(routerDelegate: navService.tasksDelegate),
@@ -75,6 +76,11 @@ class _AppScreenState extends State<AppScreen> {
             type: BottomNavigationBarType.fixed,
             currentIndex: index,
             items: [
+              BottomNavigationBarItem(
+                icon: SvgPicture.asset(styleConfig().navHomeIcon),
+                activeIcon: SvgPicture.asset(styleConfig().navHomeIconActive),
+                label: localizations.navTabTitleHabits,
+              ),
               BottomNavigationBarItem(
                 icon: SvgPicture.asset(styleConfig().navHomeIcon),
                 activeIcon: SvgPicture.asset(styleConfig().navHomeIconActive),

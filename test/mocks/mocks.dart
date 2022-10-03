@@ -50,6 +50,12 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
     (_) => Stream<List<MeasurableDataType>>.fromIterable([dataTypes]),
   );
 
+  for (final dataType in dataTypes) {
+    when(() => mock.watchMeasurableDataTypeById(dataType.id)).thenAnswer(
+      (_) => Stream<MeasurableDataType>.fromIterable([dataType]),
+    );
+  }
+
   return mock;
 }
 
@@ -62,6 +68,12 @@ MockJournalDb mockJournalDbWithHabits(
   when(mock.watchHabitDefinitions).thenAnswer(
     (_) => Stream<List<HabitDefinition>>.fromIterable([habitDefinitions]),
   );
+
+  for (final habitDefinition in habitDefinitions) {
+    when(() => mock.watchHabitById(habitDefinition.id)).thenAnswer(
+      (_) => Stream<HabitDefinition>.fromIterable([habitDefinition]),
+    );
+  }
 
   return mock;
 }

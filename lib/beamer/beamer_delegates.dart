@@ -1,8 +1,19 @@
 import 'package:beamer/beamer.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
+import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
+
+final habitsBeamerDelegate = BeamerDelegate(
+  initialPath: '/habits',
+  locationBuilder: (routeInformation, _) {
+    if (routeInformation.location!.contains('habits')) {
+      return HabitsLocation(routeInformation);
+    }
+    return NotFound(path: routeInformation.location!);
+  },
+);
 
 final dashboardsBeamerDelegate = BeamerDelegate(
   initialPath: '/dashboards',

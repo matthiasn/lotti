@@ -112,7 +112,7 @@ class HabitCompletionData with _$HabitCompletionData {
   factory HabitCompletionData({
     required DateTime dateFrom,
     required DateTime dateTo,
-    required num value,
+    num? value,
     required String habitId,
   }) = _HabitCompletionData;
 
@@ -144,6 +144,10 @@ class DashboardItem with _$DashboardItem {
     required String color,
     required WorkoutValueType valueType,
   }) = DashboardWorkoutItem;
+
+  factory DashboardItem.habitChart({
+    required String habitId,
+  }) = DashboardHabitItem;
 
   factory DashboardItem.surveyChart({
     required Map<String, String> colorsByScoreKey,

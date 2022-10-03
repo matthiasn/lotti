@@ -10,6 +10,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/charts/dashboard_habits_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
@@ -250,6 +251,14 @@ class DashboardWidget extends StatelessWidget {
         surveyChart: (DashboardSurveyItem surveyChart) {
           return DashboardSurveyChart(
             chartConfig: surveyChart,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          );
+        },
+        habitChart: (DashboardHabitItem habitItem) {
+          return DashboardHabitsChart(
+            habitId: habitItem.habitId,
+            dashboardId: dashboardId,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
           );

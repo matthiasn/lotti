@@ -18,6 +18,7 @@ class NavService {
   final indexStreamController = StreamController<int>.broadcast();
 
   int index = 0;
+  final BeamerDelegate habitsDelegate = habitsBeamerDelegate;
   final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
   final BeamerDelegate journalDelegate = journalBeamerDelegate;
   final BeamerDelegate tasksDelegate = tasksBeamerDelegate;
@@ -37,17 +38,20 @@ class NavService {
   void setPath(String path) {
     currentPath = path;
 
-    if (path.startsWith('/dashboards')) {
+    if (path.startsWith('/habits')) {
       setIndex(0);
     }
-    if (path.startsWith('/journal')) {
+    if (path.startsWith('/dashboards')) {
       setIndex(1);
     }
-    if (path.startsWith('/tasks')) {
+    if (path.startsWith('/journal')) {
       setIndex(2);
     }
-    if (path.startsWith('/settings')) {
+    if (path.startsWith('/tasks')) {
       setIndex(3);
+    }
+    if (path.startsWith('/settings')) {
+      setIndex(4);
     }
 
     emitState();
@@ -55,6 +59,7 @@ class NavService {
 
   BeamerDelegate delegateByIndex(int index) {
     final beamerDelegates = <BeamerDelegate>[
+      habitsBeamerDelegate,
       dashboardsDelegate,
       journalDelegate,
       tasksBeamerDelegate,
@@ -66,15 +71,18 @@ class NavService {
 
   void setTabRoot(int newIndex) {
     if (index == 0) {
-      beamToNamed('/dashboards');
+      beamToNamed('/habits');
     }
     if (index == 1) {
-      beamToNamed('/journal');
+      beamToNamed('/dashboards');
     }
     if (index == 2) {
-      beamToNamed('/tasks');
+      beamToNamed('/journal');
     }
     if (index == 3) {
+      beamToNamed('/tasks');
+    }
+    if (index == 4) {
       beamToNamed('/settings');
     }
   }

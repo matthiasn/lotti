@@ -668,6 +668,17 @@ class JournalDb extends _$JournalDb {
         .map(entityStreamMapper);
   }
 
+  Stream<List<JournalEntity>> watchHabitCompletionsByHabitId({
+    required String habitId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) {
+    return habitCompletionsByHabitId(habitId, rangeStart, rangeEnd)
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(entityStreamMapper);
+  }
+
   Stream<List<JournalEntity>> watchQuantitativeByType({
     required String type,
     required DateTime rangeStart,
