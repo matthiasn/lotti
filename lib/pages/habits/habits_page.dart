@@ -24,7 +24,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
     super.initState();
   }
 
-  int timeSpanDays = isDesktop ? 30 : 7;
+  int timeSpanDays = isDesktop ? 14 : 7;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +37,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
         AsyncSnapshot<List<HabitDefinition>> snapshot,
       ) {
         final rangeStart =
-            DateTime.now().subtract(Duration(days: timeSpanDays));
+            DateTime.now().subtract(Duration(days: timeSpanDays - 1));
         final rangeEnd = getEndOfToday();
 
         final habitItems = snapshot.data;
@@ -55,7 +55,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
             child: Padding(
               padding: const EdgeInsets.only(
                 bottom: 10,
-                top: 20,
+                top: 5,
               ),
               child: Column(
                 children: [
@@ -71,18 +71,16 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                         });
                       },
                       children: {
-                        3: const DaysSegment('3'),
                         7: const DaysSegment('7'),
                         14: const DaysSegment('14'),
                         30: const DaysSegment('30'),
                         90: const DaysSegment('90'),
                         if (isDesktop || landscape)
                           180: const DaysSegment('180'),
-                        if (isDesktop) 365: const DaysSegment('365'),
                       },
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 15),
                   ...?habitItems?.map((habitDefinition) {
                     return HabitChartLine(
                       habitId: habitDefinition.id,

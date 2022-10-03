@@ -281,35 +281,39 @@ class _HabitChartLineState extends State<HabitChartLine> {
             final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
 
             return Padding(
-              padding: const EdgeInsets.all(5),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
               child: Stack(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const SizedBox(width: 70),
-                        ...results.map((res) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: Container(
-                              height: 25,
-                              width: (MediaQuery.of(context).size.width - 200) /
-                                  days,
-                              color: colorFromCssHex(res.hexColor),
-                            ),
-                          );
-                        }),
-                        const SizedBox(width: 30),
-                      ],
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(width: 70),
+                      ...results.map((res) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: Container(
+                            height: 25,
+                            width: (MediaQuery.of(context).size.width - 210) /
+                                days,
+                            color: colorFromCssHex(res.hexColor),
+                          ),
+                        );
+                      }),
+                      const SizedBox(width: 30),
+                    ],
                   ),
                   Row(
                     children: [
                       Container(
-                        height: 28,
-                        padding: const EdgeInsets.only(right: 10),
+                        height: 25,
+                        padding: const EdgeInsets.only(
+                          top: 1,
+                          right: 10,
+                          bottom: 2,
+                        ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
@@ -329,12 +333,12 @@ class _HabitChartLineState extends State<HabitChartLine> {
                         ),
                       ),
                       const Spacer(),
-                      IconButton(
-                        padding: const EdgeInsets.only(left: 10),
-                        onPressed: onTapAdd,
-                        hoverColor: Colors.transparent,
-                        splashColor: Colors.transparent,
-                        icon: SvgPicture.asset(styleConfig().addIcon),
+                      GestureDetector(
+                        onTap: onTapAdd,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: SvgPicture.asset(styleConfig().addIcon),
+                        ),
                       ),
                     ],
                   ),
