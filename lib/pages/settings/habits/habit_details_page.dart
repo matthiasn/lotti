@@ -139,7 +139,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                                 labelText: localizations.habitActiveFromLabel,
                                 labelStyle: labelStyle(),
                               ),
-                              initialValue: DateTime.now(),
+                              initialValue: item.activeFrom ?? DateTime.now(),
                               theme: datePickerTheme(),
                             ),
                           ],
