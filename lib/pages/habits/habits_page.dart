@@ -36,8 +36,10 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
         BuildContext context,
         AsyncSnapshot<List<HabitDefinition>> snapshot,
       ) {
-        final rangeStart =
-            DateTime.now().subtract(Duration(days: timeSpanDays - 1));
+        final rangeStart = getStartOfDay(
+          DateTime.now().subtract(Duration(days: timeSpanDays - 1)),
+        );
+
         final rangeEnd = getEndOfToday();
 
         final habitItems = snapshot.data;
