@@ -505,8 +505,12 @@ void main() {
       );
 
       // measurement data from db equals data used for creating measurement
-      final measurement = await getIt<PersistenceLogic>()
-          .createMeasurementEntry(data: measurementData);
+      final measurement =
+          await getIt<PersistenceLogic>().createMeasurementEntry(
+        data: measurementData,
+        private: false,
+      );
+
       expect(measurement?.data, measurementData);
 
       // measurement is retrieved in query by type
@@ -617,6 +621,7 @@ void main() {
       final habitCompletion =
           await getIt<PersistenceLogic>().createHabitCompletionEntry(
         data: habitCompletionData,
+        private: false,
       );
 
       expect(habitCompletion?.data, habitCompletionData);

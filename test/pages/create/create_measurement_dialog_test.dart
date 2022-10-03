@@ -81,6 +81,7 @@ void main() {
         return mockPersistenceLogic.createMeasurementEntry(
           data: any(named: 'data'),
           comment: any(named: 'comment'),
+          private: false,
         );
       }
 
