@@ -143,7 +143,8 @@ List<HabitResult> habitResultsByDay(
 
   for (final dayString in dayStrings) {
     final day = DateTime.parse(dayString);
-    final color = day.isAfter(activeFrom) && day.isBefore(activeUntil)
+    final color = (day.isAfter(activeFrom) || day == activeFrom) &&
+            day.isBefore(activeUntil)
         ? alarm
         : styleConfig().secondaryTextColor.withOpacity(0.4);
 

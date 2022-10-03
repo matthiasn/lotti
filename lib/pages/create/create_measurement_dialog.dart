@@ -49,6 +49,10 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
       if (selected == null) {
         return;
       }
+
+      final dataType =
+          await _db.watchMeasurableDataTypeById(selected!.id).first;
+
       final measurement = MeasurementData(
         dataTypeId: selected!.id,
         dateTo: formData!['date'] as DateTime,
@@ -59,6 +63,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
       await persistenceLogic.createMeasurementEntry(
         data: measurement,
         comment: formData['comment'] as String,
+        private: dataType?.private ?? false,
       );
 
       setState(() {
