@@ -10,6 +10,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class HabitDetailsPage extends StatefulWidget {
@@ -42,10 +43,12 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
       if (_formKey.currentState!.validate()) {
         final formData = _formKey.currentState?.value;
         final private = formData?['private'] as bool? ?? false;
+        final activeFrom = formData?['active_from'] as DateTime;
         final dataType = item.copyWith(
           name: '${formData!['name']}'.trim(),
           description: '${formData['description']}'.trim(),
           private: private,
+          activeFrom: activeFrom,
         );
 
         await persistenceLogic.upsertEntityDefinition(dataType);
@@ -122,6 +125,22 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                                 style: formLabelStyle(),
                               ),
                               activeColor: styleConfig().private,
+                            ),
+                            FormBuilderCupertinoDateTimePicker(
+                              key: const Key('active_from'),
+                              name: 'active_from',
+                              alwaysUse24HourFormat: true,
+                              inputType: CupertinoDateTimePickerInputType.date,
+                              style: inputStyle().copyWith(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w300,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: localizations.habitActiveFromLabel,
+                                labelStyle: labelStyle(),
+                              ),
+                              initialValue: DateTime.now(),
+                              theme: datePickerTheme(),
                             ),
                           ],
                         ),

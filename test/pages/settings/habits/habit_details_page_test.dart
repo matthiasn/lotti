@@ -170,6 +170,40 @@ void main() {
       await tester.tap(saveButtonFinder);
     });
 
+    testWidgets('habit details page is displayed & date updated',
+        (tester) async {
+      when(
+        () => mockPersistenceLogic.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
+            ),
+            child: const CreateHabitPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final activeFromFieldFinder = find.byKey(const Key('active_from'));
+
+      final saveButtonFinder = find.byKey(const Key('habit_save'));
+
+      expect(activeFromFieldFinder, findsOneWidget);
+
+      // save button is invisible - no changes yet
+      expect(saveButtonFinder, findsNothing);
+
+      await tester.tap(activeFromFieldFinder);
+
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('habit edit page is displayed', (tester) async {
       when(
         () => mockPersistenceLogic.upsertEntityDefinition(any()),
