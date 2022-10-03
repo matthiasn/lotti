@@ -123,4 +123,6 @@ class FakeJournalEntity extends Fake implements JournalEntity {}
 
 class FakeMeasurementData extends Fake implements MeasurementData {}
 
+class FakeHabitCompletionData extends Fake implements HabitCompletionData {}
+
 class MockMaintenance extends Mock implements Maintenance {}
