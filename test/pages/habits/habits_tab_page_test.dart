@@ -32,6 +32,15 @@ void main() {
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
       );
+
+      when(
+        () => mockJournalDb.watchHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
+      );
     });
     tearDown(getIt.reset);
 

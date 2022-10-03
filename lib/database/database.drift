@@ -344,6 +344,15 @@ SELECT * FROM journal
   AND deleted = false
   ORDER BY date_from DESC;
 
+habitCompletionsInRange:
+SELECT * FROM journal
+  WHERE type = 'HabitCompletionEntry'
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
+  AND deleted = false
+  ORDER BY date_from DESC;
+
 quantitativeByType:
 SELECT * FROM journal
   WHERE type = 'QuantitativeEntry'
