@@ -63,7 +63,7 @@ class DashboardsLocation extends BeamLocation<BeamState> {
               barrierColor: styleConfig().negspace.withOpacity(0.54),
             );
           },
-          key: ValueKey('measure-$measurableId'),
+          key: ValueKey('dashboards-measure-$measurableId'),
           child: MeasurementDialog(measurableId: measurableId),
           onPopPage: (context, delegate, _, page) {
             dashboardsBeamerDelegate.beamBack();
@@ -86,7 +86,7 @@ class DashboardsLocation extends BeamLocation<BeamState> {
               barrierColor: styleConfig().negspace.withOpacity(0.54),
             );
           },
-          key: ValueKey('measure-$measurableId'),
+          key: ValueKey('dashboards-habit-$habitId'),
           child: HabitDialog(habitId: habitId),
           onPopPage: (context, delegate, _, page) {
             dashboardsBeamerDelegate.beamBack();

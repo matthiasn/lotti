@@ -24,12 +24,14 @@ class DashboardHabitsChart extends StatefulWidget {
     required this.dashboardId,
     required this.rangeStart,
     required this.rangeEnd,
+    this.tab = 'dashboard',
   });
 
   final String habitId;
   final String? dashboardId;
   final DateTime rangeStart;
   final DateTime rangeEnd;
+  final String tab;
 
   @override
   State<DashboardHabitsChart> createState() => _DashboardHabitsChartState();
@@ -96,6 +98,7 @@ class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
               chartHeader: HabitChartInfoWidget(
                 habitDefinition,
                 dashboardId: widget.dashboardId,
+                tab: widget.tab,
               ),
               height: 50,
             );
@@ -128,7 +131,7 @@ List<HabitResult> habitResultsByDay(
 }) {
   final resultsByDay = <String, String>{};
   final range = rangeEnd.difference(rangeStart);
-  final dayStrings = List<String>.generate(range.inDays, (days) {
+  final dayStrings = List<String>.generate(range.inDays + 1, (days) {
     final day = rangeStart.add(Duration(days: days));
     return ymd(day);
   });
@@ -154,11 +157,13 @@ class HabitChartInfoWidget extends StatelessWidget {
   const HabitChartInfoWidget(
     this.habitDefinition, {
     required this.dashboardId,
+    required this.tab,
     super.key,
   });
 
   final HabitDefinition habitDefinition;
   final String? dashboardId;
+  final String tab;
 
   void onTapAdd() {
     final beamState =
@@ -167,7 +172,7 @@ class HabitChartInfoWidget extends StatelessWidget {
     final id =
         beamState.uri.path.contains('carousel') ? 'carousel' : dashboardId;
 
-    beamToNamed('/dashboards/$id/complete_habit/${habitDefinition.id}');
+    beamToNamed('/$tab/$id/complete_habit/${habitDefinition.id}');
   }
 
   @override
@@ -212,6 +217,119 @@ class HabitChartInfoWidget extends StatelessWidget {
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+class HabitChartLine extends StatefulWidget {
+  const HabitChartLine({
+    super.key,
+    required this.habitId,
+    required this.rangeStart,
+    required this.rangeEnd,
+  });
+
+  final String habitId;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
+
+  @override
+  State<HabitChartLine> createState() => _HabitChartLineState();
+}
+
+class _HabitChartLineState extends State<HabitChartLine> {
+  final JournalDb _db = getIt<JournalDb>();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<HabitDefinition?>(
+      stream: _db.watchHabitById(widget.habitId),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<HabitDefinition?> typeSnapshot,
+      ) {
+        final habitDefinition = typeSnapshot.data;
+
+        if (habitDefinition == null) {
+          return const SizedBox.shrink();
+        }
+
+        return StreamBuilder<List<JournalEntity?>>(
+          stream: _db.watchHabitCompletionsByHabitId(
+            habitId: habitDefinition.id,
+            rangeStart: widget.rangeStart,
+            rangeEnd: widget.rangeEnd,
+          ),
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<List<JournalEntity?>> snapshot,
+          ) {
+            final entities = snapshot.data ?? [];
+
+            final results = habitResultsByDay(
+              entities,
+              rangeStart: widget.rangeStart,
+              rangeEnd: widget.rangeEnd,
+            );
+
+            final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
+
+            return Padding(
+              padding: const EdgeInsets.all(5),
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 1),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const SizedBox(width: 70),
+                        ...results.map((res) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: Container(
+                              height: 20,
+                              width: (MediaQuery.of(context).size.width - 280) /
+                                  days,
+                              color: colorFromCssHex(res.hexColor),
+                            ),
+                          );
+                        }),
+                        const SizedBox(width: 20),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        height: 22,
+                        padding: const EdgeInsets.only(right: 10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              styleConfig().negspace.withOpacity(0.8),
+                              styleConfig().negspace.withOpacity(0.4),
+                              Colors.transparent,
+                            ],
+                            stops: const [0, 0.8, 1],
+                          ),
+                        ),
+                        child: Text(
+                          habitDefinition.name,
+                          style: chartTitleStyle()
+                              .copyWith(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
