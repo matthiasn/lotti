@@ -161,6 +161,7 @@ class PersistenceLogic {
 
   Future<MeasurementEntry?> createMeasurementEntry({
     required MeasurementData data,
+    required bool private,
     String? linkedId,
     String? comment,
   }) async {
@@ -177,6 +178,7 @@ class PersistenceLogic {
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
           id: id,
+          private: private,
           vectorClock: vc,
           timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
@@ -210,6 +212,7 @@ class PersistenceLogic {
 
   Future<HabitCompletionEntry?> createHabitCompletionEntry({
     required HabitCompletionData data,
+    required bool private,
     String? linkedId,
     String? comment,
   }) async {
@@ -227,6 +230,7 @@ class PersistenceLogic {
           dateTo: data.dateTo,
           id: id,
           vectorClock: vc,
+          private: private,
           timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
         ),

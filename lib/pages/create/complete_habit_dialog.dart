@@ -42,6 +42,7 @@ class _HabitDialogState extends State<HabitDialog> {
     _formKey.currentState!.save();
     if (validate()) {
       final formData = _formKey.currentState?.value;
+      final habitDefinition = await _db.watchHabitById(widget.habitId).first;
 
       final habitCompletion = HabitCompletionData(
         habitId: widget.habitId,
@@ -52,6 +53,7 @@ class _HabitDialogState extends State<HabitDialog> {
       await persistenceLogic.createHabitCompletionEntry(
         data: habitCompletion,
         comment: formData['comment'] as String,
+        private: habitDefinition?.private ?? false,
       );
 
       setState(() {

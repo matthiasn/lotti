@@ -91,7 +91,9 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
         await persistenceLogic.createMeasurementEntry(
           data: measurement,
           linkedId: widget.linkedId,
+          private: false,
         );
+
         setState(() {
           dirty = false;
         });

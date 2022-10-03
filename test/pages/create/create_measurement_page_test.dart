@@ -80,6 +80,7 @@ void main() {
       Future<MeasurementEntry?> mockCreateMeasurementEntry() {
         return mockPersistenceLogic.createMeasurementEntry(
           data: any(named: 'data'),
+          private: false,
         );
       }
 
