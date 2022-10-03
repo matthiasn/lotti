@@ -87,7 +87,10 @@ class DashboardsLocation extends BeamLocation<BeamState> {
             );
           },
           key: ValueKey('dashboards-habit-$habitId'),
-          child: HabitDialog(habitId: habitId),
+          child: HabitDialog(
+            habitId: habitId,
+            beamerDelegate: dashboardsBeamerDelegate,
+          ),
           onPopPage: (context, delegate, _, page) {
             dashboardsBeamerDelegate.beamBack();
             return false;

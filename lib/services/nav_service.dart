@@ -59,11 +59,11 @@ class NavService {
 
   BeamerDelegate delegateByIndex(int index) {
     final beamerDelegates = <BeamerDelegate>[
+      habitsBeamerDelegate,
       dashboardsDelegate,
       journalDelegate,
       tasksBeamerDelegate,
       settingsBeamerDelegate,
-      habitsBeamerDelegate,
     ];
 
     return beamerDelegates[index];

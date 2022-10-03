@@ -12,7 +12,7 @@ class HabitsLocation extends BeamLocation<BeamState> {
   @override
   List<String> get pathPatterns => [
         '/habits',
-        '/habits/complete_habit/:habitId',
+        '/habits/complete/:habitId',
       ];
 
   @override
@@ -41,9 +41,12 @@ class HabitsLocation extends BeamLocation<BeamState> {
             );
           },
           key: ValueKey('habits-complete-$habitId'),
-          child: HabitDialog(habitId: habitId),
+          child: HabitDialog(
+            habitId: habitId,
+            beamerDelegate: habitsBeamerDelegate,
+          ),
           onPopPage: (context, delegate, _, page) {
-            dashboardsBeamerDelegate.beamBack();
+            habitsBeamerDelegate.beamBack();
             return false;
           },
         ),

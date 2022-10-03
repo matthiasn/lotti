@@ -1,10 +1,10 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -16,9 +16,11 @@ class HabitDialog extends StatefulWidget {
   const HabitDialog({
     super.key,
     required this.habitId,
+    required this.beamerDelegate,
   });
 
   final String habitId;
+  final BeamerDelegate beamerDelegate;
 
   @override
   State<HabitDialog> createState() => _HabitDialogState();
@@ -35,8 +37,6 @@ class _HabitDialogState extends State<HabitDialog> {
     modifiers: [KeyModifier.meta],
     scope: HotKeyScope.inapp,
   );
-
-  final beamBack = dashboardsBeamerDelegate.beamBack;
 
   Future<void> saveHabit() async {
     _formKey.currentState!.save();
@@ -58,7 +58,7 @@ class _HabitDialogState extends State<HabitDialog> {
         dirty = false;
       });
 
-      beamBack();
+      widget.beamerDelegate.beamBack();
     }
   }
 
@@ -152,7 +152,7 @@ class _HabitDialogState extends State<HabitDialog> {
                       padding: const EdgeInsets.all(10),
                       icon: SvgPicture.asset('assets/icons/close.svg'),
                       hoverColor: Colors.transparent,
-                      onPressed: dashboardsBeamerDelegate.beamBack,
+                      onPressed: widget.beamerDelegate.beamBack,
                     ),
                   ],
                 ),

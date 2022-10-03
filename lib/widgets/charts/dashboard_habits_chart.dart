@@ -242,6 +242,10 @@ class HabitChartLine extends StatefulWidget {
 class _HabitChartLineState extends State<HabitChartLine> {
   final JournalDb _db = getIt<JournalDb>();
 
+  void onTapAdd() {
+    beamToNamed('/habits/complete/${widget.habitId}');
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<HabitDefinition?>(
@@ -281,7 +285,7 @@ class _HabitChartLineState extends State<HabitChartLine> {
               child: Stack(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -290,21 +294,21 @@ class _HabitChartLineState extends State<HabitChartLine> {
                           return ClipRRect(
                             borderRadius: BorderRadius.circular(2),
                             child: Container(
-                              height: 20,
-                              width: (MediaQuery.of(context).size.width - 280) /
+                              height: 25,
+                              width: (MediaQuery.of(context).size.width - 200) /
                                   days,
                               color: colorFromCssHex(res.hexColor),
                             ),
                           );
                         }),
-                        const SizedBox(width: 20),
+                        const SizedBox(width: 30),
                       ],
                     ),
                   ),
                   Row(
                     children: [
                       Container(
-                        height: 22,
+                        height: 28,
                         padding: const EdgeInsets.only(right: 10),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -323,6 +327,14 @@ class _HabitChartLineState extends State<HabitChartLine> {
                           overflow: TextOverflow.ellipsis,
                           softWrap: false,
                         ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        padding: const EdgeInsets.only(left: 10),
+                        onPressed: onTapAdd,
+                        hoverColor: Colors.transparent,
+                        splashColor: Colors.transparent,
+                        icon: SvgPicture.asset(styleConfig().addIcon),
                       ),
                     ],
                   ),
