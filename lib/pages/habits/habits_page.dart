@@ -104,7 +104,10 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                       ),
                       Padding(
                         padding: const EdgeInsets.only(top: 20),
-                        child: Text('Open', style: chartTitleStyle()),
+                        child: Text(
+                          localizations.habitsOpenHeader,
+                          style: chartTitleStyle(),
+                        ),
                       ),
                       const SizedBox(height: 15),
                       ...openHabits.map((habitDefinition) {
@@ -116,7 +119,10 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                       }),
                       Padding(
                         padding: const EdgeInsets.only(top: 20),
-                        child: Text('Completed', style: chartTitleStyle()),
+                        child: Text(
+                          localizations.habitsCompletedHeader,
+                          style: chartTitleStyle(),
+                        ),
                       ),
                       const SizedBox(height: 15),
                       ...completedHabits.map((habitDefinition) {
