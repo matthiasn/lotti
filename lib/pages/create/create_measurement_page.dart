@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/form_utils.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -285,7 +286,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     keyboardAppearance: Brightness.dark,
                                     style: inputStyle(),
                                     autofocus: true,
-                                    validator: FormBuilderValidators.required(),
+                                    validator: numericValidator(),
                                     name: 'value',
                                     keyboardType:
                                         const TextInputType.numberWithOptions(

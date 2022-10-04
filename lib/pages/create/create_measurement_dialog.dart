@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/form_utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -219,7 +219,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         keyboardAppearance: Brightness.light,
                         style: newInputStyle().copyWith(color: Colors.black),
                         autofocus: true,
-                        validator: FormBuilderValidators.numeric(),
+                        validator: numericValidator(),
                         name: 'value',
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,

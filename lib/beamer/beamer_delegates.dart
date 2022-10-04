@@ -7,6 +7,8 @@ import 'package:lotti/beamer/locations/tasks_location.dart';
 
 final habitsBeamerDelegate = BeamerDelegate(
   initialPath: '/habits',
+  updateParent: false,
+  updateFromParent: false,
   locationBuilder: (routeInformation, _) {
     if (routeInformation.location!.contains('habits')) {
       return HabitsLocation(routeInformation);
@@ -17,6 +19,8 @@ final habitsBeamerDelegate = BeamerDelegate(
 
 final dashboardsBeamerDelegate = BeamerDelegate(
   initialPath: '/dashboards',
+  updateParent: false,
+  updateFromParent: false,
   locationBuilder: (routeInformation, _) {
     if (routeInformation.location!.contains('dashboards')) {
       return DashboardsLocation(routeInformation);
@@ -27,6 +31,8 @@ final dashboardsBeamerDelegate = BeamerDelegate(
 
 final journalBeamerDelegate = BeamerDelegate(
   initialPath: '/journal',
+  updateParent: false,
+  updateFromParent: false,
   locationBuilder: (routeInformation, _) {
     if (routeInformation.location!.contains('journal')) {
       return JournalLocation(routeInformation);
@@ -37,6 +43,8 @@ final journalBeamerDelegate = BeamerDelegate(
 
 final tasksBeamerDelegate = BeamerDelegate(
   initialPath: '/tasks',
+  updateParent: false,
+  updateFromParent: false,
   locationBuilder: (routeInformation, _) {
     if (routeInformation.location!.contains('tasks')) {
       return TasksLocation(routeInformation);
@@ -47,6 +55,8 @@ final tasksBeamerDelegate = BeamerDelegate(
 
 final settingsBeamerDelegate = BeamerDelegate(
   initialPath: '/settings',
+  updateParent: false,
+  updateFromParent: false,
   locationBuilder: (routeInformation, _) {
     if (routeInformation.location!.contains('settings')) {
       return SettingsLocation(routeInformation);

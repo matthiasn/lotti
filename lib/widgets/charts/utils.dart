@@ -251,6 +251,18 @@ String padLeft(num value) {
   return value.toString().padLeft(2, '0');
 }
 
+int minutesSinceMidnight(DateTime? dt) {
+  final hoursPastMidnight = dt?.hour ?? 0;
+  return hoursPastMidnight * 60 + (dt?.minute ?? 0);
+}
+
+bool showHabit(HabitDefinition item) {
+  final showFrom = item.habitSchedule.mapOrNull(daily: (d) => d.showFrom);
+  final showFromMinuteOfDay = minutesSinceMidnight(showFrom);
+  final actualMinuteOfDay = minutesSinceMidnight(DateTime.now());
+  return actualMinuteOfDay >= showFromMinuteOfDay;
+}
+
 String formatHhMm(Duration dur) {
   return '${padLeft(dur.inHours)}:${padLeft(dur.inMinutes.remainder(60))}';
 }
