@@ -48,6 +48,7 @@ class TagAddIconWidget extends StatelessWidget {
                     isTestEnv ? Duration.zero : const Duration(seconds: 1),
                 context: context,
                 isDismissible: true,
+                bounce: false,
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(16),
