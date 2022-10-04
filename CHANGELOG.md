@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Habits tab
 - Habits grouped by open/completed
 - Localize open/closed headers
+- Add show from field
 
 ## [0.8.163] - 2022-10-01
 ### Changed:

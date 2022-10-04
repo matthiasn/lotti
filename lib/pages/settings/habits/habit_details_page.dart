@@ -11,6 +11,7 @@ import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class HabitDetailsPage extends StatefulWidget {
@@ -44,11 +45,17 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
         final formData = _formKey.currentState?.value;
         final private = formData?['private'] as bool? ?? false;
         final activeFrom = formData?['active_from'] as DateTime;
+        final showFrom = formData?['show_from'] as DateTime?;
+
         final dataType = item.copyWith(
           name: '${formData!['name']}'.trim(),
           description: '${formData['description']}'.trim(),
           private: private,
           activeFrom: activeFrom,
+          habitSchedule: HabitSchedule.daily(
+            requiredCompletions: 1,
+            showFrom: showFrom,
+          ),
         );
 
         await persistenceLogic.upsertEntityDefinition(dataType);
@@ -59,6 +66,9 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
         maybePop();
       }
     }
+
+    final isDaily = item.habitSchedule is DailyHabitSchedule;
+    final showFrom = item.habitSchedule.mapOrNull(daily: (d) => d.showFrom);
 
     return Scaffold(
       backgroundColor: styleConfig().negspace,
@@ -142,6 +152,24 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                               initialValue: item.activeFrom ?? DateTime.now(),
                               theme: datePickerTheme(),
                             ),
+                            if (isDaily)
+                              FormBuilderCupertinoDateTimePicker(
+                                name: 'show_from',
+                                alwaysUse24HourFormat: true,
+                                format: hhMmFormat,
+                                inputType:
+                                    CupertinoDateTimePickerInputType.time,
+                                style: inputStyle().copyWith(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w300,
+                                ),
+                                initialValue: showFrom,
+                                decoration: InputDecoration(
+                                  labelText: localizations.habitShowFromLabel,
+                                  labelStyle: labelStyle(),
+                                ),
+                                theme: datePickerTheme(),
+                              ),
                           ],
                         ),
                       ),

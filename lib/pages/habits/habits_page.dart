@@ -64,6 +64,9 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
             final openHabits =
                 habitItems.where((item) => !completedToday.contains(item.id));
 
+            final openNow = openHabits.where(showHabit);
+            final pendingLater = openHabits.where((item) => !showHabit(item));
+
             final completedHabits =
                 habitItems.where((item) => completedToday.contains(item.id));
 
@@ -102,30 +105,48 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                           },
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 20),
-                        child: Text(
-                          localizations.habitsOpenHeader,
-                          style: chartTitleStyle(),
+                      if (openNow.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 20),
+                          child: Text(
+                            localizations.habitsOpenHeader,
+                            style: chartTitleStyle(),
+                          ),
                         ),
-                      ),
                       const SizedBox(height: 15),
-                      ...openHabits.map((habitDefinition) {
+                      ...openNow.map((habitDefinition) {
                         return HabitChartLine(
                           habitId: habitDefinition.id,
                           rangeStart: rangeStart,
                           rangeEnd: rangeEnd,
                         );
                       }),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 20),
-                        child: Text(
-                          localizations.habitsCompletedHeader,
-                          style: chartTitleStyle(),
+                      if (completedHabits.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 20),
+                          child: Text(
+                            localizations.habitsCompletedHeader,
+                            style: chartTitleStyle(),
+                          ),
                         ),
-                      ),
                       const SizedBox(height: 15),
                       ...completedHabits.map((habitDefinition) {
+                        return HabitChartLine(
+                          habitId: habitDefinition.id,
+                          rangeStart: rangeStart,
+                          rangeEnd: rangeEnd,
+                        );
+                      }),
+                      if (pendingLater.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 20),
+                          child: Text(
+                            localizations.habitsPendingLaterHeader,
+                            style: chartTitleStyle(),
+                          ),
+                        ),
+                      const SizedBox(height: 15),
+                      ...pendingLater.map((habitDefinition) {
                         return HabitChartLine(
                           habitId: habitDefinition.id,
                           rangeStart: rangeStart,

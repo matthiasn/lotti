@@ -10,6 +10,7 @@ enum AggregationType { none, dailySum, dailyMax, dailyAvg, hourlySum }
 class HabitSchedule with _$HabitSchedule {
   factory HabitSchedule.daily({
     required int requiredCompletions,
+    DateTime? showFrom,
   }) = DailyHabitSchedule;
 
   factory HabitSchedule.weekly({
