@@ -183,7 +183,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                               iconSize: settingsIconSize,
                               tooltip: AppLocalizations.of(context)!
                                   .settingsHabitsDeleteTooltip,
-                              color: styleConfig().cardColor,
+                              color: styleConfig().primaryTextColor,
                               onPressed: () async {
                                 const deleteKey = 'deleteKey';
                                 final result =
