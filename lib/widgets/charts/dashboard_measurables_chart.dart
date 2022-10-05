@@ -176,7 +176,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                   enableCreate: widget.enableCreate,
                   aggregationType: aggregationType,
                 ),
-                height: 136,
+                height: aggregationNone ? 200 : 136,
               );
             },
           ),
