@@ -56,7 +56,8 @@ class _DashboardPageState extends State<DashboardPage> {
     // );
     // final rangeEnd = getRangeEnd(shiftDays: shiftDays);
 
-    final rangeStart = DateTime.now().subtract(Duration(days: timeSpanDays));
+    final rangeStart =
+        getStartOfDay(DateTime.now().subtract(Duration(days: timeSpanDays)));
     final rangeEnd = getEndOfToday();
 
     return GestureDetector(
