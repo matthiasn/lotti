@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Increase measurement line chart height
 
+### Fixed:
+- Alignment of time axis between different types
+
 ## [0.8.164] - 2022-10-04
 ### Added
 - Habits definition in Settings
