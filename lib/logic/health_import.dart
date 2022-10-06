@@ -54,7 +54,11 @@ class HealthImport {
       return;
     }
 
-    Future<void> addEntries(Map<DateTime, num> data, String type) async {
+    Future<void> addEntries(
+      Map<DateTime, num> data,
+      String type,
+      String unit,
+    ) async {
       final entries = List<MapEntry<DateTime, num>>.from(data.entries)
         ..sort((a, b) => a.key.compareTo(b.key));
 
@@ -69,7 +73,7 @@ class HealthImport {
           dateTo: dateToOrNow,
           value: dailyStepsEntry.value,
           dataType: type,
-          unit: 'count',
+          unit: unit,
           deviceType: deviceType,
           platformType: platform,
         );
@@ -79,6 +83,7 @@ class HealthImport {
 
     final stepsByDay = <DateTime, num>{};
     final flightsByDay = <DateTime, num>{};
+    final distanceByDay = <DateTime, num>{};
     final range = dateTo.difference(dateFrom);
 
     final days = List<DateTime>.generate(range.inDays + 1, (days) {
@@ -104,16 +109,22 @@ class HealthImport {
 
         final steps =
             await _healthFactory.getTotalStepsInInterval(dateFrom, dateTo);
+
         final flightsClimbed = await _healthFactory
             .getTotalFlightsClimbedInInterval(dateFrom, dateTo);
 
+        final distance =
+            await _healthFactory.getTotalDistanceInInterval(dateFrom, dateTo);
+
         flightsByDay[dateFrom] = flightsClimbed ?? 0;
         stepsByDay[dateFrom] = steps ?? 0;
+        distanceByDay[dateFrom] = distance ?? 0;
       }
     }
 
-    await addEntries(stepsByDay, 'cumulative_step_count');
-    await addEntries(flightsByDay, 'cumulative_flights_climbed');
+    await addEntries(stepsByDay, 'cumulative_step_count', 'count');
+    await addEntries(flightsByDay, 'cumulative_flights_climbed', 'count');
+    await addEntries(distanceByDay, 'cumulative_distance', 'meters');
   }
 
   Future<bool> authorizeHealth(List<HealthDataType> types) async {
@@ -302,4 +313,5 @@ List<HealthDataType> workoutTypes = [
 List<HealthDataType> activityTypes = [
   HealthDataType.STEPS,
   HealthDataType.FLIGHTS_CLIMBED,
+  HealthDataType.DISTANCE_WALKING_RUNNING,
 ];

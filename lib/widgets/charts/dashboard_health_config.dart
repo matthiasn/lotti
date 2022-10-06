@@ -104,6 +104,12 @@ Map<String, HealthTypeConfig> healthTypes = {
       0: '#FF9595',
     },
   ),
+  'cumulative_distance': HealthTypeConfig(
+    displayName: 'Distance/m',
+    healthType: 'cumulative_distance',
+    chartType: HealthChartType.barChart,
+    aggregationType: HealthAggregationType.dailyMax,
+  ),
   'cumulative_flights_climbed': HealthTypeConfig(
     displayName: 'Flights of stairs',
     healthType: 'cumulative_flights_climbed',
