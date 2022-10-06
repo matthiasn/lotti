@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.165+1471
+version: 0.8.166+1472
 
 msix_config:
   display_name: Lotti
@@ -95,7 +95,7 @@ dependencies:
     git:
       url: https://github.com/matthiasn/flutter-plugins
       path: packages/health
-      ref: 8fa7374
+      ref: 918a45c
 
   hotkey_manager: ^0.1.6
   intersperse: ^2.0.0

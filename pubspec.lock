@@ -991,8 +991,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/health"
-      ref: "8fa7374"
-      resolved-ref: "8fa7374d08edb7485407fc26204e5ead533dec00"
+      ref: "918a45c"
+      resolved-ref: "918a45c95b41e192aeb438ab54871009803cc156"
       url: "https://github.com/matthiasn/flutter-plugins"
     source: git
     version: "3.4.4"
