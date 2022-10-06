@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Increase measurement line chart height
+
+### Fixed:
+- Alignment of time axis between different types
+
+## [0.8.164] - 2022-10-04
 ### Added
 - Habits definition in Settings
 - Add habit chart in dashboard

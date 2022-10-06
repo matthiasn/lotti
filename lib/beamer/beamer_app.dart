@@ -77,8 +77,8 @@ class _AppScreenState extends State<AppScreen> {
             currentIndex: index,
             items: [
               BottomNavigationBarItem(
-                icon: SvgPicture.asset(styleConfig().navHomeIcon),
-                activeIcon: SvgPicture.asset(styleConfig().navHomeIconActive),
+                icon: SvgPicture.asset(styleConfig().navTasksIcon),
+                activeIcon: SvgPicture.asset(styleConfig().navTasksIconActive),
                 label: localizations.navTabTitleHabits,
               ),
               BottomNavigationBarItem(

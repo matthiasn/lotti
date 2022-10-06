@@ -64,7 +64,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
           child: StreamBuilder<List<JournalEntity?>>(
             stream: _db.watchMeasurementsByType(
               type: measurableDataType.id,
-              rangeStart: widget.rangeStart,
+              rangeStart: widget.rangeStart.subtract(const Duration(hours: 12)),
               rangeEnd: widget.rangeEnd,
             ),
             builder: (
@@ -153,9 +153,13 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                   ],
                   behaviors: [
                     chartRangeAnnotation(
-                      aggregationType == AggregationType.hourlySum
-                          ? widget.rangeStart.subtract(const Duration(days: 1))
-                          : widget.rangeStart,
+                      aggregationType == AggregationType.none
+                          ? widget.rangeStart
+                              .subtract(const Duration(hours: 36))
+                          : aggregationType == AggregationType.hourlySum
+                              ? widget.rangeStart
+                                  .subtract(const Duration(days: 1))
+                              : widget.rangeStart,
                       widget.rangeEnd,
                     )
                   ],
@@ -176,7 +180,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                   enableCreate: widget.enableCreate,
                   aggregationType: aggregationType,
                 ),
-                height: 136,
+                height: aggregationNone ? 272 : 136,
               );
             },
           ),
