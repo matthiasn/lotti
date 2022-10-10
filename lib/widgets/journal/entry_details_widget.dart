@@ -101,14 +101,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       orElse: () => const SizedBox.shrink(),
                     ),
                     const EntryDetailHeader(),
-                    Padding(
-                      padding: EdgeInsets.only(
-                        left: 8,
-                        right: 8,
-                        bottom: isTask ? 0 : 8,
-                      ),
-                      child: TagsListWidget(),
-                    ),
+                    TagsListWidget(),
                     item.maybeMap(
                       task: (_) => const SizedBox.shrink(),
                       quantitative: (_) => const SizedBox.shrink(),

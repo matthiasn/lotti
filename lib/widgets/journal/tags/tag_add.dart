@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -9,7 +10,6 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/tags/tags_modal.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
 class TagAddIconWidget extends StatelessWidget {
@@ -68,11 +68,10 @@ class TagAddIconWidget extends StatelessWidget {
               width: 40,
               child: IconButton(
                 onPressed: onTapAdd,
-                icon: Icon(
-                  MdiIcons.tagPlusOutline,
-                  size: 24,
-                  color: styleConfig().secondaryTextColor,
-                ),
+                key: Key(styleConfig().cardTagIcon),
+                icon: SvgPicture.asset(styleConfig().cardTagIcon),
+                hoverColor: Colors.transparent,
+                splashColor: Colors.transparent,
                 tooltip: localizations.journalTagPlusHint,
               ),
             );

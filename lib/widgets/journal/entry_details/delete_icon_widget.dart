@@ -2,10 +2,10 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class DeleteIconWidget extends StatelessWidget {
   const DeleteIconWidget({
@@ -49,8 +49,10 @@ class DeleteIconWidget extends StatelessWidget {
         return SizedBox(
           width: 40,
           child: IconButton(
-            icon: const Icon(MdiIcons.trashCanOutline),
-            iconSize: 24,
+            key: Key(styleConfig().cardTrashIcon),
+            icon: SvgPicture.asset(styleConfig().cardTrashIcon),
+            hoverColor: Colors.transparent,
+            splashColor: Colors.transparent,
             tooltip: localizations.journalDeleteHint,
             padding: EdgeInsets.zero,
             color: styleConfig().secondaryTextColor,
