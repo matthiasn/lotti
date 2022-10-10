@@ -68,6 +68,16 @@ final darkTheme = StyleConfig(
   micIcon: 'assets/icons/mic_dark.svg',
   micHotIcon: 'assets/icons/mic_hot_dark.svg',
   micRecIcon: 'assets/icons/mic_rec_dark.svg',
+  cardStarIcon: 'assets/icons/card/DM-icon-star.svg',
+  cardStarIconActive: 'assets/icons/card/DM-icon-star-active.svg',
+  cardShieldIcon: 'assets/icons/card/DM-icon-shield.svg',
+  cardShieldIconActive: 'assets/icons/card/DM-icon-shield-active.svg',
+  cardFlagIcon: 'assets/icons/card/DM-icon-flag.svg',
+  cardFlagIconActive: 'assets/icons/card/DM-icon-flag-active.svg',
+  cardMapIcon: 'assets/icons/card/DM-icon-map.svg',
+  cardMapIconActive: 'assets/icons/card/DM-icon-map-active.svg',
+  cardTagIcon: 'assets/icons/card/DM-icon-tag.svg',
+  cardTrashIcon: 'assets/icons/card/DM-icon-trash.svg',
 );
 
 final brightTheme = StyleConfig(
@@ -120,4 +130,14 @@ final brightTheme = StyleConfig(
   micIcon: 'assets/icons/mic.svg',
   micHotIcon: 'assets/icons/mic_hot.svg',
   micRecIcon: 'assets/icons/mic_rec.svg',
+  cardStarIcon: 'assets/icons/card/LM-icon-star.svg',
+  cardStarIconActive: 'assets/icons/card/LM-icon-star-active.svg',
+  cardShieldIcon: 'assets/icons/card/LM-icon-shield.svg',
+  cardShieldIconActive: 'assets/icons/card/LM-icon-shield-active.svg',
+  cardFlagIcon: 'assets/icons/card/LM-icon-flag.svg',
+  cardFlagIconActive: 'assets/icons/card/LM-icon-flag-active.svg',
+  cardMapIcon: 'assets/icons/card/LM-icon-map.svg',
+  cardMapIconActive: 'assets/icons/card/LM-icon-map-active.svg',
+  cardTagIcon: 'assets/icons/card/LM-icon-tag.svg',
+  cardTrashIcon: 'assets/icons/card/LM-icon-trash.svg',
 );

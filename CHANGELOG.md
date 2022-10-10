@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Entry details header icons
+
+## [0.8.167] - 2022-10-08
+### Changed:
 - Delayed health import to improve scroll performance
 
 ## [0.8.166] - 2022-10-06
