@@ -83,6 +83,16 @@ class StyleConfig with _$StyleConfig {
     required String micIcon,
     required String micHotIcon,
     required String micRecIcon,
+    required String cardStarIcon,
+    required String cardStarIconActive,
+    required String cardFlagIcon,
+    required String cardFlagIconActive,
+    required String cardShieldIcon,
+    required String cardShieldIconActive,
+    required String cardMapIcon,
+    required String cardMapIconActive,
+    required String cardTrashIcon,
+    required String cardTagIcon,
   }) = _StyleConfig;
 
   factory StyleConfig.fromJson(Map<String, dynamic> json) =>

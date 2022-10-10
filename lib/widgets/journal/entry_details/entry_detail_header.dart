@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/save_button.dart';
 import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
 import 'package:lotti/widgets/journal/tags/tag_add.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class EntryDetailHeader extends StatefulWidget {
   const EntryDetailHeader({
@@ -40,48 +40,56 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
           return const SizedBox.shrink();
         }
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Column(
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SwitchIconWidget(
-                  tooltip: localizations.journalFavoriteTooltip,
-                  activeColor: styleConfig().starredGold,
-                  onPressed: cubit.toggleStarred,
-                  value: item.meta.starred ?? false,
-                  iconData: MdiIcons.star,
+                Row(
+                  children: [
+                    SwitchIconWidget(
+                      tooltip: localizations.journalFavoriteTooltip,
+                      onPressed: cubit.toggleStarred,
+                      value: item.meta.starred ?? false,
+                      icon: styleConfig().cardStarIcon,
+                      activeIcon: styleConfig().cardStarIconActive,
+                    ),
+                    SwitchIconWidget(
+                      tooltip: localizations.journalPrivateTooltip,
+                      onPressed: cubit.togglePrivate,
+                      value: item.meta.private ?? false,
+                      icon: styleConfig().cardShieldIcon,
+                      activeIcon: styleConfig().cardShieldIconActive,
+                    ),
+                    SwitchIconWidget(
+                      tooltip: localizations.journalFlaggedTooltip,
+                      onPressed: cubit.toggleFlagged,
+                      value: item.meta.flag == EntryFlag.import,
+                      icon: styleConfig().cardFlagIcon,
+                      activeIcon: styleConfig().cardFlagIconActive,
+                    ),
+                    if (state.entry?.geolocation != null)
+                      SwitchIconWidget(
+                        tooltip: state.showMap
+                            ? localizations.journalHideMapHint
+                            : localizations.journalShowMapHint,
+                        onPressed: cubit.toggleMapVisible,
+                        value: cubit.showMap,
+                        icon: styleConfig().cardMapIcon,
+                        activeIcon: styleConfig().cardMapIconActive,
+                      ),
+                    const DeleteIconWidget(),
+                    const ShareButtonWidget(),
+                    TagAddIconWidget(),
+                  ],
                 ),
-                SwitchIconWidget(
-                  tooltip: localizations.journalPrivateTooltip,
-                  activeColor: styleConfig().alarm,
-                  onPressed: cubit.togglePrivate,
-                  value: item.meta.private ?? false,
-                  iconData: MdiIcons.security,
-                ),
-                SwitchIconWidget(
-                  tooltip: localizations.journalFlaggedTooltip,
-                  activeColor: styleConfig().alarm,
-                  onPressed: cubit.toggleFlagged,
-                  value: item.meta.flag == EntryFlag.import,
-                  iconData: MdiIcons.flag,
-                ),
-                if (state.entry?.geolocation != null)
-                  SwitchIconWidget(
-                    tooltip: state.showMap
-                        ? localizations.journalHideMapHint
-                        : localizations.journalShowMapHint,
-                    activeColor: styleConfig().starredGold,
-                    onPressed: cubit.toggleMapVisible,
-                    value: cubit.showMap,
-                    iconData: MdiIcons.mapOutline,
-                  ),
-                const DeleteIconWidget(),
-                const ShareButtonWidget(),
-                TagAddIconWidget(),
+                const SaveButton(),
               ],
             ),
-            const SaveButton(),
+            Divider(
+              height: 0.5,
+              color: styleConfig().secondaryTextColor,
+            )
           ],
         );
       },
@@ -95,21 +103,25 @@ class SwitchIconWidget extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     required this.value,
-    required this.activeColor,
-    required this.iconData,
+    required this.icon,
+    required this.activeIcon,
   });
 
   final String tooltip;
   final void Function() onPressed;
   final bool value;
-  final Color activeColor;
-  final IconData iconData;
+
+  final String icon;
+  final String activeIcon;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 40,
       child: IconButton(
+        key: Key(value ? activeIcon : icon),
+        hoverColor: Colors.transparent,
+        splashColor: Colors.transparent,
         padding: EdgeInsets.zero,
         tooltip: tooltip,
         onPressed: () {
@@ -120,11 +132,7 @@ class SwitchIconWidget extends StatelessWidget {
           }
           onPressed();
         },
-        icon: Icon(
-          iconData,
-          size: 20,
-          color: value ? activeColor : styleConfig().secondaryTextColor,
-        ),
+        icon: value ? SvgPicture.asset(activeIcon) : SvgPicture.asset(icon),
       ),
     );
   }

@@ -41,23 +41,30 @@ class TagsListWidget extends StatelessWidget {
               }
             }
 
-            return ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width - 24,
-              ),
-              child: Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: tagsFromTagIds
-                    .map(
-                      (TagEntity tagEntity) => TagWidget(
-                        tagEntity: tagEntity,
-                        onTapRemove: () {
-                          cubit.removeTagId(tagEntity.id);
-                        },
-                      ),
-                    )
-                    .toList(),
+            if (tagIds.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            return Padding(
+              padding: const EdgeInsets.all(8),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width - 24,
+                ),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: tagsFromTagIds
+                      .map(
+                        (TagEntity tagEntity) => TagWidget(
+                          tagEntity: tagEntity,
+                          onTapRemove: () {
+                            cubit.removeTagId(tagEntity.id);
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
             );
           },
