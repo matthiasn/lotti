@@ -157,12 +157,5 @@ class LoggingDb extends _$LoggingDb {
 }
 
 LoggingDb getLoggingDb() {
-  return LoggingDb.connect(
-    DatabaseConnection.delayed(
-      Future.sync(() async {
-        final isolate = await createDriftIsolate(loggingDbFileName);
-        return isolate.connect();
-      }),
-    ),
-  );
+  return LoggingDb.connect(getDatabaseConnection(loggingDbFileName));
 }
