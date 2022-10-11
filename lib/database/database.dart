@@ -40,7 +40,9 @@ class JournalDb extends _$JournalDb {
           ),
         );
 
-  final bool inMemoryDatabase;
+  JournalDb.connect(super.connection) : super.connect();
+
+  bool inMemoryDatabase = false;
 
   @override
   int get schemaVersion => 18;

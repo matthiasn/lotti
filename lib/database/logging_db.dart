@@ -36,8 +36,10 @@ class LoggingDb extends _$LoggingDb {
           ),
         );
 
+  LoggingDb.connect(super.connection) : super.connect();
+
   final JournalDb _journalDb = getIt<JournalDb>();
-  final bool inMemoryDatabase;
+  bool inMemoryDatabase = false;
 
   @override
   int get schemaVersion => 1;

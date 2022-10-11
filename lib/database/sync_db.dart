@@ -35,7 +35,9 @@ class SyncDatabase extends _$SyncDatabase {
           ),
         );
 
-  final bool inMemoryDatabase;
+  SyncDatabase.connect(super.connection) : super.connect();
+
+  bool inMemoryDatabase = false;
 
   Future<int> updateOutboxItem(OutboxCompanion item) {
     return (update(outbox)..where((t) => t.id.equals(item.id.value)))
