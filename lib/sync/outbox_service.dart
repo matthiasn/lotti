@@ -1,15 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:drift/drift.dart';
+import 'package:drift/isolate.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/database/common.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -26,10 +29,33 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:path_provider/path_provider.dart';
 
+Future<void> entryPoint(SendPort sendPort) async {
+  final port = ReceivePort();
+  sendPort.send(port.sendPort);
+
+  await for (final data in port) {
+    debugPrint('Outbox isolate received $data');
+
+    if (data is SendPort) {
+      debugPrint('Outbox isolate received SendPort $data');
+      final conn = getDbConnFromIsolate(DriftIsolate.fromConnectPort(data));
+      final db = SyncDatabase.connect(conn);
+      unawaited(
+        db.watchOutboxCount().forEach((element) {
+          debugPrint('db.watchOutboxCount $element');
+        }),
+      );
+    }
+  }
+}
+
+void shareDriftIsolate(DriftIsolate isolate, SendPort sendPort) {
+  sendPort.send(isolate.connectPort);
+}
+
 class OutboxService {
   OutboxService() {
     _startRunner();
-    init();
   }
 
   late ClientRunner<int> _clientRunner;
@@ -58,6 +84,18 @@ class OutboxService {
     _startRunner();
   }
 
+  Future<void> startIsolate() async {
+    final receivePort = ReceivePort();
+    await Isolate.spawn(entryPoint, receivePort.sendPort);
+    final sendPort = await receivePort.first as SendPort;
+
+    final syncDbIsolate = await getIt<Future<DriftIsolate>>(
+      instanceName: syncDbFileName,
+    );
+
+    shareDriftIsolate(syncDbIsolate, sendPort);
+  }
+
   Future<void> init() async {
     final syncConfig = await _syncConfigService.getSyncConfig();
 
@@ -68,6 +106,8 @@ class OutboxService {
       await enqueueNextSendRequest();
     }
     debugPrint('OutboxService init $enableSyncOutbox');
+
+    unawaited(startIsolate());
 
     _connectivityService.connectedStream.listen((connected) {
       if (connected) {

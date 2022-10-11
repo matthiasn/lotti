@@ -99,12 +99,5 @@ class SyncDatabase extends _$SyncDatabase {
 }
 
 SyncDatabase getSyncDatabase() {
-  return SyncDatabase.connect(
-    DatabaseConnection.delayed(
-      Future.sync(() async {
-        final isolate = await createDriftIsolate(syncDbFileName);
-        return isolate.connect();
-      }),
-    ),
-  );
+  return SyncDatabase.connect(getDatabaseConnection(syncDbFileName));
 }

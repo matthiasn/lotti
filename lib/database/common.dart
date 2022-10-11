@@ -7,6 +7,7 @@ import 'package:drift/isolate.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -81,4 +82,23 @@ class _IsolateStartRequest {
 
   final SendPort sendDriftIsolate;
   final String targetPath;
+}
+
+DatabaseConnection getDatabaseConnection(String dbFileName) {
+  return DatabaseConnection.delayed(
+    Future.sync(() async {
+      final isolate = await getIt<Future<DriftIsolate>>(
+        instanceName: dbFileName,
+      );
+      return isolate.connect();
+    }),
+  );
+}
+
+DatabaseConnection getDbConnFromIsolate(DriftIsolate isolate) {
+  return DatabaseConnection.delayed(
+    Future.sync(() async {
+      return isolate.connect();
+    }),
+  );
 }
