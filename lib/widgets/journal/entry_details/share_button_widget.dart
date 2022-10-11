@@ -1,3 +1,4 @@
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -43,11 +44,11 @@ class ShareButtonWidget extends StatelessWidget {
 
           if (item is JournalImage) {
             final filePath = await getFullImagePath(item);
-            await Share.shareFiles([filePath]);
+            await Share.shareXFiles([XFile(filePath)]);
           }
           if (item is JournalAudio) {
             final filePath = await AudioUtils.getFullAudioPath(item);
-            await Share.shareFiles([filePath]);
+            await Share.shareXFiles([XFile(filePath)]);
           }
         }
 

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgrade Flutter to 3.3.4
+- Upgrade dependencies
+
+## [0.8.168] - 2022-10-10
+### Changed:
 - Entry details header icons
 
 ## [0.8.167] - 2022-10-08
