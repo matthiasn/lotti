@@ -155,3 +155,14 @@ class LoggingDb extends _$LoggingDb {
     return allLogEntries(limit).watch();
   }
 }
+
+LoggingDb getLoggingDb() {
+  return LoggingDb.connect(
+    DatabaseConnection.delayed(
+      Future.sync(() async {
+        final isolate = await createDriftIsolate(loggingDbFileName);
+        return isolate.connect();
+      }),
+    ),
+  );
+}
