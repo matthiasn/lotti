@@ -37,11 +37,6 @@ class SyncConfigService {
     return key.base64;
   }
 
-  String generateKeyFromPassphrase(String passphrase) {
-    final key = Key.fromUtf8(passphrase);
-    return key.base64;
-  }
-
   Future<void> generateSharedKey() async {
     await getIt<SecureStorage>().write(
       key: sharedSecretKey,

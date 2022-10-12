@@ -3,29 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter/foundation.dart';
 import 'package:lotti/sync/encryption_messages.dart';
-
-FutureOr<void> encryptFileIsolate(EncryptFileMessage msg) async {
-  if (!msg.inputFile.existsSync()) {
-    debugPrint('File ${msg.inputFile} does not exist, aborting');
-    throw Exception('File not found');
-  }
-
-  final List<int> message = await msg.inputFile.readAsBytes();
-  final algorithm = AesGcm.with256bits();
-  final secretKey =
-      await algorithm.newSecretKeyFromBytes(base64Decode(msg.b64Secret));
-  final nonce = algorithm.newNonce();
-
-  final secretBox = await algorithm.encrypt(
-    message,
-    secretKey: secretKey,
-    nonce: nonce,
-  );
-
-  await msg.encryptedFile.writeAsBytes(secretBox.concatenation());
-}
 
 Future<void> encryptFile(
   File inputFile,
@@ -37,14 +17,20 @@ Future<void> encryptFile(
     throw Exception('File not found');
   }
 
-  return compute(
-    encryptFileIsolate,
-    EncryptFileMessage(
-      b64Secret: b64Secret,
-      inputFile: inputFile,
-      encryptedFile: encryptedFile,
-    ),
+  final List<int> message = await inputFile.readAsBytes();
+  final algorithm = AesGcm.with256bits();
+
+  final secretKey =
+      await algorithm.newSecretKeyFromBytes(base64Decode(b64Secret));
+  final nonce = algorithm.newNonce();
+
+  final secretBox = await algorithm.encrypt(
+    message,
+    secretKey: secretKey,
+    nonce: nonce,
   );
+
+  await encryptedFile.writeAsBytes(secretBox.concatenation());
 }
 
 FutureOr<void> decryptFileIsolate(DecryptFileMessage msg) async {
@@ -83,11 +69,15 @@ Future<void> decryptFile(
   );
 }
 
-Future<String> encryptStringIsolate(EncryptStringMessage msg) async {
-  final message = utf8.encode(msg.plaintext);
+Future<String> encryptString({
+  required String plainText,
+  required String b64Secret,
+}) async {
+  final message = utf8.encode(plainText);
   final algorithm = AesGcm.with256bits();
-  final secretKey =
-      await algorithm.newSecretKeyFromBytes(base64Decode(msg.b64Secret));
+  final secretKey = await algorithm.newSecretKeyFromBytes(
+    base64Decode(b64Secret),
+  );
   final nonce = algorithm.newNonce();
 
   final secretBox = await algorithm.encrypt(
@@ -96,19 +86,6 @@ Future<String> encryptStringIsolate(EncryptStringMessage msg) async {
     nonce: nonce,
   );
   return base64.encode(secretBox.concatenation());
-}
-
-Future<String> encryptString({
-  required String plainText,
-  required String b64Secret,
-}) async {
-  return compute(
-    encryptStringIsolate,
-    EncryptStringMessage(
-      b64Secret: b64Secret,
-      plaintext: plainText,
-    ),
-  );
 }
 
 FutureOr<String> decryptStringIsolate(DecryptStringMessage msg) async {
@@ -138,4 +115,9 @@ Future<String> decryptString({
       encrypted: encrypted,
     ),
   );
+}
+
+String generateKeyFromPassphrase(String passphrase) {
+  final key = encrypt.Key.fromUtf8(passphrase);
+  return key.base64;
 }
