@@ -69,8 +69,9 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
             final openNow = openHabits.where(showHabit);
             final pendingLater = openHabits.where((item) => !showHabit(item));
 
-            final completedHabits =
-                habitItems.where((item) => completedToday.contains(item.id));
+            final completedHabits = habitItems
+                .where((item) => completedToday.contains(item.id))
+                .sorted(habitSorter);
 
             return Scaffold(
               appBar: TitleAppBar(
