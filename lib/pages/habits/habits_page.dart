@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -61,8 +62,9 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
               }
             });
 
-            final openHabits =
-                habitItems.where((item) => !completedToday.contains(item.id));
+            final openHabits = habitItems
+                .where((item) => !completedToday.contains(item.id))
+                .sorted(habitSorter);
 
             final openNow = openHabits.where(showHabit);
             final pendingLater = openHabits.where((item) => !showHabit(item));
