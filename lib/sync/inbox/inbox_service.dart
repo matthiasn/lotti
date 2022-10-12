@@ -110,8 +110,13 @@ class InboxService {
 
   Future<void> _fetchInbox() async {
     try {
+      final allowInvalidCert =
+          await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
       final syncConfig = await _syncConfigService.getSyncConfig();
-      imapClient ??= await createImapClient(syncConfig);
+      imapClient ??= await createImapClient(
+        syncConfig,
+        allowInvalidCert: allowInvalidCert,
+      );
       final lastReadUid = await getLastReadUid();
 
       if (lastReadUid == null) {

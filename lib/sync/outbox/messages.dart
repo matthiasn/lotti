@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:isolate';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -12,5 +13,7 @@ class OutboxIsolateMessage with _$OutboxIsolateMessage {
     required bool networkConnected,
     required SendPort syncDbConnectPort,
     required SendPort loggingDbConnectPort,
+    required bool allowInvalidCert,
+    required Directory docDir,
   }) = OutboxIsolateInitMessage;
 }

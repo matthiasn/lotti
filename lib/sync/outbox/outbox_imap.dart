@@ -3,24 +3,24 @@ import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/imap_client.dart';
 
-Future<GenericImapResult> saveImapMessage(
-  ImapClient imapClient,
-  String subject,
-  String encryptedMessage, {
+Future<GenericImapResult> saveImapMessage({
   File? file,
+  required SyncConfig syncConfig,
+  required ImapClient imapClient,
+  required String subject,
+  required String encryptedMessage,
 }) async {
   final loggingDb = getIt<LoggingDb>();
-  final syncConfigService = getIt<SyncConfigService>();
-  final syncConfig = await syncConfigService.getSyncConfig();
 
   try {
-    final inbox = await imapClient
-        .selectMailboxByPath(syncConfig?.imapConfig.folder ?? 'INBOX');
+    final inbox = await imapClient.selectMailboxByPath(
+      syncConfig.imapConfig.folder,
+    );
 
     final builder = MessageBuilder.prepareMultipartAlternativeMessage()
       ..subject = subject
@@ -64,6 +64,8 @@ const String lastReadUidKey = 'lastReadUid';
 Future<ImapClient?> persistImap({
   required String encryptedMessage,
   required String subject,
+  required SyncConfig syncConfig,
+  required bool allowInvalidCert,
   String? encryptedFilePath,
   ImapClient? prevImapClient,
 }) async {
@@ -74,10 +76,8 @@ Future<ImapClient?> persistImap({
     if (prevImapClient != null && prevImapClient.isConnected) {
       imapClient = prevImapClient;
     } else {
-      final syncConfigService = getIt<SyncConfigService>();
-      final syncConfig = await syncConfigService.getSyncConfig();
       await prevImapClient?.disconnect();
-      imapClient = await createImapClient(syncConfig);
+      imapClient = await createImapClient(syncConfig, allowInvalidCert: allowInvalidCert,);
     }
 
     GenericImapResult? res;
@@ -87,17 +87,19 @@ Future<ImapClient?> persistImap({
         final fileLength = encryptedFile.lengthSync();
         if (fileLength > 0) {
           res = await saveImapMessage(
-            imapClient,
-            subject,
-            encryptedMessage,
+            imapClient: imapClient,
+            subject: subject,
+            encryptedMessage: encryptedMessage,
+            syncConfig: syncConfig,
             file: encryptedFile,
           );
         }
       } else {
         res = await saveImapMessage(
-          imapClient,
-          subject,
-          encryptedMessage,
+          imapClient: imapClient,
+          subject: subject,
+          encryptedMessage: encryptedMessage,
+          syncConfig: syncConfig,
         );
       }
     }
