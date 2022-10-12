@@ -2,11 +2,13 @@ import 'dart:convert';
 
 import 'package:encrypt/encrypt.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/utils.dart';
+import 'package:lotti/utils/consts.dart';
 
 class SyncConfigService {
   final sharedSecretKey = 'sharedSecret';
@@ -32,11 +34,6 @@ class SyncConfigService {
 
   String generateRandomKey() {
     final key = Key.fromSecureRandom(32);
-    return key.base64;
-  }
-
-  String generateKeyFromPassphrase(String passphrase) {
-    final key = Key.fromUtf8(passphrase);
     return key.base64;
   }
 
@@ -84,7 +81,12 @@ class SyncConfigService {
   }
 
   Future<bool> testConnection(SyncConfig syncConfig) async {
-    final client = await createImapClient(syncConfig);
+    final allowInvalidCert =
+        await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
+    final client = await createImapClient(
+      syncConfig,
+      allowInvalidCert: allowInvalidCert,
+    );
     return client != null;
   }
 

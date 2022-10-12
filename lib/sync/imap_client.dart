@@ -3,10 +3,8 @@ import 'dart:io';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 Future<ImapClient?> createImapClient(
@@ -14,14 +12,13 @@ Future<ImapClient?> createImapClient(
   Duration connectionTimeout = const Duration(minutes: 5),
   Duration responseTimeout = const Duration(minutes: 15),
   Duration writeTimeout = const Duration(minutes: 15),
+  required bool allowInvalidCert,
 }) async {
   final clientId = uuid.v1();
   final loggingDb = getIt<LoggingDb>();
 
   try {
     if (syncConfig != null) {
-      final allowInvalidCert =
-          await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
       final imapClient = allowInvalidCert
           ? ImapClient(
               onBadCertificate: (X509Certificate cert) => true,

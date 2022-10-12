@@ -1,4 +1,6 @@
+import 'package:drift/isolate.dart';
 import 'package:get_it/get_it.dart';
+import 'package:lotti/database/common.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -30,8 +32,16 @@ void registerSingletons() {
     ..registerSingleton<ThemesService>(ThemesService())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
-    ..registerSingleton<SyncDatabase>(SyncDatabase())
-    ..registerSingleton<LoggingDb>(LoggingDb())
+    ..registerSingleton<Future<DriftIsolate>>(
+      createDriftIsolate(syncDbFileName),
+      instanceName: syncDbFileName,
+    )
+    ..registerSingleton<SyncDatabase>(getSyncDatabase())
+    ..registerSingleton<Future<DriftIsolate>>(
+      createDriftIsolate(loggingDbFileName),
+      instanceName: loggingDbFileName,
+    )
+    ..registerSingleton<LoggingDb>(getLoggingDb())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<SyncConfigService>(SyncConfigService())
     ..registerSingleton<TimeService>(TimeService())

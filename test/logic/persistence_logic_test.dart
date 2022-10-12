@@ -68,6 +68,15 @@ void main() {
 
       when(mockNotificationService.updateBadge).thenAnswer((_) async {});
 
+      when(
+        () => mockNotificationService.showNotification(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notificationId: any(named: 'notificationId'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      ).thenAnswer((_) async {});
+
       getIt
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<FgBgService>(mockFgBgService)
@@ -83,9 +92,11 @@ void main() {
         ..registerSingleton<VectorClockService>(VectorClockService())
         ..registerSingleton<PersistenceLogic>(PersistenceLogic());
     });
+
     tearDownAll(() async {
       await getIt.reset();
     });
+
     tearDown(() {
       clearInteractions(mockNotificationService);
     });

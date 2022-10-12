@@ -2,12 +2,11 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:lotti/database/common.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 part 'logging_db.g.dart';
@@ -36,8 +35,9 @@ class LoggingDb extends _$LoggingDb {
           ),
         );
 
-  final JournalDb _journalDb = getIt<JournalDb>();
-  final bool inMemoryDatabase;
+  LoggingDb.connect(super.connection) : super.connect();
+
+  bool inMemoryDatabase = false;
 
   @override
   int get schemaVersion => 1;
@@ -109,9 +109,7 @@ class LoggingDb extends _$LoggingDb {
       ),
     );
 
-    final notifyEnabled = await _journalDb.getConfigFlag(notifyExceptionsFlag);
-
-    if (notifyEnabled) {
+    if (kDebugMode) {
       final title = 'Exception in $domain $subDomain';
       final body = exception.toString();
       final shortened = body.substring(0, min(195, body.length - 1));
@@ -152,4 +150,8 @@ class LoggingDb extends _$LoggingDb {
   }) {
     return allLogEntries(limit).watch();
   }
+}
+
+LoggingDb getLoggingDb() {
+  return LoggingDb.connect(getDatabaseConnection(loggingDbFileName));
 }

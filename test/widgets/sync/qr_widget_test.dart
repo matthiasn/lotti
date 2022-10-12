@@ -20,9 +20,6 @@ void main() {
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<SyncConfigService>(mockSyncConfigService);
-
-      when(() => mockSyncConfigService.generateKeyFromPassphrase(any()))
-          .thenAnswer((invocation) => '12345678901234567890123456789012');
     });
 
     tearDown(getIt.reset);

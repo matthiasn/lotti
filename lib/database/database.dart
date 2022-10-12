@@ -40,7 +40,9 @@ class JournalDb extends _$JournalDb {
           ),
         );
 
-  final bool inMemoryDatabase;
+  JournalDb.connect(super.connection) : super.connect();
+
+  bool inMemoryDatabase = false;
 
   @override
   int get schemaVersion => 18;
@@ -878,4 +880,16 @@ class JournalDb extends _$JournalDb {
     );
     return linesAffected;
   }
+}
+
+// TODO: examine why failing with index already exists
+JournalDb getJournalDb() {
+  return JournalDb.connect(
+    DatabaseConnection.delayed(
+      Future.sync(() async {
+        final isolate = await createDriftIsolate(journalDbFileName);
+        return isolate.connect();
+      }),
+    ),
+  );
 }

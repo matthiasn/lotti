@@ -8,9 +8,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_state.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
@@ -121,8 +119,7 @@ class EncryptionQrWidget extends StatelessWidget {
                                     key: const Key('copyButton'),
                                     onPressed: () async {
                                       final b64Secret =
-                                          getIt<SyncConfigService>()
-                                              .generateKeyFromPassphrase(
+                                          generateKeyFromPassphrase(
                                         randomPassword,
                                       );
 
@@ -228,10 +225,7 @@ class EmptyConfigWidget extends StatelessWidget {
                       final syncConfigCubit = context.read<SyncConfigCubit>();
 
                       final data = await Clipboard.getData('text/plain');
-
-                      final b64Secret = getIt<SyncConfigService>()
-                          .generateKeyFromPassphrase(passphrase);
-
+                      final b64Secret = generateKeyFromPassphrase(passphrase);
                       final encryptedSyncCfg = data?.text;
 
                       if (encryptedSyncCfg != null) {
