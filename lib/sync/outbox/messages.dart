@@ -12,5 +12,5 @@ class OutboxIsolateMessage with _$OutboxIsolateMessage {
     required bool networkConnected,
     required SendPort syncDbConnectPort,
     required SendPort loggingDbConnectPort,
-  }) = OutboxIsolateMessageInit;
+  }) = OutboxIsolateInitMessage;
 }

@@ -22,6 +22,7 @@ import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/sync/fg_bg.dart';
+import 'package:lotti/sync/outbox/messages.dart';
 import 'package:lotti/sync/outbox/outbox_service_isolate.dart';
 import 'package:lotti/sync/outbox_imap.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -61,6 +62,9 @@ class OutboxService {
   }
 
   Future<void> startIsolate() async {
+    final syncConfig = await _syncConfigService.getSyncConfig();
+    final networkConnected = await _connectivityService.isConnected();
+
     final receivePort = ReceivePort();
     await Isolate.spawn(entryPoint, receivePort.sendPort);
     final sendPort = await receivePort.first as SendPort;
@@ -68,8 +72,20 @@ class OutboxService {
     final syncDbIsolate = await getIt<Future<DriftIsolate>>(
       instanceName: syncDbFileName,
     );
+    final loggingDbIsolate = await getIt<Future<DriftIsolate>>(
+      instanceName: loggingDbFileName,
+    );
 
-    shareDriftIsolate(syncDbIsolate, sendPort);
+    if (syncConfig != null) {
+      sendPort.send(
+        OutboxIsolateMessage.init(
+          syncConfig: syncConfig,
+          networkConnected: networkConnected,
+          syncDbConnectPort: syncDbIsolate.connectPort,
+          loggingDbConnectPort: loggingDbIsolate.connectPort,
+        ),
+      );
+    }
   }
 
   Future<void> init() async {

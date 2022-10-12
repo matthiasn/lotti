@@ -16,6 +16,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/encryption.dart';
+import 'package:lotti/sync/outbox/messages.dart';
 import 'package:lotti/sync/outbox_imap.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:path_provider/path_provider.dart';
@@ -24,24 +25,37 @@ Future<void> entryPoint(SendPort sendPort) async {
   final port = ReceivePort();
   sendPort.send(port.sendPort);
 
-  await for (final data in port) {
-    debugPrint('Outbox isolate received $data');
+  await for (final msg in port) {
+    if (msg is OutboxIsolateInitMessage) {
+      final syncDb = SyncDatabase.connect(
+        getDbConnFromIsolate(
+          DriftIsolate.fromConnectPort(msg.syncDbConnectPort),
+        ),
+      );
 
-    if (data is SendPort) {
-      debugPrint('Outbox isolate received SendPort $data');
-      final conn = getDbConnFromIsolate(DriftIsolate.fromConnectPort(data));
-      final db = SyncDatabase.connect(conn);
+      final loggingDb = LoggingDb.connect(
+        getDbConnFromIsolate(
+          DriftIsolate.fromConnectPort(msg.loggingDbConnectPort),
+        ),
+      );
+
+      getIt
+        ..registerSingleton<SyncDatabase>(syncDb)
+        ..registerSingleton<LoggingDb>(loggingDb);
+
+      final outbox = OutboxServiceIsolatePart(
+        syncConfig: msg.syncConfig,
+        networkConnected: msg.networkConnected,
+      );
+
       unawaited(
-        db.watchOutboxCount().forEach((element) {
+        getIt<SyncDatabase>().watchOutboxCount().forEach((element) {
           debugPrint('db.watchOutboxCount $element');
+          outbox.restartRunner();
         }),
       );
     }
   }
-}
-
-void shareDriftIsolate(DriftIsolate isolate, SendPort sendPort) {
-  sendPort.send(isolate.connectPort);
 }
 
 class OutboxServiceIsolatePart {
@@ -76,13 +90,7 @@ class OutboxServiceIsolatePart {
   }
 
   Future<void> init() async {
-    final enableSyncOutbox =
-        await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
-
-    if (syncConfig != null && enableSyncOutbox) {
-      await enqueueNextSendRequest();
-    }
-    debugPrint('OutboxService2 init $enableSyncOutbox');
+    debugPrint('OutboxServiceIsolatePart init');
 
     Timer.periodic(const Duration(minutes: 1), (timer) async {
       final unprocessed = await getNextItems();
@@ -121,15 +129,6 @@ class OutboxServiceIsolatePart {
     if (!enableSyncOutbox) {
       _loggingDb.captureEvent(
         'sync not enabled',
-        domain: 'OUTBOX',
-        subDomain: 'sendNext()',
-      );
-      return;
-    }
-
-    if (b64Secret == null) {
-      _loggingDb.captureEvent(
-        'sync config does not exist',
         domain: 'OUTBOX',
         subDomain: 'sendNext()',
       );
@@ -244,14 +243,6 @@ class OutboxServiceIsolatePart {
     if (!enableSyncOutbox) {
       _loggingDb.captureEvent(
         'Sync not enabled -> not enqueued',
-        domain: 'OUTBOX',
-      );
-      return;
-    }
-
-    if (syncConfig == null) {
-      _loggingDb.captureEvent(
-        'Sync config missing -> not enqueued',
         domain: 'OUTBOX',
       );
       return;
