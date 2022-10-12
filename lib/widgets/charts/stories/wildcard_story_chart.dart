@@ -51,7 +51,7 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
         stream: _db.watchJournalByTagIds(
           match: subString,
           rangeStart: widget.rangeStart,
-          rangeEnd: widget.rangeEnd,
+          rangeEnd: widget.rangeEnd.add(const Duration(days: 1)),
         ),
         builder: (
           BuildContext context,
@@ -60,7 +60,7 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
           final data = aggregateStoryTimeSum(
             snapshot.data ?? [],
             rangeStart: widget.rangeStart,
-            rangeEnd: widget.rangeEnd,
+            rangeEnd: widget.rangeEnd.add(const Duration(days: 1)),
             timeframe: AggregationTimeframe.daily,
           );
 

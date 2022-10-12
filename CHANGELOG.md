@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Time chart didn't include today
+
+## [0.8.170] - 2022-10-12
 ### Changed:
 - Enable isolate support in JournalDb, SyncDb, LoggingDb
 - Run SyncDb and LoggingDb in separate isolate (thread)
