@@ -263,6 +263,24 @@ bool showHabit(HabitDefinition item) {
   return actualMinuteOfDay >= showFromMinuteOfDay;
 }
 
+int habitSorter(HabitDefinition a, HabitDefinition b) {
+  return <Comparator<HabitDefinition>>[
+    (o1, o2) {
+      final showFrom1 = o1.habitSchedule.mapOrNull(daily: (d) => d.showFrom) ??
+          getEndOfToday();
+      final showFrom2 = o2.habitSchedule.mapOrNull(daily: (d) => d.showFrom) ??
+          getEndOfToday();
+
+      return minutesSinceMidnight(showFrom1)
+          .compareTo(minutesSinceMidnight(showFrom2));
+    },
+    (o1, o2) => o1.name.compareTo(o2.name),
+  ].map((e) => e(a, b)).firstWhere(
+        (e) => e != 0,
+        orElse: () => 0,
+      );
+}
+
 String formatHhMm(Duration dur) {
   return '${padLeft(dur.inHours)}:${padLeft(dur.inMinutes.remainder(60))}';
 }

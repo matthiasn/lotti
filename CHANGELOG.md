@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Sort habits by show from time, then a-z
+
+### Fixed:
+- Time chart didn't include today
+
+## [0.8.170] - 2022-10-12
+### Changed:
 - Enable isolate support in JournalDb, SyncDb, LoggingDb
 - Run SyncDb and LoggingDb in separate isolate (thread)
 - Run Sync outbox in isolate to avoid jank

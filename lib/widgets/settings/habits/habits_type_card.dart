@@ -31,17 +31,6 @@ class HabitsTypeCard extends StatelessWidget {
               size: settingsIconSize,
             ),
           ),
-          Visibility(
-            visible: fromNullableBool(item.private),
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Icon(
-                MdiIcons.security,
-                color: styleConfig().alarm,
-                size: settingsIconSize,
-              ),
-            ),
-          ),
         ],
       ),
     );
