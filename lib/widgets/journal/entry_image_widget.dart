@@ -14,10 +14,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 
 class EntryImageWidget extends StatefulWidget {
-  const EntryImageWidget({
-    super.key,
-    required this.journalImage,
-  });
+  const EntryImageWidget(this.journalImage, {super.key});
 
   final JournalImage journalImage;
 
@@ -65,7 +62,7 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
               );
             },
             child: ColoredBox(
-              color: styleConfig().primaryTextColor,
+              color: Colors.black,
               child: Hero(
                 tag: 'entry_img',
                 child: ConstrainedBox(
