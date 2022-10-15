@@ -88,20 +88,12 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    item.maybeMap(
-                      journalImage: (image) {
-                        return Container(
-                          width: MediaQuery.of(context).size.width,
-                          color: styleConfig().primaryTextColor,
-                          child: EntryImageWidget(
-                            journalImage: image,
-                          ),
-                        );
-                      },
-                      orElse: () => const SizedBox.shrink(),
-                    ),
                     const EntryDetailHeader(),
                     TagsListWidget(),
+                    item.maybeMap(
+                      journalImage: EntryImageWidget.new,
+                      orElse: () => const SizedBox.shrink(),
+                    ),
                     item.maybeMap(
                       task: (_) => const SizedBox.shrink(),
                       quantitative: (_) => const SizedBox.shrink(),
