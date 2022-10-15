@@ -882,14 +882,6 @@ class JournalDb extends _$JournalDb {
   }
 }
 
-// TODO: examine why failing with index already exists
 JournalDb getJournalDb() {
-  return JournalDb.connect(
-    DatabaseConnection.delayed(
-      Future.sync(() async {
-        final isolate = await createDriftIsolate(journalDbFileName);
-        return isolate.connect();
-      }),
-    ),
-  );
+  return JournalDb.connect(getDatabaseConnection(journalDbFileName));
 }

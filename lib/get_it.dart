@@ -26,7 +26,12 @@ final getIt = GetIt.instance;
 
 void registerSingletons() {
   getIt
-    ..registerSingleton<JournalDb>(JournalDb())
+//    ..registerSingleton<JournalDb>(JournalDb())
+    ..registerSingleton<Future<DriftIsolate>>(
+      createDriftIsolate(journalDbFileName),
+      instanceName: journalDbFileName,
+    )
+    ..registerSingleton<JournalDb>(getJournalDb())
     ..registerSingleton<ConnectivityService>(ConnectivityService())
     ..registerSingleton<FgBgService>(FgBgService())
     ..registerSingleton<ThemesService>(ThemesService())
