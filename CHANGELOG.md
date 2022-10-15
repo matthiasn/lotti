@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgraded dependencies
+
+## [0.8.171] - 2022-10-13
+### Changed:
 - Sort habits by show from time, then a-z
 
 ### Fixed:
