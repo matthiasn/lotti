@@ -22,47 +22,20 @@ CREATE TABLE journal (
   PRIMARY KEY (id)
 ) as JournalDbEntity;
 
-CREATE INDEX idx_journal_created_at
-ON journal (created_at);
-
-CREATE INDEX idx_journal_updated_at
-ON journal (updated_at);
-
-CREATE INDEX idx_journal_date_from
-ON journal (date_from);
-
-CREATE INDEX idx_journal_date_to
-ON journal (date_to);
-
-CREATE INDEX idx_journal_deleted
-ON journal (deleted);
-
-CREATE INDEX idx_journal_starred
-ON journal (starred);
-
-CREATE INDEX idx_journal_private
-ON journal (private);
-
-CREATE INDEX idx_journal_task
-ON journal (task);
-
-CREATE INDEX idx_journal_task_status
-ON journal (task_status);
-
-CREATE INDEX idx_journal_flag
-ON journal (flag);
-
-CREATE INDEX idx_journal_type
-ON journal (type);
-
-CREATE INDEX idx_journal_subtype
-ON journal (subtype);
-
-CREATE INDEX idx_journal_geohash_string
-ON journal (geohash_string);
-
-CREATE INDEX idx_journal_geohash_int
-ON journal (geohash_int);
+CREATE INDEX idx_journal_created_at ON journal (created_at);
+CREATE INDEX idx_journal_updated_at ON journal (updated_at);
+CREATE INDEX idx_journal_date_from ON journal (date_from);
+CREATE INDEX idx_journal_date_to ON journal (date_to);
+CREATE INDEX idx_journal_deleted ON journal (deleted);
+CREATE INDEX idx_journal_starred ON journal (starred);
+CREATE INDEX idx_journal_private ON journal (private);
+CREATE INDEX idx_journal_task ON journal (task);
+CREATE INDEX idx_journal_task_status ON journal (task_status);
+CREATE INDEX idx_journal_flag ON journal (flag);
+CREATE INDEX idx_journal_type ON journal (type);
+CREATE INDEX idx_journal_subtype ON journal (subtype);
+CREATE INDEX idx_journal_geohash_string ON journal (geohash_string);
+CREATE INDEX idx_journal_geohash_int ON journal (geohash_int);
 
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
@@ -99,14 +72,9 @@ CREATE TABLE habit_definitions (
   PRIMARY KEY (id)
 ) as HabitDefinitionDbEntity;
 
-CREATE INDEX idx_habit_definitions_id
-ON habit_definitions (id);
-
-CREATE INDEX idx_habit_definitions_name
-ON habit_definitions (name);
-
-CREATE INDEX idx_habit_definitions_private
-ON habit_definitions (private);
+CREATE INDEX idx_habit_definitions_id ON habit_definitions (id);
+CREATE INDEX idx_habit_definitions_name ON habit_definitions (name);
+CREATE INDEX idx_habit_definitions_private ON habit_definitions (private);
 
 CREATE TABLE dashboard_definitions (
   id TEXT NOT NULL,
@@ -121,14 +89,9 @@ CREATE TABLE dashboard_definitions (
   PRIMARY KEY (id)
 ) as DashboardDefinitionDbEntity;
 
-CREATE INDEX idx_dashboard_definitions_id
-ON dashboard_definitions (id);
-
-CREATE INDEX idx_dashboard_definitions_name
-ON dashboard_definitions (name);
-
-CREATE INDEX idx_dashboard_definitions_private
-ON dashboard_definitions (private);
+CREATE INDEX idx_dashboard_definitions_id ON dashboard_definitions (id);
+CREATE INDEX idx_dashboard_definitions_name ON dashboard_definitions (name);
+CREATE INDEX idx_dashboard_definitions_private ON dashboard_definitions (private);
 
 CREATE TABLE config_flags (
   name TEXT NOT NULL UNIQUE,
@@ -151,20 +114,11 @@ CREATE TABLE tag_entities (
   UNIQUE(tag, type)
 ) as TagDbEntity;
 
-CREATE INDEX idx_tag_entities_id
-ON tag_entities (id);
-
-CREATE INDEX idx_tag_entities_tag
-ON tag_entities (tag);
-
-CREATE INDEX idx_tag_entities_type
-ON tag_entities (type);
-
-CREATE INDEX idx_tag_entities_private
-ON tag_entities (private);
-
-CREATE INDEX idx_tag_entities_inactive
-ON tag_entities (inactive);
+CREATE INDEX idx_tag_entities_id ON tag_entities (id);
+CREATE INDEX idx_tag_entities_tag ON tag_entities (tag);
+CREATE INDEX idx_tag_entities_type ON tag_entities (type);
+CREATE INDEX idx_tag_entities_private ON tag_entities (private);
+CREATE INDEX idx_tag_entities_inactive ON tag_entities (inactive);
 
 CREATE TABLE tagged (
   id TEXT NOT NULL UNIQUE,
@@ -176,11 +130,8 @@ CREATE TABLE tagged (
   UNIQUE(journal_id, tag_entity_id)
 ) as TaggedWith;
 
-CREATE INDEX idx_tagged_journal_id
-ON tagged (journal_id);
-
-CREATE INDEX idx_tagged_tag_entity_id
-ON tagged (tag_entity_id);
+CREATE INDEX idx_tagged_journal_id ON tagged (journal_id);
+CREATE INDEX idx_tagged_tag_entity_id ON tagged (tag_entity_id);
 
 CREATE TABLE linked_entries (
   id TEXT NOT NULL UNIQUE,
@@ -192,14 +143,9 @@ CREATE TABLE linked_entries (
   UNIQUE(from_id, to_id, type)
 ) as LinkedDbEntry;
 
-CREATE INDEX idx_linked_entries_from_id
-ON linked_entries (from_id);
-
-CREATE INDEX idx_linked_entries_to_id
-ON linked_entries (to_id);
-
-CREATE INDEX idx_linked_entries_type
-ON linked_entries (type);
+CREATE INDEX idx_linked_entries_from_id ON linked_entries (from_id);
+CREATE INDEX idx_linked_entries_to_id ON linked_entries (to_id);
+CREATE INDEX idx_linked_entries_type ON linked_entries (type);
 
 /* Queries ----------------------------------------------------- */
 listConfigFlags:
