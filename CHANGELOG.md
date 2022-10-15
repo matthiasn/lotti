@@ -6,7 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Improved photo view
+
+## [0.8.172] - 2022-10-16
+### Changed:
 - Upgraded dependencies
+- JournalDb moved to a separate isolate, freeing up CPU resources on the main thread/isolate
 
 ## [0.8.171] - 2022-10-13
 ### Changed:
