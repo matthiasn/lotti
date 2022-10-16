@@ -40,14 +40,14 @@ Map<String, DashboardSurveyItem> surveyTypes = {
 };
 
 List<Observation> aggregateSurvey({
-  required List<JournalEntity?> entities,
+  required List<JournalEntity> entities,
   required DashboardSurveyItem dashboardSurveyItem,
   required String scoreKey,
 }) {
   final aggregated = <Observation>[];
 
   for (final entity in entities) {
-    entity?.maybeMap(
+    entity.maybeMap(
       survey: (SurveyEntry surveyEntry) {
         final num? value = surveyEntry.data.calculatedScores[scoreKey];
         if (value != null) {
@@ -67,7 +67,7 @@ List<Observation> aggregateSurvey({
 }
 
 List<charts.Series<Observation, DateTime>> surveySeries({
-  required List<JournalEntity?> entities,
+  required List<JournalEntity> entities,
   required DashboardSurveyItem dashboardSurveyItem,
 }) {
   final seriesList = <charts.Series<Observation, DateTime>>[];

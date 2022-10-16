@@ -47,7 +47,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
 
     return BlocProvider<StoryChartInfoCubit>(
       create: (BuildContext context) => StoryChartInfoCubit(),
-      child: StreamBuilder<List<JournalEntity?>>(
+      child: StreamBuilder<List<JournalEntity>>(
         stream: _db.watchJournalEntitiesByTag(
           rangeStart: widget.rangeStart,
           rangeEnd: widget.rangeEnd,
@@ -55,7 +55,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
         ),
         builder: (
           BuildContext context,
-          AsyncSnapshot<List<JournalEntity?>> snapshot,
+          AsyncSnapshot<List<JournalEntity>> snapshot,
         ) {
           final items = snapshot.data ?? [];
 

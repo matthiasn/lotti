@@ -77,7 +77,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
 
     return BlocProvider<HealthChartInfoCubit>(
       create: (BuildContext context) => HealthChartInfoCubit(),
-      child: StreamBuilder<List<JournalEntity?>>(
+      child: StreamBuilder<List<JournalEntity>>(
         stream: _db.watchQuantitativeByType(
           type: widget.chartConfig.healthType,
           rangeStart: widget.rangeStart,
@@ -85,7 +85,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
         ),
         builder: (
           BuildContext context,
-          AsyncSnapshot<List<JournalEntity?>> snapshot,
+          AsyncSnapshot<List<JournalEntity>> snapshot,
         ) {
           void infoSelectionModelUpdated(
             charts.SelectionModel<DateTime> model,
