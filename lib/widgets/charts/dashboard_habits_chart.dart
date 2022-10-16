@@ -324,13 +324,18 @@ class _HabitChartLineState extends State<HabitChartLine> {
                     children: [
                       const SizedBox(width: 70),
                       ...results.map((res) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(2),
-                          child: Container(
-                            height: 25,
-                            width: (MediaQuery.of(context).size.width - 300) /
-                                days,
-                            color: colorFromCssHex(res.hexColor),
+                        return Flexible(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: Container(
+                              margin: EdgeInsets.only(
+                                left: MediaQuery.of(context).size.width /
+                                    6 /
+                                    days,
+                              ),
+                              height: 25,
+                              color: colorFromCssHex(res.hexColor),
+                            ),
                           ),
                         );
                       }),
