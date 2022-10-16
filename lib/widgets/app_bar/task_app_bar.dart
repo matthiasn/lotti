@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_fadein/flutter_fadein.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -23,8 +21,6 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<JournalEntity?>(
       stream: _db.watchEntityById(itemId),
       builder: (
@@ -35,13 +31,6 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
         if (item == null || item.meta.deletedAt != null) {
           return AppBar(
             backgroundColor: styleConfig().cardColor,
-            title: FadeIn(
-              duration: const Duration(milliseconds: 500),
-              child: Text(
-                localizations.taskNotFound,
-                style: appBarTextStyle(),
-              ),
-            ),
             centerTitle: true,
           );
         }
