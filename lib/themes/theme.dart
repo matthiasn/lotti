@@ -177,6 +177,7 @@ const taskFormFieldStyle = TextStyle(color: Colors.black87);
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontFamily: mainFont,
+      fontWeight: FontWeight.bold,
       color: styleConfig().alarm,
     );
 

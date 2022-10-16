@@ -38,7 +38,7 @@ class _HabitDialogState extends State<HabitDialog> {
     scope: HotKeyScope.inapp,
   );
 
-  Future<void> saveHabit() async {
+  Future<void> saveHabit(HabitCompletionType completionType) async {
     _formKey.currentState!.save();
     if (validate()) {
       final formData = _formKey.currentState?.value;
@@ -48,6 +48,7 @@ class _HabitDialogState extends State<HabitDialog> {
         habitId: widget.habitId,
         dateTo: formData!['date'] as DateTime,
         dateFrom: formData['date'] as DateTime,
+        completionType: completionType,
       );
 
       await persistenceLogic.createHabitCompletionEntry(
@@ -70,7 +71,7 @@ class _HabitDialogState extends State<HabitDialog> {
 
     hotKeyManager.register(
       hotkeyCmdS,
-      keyDownHandler: (hotKey) => saveHabit(),
+      keyDownHandler: (hotKey) => saveHabit(HabitCompletionType.success),
     );
   }
 
@@ -111,22 +112,39 @@ class _HabitDialogState extends State<HabitDialog> {
             borderRadius: BorderRadius.all(Radius.circular(50)),
           ),
           backgroundColor: styleConfig().primaryColorLight,
-          actionsAlignment: MainAxisAlignment.end,
+          actionsAlignment: MainAxisAlignment.spaceBetween,
           actionsPadding: const EdgeInsets.only(
             left: 20,
             right: 20,
             bottom: 20,
           ),
           actions: [
-            if (dirty && validate())
-              TextButton(
-                key: const Key('habit_save'),
-                onPressed: saveHabit,
-                child: Text(
-                  localizations.addMeasurementSaveButton,
-                  style: saveButtonStyle(),
-                ),
+            TextButton(
+              key: const Key('habit_fail'),
+              onPressed: () => saveHabit(HabitCompletionType.fail),
+              child: Text(
+                localizations.completeHabitFailButton,
+                style: saveButtonStyle(),
               ),
+            ),
+            TextButton(
+              key: const Key('habit_skip'),
+              onPressed: () => saveHabit(HabitCompletionType.skip),
+              child: Text(
+                localizations.completeHabitSkipButton,
+                style: saveButtonStyle()
+                    .copyWith(color: styleConfig().secondaryTextColor),
+              ),
+            ),
+            TextButton(
+              key: const Key('habit_save'),
+              onPressed: () => saveHabit(HabitCompletionType.success),
+              child: Text(
+                localizations.completeHabitSuccessButton,
+                style: saveButtonStyle()
+                    .copyWith(color: styleConfig().primaryColor),
+              ),
+            ),
           ],
           content: FormBuilder(
             key: _formKey,

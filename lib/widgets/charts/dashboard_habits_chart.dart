@@ -54,7 +54,7 @@ class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
           return const SizedBox.shrink();
         }
 
-        return StreamBuilder<List<JournalEntity?>>(
+        return StreamBuilder<List<JournalEntity>>(
           stream: _db.watchHabitCompletionsByHabitId(
             habitId: habitDefinition.id,
             rangeStart: widget.rangeStart,
@@ -62,7 +62,7 @@ class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
           ),
           builder: (
             BuildContext context,
-            AsyncSnapshot<List<JournalEntity?>> snapshot,
+            AsyncSnapshot<List<JournalEntity>> snapshot,
           ) {
             final entities = snapshot.data ?? [];
 
@@ -126,7 +126,7 @@ class HabitResult extends Equatable {
 }
 
 List<HabitResult> habitResultsByDay(
-  List<JournalEntity?> entities, {
+  List<JournalEntity> entities, {
   required HabitDefinition habitDefinition,
   required DateTime rangeStart,
   required DateTime rangeEnd,
@@ -141,19 +141,42 @@ List<HabitResult> habitResultsByDay(
   final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
   final activeUntil = habitDefinition.activeUntil ?? DateTime(9999);
 
+  final successColor = colorToCssHex(primaryColor);
+  final failColor = colorToCssHex(alarm);
+  final skipColor = colorToCssHex(
+    styleConfig().secondaryTextColor.withOpacity(0.4),
+  );
+
   for (final dayString in dayStrings) {
     final day = DateTime.parse(dayString);
-    final color = (day.isAfter(activeFrom) || day == activeFrom) &&
+    final hexColor = (day.isAfter(activeFrom) || day == activeFrom) &&
             day.isBefore(activeUntil)
-        ? alarm
-        : styleConfig().secondaryTextColor.withOpacity(0.4);
+        ? failColor
+        : skipColor;
 
-    resultsByDay[dayString] = colorToCssHex(color);
+    resultsByDay[dayString] = hexColor;
   }
 
-  for (final entity in entities) {
-    final dayString = ymd(entity!.meta.dateFrom);
-    resultsByDay[dayString] = colorToCssHex(primaryColor);
+  for (final entity in entities.sortedBy((entity) => entity.meta.dateFrom)) {
+    final dayString = ymd(entity.meta.dateFrom);
+    final hexColor = entity.maybeMap(
+      habitCompletion: (completion) {
+        final completionType = completion.data.completionType;
+        final hexColor = completionType == HabitCompletionType.fail
+            ? failColor
+            : completionType == HabitCompletionType.skip
+                ? skipColor
+                : successColor;
+        if (completionType != null) {
+          debugPrint('completion $dayString $completionType $hexColor');
+        }
+
+        return hexColor;
+      },
+      orElse: () => skipColor,
+    );
+
+    resultsByDay[dayString] = hexColor;
   }
 
   final aggregated = <HabitResult>[];
@@ -271,7 +294,7 @@ class _HabitChartLineState extends State<HabitChartLine> {
           return const SizedBox.shrink();
         }
 
-        return StreamBuilder<List<JournalEntity?>>(
+        return StreamBuilder<List<JournalEntity>>(
           stream: _db.watchHabitCompletionsByHabitId(
             habitId: habitDefinition.id,
             rangeStart: widget.rangeStart,
@@ -279,7 +302,7 @@ class _HabitChartLineState extends State<HabitChartLine> {
           ),
           builder: (
             BuildContext context,
-            AsyncSnapshot<List<JournalEntity?>> snapshot,
+            AsyncSnapshot<List<JournalEntity>> snapshot,
           ) {
             final entities = snapshot.data ?? [];
 
