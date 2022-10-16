@@ -6,7 +6,7 @@ import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 List<Observation> aggregateWorkoutDailySum(
-  List<JournalEntity?> entities, {
+  List<JournalEntity> entities, {
   required DashboardWorkoutItem chartConfig,
   required DateTime rangeStart,
   required DateTime rangeEnd,
@@ -24,7 +24,7 @@ List<Observation> aggregateWorkoutDailySum(
   }
 
   for (final entity in entities) {
-    entity?.maybeMap(
+    entity.maybeMap(
       workout: (WorkoutEntry workoutEntry) {
         final data = workoutEntry.data;
         if (data.workoutType == chartConfig.workoutType) {
@@ -55,7 +55,7 @@ List<Observation> aggregateWorkoutDailySum(
   }
 
   for (final entity in entities) {
-    final dayString = ymd(entity!.meta.dateFrom);
+    final dayString = ymd(entity.meta.dateFrom);
     final n = sumsByDay[dayString] ?? 0;
     if (entity is QuantitativeEntry) {
       sumsByDay[dayString] = n + entity.data.value;

@@ -59,7 +59,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
         charts.LineRendererConfig<DateTime>();
     return BlocProvider<HealthChartInfoCubit>(
       create: (BuildContext context) => HealthChartInfoCubit(),
-      child: StreamBuilder<List<JournalEntity?>>(
+      child: StreamBuilder<List<JournalEntity>>(
         stream: _db.watchQuantitativeByType(
           type: 'HealthDataType.HEIGHT',
           rangeStart: DateTime(2010),
@@ -67,7 +67,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
         ),
         builder: (
           BuildContext context,
-          AsyncSnapshot<List<JournalEntity?>> snapshot,
+          AsyncSnapshot<List<JournalEntity>> snapshot,
         ) {
           void infoSelectionModelUpdated(
             charts.SelectionModel<DateTime> model,
@@ -93,7 +93,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
             return const LoadingDashboards();
           }
 
-          return StreamBuilder<List<JournalEntity?>>(
+          return StreamBuilder<List<JournalEntity>>(
             stream: _db.watchQuantitativeByType(
               type: weightType,
               rangeStart: widget.rangeStart,
@@ -101,7 +101,7 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
             ),
             builder: (
               BuildContext context,
-              AsyncSnapshot<List<JournalEntity?>> snapshot,
+              AsyncSnapshot<List<JournalEntity>> snapshot,
             ) {
               if (snapshot.data == null) {
                 return const LoadingDashboards();

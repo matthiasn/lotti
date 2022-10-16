@@ -39,7 +39,7 @@ String ymdh(DateTime dt) {
 }
 
 List<MeasuredObservation> aggregateSumByDay(
-  List<JournalEntity?> entities, {
+  List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
@@ -55,7 +55,7 @@ List<MeasuredObservation> aggregateSumByDay(
   }
 
   for (final entity in entities) {
-    final dayString = ymd(entity!.meta.dateFrom);
+    final dayString = ymd(entity.meta.dateFrom);
     final n = sumsByDay[dayString] ?? 0;
     if (entity is MeasurementEntry) {
       sumsByDay[dayString] = n + entity.data.value;
@@ -73,7 +73,7 @@ List<MeasuredObservation> aggregateSumByDay(
 }
 
 List<MeasuredObservation> aggregateSumByHour(
-  List<JournalEntity?> entities, {
+  List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
@@ -89,7 +89,7 @@ List<MeasuredObservation> aggregateSumByHour(
   }
 
   for (final entity in entities) {
-    final beginningOfHour = ymdh(entity!.meta.dateFrom);
+    final beginningOfHour = ymdh(entity.meta.dateFrom);
     final n = sumsByHour[beginningOfHour] ?? 0;
     if (entity is MeasurementEntry) {
       sumsByHour[beginningOfHour] = n + entity.data.value;
@@ -106,7 +106,7 @@ List<MeasuredObservation> aggregateSumByHour(
 }
 
 List<MeasuredObservation> aggregateMaxByDay(
-  List<JournalEntity?> entities, {
+  List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
@@ -123,7 +123,7 @@ List<MeasuredObservation> aggregateMaxByDay(
   }
 
   for (final entity in entities) {
-    final dayString = ymd(entity!.meta.dateFrom);
+    final dayString = ymd(entity.meta.dateFrom);
     final n = sumsByDay[dayString] ?? 0;
     if (entity is MeasurementEntry) {
       sumsByDay[dayString] = max(n, entity.data.value);
@@ -140,12 +140,12 @@ List<MeasuredObservation> aggregateMaxByDay(
 }
 
 List<MeasuredObservation> aggregateMeasurementNone(
-  List<JournalEntity?> entities,
+  List<JournalEntity> entities,
 ) {
   final aggregated = <MeasuredObservation>[];
 
   for (final entity in entities) {
-    entity?.maybeMap(
+    entity.maybeMap(
       measurement: (MeasurementEntry entry) {
         aggregated.add(
           MeasuredObservation(

@@ -80,7 +80,7 @@ Map<String, num> durationsByDayInRange(
 }
 
 List<MeasuredObservation> aggregateStoryDailyTimeSum(
-  List<JournalEntity?> entities, {
+  List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
@@ -94,8 +94,8 @@ List<MeasuredObservation> aggregateStoryDailyTimeSum(
 
   for (final entity in entities) {
     durationsByDayInRange(
-      entity?.meta.dateFrom,
-      entity?.meta.dateTo,
+      entity.meta.dateFrom,
+      entity.meta.dateTo,
     ).forEach((dayString, minutes) {
       if (days.contains(dayString)) {
         final n = minutesByDay[dayString] ?? 0;
@@ -130,7 +130,7 @@ class WeeklyAggregate extends Equatable {
 }
 
 List<WeeklyAggregate> aggregateStoryWeeklyTimeSum(
-  List<JournalEntity?> entities, {
+  List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
@@ -157,7 +157,7 @@ List<WeeklyAggregate> aggregateStoryWeeklyTimeSum(
 }
 
 List<MeasuredObservation> aggregateStoryTimeSum(
-  List<JournalEntity?> entities, {
+  List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
   required AggregationTimeframe timeframe,

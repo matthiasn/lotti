@@ -61,7 +61,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
         return BlocProvider<MeasurablesChartInfoCubit>(
           create: (BuildContext context) => MeasurablesChartInfoCubit(),
-          child: StreamBuilder<List<JournalEntity?>>(
+          child: StreamBuilder<List<JournalEntity>>(
             stream: _db.watchMeasurementsByType(
               type: measurableDataType.id,
               rangeStart: widget.rangeStart.subtract(const Duration(hours: 12)),
@@ -69,7 +69,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
             ),
             builder: (
               BuildContext context,
-              AsyncSnapshot<List<JournalEntity?>> measurementsSnapshot,
+              AsyncSnapshot<List<JournalEntity>> measurementsSnapshot,
             ) {
               final measurements = measurementsSnapshot.data ?? [];
 

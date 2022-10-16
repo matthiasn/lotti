@@ -47,7 +47,7 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
 
     return BlocProvider<StoryChartInfoCubit>(
       create: (BuildContext context) => StoryChartInfoCubit(),
-      child: StreamBuilder<List<JournalEntity?>>(
+      child: StreamBuilder<List<JournalEntity>>(
         stream: _db.watchJournalByTagIds(
           match: subString,
           rangeStart: widget.rangeStart,
@@ -55,7 +55,7 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
         ),
         builder: (
           BuildContext context,
-          AsyncSnapshot<List<JournalEntity?>> snapshot,
+          AsyncSnapshot<List<JournalEntity>> snapshot,
         ) {
           final data = aggregateStoryTimeSum(
             snapshot.data ?? [],
@@ -224,7 +224,7 @@ class _WildcardStoryWeeklyChartState extends State<WildcardStoryWeeklyChart> {
 
     return BlocProvider<WeeklyStoryChartInfoCubit>(
       create: (BuildContext context) => WeeklyStoryChartInfoCubit(),
-      child: StreamBuilder<List<JournalEntity?>>(
+      child: StreamBuilder<List<JournalEntity>>(
         stream: _db.watchJournalByTagIds(
           match: subString,
           rangeStart: widget.rangeStart,
@@ -232,7 +232,7 @@ class _WildcardStoryWeeklyChartState extends State<WildcardStoryWeeklyChart> {
         ),
         builder: (
           BuildContext context,
-          AsyncSnapshot<List<JournalEntity?>> snapshot,
+          AsyncSnapshot<List<JournalEntity>> snapshot,
         ) {
           final data = aggregateStoryWeeklyTimeSum(
             snapshot.data ?? [],

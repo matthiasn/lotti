@@ -52,14 +52,14 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
   Widget build(BuildContext context) {
     return BlocProvider<WorkoutChartInfoCubit>(
       create: (BuildContext context) => WorkoutChartInfoCubit(),
-      child: StreamBuilder<List<JournalEntity?>>(
+      child: StreamBuilder<List<JournalEntity>>(
         stream: _db.watchWorkouts(
           rangeStart: widget.rangeStart,
           rangeEnd: widget.rangeEnd,
         ),
         builder: (
           BuildContext context,
-          AsyncSnapshot<List<JournalEntity?>> snapshot,
+          AsyncSnapshot<List<JournalEntity>> snapshot,
         ) {
           final items = snapshot.data ?? [];
 

@@ -6,6 +6,8 @@ part 'entity_definitions.g.dart';
 
 enum AggregationType { none, dailySum, dailyMax, dailyAvg, hourlySum }
 
+enum HabitCompletionType { success, skip, fail }
+
 @freezed
 class HabitSchedule with _$HabitSchedule {
   factory HabitSchedule.daily({
@@ -113,7 +115,7 @@ class HabitCompletionData with _$HabitCompletionData {
   factory HabitCompletionData({
     required DateTime dateFrom,
     required DateTime dateTo,
-    num? value,
+    HabitCompletionType? completionType,
     required String habitId,
   }) = _HabitCompletionData;
 

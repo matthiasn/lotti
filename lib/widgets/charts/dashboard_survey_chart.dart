@@ -33,7 +33,7 @@ class DashboardSurveyChart extends StatelessWidget {
       strokeWidthPx: 2.5,
     );
 
-    return StreamBuilder<List<JournalEntity?>>(
+    return StreamBuilder<List<JournalEntity>>(
       stream: _db.watchSurveysByType(
         type: chartConfig.surveyType,
         rangeStart: rangeStart,
@@ -41,7 +41,7 @@ class DashboardSurveyChart extends StatelessWidget {
       ),
       builder: (
         BuildContext context,
-        AsyncSnapshot<List<JournalEntity?>> snapshot,
+        AsyncSnapshot<List<JournalEntity>> snapshot,
       ) {
         final items = snapshot.data ?? [];
 

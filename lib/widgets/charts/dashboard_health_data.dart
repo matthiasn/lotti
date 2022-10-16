@@ -51,14 +51,14 @@ class Observation extends Equatable {
 }
 
 List<Observation> aggregateNone(
-  List<JournalEntity?> entities,
+  List<JournalEntity> entities,
   String healthType,
 ) {
   final aggregated = <Observation>[];
   final multiplier = healthType.contains('PERCENTAGE') ? 100 : 1;
 
   for (final entity in entities) {
-    entity?.maybeMap(
+    entity.maybeMap(
       quantitative: (QuantitativeEntry quant) {
         aggregated.add(
           Observation(
@@ -74,10 +74,10 @@ List<Observation> aggregateNone(
   return aggregated;
 }
 
-List<Observation> aggregateDailyMax(List<JournalEntity?> entities) {
+List<Observation> aggregateDailyMax(List<JournalEntity> entities) {
   final maxByDay = <String, num>{};
   for (final entity in entities) {
-    final dayString = ymd(entity!.meta.dateFrom);
+    final dayString = ymd(entity.meta.dateFrom);
     final n = maxByDay[dayString] ?? 0;
     if (entity is QuantitativeEntry) {
       maxByDay[dayString] = max(n, entity.data.value);
@@ -93,11 +93,11 @@ List<Observation> aggregateDailyMax(List<JournalEntity?> entities) {
   return aggregated;
 }
 
-List<Observation> aggregateDailySum(List<JournalEntity?> entities) {
+List<Observation> aggregateDailySum(List<JournalEntity> entities) {
   final sumsByDay = <String, num>{};
 
   for (final entity in entities) {
-    final dayString = ymd(entity!.meta.dateFrom);
+    final dayString = ymd(entity.meta.dateFrom);
     final n = sumsByDay[dayString] ?? 0;
     if (entity is QuantitativeEntry) {
       sumsByDay[dayString] = n + entity.data.value;
@@ -124,7 +124,7 @@ List<Observation> transformToHours(List<Observation> observations) {
 }
 
 List<Observation> aggregateByType(
-  List<JournalEntity?> entities,
+  List<JournalEntity> entities,
   String dataType,
 ) {
   final config = healthTypes[dataType];
@@ -144,7 +144,7 @@ List<Observation> aggregateByType(
 }
 
 List<Observation> aggregateNoneFilteredBy(
-  List<JournalEntity?> entities,
+  List<JournalEntity> entities,
   String healthType,
 ) {
   return aggregateNone(

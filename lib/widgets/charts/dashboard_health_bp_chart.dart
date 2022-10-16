@@ -45,7 +45,7 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
 
     return BlocProvider<BpChartInfoCubit>(
       create: (BuildContext context) => BpChartInfoCubit(),
-      child: StreamBuilder<List<JournalEntity?>>(
+      child: StreamBuilder<List<JournalEntity>>(
         stream: _db.watchQuantitativeByTypes(
           types: dataTypes,
           rangeStart: widget.rangeStart,
@@ -53,7 +53,7 @@ class _DashboardHealthBpChartState extends State<DashboardHealthBpChart> {
         ),
         builder: (
           BuildContext context,
-          AsyncSnapshot<List<JournalEntity?>> snapshot,
+          AsyncSnapshot<List<JournalEntity>> snapshot,
         ) {
           final items = snapshot.data ?? [];
 
