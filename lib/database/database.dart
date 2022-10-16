@@ -62,17 +62,17 @@ class JournalDb extends _$JournalDb {
         await () async {
           debugPrint('Creating habit_definitions table and indices');
           await m.createTable(habitDefinitions);
-          await m.createIndex(idxHabitDefinitionsId);
-          await m.createIndex(idxHabitDefinitionsName);
-          await m.createIndex(idxHabitDefinitionsPrivate);
+          // await m.createIndex(idxHabitDefinitionsId);
+          // await m.createIndex(idxHabitDefinitionsName);
+          // await m.createIndex(idxHabitDefinitionsPrivate);
         }();
 
         await () async {
           debugPrint('Creating dashboard_definitions table and indices');
           await m.createTable(dashboardDefinitions);
-          await m.createIndex(idxDashboardDefinitionsId);
-          await m.createIndex(idxDashboardDefinitionsName);
-          await m.createIndex(idxDashboardDefinitionsPrivate);
+          // await m.createIndex(idxDashboardDefinitionsId);
+          // await m.createIndex(idxDashboardDefinitionsName);
+          // await m.createIndex(idxDashboardDefinitionsPrivate);
         }();
 
         await () async {
@@ -86,34 +86,34 @@ class JournalDb extends _$JournalDb {
         await () async {
           debugPrint('Creating tagged table and indices');
           await m.createTable(tagged);
-          await m.createIndex(idxTaggedJournalId);
-          await m.createIndex(idxTaggedTagEntityId);
+          // await m.createIndex(idxTaggedJournalId);
+          // await m.createIndex(idxTaggedTagEntityId);
         }();
 
         await () async {
           debugPrint('Creating task columns and indices');
           await m.addColumn(journal, journal.taskStatus);
-          await m.createIndex(idxJournalTaskStatus);
+          //await m.createIndex(idxJournalTaskStatus);
           await m.addColumn(journal, journal.task);
-          await m.createIndex(idxJournalTask);
+          //await m.createIndex(idxJournalTask);
         }();
 
         await () async {
           debugPrint('Creating linked entries table and indices');
           await m.createTable(linkedEntries);
-          await m.createIndex(idxLinkedEntriesFromId);
-          await m.createIndex(idxLinkedEntriesToId);
-          await m.createIndex(idxLinkedEntriesType);
+          // await m.createIndex(idxLinkedEntriesFromId);
+          // await m.createIndex(idxLinkedEntriesToId);
+          // await m.createIndex(idxLinkedEntriesType);
         }();
 
         await () async {
           debugPrint('Creating tag_entities table and indices');
           await m.createTable(tagEntities);
-          await m.createIndex(idxTagEntitiesId);
-          await m.createIndex(idxTagEntitiesTag);
-          await m.createIndex(idxTagEntitiesType);
-          await m.createIndex(idxTagEntitiesInactive);
-          await m.createIndex(idxTagEntitiesPrivate);
+          // await m.createIndex(idxTagEntitiesId);
+          // await m.createIndex(idxTagEntitiesTag);
+          // await m.createIndex(idxTagEntitiesType);
+          // await m.createIndex(idxTagEntitiesInactive);
+          // await m.createIndex(idxTagEntitiesPrivate);
         }();
 
         await () async {
