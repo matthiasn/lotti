@@ -26,7 +26,6 @@ final getIt = GetIt.instance;
 
 void registerSingletons() {
   getIt
-//    ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<Future<DriftIsolate>>(
       createDriftIsolate(journalDbFileName),
       instanceName: journalDbFileName,
