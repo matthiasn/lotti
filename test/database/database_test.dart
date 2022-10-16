@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/utils/consts.dart';
 
 final expectedActiveFlagNames = Platform.isMacOS
@@ -91,7 +92,7 @@ void main() {
   group('Database Tests - ', () {
     setUp(() async {
       db = JournalDb(inMemoryDatabase: true);
-      await db?.initConfigFlags();
+      await initConfigFlags(db!);
     });
     tearDown(() async {
       await db?.close();
