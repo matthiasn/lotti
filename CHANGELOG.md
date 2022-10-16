@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Removed index creation in JournalDb for now
+
+## [0.8.173] - 2022-10-16
+### Changed:
 - Improved photo view
 
 ## [0.8.172] - 2022-10-16
