@@ -331,7 +331,7 @@ class _HabitChartLineState extends State<HabitChartLine> {
                           borderRadius: BorderRadius.circular(2),
                           child: Container(
                             height: 25,
-                            width: (MediaQuery.of(context).size.width - 210) /
+                            width: (MediaQuery.of(context).size.width - 300) /
                                 days,
                             color: colorFromCssHex(res.hexColor),
                           ),

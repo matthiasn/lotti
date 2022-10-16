@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- "Task not found" when task still loading
+- Spacing between habit success indicators
+
+## [0.8.175] - 2022-10-16
 ### Added:
 - Habit completion types success, skip, fail
 
