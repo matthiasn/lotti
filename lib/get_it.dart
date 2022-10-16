@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -59,5 +60,5 @@ void registerSingletons() {
     ..registerSingleton<Maintenance>(Maintenance())
     ..registerSingleton<NavService>(NavService());
 
-  getIt<JournalDb>().initConfigFlags();
+  initConfigFlags(getIt<JournalDb>());
 }

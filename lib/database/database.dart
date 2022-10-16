@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
@@ -14,9 +13,7 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/sync/vector_clock.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 part 'database.g.dart';
@@ -53,7 +50,7 @@ class JournalDb extends _$JournalDb {
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');
       },
-      onCreate: (Migrator m) {
+      onCreate: (Migrator m) async {
         return m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
@@ -62,17 +59,17 @@ class JournalDb extends _$JournalDb {
         await () async {
           debugPrint('Creating habit_definitions table and indices');
           await m.createTable(habitDefinitions);
-          // await m.createIndex(idxHabitDefinitionsId);
-          // await m.createIndex(idxHabitDefinitionsName);
-          // await m.createIndex(idxHabitDefinitionsPrivate);
+          await m.createIndex(idxHabitDefinitionsId);
+          await m.createIndex(idxHabitDefinitionsName);
+          await m.createIndex(idxHabitDefinitionsPrivate);
         }();
 
         await () async {
           debugPrint('Creating dashboard_definitions table and indices');
           await m.createTable(dashboardDefinitions);
-          // await m.createIndex(idxDashboardDefinitionsId);
-          // await m.createIndex(idxDashboardDefinitionsName);
-          // await m.createIndex(idxDashboardDefinitionsPrivate);
+          await m.createIndex(idxDashboardDefinitionsId);
+          await m.createIndex(idxDashboardDefinitionsName);
+          await m.createIndex(idxDashboardDefinitionsPrivate);
         }();
 
         await () async {
@@ -86,34 +83,34 @@ class JournalDb extends _$JournalDb {
         await () async {
           debugPrint('Creating tagged table and indices');
           await m.createTable(tagged);
-          // await m.createIndex(idxTaggedJournalId);
-          // await m.createIndex(idxTaggedTagEntityId);
+          await m.createIndex(idxTaggedJournalId);
+          await m.createIndex(idxTaggedTagEntityId);
         }();
 
         await () async {
           debugPrint('Creating task columns and indices');
           await m.addColumn(journal, journal.taskStatus);
-          //await m.createIndex(idxJournalTaskStatus);
+          await m.createIndex(idxJournalTaskStatus);
           await m.addColumn(journal, journal.task);
-          //await m.createIndex(idxJournalTask);
+          await m.createIndex(idxJournalTask);
         }();
 
         await () async {
           debugPrint('Creating linked entries table and indices');
           await m.createTable(linkedEntries);
-          // await m.createIndex(idxLinkedEntriesFromId);
-          // await m.createIndex(idxLinkedEntriesToId);
-          // await m.createIndex(idxLinkedEntriesType);
+          await m.createIndex(idxLinkedEntriesFromId);
+          await m.createIndex(idxLinkedEntriesToId);
+          await m.createIndex(idxLinkedEntriesType);
         }();
 
         await () async {
           debugPrint('Creating tag_entities table and indices');
           await m.createTable(tagEntities);
-          // await m.createIndex(idxTagEntitiesId);
-          // await m.createIndex(idxTagEntitiesTag);
-          // await m.createIndex(idxTagEntitiesType);
-          // await m.createIndex(idxTagEntitiesInactive);
-          // await m.createIndex(idxTagEntitiesPrivate);
+          await m.createIndex(idxTagEntitiesId);
+          await m.createIndex(idxTagEntitiesTag);
+          await m.createIndex(idxTagEntitiesType);
+          await m.createIndex(idxTagEntitiesInactive);
+          await m.createIndex(idxTagEntitiesPrivate);
         }();
 
         await () async {
@@ -513,97 +510,6 @@ class JournalDb extends _$JournalDb {
 
     if (existing == null) {
       await into(configFlags).insert(configFlag);
-    }
-  }
-
-  Future<void> initConfigFlags() async {
-    await insertFlagIfNotExists(
-      const ConfigFlag(
-        name: privateFlag,
-        description: 'Show private entries?',
-        status: true,
-      ),
-    );
-    await insertFlagIfNotExists(
-      const ConfigFlag(
-        name: notifyExceptionsFlag,
-        description: 'Notify when exceptions occur?',
-        status: false,
-      ),
-    );
-    await insertFlagIfNotExists(
-      const ConfigFlag(
-        name: hideForScreenshotFlag,
-        description: 'Hide Lotti when taking screenshots?',
-        status: true,
-      ),
-    );
-    await insertFlagIfNotExists(
-      const ConfigFlag(
-        name: showTasksTabFlag,
-        description: 'Show Tasks tab?',
-        status: false,
-      ),
-    );
-    await insertFlagIfNotExists(
-      const ConfigFlag(
-        name: showBrightSchemeFlag,
-        description: 'Show Bright ☀️ scheme?',
-        status: false,
-      ),
-    );
-    await insertFlagIfNotExists(
-      const ConfigFlag(
-        name: allowInvalidCertFlag,
-        description: 'Allow invalid certificate? (not recommended)',
-        status: false,
-      ),
-    );
-    await insertFlagIfNotExists(
-      const ConfigFlag(
-        name: enableSyncInboxFlag,
-        description: 'Enable sync inbox? (requires restart)',
-        status: true,
-      ),
-    );
-    await insertFlagIfNotExists(
-      const ConfigFlag(
-        name: enableSyncOutboxFlag,
-        description: 'Enable sync outbox? (requires restart)',
-        status: true,
-      ),
-    );
-    await insertFlagIfNotExists(
-      const ConfigFlag(
-        name: enableBeamerNavFlag,
-        description: 'Show new navigation (in progress)',
-        status: false,
-      ),
-    );
-    if (Platform.isMacOS) {
-      await insertFlagIfNotExists(
-        const ConfigFlag(
-          name: listenToScreenshotHotkeyFlag,
-          description: 'Listen to global screenshot hotkey?',
-          status: true,
-        ),
-      );
-      await insertFlagIfNotExists(
-        const ConfigFlag(
-          name: enableNotificationsFlag,
-          description: 'Enable desktop notifications?',
-          status: false,
-        ),
-      );
-    }
-    if (isDesktop) {
-      await insertFlagIfNotExists(
-        const ConfigFlag(
-          name: showThemeConfigFlag,
-          description: 'Show Theme Config UI?',
-          status: false,
-        ),
-      );
     }
   }
 

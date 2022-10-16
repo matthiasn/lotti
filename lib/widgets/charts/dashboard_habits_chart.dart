@@ -167,9 +167,6 @@ List<HabitResult> habitResultsByDay(
             : completionType == HabitCompletionType.skip
                 ? skipColor
                 : successColor;
-        if (completionType != null) {
-          debugPrint('completion $dayString $completionType $hexColor');
-        }
 
         return hexColor;
       },
