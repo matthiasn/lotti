@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
@@ -49,7 +50,7 @@ void main() {
 
     setUpAll(() async {
       final journalDb = JournalDb(inMemoryDatabase: true);
-      await journalDb.initConfigFlags();
+      await initConfigFlags(journalDb);
 
       final syncConfigMock = MockSyncConfigService();
       when(syncConfigMock.getSyncConfig)

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Bring back index creation in journal database
+
+## [0.8.176] - 2022-10-16
+### Fixed:
 - "Task not found" when task still loading
 - Spacing between habit success indicators
 
