@@ -243,10 +243,10 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
         });
 
         final habitCounters =
-            ' $total/$todayCount/$shortStreakCount/$longStreakCount';
+            '($total / $todayCount / $shortStreakCount / $longStreakCount)';
 
         return TitleAppBar(
-          title: '$title - $habitCounters',
+          title: '$title $habitCounters',
           showBackButton: false,
         );
       },
