@@ -74,9 +74,9 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                 .sorted(habitSorter);
 
             return Scaffold(
-              appBar: TitleAppBar(
-                title: localizations.settingsHabitsTitle,
-                showBackButton: false,
+              appBar: HabitsPageAppBar(
+                habitItems: habitItems,
+                completedToday: completedToday,
               ),
               backgroundColor: styleConfig().negspace,
               body: SingleChildScrollView(
@@ -162,6 +162,92 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
               ),
             );
           },
+        );
+      },
+    );
+  }
+}
+
+class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
+  HabitsPageAppBar({
+    required this.habitItems,
+    required this.completedToday,
+    super.key,
+  });
+
+  final List<HabitDefinition> habitItems;
+  final Set<String> completedToday;
+
+  final rangeStart = getStartOfDay(
+    DateTime.now().subtract(const Duration(days: 7)),
+  );
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final title = localizations.settingsHabitsTitle;
+    final total = habitItems.length;
+    final todayCount = completedToday.length;
+
+    final rangeStart = getStartOfDay(
+      DateTime.now().subtract(const Duration(days: 7)),
+    );
+
+    final rangeEnd = getEndOfToday();
+
+    return StreamBuilder<List<JournalEntity>>(
+      stream: getIt<JournalDb>().watchHabitCompletionsInRange(
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
+      builder: (context, completionsSnapshot) {
+        final now = DateTime.now();
+        final shortStreakDays = daysInRange(
+          rangeStart: now.subtract(const Duration(days: 2)),
+          rangeEnd: now,
+        );
+
+        final longStreakDays = daysInRange(
+          rangeStart: now.subtract(const Duration(days: 7)),
+          rangeEnd: now,
+        );
+
+        final habitSuccessDays = <String, Set<String>>{};
+
+        completionsSnapshot.data?.forEach((item) {
+          if (item is HabitCompletionEntry &&
+              (item.data.completionType == HabitCompletionType.success ||
+                  item.data.completionType == null)) {
+            final day = ymd(item.meta.dateFrom);
+            final successDays =
+                habitSuccessDays[item.data.habitId] ?? <String>{}
+                  ..add(day);
+            habitSuccessDays[item.data.habitId] = successDays;
+          }
+        });
+
+        var shortStreakCount = 0;
+        var longStreakCount = 0;
+
+        habitSuccessDays.forEach((habitId, days) {
+          if (days.containsAll(shortStreakDays)) {
+            shortStreakCount++;
+          }
+
+          if (days.containsAll(longStreakDays)) {
+            longStreakCount++;
+          }
+        });
+
+        final habitCounters =
+            ' $total/$todayCount/$shortStreakCount/$longStreakCount';
+
+        return TitleAppBar(
+          title: '$title - $habitCounters',
+          showBackButton: false,
         );
       },
     );

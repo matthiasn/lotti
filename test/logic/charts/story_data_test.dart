@@ -11,7 +11,10 @@ void main() {
       'daysInRange for range for week',
       () {
         expect(
-          daysInRange(DateTime(2022, 7, 1), DateTime(2022, 7, 7)),
+          daysInRange(
+            rangeStart: DateTime(2022, 7, 1),
+            rangeEnd: DateTime(2022, 7, 7),
+          ),
           [
             '2022-07-01',
             '2022-07-02',
@@ -28,7 +31,10 @@ void main() {
       'daysInRange for single day',
       () {
         expect(
-          daysInRange(DateTime(2022, 7, 1), DateTime(2022, 7, 2, 1)),
+          daysInRange(
+            rangeStart: DateTime(2022, 7, 1),
+            rangeEnd: DateTime(2022, 7, 2, 1),
+          ),
           [
             '2022-07-01',
           ],

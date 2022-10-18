@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Upgraded dependencies
+- Count habits total and finished today
+- Count habit streaks of two days (up until yesterday) 
+- Count habit streaks of one week (up until yesterday)
 
 ## [0.8.177] - 2022-10-17
 ### Fixed:
