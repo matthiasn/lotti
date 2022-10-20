@@ -17,7 +17,10 @@ void main() {
 
   group('HabitsTabPage Widget Tests - ', () {
     setUp(() {
-      mockJournalDb = mockJournalDbWithHabits([habitFlossing]);
+      mockJournalDb = mockJournalDbWithHabits([
+        habitFlossing,
+        habitFlossingDueLater,
+      ]);
 
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
@@ -28,6 +31,18 @@ void main() {
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
           habitId: habitFlossing.id,
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testHabitCompletionEntry]
+        ]),
+      );
+
+      when(
+        () => mockJournalDb.watchHabitCompletionsByHabitId(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+          habitId: habitFlossingDueLater.id,
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
@@ -44,8 +59,7 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('workout chart for running distance is rendered',
-        (tester) async {
+    testWidgets('habits page is rendered', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const HabitsTabPage(),
@@ -54,7 +68,6 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // chart displays expected title
       expect(
         find.text(habitFlossing.name),
         findsOneWidget,

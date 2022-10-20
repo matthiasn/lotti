@@ -14,10 +14,7 @@ List<Observation> aggregateWorkoutDailySum(
   final sumsByDay = <String, num>{};
 
   final range = rangeEnd.difference(rangeStart);
-  final dayStrings = List<String>.generate(range.inDays, (days) {
-    final day = rangeStart.add(Duration(days: days));
-    return ymd(day);
-  });
+  final dayStrings = getDayStrings(range.inDays, rangeStart);
 
   for (final dayString in dayStrings) {
     sumsByDay[dayString] = 0;

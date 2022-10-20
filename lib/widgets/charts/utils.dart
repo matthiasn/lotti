@@ -45,10 +45,7 @@ List<MeasuredObservation> aggregateSumByDay(
 }) {
   final sumsByDay = <String, num>{};
   final range = rangeEnd.difference(rangeStart);
-  final dayStrings = List<String>.generate(range.inDays, (days) {
-    final day = rangeStart.add(Duration(days: days));
-    return ymd(day);
-  });
+  final dayStrings = getDayStrings(range.inDays, rangeStart);
 
   for (final dayString in dayStrings) {
     sumsByDay[dayString] = 0;
@@ -105,6 +102,21 @@ List<MeasuredObservation> aggregateSumByHour(
   return aggregated;
 }
 
+List<String> getDayStrings(int rangeDays, DateTime rangeStart) {
+  return List<String>.generate(rangeDays, (days) {
+    final day = rangeStart.add(Duration(days: days));
+    return ymd(day);
+  });
+}
+
+List<String> daysInRange({
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) {
+  final range = rangeEnd.difference(rangeStart);
+  return getDayStrings(range.inDays, rangeStart);
+}
+
 List<MeasuredObservation> aggregateMaxByDay(
   List<JournalEntity> entities, {
   required DateTime rangeStart,
@@ -113,10 +125,7 @@ List<MeasuredObservation> aggregateMaxByDay(
   final sumsByDay = <String, num>{};
 
   final range = rangeEnd.difference(rangeStart);
-  final dayStrings = List<String>.generate(range.inDays, (days) {
-    final day = rangeStart.add(Duration(days: days));
-    return ymd(day);
-  });
+  final dayStrings = getDayStrings(range.inDays, rangeStart);
 
   for (final dayString in dayStrings) {
     sumsByDay[dayString] = 0;

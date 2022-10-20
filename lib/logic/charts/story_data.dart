@@ -13,14 +13,6 @@ enum AggregationTimeframe {
   weekly,
 }
 
-List<String> daysInRange(DateTime rangeStart, DateTime rangeEnd) {
-  final range = rangeEnd.difference(rangeStart);
-  return List<String>.generate(range.inDays, (days) {
-    final day = rangeStart.add(Duration(days: days));
-    return ymd(day);
-  });
-}
-
 List<String> daysInEntryRange(
   DateTime? dateFrom,
   DateTime? dateTo,
@@ -29,7 +21,7 @@ List<String> daysInEntryRange(
   final end = Jiffy(dateTo).endOf(Units.DAY).dateTime.add(
         const Duration(days: 1),
       );
-  return daysInRange(start, end);
+  return daysInRange(rangeStart: start, rangeEnd: end);
 }
 
 DateTimeRange? overlappingRange(DateTimeRange a, DateTimeRange b) {
@@ -85,7 +77,7 @@ List<MeasuredObservation> aggregateStoryDailyTimeSum(
   required DateTime rangeEnd,
 }) {
   final minutesByDay = <String, num>{};
-  final dayStrings = daysInRange(rangeStart, rangeEnd);
+  final dayStrings = daysInRange(rangeStart: rangeStart, rangeEnd: rangeEnd);
   final days = dayStrings.toSet();
 
   for (final dayString in dayStrings) {

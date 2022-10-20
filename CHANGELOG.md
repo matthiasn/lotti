@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Upgraded dependencies
+- Count habits total and finished today
+- Count habit streaks of two days (up until yesterday) 
+- Count habit streaks of one week (up until yesterday)
+
+## [0.8.177] - 2022-10-17
 ### Fixed:
 - Bring back index creation in journal database
 - Fix habit success indicator width

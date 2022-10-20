@@ -35,6 +35,19 @@ final habitFlossing = HabitDefinition(
   private: false,
 );
 
+final habitFlossingDueLater = HabitDefinition(
+  id: '4325b06e-a24c-4d90-b42b-5006f5f82f48',
+  name: 'Flossing later today',
+  description: 'Maintain healthy teeth and gums',
+  createdAt: testEpochDateTime,
+  updatedAt: testEpochDateTime,
+  vectorClock: null,
+  habitSchedule: HabitSchedule.daily(requiredCompletions: 1),
+  active: true,
+  private: false,
+  activeFrom: DateTime.now().add(const Duration(minutes: 10)),
+);
+
 final measurablePullUps = MeasurableDataType(
   id: '22922182-15bf-4f2b-864f-1f546f95cac2',
   displayName: 'Pull-Ups',
@@ -220,6 +233,23 @@ final testAudioEntry = JournalAudio(
     duration: const Duration(hours: 1),
     audioFile: '',
     audioDirectory: '',
+  ),
+);
+
+final testHabitCompletionEntry = HabitCompletionEntry(
+  meta: Metadata(
+    id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
+    createdAt: DateTime.now(),
+    dateFrom: DateTime.now(),
+    dateTo: DateTime.now(),
+    updatedAt: DateTime.now(),
+    starred: true,
+  ),
+  entryText: EntryText(plainText: 'test image entry text'),
+  data: HabitCompletionData(
+    dateFrom: DateTime.now(),
+    dateTo: DateTime.now(),
+    habitId: habitFlossing.id,
   ),
 );
 
