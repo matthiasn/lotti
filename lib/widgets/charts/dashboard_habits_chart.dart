@@ -261,11 +261,13 @@ class HabitChartLine extends StatefulWidget {
     required this.habitId,
     required this.rangeStart,
     required this.rangeEnd,
+    this.streakDuration = 0,
   });
 
   final String habitId;
   final DateTime rangeStart;
   final DateTime rangeEnd;
+  final int streakDuration;
 
   @override
   State<HabitChartLine> createState() => _HabitChartLineState();
@@ -310,6 +312,16 @@ class _HabitChartLineState extends State<HabitChartLine> {
               rangeStart: widget.rangeStart,
               rangeEnd: widget.rangeEnd,
             );
+            final successColor = colorToCssHex(primaryColor);
+
+            final streak = results.reversed
+                .toList()
+                .skip(1)
+                .takeWhile((value) => value.hexColor == successColor);
+
+            if (streak.length < widget.streakDuration) {
+              return const SizedBox.shrink();
+            }
 
             final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
 

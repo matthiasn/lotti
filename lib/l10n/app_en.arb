@@ -72,6 +72,8 @@
   "habitsCompletedHeader": "Completed",
   "habitsOpenHeader": "Open",
   "habitsPendingLaterHeader": "Pending later",
+  "habitsShortStreaksHeader": "3-day streaks (or longer)",
+  "habitsLongerStreaksHeader": "Week-long streaks (or longer)",
   "journalDateFromLabel": "Date from:",
   "journalDateInvalid": "Invalid Date Range",
   "journalDateNowButton": "now",

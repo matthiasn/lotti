@@ -156,6 +156,38 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                           rangeEnd: rangeEnd,
                         );
                       }),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Text(
+                          localizations.habitsShortStreaksHeader,
+                          style: chartTitleStyle(),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      ...habitItems.map((habitDefinition) {
+                        return HabitChartLine(
+                          habitId: habitDefinition.id,
+                          rangeStart: rangeStart,
+                          rangeEnd: rangeEnd,
+                          streakDuration: 3,
+                        );
+                      }),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Text(
+                          localizations.habitsLongerStreaksHeader,
+                          style: chartTitleStyle(),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      ...habitItems.map((habitDefinition) {
+                        return HabitChartLine(
+                          habitId: habitDefinition.id,
+                          rangeStart: rangeStart,
+                          rangeEnd: rangeEnd,
+                          streakDuration: 7,
+                        );
+                      }),
                     ],
                   ),
                 ),
