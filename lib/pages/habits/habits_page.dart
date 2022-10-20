@@ -206,7 +206,7 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
       builder: (context, completionsSnapshot) {
         final now = DateTime.now();
         final shortStreakDays = daysInRange(
-          rangeStart: now.subtract(const Duration(days: 2)),
+          rangeStart: now.subtract(const Duration(days: 3)),
           rangeEnd: now,
         );
 
