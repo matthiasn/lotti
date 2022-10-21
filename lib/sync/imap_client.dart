@@ -5,16 +5,19 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 class ImapClientManager {
-  ImapClientManager();
+  ImapClientManager({this.allowInvalidCert = false});
 
   ImapClient? _imapClient;
   DateTime clientStarted = DateTime.now();
+  bool allowInvalidCert;
 
-  Future<ImapClient?> createImapClient(
+  Future<ImapClient> createImapClient(
     SyncConfig? syncConfig, {
+    bool reuseClient = true,
     Duration connectionTimeout = const Duration(minutes: 5),
     Duration responseTimeout = const Duration(minutes: 15),
     Duration writeTimeout = const Duration(minutes: 15),
@@ -23,7 +26,7 @@ class ImapClientManager {
     final clientId = uuid.v1();
     final loggingDb = getIt<LoggingDb>();
 
-    if (_imapClient != null) {
+    if (reuseClient && _imapClient != null) {
       final client = _imapClient!;
       final connected = client.isConnected && client.isLoggedIn;
       if (connected) {
@@ -94,8 +97,29 @@ class ImapClientManager {
         subDomain: 'createImapClient',
         stackTrace: stackTrace,
       );
+      rethrow;
     }
+  }
 
-    return null;
+  Future<bool> imapAction(
+    Future<bool> Function(ImapClient imapClient) callback,
+  ) async {
+    final foo = getIt<SyncConfigService>();
+    final syncConfig = await foo.getSyncConfig();
+
+    try {
+      final client = await createImapClient(
+        syncConfig,
+        allowInvalidCert: allowInvalidCert,
+      );
+      return await callback(client);
+    } catch (_) {
+      final client = await createImapClient(
+        syncConfig,
+        allowInvalidCert: allowInvalidCert,
+        reuseClient: false,
+      );
+      return callback(client);
+    }
   }
 }

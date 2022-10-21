@@ -128,7 +128,7 @@ class InboxService {
 
       final hostHash = await _vectorClockService.getHostHash();
 
-      if (imapClient != null && hostHash != null) {
+      if (hostHash != null) {
         final fetchResult = await imapClient.uidFetchMessages(
           sequence,
           'ENVELOPE',
