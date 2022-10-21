@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 class ImapClientManager {
@@ -102,11 +101,9 @@ class ImapClientManager {
   }
 
   Future<bool> imapAction(
-    Future<bool> Function(ImapClient imapClient) callback,
-  ) async {
-    final foo = getIt<SyncConfigService>();
-    final syncConfig = await foo.getSyncConfig();
-
+    Future<bool> Function(ImapClient imapClient) callback, {
+    required SyncConfig? syncConfig,
+  }) async {
     try {
       final client = await createImapClient(
         syncConfig,

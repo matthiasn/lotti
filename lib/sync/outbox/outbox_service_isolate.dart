@@ -147,14 +147,14 @@ class OutboxServiceIsolate {
               encryptedFilePath = encryptedFile.path;
             }
 
-            final successfulClient = await persistImap(
+            final success = await persistImap(
               encryptedFilePath: encryptedFilePath,
               subject: nextPending.subject,
               encryptedMessage: encryptedMessage,
               syncConfig: syncConfig,
               allowInvalidCert: allowInvalidCert,
             );
-            if (successfulClient != null) {
+            if (success) {
               await _syncDatabase.updateOutboxItem(
                 OutboxCompanion(
                   id: Value(nextPending.id),
