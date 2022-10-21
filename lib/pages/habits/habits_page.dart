@@ -73,6 +73,8 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                 .where((item) => completedToday.contains(item.id))
                 .sorted(habitSorter);
 
+            final showGaps = timeSpanDays < 180;
+
             return Scaffold(
               appBar: HabitsPageAppBar(
                 habitItems: habitItems,
@@ -99,7 +101,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                             });
                           },
                           children: {
-                            7: const DaysSegment('7'),
+                            if (isMobile) 7: const DaysSegment('7'),
                             14: const DaysSegment('14'),
                             30: const DaysSegment('30'),
                             90: const DaysSegment('90'),
@@ -122,6 +124,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                           habitId: habitDefinition.id,
                           rangeStart: rangeStart,
                           rangeEnd: rangeEnd,
+                          showGaps: showGaps,
                         );
                       }),
                       if (completedHabits.isNotEmpty)
@@ -138,6 +141,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                           habitId: habitDefinition.id,
                           rangeStart: rangeStart,
                           rangeEnd: rangeEnd,
+                          showGaps: showGaps,
                         );
                       }),
                       if (pendingLater.isNotEmpty)
@@ -154,6 +158,41 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                           habitId: habitDefinition.id,
                           rangeStart: rangeStart,
                           rangeEnd: rangeEnd,
+                          showGaps: showGaps,
+                        );
+                      }),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Text(
+                          localizations.habitsShortStreaksHeader,
+                          style: chartTitleStyle(),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      ...habitItems.map((habitDefinition) {
+                        return HabitChartLine(
+                          habitId: habitDefinition.id,
+                          rangeStart: rangeStart,
+                          rangeEnd: rangeEnd,
+                          streakDuration: 2,
+                          showGaps: showGaps,
+                        );
+                      }),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Text(
+                          localizations.habitsLongerStreaksHeader,
+                          style: chartTitleStyle(),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      ...habitItems.map((habitDefinition) {
+                        return HabitChartLine(
+                          habitId: habitDefinition.id,
+                          rangeStart: rangeStart,
+                          rangeEnd: rangeEnd,
+                          streakDuration: 6,
+                          showGaps: days < 180,
                         );
                       }),
                     ],

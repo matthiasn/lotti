@@ -70,7 +70,7 @@ packages:
       name: asn1lib
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.0"
+    version: "1.2.1"
   async:
     dependency: transitive
     description:
@@ -824,7 +824,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.8+1"
+    version: "6.0.10"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1014,7 +1014,7 @@ packages:
       name: graphs
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.0"
+    version: "2.2.0"
   health:
     dependency: "direct main"
     description:
@@ -1189,7 +1189,7 @@ packages:
       name: lints
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.0"
+    version: "2.0.1"
   lists:
     dependency: transitive
     description:
