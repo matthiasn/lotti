@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
-import 'package:lotti/sync/outbox_service.dart';
+import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:window_manager/window_manager.dart';
 

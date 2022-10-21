@@ -18,7 +18,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/outbox_service.dart';
+import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/utils/entry_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/location.dart';
