@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Simplify sync by not reusing IMAP client
+
+## [0.8.178] - 2022-10-21
+### Changed:
 - Upgraded dependencies
 - Count habits total and finished today
 - Count habit streaks of three days (up until yesterday) 

@@ -37,8 +37,6 @@ Future<ImapClient?> createImapClient(
         timeout: connectionTimeout,
       );
 
-      debugPrint('ImapClient created');
-
       loggingDb.captureEvent(
         'ImapClient created',
         domain: 'IMAP_CLIENT $clientId',
