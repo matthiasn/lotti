@@ -107,83 +107,87 @@ class InboxService {
   }
 
   Future<void> _fetchInbox() async {
-    try {
-      final allowInvalidCert =
-          await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
-      final syncConfig = await _syncConfigService.getSyncConfig();
+    final allowInvalidCert =
+        await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
+    final syncConfig = await _syncConfigService.getSyncConfig();
 
-      final imapClient = await getIt<ImapClientManager>().createImapClient(
-        syncConfig,
-        allowInvalidCert: allowInvalidCert,
-      );
-      final lastReadUid = await getLastReadUid();
+    await getIt<ImapClientManager>().imapAction(
+      (imapClient) async {
+        try {
+          final lastReadUid = await getLastReadUid() ?? -1;
 
-      if (lastReadUid == null) {
-        enqueueNextFetchRequest(delay: const Duration(seconds: 1));
-        return;
-      }
+          if (lastReadUid == -1) {
+            enqueueNextFetchRequest(delay: const Duration(seconds: 1));
+          }
 
-      final sequence = MessageSequence(isUidSequence: true)
-        ..addRangeToLast(lastReadUid + 1);
+          final sequence = MessageSequence(isUidSequence: true)
+            ..addRangeToLast(lastReadUid + 1);
 
-      final hostHash = await _vectorClockService.getHostHash();
+          final hostHash = await _vectorClockService.getHostHash();
 
-      if (hostHash != null) {
-        final fetchResult = await imapClient.uidFetchMessages(
-          sequence,
-          'ENVELOPE',
-        );
-
-        for (final msg in fetchResult.messages.take(1)) {
-          final lastReadUid = await getLastReadUid();
-          final current = msg.uid;
-          final subject = '${msg.decodeSubject()}';
-          if (lastReadUid != current) {
-            _loggingDb.captureEvent(
-              'lastReadUid $lastReadUid current $current',
-              domain: 'INBOX',
-              subDomain: 'fetch',
+          if (hostHash != null) {
+            final fetchResult = await imapClient.uidFetchMessages(
+              sequence,
+              'ENVELOPE',
             );
-            if (!validSubject(subject)) {
-              debugPrint('_fetchInbox ignoring invalid email: $current');
-              _loggingDb.captureEvent(
-                '_fetchInbox ignoring invalid email: $current',
-                domain: 'INBOX',
-              );
-              await setLastReadUid(current);
-            } else if (subject.contains(hostHash)) {
-              debugPrint('_fetchInbox ignoring from same host: $current');
-              _loggingDb.captureEvent(
-                '_fetchInbox ignoring from same host: $current',
-                domain: 'INBOX',
-              );
-              await setLastReadUid(current);
-            } else {
-              await fetchByUid(uid: current, imapClient: imapClient);
+
+            for (final msg in fetchResult.messages.take(1)) {
+              final lastReadUid = await getLastReadUid();
+              final current = msg.uid;
+              final subject = '${msg.decodeSubject()}';
+              if (lastReadUid != current) {
+                _loggingDb.captureEvent(
+                  'lastReadUid $lastReadUid current $current',
+                  domain: 'INBOX',
+                  subDomain: 'fetch',
+                );
+                if (!validSubject(subject)) {
+                  debugPrint('_fetchInbox ignoring invalid email: $current');
+                  _loggingDb.captureEvent(
+                    '_fetchInbox ignoring invalid email: $current',
+                    domain: 'INBOX',
+                  );
+                  await setLastReadUid(current);
+                } else if (subject.contains(hostHash)) {
+                  debugPrint('_fetchInbox ignoring from same host: $current');
+                  _loggingDb.captureEvent(
+                    '_fetchInbox ignoring from same host: $current',
+                    domain: 'INBOX',
+                  );
+                  await setLastReadUid(current);
+                } else {
+                  await fetchByUid(uid: current, imapClient: imapClient);
+                }
+              }
+              if (fetchResult.messages.length > 1) {
+                enqueueNextFetchRequest();
+              }
             }
           }
-          if (fetchResult.messages.length > 1) {
-            enqueueNextFetchRequest();
-          }
+          return true;
+        } on MailException catch (e, stackTrace) {
+          debugPrint('High level API failed with $e');
+          _loggingDb.captureException(
+            e,
+            domain: 'INBOX',
+            subDomain: '_fetchInbox',
+            stackTrace: stackTrace,
+          );
+          return false;
+        } catch (e, stackTrace) {
+          debugPrint('Exception $e');
+          _loggingDb.captureException(
+            e,
+            domain: 'INBOX',
+            subDomain: '_fetchInbox',
+            stackTrace: stackTrace,
+          );
+          return false;
         }
-      }
-    } on MailException catch (e, stackTrace) {
-      debugPrint('High level API failed with $e');
-      _loggingDb.captureException(
-        e,
-        domain: 'INBOX',
-        subDomain: '_fetchInbox',
-        stackTrace: stackTrace,
-      );
-    } catch (e, stackTrace) {
-      debugPrint('Exception $e');
-      _loggingDb.captureException(
-        e,
-        domain: 'INBOX',
-        subDomain: '_fetchInbox',
-        stackTrace: stackTrace,
-      );
-    }
+      },
+      syncConfig: syncConfig,
+      allowInvalidCert: allowInvalidCert,
+    );
   }
 
   Future<void> _observeInbox() async {
