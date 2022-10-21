@@ -8,6 +8,7 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
+import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -23,6 +24,7 @@ void main() {
     final syncConfigMock = MockSyncConfigService();
     final mockVectorClockService = MockVectorClockService();
     final mockJournalDb = MockJournalDb();
+    final mockImapClientManager = MockImapClientManager();
     final mockPersistenceLogic = MockPersistenceLogic();
 
     final mockConnectivityService = MockConnectivityService();
@@ -41,8 +43,17 @@ void main() {
 
       when(syncConfigMock.getSyncConfig)
           .thenAnswer((_) async => testSyncConfigConfigured);
+
       when(() => mockJournalDb.getConfigFlag(any()))
           .thenAnswer((_) async => true);
+
+      when(
+        () => mockImapClientManager.imapAction(
+          any(),
+          syncConfig: any(named: 'syncConfig'),
+          allowInvalidCert: any(named: 'allowInvalidCert'),
+        ),
+      ).thenAnswer((_) async => true);
 
       getIt
         ..registerSingleton<SyncDatabase>(
@@ -51,6 +62,7 @@ void main() {
         )
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<FgBgService>(mockFgBgService)
+        ..registerSingleton<ImapClientManager>(mockImapClientManager)
         ..registerSingleton<VectorClockService>(mockVectorClockService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)

@@ -6,9 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
-- Simplify sync by not reusing IMAP client
-- Move sync inbox into isolate
-- 
+- Simplify sync by reusing IMAP client in one place
+- Restart outbox client isolate on network reconnect
 
 ## [0.8.178] - 2022-10-21
 ### Changed:

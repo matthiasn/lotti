@@ -20,37 +20,43 @@ import 'package:lotti/sync/outbox/outbox_imap.dart';
 Future<void> entryPoint(SendPort sendPort) async {
   final port = ReceivePort();
   sendPort.send(port.sendPort);
+  OutboxServiceIsolate? outbox;
 
   await for (final msg in port) {
-    if (msg is OutboxIsolateInitMessage) {
-      final syncDb = SyncDatabase.connect(
-        getDbConnFromIsolate(
-          DriftIsolate.fromConnectPort(msg.syncDbConnectPort),
-        ),
-      );
+    if (msg is OutboxIsolateMessage) {
+      msg.map(
+        init: (initMsg) {
+          final syncDb = SyncDatabase.connect(
+            getDbConnFromIsolate(
+              DriftIsolate.fromConnectPort(initMsg.syncDbConnectPort),
+            ),
+          );
 
-      final loggingDb = LoggingDb.connect(
-        getDbConnFromIsolate(
-          DriftIsolate.fromConnectPort(msg.loggingDbConnectPort),
-        ),
-      );
+          final loggingDb = LoggingDb.connect(
+            getDbConnFromIsolate(
+              DriftIsolate.fromConnectPort(initMsg.loggingDbConnectPort),
+            ),
+          );
 
-      getIt
-        ..registerSingleton<ImapClientManager>(ImapClientManager())
-        ..registerSingleton<SyncDatabase>(syncDb)
-        ..registerSingleton<LoggingDb>(loggingDb);
+          getIt
+            ..registerSingleton<ImapClientManager>(ImapClientManager())
+            ..registerSingleton<SyncDatabase>(syncDb)
+            ..registerSingleton<LoggingDb>(loggingDb);
 
-      final outbox = OutboxServiceIsolate(
-        syncConfig: msg.syncConfig,
-        networkConnected: msg.networkConnected,
-        allowInvalidCert: msg.allowInvalidCert,
-        docDir: msg.docDir,
-      );
+          outbox = OutboxServiceIsolate(
+            syncConfig: initMsg.syncConfig,
+            networkConnected: initMsg.networkConnected,
+            allowInvalidCert: initMsg.allowInvalidCert,
+            docDir: initMsg.docDir,
+          );
 
-      unawaited(
-        getIt<SyncDatabase>().watchOutboxCount().forEach((element) {
-          outbox.enqueueNextSendRequest();
-        }),
+          unawaited(
+            getIt<SyncDatabase>().watchOutboxCount().forEach((element) {
+              outbox?.enqueueNextSendRequest();
+            }),
+          );
+        },
+        restart: (_) => outbox?.restartRunner(),
       );
     }
   }
@@ -147,14 +153,14 @@ class OutboxServiceIsolate {
               encryptedFilePath = encryptedFile.path;
             }
 
-            final successfulClient = await persistImap(
+            final success = await persistImap(
               encryptedFilePath: encryptedFilePath,
               subject: nextPending.subject,
               encryptedMessage: encryptedMessage,
               syncConfig: syncConfig,
               allowInvalidCert: allowInvalidCert,
             );
-            if (successfulClient != null) {
+            if (success) {
               await _syncDatabase.updateOutboxItem(
                 OutboxCompanion(
                   id: Value(nextPending.id),

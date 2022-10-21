@@ -5,7 +5,6 @@ import 'dart:isolate';
 
 import 'package:drift/drift.dart';
 import 'package:drift/isolate.dart';
-import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
@@ -33,14 +32,25 @@ class OutboxService {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   late final StreamSubscription<FGBGType> fgBgSubscription;
-  ImapClient? prevImapClient;
+
+  late SendPort _sendPort;
 
   void dispose() {
     fgBgSubscription.cancel();
   }
 
-  void restartRunner() {
-    // TODO: pass request to isolate
+  Future<void> restartRunner() async {
+    final syncConfig = await _syncConfigService.getSyncConfig();
+    final networkConnected = await _connectivityService.isConnected();
+
+    if (syncConfig != null) {
+      _sendPort.send(
+        OutboxIsolateMessage.restart(
+          syncConfig: syncConfig,
+          networkConnected: networkConnected,
+        ),
+      );
+    }
   }
 
   Future<void> startIsolate() async {
@@ -50,7 +60,7 @@ class OutboxService {
 
     final receivePort = ReceivePort();
     await Isolate.spawn(entryPoint, receivePort.sendPort);
-    final sendPort = await receivePort.first as SendPort;
+    _sendPort = await receivePort.first as SendPort;
 
     final syncDbIsolate = await getIt<Future<DriftIsolate>>(
       instanceName: syncDbFileName,
@@ -62,7 +72,7 @@ class OutboxService {
         await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
 
     if (syncConfig != null) {
-      sendPort.send(
+      _sendPort.send(
         OutboxIsolateMessage.init(
           syncConfig: syncConfig,
           networkConnected: networkConnected,
