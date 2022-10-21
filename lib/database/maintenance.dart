@@ -66,6 +66,7 @@ class Maintenance {
     final tags = await _db.watchTags().first;
     final measurables = await _db.watchMeasurableDataTypes().first;
     final dashboards = await _db.watchDashboards().first;
+    final habits = await _db.watchHabitDefinitions().first;
 
     for (final tag in tags) {
       await outboxService.enqueueMessage(
@@ -87,6 +88,14 @@ class Maintenance {
       await outboxService.enqueueMessage(
         SyncMessage.entityDefinition(
           entityDefinition: dashboard,
+          status: SyncEntryStatus.update,
+        ),
+      );
+    }
+    for (final habit in habits) {
+      await outboxService.enqueueMessage(
+        SyncMessage.entityDefinition(
+          entityDefinition: habit,
           status: SyncEntryStatus.update,
         ),
       );

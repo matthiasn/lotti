@@ -111,7 +111,8 @@ class InboxService {
       final allowInvalidCert =
           await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
       final syncConfig = await _syncConfigService.getSyncConfig();
-      final imapClient = await createImapClient(
+
+      final imapClient = await getIt<ImapClientManager>().createImapClient(
         syncConfig,
         allowInvalidCert: allowInvalidCert,
       );
@@ -127,7 +128,7 @@ class InboxService {
 
       final hostHash = await _vectorClockService.getHostHash();
 
-      if (imapClient != null && hostHash != null) {
+      if (hostHash != null) {
         final fetchResult = await imapClient.uidFetchMessages(
           sequence,
           'ENVELOPE',

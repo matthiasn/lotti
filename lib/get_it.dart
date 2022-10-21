@@ -19,6 +19,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
+import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/themes/themes_service.dart';
@@ -46,6 +47,7 @@ void registerSingletons() {
       createDriftIsolate(loggingDbFileName),
       instanceName: loggingDbFileName,
     )
+    ..registerSingleton<ImapClientManager>(ImapClientManager())
     ..registerSingleton<LoggingDb>(getLoggingDb())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<SyncConfigService>(SyncConfigService())

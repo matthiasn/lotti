@@ -83,11 +83,11 @@ class SyncConfigService {
   Future<bool> testConnection(SyncConfig syncConfig) async {
     final allowInvalidCert =
         await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
-    final client = await createImapClient(
+    await getIt<ImapClientManager>().createImapClient(
       syncConfig,
       allowInvalidCert: allowInvalidCert,
     );
-    return client != null;
+    return true;
   }
 
   Future<ImapConfig?> getImapConfig() async {

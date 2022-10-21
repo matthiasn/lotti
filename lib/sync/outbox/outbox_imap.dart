@@ -67,41 +67,36 @@ Future<ImapClient?> persistImap({
   required SyncConfig syncConfig,
   required bool allowInvalidCert,
   String? encryptedFilePath,
-  ImapClient? prevImapClient,
 }) async {
   final loggingDb = getIt<LoggingDb>();
 
-  ImapClient? imapClient;
   try {
-    if (prevImapClient != null && prevImapClient.isConnected) {
-      imapClient = prevImapClient;
-    } else {
-      await prevImapClient?.disconnect();
-      imapClient = await createImapClient(syncConfig, allowInvalidCert: allowInvalidCert,);
-    }
+    final imapClient = await getIt<ImapClientManager>().createImapClient(
+      syncConfig,
+      allowInvalidCert: allowInvalidCert,
+    );
 
     GenericImapResult? res;
-    if (imapClient != null) {
-      if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
-        final encryptedFile = File(encryptedFilePath);
-        final fileLength = encryptedFile.lengthSync();
-        if (fileLength > 0) {
-          res = await saveImapMessage(
-            imapClient: imapClient,
-            subject: subject,
-            encryptedMessage: encryptedMessage,
-            syncConfig: syncConfig,
-            file: encryptedFile,
-          );
-        }
-      } else {
+
+    if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
+      final encryptedFile = File(encryptedFilePath);
+      final fileLength = encryptedFile.lengthSync();
+      if (fileLength > 0) {
         res = await saveImapMessage(
           imapClient: imapClient,
           subject: subject,
           encryptedMessage: encryptedMessage,
           syncConfig: syncConfig,
+          file: encryptedFile,
         );
       }
+    } else {
+      res = await saveImapMessage(
+        imapClient: imapClient,
+        subject: subject,
+        encryptedMessage: encryptedMessage,
+        syncConfig: syncConfig,
+      );
     }
 
     final resDetails = res?.details;
@@ -113,7 +108,7 @@ Future<ImapClient?> persistImap({
     if (resDetails != null && resDetails.contains('completed')) {
       return imapClient;
     } else {
-      await imapClient?.disconnect();
+      await imapClient.disconnect();
       return null;
     }
   } catch (exception, stackTrace) {
@@ -122,8 +117,6 @@ Future<ImapClient?> persistImap({
       domain: 'OUTBOX_IMAP persistImap',
       stackTrace: stackTrace,
     );
-    await prevImapClient?.disconnect();
-    imapClient = null;
     rethrow;
   }
 }
