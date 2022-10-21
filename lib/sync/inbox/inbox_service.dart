@@ -20,8 +20,6 @@ import 'package:lotti/utils/consts.dart';
 class InboxService {
   InboxService() {
     _startRunner();
-
-    init();
   }
 
   late ClientRunner<int> _clientRunner;
@@ -33,7 +31,6 @@ class InboxService {
   MailClient? _observingClient;
   late final StreamSubscription<FGBGType> fgBgSubscription;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
-  ImapClient? imapClient;
   late Timer _timer;
 
   void _startRunner() {
@@ -58,9 +55,10 @@ class InboxService {
 
   void _startTimer() {
     _timer = Timer.periodic(
-      const Duration(seconds: 15),
+      const Duration(minutes: 1),
       (timer) async {
         enqueueNextFetchRequest();
+        await _observeInbox();
       },
     );
   }
@@ -113,7 +111,7 @@ class InboxService {
       final allowInvalidCert =
           await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
       final syncConfig = await _syncConfigService.getSyncConfig();
-      imapClient ??= await createImapClient(
+      final imapClient = await createImapClient(
         syncConfig,
         allowInvalidCert: allowInvalidCert,
       );
@@ -130,7 +128,7 @@ class InboxService {
       final hostHash = await _vectorClockService.getHostHash();
 
       if (imapClient != null && hostHash != null) {
-        final fetchResult = await imapClient!.uidFetchMessages(
+        final fetchResult = await imapClient.uidFetchMessages(
           sequence,
           'ENVELOPE',
         );
@@ -176,7 +174,6 @@ class InboxService {
         subDomain: '_fetchInbox',
         stackTrace: stackTrace,
       );
-      imapClient = null;
     } catch (e, stackTrace) {
       debugPrint('Exception $e');
       _loggingDb.captureException(
@@ -185,8 +182,6 @@ class InboxService {
         subDomain: '_fetchInbox',
         stackTrace: stackTrace,
       );
-
-      imapClient = null;
     }
   }
 
@@ -205,15 +200,9 @@ class InboxService {
           imapConfig.password,
         );
 
-        _observingClient ??= MailClient(account);
-
-        if (_observingClient == null) {
-          return;
-        }
-
-        if (_observingClient?.isConnected ?? false) {
-          return;
-        }
+        await _observingClient?.stopPolling();
+        _observingClient = null;
+        _observingClient = MailClient(account);
 
         await _observingClient?.connect();
         await _observingClient?.selectMailboxByPath(imapConfig.folder);
