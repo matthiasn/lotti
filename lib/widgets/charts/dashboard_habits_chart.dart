@@ -1,11 +1,11 @@
 import 'dart:core';
-import 'dart:math';
 
 import 'package:beamer/beamer.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:intersperse/intersperse.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -262,12 +262,14 @@ class HabitChartLine extends StatefulWidget {
     required this.rangeStart,
     required this.rangeEnd,
     this.streakDuration = 0,
+    required this.showGaps,
   });
 
   final String habitId;
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final int streakDuration;
+  final bool showGaps;
 
   @override
   State<HabitChartLine> createState() => _HabitChartLineState();
@@ -336,23 +338,24 @@ class _HabitChartLineState extends State<HabitChartLine> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const SizedBox(width: 70),
-                      ...results.map((res) {
-                        return Flexible(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: Container(
-                              margin: EdgeInsets.only(
-                                left: min(
-                                  MediaQuery.of(context).size.width / 6 / days,
-                                  8,
-                                ),
+                      ...intersperse(
+                        widget.showGaps
+                            ? SizedBox(width: days < 30 ? 8 : 2)
+                            : const SizedBox.shrink(),
+                        results.map((res) {
+                          return Flexible(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                widget.showGaps ? 2 : 0,
                               ),
-                              height: 25,
-                              color: colorFromCssHex(res.hexColor),
+                              child: Container(
+                                height: 25,
+                                color: colorFromCssHex(res.hexColor),
+                              ),
                             ),
-                          ),
-                        );
-                      }),
+                          );
+                        }),
+                      ),
                       const SizedBox(width: 30),
                     ],
                   ),
