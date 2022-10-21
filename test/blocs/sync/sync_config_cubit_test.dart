@@ -83,7 +83,6 @@ void main() {
         verify(() => mock.getImapConfig()).called(1);
         verify(() => mock.getSharedKey()).called(1);
         verify(() => mockInboxService.init()).called(1);
-        verify(() => mockOutboxService.init()).called(1);
       },
     );
 
@@ -113,7 +112,6 @@ void main() {
         verify(() => mock.getImapConfig()).called(1);
         verify(() => mock.getSharedKey()).called(1);
         verify(() => mockInboxService.init()).called(1);
-        verify(() => mockOutboxService.init()).called(1);
       },
     );
 
@@ -321,7 +319,6 @@ void main() {
         verify(() => mock.getImapConfig()).called(1);
         verify(() => mock.getSharedKey()).called(1);
         verify(() => mockInboxService.init()).called(1);
-        verify(() => mockOutboxService.init()).called(1);
       },
     );
 
@@ -361,7 +358,6 @@ void main() {
         verify(() => mock.getSharedKey()).called(1);
         verify(() => mock.setSyncConfig(testSyncConfigJson)).called(1);
         verify(() => mockInboxService.init()).called(1);
-        verify(() => mockOutboxService.init()).called(1);
       },
     );
 

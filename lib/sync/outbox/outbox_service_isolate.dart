@@ -4,7 +4,6 @@ import 'dart:isolate';
 
 import 'package:drift/drift.dart';
 import 'package:drift/isolate.dart';
-import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/config.dart';
@@ -70,7 +69,6 @@ class OutboxServiceIsolatePart {
 
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
-  ImapClient? prevImapClient;
   SyncConfig syncConfig;
   Directory docDir;
   bool networkConnected;
@@ -122,21 +120,10 @@ class OutboxServiceIsolatePart {
     );
 
     try {
-      final clientConnected = prevImapClient?.isConnected ?? false;
-
-      _loggingDb
-        ..captureEvent(
-          'sendNext() networkConnected: $networkConnected ',
-          domain: 'OUTBOX_ISOLATE',
-        )
-        ..captureEvent(
-          'sendNext() clientConnected: $clientConnected ',
-          domain: 'OUTBOX_ISOLATE',
-        );
-
-      if (!clientConnected) {
-        prevImapClient = null;
-      }
+      _loggingDb.captureEvent(
+        'sendNext() networkConnected: $networkConnected ',
+        domain: 'OUTBOX_ISOLATE',
+      );
 
       if (networkConnected) {
         final unprocessed = await getNextItems();
@@ -163,7 +150,6 @@ class OutboxServiceIsolatePart {
               encryptedFilePath: encryptedFilePath,
               subject: nextPending.subject,
               encryptedMessage: encryptedMessage,
-              prevImapClient: prevImapClient,
               syncConfig: syncConfig,
               allowInvalidCert: allowInvalidCert,
             );
@@ -183,7 +169,7 @@ class OutboxServiceIsolatePart {
                 delay: const Duration(seconds: 15),
               );
             }
-            prevImapClient = successfulClient;
+
             _loggingDb.captureEvent(
               'sendNext() done',
               domain: 'OUTBOX_ISOLATE',
@@ -201,9 +187,6 @@ class OutboxServiceIsolatePart {
                 updatedAt: Value(DateTime.now()),
               ),
             );
-            await prevImapClient?.disconnect();
-            // ignore: unnecessary_statements
-            prevImapClient == null;
             await enqueueNextSendRequest(delay: const Duration(seconds: 15));
           }
         }
@@ -215,9 +198,6 @@ class OutboxServiceIsolatePart {
         subDomain: 'sendNext',
         stackTrace: stackTrace,
       );
-      await prevImapClient?.disconnect();
-      // ignore: unnecessary_statements
-      prevImapClient == null;
       await enqueueNextSendRequest(delay: const Duration(seconds: 15));
     }
   }
