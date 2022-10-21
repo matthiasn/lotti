@@ -118,5 +118,6 @@ Future<bool> persistImap({
       }
     },
     syncConfig: syncConfig,
+    allowInvalidCert: allowInvalidCert,
   );
 }
