@@ -111,7 +111,8 @@ class InboxService {
       final allowInvalidCert =
           await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
       final syncConfig = await _syncConfigService.getSyncConfig();
-      final imapClient = await createImapClient(
+
+      final imapClient = await getIt<ImapClientManager>().createImapClient(
         syncConfig,
         allowInvalidCert: allowInvalidCert,
       );

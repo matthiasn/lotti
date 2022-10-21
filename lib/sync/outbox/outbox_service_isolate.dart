@@ -13,6 +13,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/encryption.dart';
+import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/outbox/messages.dart';
 import 'package:lotti/sync/outbox/outbox_imap.dart';
 
@@ -35,6 +36,7 @@ Future<void> entryPoint(SendPort sendPort) async {
       );
 
       getIt
+        ..registerSingleton<ImapClientManager>(ImapClientManager())
         ..registerSingleton<SyncDatabase>(syncDb)
         ..registerSingleton<LoggingDb>(loggingDb);
 
@@ -47,7 +49,6 @@ Future<void> entryPoint(SendPort sendPort) async {
 
       unawaited(
         getIt<SyncDatabase>().watchOutboxCount().forEach((element) {
-          debugPrint('db.watchOutboxCount $element');
           outbox.enqueueNextSendRequest();
         }),
       );

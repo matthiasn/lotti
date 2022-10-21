@@ -67,18 +67,14 @@ Future<ImapClient?> persistImap({
   required SyncConfig syncConfig,
   required bool allowInvalidCert,
   String? encryptedFilePath,
-  ImapClient? prevImapClient,
 }) async {
   final loggingDb = getIt<LoggingDb>();
 
-  ImapClient? imapClient;
   try {
-    if (prevImapClient != null && prevImapClient.isConnected) {
-      imapClient = prevImapClient;
-    } else {
-      await prevImapClient?.disconnect();
-      imapClient = await createImapClient(syncConfig, allowInvalidCert: allowInvalidCert,);
-    }
+    final imapClient = await getIt<ImapClientManager>().createImapClient(
+      syncConfig,
+      allowInvalidCert: allowInvalidCert,
+    );
 
     GenericImapResult? res;
     if (imapClient != null) {
@@ -122,8 +118,6 @@ Future<ImapClient?> persistImap({
       domain: 'OUTBOX_IMAP persistImap',
       stackTrace: stackTrace,
     );
-    await prevImapClient?.disconnect();
-    imapClient = null;
     rethrow;
   }
 }
