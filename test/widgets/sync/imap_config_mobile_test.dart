@@ -6,7 +6,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
-import 'package:lotti/sync/outbox_service.dart';
+import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_mobile.dart';

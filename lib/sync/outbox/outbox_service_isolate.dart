@@ -38,7 +38,7 @@ Future<void> entryPoint(SendPort sendPort) async {
         ..registerSingleton<SyncDatabase>(syncDb)
         ..registerSingleton<LoggingDb>(loggingDb);
 
-      final outbox = OutboxServiceIsolatePart(
+      final outbox = OutboxServiceIsolate(
         syncConfig: msg.syncConfig,
         networkConnected: msg.networkConnected,
         allowInvalidCert: msg.allowInvalidCert,
@@ -55,8 +55,8 @@ Future<void> entryPoint(SendPort sendPort) async {
   }
 }
 
-class OutboxServiceIsolatePart {
-  OutboxServiceIsolatePart({
+class OutboxServiceIsolate {
+  OutboxServiceIsolate({
     required this.syncConfig,
     required this.networkConnected,
     required this.allowInvalidCert,

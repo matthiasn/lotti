@@ -1,12 +1,8 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/stream_helpers.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 part 'logging_db.g.dart';
@@ -108,19 +104,6 @@ class LoggingDb extends _$LoggingDb {
         type: type.name.toUpperCase(),
       ),
     );
-
-    if (kDebugMode) {
-      final title = 'Exception in $domain $subDomain';
-      final body = exception.toString();
-      final shortened = body.substring(0, min(195, body.length - 1));
-
-      await getIt<NotificationService>().showNotification(
-        title: title,
-        body: shortened,
-        notificationId: title.hashCode,
-        deepLink: '/settings/logging',
-      );
-    }
   }
 
   void captureException(
