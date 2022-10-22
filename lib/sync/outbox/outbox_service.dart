@@ -32,7 +32,7 @@ class OutboxService {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   late final StreamSubscription<FGBGType> fgBgSubscription;
-  late final SendPort _sendPort;
+  SendPort? _sendPort;
 
   void dispose() {
     fgBgSubscription.cancel();
@@ -43,7 +43,7 @@ class OutboxService {
     final networkConnected = await _connectivityService.isConnected();
 
     if (syncConfig != null) {
-      _sendPort.send(
+      _sendPort?.send(
         OutboxIsolateMessage.restart(
           syncConfig: syncConfig,
           networkConnected: networkConnected,
@@ -70,7 +70,7 @@ class OutboxService {
         await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
 
     if (syncConfig != null) {
-      _sendPort.send(
+      _sendPort?.send(
         OutboxIsolateMessage.init(
           syncConfig: syncConfig,
           networkConnected: networkConnected,
@@ -81,7 +81,6 @@ class OutboxService {
         ),
       );
     }
-    //await restartRunner();
   }
 
   Future<void> init() async {
@@ -96,13 +95,13 @@ class OutboxService {
 
       _connectivityService.connectedStream.listen((connected) {
         if (connected) {
-          //restartRunner();
+          restartRunner();
         }
       });
 
       _fgBgService.fgBgStream.listen((foreground) {
         if (foreground) {
-          //restartRunner();
+          restartRunner();
         }
       });
     }
