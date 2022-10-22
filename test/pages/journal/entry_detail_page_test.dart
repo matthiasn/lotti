@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,7 +22,9 @@ import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path_provider/path_provider.dart';
 
+import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
 import '../../test_data/test_data.dart';
 import '../../widget_test_utils.dart';
@@ -33,10 +37,11 @@ void main() {
 
   group('EntryDetailPage Widget Tests - ', () {
     setUpAll(() {
+      setFakeDocumentsPath();
       registerFallbackValue(FakeMeasurementData());
     });
 
-    setUp(() {
+    setUp(() async {
       mockJournalDb = mockJournalDbWithMeasurableTypes([
         measurableWater,
         measurableChocolate,
@@ -49,6 +54,7 @@ void main() {
       final mockHealthImport = MockHealthImport();
 
       getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<EditorStateService>(mockEditorStateService)
