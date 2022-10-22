@@ -8,6 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/task_app_bar.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/entry_detail_linked.dart';
 import 'package:lotti/widgets/journal/entry_detail_linked_from.dart';
 import 'package:lotti/widgets/journal/entry_details_widget.dart';
-import 'package:path_provider/path_provider.dart';
 
 class EntryDetailPage extends StatefulWidget {
   const EntryDetailPage({
@@ -40,7 +40,7 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
 
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
-  Directory? docDir;
+  Directory docDir = getDocumentsDirectory();
   double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
   double imageTextEditorHeight =
       (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
@@ -48,12 +48,6 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
   @override
   void initState() {
     super.initState();
-
-    getApplicationDocumentsDirectory().then((value) {
-      setState(() {
-        docDir = value;
-      });
-    });
   }
 
   @override

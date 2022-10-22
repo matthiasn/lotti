@@ -43,7 +43,7 @@ class ShareButtonWidget extends StatelessWidget {
           }
 
           if (item is JournalImage) {
-            final filePath = await getFullImagePath(item);
+            final filePath = getFullImagePath(item);
             await Share.shareXFiles([XFile(filePath)]);
           }
           if (item is JournalAudio) {

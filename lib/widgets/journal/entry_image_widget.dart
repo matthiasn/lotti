@@ -10,7 +10,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 
 class EntryImageWidget extends StatefulWidget {
@@ -23,67 +22,53 @@ class EntryImageWidget extends StatefulWidget {
 }
 
 class _EntryImageWidgetState extends State<EntryImageWidget> {
-  Directory? docDir;
-
   @override
   void initState() {
     super.initState();
-
-    getApplicationDocumentsDirectory().then((value) {
-      setState(() {
-        docDir = value;
-      });
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (docDir != null) {
-      final file =
-          File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
+    final file = File(getFullImagePath(widget.journalImage));
 
-      return BlocBuilder<EntryCubit, EntryState>(
-        builder: (
-          context,
-          EntryState snapshot,
-        ) {
-          final focusNode = context.read<EntryCubit>().focusNode;
+    return BlocBuilder<EntryCubit, EntryState>(
+      builder: (
+        context,
+        EntryState snapshot,
+      ) {
+        final focusNode = context.read<EntryCubit>().focusNode;
 
-          return GestureDetector(
-            onTap: () {
-              focusNode.unfocus();
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute<HeroPhotoViewRouteWrapper>(
-                  builder: (_) => HeroPhotoViewRouteWrapper(
-                    focusNode: focusNode,
-                    imageProvider: FileImage(file),
-                  ),
+        return GestureDetector(
+          onTap: () {
+            focusNode.unfocus();
+            Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute<HeroPhotoViewRouteWrapper>(
+                builder: (_) => HeroPhotoViewRouteWrapper(
+                  focusNode: focusNode,
+                  imageProvider: FileImage(file),
                 ),
-              );
-            },
-            child: ColoredBox(
-              color: Colors.black,
-              child: Hero(
-                tag: 'entry_img',
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight:
-                        isMobile ? 400 : MediaQuery.of(context).size.width,
-                  ),
-                  child: Image.file(
-                    file,
-                    width: MediaQuery.of(context).size.width,
-                    fit: BoxFit.contain,
-                  ),
+              ),
+            );
+          },
+          child: ColoredBox(
+            color: Colors.black,
+            child: Hero(
+              tag: 'entry_img',
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: isMobile ? 400 : MediaQuery.of(context).size.width,
+                ),
+                child: Image.file(
+                  file,
+                  width: MediaQuery.of(context).size.width,
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
-          );
-        },
-      );
-    } else {
-      return Container();
-    }
+          ),
+        );
+      },
+    );
   }
 }
 

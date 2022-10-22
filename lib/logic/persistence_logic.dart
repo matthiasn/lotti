@@ -20,7 +20,6 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/utils/entry_utils.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:uuid/uuid.dart';
@@ -498,7 +497,6 @@ class PersistenceLogic {
 
       final res = await _journalDb.addJournalEntity(withTags);
       final saved = res != 0;
-      await saveJournalEntityJson(withTags);
       await _journalDb.addTagged(withTags);
 
       if (saved && enqueueSync) {
@@ -935,8 +933,6 @@ class PersistenceLogic {
   }) async {
     try {
       await _journalDb.updateJournalEntity(journalEntity);
-      await saveJournalEntityJson(journalEntity);
-      await _journalDb.addTagged(journalEntity);
 
       if (enqueueSync) {
         await _outboxService.enqueueMessage(
