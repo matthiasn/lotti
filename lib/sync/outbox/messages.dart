@@ -16,4 +16,9 @@ class OutboxIsolateMessage with _$OutboxIsolateMessage {
     required bool allowInvalidCert,
     required Directory docDir,
   }) = OutboxIsolateInitMessage;
+
+  factory OutboxIsolateMessage.restart({
+    required SyncConfig syncConfig,
+    required bool networkConnected,
+  }) = OutboxIsolateRestartMessage;
 }
