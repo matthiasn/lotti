@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:isolate';
 
+import 'package:drift/isolate.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
@@ -13,6 +16,8 @@ import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/imap_client.dart';
+import 'package:lotti/sync/inbox/inbox_service_isolate.dart';
+import 'package:lotti/sync/inbox/messages.dart';
 import 'package:lotti/sync/inbox/process_message.dart';
 import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -32,6 +37,8 @@ class InboxService {
   late final StreamSubscription<FGBGType> fgBgSubscription;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   late Timer _timer;
+
+  late SendPort _sendPort;
 
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
@@ -74,6 +81,8 @@ class InboxService {
       return;
     }
 
+    await startInboxIsolate();
+
     _fgBgService.fgBgStream.listen((foreground) {
       if (foreground) {
         restartRunner();
@@ -93,6 +102,43 @@ class InboxService {
     _startTimer();
     enqueueNextFetchRequest();
     await _observeInbox();
+  }
+
+  Future<void> startInboxIsolate() async {
+    final syncConfig = await _syncConfigService.getSyncConfig();
+    final networkConnected = await _connectivityService.isConnected();
+
+    final receivePort = ReceivePort();
+    await Isolate.spawn(entryPoint, receivePort.sendPort);
+    _sendPort = await receivePort.first as SendPort;
+
+    final syncDbIsolate = await getIt<Future<DriftIsolate>>(
+      instanceName: syncDbFileName,
+    );
+
+    final loggingDbIsolate = await getIt<Future<DriftIsolate>>(
+      instanceName: loggingDbFileName,
+    );
+
+    final journalDbIsolate = await getIt<Future<DriftIsolate>>(
+      instanceName: journalDbFileName,
+    );
+
+    final allowInvalidCert =
+        await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
+
+    if (syncConfig != null) {
+      _sendPort.send(
+        InboxIsolateMessage.init(
+          syncConfig: syncConfig,
+          networkConnected: networkConnected,
+          syncDbConnectPort: syncDbIsolate.connectPort,
+          loggingDbConnectPort: loggingDbIsolate.connectPort,
+          allowInvalidCert: allowInvalidCert,
+          journalDbConnectPort: journalDbIsolate.connectPort,
+        ),
+      );
+    }
   }
 
   void enqueueNextFetchRequest({

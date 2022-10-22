@@ -10,7 +10,6 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox/read_decrypt.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
@@ -19,7 +18,6 @@ import 'package:lotti/utils/file_utils.dart';
 
 Future<void> processMessage(MimeMessage message) async {
   final syncConfigService = getIt<SyncConfigService>();
-  final persistenceLogic = getIt<PersistenceLogic>();
   final journalDb = getIt<JournalDb>();
   final loggingDb = getIt<LoggingDb>();
 
@@ -53,9 +51,9 @@ Future<void> processMessage(MimeMessage message) async {
           );
 
           if (status == SyncEntryStatus.update) {
-            await persistenceLogic.updateDbEntity(journalEntity);
+            await journalDb.updateJournalEntity(journalEntity);
           } else {
-            await persistenceLogic.createDbEntity(journalEntity);
+            await journalDb.addJournalEntity(journalEntity);
           }
         },
         entryLink: (EntryLink entryLink, SyncEntryStatus _) {

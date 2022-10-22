@@ -136,6 +136,7 @@ class JournalDb extends _$JournalDb {
 
   Future<int?> addJournalEntity(JournalEntity journalEntity) async {
     final dbEntity = toDbEntity(journalEntity);
+    await saveJournalEntityJson(journalEntity);
 
     final exists = (await entityById(dbEntity.id)) != null;
     if (!exists) {
@@ -223,6 +224,10 @@ class JournalDb extends _$JournalDb {
     } else {
       rowsAffected = await upsertJournalDbEntity(dbEntity);
     }
+
+    await saveJournalEntityJson(updated);
+    await addTagged(updated);
+
     return rowsAffected;
   }
 
