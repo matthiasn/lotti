@@ -39,6 +39,7 @@ Future<void> entryPoint(SendPort sendPort) async {
           );
 
           getIt
+            ..registerSingleton<Directory>(initMsg.docDir)
             ..registerSingleton<ImapClientManager>(ImapClientManager())
             ..registerSingleton<SyncDatabase>(syncDb)
             ..registerSingleton<LoggingDb>(loggingDb);

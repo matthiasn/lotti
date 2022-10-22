@@ -27,8 +27,8 @@ Future<void> main() async {
   await getIt<WindowService>().restore();
   tz.initializeTimeZones();
 
-  runZonedGuarded(() {
-    registerSingletons();
+  await runZonedGuarded(() async {
+    await registerSingletons();
 
     FlutterError.onError = (FlutterErrorDetails details) {
       getIt<LoggingDb>().captureException(
@@ -38,7 +38,7 @@ Future<void> main() async {
       );
     };
 
-    registerScreenshotHotkey();
+    await registerScreenshotHotkey();
     runApp(MyBeamerApp());
   }, (Object error, StackTrace stackTrace) {
     getIt<LoggingDb>().captureException(

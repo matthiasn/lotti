@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:path_provider/path_provider.dart';
 
 class CardImageWidget extends StatefulWidget {
   const CardImageWidget({
@@ -23,51 +23,40 @@ class CardImageWidget extends StatefulWidget {
 }
 
 class _CardImageWidgetState extends State<CardImageWidget> {
-  Directory? docDir;
+  Directory docDir = getDocumentsDirectory();
   int retries = 0;
 
   @override
   void initState() {
     super.initState();
-
-    getApplicationDocumentsDirectory().then((value) {
-      setState(() {
-        docDir = value;
-      });
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (docDir != null) {
-      final file =
-          File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
+    final file = File(getFullImagePath(widget.journalImage));
 
-      if (retries < 10 && !file.existsSync()) {
-        Future<void>.delayed(const Duration(milliseconds: 200)).then((_) {
-          setState(() {
-            retries++;
-          });
+    if (retries < 10 && !file.existsSync()) {
+      Future<void>.delayed(const Duration(milliseconds: 200)).then((_) {
+        setState(() {
+          retries++;
         });
-      }
+      });
+    }
 
-      if (!file.existsSync()) {
-        return Container();
-      }
-
-      return Container(
-        key: Key('${file.path}-$retries'),
-        color: styleConfig().primaryTextColor,
-        height: widget.height.toDouble(),
-        child: Image.file(
-          file,
-          cacheHeight: widget.height * 3,
-          height: widget.height.toDouble(),
-          fit: widget.fit,
-        ),
-      );
-    } else {
+    if (!file.existsSync()) {
       return Container();
     }
+
+    return Container(
+      key: Key('${file.path}-$retries'),
+      color: styleConfig().primaryTextColor,
+      height: widget.height.toDouble(),
+      child: Image.file(
+        file,
+        cacheHeight: widget.height * 3,
+        height: widget.height.toDouble(),
+        fit: widget.fit,
+      ),
+    );
   }
 }

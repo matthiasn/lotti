@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:lotti/utils/file_utils.dart';
 
 class AudioUtils {
   static Future<String> getFullAudioPath(JournalAudio j) async {
-    final docDir = await getApplicationDocumentsDirectory();
+    final docDir = getDocumentsDirectory();
     return '${docDir.path}${j.data.audioDirectory}${j.data.audioFile}';
   }
 
@@ -14,7 +14,7 @@ class AudioUtils {
   }
 
   static Future<void> moveToTrash(JournalAudio journalDbAudio) async {
-    final docDir = await getApplicationDocumentsDirectory();
+    final docDir = getDocumentsDirectory();
     final trashDirectory =
         await Directory('${docDir.path}/audio/trash/').create(recursive: true);
     final fullAudioPath = await AudioUtils.getFullAudioPath(journalDbAudio);

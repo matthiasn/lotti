@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:cryptography/cryptography.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter/foundation.dart';
-import 'package:lotti/sync/encryption_messages.dart';
 
 Future<void> encryptFile(
   File inputFile,
@@ -33,40 +32,29 @@ Future<void> encryptFile(
   await encryptedFile.writeAsBytes(secretBox.concatenation());
 }
 
-FutureOr<void> decryptFileIsolate(DecryptFileMessage msg) async {
-  if (!msg.inputFile.existsSync()) {
+Future<void> decryptFile(
+  File inputFile,
+  File decryptedFile,
+  String b64Secret,
+) async {
+  if (!inputFile.existsSync()) {
     debugPrint('File does not exist, aborting');
     throw Exception('File not found');
   }
 
   final algorithm = AesGcm.with256bits();
-  final List<int> bytes = await msg.inputFile.readAsBytes();
+  final List<int> bytes = await inputFile.readAsBytes();
   final deserializedSecretBox =
       SecretBox.fromConcatenation(bytes, nonceLength: 12, macLength: 16);
   final secretKey =
-      await algorithm.newSecretKeyFromBytes(base64Decode(msg.b64Secret));
+      await algorithm.newSecretKeyFromBytes(base64Decode(b64Secret));
 
   final decryptedBytes = await algorithm.decrypt(
     deserializedSecretBox,
     secretKey: secretKey,
   );
 
-  await msg.decryptedFile.writeAsBytes(decryptedBytes);
-}
-
-Future<void> decryptFile(
-  File inputFile,
-  File decryptedFile,
-  String b64Secret,
-) async {
-  return compute(
-    decryptFileIsolate,
-    DecryptFileMessage(
-      b64Secret: b64Secret,
-      inputFile: inputFile,
-      decryptedFile: decryptedFile,
-    ),
-  );
+  await decryptedFile.writeAsBytes(decryptedBytes);
 }
 
 Future<String> encryptString({
@@ -88,13 +76,16 @@ Future<String> encryptString({
   return base64.encode(secretBox.concatenation());
 }
 
-FutureOr<String> decryptStringIsolate(DecryptStringMessage msg) async {
+Future<String> decryptString({
+  required String encrypted,
+  required String b64Secret,
+}) async {
   final algorithm = AesGcm.with256bits();
-  final List<int> bytes = base64.decode(msg.encrypted);
+  final List<int> bytes = base64.decode(encrypted);
   final deserializedSecretBox =
       SecretBox.fromConcatenation(bytes, nonceLength: 12, macLength: 16);
   final secretKey =
-      await algorithm.newSecretKeyFromBytes(base64Decode(msg.b64Secret));
+      await algorithm.newSecretKeyFromBytes(base64Decode(b64Secret));
 
   final decryptedBytes = await algorithm.decrypt(
     deserializedSecretBox,
@@ -102,19 +93,6 @@ FutureOr<String> decryptStringIsolate(DecryptStringMessage msg) async {
   );
 
   return utf8.decode(decryptedBytes);
-}
-
-Future<String> decryptString({
-  required String encrypted,
-  required String b64Secret,
-}) async {
-  return compute(
-    decryptStringIsolate,
-    DecryptStringMessage(
-      b64Secret: b64Secret,
-      encrypted: encrypted,
-    ),
-  );
 }
 
 String generateKeyFromPassphrase(String passphrase) {
