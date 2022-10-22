@@ -11,10 +11,11 @@ class InboxIsolateMessage with _$InboxIsolateMessage {
   factory InboxIsolateMessage.init({
     required SyncConfig syncConfig,
     required bool networkConnected,
-    required SendPort syncDbConnectPort,
     required SendPort loggingDbConnectPort,
     required SendPort journalDbConnectPort,
     required bool allowInvalidCert,
+    required String? hostHash,
+    required Directory docDir,
   }) = InboxIsolateInitMessage;
 
   factory InboxIsolateMessage.restart({

@@ -87,7 +87,7 @@ void main() {
     });
 
     test('', () async {
-      getIt<InboxService>().enqueueNextFetchRequest();
+      //getIt<InboxService>().enqueueNextFetchRequest();
     });
   });
 }

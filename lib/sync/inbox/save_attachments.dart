@@ -71,7 +71,7 @@ Future<void> saveImageAttachment(
         journalImage != null &&
         b64Secret != null) {
       final bytes = attachmentMimePart.decodeContentBinary();
-      final filePath = await getFullImagePath(journalImage);
+      final filePath = getFullImagePath(journalImage);
       await File(filePath).parent.create(recursive: true);
       final encrypted = File('$filePath.aes');
       debugPrint('saveAttachment $filePath');

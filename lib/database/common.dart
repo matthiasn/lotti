@@ -8,11 +8,11 @@ import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 Future<File> getDatabaseFile(String dbFileName) async {
-  final dbFolder = await getApplicationDocumentsDirectory();
+  final dbFolder = getDocumentsDirectory();
   return File(p.join(dbFolder.path, dbFileName));
 }
 
@@ -45,7 +45,7 @@ Future<DriftIsolate> createDriftIsolate(String dbFileName) async {
   // getApplicationDocumentsDirectory on a background isolate, we calculate
   // the database path in the foreground isolate and then inform the
   // background isolate about the path.
-  final dir = await getApplicationDocumentsDirectory();
+  final dir = getDocumentsDirectory();
   final path = p.join(dir.path, dbFileName);
   final receivePort = ReceivePort();
 

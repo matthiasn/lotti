@@ -22,8 +22,8 @@ import 'package:lotti/sync/outbox/messages.dart';
 import 'package:lotti/sync/outbox/outbox_service_isolate.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:path_provider/path_provider.dart';
 
 class OutboxService {
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
@@ -56,7 +56,6 @@ class OutboxService {
   Future<void> startIsolate() async {
     final syncConfig = await _syncConfigService.getSyncConfig();
     final networkConnected = await _connectivityService.isConnected();
-    final docDir = await getApplicationDocumentsDirectory();
 
     final receivePort = ReceivePort();
     await Isolate.spawn(entryPoint, receivePort.sendPort);
@@ -79,7 +78,7 @@ class OutboxService {
           syncDbConnectPort: syncDbIsolate.connectPort,
           loggingDbConnectPort: loggingDbIsolate.connectPort,
           allowInvalidCert: allowInvalidCert,
-          docDir: docDir,
+          docDir: getDocumentsDirectory(),
         ),
       );
     }
@@ -119,7 +118,7 @@ class OutboxService {
       final hostHash = await vectorClockService.getHostHash();
       final host = await vectorClockService.getHost();
       final jsonString = json.encode(syncMessage);
-      final docDir = await getApplicationDocumentsDirectory();
+      final docDir = getDocumentsDirectory();
 
       final commonFields = OutboxCompanion(
         status: Value(OutboxStatus.pending.index),
@@ -141,8 +140,7 @@ class OutboxService {
           },
           journalImage: (JournalImage journalImage) {
             if (syncMessage.status == SyncEntryStatus.initial) {
-              attachment =
-                  File(getFullImagePathWithDocDir(journalImage, docDir));
+              attachment = File(getFullImagePath(journalImage));
             }
           },
           orElse: () {},
