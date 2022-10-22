@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_links.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../helpers/path_provider.dart';
 import '../mocks/mocks.dart';
@@ -51,6 +53,7 @@ void main() {
           .thenAnswer((_) async => true);
 
       getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<SyncDatabase>(
           SyncDatabase(inMemoryDatabase: true),
           dispose: (db) async => db.close(),

@@ -50,6 +50,8 @@ Future<void> entryPoint(SendPort sendPort) async {
             networkConnected: initMsg.networkConnected,
             allowInvalidCert: initMsg.allowInvalidCert,
             hostHash: initMsg.hostHash,
+            lastReadUid: initMsg.lastReadUid,
+            sendPort: sendPort,
           );
         },
         restart: (_) {},
@@ -64,6 +66,8 @@ class InboxServiceIsolate {
     required this.networkConnected,
     required this.allowInvalidCert,
     required this.hostHash,
+    required this.lastReadUid,
+    required this.sendPort,
   }) {
     _startRunner();
     _startTimer();
@@ -95,15 +99,15 @@ class InboxServiceIsolate {
     );
   }
 
-  int? lastReadUid = 0;
+  int lastReadUid;
+  final SendPort sendPort;
 
-  Future<void> setLastReadUid(int? uid) async {
+  Future<void> setLastReadUid(int uid) async {
     lastReadUid = uid;
-    debugPrint('INBOX ISOLATE setLastReadUid $lastReadUid');
+    sendPort.send(IsolateInboxMessage.setLastReadUid(lastReadUid: uid));
   }
 
   Future<int?> getLastReadUid() async {
-    debugPrint('INBOX ISOLATE getLastReadUid $lastReadUid');
     return lastReadUid;
   }
 
@@ -138,8 +142,6 @@ class InboxServiceIsolate {
     await getIt<ImapClientManager>().imapAction(
       (imapClient) async {
         try {
-          final lastReadUid = await getLastReadUid() ?? 0;
-
           if (lastReadUid == -1) {
             enqueueNextFetchRequest(delay: const Duration(seconds: 1));
           }
@@ -154,8 +156,7 @@ class InboxServiceIsolate {
             );
 
             for (final msg in fetchResult.messages.take(1)) {
-              final lastReadUid = await getLastReadUid();
-              final current = msg.uid;
+              final current = msg.uid!;
               final subject = '${msg.decodeSubject()}';
               if (lastReadUid != current) {
                 _loggingDb.captureEvent(

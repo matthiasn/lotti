@@ -32,8 +32,7 @@ class OutboxService {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   late final StreamSubscription<FGBGType> fgBgSubscription;
-
-  late SendPort _sendPort;
+  late final SendPort _sendPort;
 
   void dispose() {
     fgBgSubscription.cancel();
@@ -82,6 +81,7 @@ class OutboxService {
         ),
       );
     }
+    //await restartRunner();
   }
 
   Future<void> init() async {
@@ -93,19 +93,19 @@ class OutboxService {
     if (syncConfig != null && enableSyncOutbox) {
       debugPrint('OutboxService init $enableSyncOutbox');
       await startIsolate();
+
+      _connectivityService.connectedStream.listen((connected) {
+        if (connected) {
+          //restartRunner();
+        }
+      });
+
+      _fgBgService.fgBgStream.listen((foreground) {
+        if (foreground) {
+          //restartRunner();
+        }
+      });
     }
-
-    _connectivityService.connectedStream.listen((connected) {
-      if (connected) {
-        restartRunner();
-      }
-    });
-
-    _fgBgService.fgBgStream.listen((foreground) {
-      if (foreground) {
-        restartRunner();
-      }
-    });
   }
 
   Future<List<OutboxItem>> getNextItems() async {
