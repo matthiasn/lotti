@@ -16,9 +16,9 @@ class ImapClientManager {
   Future<ImapClient> _createImapClient(
     SyncConfig? syncConfig, {
     bool reuseClient = true,
-    Duration connectionTimeout = const Duration(minutes: 5),
-    Duration responseTimeout = const Duration(minutes: 15),
-    Duration writeTimeout = const Duration(minutes: 15),
+    Duration connectionTimeout = const Duration(seconds: 15),
+    Duration responseTimeout = const Duration(minutes: 1),
+    Duration writeTimeout = const Duration(minutes: 1),
     required bool allowInvalidCert,
   }) async {
     final clientId = uuid.v1();
@@ -28,7 +28,6 @@ class ImapClientManager {
       final client = _imapClient!;
       final connected = client.isConnected && client.isLoggedIn;
       if (connected) {
-        await client.check();
         return client;
       }
     }
@@ -111,12 +110,22 @@ class ImapClientManager {
       );
       return await callback(client).timeout(const Duration(seconds: 30));
     } catch (_) {
-      final client = await _createImapClient(
-        syncConfig,
-        allowInvalidCert: allowInvalidCert,
-        reuseClient: false,
-      );
-      return callback(client);
+      try {
+        final client = await _createImapClient(
+          syncConfig,
+          allowInvalidCert: allowInvalidCert,
+          reuseClient: false,
+        );
+        return callback(client).timeout(const Duration(minutes: 1));
+      } catch (e, stackTrace) {
+        getIt<LoggingDb>().captureException(
+          e,
+          domain: 'IMAP_CLIENT',
+          subDomain: 'imapAction',
+          stackTrace: stackTrace,
+        );
+        return false;
+      }
     }
   }
 }
