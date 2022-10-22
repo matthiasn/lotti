@@ -27,9 +27,21 @@ class InboxService {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final VectorClockService _vectorClockService = getIt<VectorClockService>();
   late final StreamSubscription<FGBGType> fgBgSubscription;
-  late final SendPort _sendPort;
+  SendPort? _sendPort;
 
-  void restartRunner() {}
+  Future<void> restartRunner() async {
+    final syncConfig = await _syncConfigService.getSyncConfig();
+    final networkConnected = await _connectivityService.isConnected();
+
+    if (syncConfig != null) {
+      _sendPort?.send(
+        InboxIsolateMessage.restart(
+          syncConfig: syncConfig,
+          networkConnected: networkConnected,
+        ),
+      );
+    }
+  }
 
   void dispose() {
     fgBgSubscription.cancel();
@@ -94,7 +106,7 @@ class InboxService {
     final lastReadUid = await getLastReadUid() ?? 0;
 
     if (syncConfig != null) {
-      _sendPort.send(
+      _sendPort?.send(
         InboxIsolateMessage.init(
           syncConfig: syncConfig,
           networkConnected: networkConnected,

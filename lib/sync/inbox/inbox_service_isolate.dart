@@ -57,6 +57,10 @@ Future<void> entryPoint(SendPort sendPort) async {
         restart: (_) {},
       );
     }
+
+    if (msg is InboxIsolateRestartMessage) {
+      inbox?.restartRunner();
+    }
   }
 }
 
@@ -75,6 +79,7 @@ class InboxServiceIsolate {
   }
 
   void restartRunner() {
+    debugPrint('INBOX ISOLATE restart');
     _timer.cancel();
     _clientRunner.close();
     _startRunner();

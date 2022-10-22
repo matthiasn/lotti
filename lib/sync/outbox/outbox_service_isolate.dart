@@ -60,6 +60,10 @@ Future<void> entryPoint(SendPort sendPort) async {
         restart: (_) => outbox?.restartRunner(),
       );
     }
+
+    if (msg is OutboxIsolateRestartMessage) {
+      outbox?.restartRunner();
+    }
   }
 }
 
@@ -94,12 +98,13 @@ class OutboxServiceIsolate {
   }
 
   void restartRunner() {
+    debugPrint('OUTBOX ISOLATE restart');
     _clientRunner.close();
     _startRunner();
   }
 
   Future<void> init() async {
-    debugPrint('OutboxServiceIsolatePart init');
+    debugPrint('OUTBOX ISOLATE init');
 
     Timer.periodic(const Duration(minutes: 1), (timer) async {
       final unprocessed = await getNextItems();
