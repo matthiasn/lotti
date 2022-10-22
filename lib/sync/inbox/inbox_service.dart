@@ -10,47 +10,29 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/inbox/inbox_service_isolate.dart';
 import 'package:lotti/sync/inbox/messages.dart';
+import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 class InboxService {
-  InboxService() {
-    _startRunner();
-  }
+  InboxService();
 
-  late ClientRunner<int> _clientRunner;
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
   final FgBgService _fgBgService = getIt<FgBgService>();
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final VectorClockService _vectorClockService = getIt<VectorClockService>();
   late final StreamSubscription<FGBGType> fgBgSubscription;
-  late Timer _timer;
+  late final SendPort _sendPort;
 
-  late SendPort _sendPort;
-
-  void _startRunner() {
-    _clientRunner = ClientRunner<int>(
-      callback: (event) async {
-        // await _fetchInbox();
-      },
-    );
-  }
-
-  void restartRunner() {
-    _timer.cancel();
-    _clientRunner.close();
-    _startRunner();
-  }
+  void restartRunner() {}
 
   void dispose() {
     fgBgSubscription.cancel();
-    _clientRunner.close();
   }
 
   Future<void> init() async {
@@ -85,7 +67,17 @@ class InboxService {
 
     final receivePort = ReceivePort();
     await Isolate.spawn(entryPoint, receivePort.sendPort);
-    _sendPort = await receivePort.first as SendPort;
+    final receiveBroadcast = receivePort.asBroadcastStream();
+
+    unawaited(
+      receiveBroadcast.forEach((msg) {
+        if (msg is IsolateInboxLastReadMessage) {
+          setLastReadUid(msg.lastReadUid);
+        }
+      }),
+    );
+
+    _sendPort = await receiveBroadcast.first as SendPort;
 
     final loggingDbIsolate = await getIt<Future<DriftIsolate>>(
       instanceName: loggingDbFileName,
@@ -99,6 +91,7 @@ class InboxService {
         await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
 
     final hostHash = await _vectorClockService.getHostHash();
+    final lastReadUid = await getLastReadUid() ?? 0;
 
     if (syncConfig != null) {
       _sendPort.send(
@@ -110,6 +103,7 @@ class InboxService {
           journalDbConnectPort: journalDbIsolate.connectPort,
           hostHash: hostHash,
           docDir: getDocumentsDirectory(),
+          lastReadUid: lastReadUid,
         ),
       );
     }

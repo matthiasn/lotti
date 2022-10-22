@@ -85,39 +85,37 @@ Future<void> processMessage(SyncConfig? syncConfig, MimeMessage message) async {
 }
 
 Future<void> fetchByUid({
-  int? uid,
+  required int uid,
   ImapClient? imapClient,
   SyncConfig? syncConfig,
-  required Future<void> Function(int?) setLastReadUid,
+  required Future<void> Function(int) setLastReadUid,
 }) async {
-  if (uid != null) {
-    final loggingDb = getIt<LoggingDb>();
+  final loggingDb = getIt<LoggingDb>();
 
-    try {
-      if (imapClient != null) {
-        // odd workaround, prevents intermittent failures on macOS
-        await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
-        final res = await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+  try {
+    if (imapClient != null) {
+      // odd workaround, prevents intermittent failures on macOS
+      await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+      final res = await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
 
-        for (final message in res.messages) {
-          await processMessage(syncConfig, message);
-        }
-        await setLastReadUid(uid);
+      for (final message in res.messages) {
+        await processMessage(syncConfig, message);
       }
-    } on MailException catch (e) {
-      debugPrint('High level API failed with $e');
-      loggingDb.captureException(
-        e,
-        domain: 'INBOX_SERVICE',
-        subDomain: '_fetchByUid',
-      );
-    } catch (e, stackTrace) {
-      loggingDb.captureException(
-        e,
-        domain: 'INBOX_SERVICE',
-        subDomain: '_fetchByUid',
-        stackTrace: stackTrace,
-      );
+      await setLastReadUid(uid);
     }
+  } on MailException catch (e) {
+    debugPrint('High level API failed with $e');
+    loggingDb.captureException(
+      e,
+      domain: 'INBOX_SERVICE',
+      subDomain: '_fetchByUid',
+    );
+  } catch (e, stackTrace) {
+    loggingDb.captureException(
+      e,
+      domain: 'INBOX_SERVICE',
+      subDomain: '_fetchByUid',
+      stackTrace: stackTrace,
+    );
   }
 }
