@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +14,9 @@ import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path_provider/path_provider.dart';
 
+import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
 import '../../test_data/test_data.dart';
 import '../../widget_test_utils.dart';
@@ -29,8 +33,11 @@ void main() {
     final mockTimeService = MockTimeService();
     final mockJournalDb = MockJournalDb();
 
-    setUp(() {
+    setUp(() async {
+      setFakeDocumentsPath();
+
       getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<JournalDb>(mockJournalDb)

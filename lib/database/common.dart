@@ -8,11 +8,11 @@ import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 Future<File> getDatabaseFile(String dbFileName) async {
-  final dbFolder = await getApplicationDocumentsDirectory();
+  final dbFolder = getDocumentsDirectory();
   return File(p.join(dbFolder.path, dbFileName));
 }
 
@@ -40,17 +40,20 @@ LazyDatabase openDbConnection(
   });
 }
 
-Future<DriftIsolate> createDriftIsolate(String dbFileName) async {
+Future<DriftIsolate> createDriftIsolate(
+  String dbFileName, {
+  bool inMemory = false,
+}) async {
   // this method is called from the main isolate. Since we can't use
   // getApplicationDocumentsDirectory on a background isolate, we calculate
   // the database path in the foreground isolate and then inform the
   // background isolate about the path.
-  final dir = await getApplicationDocumentsDirectory();
+  final dir = getDocumentsDirectory();
   final path = p.join(dir.path, dbFileName);
   final receivePort = ReceivePort();
 
   await Isolate.spawn(
-    _startBackground,
+    inMemory ? _startBackgroundInMem : _startBackground,
     _IsolateStartRequest(receivePort.sendPort, path),
   );
 
@@ -69,6 +72,14 @@ void _startBackground(_IsolateStartRequest request) {
     () => DatabaseConnection(executor),
   );
   // inform the starting isolate about this, so that it can call .connect()
+  request.sendDriftIsolate.send(driftIsolate);
+}
+
+void _startBackgroundInMem(_IsolateStartRequest request) {
+  final executor = NativeDatabase.memory();
+  final driftIsolate = DriftIsolate.inCurrent(
+    () => DatabaseConnection(executor),
+  );
   request.sendDriftIsolate.send(driftIsolate);
 }
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/isolate.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/common.dart';
@@ -19,14 +21,19 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
+import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
-import 'package:lotti/sync/outbox_service.dart';
+import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/themes/themes_service.dart';
+import 'package:path_provider/path_provider.dart';
 
 final getIt = GetIt.instance;
 
-void registerSingletons() {
+Future<void> registerSingletons() async {
+  final docDir = await getApplicationDocumentsDirectory();
+
   getIt
+    ..registerSingleton<Directory>(docDir)
     ..registerSingleton<Future<DriftIsolate>>(
       createDriftIsolate(journalDbFileName),
       instanceName: journalDbFileName,
@@ -46,6 +53,7 @@ void registerSingletons() {
       createDriftIsolate(loggingDbFileName),
       instanceName: loggingDbFileName,
     )
+    ..registerSingleton<ImapClientManager>(ImapClientManager())
     ..registerSingleton<LoggingDb>(getLoggingDb())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<SyncConfigService>(SyncConfigService())
@@ -60,5 +68,5 @@ void registerSingletons() {
     ..registerSingleton<Maintenance>(Maintenance())
     ..registerSingleton<NavService>(NavService());
 
-  initConfigFlags(getIt<JournalDb>());
+  await initConfigFlags(getIt<JournalDb>());
 }

@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:drift/isolate.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/database/common.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -11,10 +14,11 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
-import 'package:lotti/sync/outbox_service.dart';
+import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../helpers/path_provider.dart';
 import '../mocks/mocks.dart';
@@ -51,15 +55,21 @@ void main() {
           .thenAnswer((_) async => true);
 
       getIt
-        ..registerSingleton<SyncDatabase>(
-          SyncDatabase(inMemoryDatabase: true),
-          dispose: (db) async => db.close(),
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<Future<DriftIsolate>>(
+          createDriftIsolate(syncDbFileName, inMemory: true),
+          instanceName: syncDbFileName,
         )
+        ..registerSingleton<SyncDatabase>(getSyncDatabase())
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<FgBgService>(mockFgBgService)
         ..registerSingleton<VectorClockService>(mockVectorClockService)
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
+        ..registerSingleton<Future<DriftIsolate>>(
+          createDriftIsolate(loggingDbFileName, inMemory: true),
+          instanceName: loggingDbFileName,
+        )
+        ..registerSingleton<LoggingDb>(getLoggingDb())
         ..registerSingleton<SyncConfigService>(syncConfigMock)
         ..registerSingleton<OutboxService>(OutboxService());
     });
@@ -69,6 +79,9 @@ void main() {
           .thenAnswer((_) async => 'some_host_hash');
       when(mockVectorClockService.getHost)
           .thenAnswer((_) async => 'some_host_id');
+
+      when(() => mockJournalDb.getConfigFlag(any()))
+          .thenAnswer((_) async => true);
     });
 
     tearDownAll(() async {
@@ -82,6 +95,8 @@ void main() {
 
     test('SyncMessage with JournalEntry is enqueued into database', () async {
       final outboxService = getIt<OutboxService>();
+      await outboxService.init();
+
       final message = SyncMessage.journalEntity(
         journalEntity: testWeightEntry,
         status: SyncEntryStatus.initial,

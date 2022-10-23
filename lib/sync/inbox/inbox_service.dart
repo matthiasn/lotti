@@ -1,6 +1,7 @@
 import 'dart:async';
+import 'dart:isolate';
 
-import 'package:enough_mail/enough_mail.dart';
+import 'package:drift/isolate.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/database/database.dart';
@@ -9,60 +10,41 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
-import 'package:lotti/sync/imap_client.dart';
-import 'package:lotti/sync/inbox/process_message.dart';
+import 'package:lotti/sync/inbox/inbox_service_isolate.dart';
+import 'package:lotti/sync/inbox/messages.dart';
 import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 
 class InboxService {
-  InboxService() {
-    _startRunner();
+  InboxService();
 
-    init();
-  }
-
-  late ClientRunner<int> _clientRunner;
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
   final FgBgService _fgBgService = getIt<FgBgService>();
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final VectorClockService _vectorClockService = getIt<VectorClockService>();
-  MailClient? _observingClient;
   late final StreamSubscription<FGBGType> fgBgSubscription;
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
-  ImapClient? imapClient;
-  late Timer _timer;
+  SendPort? _sendPort;
 
-  void _startRunner() {
-    _clientRunner = ClientRunner<int>(
-      callback: (event) async {
-        await _fetchInbox();
-      },
-    );
-  }
+  Future<void> restartRunner() async {
+    final syncConfig = await _syncConfigService.getSyncConfig();
+    final networkConnected = await _connectivityService.isConnected();
 
-  void restartRunner() {
-    _timer.cancel();
-    _clientRunner.close();
-    _startRunner();
-    _startTimer();
+    if (syncConfig != null) {
+      _sendPort?.send(
+        InboxIsolateMessage.restart(
+          syncConfig: syncConfig,
+          networkConnected: networkConnected,
+        ),
+      );
+    }
   }
 
   void dispose() {
     fgBgSubscription.cancel();
-    _clientRunner.close();
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(
-      const Duration(seconds: 15),
-      (timer) async {
-        enqueueNextFetchRequest();
-      },
-    );
   }
 
   Future<void> init() async {
@@ -76,196 +58,65 @@ class InboxService {
       return;
     }
 
+    await startInboxIsolate();
+
     _fgBgService.fgBgStream.listen((foreground) {
       if (foreground) {
         restartRunner();
-        enqueueNextFetchRequest();
-        _observeInbox();
       }
     });
 
     _connectivityService.connectedStream.listen((connected) {
       if (connected) {
         restartRunner();
-        enqueueNextFetchRequest();
-        _observeInbox();
       }
     });
-
-    _startTimer();
-    enqueueNextFetchRequest();
-    await _observeInbox();
   }
 
-  void enqueueNextFetchRequest({
-    Duration delay = const Duration(milliseconds: 1),
-  }) {
+  Future<void> startInboxIsolate() async {
+    final syncConfig = await _syncConfigService.getSyncConfig();
+    final networkConnected = await _connectivityService.isConnected();
+
+    final receivePort = ReceivePort();
+    await Isolate.spawn(entryPoint, receivePort.sendPort);
+    final receiveBroadcast = receivePort.asBroadcastStream();
+
     unawaited(
-      Future<void>.delayed(delay).then(
-        (_) =>
-            _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch),
-      ),
+      receiveBroadcast.forEach((msg) {
+        if (msg is IsolateInboxLastReadMessage) {
+          setLastReadUid(msg.lastReadUid);
+        }
+      }),
     );
-  }
 
-  Future<void> _fetchInbox() async {
-    try {
-      final allowInvalidCert =
-          await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
-      final syncConfig = await _syncConfigService.getSyncConfig();
-      imapClient ??= await createImapClient(
-        syncConfig,
-        allowInvalidCert: allowInvalidCert,
-      );
-      final lastReadUid = await getLastReadUid();
+    _sendPort = await receiveBroadcast.first as SendPort;
 
-      if (lastReadUid == null) {
-        enqueueNextFetchRequest(delay: const Duration(seconds: 1));
-        return;
-      }
+    final loggingDbIsolate = await getIt<Future<DriftIsolate>>(
+      instanceName: loggingDbFileName,
+    );
 
-      final sequence = MessageSequence(isUidSequence: true)
-        ..addRangeToLast(lastReadUid + 1);
+    final journalDbIsolate = await getIt<Future<DriftIsolate>>(
+      instanceName: journalDbFileName,
+    );
 
-      final hostHash = await _vectorClockService.getHostHash();
+    final allowInvalidCert =
+        await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
 
-      if (imapClient != null && hostHash != null) {
-        final fetchResult = await imapClient!.uidFetchMessages(
-          sequence,
-          'ENVELOPE',
-        );
+    final hostHash = await _vectorClockService.getHostHash();
+    final lastReadUid = await getLastReadUid() ?? 0;
 
-        for (final msg in fetchResult.messages.take(1)) {
-          final lastReadUid = await getLastReadUid();
-          final current = msg.uid;
-          final subject = '${msg.decodeSubject()}';
-          if (lastReadUid != current) {
-            _loggingDb.captureEvent(
-              'lastReadUid $lastReadUid current $current',
-              domain: 'INBOX',
-              subDomain: 'fetch',
-            );
-            if (!validSubject(subject)) {
-              debugPrint('_fetchInbox ignoring invalid email: $current');
-              _loggingDb.captureEvent(
-                '_fetchInbox ignoring invalid email: $current',
-                domain: 'INBOX',
-              );
-              await setLastReadUid(current);
-            } else if (subject.contains(hostHash)) {
-              debugPrint('_fetchInbox ignoring from same host: $current');
-              _loggingDb.captureEvent(
-                '_fetchInbox ignoring from same host: $current',
-                domain: 'INBOX',
-              );
-              await setLastReadUid(current);
-            } else {
-              await fetchByUid(uid: current, imapClient: imapClient);
-            }
-          }
-          if (fetchResult.messages.length > 1) {
-            enqueueNextFetchRequest();
-          }
-        }
-      }
-    } on MailException catch (e, stackTrace) {
-      debugPrint('High level API failed with $e');
-      _loggingDb.captureException(
-        e,
-        domain: 'INBOX',
-        subDomain: '_fetchInbox',
-        stackTrace: stackTrace,
-      );
-      imapClient = null;
-    } catch (e, stackTrace) {
-      debugPrint('Exception $e');
-      _loggingDb.captureException(
-        e,
-        domain: 'INBOX',
-        subDomain: '_fetchInbox',
-        stackTrace: stackTrace,
-      );
-
-      imapClient = null;
-    }
-  }
-
-  Future<void> _observeInbox() async {
-    try {
-      final syncConfig = await _syncConfigService.getSyncConfig();
-
-      if (syncConfig != null) {
-        final imapConfig = syncConfig.imapConfig;
-
-        final account = MailAccount.fromManualSettings(
-          'sync',
-          imapConfig.userName,
-          imapConfig.host,
-          imapConfig.host,
-          imapConfig.password,
-        );
-
-        _observingClient ??= MailClient(account);
-
-        if (_observingClient == null) {
-          return;
-        }
-
-        if (_observingClient?.isConnected ?? false) {
-          return;
-        }
-
-        await _observingClient?.connect();
-        await _observingClient?.selectMailboxByPath(imapConfig.folder);
-
-        _observingClient?.eventBus
-            .on<MailLoadEvent>()
-            .listen((MailLoadEvent event) async {
-          enqueueNextFetchRequest();
-        });
-
-        _observingClient?.eventBus
-            .on<MailConnectionLostEvent>()
-            .listen((MailConnectionLostEvent event) async {
-          _loggingDb.captureEvent(
-            event,
-            domain: 'INBOX',
-          );
-
-          try {
-            await _observingClient?.disconnect();
-            _observingClient = null;
-          } catch (e, stackTrace) {
-            _loggingDb.captureException(
-              e,
-              domain: 'INBOX',
-              subDomain: '_observeInbox',
-              stackTrace: stackTrace,
-            );
-          }
-
-          _loggingDb.captureEvent(
-            'isConnected: ${_observingClient?.isConnected} '
-            'isPolling: ${_observingClient?.isPolling()}',
-            domain: 'INBOX',
-          );
-        });
-
-        await _observingClient!.startPolling();
-      }
-    } on MailException catch (e) {
-      debugPrint('High level API failed with $e');
-      _loggingDb.captureException(
-        e,
-        domain: 'INBOX',
-        stackTrace: e.stackTrace,
-      );
-    } catch (e, stackTrace) {
-      _loggingDb.captureException(
-        e,
-        domain: 'INBOX',
-        subDomain: '_observeInbox',
-        stackTrace: stackTrace,
+    if (syncConfig != null) {
+      _sendPort?.send(
+        InboxIsolateMessage.init(
+          syncConfig: syncConfig,
+          networkConnected: networkConnected,
+          loggingDbConnectPort: loggingDbIsolate.connectPort,
+          allowInvalidCert: allowInvalidCert,
+          journalDbConnectPort: journalDbIsolate.connectPort,
+          hostHash: hostHash,
+          docDir: getDocumentsDirectory(),
+          lastReadUid: lastReadUid,
+        ),
       );
     }
   }

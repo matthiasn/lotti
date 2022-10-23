@@ -23,6 +23,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
+import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -100,6 +101,8 @@ class MockSecureStorage extends Mock implements SecureStorage {}
 class MockVectorClockService extends Mock implements VectorClockService {}
 
 class MockConnectivityService extends Mock implements ConnectivityService {}
+
+class MockImapClientManager extends Mock implements ImapClientManager {}
 
 class MockFgBgService extends Mock implements FgBgService {}
 

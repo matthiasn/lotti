@@ -61,69 +61,63 @@ const String sharedSecretKey = 'sharedSecret';
 const String imapConfigKey = 'imapConfig';
 const String lastReadUidKey = 'lastReadUid';
 
-Future<ImapClient?> persistImap({
+Future<bool> persistImap({
   required String encryptedMessage,
   required String subject,
   required SyncConfig syncConfig,
   required bool allowInvalidCert,
   String? encryptedFilePath,
-  ImapClient? prevImapClient,
 }) async {
   final loggingDb = getIt<LoggingDb>();
 
-  ImapClient? imapClient;
-  try {
-    if (prevImapClient != null && prevImapClient.isConnected) {
-      imapClient = prevImapClient;
-    } else {
-      await prevImapClient?.disconnect();
-      imapClient = await createImapClient(syncConfig, allowInvalidCert: allowInvalidCert,);
-    }
+  return getIt<ImapClientManager>().imapAction(
+    (imapClient) async {
+      try {
+        GenericImapResult? res;
 
-    GenericImapResult? res;
-    if (imapClient != null) {
-      if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
-        final encryptedFile = File(encryptedFilePath);
-        final fileLength = encryptedFile.lengthSync();
-        if (fileLength > 0) {
+        if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
+          final encryptedFile = File(encryptedFilePath);
+          final fileLength = encryptedFile.lengthSync();
+          if (fileLength > 0) {
+            res = await saveImapMessage(
+              imapClient: imapClient,
+              subject: subject,
+              encryptedMessage: encryptedMessage,
+              syncConfig: syncConfig,
+              file: encryptedFile,
+            );
+          }
+        } else {
           res = await saveImapMessage(
             imapClient: imapClient,
             subject: subject,
             encryptedMessage: encryptedMessage,
             syncConfig: syncConfig,
-            file: encryptedFile,
           );
         }
-      } else {
-        res = await saveImapMessage(
-          imapClient: imapClient,
-          subject: subject,
-          encryptedMessage: encryptedMessage,
-          syncConfig: syncConfig,
+
+        final resDetails = res?.details;
+        loggingDb.captureEvent(
+          resDetails ?? 'no result details',
+          domain: 'OUTBOX_IMAP',
         );
+
+        if (resDetails != null && resDetails.contains('completed')) {
+          return true;
+        } else {
+          await imapClient.disconnect();
+          return false;
+        }
+      } catch (exception, stackTrace) {
+        loggingDb.captureException(
+          exception,
+          domain: 'OUTBOX_IMAP persistImap',
+          stackTrace: stackTrace,
+        );
+        rethrow;
       }
-    }
-
-    final resDetails = res?.details;
-    loggingDb.captureEvent(
-      resDetails ?? 'no result details',
-      domain: 'OUTBOX_IMAP',
-    );
-
-    if (resDetails != null && resDetails.contains('completed')) {
-      return imapClient;
-    } else {
-      await imapClient?.disconnect();
-      return null;
-    }
-  } catch (exception, stackTrace) {
-    loggingDb.captureException(
-      exception,
-      domain: 'OUTBOX_IMAP persistImap',
-      stackTrace: stackTrace,
-    );
-    await prevImapClient?.disconnect();
-    imapClient = null;
-    rethrow;
-  }
+    },
+    syncConfig: syncConfig,
+    allowInvalidCert: allowInvalidCert,
+  );
 }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -9,7 +11,9 @@ import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path_provider/path_provider.dart';
 
+import '../../../helpers/path_provider.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -18,8 +22,11 @@ void main() {
   group('ShareButtonWidget', () {
     final entryCubit = MockEntryCubit();
 
-    setUpAll(() {
+    setUpAll(() async {
+      setFakeDocumentsPath();
+
       getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<TagsService>(TagsService());

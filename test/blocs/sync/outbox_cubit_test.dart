@@ -4,7 +4,7 @@ import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/sync/outbox_service.dart';
+import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/sync_config_test_mocks.dart';
@@ -36,9 +36,7 @@ void main() {
       expect: () => <OutboxState>[
         OutboxState.disabled(),
       ],
-      verify: (c) {
-        verify(() => mockOutboxService.init()).called(1);
-      },
+      verify: (c) {},
     );
 
     // TODO: adapt test (works when testing manually)

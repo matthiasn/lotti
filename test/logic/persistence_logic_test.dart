@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -16,12 +18,13 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
-import 'package:lotti/sync/outbox_service.dart';
+import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/utils.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../helpers/path_provider.dart';
 import '../mocks/mocks.dart';
@@ -49,6 +52,8 @@ void main() {
     );
 
     setUpAll(() async {
+      setFakeDocumentsPath();
+
       final journalDb = JournalDb(inMemoryDatabase: true);
       await initConfigFlags(journalDb);
 
@@ -79,6 +84,7 @@ void main() {
       ).thenAnswer((_) async {});
 
       getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<FgBgService>(mockFgBgService)
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))

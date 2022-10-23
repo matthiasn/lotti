@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 Uuid uuid = const Uuid();
@@ -41,7 +41,7 @@ String typeSuffix(JournalEntity journalEntity) {
 String entityPath(JournalEntity journalEntity, Directory docDir) {
   return journalEntity.maybeMap(
     journalImage: (JournalImage journalImage) =>
-        '${getFullImagePathWithDocDir(journalImage, docDir)}.json',
+        '${getFullImagePath(journalImage)}.json',
     journalAudio: (journalAudio) =>
         '${AudioUtils.getAudioPath(journalAudio, docDir)}.json',
     orElse: () {
@@ -57,7 +57,7 @@ String entityPath(JournalEntity journalEntity, Directory docDir) {
 
 Future<void> saveJournalEntityJson(JournalEntity journalEntity) async {
   final json = jsonEncode(journalEntity);
-  final docDir = await getApplicationDocumentsDirectory();
+  final docDir = getDocumentsDirectory();
   final path = entityPath(journalEntity, docDir);
   await saveJson(path, json);
 }
@@ -68,8 +68,12 @@ Future<void> saveJson(String path, String json) async {
 }
 
 Future<String> createAssetDirectory(String relativePath) async {
-  final docDir = await getApplicationDocumentsDirectory();
+  final docDir = getDocumentsDirectory();
   final directory =
       await Directory('${docDir.path}$relativePath').create(recursive: true);
   return directory.path;
+}
+
+Directory getDocumentsDirectory() {
+  return getIt<Directory>();
 }

@@ -7,7 +7,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/sync/outbox_service.dart';
+import 'package:lotti/sync/outbox/outbox_service.dart';
 
 class Maintenance {
   final JournalDb _db = getIt<JournalDb>();
@@ -66,6 +66,7 @@ class Maintenance {
     final tags = await _db.watchTags().first;
     final measurables = await _db.watchMeasurableDataTypes().first;
     final dashboards = await _db.watchDashboards().first;
+    final habits = await _db.watchHabitDefinitions().first;
 
     for (final tag in tags) {
       await outboxService.enqueueMessage(
@@ -87,6 +88,14 @@ class Maintenance {
       await outboxService.enqueueMessage(
         SyncMessage.entityDefinition(
           entityDefinition: dashboard,
+          status: SyncEntryStatus.update,
+        ),
+      );
+    }
+    for (final habit in habits) {
+      await outboxService.enqueueMessage(
+        SyncMessage.entityDefinition(
+          entityDefinition: habit,
           status: SyncEntryStatus.update,
         ),
       );

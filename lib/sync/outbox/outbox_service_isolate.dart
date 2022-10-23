@@ -4,7 +4,6 @@ import 'dart:isolate';
 
 import 'package:drift/drift.dart';
 import 'package:drift/isolate.dart';
-import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/config.dart';
@@ -14,50 +13,62 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/encryption.dart';
+import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/outbox/messages.dart';
 import 'package:lotti/sync/outbox/outbox_imap.dart';
 
 Future<void> entryPoint(SendPort sendPort) async {
   final port = ReceivePort();
   sendPort.send(port.sendPort);
+  OutboxServiceIsolate? outbox;
 
   await for (final msg in port) {
-    if (msg is OutboxIsolateInitMessage) {
-      final syncDb = SyncDatabase.connect(
-        getDbConnFromIsolate(
-          DriftIsolate.fromConnectPort(msg.syncDbConnectPort),
-        ),
-      );
+    if (msg is OutboxIsolateMessage) {
+      msg.map(
+        init: (initMsg) {
+          final syncDb = SyncDatabase.connect(
+            getDbConnFromIsolate(
+              DriftIsolate.fromConnectPort(initMsg.syncDbConnectPort),
+            ),
+          );
 
-      final loggingDb = LoggingDb.connect(
-        getDbConnFromIsolate(
-          DriftIsolate.fromConnectPort(msg.loggingDbConnectPort),
-        ),
-      );
+          final loggingDb = LoggingDb.connect(
+            getDbConnFromIsolate(
+              DriftIsolate.fromConnectPort(initMsg.loggingDbConnectPort),
+            ),
+          );
 
-      getIt
-        ..registerSingleton<SyncDatabase>(syncDb)
-        ..registerSingleton<LoggingDb>(loggingDb);
+          getIt
+            ..registerSingleton<Directory>(initMsg.docDir)
+            ..registerSingleton<ImapClientManager>(ImapClientManager())
+            ..registerSingleton<SyncDatabase>(syncDb)
+            ..registerSingleton<LoggingDb>(loggingDb);
 
-      final outbox = OutboxServiceIsolatePart(
-        syncConfig: msg.syncConfig,
-        networkConnected: msg.networkConnected,
-        allowInvalidCert: msg.allowInvalidCert,
-        docDir: msg.docDir,
-      );
+          outbox = OutboxServiceIsolate(
+            syncConfig: initMsg.syncConfig,
+            networkConnected: initMsg.networkConnected,
+            allowInvalidCert: initMsg.allowInvalidCert,
+            docDir: initMsg.docDir,
+          );
 
-      unawaited(
-        getIt<SyncDatabase>().watchOutboxCount().forEach((element) {
-          debugPrint('db.watchOutboxCount $element');
-          outbox.enqueueNextSendRequest();
-        }),
+          unawaited(
+            getIt<SyncDatabase>().watchOutboxCount().forEach((element) {
+              outbox?.enqueueNextSendRequest();
+            }),
+          );
+        },
+        restart: (_) => outbox?.restartRunner(),
       );
+    }
+
+    if (msg is OutboxIsolateRestartMessage) {
+      outbox?.restartRunner();
     }
   }
 }
 
-class OutboxServiceIsolatePart {
-  OutboxServiceIsolatePart({
+class OutboxServiceIsolate {
+  OutboxServiceIsolate({
     required this.syncConfig,
     required this.networkConnected,
     required this.allowInvalidCert,
@@ -70,7 +81,6 @@ class OutboxServiceIsolatePart {
 
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
-  ImapClient? prevImapClient;
   SyncConfig syncConfig;
   Directory docDir;
   bool networkConnected;
@@ -88,12 +98,13 @@ class OutboxServiceIsolatePart {
   }
 
   void restartRunner() {
+    debugPrint('OUTBOX ISOLATE restart');
     _clientRunner.close();
     _startRunner();
   }
 
   Future<void> init() async {
-    debugPrint('OutboxServiceIsolatePart init');
+    debugPrint('OUTBOX ISOLATE init');
 
     Timer.periodic(const Duration(minutes: 1), (timer) async {
       final unprocessed = await getNextItems();
@@ -122,21 +133,10 @@ class OutboxServiceIsolatePart {
     );
 
     try {
-      final clientConnected = prevImapClient?.isConnected ?? false;
-
-      _loggingDb
-        ..captureEvent(
-          'sendNext() networkConnected: $networkConnected ',
-          domain: 'OUTBOX_ISOLATE',
-        )
-        ..captureEvent(
-          'sendNext() clientConnected: $clientConnected ',
-          domain: 'OUTBOX_ISOLATE',
-        );
-
-      if (!clientConnected) {
-        prevImapClient = null;
-      }
+      _loggingDb.captureEvent(
+        'sendNext() networkConnected: $networkConnected ',
+        domain: 'OUTBOX_ISOLATE',
+      );
 
       if (networkConnected) {
         final unprocessed = await getNextItems();
@@ -159,15 +159,14 @@ class OutboxServiceIsolatePart {
               encryptedFilePath = encryptedFile.path;
             }
 
-            final successfulClient = await persistImap(
+            final success = await persistImap(
               encryptedFilePath: encryptedFilePath,
               subject: nextPending.subject,
               encryptedMessage: encryptedMessage,
-              prevImapClient: prevImapClient,
               syncConfig: syncConfig,
               allowInvalidCert: allowInvalidCert,
             );
-            if (successfulClient != null) {
+            if (success) {
               await _syncDatabase.updateOutboxItem(
                 OutboxCompanion(
                   id: Value(nextPending.id),
@@ -183,7 +182,7 @@ class OutboxServiceIsolatePart {
                 delay: const Duration(seconds: 15),
               );
             }
-            prevImapClient = successfulClient;
+
             _loggingDb.captureEvent(
               'sendNext() done',
               domain: 'OUTBOX_ISOLATE',
@@ -201,9 +200,6 @@ class OutboxServiceIsolatePart {
                 updatedAt: Value(DateTime.now()),
               ),
             );
-            await prevImapClient?.disconnect();
-            // ignore: unnecessary_statements
-            prevImapClient == null;
             await enqueueNextSendRequest(delay: const Duration(seconds: 15));
           }
         }
@@ -215,9 +211,6 @@ class OutboxServiceIsolatePart {
         subDomain: 'sendNext',
         stackTrace: stackTrace,
       );
-      await prevImapClient?.disconnect();
-      // ignore: unnecessary_statements
-      prevImapClient == null;
       await enqueueNextSendRequest(delay: const Duration(seconds: 15));
     }
   }

@@ -5,7 +5,6 @@ import 'dart:isolate';
 
 import 'package:drift/drift.dart';
 import 'package:drift/isolate.dart';
-import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
@@ -23,8 +22,8 @@ import 'package:lotti/sync/outbox/messages.dart';
 import 'package:lotti/sync/outbox/outbox_service_isolate.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:path_provider/path_provider.dart';
 
 class OutboxService {
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
@@ -33,24 +32,33 @@ class OutboxService {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   late final StreamSubscription<FGBGType> fgBgSubscription;
-  ImapClient? prevImapClient;
+  SendPort? _sendPort;
 
   void dispose() {
     fgBgSubscription.cancel();
   }
 
-  void restartRunner() {
-    // TODO: pass request to isolate
+  Future<void> restartRunner() async {
+    final syncConfig = await _syncConfigService.getSyncConfig();
+    final networkConnected = await _connectivityService.isConnected();
+
+    if (syncConfig != null) {
+      _sendPort?.send(
+        OutboxIsolateMessage.restart(
+          syncConfig: syncConfig,
+          networkConnected: networkConnected,
+        ),
+      );
+    }
   }
 
   Future<void> startIsolate() async {
     final syncConfig = await _syncConfigService.getSyncConfig();
     final networkConnected = await _connectivityService.isConnected();
-    final docDir = await getApplicationDocumentsDirectory();
 
     final receivePort = ReceivePort();
     await Isolate.spawn(entryPoint, receivePort.sendPort);
-    final sendPort = await receivePort.first as SendPort;
+    _sendPort = await receivePort.first as SendPort;
 
     final syncDbIsolate = await getIt<Future<DriftIsolate>>(
       instanceName: syncDbFileName,
@@ -62,14 +70,14 @@ class OutboxService {
         await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
 
     if (syncConfig != null) {
-      sendPort.send(
+      _sendPort?.send(
         OutboxIsolateMessage.init(
           syncConfig: syncConfig,
           networkConnected: networkConnected,
           syncDbConnectPort: syncDbIsolate.connectPort,
           loggingDbConnectPort: loggingDbIsolate.connectPort,
           allowInvalidCert: allowInvalidCert,
-          docDir: docDir,
+          docDir: getDocumentsDirectory(),
         ),
       );
     }
@@ -84,19 +92,19 @@ class OutboxService {
     if (syncConfig != null && enableSyncOutbox) {
       debugPrint('OutboxService init $enableSyncOutbox');
       await startIsolate();
+
+      _connectivityService.connectedStream.listen((connected) {
+        if (connected) {
+          restartRunner();
+        }
+      });
+
+      _fgBgService.fgBgStream.listen((foreground) {
+        if (foreground) {
+          restartRunner();
+        }
+      });
     }
-
-    _connectivityService.connectedStream.listen((connected) {
-      if (connected) {
-        restartRunner();
-      }
-    });
-
-    _fgBgService.fgBgStream.listen((foreground) {
-      if (foreground) {
-        restartRunner();
-      }
-    });
   }
 
   Future<List<OutboxItem>> getNextItems() async {
@@ -109,7 +117,7 @@ class OutboxService {
       final hostHash = await vectorClockService.getHostHash();
       final host = await vectorClockService.getHost();
       final jsonString = json.encode(syncMessage);
-      final docDir = await getApplicationDocumentsDirectory();
+      final docDir = getDocumentsDirectory();
 
       final commonFields = OutboxCompanion(
         status: Value(OutboxStatus.pending.index),
@@ -131,8 +139,7 @@ class OutboxService {
           },
           journalImage: (JournalImage journalImage) {
             if (syncMessage.status == SyncEntryStatus.initial) {
-              attachment =
-                  File(getFullImagePathWithDocDir(journalImage, docDir));
+              attachment = File(getFullImagePath(journalImage));
             }
           },
           orElse: () {},

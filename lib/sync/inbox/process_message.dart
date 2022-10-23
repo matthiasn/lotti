@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -10,22 +11,16 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox/read_decrypt.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
-import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 
-Future<void> processMessage(MimeMessage message) async {
-  final syncConfigService = getIt<SyncConfigService>();
-  final persistenceLogic = getIt<PersistenceLogic>();
+Future<void> processMessage(SyncConfig? syncConfig, MimeMessage message) async {
   final journalDb = getIt<JournalDb>();
   final loggingDb = getIt<LoggingDb>();
 
   try {
     final encryptedMessage = readMessage(message);
-    final syncConfig = await syncConfigService.getSyncConfig();
 
     if (syncConfig != null) {
       final b64Secret = syncConfig.sharedSecret;
@@ -34,8 +29,10 @@ Future<void> processMessage(MimeMessage message) async {
           await decryptMessage(encryptedMessage, message, b64Secret);
 
       await syncMessage?.when(
-        journalEntity:
-            (JournalEntity journalEntity, SyncEntryStatus status) async {
+        journalEntity: (
+          JournalEntity journalEntity,
+          SyncEntryStatus status,
+        ) async {
           await saveJournalEntityJson(journalEntity);
 
           await journalEntity.maybeMap(
@@ -53,9 +50,9 @@ Future<void> processMessage(MimeMessage message) async {
           );
 
           if (status == SyncEntryStatus.update) {
-            await persistenceLogic.updateDbEntity(journalEntity);
+            await journalDb.updateJournalEntity(journalEntity);
           } else {
-            await persistenceLogic.createDbEntity(journalEntity);
+            await journalDb.addJournalEntity(journalEntity);
           }
         },
         entryLink: (EntryLink entryLink, SyncEntryStatus _) {
@@ -88,37 +85,37 @@ Future<void> processMessage(MimeMessage message) async {
 }
 
 Future<void> fetchByUid({
-  int? uid,
+  required int uid,
   ImapClient? imapClient,
+  SyncConfig? syncConfig,
+  required Future<void> Function(int) setLastReadUid,
 }) async {
-  if (uid != null) {
-    final loggingDb = getIt<LoggingDb>();
+  final loggingDb = getIt<LoggingDb>();
 
-    try {
-      if (imapClient != null) {
-        // odd workaround, prevents intermittent failures on macOS
-        await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
-        final res = await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+  try {
+    if (imapClient != null) {
+      // odd workaround, prevents intermittent failures on macOS
+      await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+      final res = await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
 
-        for (final message in res.messages) {
-          await processMessage(message);
-        }
-        await setLastReadUid(uid);
+      for (final message in res.messages) {
+        await processMessage(syncConfig, message);
       }
-    } on MailException catch (e) {
-      debugPrint('High level API failed with $e');
-      loggingDb.captureException(
-        e,
-        domain: 'INBOX_SERVICE',
-        subDomain: '_fetchByUid',
-      );
-    } catch (e, stackTrace) {
-      loggingDb.captureException(
-        e,
-        domain: 'INBOX_SERVICE',
-        subDomain: '_fetchByUid',
-        stackTrace: stackTrace,
-      );
+      await setLastReadUid(uid);
     }
+  } on MailException catch (e) {
+    debugPrint('High level API failed with $e');
+    loggingDb.captureException(
+      e,
+      domain: 'INBOX_SERVICE',
+      subDomain: '_fetchByUid',
+    );
+  } catch (e, stackTrace) {
+    loggingDb.captureException(
+      e,
+      domain: 'INBOX_SERVICE',
+      subDomain: '_fetchByUid',
+      stackTrace: stackTrace,
+    );
   }
 }

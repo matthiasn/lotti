@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Move Sync inbox to separate isolate
+
+## [0.8.179] - 2022-10-22
+### Changed:
+- Simplify sync by reusing IMAP client in one place
+- Restart outbox client isolate on network reconnect
+
+## [0.8.178] - 2022-10-21
+### Changed:
 - Upgraded dependencies
 - Count habits total and finished today
 - Count habit streaks of three days (up until yesterday) 

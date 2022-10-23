@@ -1,15 +1,22 @@
+import 'dart:io';
+
+import 'package:drift/isolate.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/common.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/logging_db.dart';
-import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
+import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
+import 'package:lotti/sync/secure_storage.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
@@ -23,7 +30,9 @@ void main() {
     final syncConfigMock = MockSyncConfigService();
     final mockVectorClockService = MockVectorClockService();
     final mockJournalDb = MockJournalDb();
+    final mockImapClientManager = MockImapClientManager();
     final mockPersistenceLogic = MockPersistenceLogic();
+    final secureStorageMock = MockSecureStorage();
 
     final mockConnectivityService = MockConnectivityService();
     when(() => mockConnectivityService.connectedStream).thenAnswer(
@@ -41,22 +50,40 @@ void main() {
 
       when(syncConfigMock.getSyncConfig)
           .thenAnswer((_) async => testSyncConfigConfigured);
+
       when(() => mockJournalDb.getConfigFlag(any()))
           .thenAnswer((_) async => true);
 
+      when(
+        () => mockImapClientManager.imapAction(
+          any(),
+          syncConfig: any(named: 'syncConfig'),
+          allowInvalidCert: any(named: 'allowInvalidCert'),
+        ),
+      ).thenAnswer((_) async => true);
+
       getIt
-        ..registerSingleton<SyncDatabase>(
-          SyncDatabase(inMemoryDatabase: true),
-          dispose: (db) async => db.close(),
-        )
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<SecureStorage>(secureStorageMock)
+        ..registerSingleton<SyncConfigService>(syncConfigMock)
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<FgBgService>(mockFgBgService)
+        ..registerSingleton<ImapClientManager>(mockImapClientManager)
         ..registerSingleton<VectorClockService>(mockVectorClockService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<Future<DriftIsolate>>(
+          createDriftIsolate(journalDbFileName),
+          instanceName: journalDbFileName,
+        )
+        ..registerSingleton<JournalDb>(getJournalDb())
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
-        ..registerSingleton<SyncConfigService>(syncConfigMock)
+        ..registerSingleton<Future<DriftIsolate>>(
+          createDriftIsolate(loggingDbFileName, inMemory: true),
+          instanceName: loggingDbFileName,
+        )
+        ..registerSingleton<LoggingDb>(getLoggingDb())
         ..registerSingleton<InboxService>(InboxService());
+
+      await initConfigFlags(getIt<JournalDb>());
     });
 
     setUp(() {
@@ -75,7 +102,7 @@ void main() {
     });
 
     test('', () async {
-      getIt<InboxService>().enqueueNextFetchRequest();
+      await getIt<InboxService>().init();
     });
   });
 }

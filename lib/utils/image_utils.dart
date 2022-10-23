@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:lotti/utils/file_utils.dart';
 
 Future<File?> compressAndGetFile(File file) async {
   final sourcePath = file.absolute.path;
@@ -28,7 +28,7 @@ Future<File?> compressAndSave(File file, String targetPath) async {
 }
 
 Future<String> getFullAssetPath(String relativePath) async {
-  final docDir = await getApplicationDocumentsDirectory();
+  final docDir = getDocumentsDirectory();
   return '${docDir.path}$relativePath';
 }
 
@@ -39,11 +39,7 @@ String? getRelativeAssetPath(String? absolutePath) {
   return absolutePath?.split('Documents').last;
 }
 
-Future<String> getFullImagePath(JournalImage img) async {
-  final docDir = await getApplicationDocumentsDirectory();
-  return '${docDir.path}${img.data.imageDirectory}${img.data.imageFile}';
-}
-
-String getFullImagePathWithDocDir(JournalImage img, Directory docDir) {
+String getFullImagePath(JournalImage img) {
+  final docDir = getDocumentsDirectory();
   return '${docDir.path}${img.data.imageDirectory}${img.data.imageFile}';
 }
