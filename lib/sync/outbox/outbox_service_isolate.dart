@@ -4,7 +4,6 @@ import 'dart:isolate';
 
 import 'package:drift/drift.dart';
 import 'package:drift/isolate.dart';
-import 'package:flutter/foundation.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/common.dart';
@@ -89,7 +88,6 @@ class OutboxServiceIsolate {
   void dispose() {}
 
   void _startRunner() {
-    debugPrint('OutboxServiceIsolatePart _startRunner');
     _clientRunner = ClientRunner<int>(
       callback: (event) async {
         await sendNext();
@@ -98,14 +96,16 @@ class OutboxServiceIsolate {
   }
 
   void restartRunner() {
-    debugPrint('OUTBOX ISOLATE restart');
+    _loggingDb.captureEvent(
+      'restartRunner()',
+      domain: 'OUTBOX_ISOLATE',
+      subDomain: 'Runner',
+    );
     _clientRunner.close();
     _startRunner();
   }
 
   Future<void> init() async {
-    debugPrint('OUTBOX ISOLATE init');
-
     Timer.periodic(const Duration(minutes: 1), (timer) async {
       final unprocessed = await getNextItems();
       if (unprocessed.isNotEmpty) {

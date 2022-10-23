@@ -232,7 +232,9 @@ class InboxServiceIsolate {
         imapConfig.password,
       );
 
-      await _observingClient?.stopPolling();
+      await _observingClient?.stopPollingIfNeeded();
+      await _observingClient?.disconnect();
+
       _observingClient = null;
       _observingClient = MailClient(account);
 
@@ -251,6 +253,7 @@ class InboxServiceIsolate {
         _loggingDb.captureEvent(
           event,
           domain: 'INBOX_ISOLATE',
+          subDomain: 'MailConnectionLostEvent',
         );
 
         try {
