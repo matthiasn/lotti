@@ -44,8 +44,6 @@ class StyleConfig with _$StyleConfig {
     @ColorConverter() required Color selectedChoiceChipTextColor,
     @ColorConverter() required Color unselectedChoiceChipColor,
     @ColorConverter() required Color unselectedChoiceChipTextColor,
-    @ColorConverter() required Color timeRecording,
-    @ColorConverter() required Color timeRecordingBg,
     @ColorConverter() required Color outboxSuccessColor,
     @ColorConverter() required Color outboxPendingColor,
     @ColorConverter() required Color activeAudioControl,

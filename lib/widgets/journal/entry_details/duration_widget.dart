@@ -43,8 +43,7 @@ class DurationWidget extends StatelessWidget {
           isRecording = true;
         }
 
-        final labelColor =
-            isRecording ? styleConfig().timeRecording : style?.color;
+        final labelColor = isRecording ? styleConfig().alarm : style?.color;
 
         return BlocBuilder<EntryCubit, EntryState>(
           builder: (
@@ -75,7 +74,7 @@ class DurationWidget extends StatelessWidget {
                             icon: const Icon(Icons.fiber_manual_record_sharp),
                             iconSize: 20,
                             tooltip: 'Record',
-                            color: styleConfig().timeRecording,
+                            color: styleConfig().alarm,
                             onPressed: () {
                               _timeService.start(item);
                             },
@@ -137,8 +136,7 @@ class DurationViewWidget extends StatelessWidget {
           isRecording = true;
         }
 
-        final labelColor =
-            isRecording ? styleConfig().timeRecording : style?.color;
+        final labelColor = isRecording ? styleConfig().alarm : style?.color;
 
         return Visibility(
           visible: entryDuration(displayed).inMilliseconds > 0,
@@ -174,7 +172,7 @@ class FormattedTime extends StatelessWidget {
           child: Icon(
             MdiIcons.timerOutline,
             color: labelColor,
-            size: 14,
+            size: 15,
           ),
         ),
         Text(
