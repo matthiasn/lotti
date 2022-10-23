@@ -782,7 +782,7 @@ packages:
       name: flutter_native_splash
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.11"
+    version: "2.2.12"
   flutter_native_timezone:
     dependency: "direct main"
     description:
@@ -1126,7 +1126,7 @@ packages:
       name: just_audio
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.29"
+    version: "0.9.30"
   just_audio_platform_interface:
     dependency: transitive
     description:
@@ -1476,7 +1476,7 @@ packages:
       name: petitparser
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.0"
+    version: "5.1.0"
   photo_manager:
     dependency: transitive
     description:
@@ -1644,6 +1644,13 @@ packages:
       url: "https://github.com/matthiasn/research.package.git"
     source: git
     version: "0.6.6-1"
+  retry:
+    dependency: "direct main"
+    description:
+      name: retry
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.1.0"
   rxdart:
     dependency: "direct overridden"
     description:
@@ -2229,7 +2236,7 @@ packages:
       name: xml
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.0"
+    version: "6.2.0"
   yaml:
     dependency: "direct main"
     description:

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
@@ -6,6 +7,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:retry/retry.dart';
 
 class ImapClientManager {
   ImapClientManager();
@@ -59,8 +61,6 @@ class ImapClientManager {
 
         await imapClient.login(imapConfig.userName, imapConfig.password);
 
-        debugPrint('ImapClient logged in');
-
         loggingDb.captureEvent(
           'ImapClient logged in',
           domain: 'IMAP_CLIENT $clientId',
@@ -111,12 +111,23 @@ class ImapClientManager {
       return await callback(client).timeout(const Duration(seconds: 30));
     } catch (_) {
       try {
-        final client = await _createImapClient(
-          syncConfig,
-          allowInvalidCert: allowInvalidCert,
-          reuseClient: false,
+        getIt<LoggingDb>().captureEvent(
+          'Retrying with new client',
+          domain: 'IMAP_CLIENT',
+          subDomain: 'imapAction()',
         );
-        return callback(client).timeout(const Duration(minutes: 1));
+
+        final response = await retry<bool>(
+          () async {
+            final client = await _createImapClient(
+              syncConfig,
+              allowInvalidCert: allowInvalidCert,
+              reuseClient: false,
+            );
+            return callback(client).timeout(const Duration(minutes: 2));
+          },
+        );
+        return response;
       } catch (e, stackTrace) {
         getIt<LoggingDb>().captureException(
           e,
