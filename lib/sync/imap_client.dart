@@ -126,6 +126,8 @@ class ImapClientManager {
             );
             return callback(client).timeout(const Duration(minutes: 2));
           },
+          maxDelay: const Duration(minutes: 2),
+          maxAttempts: 10,
         );
         return response;
       } catch (e, stackTrace) {

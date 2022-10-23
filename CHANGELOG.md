@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Screenshot exception logging
+- Retry IMAP actions with exponential backoff
 
 ## [0.8.181] - 2022-10-23
 ### Changed:
