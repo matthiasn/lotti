@@ -132,15 +132,12 @@ class InboxServiceIsolate {
   }) {
     unawaited(
       Future<void>.delayed(delay).then((_) {
-        debugPrint('INBOX ISOLATE: enqueueNextFetchRequest');
         _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
       }),
     );
   }
 
   Future<void> _fetchInbox() async {
-    debugPrint('INBOX ISOLATE: _fetchInbox');
-
     final allowInvalidCert =
         await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
 

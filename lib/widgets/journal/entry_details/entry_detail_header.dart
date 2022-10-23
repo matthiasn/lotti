@@ -122,7 +122,9 @@ class SwitchIconWidget extends StatelessWidget {
         key: Key(value ? activeIcon : icon),
         hoverColor: Colors.transparent,
         splashColor: Colors.transparent,
+        focusColor: Colors.transparent,
         padding: EdgeInsets.zero,
+        splashRadius: 1,
         tooltip: tooltip,
         onPressed: () {
           if (value) {
