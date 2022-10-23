@@ -6,7 +6,7 @@ import FlutterMacOS
 import Foundation
 
 import audio_session
-import connectivity_plus_macos
+import connectivity_plus
 import device_info_plus_macos
 import dynamic_color
 import flutter_app_badger
@@ -17,7 +17,7 @@ import hotkey_manager
 import just_audio
 import location
 import macos_ui
-import package_info_plus_macos
+import package_info_plus
 import pasteboard
 import path_provider_macos
 import photo_manager
