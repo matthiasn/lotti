@@ -28,6 +28,34 @@ class HabitSchedule with _$HabitSchedule {
 }
 
 @freezed
+class HabitAutoComplete with _$HabitAutoComplete {
+  factory HabitAutoComplete.health({
+    required String dataType,
+    num? minimum,
+    num? maximum,
+  }) = HabitAutoCompleteHealth;
+
+  factory HabitAutoComplete.measurable({
+    required String dataTypeId,
+    num? minimum,
+    num? maximum,
+  }) = HabitAutoCompleteMeasurable;
+
+  factory HabitAutoComplete.and({
+    required HabitAutoComplete a,
+    required HabitAutoComplete b,
+  }) = HabitAutoCompleteAnd;
+
+  factory HabitAutoComplete.or({
+    required HabitAutoComplete a,
+    required HabitAutoComplete b,
+  }) = HabitAutoCompleteOr;
+
+  factory HabitAutoComplete.fromJson(Map<String, dynamic> json) =>
+      _$HabitAutoCompleteFromJson(json);
+}
+
+@freezed
 class EntityDefinition with _$EntityDefinition {
   factory EntityDefinition.measurableDataType({
     required String id,
@@ -51,6 +79,7 @@ class EntityDefinition with _$EntityDefinition {
     required String name,
     required String description,
     required HabitSchedule habitSchedule,
+    HabitAutoComplete? autoComplete,
     String? version,
     required VectorClock? vectorClock,
     required bool active,
