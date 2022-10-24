@@ -15,18 +15,22 @@ import 'package:lotti/sync/inbox/read_decrypt.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
 import 'package:lotti/utils/file_utils.dart';
 
+Future<SyncMessage?> decodeMessage(
+  MimeMessage message,
+  String b64Secret,
+) async {
+  final encryptedMessage = readMessage(message);
+  return decryptMessage(encryptedMessage, message, b64Secret);
+}
+
 Future<void> processMessage(SyncConfig? syncConfig, MimeMessage message) async {
   final journalDb = getIt<JournalDb>();
   final loggingDb = getIt<LoggingDb>();
 
   try {
-    final encryptedMessage = readMessage(message);
-
     if (syncConfig != null) {
       final b64Secret = syncConfig.sharedSecret;
-
-      final syncMessage =
-          await decryptMessage(encryptedMessage, message, b64Secret);
+      final syncMessage = await decodeMessage(message, b64Secret);
 
       await syncMessage?.when(
         journalEntity: (

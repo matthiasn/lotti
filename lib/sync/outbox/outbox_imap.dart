@@ -8,20 +8,14 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/imap_client.dart';
 
-Future<GenericImapResult> saveImapMessage({
-  File? file,
-  required SyncConfig syncConfig,
-  required ImapClient imapClient,
+Future<MimeMessage> createImapMessage({
   required String subject,
   required String encryptedMessage,
+  File? file,
 }) async {
   final loggingDb = getIt<LoggingDb>();
 
   try {
-    final inbox = await imapClient.selectMailboxByPath(
-      syncConfig.imapConfig.folder,
-    );
-
     final builder = MessageBuilder.prepareMultipartAlternativeMessage()
       ..subject = subject
       ..addTextPlain(encryptedMessage);
@@ -36,7 +30,38 @@ Future<GenericImapResult> saveImapMessage({
       }
     }
 
-    final message = builder.buildMimeMessage();
+    return builder.buildMimeMessage();
+  } catch (exception, stackTrace) {
+    loggingDb.captureException(
+      exception,
+      domain: 'OUTBOX_IMAP',
+      subDomain: 'createImapMessage',
+      stackTrace: stackTrace,
+    );
+    rethrow;
+  }
+}
+
+Future<GenericImapResult> saveImapMessage({
+  File? file,
+  required SyncConfig syncConfig,
+  required ImapClient imapClient,
+  required String subject,
+  required String encryptedMessage,
+}) async {
+  final loggingDb = getIt<LoggingDb>();
+
+  try {
+    final inbox = await imapClient.selectMailboxByPath(
+      syncConfig.imapConfig.folder,
+    );
+
+    final message = await createImapMessage(
+      subject: subject,
+      encryptedMessage: encryptedMessage,
+      file: file,
+    );
+
     final res = await imapClient.appendMessage(
       message,
       targetMailbox: inbox,
