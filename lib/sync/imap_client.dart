@@ -109,7 +109,14 @@ class ImapClientManager {
         allowInvalidCert: allowInvalidCert,
       );
       return await callback(client).timeout(const Duration(seconds: 30));
-    } catch (_) {
+    } catch (e, stackTrace) {
+      getIt<LoggingDb>().captureException(
+        e,
+        domain: 'IMAP_CLIENT',
+        subDomain: 'imapAction retry',
+        stackTrace: stackTrace,
+      );
+
       try {
         getIt<LoggingDb>().captureEvent(
           'Retrying with new client',
