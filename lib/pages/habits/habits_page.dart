@@ -259,6 +259,7 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
         completionsSnapshot.data?.forEach((item) {
           if (item is HabitCompletionEntry &&
               (item.data.completionType == HabitCompletionType.success ||
+                  item.data.completionType == HabitCompletionType.skip ||
                   item.data.completionType == null)) {
             final day = ymd(item.meta.dateFrom);
             final successDays =

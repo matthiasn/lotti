@@ -126,6 +126,12 @@ class HabitResult extends Equatable {
   List<Object?> get props => [dayString, hexColor];
 }
 
+final successColor = colorToCssHex(primaryColor);
+final failColor = colorToCssHex(alarm);
+final skipColor = colorToCssHex(
+  styleConfig().secondaryTextColor.withOpacity(0.4),
+);
+
 List<HabitResult> habitResultsByDay(
   List<JournalEntity> entities, {
   required HabitDefinition habitDefinition,
@@ -141,12 +147,6 @@ List<HabitResult> habitResultsByDay(
 
   final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
   final activeUntil = habitDefinition.activeUntil ?? DateTime(9999);
-
-  final successColor = colorToCssHex(primaryColor);
-  final failColor = colorToCssHex(alarm);
-  final skipColor = colorToCssHex(
-    styleConfig().secondaryTextColor.withOpacity(0.4),
-  );
 
   for (final dayString in dayStrings) {
     final day = DateTime.parse(dayString);
@@ -314,12 +314,12 @@ class _HabitChartLineState extends State<HabitChartLine> {
               rangeStart: widget.rangeStart,
               rangeEnd: widget.rangeEnd,
             );
-            final successColor = colorToCssHex(primaryColor);
 
-            final streak = results.reversed
-                .toList()
-                .skip(1)
-                .takeWhile((value) => value.hexColor == successColor);
+            final streak = results.reversed.toList().skip(1).takeWhile(
+                  (value) =>
+                      value.hexColor == successColor ||
+                      value.hexColor == skipColor,
+                );
 
             if (streak.length < widget.streakDuration) {
               return const SizedBox.shrink();
