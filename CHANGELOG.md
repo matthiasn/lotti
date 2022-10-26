@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Autocomplete habits data structure
-- 
+- Skipping habit doesn't break the chain
 
 ## [0.8.182] - 2022-10-24
 ### Changed:
