@@ -51,7 +51,6 @@ void main() {
       when(
         () => mockJournalDb.watchHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([

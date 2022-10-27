@@ -51,7 +51,6 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
         return StreamBuilder<List<JournalEntity>>(
           stream: getIt<JournalDb>().watchHabitCompletionsInRange(
             rangeStart: getStartOfDay(DateTime.now()),
-            rangeEnd: rangeEnd,
           ),
           builder: (context, completionsSnapshot) {
             final completedToday = <String>{};
@@ -217,10 +216,6 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
   final List<HabitDefinition> habitItems;
   final Set<String> completedToday;
 
-  final rangeStart = getStartOfDay(
-    DateTime.now().subtract(const Duration(days: 7)),
-  );
-
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
@@ -235,23 +230,20 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
       DateTime.now().subtract(const Duration(days: 7)),
     );
 
-    final rangeEnd = getEndOfToday();
-
     return StreamBuilder<List<JournalEntity>>(
       stream: getIt<JournalDb>().watchHabitCompletionsInRange(
         rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
       ),
       builder: (context, completionsSnapshot) {
         final now = DateTime.now();
         final shortStreakDays = daysInRange(
           rangeStart: now.subtract(const Duration(days: 3)),
-          rangeEnd: now,
+          rangeEnd: getEndOfToday(),
         );
 
         final longStreakDays = daysInRange(
           rangeStart: now.subtract(const Duration(days: 7)),
-          rangeEnd: now,
+          rangeEnd: getEndOfToday(),
         );
 
         final habitSuccessDays = <String, Set<String>>{};
