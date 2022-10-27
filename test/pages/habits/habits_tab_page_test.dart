@@ -54,7 +54,9 @@ void main() {
           rangeEnd: any(named: 'rangeEnd'),
         ),
       ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([[]]),
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testHabitCompletionEntry]
+        ]),
       );
     });
     tearDown(getIt.reset);
