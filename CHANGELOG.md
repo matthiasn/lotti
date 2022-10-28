@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Simplify sync outbox, remove faulty network connected check
-- Add sync inbox tests
+- Add sync inbox tests for decrypting and writing image and audio files
 
 ## [0.8.184] - 2022-10-28
 ### Fixed:
