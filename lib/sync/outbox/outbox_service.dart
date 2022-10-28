@@ -40,13 +40,11 @@ class OutboxService {
 
   Future<void> restartRunner() async {
     final syncConfig = await _syncConfigService.getSyncConfig();
-    final networkConnected = await _connectivityService.isConnected();
 
     if (syncConfig != null) {
       _sendPort?.send(
         OutboxIsolateMessage.restart(
           syncConfig: syncConfig,
-          networkConnected: networkConnected,
         ),
       );
     }
@@ -54,7 +52,6 @@ class OutboxService {
 
   Future<void> startIsolate() async {
     final syncConfig = await _syncConfigService.getSyncConfig();
-    final networkConnected = await _connectivityService.isConnected();
 
     final receivePort = ReceivePort();
     await Isolate.spawn(entryPoint, receivePort.sendPort);
@@ -73,7 +70,6 @@ class OutboxService {
       _sendPort?.send(
         OutboxIsolateMessage.init(
           syncConfig: syncConfig,
-          networkConnected: networkConnected,
           syncDbConnectPort: syncDbIsolate.connectPort,
           loggingDbConnectPort: loggingDbIsolate.connectPort,
           allowInvalidCert: allowInvalidCert,
@@ -101,7 +97,7 @@ class OutboxService {
 
       _fgBgService.fgBgStream.listen((foreground) {
         if (foreground) {
-          restartRunner();
+          //restartRunner();
         }
       });
     }

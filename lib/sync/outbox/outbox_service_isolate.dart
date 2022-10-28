@@ -45,7 +45,6 @@ Future<void> entryPoint(SendPort sendPort) async {
 
           outbox = OutboxServiceIsolate(
             syncConfig: initMsg.syncConfig,
-            networkConnected: initMsg.networkConnected,
             allowInvalidCert: initMsg.allowInvalidCert,
             docDir: initMsg.docDir,
           );
@@ -59,17 +58,12 @@ Future<void> entryPoint(SendPort sendPort) async {
         restart: (_) => outbox?.restartRunner(),
       );
     }
-
-    if (msg is OutboxIsolateRestartMessage) {
-      outbox?.restartRunner();
-    }
   }
 }
 
 class OutboxServiceIsolate {
   OutboxServiceIsolate({
     required this.syncConfig,
-    required this.networkConnected,
     required this.allowInvalidCert,
     required this.docDir,
   }) {
@@ -82,7 +76,6 @@ class OutboxServiceIsolate {
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   SyncConfig syncConfig;
   Directory docDir;
-  bool networkConnected;
   bool allowInvalidCert;
 
   void dispose() {}
@@ -133,75 +126,70 @@ class OutboxServiceIsolate {
     );
 
     try {
-      _loggingDb.captureEvent(
-        'sendNext() networkConnected: $networkConnected ',
-        domain: 'OUTBOX_ISOLATE',
-      );
+      _loggingDb.captureEvent('sendNext() start ', domain: 'OUTBOX_ISOLATE');
 
-      if (networkConnected) {
-        final unprocessed = await getNextItems();
-        if (unprocessed.isNotEmpty) {
-          final nextPending = unprocessed.first;
-          try {
-            final encryptedMessage = await encryptString(
-              b64Secret: b64Secret,
-              plainText: nextPending.message,
-            );
+      final unprocessed = await getNextItems();
+      if (unprocessed.isNotEmpty) {
+        final nextPending = unprocessed.first;
+        try {
+          final encryptedMessage = await encryptString(
+            b64Secret: b64Secret,
+            plainText: nextPending.message,
+          );
 
-            final filePath = nextPending.filePath;
-            String? encryptedFilePath;
+          final filePath = nextPending.filePath;
+          String? encryptedFilePath;
 
-            if (filePath != null) {
-              final encryptedFile =
-                  File('${docDir.path}${nextPending.filePath}.aes');
-              final attachment = File('${docDir.path}$filePath');
-              await encryptFile(attachment, encryptedFile, b64Secret);
-              encryptedFilePath = encryptedFile.path;
-            }
+          if (filePath != null) {
+            final encryptedFile =
+                File('${docDir.path}${nextPending.filePath}.aes');
+            final attachment = File('${docDir.path}$filePath');
+            await encryptFile(attachment, encryptedFile, b64Secret);
+            encryptedFilePath = encryptedFile.path;
+          }
 
-            final success = await persistImap(
-              encryptedFilePath: encryptedFilePath,
-              subject: nextPending.subject,
-              encryptedMessage: encryptedMessage,
-              syncConfig: syncConfig,
-              allowInvalidCert: allowInvalidCert,
-            );
-            if (success) {
-              await _syncDatabase.updateOutboxItem(
-                OutboxCompanion(
-                  id: Value(nextPending.id),
-                  status: Value(OutboxStatus.sent.index),
-                  updatedAt: Value(DateTime.now()),
-                ),
-              );
-              if (unprocessed.length > 1) {
-                await enqueueNextSendRequest();
-              }
-            } else {
-              await enqueueNextSendRequest(
-                delay: const Duration(seconds: 15),
-              );
-            }
-
-            _loggingDb.captureEvent(
-              'sendNext() done',
-              domain: 'OUTBOX_ISOLATE',
-            );
-          } catch (e) {
+          final success = await persistImap(
+            encryptedFilePath: encryptedFilePath,
+            subject: nextPending.subject,
+            encryptedMessage: encryptedMessage,
+            syncConfig: syncConfig,
+            allowInvalidCert: allowInvalidCert,
+          );
+          if (success) {
             await _syncDatabase.updateOutboxItem(
               OutboxCompanion(
                 id: Value(nextPending.id),
-                status: Value(
-                  nextPending.retries < 10
-                      ? OutboxStatus.pending.index
-                      : OutboxStatus.error.index,
-                ),
-                retries: Value(nextPending.retries + 1),
+                status: Value(OutboxStatus.sent.index),
                 updatedAt: Value(DateTime.now()),
               ),
             );
-            await enqueueNextSendRequest(delay: const Duration(seconds: 15));
+            if (unprocessed.length > 1) {
+              await enqueueNextSendRequest();
+            }
+          } else {
+            await enqueueNextSendRequest(
+              delay: const Duration(seconds: 15),
+            );
           }
+
+          _loggingDb.captureEvent(
+            'sendNext() done',
+            domain: 'OUTBOX_ISOLATE',
+          );
+        } catch (e) {
+          await _syncDatabase.updateOutboxItem(
+            OutboxCompanion(
+              id: Value(nextPending.id),
+              status: Value(
+                nextPending.retries < 10
+                    ? OutboxStatus.pending.index
+                    : OutboxStatus.error.index,
+              ),
+              retries: Value(nextPending.retries + 1),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+          await enqueueNextSendRequest(delay: const Duration(seconds: 15));
         }
       }
     } catch (exception, stackTrace) {
