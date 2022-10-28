@@ -1,6 +1,8 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
+import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/pages/habits/habits_page.dart';
 import 'package:lotti/themes/theme.dart';
@@ -20,11 +22,14 @@ class HabitsLocation extends BeamLocation<BeamState> {
     final habitId = state.pathParameters['habitId'];
 
     final pages = [
-      const BeamPage(
-        key: ValueKey('habits'),
+      BeamPage(
+        key: const ValueKey('habits'),
         title: 'Habits',
         type: BeamPageType.noTransition,
-        child: HabitsTabPage(),
+        child: BlocProvider<HabitsCubit>(
+          create: (BuildContext context) => HabitsCubit(),
+          child: const HabitsTabPage(),
+        ),
       ),
       if (habitId != null && isUuid(habitId))
         BeamPage(

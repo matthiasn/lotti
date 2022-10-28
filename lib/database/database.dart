@@ -594,9 +594,8 @@ class JournalDb extends _$JournalDb {
 
   Stream<List<JournalEntity>> watchHabitCompletionsInRange({
     required DateTime rangeStart,
-    required DateTime rangeEnd,
   }) {
-    return habitCompletionsInRange(rangeStart, rangeEnd)
+    return habitCompletionsInRange(rangeStart)
         .watch()
         .where(makeDuplicateFilter())
         .map(entityStreamMapper);
