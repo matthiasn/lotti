@@ -14,5 +14,7 @@ class HabitsState with _$HabitsState {
     required List<HabitDefinition> completed,
     required List<JournalEntity> habitCompletions,
     required Set<String> completedToday,
+    required int shortStreakCount,
+    required int longStreakCount,
   }) = _HabitsStateSaved;
 }

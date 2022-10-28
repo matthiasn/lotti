@@ -20,6 +20,8 @@ class HabitsCubit extends Cubit<HabitsState> {
             openNow: [],
             pendingLater: [],
             completed: [],
+            shortStreakCount: 0,
+            longStreakCount: 0,
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
@@ -29,21 +31,28 @@ class HabitsCubit extends Cubit<HabitsState> {
     });
 
     _completionsStream = _journalDb.watchHabitCompletionsInRange(
-      rangeStart: getStartOfDay(DateTime.now()),
+      rangeStart: getStartOfDay(
+        DateTime.now().subtract(const Duration(days: 8)),
+      ),
     );
+
     _completionsSubscription = _completionsStream.listen((habitCompletions) {
       _habitCompletions = habitCompletions;
 
       _completedToday = <String>{};
 
+      final today = ymd(DateTime.now());
+
       for (final item in _habitCompletions) {
-        if (item is HabitCompletionEntry) {
+        final day = ymd(item.meta.dateFrom);
+
+        if (item is HabitCompletionEntry && day == today) {
           _completedToday.add(item.data.habitId);
         }
       }
 
       _openHabits = _habitDefinitions
-          .where((item) => !state.completedToday.contains(item.id))
+          .where((item) => !_completedToday.contains(item.id))
           .sorted(habitSorter);
 
       _openNow = _openHabits.where(showHabit).toList();
@@ -52,6 +61,48 @@ class HabitsCubit extends Cubit<HabitsState> {
       _completed = _habitDefinitions
           .where((item) => _completedToday.contains(item.id))
           .sorted(habitSorter);
+
+      final now = DateTime.now();
+
+      final shortStreakDays = daysInRange(
+        rangeStart: now.subtract(const Duration(days: 3)),
+        rangeEnd: getEndOfToday(),
+      );
+
+      final longStreakDays = daysInRange(
+        rangeStart: now.subtract(const Duration(days: 7)),
+        rangeEnd: getEndOfToday(),
+      );
+
+      final habitSuccessDays = <String, Set<String>>{};
+
+      for (final item in _habitCompletions) {
+        if (item is HabitCompletionEntry &&
+            (item.data.completionType == HabitCompletionType.success ||
+                item.data.completionType == HabitCompletionType.skip ||
+                item.data.completionType == null)) {
+          final day = ymd(item.meta.dateFrom);
+          final successDays = habitSuccessDays[item.data.habitId] ?? <String>{}
+            ..add(day);
+          habitSuccessDays[item.data.habitId] = successDays;
+        }
+      }
+
+      var shortStreakCount = 0;
+      var longStreakCount = 0;
+
+      habitSuccessDays.forEach((habitId, days) {
+        if (days.containsAll(shortStreakDays)) {
+          shortStreakCount++;
+        }
+
+        if (days.containsAll(longStreakDays)) {
+          longStreakCount++;
+        }
+      });
+
+      _shortStreakCount = shortStreakCount;
+      _longStreakCount = longStreakCount;
 
       emitState();
     });
@@ -66,6 +117,9 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   List<JournalEntity> _habitCompletions = [];
   var _completedToday = <String>{};
+
+  var _shortStreakCount = 0;
+  var _longStreakCount = 0;
 
   final JournalDb _journalDb = getIt<JournalDb>();
 
@@ -85,6 +139,8 @@ class HabitsCubit extends Cubit<HabitsState> {
         openNow: _openNow,
         pendingLater: _pendingLater,
         completed: _completed,
+        shortStreakCount: _shortStreakCount,
+        longStreakCount: _longStreakCount,
       ),
     );
   }

@@ -4,10 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
-import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
@@ -41,7 +37,6 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
         );
 
         final rangeEnd = getEndOfToday();
-        final habitItems = state.habitDefinitions;
 
         final landscape =
             MediaQuery.of(context).orientation == Orientation.landscape;
@@ -49,10 +44,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
         final showGaps = timeSpanDays < 180;
 
         return Scaffold(
-          appBar: HabitsPageAppBar(
-            habitItems: habitItems,
-            completedToday: state.completedToday,
-          ),
+          appBar: HabitsPageAppBar(),
           backgroundColor: styleConfig().negspace,
           body: SingleChildScrollView(
             child: Padding(
@@ -142,7 +134,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                     ),
                   ),
                   const SizedBox(height: 15),
-                  ...habitItems.map((habitDefinition) {
+                  ...state.habitDefinitions.map((habitDefinition) {
                     return HabitChartLine(
                       habitId: habitDefinition.id,
                       rangeStart: rangeStart,
@@ -159,7 +151,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                     ),
                   ),
                   const SizedBox(height: 15),
-                  ...habitItems.map((habitDefinition) {
+                  ...state.habitDefinitions.map((habitDefinition) {
                     return HabitChartLine(
                       habitId: habitDefinition.id,
                       rangeStart: rangeStart,
@@ -179,14 +171,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
 }
 
 class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
-  HabitsPageAppBar({
-    required this.habitItems,
-    required this.completedToday,
-    super.key,
-  });
-
-  final List<HabitDefinition> habitItems;
-  final Set<String> completedToday;
+  HabitsPageAppBar({super.key});
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -195,59 +180,14 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final title = localizations.settingsHabitsTitle;
-    final total = habitItems.length;
-    final todayCount = completedToday.length;
 
-    final rangeStart = getStartOfDay(
-      DateTime.now().subtract(const Duration(days: 7)),
-    );
-
-    return StreamBuilder<List<JournalEntity>>(
-      stream: getIt<JournalDb>().watchHabitCompletionsInRange(
-        rangeStart: rangeStart,
-      ),
-      builder: (context, completionsSnapshot) {
-        final now = DateTime.now();
-        final shortStreakDays = daysInRange(
-          rangeStart: now.subtract(const Duration(days: 3)),
-          rangeEnd: getEndOfToday(),
-        );
-
-        final longStreakDays = daysInRange(
-          rangeStart: now.subtract(const Duration(days: 7)),
-          rangeEnd: getEndOfToday(),
-        );
-
-        final habitSuccessDays = <String, Set<String>>{};
-
-        completionsSnapshot.data?.forEach((item) {
-          if (item is HabitCompletionEntry &&
-              (item.data.completionType == HabitCompletionType.success ||
-                  item.data.completionType == HabitCompletionType.skip ||
-                  item.data.completionType == null)) {
-            final day = ymd(item.meta.dateFrom);
-            final successDays =
-                habitSuccessDays[item.data.habitId] ?? <String>{}
-                  ..add(day);
-            habitSuccessDays[item.data.habitId] = successDays;
-          }
-        });
-
-        var shortStreakCount = 0;
-        var longStreakCount = 0;
-
-        habitSuccessDays.forEach((habitId, days) {
-          if (days.containsAll(shortStreakDays)) {
-            shortStreakCount++;
-          }
-
-          if (days.containsAll(longStreakDays)) {
-            longStreakCount++;
-          }
-        });
+    return BlocBuilder<HabitsCubit, HabitsState>(
+      builder: (context, HabitsState state) {
+        final total = state.habitDefinitions.length;
+        final todayCount = state.completedToday.length;
 
         final habitCounters =
-            '($total / $todayCount / $shortStreakCount / $longStreakCount)';
+            '($total / $todayCount / ${state.shortStreakCount} / ${state.longStreakCount})';
 
         return TitleAppBar(
           title: '$title $habitCounters',

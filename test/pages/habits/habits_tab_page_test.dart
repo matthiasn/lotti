@@ -1,4 +1,6 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -63,7 +65,11 @@ void main() {
     testWidgets('habits page is rendered', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const HabitsTabPage(),
+          BlocProvider<HabitsCubit>(
+            lazy: false,
+            create: (_) => HabitsCubit(),
+            child: const HabitsTabPage(),
+          ),
         ),
       );
 
