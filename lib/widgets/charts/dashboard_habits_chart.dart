@@ -389,9 +389,12 @@ class _HabitChartLineState extends State<HabitChartLine> {
                       const Spacer(),
                       GestureDetector(
                         onTap: onTapAdd,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 10),
-                          child: SvgPicture.asset(styleConfig().addIcon),
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 40),
+                            child: SvgPicture.asset(styleConfig().addIcon),
+                          ),
                         ),
                       ),
                     ],
