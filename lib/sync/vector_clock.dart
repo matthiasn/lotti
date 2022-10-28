@@ -3,6 +3,7 @@
 import 'dart:math';
 
 import 'package:collection/collection.dart';
+import 'package:equatable/equatable.dart';
 
 class VclockException implements Exception {
   @override
@@ -16,12 +17,13 @@ enum VclockStatus {
   b_gt_a,
 }
 
-class VectorClock {
-  VectorClock(this.vclock);
+class VectorClock extends Equatable {
+  const VectorClock(this.vclock);
 
   factory VectorClock.fromJson(Map<String, dynamic> json) =>
       VectorClock(Map<String, int>.from(json));
-  Map<String, int> vclock = <String, int>{};
+
+  final Map<String, int> vclock;
 
   // Compares two vector clocks. A and B are maps with node id strings as keys
   // and an integer as value, which is the offset on the node associated with
@@ -117,4 +119,7 @@ class VectorClock {
   }
 
   Map<String, dynamic> toJson() => vclock;
+
+  @override
+  List<Object?> get props => [vclock];
 }
