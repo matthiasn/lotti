@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/sync/vector_clock.dart';
 
 final testEpochDateTime = DateTime.fromMillisecondsSinceEpoch(0);
 
@@ -180,6 +181,7 @@ final testTextEntry = JournalEntry(
     dateTo: DateTime(2022, 7, 7, 14),
     updatedAt: DateTime(2022, 7, 7, 13),
     starred: true,
+    vectorClock: const VectorClock({'a': 11}),
   ),
   entryText: EntryText(plainText: 'test entry text'),
   geolocation: Geolocation(

@@ -31,14 +31,10 @@ class InboxService {
 
   Future<void> restartRunner() async {
     final syncConfig = await _syncConfigService.getSyncConfig();
-    final networkConnected = await _connectivityService.isConnected();
 
     if (syncConfig != null) {
       _sendPort?.send(
-        InboxIsolateMessage.restart(
-          syncConfig: syncConfig,
-          networkConnected: networkConnected,
-        ),
+        InboxIsolateMessage.restart(syncConfig: syncConfig),
       );
     }
   }
@@ -75,7 +71,6 @@ class InboxService {
 
   Future<void> startInboxIsolate() async {
     final syncConfig = await _syncConfigService.getSyncConfig();
-    final networkConnected = await _connectivityService.isConnected();
 
     final receivePort = ReceivePort();
     await Isolate.spawn(entryPoint, receivePort.sendPort);
@@ -109,7 +104,6 @@ class InboxService {
       _sendPort?.send(
         InboxIsolateMessage.init(
           syncConfig: syncConfig,
-          networkConnected: networkConnected,
           loggingDbConnectPort: loggingDbIsolate.connectPort,
           allowInvalidCert: allowInvalidCert,
           journalDbConnectPort: journalDbIsolate.connectPort,

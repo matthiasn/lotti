@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Simplify sync outbox, remove faulty network connected check
+- Add sync inbox tests for decrypting and writing image and audio files
+
+## [0.8.184] - 2022-10-28
 ### Fixed:
 - Update habits range after midnight
 

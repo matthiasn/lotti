@@ -47,7 +47,6 @@ Future<void> entryPoint(SendPort sendPort) async {
 
           inbox = InboxServiceIsolate(
             syncConfig: initMsg.syncConfig,
-            networkConnected: initMsg.networkConnected,
             allowInvalidCert: initMsg.allowInvalidCert,
             hostHash: initMsg.hostHash,
             lastReadUid: initMsg.lastReadUid,
@@ -67,7 +66,6 @@ Future<void> entryPoint(SendPort sendPort) async {
 class InboxServiceIsolate {
   InboxServiceIsolate({
     required this.syncConfig,
-    required this.networkConnected,
     required this.allowInvalidCert,
     required this.hostHash,
     required this.lastReadUid,
@@ -124,7 +122,6 @@ class InboxServiceIsolate {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
 
   SyncConfig syncConfig;
-  bool networkConnected;
   bool allowInvalidCert;
 
   void enqueueNextFetchRequest({

@@ -8,8 +8,8 @@ String nodeId3 = const Uuid().v1();
 
 void main() {
   test('Compare two empty clocks', () {
-    final vc1 = VectorClock({});
-    final vc2 = VectorClock({});
+    const vc1 = VectorClock({});
+    const vc2 = VectorClock({});
 
     expect(VectorClock.compare(vc1, vc2), VclockStatus.equal);
   });
@@ -57,7 +57,7 @@ void main() {
   });
 
   test('Vector clock toString as expected', () {
-    final vc = VectorClock({'nodeId1': 0, 'nodeId2': 1});
+    const vc = VectorClock({'nodeId1': 0, 'nodeId2': 1});
     expect(vc.toString(), '{nodeId1: 0, nodeId2: 1}');
   });
 }

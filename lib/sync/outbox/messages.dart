@@ -10,7 +10,6 @@ part 'messages.freezed.dart';
 class OutboxIsolateMessage with _$OutboxIsolateMessage {
   factory OutboxIsolateMessage.init({
     required SyncConfig syncConfig,
-    required bool networkConnected,
     required SendPort syncDbConnectPort,
     required SendPort loggingDbConnectPort,
     required bool allowInvalidCert,
@@ -19,6 +18,5 @@ class OutboxIsolateMessage with _$OutboxIsolateMessage {
 
   factory OutboxIsolateMessage.restart({
     required SyncConfig syncConfig,
-    required bool networkConnected,
   }) = OutboxIsolateRestartMessage;
 }
