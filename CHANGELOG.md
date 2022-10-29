@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Improved habit completion add icon
+
+## [0.8.185] - 2022-10-28
+### Changed:
 - Simplify sync outbox, remove faulty network connected check
 - Add sync inbox tests for decrypting and writing image and audio files
 
