@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Flutter upgrade to 3.3.6
+
+## [0.8.186] - 2022-10-29
+### Changed:
 - Improved habit completion add icon
 
 ## [0.8.185] - 2022-10-28
