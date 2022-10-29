@@ -82,155 +82,146 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
         ],
       ),
       body: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(0),
-                child: Container(
-                  color: styleConfig().cardColor,
-                  padding: const EdgeInsets.all(24),
+          child: Container(
+            color: styleConfig().cardColor,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                FormBuilder(
+                  key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  onChanged: () {
+                    setState(() {
+                      dirty = true;
+                    });
+                  },
                   child: Column(
-                    children: [
-                      FormBuilder(
-                        key: _formKey,
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        onChanged: () {
-                          setState(() {
-                            dirty = true;
-                          });
-                        },
-                        child: Column(
-                          children: <Widget>[
-                            FormTextField(
-                              key: const Key('measurable_name_field'),
-                              initialValue: item.displayName,
-                              labelText: AppLocalizations.of(context)!
-                                  .settingsMeasurableNameLabel,
-                              name: 'displayName',
+                    children: <Widget>[
+                      FormTextField(
+                        key: const Key('measurable_name_field'),
+                        initialValue: item.displayName,
+                        labelText: AppLocalizations.of(context)!
+                            .settingsMeasurableNameLabel,
+                        name: 'displayName',
+                      ),
+                      FormTextField(
+                        key: const Key('measurable_description_field'),
+                        initialValue: item.description,
+                        labelText: AppLocalizations.of(context)!
+                            .settingsMeasurableDescriptionLabel,
+                        fieldRequired: false,
+                        name: 'description',
+                      ),
+                      FormTextField(
+                        initialValue: item.unitName,
+                        labelText: AppLocalizations.of(context)!
+                            .settingsMeasurableUnitLabel,
+                        fieldRequired: false,
+                        name: 'unitName',
+                      ),
+                      FormBuilderSwitch(
+                        name: 'private',
+                        initialValue: item.private,
+                        title: Text(
+                          AppLocalizations.of(context)!
+                              .settingsMeasurablePrivateLabel,
+                          style: formLabelStyle(),
+                        ),
+                        activeColor: styleConfig().private,
+                      ),
+                      FormBuilderSwitch(
+                        name: 'favorite',
+                        initialValue: item.favorite,
+                        title: Text(
+                          AppLocalizations.of(context)!
+                              .settingsMeasurableFavoriteLabel,
+                          style: formLabelStyle(),
+                        ),
+                        activeColor: styleConfig().starredGold,
+                      ),
+                      FormBuilderDropdown(
+                        name: 'aggregationType',
+                        initialValue: item.aggregationType,
+                        decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!
+                              .settingsMeasurableAggregationLabel,
+                          labelStyle: formLabelStyle(),
+                          suffixIcon: Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Icon(
+                              Icons.close,
+                              color: styleConfig().primaryTextColor,
                             ),
-                            FormTextField(
-                              key: const Key('measurable_description_field'),
-                              initialValue: item.description,
-                              labelText: AppLocalizations.of(context)!
-                                  .settingsMeasurableDescriptionLabel,
-                              fieldRequired: false,
-                              name: 'description',
-                            ),
-                            FormTextField(
-                              initialValue: item.unitName,
-                              labelText: AppLocalizations.of(context)!
-                                  .settingsMeasurableUnitLabel,
-                              fieldRequired: false,
-                              name: 'unitName',
-                            ),
-                            FormBuilderSwitch(
-                              name: 'private',
-                              initialValue: item.private,
-                              title: Text(
-                                AppLocalizations.of(context)!
-                                    .settingsMeasurablePrivateLabel,
-                                style: formLabelStyle(),
-                              ),
-                              activeColor: styleConfig().private,
-                            ),
-                            FormBuilderSwitch(
-                              name: 'favorite',
-                              initialValue: item.favorite,
-                              title: Text(
-                                AppLocalizations.of(context)!
-                                    .settingsMeasurableFavoriteLabel,
-                                style: formLabelStyle(),
-                              ),
-                              activeColor: styleConfig().starredGold,
-                            ),
-                            FormBuilderDropdown(
-                              name: 'aggregationType',
-                              initialValue: item.aggregationType,
-                              decoration: InputDecoration(
-                                labelText: AppLocalizations.of(context)!
-                                    .settingsMeasurableAggregationLabel,
-                                labelStyle: formLabelStyle(),
-                                suffixIcon: Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: Icon(
-                                    Icons.close,
-                                    color: styleConfig().primaryTextColor,
-                                  ),
+                          ),
+                        ),
+                        iconEnabledColor: styleConfig().primaryTextColor,
+                        style: const TextStyle(fontSize: 40),
+                        dropdownColor: styleConfig().cardColor,
+                        items: AggregationType.values.map((aggregationType) {
+                          return DropdownMenuItem(
+                            value: aggregationType,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(
+                                EnumToString.convertToString(
+                                  aggregationType,
+                                ),
+                                style: TextStyle(
+                                  fontSize: fontSizeMedium,
+                                  color: styleConfig().primaryTextColor,
                                 ),
                               ),
-                              iconEnabledColor: styleConfig().primaryTextColor,
-                              style: const TextStyle(fontSize: 40),
-                              dropdownColor: styleConfig().cardColor,
-                              items:
-                                  AggregationType.values.map((aggregationType) {
-                                return DropdownMenuItem(
-                                  value: aggregationType,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8),
-                                    child: Text(
-                                      EnumToString.convertToString(
-                                        aggregationType,
-                                      ),
-                                      style: TextStyle(
-                                        fontSize: fontSizeMedium,
-                                        color: styleConfig().primaryTextColor,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
                             ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            IconButton(
-                              icon: const Icon(MdiIcons.trashCanOutline),
-                              iconSize: settingsIconSize,
-                              tooltip: AppLocalizations.of(context)!
-                                  .settingsMeasurableDeleteTooltip,
-                              color: styleConfig().cardColor,
-                              onPressed: () async {
-                                const deleteKey = 'deleteKey';
-                                final result =
-                                    await showModalActionSheet<String>(
-                                  context: context,
-                                  title: localizations.measurableDeleteQuestion,
-                                  actions: [
-                                    SheetAction(
-                                      icon: Icons.warning,
-                                      label:
-                                          localizations.measurableDeleteConfirm,
-                                      key: deleteKey,
-                                      isDestructiveAction: true,
-                                      isDefaultAction: true,
-                                    ),
-                                  ],
-                                );
-
-                                if (result == deleteKey) {
-                                  await persistenceLogic.upsertEntityDefinition(
-                                    item.copyWith(deletedAt: DateTime.now()),
-                                  );
-
-                                  maybePop();
-                                }
-                              },
-                            ),
-                          ],
-                        ),
+                          );
+                        }).toList(),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        icon: const Icon(MdiIcons.trashCanOutline),
+                        iconSize: settingsIconSize,
+                        tooltip: AppLocalizations.of(context)!
+                            .settingsMeasurableDeleteTooltip,
+                        color: styleConfig().secondaryTextColor,
+                        onPressed: () async {
+                          const deleteKey = 'deleteKey';
+                          final result = await showModalActionSheet<String>(
+                            context: context,
+                            title: localizations.measurableDeleteQuestion,
+                            actions: [
+                              SheetAction(
+                                icon: Icons.warning,
+                                label: localizations.measurableDeleteConfirm,
+                                key: deleteKey,
+                                isDestructiveAction: true,
+                                isDefaultAction: true,
+                              ),
+                            ],
+                          );
+
+                          if (result == deleteKey) {
+                            await persistenceLogic.upsertEntityDefinition(
+                              item.copyWith(deletedAt: DateTime.now()),
+                            );
+
+                            maybePop();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

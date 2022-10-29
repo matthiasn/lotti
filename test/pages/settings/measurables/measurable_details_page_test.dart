@@ -145,7 +145,7 @@ void main() {
               maxHeight: 1000,
               maxWidth: 1000,
             ),
-            child: const CreateMeasurablePage(),
+            child: CreateMeasurablePage(),
           ),
         ),
       );

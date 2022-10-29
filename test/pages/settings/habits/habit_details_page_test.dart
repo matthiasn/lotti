@@ -136,7 +136,7 @@ void main() {
               maxHeight: 1000,
               maxWidth: 1000,
             ),
-            child: const CreateHabitPage(),
+            child: CreateHabitPage(),
           ),
         ),
       );
@@ -183,7 +183,7 @@ void main() {
               maxHeight: 1000,
               maxWidth: 1000,
             ),
-            child: const CreateHabitPage(),
+            child: CreateHabitPage(),
           ),
         ),
       );

@@ -113,8 +113,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
         ),
 
       if (pathContains('dashboards/create'))
-        const BeamPage(
-          key: ValueKey('settings-dashboards-create'),
+        BeamPage(
+          key: const ValueKey('settings-dashboards-create'),
           child: CreateDashboardPage(),
         ),
 
@@ -138,8 +138,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
         ),
 
       if (pathContains('measurables/create'))
-        const BeamPage(
-          key: ValueKey('settings-measurables-create'),
+        BeamPage(
+          key: const ValueKey('settings-measurables-create'),
           child: CreateMeasurablePage(),
         ),
 
@@ -163,8 +163,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
         ),
 
       if (pathContains('habits/create'))
-        const BeamPage(
-          key: ValueKey('settings-habits-create'),
+        BeamPage(
+          key: const ValueKey('settings-habits-create'),
           child: CreateHabitPage(),
         ),
 

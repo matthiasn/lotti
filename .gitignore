@@ -72,3 +72,6 @@ nohup.out
 TEST-report.jsonl
 TEST-report.xml
 junit.xml
+
+test_resources/test.aac.aes
+test_resources/test.png.aes
