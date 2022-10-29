@@ -227,8 +227,6 @@ class EditHabitPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder(
       stream: _db.watchHabitById(habitId),
       builder: (
@@ -238,7 +236,7 @@ class EditHabitPage extends StatelessWidget {
         final habitDefinition = snapshot.data;
 
         if (habitDefinition == null) {
-          return EmptyScaffoldWithTitle(localizations.habitNotFound);
+          return const EmptyScaffoldWithTitle('');
         }
 
         return HabitDetailsPage(

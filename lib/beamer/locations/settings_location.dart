@@ -163,8 +163,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
         ),
 
       if (pathContains('habits/create'))
-        const BeamPage(
-          key: ValueKey('settings-habits-create'),
+        BeamPage(
+          key: const ValueKey('settings-habits-create'),
           child: CreateHabitPage(),
         ),
 
