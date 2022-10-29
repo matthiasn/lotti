@@ -121,133 +121,124 @@ class _TagEditPageState extends State<TagEditPage> {
       backgroundColor: styleConfig().negspace,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(0),
-              child: Container(
-                color: styleConfig().cardColor,
-                padding: const EdgeInsets.all(24),
+        child: Container(
+          color: styleConfig().cardColor,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              FormBuilder(
+                key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                onChanged: () {
+                  setState(() {
+                    dirty = true;
+                  });
+                },
                 child: Column(
-                  children: [
-                    FormBuilder(
-                      key: _formKey,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      onChanged: () {
-                        setState(() {
-                          dirty = true;
-                        });
-                      },
-                      child: Column(
-                        children: <Widget>[
-                          FormTextField(
-                            initialValue: widget.tagEntity.tag,
-                            labelText: localizations.settingsTagsTagName,
-                            name: 'tag',
-                            key: const Key('tag_name_field'),
-                          ),
-                          FormBuilderSwitch(
-                            name: 'private',
-                            initialValue: widget.tagEntity.private,
-                            title: Text(
-                              localizations.settingsTagsPrivateLabel,
-                              style: formLabelStyle(),
-                            ),
-                            activeColor: styleConfig().private,
-                          ),
-                          FormBuilderSwitch(
-                            name: 'inactive',
-                            initialValue: widget.tagEntity.inactive,
-                            title: Text(
-                              localizations.settingsTagsHideLabel,
-                              style: formLabelStyle(),
-                            ),
-                            activeColor: styleConfig().private,
-                          ),
-                          FormBuilderChoiceChip<String>(
-                            name: 'type',
-                            initialValue: widget.tagEntity.map(
-                              genericTag: (_) =>
-                                  localizations.settingsTagsTypeTag,
-                              personTag: (_) =>
-                                  localizations.settingsTagsTypePerson,
-                              storyTag: (_) => localizations
-                                  .settingsTagsTypeStory, // 'STORY',
-                            ),
-                            decoration: InputDecoration(
-                              labelText: localizations.settingsTagsTypeLabel,
-                              labelStyle: labelStyle().copyWith(
-                                height: 0.6,
-                                fontFamily: 'Oswald',
-                              ),
-                            ),
-                            selectedColor: widget.tagEntity.map(
-                              genericTag: getTagColor,
-                              personTag: getTagColor,
-                              storyTag: getTagColor,
-                            ),
-                            runSpacing: 4,
-                            spacing: 4,
-                            labelStyle: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w300,
-                              fontFamily: 'Oswald',
-                            ),
-                            options: [
-                              FormBuilderChipOption<String>(
-                                value: 'TAG',
-                                child: Text(
-                                  localizations.settingsTagsTypeTag,
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                              ),
-                              FormBuilderChipOption<String>(
-                                value: 'PERSON',
-                                child: Text(
-                                  localizations.settingsTagsTypePerson,
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                              ),
-                              FormBuilderChipOption<String>(
-                                value: 'STORY',
-                                child: Text(
-                                  localizations.settingsTagsTypeStory,
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                  children: <Widget>[
+                    FormTextField(
+                      initialValue: widget.tagEntity.tag,
+                      labelText: localizations.settingsTagsTagName,
+                      name: 'tag',
+                      key: const Key('tag_name_field'),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Spacer(),
-                          IconButton(
-                            icon: const Icon(MdiIcons.trashCanOutline),
-                            iconSize: 24,
-                            tooltip: localizations.settingsTagsDeleteTooltip,
-                            color: styleConfig().cardColor,
-                            onPressed: () {
-                              persistenceLogic.upsertTagEntity(
-                                widget.tagEntity.copyWith(
-                                  deletedAt: DateTime.now(),
-                                ),
-                              );
-                              Navigator.of(context).maybePop();
-                            },
-                          ),
-                        ],
+                    FormBuilderSwitch(
+                      name: 'private',
+                      initialValue: widget.tagEntity.private,
+                      title: Text(
+                        localizations.settingsTagsPrivateLabel,
+                        style: formLabelStyle(),
                       ),
+                      activeColor: styleConfig().private,
+                    ),
+                    FormBuilderSwitch(
+                      name: 'inactive',
+                      initialValue: widget.tagEntity.inactive,
+                      title: Text(
+                        localizations.settingsTagsHideLabel,
+                        style: formLabelStyle(),
+                      ),
+                      activeColor: styleConfig().private,
+                    ),
+                    FormBuilderChoiceChip<String>(
+                      name: 'type',
+                      initialValue: widget.tagEntity.map(
+                        genericTag: (_) => localizations.settingsTagsTypeTag,
+                        personTag: (_) => localizations.settingsTagsTypePerson,
+                        storyTag: (_) =>
+                            localizations.settingsTagsTypeStory, // 'STORY',
+                      ),
+                      decoration: InputDecoration(
+                        labelText: localizations.settingsTagsTypeLabel,
+                        labelStyle: labelStyle().copyWith(
+                          height: 0.6,
+                          fontFamily: 'Oswald',
+                        ),
+                      ),
+                      selectedColor: widget.tagEntity.map(
+                        genericTag: getTagColor,
+                        personTag: getTagColor,
+                        storyTag: getTagColor,
+                      ),
+                      runSpacing: 4,
+                      spacing: 4,
+                      labelStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w300,
+                        fontFamily: 'Oswald',
+                      ),
+                      options: [
+                        FormBuilderChipOption<String>(
+                          value: 'TAG',
+                          child: Text(
+                            localizations.settingsTagsTypeTag,
+                            style: const TextStyle(color: Colors.black87),
+                          ),
+                        ),
+                        FormBuilderChipOption<String>(
+                          value: 'PERSON',
+                          child: Text(
+                            localizations.settingsTagsTypePerson,
+                            style: const TextStyle(color: Colors.black87),
+                          ),
+                        ),
+                        FormBuilderChipOption<String>(
+                          value: 'STORY',
+                          child: Text(
+                            localizations.settingsTagsTypeStory,
+                            style: const TextStyle(color: Colors.black87),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(MdiIcons.trashCanOutline),
+                      iconSize: 24,
+                      tooltip: localizations.settingsTagsDeleteTooltip,
+                      color: styleConfig().secondaryTextColor,
+                      onPressed: () {
+                        persistenceLogic.upsertTagEntity(
+                          widget.tagEntity.copyWith(
+                            deletedAt: DateTime.now(),
+                          ),
+                        );
+                        Navigator.of(context).maybePop();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

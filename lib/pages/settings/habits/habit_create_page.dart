@@ -35,6 +35,7 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('_CreateHabitPageState build');
     if (_habitDefinition == null) {
       return const EmptyScaffoldWithTitle('');
     }
