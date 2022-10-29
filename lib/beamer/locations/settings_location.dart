@@ -138,8 +138,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
         ),
 
       if (pathContains('measurables/create'))
-        const BeamPage(
-          key: ValueKey('settings-measurables-create'),
+        BeamPage(
+          key: const ValueKey('settings-measurables-create'),
           child: CreateMeasurablePage(),
         ),
 
