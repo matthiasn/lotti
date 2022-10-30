@@ -22,6 +22,7 @@ class DashboardSettingsPage extends StatefulWidget {
 
 class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
   final JournalDb _db = getIt<JournalDb>();
+
   late final Stream<List<DashboardDefinition>> stream = _db.watchDashboards();
   String match = '';
 
@@ -53,7 +54,7 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
         fontFamily: mainFont,
         fontSize: 20,
       ),
-      physics: const BouncingScrollPhysics(),
+      //physics: const BouncingScrollPhysics(),
       borderRadius: BorderRadius.circular(8),
       axisAlignment: isPortrait ? 0 : -1,
       openAxisAlignment: 0,

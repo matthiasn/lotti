@@ -18,7 +18,7 @@ import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags/tags_list_widget.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
 
-class EntryDetailWidget extends StatefulWidget {
+class EntryDetailWidget extends StatelessWidget {
   const EntryDetailWidget({
     super.key,
     required this.itemId,
@@ -31,23 +31,9 @@ class EntryDetailWidget extends StatefulWidget {
   final bool showTaskDetails;
 
   @override
-  State<EntryDetailWidget> createState() => _EntryDetailWidgetState();
-}
-
-class _EntryDetailWidgetState extends State<EntryDetailWidget> {
-  final JournalDb _db = getIt<JournalDb>();
-  late final Stream<JournalEntity?> _stream =
-      _db.watchEntityById(widget.itemId);
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return StreamBuilder<JournalEntity?>(
-      stream: _stream,
+      stream: getIt<JournalDb>().watchEntityById(itemId),
       builder: (
         BuildContext context,
         AsyncSnapshot<JournalEntity?> snapshot,
@@ -60,13 +46,13 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         final isTask = item is Task;
         final isAudio = item is JournalAudio;
 
-        if ((isTask || isAudio) && !widget.showTaskDetails) {
+        if ((isTask || isAudio) && !showTaskDetails) {
           return JournalCard(item: item);
         }
 
         return BlocProvider<EntryCubit>(
           create: (BuildContext context) => EntryCubit(
-            entryId: widget.itemId,
+            entryId: itemId,
             entry: item,
           ),
           child: Container(
