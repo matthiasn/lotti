@@ -258,14 +258,14 @@ class HabitChartInfoWidget extends StatelessWidget {
 class HabitChartLine extends StatefulWidget {
   const HabitChartLine({
     super.key,
-    required this.habitId,
+    required this.habitDefinition,
     required this.rangeStart,
     required this.rangeEnd,
     this.streakDuration = 0,
     required this.showGaps,
   });
 
-  final String habitId;
+  final HabitDefinition habitDefinition;
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final int streakDuration;
@@ -279,130 +279,115 @@ class _HabitChartLineState extends State<HabitChartLine> {
   final JournalDb _db = getIt<JournalDb>();
 
   void onTapAdd() {
-    beamToNamed('/habits/complete/${widget.habitId}');
+    beamToNamed('/habits/complete/${widget.habitDefinition.id}');
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<HabitDefinition?>(
-      stream: _db.watchHabitById(widget.habitId),
+    return StreamBuilder<List<JournalEntity>>(
+      stream: _db.watchHabitCompletionsByHabitId(
+        habitId: widget.habitDefinition.id,
+        rangeStart: widget.rangeStart,
+        rangeEnd: widget.rangeEnd,
+      ),
       builder: (
         BuildContext context,
-        AsyncSnapshot<HabitDefinition?> typeSnapshot,
+        AsyncSnapshot<List<JournalEntity>> snapshot,
       ) {
-        final habitDefinition = typeSnapshot.data;
+        final entities = snapshot.data ?? [];
 
-        if (habitDefinition == null) {
+        final results = habitResultsByDay(
+          entities,
+          habitDefinition: widget.habitDefinition,
+          rangeStart: widget.rangeStart,
+          rangeEnd: widget.rangeEnd,
+        );
+
+        final streak = results.reversed.toList().skip(1).takeWhile(
+              (value) =>
+                  value.hexColor == successColor || value.hexColor == skipColor,
+            );
+
+        if (streak.length < widget.streakDuration) {
           return const SizedBox.shrink();
         }
 
-        return StreamBuilder<List<JournalEntity>>(
-          stream: _db.watchHabitCompletionsByHabitId(
-            habitId: habitDefinition.id,
-            rangeStart: widget.rangeStart,
-            rangeEnd: widget.rangeEnd,
+        final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 4,
           ),
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<List<JournalEntity>> snapshot,
-          ) {
-            final entities = snapshot.data ?? [];
-
-            final results = habitResultsByDay(
-              entities,
-              habitDefinition: habitDefinition,
-              rangeStart: widget.rangeStart,
-              rangeEnd: widget.rangeEnd,
-            );
-
-            final streak = results.reversed.toList().skip(1).takeWhile(
-                  (value) =>
-                      value.hexColor == successColor ||
-                      value.hexColor == skipColor,
-                );
-
-            if (streak.length < widget.streakDuration) {
-              return const SizedBox.shrink();
-            }
-
-            final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
-              child: Stack(
+          child: Stack(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const SizedBox(width: 70),
-                      ...intersperse(
-                        widget.showGaps
-                            ? SizedBox(width: days < 30 ? 8 : 2)
-                            : const SizedBox.shrink(),
-                        results.map((res) {
-                          return Flexible(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                widget.showGaps ? 2 : 0,
-                              ),
-                              child: Container(
-                                height: 25,
-                                color: colorFromCssHex(res.hexColor),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(width: 30),
-                    ],
+                  const SizedBox(width: 70),
+                  ...intersperse(
+                    widget.showGaps
+                        ? SizedBox(width: days < 30 ? 8 : 2)
+                        : const SizedBox.shrink(),
+                    results.map((res) {
+                      return Flexible(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            widget.showGaps ? 2 : 0,
+                          ),
+                          child: Container(
+                            height: 25,
+                            color: colorFromCssHex(res.hexColor),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
-                  Row(
-                    children: [
-                      Container(
-                        height: 25,
-                        padding: const EdgeInsets.only(
-                          top: 1,
-                          right: 10,
-                          bottom: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              styleConfig().negspace.withOpacity(0.8),
-                              styleConfig().negspace.withOpacity(0.4),
-                              Colors.transparent,
-                            ],
-                            stops: const [0, 0.8, 1],
-                          ),
-                        ),
-                        child: Text(
-                          habitDefinition.name,
-                          style: chartTitleStyle()
-                              .copyWith(fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: false,
-                        ),
+                  const SizedBox(width: 30),
+                ],
+              ),
+              Row(
+                children: [
+                  Container(
+                    height: 25,
+                    padding: const EdgeInsets.only(
+                      top: 1,
+                      right: 10,
+                      bottom: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          styleConfig().negspace.withOpacity(0.8),
+                          styleConfig().negspace.withOpacity(0.4),
+                          Colors.transparent,
+                        ],
+                        stops: const [0, 0.8, 1],
                       ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: onTapAdd,
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 40),
-                            child: SvgPicture.asset(styleConfig().addIcon),
-                          ),
-                        ),
+                    ),
+                    child: Text(
+                      widget.habitDefinition.name,
+                      style: chartTitleStyle()
+                          .copyWith(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: onTapAdd,
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 40),
+                        child: SvgPicture.asset(styleConfig().addIcon),
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            );
-          },
+            ],
+          ),
         );
       },
     );

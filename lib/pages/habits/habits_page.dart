@@ -86,7 +86,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                   const SizedBox(height: 15),
                   ...state.openNow.map((habitDefinition) {
                     return HabitChartLine(
-                      habitId: habitDefinition.id,
+                      habitDefinition: habitDefinition,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       showGaps: showGaps,
@@ -103,7 +103,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                   const SizedBox(height: 15),
                   ...state.completed.map((habitDefinition) {
                     return HabitChartLine(
-                      habitId: habitDefinition.id,
+                      habitDefinition: habitDefinition,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       showGaps: showGaps,
@@ -120,7 +120,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                   const SizedBox(height: 15),
                   ...state.pendingLater.map((habitDefinition) {
                     return HabitChartLine(
-                      habitId: habitDefinition.id,
+                      habitDefinition: habitDefinition,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       showGaps: showGaps,
@@ -136,7 +136,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                   const SizedBox(height: 15),
                   ...state.habitDefinitions.map((habitDefinition) {
                     return HabitChartLine(
-                      habitId: habitDefinition.id,
+                      habitDefinition: habitDefinition,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       streakDuration: 2,
@@ -153,7 +153,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                   const SizedBox(height: 15),
                   ...state.habitDefinitions.map((habitDefinition) {
                     return HabitChartLine(
-                      habitId: habitDefinition.id,
+                      habitDefinition: habitDefinition,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       streakDuration: 6,
