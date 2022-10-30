@@ -79,9 +79,7 @@ class LogLineCard extends StatelessWidget {
         : styleConfig().primaryTextColor;
 
     return GestureDetector(
-      onTap: () {
-        beamToNamed('/settings/advanced/logging/${logEntry.id}');
-      },
+      onTap: () => beamToNamed('/settings/advanced/logging/${logEntry.id}'),
       child: Padding(
         padding: const EdgeInsets.all(2),
         child: Text(

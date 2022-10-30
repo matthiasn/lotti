@@ -18,10 +18,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class TagsModal extends StatefulWidget {
   const TagsModal({
     super.key,
-    required this.controller,
   });
-
-  final TextEditingController controller;
 
   @override
   State<TagsModal> createState() => _TagsModalState();
@@ -34,6 +31,8 @@ class _TagsModalState extends State<TagsModal> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('TagsModal build');
+
     final tagsService = getIt<TagsService>();
     final localizations = AppLocalizations.of(context)!;
     final cubit = context.read<EntryCubit>();

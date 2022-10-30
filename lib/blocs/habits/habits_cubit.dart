@@ -7,6 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class HabitsCubit extends Cubit<HabitsState> {
@@ -22,6 +23,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             completed: [],
             shortStreakCount: 0,
             longStreakCount: 0,
+            timeSpanDays: isDesktop ? 14 : 7,
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
@@ -120,6 +122,12 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   var _shortStreakCount = 0;
   var _longStreakCount = 0;
+  var _timeSpanDays = isDesktop ? 14 : 7;
+
+  void setTimeSpan(int timeSpanDays) {
+    _timeSpanDays = timeSpanDays;
+    emitState();
+  }
 
   final JournalDb _journalDb = getIt<JournalDb>();
 
@@ -141,6 +149,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         completed: _completed,
         shortStreakCount: _shortStreakCount,
         longStreakCount: _longStreakCount,
+        timeSpanDays: _timeSpanDays,
       ),
     );
   }

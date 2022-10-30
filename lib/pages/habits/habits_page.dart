@@ -11,20 +11,8 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_habits_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-class HabitsTabPage extends StatefulWidget {
+class HabitsTabPage extends StatelessWidget {
   const HabitsTabPage({super.key});
-
-  @override
-  State<HabitsTabPage> createState() => _HabitsTabPageState();
-}
-
-class _HabitsTabPageState extends State<HabitsTabPage> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  int timeSpanDays = isDesktop ? 14 : 7;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +20,9 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
 
     return BlocBuilder<HabitsCubit, HabitsState>(
       builder: (context, HabitsState state) {
+        final cubit = context.read<HabitsCubit>();
+        final timeSpanDays = state.timeSpanDays;
+
         final rangeStart = getStartOfDay(
           DateTime.now().subtract(Duration(days: timeSpanDays - 1)),
         );
@@ -60,11 +51,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                       unselectedColor: styleConfig().negspace,
                       borderColor: styleConfig().primaryColor,
                       groupValue: timeSpanDays,
-                      onValueChanged: (int value) {
-                        setState(() {
-                          timeSpanDays = value;
-                        });
-                      },
+                      onValueChanged: cubit.setTimeSpan,
                       children: {
                         if (isMobile) 7: const DaysSegment('7'),
                         14: const DaysSegment('14'),
@@ -86,7 +73,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                   const SizedBox(height: 15),
                   ...state.openNow.map((habitDefinition) {
                     return HabitChartLine(
-                      habitId: habitDefinition.id,
+                      habitDefinition: habitDefinition,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       showGaps: showGaps,
@@ -103,7 +90,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                   const SizedBox(height: 15),
                   ...state.completed.map((habitDefinition) {
                     return HabitChartLine(
-                      habitId: habitDefinition.id,
+                      habitDefinition: habitDefinition,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       showGaps: showGaps,
@@ -120,7 +107,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                   const SizedBox(height: 15),
                   ...state.pendingLater.map((habitDefinition) {
                     return HabitChartLine(
-                      habitId: habitDefinition.id,
+                      habitDefinition: habitDefinition,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       showGaps: showGaps,
@@ -136,7 +123,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                   const SizedBox(height: 15),
                   ...state.habitDefinitions.map((habitDefinition) {
                     return HabitChartLine(
-                      habitId: habitDefinition.id,
+                      habitDefinition: habitDefinition,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       streakDuration: 2,
@@ -153,7 +140,7 @@ class _HabitsTabPageState extends State<HabitsTabPage> {
                   const SizedBox(height: 15),
                   ...state.habitDefinitions.map((habitDefinition) {
                     return HabitChartLine(
-                      habitId: habitDefinition.id,
+                      habitDefinition: habitDefinition,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       streakDuration: 6,

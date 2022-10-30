@@ -5,10 +5,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/task_app_bar.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -17,7 +15,7 @@ import 'package:lotti/widgets/journal/entry_detail_linked.dart';
 import 'package:lotti/widgets/journal/entry_detail_linked_from.dart';
 import 'package:lotti/widgets/journal/entry_details_widget.dart';
 
-class EntryDetailPage extends StatefulWidget {
+class EntryDetailPage extends StatelessWidget {
   const EntryDetailPage({
     super.key,
     required this.itemId,
@@ -28,34 +26,11 @@ class EntryDetailPage extends StatefulWidget {
   final bool readOnly;
 
   @override
-  State<EntryDetailPage> createState() => _EntryDetailPageState();
-}
-
-class _EntryDetailPageState extends State<EntryDetailPage> {
-  final JournalDb _db = getIt<JournalDb>();
-  bool showDetails = false;
-
-  late final Stream<JournalEntity?> _stream =
-      _db.watchEntityById(widget.itemId);
-
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-
-  Directory docDir = getDocumentsDirectory();
-  double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
-  double imageTextEditorHeight =
-      (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder<JournalEntity?>(
-      stream: _stream,
+      stream: getIt<JournalDb>().watchEntityById(itemId),
       builder: (
         BuildContext context,
         AsyncSnapshot<JournalEntity?> snapshot,
@@ -84,11 +59,11 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
                 EntryDetailWidget(
-                  itemId: widget.itemId,
+                  itemId: itemId,
                   popOnDelete: true,
                   showTaskDetails: true,
                 ),
-                LinkedEntriesWidget(itemId: widget.itemId),
+                LinkedEntriesWidget(itemId: itemId),
                 LinkedFromEntriesWidget(item: item),
               ],
             ),

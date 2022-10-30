@@ -224,11 +224,9 @@ class ConflictDetailRoute extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         TextButton(
-                          onPressed: () {
-                            beamToNamed(
-                              '/settings/advanced/conflicts/${conflict.id}/edit',
-                            );
-                          },
+                          onPressed: () => beamToNamed(
+                            '/settings/advanced/conflicts/${conflict.id}/edit',
+                          ),
                           child: const Text('Edit'),
                         ),
                         TextButton(
