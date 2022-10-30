@@ -16,5 +16,6 @@ class HabitsState with _$HabitsState {
     required Set<String> completedToday,
     required int shortStreakCount,
     required int longStreakCount,
+    required int timeSpanDays,
   }) = _HabitsStateSaved;
 }
