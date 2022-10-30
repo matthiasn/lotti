@@ -23,7 +23,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('TagsModal Widget Tests -', () {
-    final controller = TextEditingController();
     final mockTagsService = MockTagsService();
     final entryCubit = MockEntryCubit();
 
@@ -87,9 +86,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: TagsModal(
-              controller: controller,
-            ),
+            child: const TagsModal(),
           ),
         ),
       );
@@ -115,9 +112,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: TagsModal(
-              controller: controller,
-            ),
+            child: const TagsModal(),
           ),
         ),
       );
@@ -167,9 +162,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: TagsModal(
-              controller: controller,
-            ),
+            child: const TagsModal(),
           ),
         ),
       );
@@ -199,9 +192,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: TagsModal(
-              controller: controller,
-            ),
+            child: const TagsModal(),
           ),
         ),
       );

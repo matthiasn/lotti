@@ -167,11 +167,9 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                 MouseRegion(
                                   cursor: SystemMouseCursors.click,
                                   child: GestureDetector(
-                                    onTap: () {
-                                      beamToNamed(
-                                        '/settings/create_measurable',
-                                      );
-                                    },
+                                    onTap: () => beamToNamed(
+                                      '/settings/create_measurable',
+                                    ),
                                     child: SizedBox(
                                       width: MediaQuery.of(context).size.width -
                                           100,
@@ -210,11 +208,9 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                     IconButton(
                                       icon: const Icon(Icons.settings_outlined),
                                       color: styleConfig().primaryTextColor,
-                                      onPressed: () {
-                                        beamToNamed(
-                                          '/settings/measurables/${selected?.id}',
-                                        );
-                                      },
+                                      onPressed: () => beamToNamed(
+                                        '/settings/measurables/${selected?.id}',
+                                      ),
                                     ),
                                   ],
                                 ),

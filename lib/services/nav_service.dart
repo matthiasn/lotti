@@ -105,10 +105,10 @@ class NavService {
     return indexStreamController.stream;
   }
 
-  void beamToNamed(String path) {
+  void beamToNamed(String path, {Object? data}) {
     setPath(path);
     persistNamedRoute(path);
-    delegateByIndex(index).beamToNamed(path);
+    delegateByIndex(index).beamToNamed(path, data: data);
   }
 }
 
@@ -130,7 +130,7 @@ void persistNamedRoute(String route) {
   getIt<NavService>().currentPath = route;
 }
 
-void beamToNamed(String path) {
+void beamToNamed(String path, {Object? data}) {
   debugPrint('beamToNamed $path');
-  getIt<NavService>().beamToNamed(path);
+  getIt<NavService>().beamToNamed(path, data: data);
 }

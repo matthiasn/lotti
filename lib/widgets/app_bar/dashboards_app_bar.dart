@@ -24,13 +24,8 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
       ) {
         final dashboards = snapshot.data ?? [];
 
-        void onPressSettings() {
-          beamToNamed('/settings/dashboards');
-        }
-
-        void onPressCarousel() {
-          beamToNamed('/dashboards/carousel');
-        }
+        void onPressSettings() => beamToNamed('/settings/dashboards');
+        void onPressCarousel() => beamToNamed('/dashboards/carousel');
 
         return AppBar(
           backgroundColor: styleConfig().negspace,

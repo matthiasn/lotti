@@ -5,6 +5,7 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes_service.dart';
@@ -19,6 +20,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('TagAddIconWidget Tests -', () {
+    final mockNavService = MockNavService();
     final mockTagsService = mockTagsServiceWithTags([testStoryTag1]);
     final entryCubit = MockEntryCubit();
 
@@ -37,6 +39,7 @@ void main() {
     setUpAll(() {
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<TagsService>(mockTagsService);
     });
 
@@ -70,7 +73,12 @@ void main() {
       await tester.tap(tagAddIconFinder);
       await tester.pumpAndSettle();
 
-      expect(find.text('Tags:'), findsOneWidget);
+      verify(
+        () => mockNavService.beamToNamed(
+          '/journal/32ea936e-dfc6-43bd-8722-d816c35eb489/manage_tags',
+          data: any(named: 'data'),
+        ),
+      ).called(1);
     });
   });
 }
