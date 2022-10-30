@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/platform.dart';
 
 class CardImageWidget extends StatefulWidget {
   const CardImageWidget({
@@ -35,7 +36,7 @@ class _CardImageWidgetState extends State<CardImageWidget> {
   Widget build(BuildContext context) {
     final file = File(getFullImagePath(widget.journalImage));
 
-    if (retries < 10 && !file.existsSync()) {
+    if (!isTestEnv && retries < 10 && !file.existsSync()) {
       Future<void>.delayed(const Duration(milliseconds: 200)).then((_) {
         setState(() {
           retries++;
