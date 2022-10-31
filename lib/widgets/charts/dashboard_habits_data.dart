@@ -10,10 +10,15 @@ import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class HabitResult extends Equatable {
-  const HabitResult(this.dayString, this.hexColor);
+  const HabitResult({
+    required this.dayString,
+    required this.hexColor,
+    required this.habitCompletionType,
+  });
 
   final String dayString;
   final String hexColor;
+  final HabitCompletionType habitCompletionType;
 
   @override
   String toString() {
@@ -30,13 +35,21 @@ final skipColor = colorToCssHex(
   styleConfig().secondaryTextColor.withOpacity(0.4),
 );
 
+String hexColorForHabitCompletion(HabitCompletionType completionType) {
+  return completionType == HabitCompletionType.fail
+      ? failColor
+      : completionType == HabitCompletionType.skip
+          ? skipColor
+          : successColor;
+}
+
 List<HabitResult> habitResultsByDay(
   List<JournalEntity> entities, {
   required HabitDefinition habitDefinition,
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
-  final resultsByDay = <String, String>{};
+  final resultsByDay = <String, HabitResult>{};
   final range = rangeEnd.difference(rangeStart);
   final dayStrings = List<String>.generate(range.inDays + 1, (days) {
     final day = rangeStart.add(Duration(days: days));
@@ -48,36 +61,41 @@ List<HabitResult> habitResultsByDay(
 
   for (final dayString in dayStrings) {
     final day = DateTime.parse(dayString);
-    final hexColor = (day.isAfter(activeFrom) || day == activeFrom) &&
+    final completionType = (day.isAfter(activeFrom) || day == activeFrom) &&
             day.isBefore(activeUntil)
-        ? failColor
-        : skipColor;
+        ? HabitCompletionType.fail
+        : HabitCompletionType.skip;
 
-    resultsByDay[dayString] = hexColor;
+    resultsByDay[dayString] = HabitResult(
+      dayString: dayString,
+      habitCompletionType: completionType,
+      hexColor: hexColorForHabitCompletion(completionType),
+    );
   }
 
   for (final entity in entities.sortedBy((entity) => entity.meta.dateFrom)) {
     final dayString = ymd(entity.meta.dateFrom);
-    final hexColor = entity.maybeMap(
+
+    final completionType = entity.maybeMap(
       habitCompletion: (completion) {
         final completionType = completion.data.completionType;
-        final hexColor = completionType == HabitCompletionType.fail
-            ? failColor
-            : completionType == HabitCompletionType.skip
-                ? skipColor
-                : successColor;
-
-        return hexColor;
+        return completionType;
       },
-      orElse: () => skipColor,
+      orElse: () => null,
     );
 
-    resultsByDay[dayString] = hexColor;
+    if (completionType != null) {
+      resultsByDay[dayString] = HabitResult(
+        dayString: dayString,
+        habitCompletionType: completionType,
+        hexColor: hexColorForHabitCompletion(completionType),
+      );
+    }
   }
 
   final aggregated = <HabitResult>[];
   for (final dayString in resultsByDay.keys.sorted()) {
-    aggregated.add(HabitResult(dayString, resultsByDay[dayString]!));
+    aggregated.add(resultsByDay[dayString]!);
   }
 
   return aggregated;

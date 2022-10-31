@@ -13,8 +13,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
-
-import 'dashboard_habits_data.dart';
+import 'package:lotti/widgets/charts/dashboard_habits_data.dart';
 
 class DashboardHabitsChart extends StatefulWidget {
   const DashboardHabitsChart({
