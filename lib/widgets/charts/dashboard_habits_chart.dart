@@ -87,7 +87,9 @@ class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
                       child: Container(
                         height: 15,
                         width: (MediaQuery.of(context).size.width - 200) / days,
-                        color: colorFromCssHex(res.hexColor),
+                        color: colorFromCssHex(
+                          hexColorForHabitCompletion(res.completionType),
+                        ),
                       ),
                     );
                   }),
@@ -228,7 +230,8 @@ class _HabitChartLineState extends State<HabitChartLine> {
 
         final streak = results.reversed.toList().skip(1).takeWhile(
               (value) =>
-                  value.hexColor == successColor || value.hexColor == skipColor,
+                  value.completionType == HabitCompletionType.success ||
+                  value.completionType == HabitCompletionType.skip,
             );
 
         if (streak.length < widget.streakDuration) {
@@ -260,7 +263,11 @@ class _HabitChartLineState extends State<HabitChartLine> {
                           ),
                           child: Container(
                             height: 25,
-                            color: colorFromCssHex(res.hexColor),
+                            color: colorFromCssHex(
+                              hexColorForHabitCompletion(
+                                res.completionType,
+                              ),
+                            ),
                           ),
                         ),
                       );

@@ -12,21 +12,19 @@ import 'package:lotti/widgets/charts/utils.dart';
 class HabitResult extends Equatable {
   const HabitResult({
     required this.dayString,
-    required this.hexColor,
-    required this.habitCompletionType,
+    required this.completionType,
   });
 
   final String dayString;
-  final String hexColor;
-  final HabitCompletionType habitCompletionType;
+  final HabitCompletionType completionType;
 
   @override
   String toString() {
-    return '$dayString $hexColor}';
+    return '$dayString}';
   }
 
   @override
-  List<Object?> get props => [dayString, hexColor];
+  List<Object?> get props => [dayString];
 }
 
 final successColor = colorToCssHex(primaryColor);
@@ -68,8 +66,7 @@ List<HabitResult> habitResultsByDay(
 
     resultsByDay[dayString] = HabitResult(
       dayString: dayString,
-      habitCompletionType: completionType,
-      hexColor: hexColorForHabitCompletion(completionType),
+      completionType: completionType,
     );
   }
 
@@ -87,8 +84,7 @@ List<HabitResult> habitResultsByDay(
     if (completionType != null) {
       resultsByDay[dayString] = HabitResult(
         dayString: dayString,
-        habitCompletionType: completionType,
-        hexColor: hexColorForHabitCompletion(completionType),
+        completionType: completionType,
       );
     }
   }
