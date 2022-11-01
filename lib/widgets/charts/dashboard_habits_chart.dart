@@ -11,7 +11,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_habits_data.dart';
 
@@ -87,9 +86,7 @@ class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
                       child: Container(
                         height: 15,
                         width: (MediaQuery.of(context).size.width - 200) / days,
-                        color: colorFromCssHex(
-                          hexColorForHabitCompletion(res.completionType),
-                        ),
+                        color: habitCompletionColor(res.completionType),
                       ),
                     );
                   }),
@@ -263,11 +260,7 @@ class _HabitChartLineState extends State<HabitChartLine> {
                           ),
                           child: Container(
                             height: 25,
-                            color: colorFromCssHex(
-                              hexColorForHabitCompletion(
-                                res.completionType,
-                              ),
-                            ),
+                            color: habitCompletionColor(res.completionType),
                           ),
                         ),
                       );

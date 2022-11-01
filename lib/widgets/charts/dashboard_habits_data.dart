@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'dart:ui';
 
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
@@ -39,6 +40,14 @@ String hexColorForHabitCompletion(HabitCompletionType completionType) {
       : completionType == HabitCompletionType.skip
           ? skipColor
           : successColor;
+}
+
+Color habitCompletionColor(HabitCompletionType completionType) {
+  return completionType == HabitCompletionType.fail
+      ? alarm
+      : completionType == HabitCompletionType.skip
+          ? styleConfig().secondaryTextColor.withOpacity(0.4)
+          : primaryColor;
 }
 
 List<HabitResult> habitResultsByDay(
