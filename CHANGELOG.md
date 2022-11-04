@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Allow setting habit active or inactive
+- Rename "active from" to "expect success from"
 
 ## [0.8.190] - 2022-11-04
 - Flutter upgrade

@@ -45,6 +45,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
         final formData = _formKey.currentState?.value;
         final private = formData?['private'] as bool? ?? false;
         final active = formData?['active'] as bool? ?? false;
+        final activeFrom = formData?['active_from'] as DateTime?;
         final showFrom = formData?['show_from'] as DateTime?;
 
         final dataType = item.copyWith(
@@ -52,6 +53,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
           description: '${formData['description']}'.trim(),
           private: private,
           active: active,
+          activeFrom: activeFrom,
           habitSchedule: HabitSchedule.daily(
             requiredCompletions: 1,
             showFrom: showFrom,
@@ -141,6 +143,20 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           style: formLabelStyle(),
                         ),
                         activeColor: styleConfig().starredGold,
+                      ),
+                      FormBuilderCupertinoDateTimePicker(
+                        key: const Key('active_from'),
+                        name: 'active_from',
+                        alwaysUse24HourFormat: true,
+                        inputType: CupertinoDateTimePickerInputType.date,
+                        style: inputStyle().copyWith(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w300,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: localizations.habitActiveFromLabel,
+                          labelStyle: labelStyle(),
+                        ),
                       ),
                       if (isDaily)
                         FormBuilderCupertinoDateTimePicker(
