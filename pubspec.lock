@@ -49,7 +49,7 @@ packages:
       name: arb_utils
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.3.0"
+    version: "0.3.1"
   archive:
     dependency: "direct dev"
     description:
@@ -796,7 +796,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.1"
+    version: "6.1.2"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1287,7 +1287,7 @@ packages:
       name: msix
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.6.6"
+    version: "3.7.0"
   multi_select_flutter:
     dependency: "direct main"
     description:
@@ -1483,7 +1483,7 @@ packages:
       name: photo_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.1"
+    version: "2.5.0"
   photo_view:
     dependency: "direct main"
     description:
@@ -1797,7 +1797,7 @@ packages:
       name: shelf_web_socket
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.2"
+    version: "1.0.3"
   signature:
     dependency: transitive
     description:
@@ -1865,7 +1865,7 @@ packages:
       name: sqflite
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0+2"
+    version: "2.2.0+3"
   sqflite_common:
     dependency: transitive
     description:
@@ -1914,7 +1914,7 @@ packages:
       name: stream_transform
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.1"
+    version: "2.1.0"
   string_scanner:
     dependency: transitive
     description:
