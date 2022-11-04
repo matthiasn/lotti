@@ -48,6 +48,7 @@
   "fileMenuNewTask": "Aufgabe",
   "fileMenuTitle": "Datei",
   "habitActiveFromLabel": "Aktiv ab",
+  "habitActiveUntilLabel": "Aktiv bis",
   "habitNotFound": "Habit nicht gefunden",
   "habitDeleteConfirm": "JA, HABIT löschen",
   "habitDeleteQuestion": "Habit wirklich löschen?",
