@@ -27,15 +27,10 @@ class HabitsCubit extends Cubit<HabitsState> {
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
+
     _definitionsSubscription = _definitionsStream.listen((habitDefinitions) {
-      final now = DateTime.now();
-      _habitDefinitions = habitDefinitions
-          .where(
-            (habit) =>
-                (habit.activeFrom == null || habit.activeFrom!.isBefore(now)) &&
-                (habit.activeUntil == null || habit.activeUntil!.isAfter(now)),
-          )
-          .toList();
+      _habitDefinitions =
+          habitDefinitions.where((habit) => habit.active).toList();
       determineHabitSuccessByDays();
     });
 

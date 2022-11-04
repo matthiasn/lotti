@@ -190,7 +190,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final activeFromFieldFinder = find.byKey(const Key('active_from'));
+      final activeFromFieldFinder = find.byKey(const Key('habit_active'));
 
       final saveButtonFinder = find.byKey(const Key('habit_save'));
 

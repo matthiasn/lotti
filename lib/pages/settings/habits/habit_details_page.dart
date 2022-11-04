@@ -44,16 +44,14 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
       if (_formKey.currentState!.validate()) {
         final formData = _formKey.currentState?.value;
         final private = formData?['private'] as bool? ?? false;
-        final activeFrom = formData?['active_from'] as DateTime;
-        final activeUntil = formData?['active_until'] as DateTime?;
+        final active = formData?['active'] as bool? ?? false;
         final showFrom = formData?['show_from'] as DateTime?;
 
         final dataType = item.copyWith(
           name: '${formData!['name']}'.trim(),
           description: '${formData['description']}'.trim(),
           private: private,
-          activeFrom: activeFrom,
-          activeUntil: activeUntil,
+          active: active,
           habitSchedule: HabitSchedule.daily(
             requiredCompletions: 1,
             showFrom: showFrom,
@@ -134,37 +132,15 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                         ),
                         activeColor: styleConfig().private,
                       ),
-                      FormBuilderCupertinoDateTimePicker(
-                        key: const Key('active_from'),
-                        name: 'active_from',
-                        alwaysUse24HourFormat: true,
-                        inputType: CupertinoDateTimePickerInputType.date,
-                        style: inputStyle().copyWith(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w300,
+                      FormBuilderSwitch(
+                        name: 'active',
+                        key: const Key('habit_active'),
+                        initialValue: widget.habitDefinition.active,
+                        title: Text(
+                          localizations.dashboardActiveLabel,
+                          style: formLabelStyle(),
                         ),
-                        decoration: InputDecoration(
-                          labelText: localizations.habitActiveFromLabel,
-                          labelStyle: labelStyle(),
-                        ),
-                        initialValue: item.activeFrom ?? DateTime.now(),
-                        theme: datePickerTheme(),
-                      ),
-                      FormBuilderCupertinoDateTimePicker(
-                        key: const Key('active_until'),
-                        name: 'active_until',
-                        alwaysUse24HourFormat: true,
-                        inputType: CupertinoDateTimePickerInputType.date,
-                        style: inputStyle().copyWith(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w300,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: localizations.habitActiveUntilLabel,
-                          labelStyle: labelStyle(),
-                        ),
-                        initialValue: item.activeUntil,
-                        theme: datePickerTheme(),
+                        activeColor: styleConfig().starredGold,
                       ),
                       if (isDaily)
                         FormBuilderCupertinoDateTimePicker(
