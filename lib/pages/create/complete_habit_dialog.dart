@@ -146,76 +146,81 @@ class _HabitDialogState extends State<HabitDialog> {
               ),
             ),
           ],
-          content: FormBuilder(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            onChanged: () {
-              setState(() {
-                dirty = true;
-              });
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      habitDefinition?.name ?? '',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontFamily: mainFont,
-                        fontSize: 20,
-                      ),
-                    ),
-                    IconButton(
-                      padding: const EdgeInsets.all(10),
-                      icon: SvgPicture.asset('assets/icons/close.svg'),
-                      hoverColor: Colors.transparent,
-                      onPressed: widget.beamerDelegate.beamBack,
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: FormBuilder(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              onChanged: () {
+                setState(() {
+                  dirty = true;
+                });
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox(height: 10),
-                      FormBuilderCupertinoDateTimePicker(
-                        name: 'date',
-                        alwaysUse24HourFormat: true,
-                        format: DateFormat(
-                          "MMMM d, yyyy 'at' HH:mm",
+                      Text(
+                        habitDefinition?.name ?? '',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontFamily: mainFont,
+                          fontSize: 20,
                         ),
-                        style: newInputStyle().copyWith(color: Colors.black),
-                        decoration: InputDecoration(
-                          fillColor: styleConfig().negspace,
-                          labelText: localizations.addHabitDateLabel,
-                          labelStyle:
-                              newLabelStyle().copyWith(color: Colors.black),
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
-                        ),
-                        initialValue: DateTime.now(),
-                        theme: datePickerTheme(),
                       ),
-                      FormBuilderTextField(
-                        initialValue: '',
-                        key: const Key('habit_comment_field'),
-                        decoration: InputDecoration(
-                          labelText: localizations.addHabitCommentLabel,
-                          labelStyle:
-                              newLabelStyle().copyWith(color: Colors.black),
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
-                        ),
-                        keyboardAppearance: Brightness.light,
-                        style: newInputStyle().copyWith(color: Colors.black),
-                        name: 'comment',
+                      IconButton(
+                        padding: const EdgeInsets.all(10),
+                        icon: SvgPicture.asset('assets/icons/close.svg'),
+                        hoverColor: Colors.transparent,
+                        onPressed: widget.beamerDelegate.beamBack,
                       ),
                     ],
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.only(right: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 10),
+                        FormBuilderCupertinoDateTimePicker(
+                          name: 'date',
+                          alwaysUse24HourFormat: true,
+                          format: DateFormat(
+                            "MMMM d, yyyy 'at' HH:mm",
+                          ),
+                          style: newInputStyle().copyWith(color: Colors.black),
+                          decoration: InputDecoration(
+                            fillColor: styleConfig().negspace,
+                            labelText: localizations.addHabitDateLabel,
+                            labelStyle:
+                                newLabelStyle().copyWith(color: Colors.black),
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                          ),
+                          initialValue: DateTime.now(),
+                          theme: datePickerTheme(),
+                        ),
+                        FormBuilderTextField(
+                          initialValue: '',
+                          key: const Key('habit_comment_field'),
+                          decoration: InputDecoration(
+                            labelText: localizations.addHabitCommentLabel,
+                            labelStyle:
+                                newLabelStyle().copyWith(color: Colors.black),
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                          ),
+                          minLines: 1,
+                          maxLines: 10,
+                          keyboardAppearance: Brightness.light,
+                          style: newInputStyle().copyWith(color: Colors.black),
+                          name: 'comment',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
