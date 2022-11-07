@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Multiline comments and max width in habit capture dialog
+
+## [0.8.191] - 2022-11-05
+### Changed:
 - Allow setting habit active or inactive
 - Rename "active from" to "expect success from"
 
