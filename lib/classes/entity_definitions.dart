@@ -87,6 +87,7 @@ class EntityDefinition with _$EntityDefinition {
     DateTime? activeFrom,
     DateTime? activeUntil,
     DateTime? deletedAt,
+    String? defaultStoryId,
   }) = HabitDefinition;
 
   factory EntityDefinition.dashboard({

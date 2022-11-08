@@ -639,7 +639,7 @@ void main() {
       final habitCompletion =
           await getIt<PersistenceLogic>().createHabitCompletionEntry(
         data: habitCompletionData,
-        private: false,
+        habitDefinition: habitFlossing,
       );
 
       expect(habitCompletion?.data, habitCompletionData);
