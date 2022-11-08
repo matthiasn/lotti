@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/habits/habit_create_page.dart';
 import 'package:lotti/pages/settings/habits/habit_details_page.dart';
+import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -33,9 +35,22 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
+      final mockTagsService = mockTagsServiceWithTags([]);
+
+      when(mockTagsService.watchTags).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([
+          [
+            testStoryTag1,
+            testPersonTag1,
+            testTag1,
+          ]
+        ]),
+      );
+
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
     });
     tearDown(getIt.reset);
