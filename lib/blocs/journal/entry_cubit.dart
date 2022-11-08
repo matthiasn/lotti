@@ -9,6 +9,7 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -41,30 +42,39 @@ class EntryCubit extends Cubit<EntryState> {
       formKey = GlobalKey<FormBuilderState>();
     }
 
-    controller = makeController(
-      serializedQuill:
-          _editorStateService.getDelta(entryId) ?? entry.entryText?.quill,
-      selection: _editorStateService.getSelection(entryId),
-    );
-
-    controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
-      final delta = deltaFromController(controller);
-      _editorStateService.saveTempState(
-        id: entryId,
-        json: quillJsonFromDelta(delta),
-        lastSaved: entry.meta.updatedAt,
+    try {
+      controller = makeController(
+        serializedQuill:
+            _editorStateService.getDelta(entryId) ?? entry.entryText?.quill,
+        selection: _editorStateService.getSelection(entryId),
       );
-      dirty = true;
-      emitState();
-    });
 
-    _entryStream = _journalDb.watchEntityById(entryId);
-    _entryStreamSubscription = _entryStream.listen((updated) {
-      if (updated != null) {
-        entry = updated;
+      controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
+        final delta = deltaFromController(controller);
+        _editorStateService.saveTempState(
+          id: entryId,
+          json: quillJsonFromDelta(delta),
+          lastSaved: entry.meta.updatedAt,
+        );
+        dirty = true;
         emitState();
-      }
-    });
+      });
+
+      _entryStream = _journalDb.watchEntityById(entryId);
+      _entryStreamSubscription = _entryStream.listen((updated) {
+        if (updated != null) {
+          entry = updated;
+          emitState();
+        }
+      });
+    } catch (error, stackTrace) {
+      getIt<LoggingDb>().captureException(
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'makeController',
+        domain: 'ENTRY_CUBIT',
+      );
+    }
   }
 
   String entryId;
