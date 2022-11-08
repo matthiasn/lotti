@@ -10,6 +10,26 @@ class AudioPlayerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final speedToggleMap = <double, double>{
+      0.5: 0.75,
+      0.75: 1,
+      1: 1.25,
+      1.25: 1.5,
+      1.5: 1.75,
+      1.75: 2,
+      2: 0.5,
+    };
+
+    final speedLabelMap = <double, String>{
+      0.5: '0.5x',
+      0.75: '0.75x',
+      1: '1x',
+      1.25: '1.25x',
+      1.5: '1.5x',
+      1.75: '1.75x',
+      2: '2x',
+    };
+
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       builder: (BuildContext context, AudioPlayerState state) {
         return Column(
@@ -58,32 +78,20 @@ class AudioPlayerWidget extends StatelessWidget {
                 ),
                 IconButton(
                   icon: Text(
-                    '1x',
+                    speedLabelMap[state.speed] ?? '1x',
                     style: TextStyle(
                       fontFamily: 'Oswald',
                       fontWeight: FontWeight.bold,
-                      color: (state.speed == 1)
+                      color: (state.speed != 1)
                           ? styleConfig().activeAudioControl
                           : styleConfig().secondaryTextColor,
                     ),
                   ),
-                  tooltip: 'Normal speed',
-                  onPressed: () => context.read<AudioPlayerCubit>().setSpeed(1),
-                ),
-                IconButton(
-                  icon: Text(
-                    '1.5x',
-                    style: TextStyle(
-                      fontFamily: 'Oswald',
-                      fontWeight: FontWeight.bold,
-                      color: (state.speed == 1.5)
-                          ? styleConfig().activeAudioControl
-                          : styleConfig().secondaryTextColor,
-                    ),
-                  ),
-                  tooltip: '1.5x speed',
-                  onPressed: () =>
-                      context.read<AudioPlayerCubit>().setSpeed(1.5),
+                  iconSize: 32,
+                  tooltip: 'Toggle speed',
+                  onPressed: () => context
+                      .read<AudioPlayerCubit>()
+                      .setSpeed(speedToggleMap[state.speed] ?? 1),
                 ),
               ],
             ),
