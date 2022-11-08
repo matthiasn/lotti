@@ -43,11 +43,12 @@ class _HabitDialogState extends State<HabitDialog> {
     if (validate()) {
       final formData = _formKey.currentState?.value;
       final habitDefinition = await _db.watchHabitById(widget.habitId).first;
+      final formDate = formData!['date'] as DateTime;
 
       final habitCompletion = HabitCompletionData(
         habitId: widget.habitId,
-        dateTo: formData!['date'] as DateTime,
-        dateFrom: formData['date'] as DateTime,
+        dateTo: formDate == _started ? DateTime.now() : formDate,
+        dateFrom: formDate,
         completionType: completionType,
       );
 
@@ -68,6 +69,7 @@ class _HabitDialogState extends State<HabitDialog> {
   @override
   void initState() {
     super.initState();
+    _started = DateTime.now();
 
     hotKeyManager.register(
       hotkeyCmdS,
@@ -87,6 +89,8 @@ class _HabitDialogState extends State<HabitDialog> {
     }
     return false;
   }
+
+  late final DateTime _started;
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +202,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                 newLabelStyle().copyWith(color: Colors.black),
                             floatingLabelBehavior: FloatingLabelBehavior.always,
                           ),
-                          initialValue: DateTime.now(),
+                          initialValue: _started,
                           theme: datePickerTheme(),
                         ),
                         FormBuilderTextField(

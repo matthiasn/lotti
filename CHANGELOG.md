@@ -6,9 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Record duration between opening habit and completing habit (unless date in the past is selected)
+
+## [0.8.194] - 2022-11-08
+### Changed:
 - Audio playback speed toggle instead of individual icon button
 
-## [0.8.192] - 2022-11-07
+## [0.8.193] - 2022-11-07
 ### Changed: 
 - Upgraded dependencies
 - Error handling in editor
