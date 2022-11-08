@@ -66,16 +66,13 @@ void main() {
       final fwdIconFinder = find.byIcon(Icons.fast_forward);
 
       final normalSpeedIcon = find.text('1x');
-      final fastSpeedIcon = find.text('1.5x');
 
       expect(stopIconFinder, findsOneWidget);
       expect(playIconFinder, findsOneWidget);
       expect(pauseIconFinder, findsOneWidget);
       expect(rewindIconFinder, findsOneWidget);
       expect(fwdIconFinder, findsOneWidget);
-
       expect(normalSpeedIcon, findsOneWidget);
-      expect(fastSpeedIcon, findsOneWidget);
 
       await tester.tap(playIconFinder);
       verify(mockAudioPlayerCubit.play).called(1);
@@ -106,70 +103,10 @@ void main() {
 
       when(mockAudioPlayerCubit.close).thenAnswer((_) async {});
       when(mockAudioPlayerCubit.stopPlay).thenAnswer((_) async {});
-
-      when(() => mockAudioPlayerCubit.setSpeed(1.5)).thenAnswer((_) async {});
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (_) => mockAudioPlayerCubit,
-            lazy: false,
-            child: const AudioPlayerWidget(),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final stopIconFinder = find.byIcon(Icons.stop);
-      final playIconFinder = find.byIcon(Icons.play_arrow);
-      final rewindIconFinder = find.byIcon(Icons.fast_rewind);
-      final pauseIconFinder = find.byIcon(Icons.pause);
-      final fwdIconFinder = find.byIcon(Icons.fast_forward);
-
-      final normalSpeedIcon = find.text('1x');
-      final fastSpeedIcon = find.text('1.5x');
-
-      expect(stopIconFinder, findsOneWidget);
-      expect(playIconFinder, findsOneWidget);
-      expect(pauseIconFinder, findsOneWidget);
-      expect(rewindIconFinder, findsOneWidget);
-      expect(fwdIconFinder, findsOneWidget);
-
-      expect(normalSpeedIcon, findsOneWidget);
-      expect(fastSpeedIcon, findsOneWidget);
-
-      await tester.tap(fastSpeedIcon);
-      verify(() => mockAudioPlayerCubit.setSpeed(1.5)).called(1);
-
-      await tester.tap(stopIconFinder);
-      verify(mockAudioPlayerCubit.stopPlay).called(1);
-    });
-
-    testWidgets('controls are are displayed, playing state (1.5x)',
-        (tester) async {
-      final playingState = AudioPlayerState(
-        status: AudioPlayerStatus.playing,
-        progress: const Duration(seconds: 15),
-        totalDuration: const Duration(minutes: 1),
-        pausedAt: Duration.zero,
-        speed: 1.5,
-      );
-
-      when(() => mockAudioPlayerCubit.stream).thenAnswer(
-        (_) => Stream<AudioPlayerState>.fromIterable([playingState]),
-      );
-
-      when(() => mockAudioPlayerCubit.state).thenAnswer(
-        (_) => playingState,
-      );
-
-      when(() => mockAudioPlayerCubit.setSpeed(1)).thenAnswer((_) async {});
-
-      when(mockAudioPlayerCubit.close).thenAnswer((_) async {});
-
       when(mockAudioPlayerCubit.pause).thenAnswer((_) async {});
 
+      when(() => mockAudioPlayerCubit.setSpeed(1.25)).thenAnswer((_) async {});
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<AudioPlayerCubit>(
@@ -189,7 +126,7 @@ void main() {
       final fwdIconFinder = find.byIcon(Icons.fast_forward);
 
       final normalSpeedIcon = find.text('1x');
-      final fastSpeedIcon = find.text('1.5x');
+      final fasterSpeedIcon = find.text('1.25x');
 
       expect(stopIconFinder, findsOneWidget);
       expect(playIconFinder, findsOneWidget);
@@ -198,13 +135,19 @@ void main() {
       expect(fwdIconFinder, findsOneWidget);
 
       expect(normalSpeedIcon, findsOneWidget);
-      expect(fastSpeedIcon, findsOneWidget);
+      expect(fasterSpeedIcon, findsNothing);
 
       await tester.tap(normalSpeedIcon);
-      verify(() => mockAudioPlayerCubit.setSpeed(1)).called(1);
+
+      verify(() => mockAudioPlayerCubit.setSpeed(1.25)).called(1);
+
+      await tester.pumpAndSettle();
 
       await tester.tap(pauseIconFinder);
       verify(mockAudioPlayerCubit.pause).called(1);
+
+      await tester.tap(playIconFinder);
+      verify(mockAudioPlayerCubit.play).called(1);
 
       await tester.tap(stopIconFinder);
       verify(mockAudioPlayerCubit.stopPlay).called(1);
