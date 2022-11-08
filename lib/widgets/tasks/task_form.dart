@@ -53,23 +53,32 @@ class _TaskFormState extends State<TaskForm> {
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   children: <Widget>[
-                    FormBuilderTextField(
-                      autofocus: widget.focusOnTitle,
-                      initialValue: widget.data?.title ?? '',
-                      decoration: InputDecoration(
-                        labelText: localizations.taskNameLabel,
-                        labelStyle: labelStyle(),
+                    RawKeyboardListener(
+                      focusNode: FocusNode(),
+                      onKey: (RawKeyEvent event) {
+                        if (event.data.isMetaPressed &&
+                            event.character == 's') {
+                          save();
+                        }
+                      },
+                      child: FormBuilderTextField(
+                        autofocus: widget.focusOnTitle,
+                        initialValue: widget.data?.title ?? '',
+                        decoration: InputDecoration(
+                          labelText: localizations.taskNameLabel,
+                          labelStyle: labelStyle(),
+                        ),
+                        textCapitalization: TextCapitalization.sentences,
+                        keyboardAppearance: Brightness.dark,
+                        maxLines: null,
+                        style: inputStyle().copyWith(
+                          fontFamily: 'Oswald',
+                          fontSize: 25,
+                          fontWeight: FontWeight.normal,
+                        ),
+                        name: 'title',
+                        onChanged: context.read<EntryCubit>().setDirty,
                       ),
-                      textCapitalization: TextCapitalization.sentences,
-                      keyboardAppearance: Brightness.dark,
-                      maxLines: null,
-                      style: inputStyle().copyWith(
-                        fontFamily: 'Oswald',
-                        fontSize: 25,
-                        fontWeight: FontWeight.normal,
-                      ),
-                      name: 'title',
-                      onChanged: context.read<EntryCubit>().setDirty,
                     ),
                     FormBuilderCupertinoDateTimePicker(
                       name: 'estimate',
