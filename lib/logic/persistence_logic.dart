@@ -211,7 +211,7 @@ class PersistenceLogic {
 
   Future<HabitCompletionEntry?> createHabitCompletionEntry({
     required HabitCompletionData data,
-    required bool private,
+    required HabitDefinition? habitDefinition,
     String? linkedId,
     String? comment,
   }) async {
@@ -219,6 +219,8 @@ class PersistenceLogic {
       final now = DateTime.now();
       final vc = await _vectorClockService.getNextVectorClock();
       final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
+      final defaultStoryId = habitDefinition?.defaultStoryId;
+      final tagIds = defaultStoryId != null ? [defaultStoryId] : <String>[];
 
       final habitCompletionEntry = HabitCompletionEntry(
         data: data,
@@ -229,9 +231,10 @@ class PersistenceLogic {
           dateTo: data.dateTo,
           id: id,
           vectorClock: vc,
-          private: private,
+          private: habitDefinition?.private ?? false,
           timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
+          tagIds: tagIds,
         ),
         entryText: entryTextFromPlain(comment),
       );

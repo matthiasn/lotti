@@ -55,7 +55,7 @@ void main() {
         return mockPersistenceLogic.createHabitCompletionEntry(
           data: any(named: 'data'),
           comment: any(named: 'comment'),
-          private: false,
+          habitDefinition: habitFlossing,
         );
       }
 

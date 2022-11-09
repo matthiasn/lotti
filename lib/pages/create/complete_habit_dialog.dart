@@ -55,7 +55,7 @@ class _HabitDialogState extends State<HabitDialog> {
       await persistenceLogic.createHabitCompletionEntry(
         data: habitCompletion,
         comment: formData['comment'] as String,
-        private: habitDefinition?.private ?? false,
+        habitDefinition: habitDefinition,
       );
 
       setState(() {

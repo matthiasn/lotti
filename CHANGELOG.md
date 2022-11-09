@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Define default story for habit completion entry
+
+## [0.8.195] - 2022-11-08
+### Changed:
 - Record duration between opening habit and completing habit (unless date in the past is selected)
 
 ## [0.8.194] - 2022-11-08
