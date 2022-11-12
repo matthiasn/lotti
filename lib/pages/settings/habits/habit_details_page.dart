@@ -226,7 +226,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                                 );
                               }).toList(),
                             ),
-                          HabitAutocompleteWidget(sleepAutoComplete),
+                          HabitAutocompleteWidget(testAutoComplete),
                         ],
                       ),
                     ),
