@@ -28,31 +28,40 @@ class HabitSchedule with _$HabitSchedule {
 }
 
 @freezed
-class HabitAutoComplete with _$HabitAutoComplete {
-  factory HabitAutoComplete.health({
+class AutoCompleteRule with _$AutoCompleteRule {
+  factory AutoCompleteRule.health({
     required String dataType,
     num? minimum,
     num? maximum,
-  }) = HabitAutoCompleteHealth;
+  }) = AutoCompleteRuleHealth;
 
-  factory HabitAutoComplete.measurable({
+  factory AutoCompleteRule.workout({
+    required String dataType,
+    num? minimum,
+    num? maximum,
+  }) = AutoCompleteRuleWorkout;
+
+  factory AutoCompleteRule.measurable({
     required String dataTypeId,
     num? minimum,
     num? maximum,
-  }) = HabitAutoCompleteMeasurable;
+  }) = AutoCompleteRuleMeasurable;
 
-  factory HabitAutoComplete.and({
-    required HabitAutoComplete a,
-    required HabitAutoComplete b,
-  }) = HabitAutoCompleteAnd;
+  factory AutoCompleteRule.and({
+    required List<AutoCompleteRule> rules,
+  }) = AutoCompleteRuleAnd;
 
-  factory HabitAutoComplete.or({
-    required HabitAutoComplete a,
-    required HabitAutoComplete b,
-  }) = HabitAutoCompleteOr;
+  factory AutoCompleteRule.or({
+    required List<AutoCompleteRule> rules,
+  }) = AutoCompleteRuleOr;
 
-  factory HabitAutoComplete.fromJson(Map<String, dynamic> json) =>
-      _$HabitAutoCompleteFromJson(json);
+  factory AutoCompleteRule.multiple({
+    required List<AutoCompleteRule> rules,
+    required int successes,
+  }) = AutoCompleteRuleMultiple;
+
+  factory AutoCompleteRule.fromJson(Map<String, dynamic> json) =>
+      _$AutoCompleteRuleFromJson(json);
 }
 
 @freezed
@@ -79,7 +88,7 @@ class EntityDefinition with _$EntityDefinition {
     required String name,
     required String description,
     required HabitSchedule habitSchedule,
-    HabitAutoComplete? autoComplete,
+    AutoCompleteRule? autoCompleteRule,
     String? version,
     required VectorClock? vectorClock,
     required bool active,
