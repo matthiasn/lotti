@@ -23,7 +23,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             completed: [],
             shortStreakCount: 0,
             longStreakCount: 0,
-            timeSpanDays: isDesktop ? 14 : 7,
+            timeSpanDays: 30,
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 - New Flutter version & dependencies
+- Habits displayed for last 30 days by default on both mobile and desktop
 
 ## [0.8.196] - 2022-11-10
 ### Changed:
