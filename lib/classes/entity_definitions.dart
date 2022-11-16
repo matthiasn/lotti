@@ -33,31 +33,37 @@ class AutoCompleteRule with _$AutoCompleteRule {
     required String dataType,
     num? minimum,
     num? maximum,
+    String? title,
   }) = AutoCompleteRuleHealth;
 
   factory AutoCompleteRule.workout({
     required String dataType,
     num? minimum,
     num? maximum,
+    String? title,
   }) = AutoCompleteRuleWorkout;
 
   factory AutoCompleteRule.measurable({
     required String dataTypeId,
     num? minimum,
     num? maximum,
+    String? title,
   }) = AutoCompleteRuleMeasurable;
 
   factory AutoCompleteRule.and({
     required List<AutoCompleteRule> rules,
+    String? title,
   }) = AutoCompleteRuleAnd;
 
   factory AutoCompleteRule.or({
     required List<AutoCompleteRule> rules,
+    String? title,
   }) = AutoCompleteRuleOr;
 
   factory AutoCompleteRule.multiple({
     required List<AutoCompleteRule> rules,
     required int successes,
+    String? title,
   }) = AutoCompleteRuleMultiple;
 
   factory AutoCompleteRule.fromJson(Map<String, dynamic> json) =>

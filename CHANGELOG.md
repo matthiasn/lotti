@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Habit autocomplete definition refinements
-
+- Optional titles in habit rules
 ### Changed:
 - New Flutter version & dependencies
 - Habits displayed for last 30 days by default on both mobile and desktop
