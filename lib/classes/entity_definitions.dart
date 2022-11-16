@@ -50,6 +50,11 @@ class AutoCompleteRule with _$AutoCompleteRule {
     String? title,
   }) = AutoCompleteRuleMeasurable;
 
+  factory AutoCompleteRule.habit({
+    required String habitId,
+    String? title,
+  }) = AutoCompleteRuleHabit;
+
   factory AutoCompleteRule.and({
     required List<AutoCompleteRule> rules,
     String? title,
