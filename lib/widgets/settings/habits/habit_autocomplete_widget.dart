@@ -4,11 +4,14 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
 
 final testAutoComplete = AutoCompleteRule.and(
+  title: 'Physical Exercises and Hydration',
   rules: [
     AutoCompleteRule.or(
+      title: 'Body weight exercises or Gym',
       rules: [
         AutoCompleteRule.multiple(
           successes: 5,
+          title: 'Daily body weight exercises',
           rules: [
             AutoCompleteRule.measurable(
               dataTypeId: 'push-ups',
@@ -38,11 +41,13 @@ final testAutoComplete = AutoCompleteRule.and(
         ),
         AutoCompleteRule.workout(
           dataType: 'functionalStrengthTraining.duration',
+          title: 'Gym workout without tracking exercises',
           minimum: 30,
         ),
       ],
     ),
     AutoCompleteRule.or(
+      title: 'Daily Cardio',
       rules: [
         AutoCompleteRule.health(
           dataType: 'cumulative_step_count',
@@ -65,6 +70,7 @@ final testAutoComplete = AutoCompleteRule.and(
     AutoCompleteRule.measurable(
       dataTypeId: 'water',
       minimum: 2000,
+      title: 'Stay hydrated.',
     ),
   ],
 );
@@ -93,11 +99,31 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
             return Container(
               color: Colors.blue.withOpacity(0.5),
               padding: const EdgeInsets.all(8),
-              child: Text(
-                '${health.dataType}'
-                '${health.minimum != null ? ', min: ${health.minimum}' : ''}'
-                '${health.maximum != null ? ', max: ${health.maximum}' : ''}',
-                style: monospaceTextStyle(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RuleTitleWidget(health.title, bottomPadding: 4),
+                  RuleInfoWidget(
+                    '${health.dataType}'
+                    '${health.minimum != null ? ', min: ${health.minimum}' : ''}'
+                    '${health.maximum != null ? ', max: ${health.maximum}' : ''}',
+                  ),
+                ],
+              ),
+            );
+          },
+          habit: (habit) {
+            return Container(
+              color: Colors.blue.withOpacity(0.5),
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RuleTitleWidget(habit.title, bottomPadding: 4),
+                  RuleInfoWidget(
+                    habit.habitId,
+                  ),
+                ],
               ),
             );
           },
@@ -105,11 +131,16 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
             return Container(
               color: Colors.blue.withOpacity(0.5),
               padding: const EdgeInsets.all(8),
-              child: Text(
-                '${workout.dataType}'
-                '${workout.minimum != null ? ', min: ${workout.minimum}' : ''}'
-                '${workout.maximum != null ? ', max: ${workout.maximum}' : ''}',
-                style: monospaceTextStyle(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RuleTitleWidget(workout.title, bottomPadding: 4),
+                  RuleInfoWidget(
+                    '${workout.dataType}'
+                    '${workout.minimum != null ? ', min: ${workout.minimum}' : ''}'
+                    '${workout.maximum != null ? ', max: ${workout.maximum}' : ''}',
+                  ),
+                ],
               ),
             );
           },
@@ -117,96 +148,184 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
             return Container(
               color: Colors.green.withOpacity(0.5),
               padding: const EdgeInsets.all(8),
-              child: Text(
-                '${measurable.dataTypeId}'
-                '${measurable.minimum != null ? ', min: ${measurable.minimum}' : ''}'
-                '${measurable.maximum != null ? ', max: ${measurable.maximum}' : ''}',
-                style: monospaceTextStyle(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RuleTitleWidget(measurable.title, bottomPadding: 4),
+                  RuleInfoWidget(
+                    '${measurable.dataTypeId}'
+                    '${measurable.minimum != null ? ', min: ${measurable.minimum}' : ''}'
+                    '${measurable.maximum != null ? ', max: ${measurable.maximum}' : ''}',
+                  ),
+                ],
               ),
             );
           },
           and: (and) {
-            return Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Text(
-                    'AND',
-                    style: monospaceTextStyle()
-                        .copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    spacer,
-                    ...intersperse(
+            return Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RuleTitleWidget(and.title),
+                  Row(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: RuleListInfoWidget('AND'),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          spacer,
+                          ...intersperse(
+                            spacer,
+                            and.rules.map(HabitAutocompleteWidget.new),
+                          ),
+                          spacer,
+                        ],
+                      ),
                       spacer,
-                      and.rules.map(HabitAutocompleteWidget.new),
-                    ),
-                    spacer,
-                  ],
-                ),
-                spacer,
-              ],
+                    ],
+                  ),
+                ],
+              ),
             );
           },
           or: (or) {
-            return Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Text(
-                    'OR',
-                    style: monospaceTextStyle()
-                        .copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    spacer,
-                    ...intersperse(
+            return Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RuleTitleWidget(or.title),
+                  Row(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: RuleListInfoWidget('OR'),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          spacer,
+                          ...intersperse(
+                            spacer,
+                            or.rules.map(HabitAutocompleteWidget.new),
+                          ),
+                          spacer,
+                        ],
+                      ),
                       spacer,
-                      or.rules.map(HabitAutocompleteWidget.new),
-                    ),
-                    spacer,
-                  ],
-                ),
-                spacer,
-              ],
+                    ],
+                  ),
+                ],
+              ),
             );
           },
           multiple: (multiple) {
             final n = multiple.rules.length;
 
-            return Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Text(
-                    '${multiple.successes}/$n',
-                    style: monospaceTextStyle()
-                        .copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    spacer,
-                    ...intersperse(
+            return Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RuleTitleWidget(multiple.title),
+                  Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: RuleListInfoWidget(
+                          '${multiple.successes}/$n',
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          spacer,
+                          ...intersperse(
+                            spacer,
+                            multiple.rules.map(HabitAutocompleteWidget.new),
+                          ),
+                          spacer,
+                        ],
+                      ),
                       spacer,
-                      multiple.rules.map(HabitAutocompleteWidget.new),
-                    ),
-                    spacer,
-                  ],
-                ),
-                spacer,
-              ],
+                    ],
+                  ),
+                ],
+              ),
             );
           },
         ),
       ),
     );
+  }
+}
+
+class RuleInfoWidget extends StatelessWidget {
+  const RuleInfoWidget(
+    this.info, {
+    super.key,
+  });
+
+  final String info;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      info,
+      style: monospaceTextStyle().copyWith(
+        fontWeight: FontWeight.normal,
+        fontSize: fontSizeMedium,
+      ),
+    );
+  }
+}
+
+class RuleListInfoWidget extends StatelessWidget {
+  const RuleListInfoWidget(
+    this.info, {
+    super.key,
+  });
+
+  final String info;
+
+  @override
+  Widget build(BuildContext context) {
+    return RotatedBox(
+      quarterTurns: 3,
+      child: Text(
+        info,
+        style: monospaceTextStyle().copyWith(
+          fontWeight: FontWeight.w300,
+          fontSize: fontSizeLarge,
+        ),
+      ),
+    );
+  }
+}
+
+class RuleTitleWidget extends StatelessWidget {
+  const RuleTitleWidget(
+    this.title, {
+    this.bottomPadding = 0,
+    super.key,
+  });
+
+  final String? title;
+  final double bottomPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    if (title != null) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: bottomPadding),
+        child: Text(title!, style: formLabelStyle()),
+      );
+    } else {
+      return const SizedBox.shrink();
+    }
   }
 }
