@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/pages/settings/habits/habit_details_page.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -21,6 +23,9 @@ class CreateHabitPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HabitDetailsPage(habitDefinition: _habitDefinition);
+    return BlocProvider<HabitSettingsCubit>(
+      create: (_) => HabitSettingsCubit(_habitDefinition, context: context),
+      child: const HabitDetailsPage(),
+    );
   }
 }

@@ -1,0 +1,15 @@
+import 'package:flutter/widgets.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+
+part 'habit_settings_state.freezed.dart';
+
+@freezed
+class HabitSettingsState with _$HabitSettingsState {
+  factory HabitSettingsState({
+    required HabitDefinition habitDefinition,
+    required bool dirty,
+    required GlobalKey<FormBuilderState> formKey,
+  }) = _HabitSettingsStateSaved;
+}
