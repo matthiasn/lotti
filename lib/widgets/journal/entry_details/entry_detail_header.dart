@@ -68,6 +68,13 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                       icon: styleConfig().cardFlagIcon,
                       activeIcon: styleConfig().cardFlagIconActive,
                     ),
+                    SwitchIconWidget(
+                      tooltip: localizations.journalFlaggedTooltip,
+                      onPressed: cubit.toggleShowEditor,
+                      value: state.showEditor,
+                      icon: styleConfig().cardEditorIcon,
+                      activeIcon: styleConfig().cardEditorIconActive,
+                    ),
                     if (state.entry?.geolocation != null)
                       SwitchIconWidget(
                         tooltip: state.showMap

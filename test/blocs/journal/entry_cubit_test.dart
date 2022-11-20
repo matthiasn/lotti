@@ -95,11 +95,13 @@ void main() {
           entry: testTextEntry,
           entryId: testTextEntry.meta.id,
           showMap: false,
+          showEditor: true,
         ),
         EntryState.saved(
           entry: testTextEntry,
           entryId: testTextEntry.meta.id,
           showMap: false,
+          showEditor: true,
         ),
       ],
       verify: (c) {},
@@ -122,11 +124,13 @@ void main() {
           entry: testTask,
           entryId: testTask.meta.id,
           showMap: false,
+          showEditor: true,
         ),
         EntryState.saved(
           entry: testTask,
           entryId: testTask.meta.id,
           showMap: false,
+          showEditor: true,
         ),
       ],
       verify: (c) {},
@@ -149,11 +153,13 @@ void main() {
           entry: testTask,
           entryId: testTask.meta.id,
           showMap: false,
+          showEditor: true,
         ),
         EntryState.dirty(
           entry: testTask,
           entryId: testTask.meta.id,
           showMap: false,
+          showEditor: true,
         ),
       ],
       verify: (c) {},
@@ -175,6 +181,7 @@ void main() {
           entry: testTask,
           entryId: testTask.meta.id,
           showMap: false,
+          showEditor: true,
         ),
       ],
     );
@@ -195,6 +202,49 @@ void main() {
           entry: testTextEntry,
           entryId: testTextEntry.meta.id,
           showMap: true,
+          showEditor: true,
+        ),
+      ],
+    );
+
+    blocTest<EntryCubit, EntryState>(
+      'toggle editor hides editor for text entry',
+      build: () => EntryCubit(
+        entry: testTextEntry,
+        entryId: testTextEntry.meta.id,
+      ),
+      setUp: () {},
+      act: (c) {
+        c.toggleShowEditor();
+      },
+      wait: defaultWait,
+      expect: () => <EntryState>[
+        EntryState.saved(
+          entry: testTextEntry,
+          entryId: testTextEntry.meta.id,
+          showMap: false,
+          showEditor: false,
+        ),
+      ],
+    );
+
+    blocTest<EntryCubit, EntryState>(
+      'toggle editor show editor for measurement entry',
+      build: () => EntryCubit(
+        entry: testMeasuredPullUpsEntry,
+        entryId: testMeasuredPullUpsEntry.meta.id,
+      ),
+      setUp: () {},
+      act: (c) {
+        c.toggleShowEditor();
+      },
+      wait: defaultWait,
+      expect: () => <EntryState>[
+        EntryState.saved(
+          entry: testMeasuredPullUpsEntry,
+          entryId: testMeasuredPullUpsEntry.meta.id,
+          showMap: false,
+          showEditor: true,
         ),
       ],
     );
@@ -219,16 +269,19 @@ void main() {
           entry: testTextEntry,
           entryId: testTextEntry.meta.id,
           showMap: false,
+          showEditor: true,
         ),
         EntryState.dirty(
           entry: testTextEntry,
           entryId: testTextEntry.meta.id,
           showMap: false,
+          showEditor: true,
         ),
         EntryState.saved(
           entry: testTextEntry,
           entryId: testTextEntry.meta.id,
           showMap: false,
+          showEditor: true,
         ),
       ],
       verify: (c) {},

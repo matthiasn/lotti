@@ -87,6 +87,8 @@ class StyleConfig with _$StyleConfig {
     required String cardFlagIconActive,
     required String cardShieldIcon,
     required String cardShieldIconActive,
+    required String cardEditorIcon,
+    required String cardEditorIconActive,
     required String cardMapIcon,
     required String cardMapIconActive,
     required String cardTrashIcon,
