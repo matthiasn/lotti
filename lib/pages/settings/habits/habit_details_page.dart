@@ -162,6 +162,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                               fontSize: 15,
                               fontWeight: FontWeight.w300,
                             ),
+                            initialValue: item.activeFrom,
                             decoration: InputDecoration(
                               labelText: localizations.habitActiveFromLabel,
                               labelStyle: labelStyle(),
