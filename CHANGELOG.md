@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Editor display toggle
+
+## [0.8.197] - 2022-11-20
+### Added:
 - Habit autocomplete definition refinements
 - Optional titles in habit rules
 - Habit autocompletion type other habit rule

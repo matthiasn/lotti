@@ -68,6 +68,7 @@ void main() {
         entryId: testTextEntryWithTags.meta.id,
         entry: testTextEntryWithTags,
         showMap: false,
+        showEditor: true,
       ),
     );
 
