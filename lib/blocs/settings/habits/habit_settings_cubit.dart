@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/tags_service.dart';
 
 class HabitSettingsCubit extends Cubit<HabitSettingsState> {
   HabitSettingsCubit(
@@ -18,16 +19,30 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
             habitDefinition: habitDefinition,
             dirty: false,
             formKey: GlobalKey<FormBuilderState>(),
+            storyTags: [],
           ),
         ) {
     _habitDefinition = habitDefinition;
     _context = context;
+
+    getIt<TagsService>().watchTags().forEach((tags) {
+      _storyTags = tags.whereType<StoryTag>().toList();
+      _defaultStory = _habitDefinition.defaultStoryId != null
+          ? _storyTags
+              .where((tag) => tag.id == _habitDefinition.defaultStoryId)
+              .first
+          : null;
+
+      emitState();
+    });
   }
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
   late HabitDefinition _habitDefinition;
   bool _dirty = false;
   late BuildContext? _context;
+  List<StoryTag> _storyTags = [];
+  StoryTag? _defaultStory;
 
   void _maybePop() {
     if (_context != null) {
@@ -84,6 +99,8 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
         habitDefinition: _habitDefinition,
         dirty: _dirty,
         formKey: state.formKey,
+        storyTags: _storyTags,
+        defaultStory: _defaultStory,
       ),
     );
   }
