@@ -70,7 +70,7 @@ packages:
       name: asn1lib
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.3.0"
+    version: "1.4.0"
   async:
     dependency: transitive
     description:
@@ -84,7 +84,7 @@ packages:
       name: audio_session
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.10"
+    version: "0.1.11"
   audio_video_progress_bar:
     dependency: "direct main"
     description:
@@ -845,7 +845,7 @@ packages:
       name: flutter_sliding_tutorial
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.0"
+    version: "2.0.0+1"
   flutter_sound:
     dependency: "direct main"
     description:
@@ -1084,7 +1084,7 @@ packages:
       name: intl_utils
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.7.0"
+    version: "2.8.1"
   io:
     dependency: transitive
     description:
@@ -1574,7 +1574,7 @@ packages:
       name: pub_updater
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.2"
+    version: "0.2.3"
   pubspec_parse:
     dependency: transitive
     description:
@@ -1657,7 +1657,7 @@ packages:
       name: rxdart
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.27.6"
+    version: "0.27.7"
   salomon_bottom_bar:
     dependency: "direct main"
     description:
