@@ -1,107 +1,57 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
+import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class HabitDetailsPage extends StatefulWidget {
-  const HabitDetailsPage({
-    super.key,
-    required this.habitDefinition,
-  });
-
-  final HabitDefinition habitDefinition;
-
-  @override
-  State<HabitDetailsPage> createState() {
-    return _HabitDetailsPageState();
-  }
-}
-
-class _HabitDetailsPageState extends State<HabitDetailsPage> {
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-  final _formKey = GlobalKey<FormBuilderState>();
-  bool dirty = false;
+class HabitDetailsPage extends StatelessWidget {
+  const HabitDetailsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    void maybePop() => Navigator.of(context).maybePop();
     final localizations = AppLocalizations.of(context)!;
-    final item = widget.habitDefinition;
 
-    Future<void> onSavePressed() async {
-      _formKey.currentState!.save();
-      if (_formKey.currentState!.validate()) {
-        final formData = _formKey.currentState?.value;
-        final private = formData?['private'] as bool? ?? false;
-        final active = formData?['active'] as bool? ?? false;
-        final activeFrom = formData?['active_from'] as DateTime?;
-        final showFrom = formData?['show_from'] as DateTime?;
-        final defaultStory = formData?['default_story_id'] as StoryTag?;
+    return BlocBuilder<HabitSettingsCubit, HabitSettingsState>(
+      builder: (context, HabitSettingsState state) {
+        final item = state.habitDefinition;
+        final cubit = context.read<HabitSettingsCubit>();
+        final isDaily = item.habitSchedule is DailyHabitSchedule;
+        final showFrom = item.habitSchedule.mapOrNull(daily: (d) => d.showFrom);
 
-        final dataType = item.copyWith(
-          name: '${formData!['name']}'.trim(),
-          description: '${formData['description']}'.trim(),
-          private: private,
-          active: active,
-          activeFrom: activeFrom,
-          habitSchedule: HabitSchedule.daily(
-            requiredCompletions: 1,
-            showFrom: showFrom,
+        return Scaffold(
+          backgroundColor: styleConfig().negspace,
+          appBar: TitleAppBar(
+            title: state.habitDefinition.name,
+            actions: [
+              if (state.dirty)
+                TextButton(
+                  key: const Key('habit_save'),
+                  onPressed: cubit.onSavePressed,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      AppLocalizations.of(context)!.settingsHabitsSaveLabel,
+                      style: saveButtonStyle(),
+                    ),
+                  ),
+                )
+            ],
           ),
-          defaultStoryId: defaultStory?.id,
-        );
-
-        await persistenceLogic.upsertEntityDefinition(dataType);
-        setState(() {
-          dirty = false;
-        });
-
-        maybePop();
-      }
-    }
-
-    final isDaily = item.habitSchedule is DailyHabitSchedule;
-    final showFrom = item.habitSchedule.mapOrNull(daily: (d) => d.showFrom);
-
-    return Scaffold(
-      backgroundColor: styleConfig().negspace,
-      appBar: TitleAppBar(
-        title: widget.habitDefinition.name,
-        actions: [
-          if (dirty)
-            TextButton(
-              key: const Key('habit_save'),
-              onPressed: onSavePressed,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  AppLocalizations.of(context)!.settingsHabitsSaveLabel,
-                  style: saveButtonStyle(),
-                ),
-              ),
-            )
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: StreamBuilder<List<TagEntity>>(
-          stream: getIt<TagsService>().watchTags(),
-          builder: (context, AsyncSnapshot<List<TagEntity>> snapshot) {
-            final storyTags = snapshot.data?.whereType<StoryTag>().toList();
-
-            return Padding(
+          body: SingleChildScrollView(
+            child: Padding(
               padding: const EdgeInsets.all(16),
               child: Container(
                 color: styleConfig().cardColor,
@@ -109,13 +59,9 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                 child: Column(
                   children: [
                     FormBuilder(
-                      key: _formKey,
+                      key: state.formKey,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
-                      onChanged: () {
-                        setState(() {
-                          dirty = true;
-                        });
-                      },
+                      onChanged: cubit.setDirty,
                       child: Column(
                         children: <Widget>[
                           FormTextField(
@@ -146,7 +92,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                           FormBuilderSwitch(
                             name: 'active',
                             key: const Key('habit_active'),
-                            initialValue: widget.habitDefinition.active,
+                            initialValue: state.habitDefinition.active,
                             title: Text(
                               localizations.dashboardActiveLabel,
                               style: formLabelStyle(),
@@ -185,16 +131,10 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                               ),
                               theme: datePickerTheme(),
                             ),
-                          if (storyTags != null)
+                          if (state.storyTags.isNotEmpty)
                             FormBuilderDropdown<StoryTag>(
                               name: 'default_story_id',
-                              initialValue: item.defaultStoryId != null
-                                  ? storyTags
-                                      .where(
-                                        (tag) => tag.id == item.defaultStoryId,
-                                      )
-                                      .first
-                                  : null,
+                              initialValue: state.defaultStory,
                               decoration: InputDecoration(
                                 labelText: AppLocalizations.of(context)!
                                     .settingsHabitsStoryLabel,
@@ -210,7 +150,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                               iconEnabledColor: styleConfig().primaryTextColor,
                               style: const TextStyle(fontSize: 40),
                               dropdownColor: styleConfig().cardColor,
-                              items: storyTags.map((storyTag) {
+                              items: state.storyTags.map((storyTag) {
                                 return DropdownMenuItem(
                                   value: storyTag,
                                   child: Padding(
@@ -258,11 +198,7 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                               );
 
                               if (result == deleteKey) {
-                                await persistenceLogic.upsertEntityDefinition(
-                                  item.copyWith(deletedAt: DateTime.now()),
-                                );
-
-                                maybePop();
+                                await cubit.delete();
                               }
                             },
                           ),
@@ -272,10 +208,10 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                   ],
                 ),
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -303,8 +239,12 @@ class EditHabitPage extends StatelessWidget {
           return const EmptyScaffoldWithTitle('');
         }
 
-        return HabitDetailsPage(
-          habitDefinition: habitDefinition,
+        return BlocProvider<HabitSettingsCubit>(
+          create: (_) => HabitSettingsCubit(
+            habitDefinition,
+            context: context,
+          ),
+          child: const HabitDetailsPage(),
         );
       },
     );

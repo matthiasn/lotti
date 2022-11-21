@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -67,7 +69,10 @@ void main() {
               maxHeight: 1000,
               maxWidth: 1000,
             ),
-            child: HabitDetailsPage(habitDefinition: habitFlossing),
+            child: BlocProvider(
+              create: (_) => HabitSettingsCubit(habitFlossing),
+              child: const HabitDetailsPage(),
+            ),
           ),
         ),
       );
@@ -115,7 +120,10 @@ void main() {
               maxHeight: 1000,
               maxWidth: 1000,
             ),
-            child: HabitDetailsPage(habitDefinition: habitFlossing),
+            child: BlocProvider(
+              create: (_) => HabitSettingsCubit(habitFlossing),
+              child: const HabitDetailsPage(),
+            ),
           ),
         ),
       );
