@@ -238,3 +238,9 @@ DatePickerTheme datePickerTheme() => DatePickerTheme(
         fontSize: 20,
       ),
     );
+
+const habitCompletionHeaderStyle = TextStyle(
+  color: Colors.black,
+  fontFamily: mainFont,
+  fontSize: 20,
+);

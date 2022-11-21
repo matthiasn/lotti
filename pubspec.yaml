@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.200+1584
+version: 0.8.201+1585
 
 msix_config:
   display_name: Lotti
@@ -72,6 +72,7 @@ dependencies:
   flutter_image_compress: ^1.1.0
   flutter_image_slideshow: ^0.1.2
   flutter_isolate: ^2.0.3
+  flutter_linkify: ^5.0.2
   flutter_local_notifications: ^9.2.0
 
   flutter_localizations:
