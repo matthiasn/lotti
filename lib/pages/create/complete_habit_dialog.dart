@@ -2,15 +2,18 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HabitDialog extends StatefulWidget {
   const HabitDialog({
@@ -162,17 +165,14 @@ class _HabitDialogState extends State<HabitDialog> {
               },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         habitDefinition?.name ?? '',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontFamily: mainFont,
-                          fontSize: 20,
-                        ),
+                        style: habitCompletionHeaderStyle,
                       ),
                       IconButton(
                         padding: const EdgeInsets.all(10),
@@ -182,6 +182,7 @@ class _HabitDialogState extends State<HabitDialog> {
                       ),
                     ],
                   ),
+                  HabitDescription(habitDefinition),
                   Padding(
                     padding: const EdgeInsets.only(right: 20),
                     child: Column(
@@ -229,6 +230,43 @@ class _HabitDialogState extends State<HabitDialog> {
           ),
         );
       },
+    );
+  }
+}
+
+class HabitDescription extends StatelessWidget {
+  const HabitDescription(this.habitDefinition, {super.key});
+  final HabitDefinition? habitDefinition;
+
+  @override
+  Widget build(BuildContext context) {
+    if (habitDefinition?.description == null) {
+      return const SizedBox.shrink();
+    }
+
+    Future<void> onOpen(LinkableElement link) async {
+      final uri = Uri.tryParse(link.url);
+
+      if (uri != null && await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        getIt<LoggingDb>().captureEvent(
+          'Could not launch $uri',
+          domain: 'HABIT_COMPLETION',
+          subDomain: 'Click Link in Description',
+        );
+        debugPrint('Could not launch $uri');
+      }
+    }
+
+    return Linkify(
+      onOpen: onOpen,
+      text: habitDefinition!.description,
+      style: habitCompletionHeaderStyle.copyWith(fontSize: 15),
+      linkStyle: habitCompletionHeaderStyle.copyWith(
+        fontSize: 15,
+        color: styleConfig().primaryColor,
+      ),
     );
   }
 }
