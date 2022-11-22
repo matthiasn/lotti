@@ -365,9 +365,12 @@ class HabitAutocompleteWrapper extends StatelessWidget {
         final autoCompleteRule =
             state.habitDefinition.autoCompleteRule ?? testAutoComplete;
 
-        return HabitAutocompleteWidget(
-          autoCompleteRule,
-          path: const <int>[0],
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: HabitAutocompleteWidget(
+            autoCompleteRule,
+            path: const <int>[0],
+          ),
         );
       },
     );

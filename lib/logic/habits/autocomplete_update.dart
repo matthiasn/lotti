@@ -1,16 +1,18 @@
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 
-AutoCompleteRule? removeAtRecursive({
+AutoCompleteRule? replaceAtRecursive({
   required AutoCompleteRule? rule,
+  required AutoCompleteRule? replaceWith,
   required List<int> currentPath,
-  required List<int> deleteAtPath,
+  required List<int> replaceAtPath,
 }) {
   AutoCompleteRule? indexedChild(int idx, AutoCompleteRule rule) {
-    return removeAtRecursive(
+    return replaceAtRecursive(
       rule: rule,
       currentPath: [...currentPath, idx],
-      deleteAtPath: deleteAtPath,
+      replaceAtPath: replaceAtPath,
+      replaceWith: replaceWith,
     );
   }
 
@@ -21,8 +23,8 @@ AutoCompleteRule? removeAtRecursive({
         .toList();
   }
 
-  if (const ListEquality<int>().equals(currentPath, deleteAtPath)) {
-    return null;
+  if (const ListEquality<int>().equals(currentPath, replaceAtPath)) {
+    return replaceWith;
   }
 
   return rule?.map(
@@ -37,9 +39,23 @@ AutoCompleteRule? removeAtRecursive({
 }
 
 AutoCompleteRule? removeAt(AutoCompleteRule? rule, List<int> deleteAtPath) {
-  return removeAtRecursive(
+  return replaceAtRecursive(
     rule: rule,
     currentPath: [0],
-    deleteAtPath: deleteAtPath,
+    replaceAtPath: deleteAtPath,
+    replaceWith: null,
+  );
+}
+
+AutoCompleteRule? replaceAt(
+  AutoCompleteRule? rule,
+  List<int> replaceAtPath,
+  AutoCompleteRule? replaceWith,
+) {
+  return replaceAtRecursive(
+    rule: rule,
+    currentPath: [0],
+    replaceAtPath: replaceAtPath,
+    replaceWith: replaceWith,
   );
 }

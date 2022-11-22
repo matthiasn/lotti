@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/logic/habits/autocomplete_update.dart';
 
 import 'autocomplete_update_data.dart';
@@ -31,6 +32,23 @@ void main() {
         expect(
           removeAt(testAutoComplete, [0, 0, 0, 1]),
           testAutoCompleteWithoutPullUps,
+        );
+      },
+    );
+
+    test(
+      'Increase pull-ups rule difficulty',
+      () {
+        expect(
+          replaceAt(
+            testAutoComplete,
+            [0, 0, 0, 1],
+            AutoCompleteRule.measurable(
+              dataTypeId: 'pull-ups',
+              minimum: 18,
+            ),
+          ),
+          testAutoCompletePullUpHarder,
         );
       },
     );
