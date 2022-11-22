@@ -167,7 +167,6 @@ class HabitDetailsPage extends StatelessWidget {
                                 );
                               }).toList(),
                             ),
-                          const HabitAutocompleteWrapper(),
                         ],
                       ),
                     ),
@@ -206,6 +205,7 @@ class HabitDetailsPage extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const HabitAutocompleteWrapper(),
                   ],
                 ),
               ),
