@@ -15,6 +15,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/settings/habits/habit_autocomplete_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class HabitDetailsPage extends StatelessWidget {
@@ -166,7 +167,7 @@ class HabitDetailsPage extends StatelessWidget {
                                 );
                               }).toList(),
                             ),
-                          //HabitAutocompleteWidget(testAutoComplete),
+                          const HabitAutocompleteWrapper(),
                         ],
                       ),
                     ),
