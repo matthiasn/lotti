@@ -10,7 +10,7 @@ void main() {
       'Remove last rule in top level AND: hydration',
       () {
         expect(
-          removeAt(testAutoComplete, [0, 2]),
+          removeAt(testAutoComplete, path: [0, 2]),
           testAutoCompleteWithoutHydration,
         );
       },
@@ -20,7 +20,7 @@ void main() {
       'Remove top level rule',
       () {
         expect(
-          removeAt(testAutoComplete, [0]),
+          removeAt(testAutoComplete, path: [0]),
           null,
         );
       },
@@ -30,7 +30,7 @@ void main() {
       'Remove pull-ups rule',
       () {
         expect(
-          removeAt(testAutoComplete, [0, 0, 0, 1]),
+          removeAt(testAutoComplete, path: [0, 0, 0, 1]),
           testAutoCompleteWithoutPullUps,
         );
       },
@@ -42,8 +42,8 @@ void main() {
         expect(
           replaceAt(
             testAutoComplete,
-            [0, 0, 0, 1],
-            AutoCompleteRule.measurable(
+            replaceAtPath: [0, 0, 0, 1],
+            replaceWith: AutoCompleteRule.measurable(
               dataTypeId: 'pull-ups',
               minimum: 18,
             ),
