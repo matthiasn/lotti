@@ -6,6 +6,7 @@ import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 final testAutoComplete = AutoCompleteRule.and(
   title: 'Physical Exercises and Hydration',
@@ -105,6 +106,7 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
   @override
   Widget build(BuildContext context) {
     const spacer = SizedBox(height: 10, width: 15);
+    final cubit = context.read<HabitSettingsCubit>();
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
@@ -112,7 +114,19 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
         color: Colors.grey.withOpacity(0.6),
         child: Column(
           children: [
-            Text('Path ${widget.path}'),
+            Row(
+              children: [
+                Text('Path ${widget.path}'),
+                IconButton(
+                  icon: const Icon(MdiIcons.delete),
+                  iconSize: settingsIconSize,
+                  color: Colors.black38,
+                  onPressed: () {
+                    cubit.removeAutoCompleteRuleAt(widget.path);
+                  },
+                ),
+              ],
+            ),
             if (widget.autoCompleteRule != null)
               widget.autoCompleteRule!.map(
                 health: (health) {
@@ -362,14 +376,22 @@ class HabitAutocompleteWrapper extends StatelessWidget {
         context,
         HabitSettingsState state,
       ) {
-        final autoCompleteRule =
-            state.habitDefinition.autoCompleteRule ?? testAutoComplete;
-
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: HabitAutocompleteWidget(
-            autoCompleteRule,
-            path: const <int>[0],
+          child: Column(
+            children: [
+              Text(
+                'AutoCompleteRules editor playground, not saving yet',
+                style: formLabelStyle().copyWith(
+                  color: styleConfig().secondaryTextColor,
+                ),
+              ),
+              const SizedBox(height: 10),
+              HabitAutocompleteWidget(
+                state.autoCompleteRule,
+                path: const <int>[0],
+              ),
+            ],
           ),
         );
       },

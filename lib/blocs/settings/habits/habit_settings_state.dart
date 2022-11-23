@@ -13,6 +13,7 @@ class HabitSettingsState with _$HabitSettingsState {
     required bool dirty,
     required GlobalKey<FormBuilderState> formKey,
     required List<StoryTag> storyTags,
+    required AutoCompleteRule? autoCompleteRule,
     StoryTag? defaultStory,
   }) = _HabitSettingsStateSaved;
 }
