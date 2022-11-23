@@ -7,8 +7,10 @@ import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/habits/autocomplete_update.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/widgets/settings/habits/habit_autocomplete_widget.dart';
 
 class HabitSettingsCubit extends Cubit<HabitSettingsState> {
   HabitSettingsCubit(
@@ -20,9 +22,11 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
             dirty: false,
             formKey: GlobalKey<FormBuilderState>(),
             storyTags: [],
+            autoCompleteRule: testAutoComplete,
           ),
         ) {
     _habitDefinition = habitDefinition;
+    _autoCompleteRule = testAutoComplete;
     _context = context;
 
     getIt<TagsService>().watchTags().forEach((tags) {
@@ -39,6 +43,7 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
   late HabitDefinition _habitDefinition;
+  late AutoCompleteRule? _autoCompleteRule;
   bool _dirty = false;
   late BuildContext? _context;
   List<StoryTag> _storyTags = [];
@@ -101,8 +106,30 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
         formKey: state.formKey,
         storyTags: _storyTags,
         defaultStory: _defaultStory,
+        autoCompleteRule: _autoCompleteRule,
       ),
     );
+  }
+
+  void replaceAutoCompleteRuleAt(
+    List<int> replaceAtPath,
+    AutoCompleteRule? replaceWith,
+  ) {
+    _autoCompleteRule = replaceAt(
+      _autoCompleteRule,
+      replaceAtPath: replaceAtPath,
+      replaceWith: replaceWith,
+    );
+    emitState();
+  }
+
+  void removeAutoCompleteRuleAt(List<int> replaceAtPath) {
+    _autoCompleteRule = replaceAt(
+      _autoCompleteRule,
+      replaceAtPath: replaceAtPath,
+      replaceWith: null,
+    );
+    emitState();
   }
 
   @override
