@@ -138,7 +138,7 @@ void main() {
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
 
-      // verify(mockCreateMeasurementEntry).called(1);
+      verify(mockCreateMeasurementEntry).called(1);
     });
 
     testWidgets(
