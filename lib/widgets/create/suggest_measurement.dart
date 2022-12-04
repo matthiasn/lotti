@@ -40,22 +40,24 @@ class MeasurementSuggestions extends StatelessWidget {
             final label = value.toDouble().toString().replaceAll(regex, '');
             final unit = measurableDataType.unitName;
 
+            void onTap() {
+              final now = DateTime.now();
+              getIt<PersistenceLogic>().createMeasurementEntry(
+                data: MeasurementData(
+                  dataTypeId: measurableDataType.id,
+                  dateTo: now,
+                  dateFrom: now,
+                  value: value,
+                ),
+                private: measurableDataType.private ?? false,
+              );
+              dashboardsBeamerDelegate.beamBack();
+            }
+
             return MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
-                onTap: () async {
-                  final now = DateTime.now();
-                  await getIt<PersistenceLogic>().createMeasurementEntry(
-                    data: MeasurementData(
-                      dataTypeId: measurableDataType.id,
-                      dateTo: now,
-                      dateFrom: now,
-                      value: value,
-                    ),
-                    private: measurableDataType.private ?? false,
-                  );
-                  dashboardsBeamerDelegate.beamBack();
-                },
+                onTap: onTap,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Container(

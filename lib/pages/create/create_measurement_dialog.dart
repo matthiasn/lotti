@@ -50,6 +50,11 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
       if (selected == null) {
         return;
       }
+      setState(() {
+        dirty = false;
+      });
+
+      beamBack();
 
       final dataType =
           await _db.watchMeasurableDataTypeById(selected!.id).first;
@@ -66,12 +71,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
         comment: formData['comment'] as String,
         private: dataType?.private ?? false,
       );
-
-      setState(() {
-        dirty = false;
-      });
-
-      beamBack();
     }
   }
 
@@ -175,7 +174,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       padding: const EdgeInsets.all(10),
                       icon: SvgPicture.asset('assets/icons/close.svg'),
                       hoverColor: Colors.transparent,
-                      onPressed: dashboardsBeamerDelegate.beamBack,
+                      onPressed: beamBack,
                     ),
                   ],
                 ),
