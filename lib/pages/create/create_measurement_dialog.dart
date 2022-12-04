@@ -184,16 +184,16 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // if ('${selected?.description}'.isNotEmpty)
-                      //   Text(
-                      //     '${selected?.description}',
-                      //     style: TextStyle(
-                      //       color: colorConfig().primaryTextColor,
-                      //       fontFamily: mainFont,
-                      //       fontWeight: FontWeight.w300,
-                      //       fontSize: 14,
-                      //     ),
-                      //   ),
+                      if ('${selected?.description}'.isNotEmpty)
+                        Text(
+                          '${selected?.description}',
+                          style: const TextStyle(
+                            color: Colors.black38,
+                            fontFamily: mainFont,
+                            fontWeight: FontWeight.w300,
+                            fontSize: fontSizeMedium,
+                          ),
+                        ),
                       const SizedBox(height: 10),
                       FormBuilderCupertinoDateTimePicker(
                         name: 'date',
@@ -240,7 +240,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         name: 'comment',
                       ),
                       const SizedBox(height: 20),
-                      if (selected != null)
+                      if (selected != null && dirty == false)
                         MeasurementSuggestions(measurableDataType: selected!),
                     ],
                   ),
