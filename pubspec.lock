@@ -203,7 +203,7 @@ packages:
       name: cached_network_image
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.2.2"
+    version: "3.2.3"
   cached_network_image_platform_interface:
     dependency: transitive
     description:
@@ -457,14 +457,14 @@ packages:
       name: drift
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0"
+    version: "2.3.0"
   drift_dev:
     dependency: "direct dev"
     description:
       name: drift_dev
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0+1"
+    version: "2.3.2"
   dynamic_color:
     dependency: transitive
     description:
@@ -649,7 +649,7 @@ packages:
       name: flutter_fgbg
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.1"
+    version: "0.2.2"
   flutter_form_builder:
     dependency: "direct main"
     description:
@@ -789,7 +789,7 @@ packages:
       name: flutter_native_splash
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.14"
+    version: "2.2.16"
   flutter_native_timezone:
     dependency: "direct main"
     description:
@@ -810,42 +810,42 @@ packages:
       name: flutter_secure_storage
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.0"
+    version: "6.1.0"
   flutter_secure_storage_linux:
     dependency: transitive
     description:
       name: flutter_secure_storage_linux
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.1"
+    version: "1.1.2"
   flutter_secure_storage_macos:
     dependency: transitive
     description:
       name: flutter_secure_storage_macos
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.1"
+    version: "1.1.2"
   flutter_secure_storage_platform_interface:
     dependency: transitive
     description:
       name: flutter_secure_storage_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.0"
+    version: "1.0.1"
   flutter_secure_storage_web:
     dependency: transitive
     description:
       name: flutter_secure_storage_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.2"
+    version: "1.1.1"
   flutter_secure_storage_windows:
     dependency: transitive
     description:
       name: flutter_secure_storage_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.2"
+    version: "1.1.3"
   flutter_sliding_tutorial:
     dependency: "direct main"
     description:
@@ -1280,7 +1280,7 @@ packages:
       name: mime
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.2"
+    version: "1.0.3"
   mocktail:
     dependency: "direct dev"
     description:
@@ -1308,14 +1308,14 @@ packages:
       name: multi_select_flutter
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.1.2"
+    version: "4.1.3"
   mutex:
     dependency: "direct main"
     description:
       name: mutex
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.0"
+    version: "3.0.1"
   nested:
     dependency: transitive
     description:
@@ -1406,7 +1406,7 @@ packages:
       name: path_provider_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.21"
+    version: "2.0.22"
   path_provider_ios:
     dependency: transitive
     description:
@@ -1497,7 +1497,7 @@ packages:
       name: photo_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.5.0"
+    version: "2.5.1+1"
   photo_view:
     dependency: "direct main"
     description:
@@ -1879,7 +1879,7 @@ packages:
       name: sqflite
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0+3"
+    version: "2.2.2"
   sqflite_common:
     dependency: transitive
     description:
@@ -1900,14 +1900,14 @@ packages:
       name: sqlite3_flutter_libs
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.11+1"
+    version: "0.5.12"
   sqlparser:
     dependency: transitive
     description:
       name: sqlparser
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.23.3"
+    version: "0.24.0"
   stack_trace:
     dependency: transitive
     description:
@@ -1956,14 +1956,14 @@ packages:
       name: syncfusion_flutter_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.3.57"
+    version: "20.3.59"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.3.57"
+    version: "20.3.59"
   synchronized:
     dependency: transitive
     description:
@@ -2054,14 +2054,14 @@ packages:
       name: url_launcher
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.6"
+    version: "6.1.7"
   url_launcher_android:
     dependency: transitive
     description:
       name: url_launcher_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.21"
+    version: "6.0.22"
   url_launcher_ios:
     dependency: transitive
     description:
@@ -2131,7 +2131,7 @@ packages:
       name: video_player
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.7"
+    version: "2.4.8"
   video_player_android:
     dependency: transitive
     description:
@@ -2229,7 +2229,7 @@ packages:
       name: window_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.7"
+    version: "0.2.8"
   wkt_parser:
     dependency: transitive
     description:
