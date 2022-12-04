@@ -20,37 +20,9 @@ void main() {
     });
     test('Ranked values for empty list of measurements returns empty list.',
         () {
-      final measurements = <num>[
-        111,
-        500,
-        250,
-        500,
-        250,
-        500,
-        250,
-        500,
-        100,
-        100,
-        50,
-      ]
-          .map(
-            (value) => MeasurementEntry(
-              meta: Metadata(
-                id: 'foo',
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
-                dateFrom: DateTime.now(),
-                dateTo: DateTime.now(),
-              ),
-              data: MeasurementData(
-                value: value,
-                dateFrom: DateTime.now(),
-                dateTo: DateTime.now(),
-                dataTypeId: 'dataTypeId',
-              ),
-            ),
-          )
-          .toList();
+      final measurements = testMeasurements(
+        <num>[111, 500, 250, 500, 250, 500, 250, 500, 100, 100, 50],
+      );
 
       expect(
         rankedByPopularity(measurements: measurements),
@@ -58,4 +30,26 @@ void main() {
       );
     });
   });
+}
+
+List<MeasurementEntry> testMeasurements(List<num> values) {
+  return values
+      .map(
+        (value) => MeasurementEntry(
+          meta: Metadata(
+            id: 'foo',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          data: MeasurementData(
+            value: value,
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            dataTypeId: 'dataTypeId',
+          ),
+        ),
+      )
+      .toList();
 }
