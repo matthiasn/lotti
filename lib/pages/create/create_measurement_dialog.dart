@@ -6,11 +6,13 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/form_utils.dart';
+import 'package:lotti/utils/measurable_utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -238,12 +240,88 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         style: newInputStyle().copyWith(color: Colors.black),
                         name: 'comment',
                       ),
+                      const SizedBox(height: 20),
+                      if (selected != null)
+                        SuggestedPopularMeasurements(
+                          measurableId: widget.measurableId,
+                          measurableDataType: selected!,
+                        ),
                     ],
                   ),
                 ),
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+class SuggestedPopularMeasurements extends StatelessWidget {
+  const SuggestedPopularMeasurements({
+    required this.measurableId,
+    required this.measurableDataType,
+    super.key,
+  });
+
+  final String measurableId;
+  final MeasurableDataType measurableDataType;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<JournalEntity>>(
+      stream: getIt<JournalDb>().watchMeasurementsByType(
+        type: measurableId,
+        rangeStart: DateTime.now().subtract(const Duration(days: 90)),
+        rangeEnd: DateTime.now().add(const Duration(days: 1)),
+      ),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<JournalEntity>> measurementsSnapshot,
+      ) {
+        final popularValues = rankedByPopularity(
+          measurements: measurementsSnapshot.data,
+        );
+
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: popularValues.map((num value) {
+            final regex = RegExp(r'([.]*0)(?!.*\d)');
+            final label = value.toString().replaceAll(regex, '');
+            final unit = measurableDataType.unitName;
+
+            return MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () async {
+                  final now = DateTime.now();
+                  await getIt<PersistenceLogic>().createMeasurementEntry(
+                    data: MeasurementData(
+                      dataTypeId: measurableDataType.id,
+                      dateTo: now,
+                      dateFrom: now,
+                      value: value,
+                    ),
+                    private: measurableDataType.private ?? false,
+                  );
+                  dashboardsBeamerDelegate.beamBack();
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 4,
+                      horizontal: 8,
+                    ),
+                    color: styleConfig().primaryColor,
+                    child: Text('$label$unit'),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
         );
       },
     );
