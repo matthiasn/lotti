@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/form_utils.dart';
+import 'package:lotti/widgets/create/suggest_measurement.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -49,6 +50,11 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
       if (selected == null) {
         return;
       }
+      setState(() {
+        dirty = false;
+      });
+
+      beamBack();
 
       final dataType =
           await _db.watchMeasurableDataTypeById(selected!.id).first;
@@ -65,12 +71,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
         comment: formData['comment'] as String,
         private: dataType?.private ?? false,
       );
-
-      setState(() {
-        dirty = false;
-      });
-
-      beamBack();
     }
   }
 
@@ -174,7 +174,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       padding: const EdgeInsets.all(10),
                       icon: SvgPicture.asset('assets/icons/close.svg'),
                       hoverColor: Colors.transparent,
-                      onPressed: dashboardsBeamerDelegate.beamBack,
+                      onPressed: beamBack,
                     ),
                   ],
                 ),
@@ -183,16 +183,16 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // if ('${selected?.description}'.isNotEmpty)
-                      //   Text(
-                      //     '${selected?.description}',
-                      //     style: TextStyle(
-                      //       color: colorConfig().primaryTextColor,
-                      //       fontFamily: mainFont,
-                      //       fontWeight: FontWeight.w300,
-                      //       fontSize: 14,
-                      //     ),
-                      //   ),
+                      if ('${selected?.description}'.isNotEmpty)
+                        Text(
+                          '${selected?.description}',
+                          style: const TextStyle(
+                            color: Colors.black38,
+                            fontFamily: mainFont,
+                            fontWeight: FontWeight.w300,
+                            fontSize: fontSizeMedium,
+                          ),
+                        ),
                       const SizedBox(height: 10),
                       FormBuilderCupertinoDateTimePicker(
                         name: 'date',
@@ -238,6 +238,9 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         style: newInputStyle().copyWith(color: Colors.black),
                         name: 'comment',
                       ),
+                      const SizedBox(height: 20),
+                      if (selected != null && dirty == false)
+                        MeasurementSuggestions(measurableDataType: selected!),
                     ],
                   ),
                 ),

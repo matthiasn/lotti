@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Suggest last used value in measurable
+- Upgrade dependencies
+- More responsiveness in measurement creation
+
+## [0.8.202] - 2022-12-01
+### Added:
 - Habit autocomplete rules editor experiments
 
 ## [0.8.201] - 2022-11-22
