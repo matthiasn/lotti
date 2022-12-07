@@ -21,6 +21,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             openNow: [],
             pendingLater: [],
             completed: [],
+            successfulToday: <String>{},
             shortStreakCount: 0,
             longStreakCount: 0,
             timeSpanDays: 30,
@@ -48,6 +49,7 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   void determineHabitSuccessByDays() {
     _completedToday = <String>{};
+    _successfulToday = <String>{};
 
     final today = ymd(DateTime.now());
 
@@ -56,6 +58,11 @@ class HabitsCubit extends Cubit<HabitsState> {
 
       if (item is HabitCompletionEntry && day == today) {
         _completedToday.add(item.data.habitId);
+        final completionType = item.data.completionType;
+        if (completionType == HabitCompletionType.success ||
+            completionType == HabitCompletionType.skip) {
+          _successfulToday.add(item.data.habitId);
+        }
       }
     }
 
@@ -124,6 +131,7 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   List<JournalEntity> _habitCompletions = [];
   var _completedToday = <String>{};
+  var _successfulToday = <String>{};
 
   var _shortStreakCount = 0;
   var _longStreakCount = 0;
@@ -152,6 +160,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         openNow: _openNow,
         pendingLater: _pendingLater,
         completed: _completed,
+        successfulToday: _successfulToday,
         shortStreakCount: _shortStreakCount,
         longStreakCount: _longStreakCount,
         timeSpanDays: _timeSpanDays,
