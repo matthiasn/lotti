@@ -9,6 +9,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_habits_chart.dart';
+import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 import 'package:lotti/widgets/charts/habits/habits_page_progress_bar.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -63,6 +64,8 @@ class HabitsTabPage extends StatelessWidget {
                       },
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  const HabitCompletionRateChart(),
                   if (state.openNow.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 20),
