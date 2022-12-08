@@ -14,6 +14,7 @@ class HabitsState with _$HabitsState {
     required List<HabitDefinition> completed,
     required List<JournalEntity> habitCompletions,
     required Set<String> completedToday,
+    required Set<String> successfulToday,
     required int shortStreakCount,
     required int longStreakCount,
     required int timeSpanDays,

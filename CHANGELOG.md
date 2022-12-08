@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Progress bar for habit progress for the current day
+
+## [0.8.203] - 2022-12-05
+### Added:
 - Suggest last used value in measurable
 - Upgrade dependencies
 - More responsiveness in measurement creation
