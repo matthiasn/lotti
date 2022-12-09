@@ -51,6 +51,18 @@ TextStyle textStyle() => TextStyle(
       fontSize: fontSizeMedium,
     );
 
+TextStyle chartTooltipStyle() => const TextStyle(
+      fontSize: fontSizeSmall,
+      fontFamily: mainFont,
+      fontWeight: FontWeight.w300,
+    );
+
+TextStyle chartTooltipStyleBold() => const TextStyle(
+      fontSize: fontSizeMedium,
+      fontFamily: mainFont,
+      fontWeight: FontWeight.bold,
+    );
+
 TextStyle textStyleLarger() => textStyle().copyWith(
       fontSize: 18,
       fontWeight: FontWeight.normal,
