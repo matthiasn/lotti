@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Remove autofocus on measurement value field
+- Unify segmented time span controls on dashboard and habit pages
 
 ## [0.8.205] - 2022-12-09
 ### Added:

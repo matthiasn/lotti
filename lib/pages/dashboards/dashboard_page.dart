@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intersperse/intersperse.dart';
@@ -19,6 +18,7 @@ import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 import 'package:lotti/widgets/charts/stories/dashboard_story_chart.dart';
 import 'package:lotti/widgets/charts/stories/wildcard_story_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
@@ -114,9 +114,6 @@ class _DashboardPageState extends State<DashboardPage> {
             );
           }
 
-          final landscape =
-              MediaQuery.of(context).orientation == Orientation.landscape;
-
           return Scaffold(
             backgroundColor: styleConfig().negspace,
             appBar: TitleAppBar(
@@ -127,24 +124,12 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 children: [
                   const SizedBox(height: 15),
-                  CupertinoSegmentedControl(
-                    selectedColor: styleConfig().primaryColor,
-                    unselectedColor: styleConfig().negspace,
-                    borderColor: styleConfig().primaryColor,
-                    groupValue: timeSpanDays,
+                  TimeSpanSegmentedControl(
+                    timeSpanDays: timeSpanDays,
                     onValueChanged: (int value) {
                       setState(() {
                         timeSpanDays = value;
                       });
-                    },
-                    children: {
-                      3: const DaysSegment('3'),
-                      7: const DaysSegment('7'),
-                      14: const DaysSegment('14'),
-                      30: const DaysSegment('30'),
-                      90: const DaysSegment('90'),
-                      if (isDesktop || landscape) 180: const DaysSegment('180'),
-                      if (isDesktop) 365: const DaysSegment('365'),
                     },
                   ),
                   const SizedBox(height: 15),

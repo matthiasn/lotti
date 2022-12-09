@@ -1,16 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
-import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class HabitsTabPage extends StatelessWidget {
   const HabitsTabPage({super.key});
@@ -29,10 +27,6 @@ class HabitsTabPage extends StatelessWidget {
         );
 
         final rangeEnd = getEndOfToday();
-
-        final landscape =
-            MediaQuery.of(context).orientation == Orientation.landscape;
-
         final showGaps = timeSpanDays < 180;
 
         return Scaffold(
@@ -47,20 +41,9 @@ class HabitsTabPage extends StatelessWidget {
               child: Column(
                 children: [
                   Center(
-                    child: CupertinoSegmentedControl(
-                      selectedColor: styleConfig().primaryColor,
-                      unselectedColor: styleConfig().negspace,
-                      borderColor: styleConfig().primaryColor,
-                      groupValue: timeSpanDays,
+                    child: TimeSpanSegmentedControl(
+                      timeSpanDays: timeSpanDays,
                       onValueChanged: cubit.setTimeSpan,
-                      children: {
-                        if (isMobile) 7: const DaysSegment('7'),
-                        14: const DaysSegment('14 d'),
-                        30: const DaysSegment('30 d'),
-                        90: const DaysSegment('90 d'),
-                        if (isDesktop || landscape)
-                          180: const DaysSegment('180 d'),
-                      },
                     ),
                   ),
                   if (state.openNow.isNotEmpty)
