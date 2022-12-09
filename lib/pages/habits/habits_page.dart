@@ -10,7 +10,6 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_habits_chart.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
-import 'package:lotti/widgets/charts/habits/habits_page_progress_bar.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class HabitsTabPage extends StatelessWidget {
@@ -56,16 +55,14 @@ class HabitsTabPage extends StatelessWidget {
                       onValueChanged: cubit.setTimeSpan,
                       children: {
                         if (isMobile) 7: const DaysSegment('7'),
-                        14: const DaysSegment('14'),
-                        30: const DaysSegment('30'),
-                        90: const DaysSegment('90'),
+                        14: const DaysSegment('14 d'),
+                        30: const DaysSegment('30 d'),
+                        90: const DaysSegment('90 d'),
                         if (isDesktop || landscape)
-                          180: const DaysSegment('180'),
+                          180: const DaysSegment('180 d'),
                       },
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  const HabitCompletionRateChart(),
                   if (state.openNow.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 20),
@@ -165,7 +162,7 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
   HabitsPageAppBar({super.key});
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 40);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 110);
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +180,8 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
         return Column(
           children: [
             TitleAppBar(title: '$title $habitCounters', showBackButton: false),
-            const HabitsPageProgressBar(),
+            //const HabitsPageProgressBar(),
+            const HabitCompletionRateChart(),
           ],
         );
       },

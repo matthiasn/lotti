@@ -69,6 +69,15 @@ List<MeasuredObservation> aggregateSumByDay(
   return aggregated;
 }
 
+String chartDateFormatter(String ymd) {
+  if (ymd.isEmpty) {
+    return '';
+  }
+
+  final day = DateTime.parse(ymd);
+  return DateFormat('MMM dd').format(day);
+}
+
 List<MeasuredObservation> aggregateSumByHour(
   List<JournalEntity> entities, {
   required DateTime rangeStart,
