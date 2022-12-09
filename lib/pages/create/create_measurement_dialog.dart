@@ -218,7 +218,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         ),
                         keyboardAppearance: Brightness.light,
                         style: newInputStyle().copyWith(color: Colors.black),
-                        autofocus: true,
                         validator: numericValidator(),
                         name: 'value',
                         keyboardType: const TextInputType.numberWithOptions(

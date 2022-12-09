@@ -7,6 +7,7 @@ import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 List<Color> gradientColors = [
   styleConfig().primaryColorLight,
@@ -68,19 +69,29 @@ class HabitCompletionRateChart extends StatelessWidget {
                     tooltipMargin: isMobile ? 24 : 16,
                     tooltipPadding: const EdgeInsets.symmetric(
                       horizontal: 8,
-                      vertical: 4,
+                      vertical: 3,
                     ),
-                    tooltipBgColor: styleConfig().primaryColor.withOpacity(0.8),
-                    tooltipRoundedRadius: 4,
+                    tooltipBgColor: styleConfig().primaryColor.desaturate(),
+                    tooltipRoundedRadius: 8,
                     getTooltipItems: (List<LineBarSpot> spots) {
                       return spots.map((spot) {
                         return LineTooltipItem(
-                          '${spot.y.toInt()} %',
+                          '',
                           const TextStyle(
-                            fontSize: fontSizeMedium,
+                            fontSize: fontSizeSmall,
                             fontFamily: mainFont,
                             fontWeight: FontWeight.w300,
                           ),
+                          children: [
+                            TextSpan(
+                              text: '${spot.y.toInt()} %\n',
+                              style: chartTooltipStyleBold(),
+                            ),
+                            TextSpan(
+                              text: chartDateFormatter(days[spot.x.toInt()]),
+                              style: chartTooltipStyle(),
+                            ),
+                          ],
                         );
                       }).toList();
                     },
