@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 List<Color> gradientColors = [
@@ -57,13 +58,14 @@ class HabitCompletionRateChart extends StatelessWidget {
           width: MediaQuery.of(context).size.width,
           child: Padding(
             padding: const EdgeInsets.only(
-              right: 35,
-              left: 35,
+              right: 25,
+              left: 20,
             ),
             child: LineChart(
               LineChartData(
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
+                    tooltipMargin: isMobile ? 24 : 16,
                     tooltipPadding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 4,
@@ -113,7 +115,7 @@ class HabitCompletionRateChart extends StatelessWidget {
                       showTitles: true,
                       interval: 12.5,
                       getTitlesWidget: leftTitleWidgets,
-                      reservedSize: 42,
+                      reservedSize: 35,
                     ),
                   ),
                 ),
