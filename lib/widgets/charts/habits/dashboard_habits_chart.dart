@@ -12,7 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
-import 'package:lotti/widgets/charts/dashboard_habits_data.dart';
+import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 
 class DashboardHabitsChart extends StatefulWidget {
   const DashboardHabitsChart({
@@ -240,7 +240,7 @@ class _HabitChartLineState extends State<HabitChartLine> {
         return Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: 8,
-            vertical: 4,
+            vertical: 3,
           ),
           child: Stack(
             children: [
@@ -250,7 +250,13 @@ class _HabitChartLineState extends State<HabitChartLine> {
                   const SizedBox(width: 70),
                   ...intersperse(
                     widget.showGaps
-                        ? SizedBox(width: days < 30 ? 8 : 2)
+                        ? SizedBox(
+                            width: days < 20
+                                ? 6
+                                : days < 40
+                                    ? 4
+                                    : 1,
+                          )
                         : const SizedBox.shrink(),
                     results.map((res) {
                       return Flexible(

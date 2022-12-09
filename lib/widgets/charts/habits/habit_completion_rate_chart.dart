@@ -39,11 +39,11 @@ class HabitCompletionRateChart extends StatelessWidget {
           var ymd = '';
 
           if (value.toInt() == 1) {
-            ymd = days[1] ?? '';
+            ymd = days[1];
           }
 
           if (value.toInt() == timeSpanDays - 1) {
-            ymd = days[timeSpanDays - 1] ?? '';
+            ymd = days[timeSpanDays - 1];
           }
 
           return SideTitleWidget(
