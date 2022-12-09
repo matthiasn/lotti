@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 - Improved whitespace in habit success indicators
+- Improved habit completion rate tooltips
 
 ## [0.8.204] - 2022-12-07
 ### Added:

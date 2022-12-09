@@ -62,6 +62,28 @@ class HabitCompletionRateChart extends StatelessWidget {
             ),
             child: LineChart(
               LineChartData(
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    tooltipPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    tooltipBgColor: styleConfig().primaryColor.withOpacity(0.8),
+                    tooltipRoundedRadius: 4,
+                    getTooltipItems: (List<LineBarSpot> spots) {
+                      return spots.map((spot) {
+                        return LineTooltipItem(
+                          '${spot.y.toInt()} %',
+                          const TextStyle(
+                            fontSize: fontSizeMedium,
+                            fontFamily: mainFont,
+                            fontWeight: FontWeight.w300,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,
