@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Chart for habit completion rate over time
+
+### Changed:
+- Improved whitespace in habit success indicators
+- Improved habit completion rate tooltips
+
+## [0.8.204] - 2022-12-07
+### Added:
 - Progress bar for habit progress for the current day
 
 ## [0.8.203] - 2022-12-05

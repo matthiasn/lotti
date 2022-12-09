@@ -22,9 +22,10 @@ class HabitsCubit extends Cubit<HabitsState> {
             pendingLater: [],
             completed: [],
             successfulToday: <String>{},
+            successfulByDay: <String, Set<String>>{},
             shortStreakCount: 0,
             longStreakCount: 0,
-            timeSpanDays: 30,
+            timeSpanDays: 14,
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
@@ -35,9 +36,13 @@ class HabitsCubit extends Cubit<HabitsState> {
       determineHabitSuccessByDays();
     });
 
+    startWatching();
+  }
+
+  void startWatching() {
     _completionsStream = _journalDb.watchHabitCompletionsInRange(
       rangeStart: getStartOfDay(
-        DateTime.now().subtract(const Duration(days: 8)),
+        DateTime.now().subtract(const Duration(days: 30)),
       ),
     );
 
@@ -50,18 +55,30 @@ class HabitsCubit extends Cubit<HabitsState> {
   void determineHabitSuccessByDays() {
     _completedToday = <String>{};
     _successfulToday = <String>{};
+    _successfulByDay = <String, Set<String>>{};
 
     final today = ymd(DateTime.now());
 
     for (final item in _habitCompletions) {
       final day = ymd(item.meta.dateFrom);
 
-      if (item is HabitCompletionEntry && day == today) {
-        _completedToday.add(item.data.habitId);
+      if (item is HabitCompletionEntry) {
         final completionType = item.data.completionType;
+
+        if (day == today) {
+          _completedToday.add(item.data.habitId);
+        }
+
         if (completionType == HabitCompletionType.success ||
             completionType == HabitCompletionType.skip) {
-          _successfulToday.add(item.data.habitId);
+          final successfulForDay = _successfulByDay[day] ?? <String>{}
+            ..add(item.data.habitId);
+
+          _successfulByDay[day] = successfulForDay;
+
+          if (day == today) {
+            _successfulToday.add(item.data.habitId);
+          }
         }
       }
     }
@@ -128,10 +145,11 @@ class HabitsCubit extends Cubit<HabitsState> {
   List<HabitDefinition> _openNow = [];
   List<HabitDefinition> _pendingLater = [];
   List<HabitDefinition> _completed = [];
-
   List<JournalEntity> _habitCompletions = [];
+
   var _completedToday = <String>{};
   var _successfulToday = <String>{};
+  var _successfulByDay = <String, Set<String>>{};
 
   var _shortStreakCount = 0;
   var _longStreakCount = 0;
@@ -161,6 +179,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         pendingLater: _pendingLater,
         completed: _completed,
         successfulToday: _successfulToday,
+        successfulByDay: _successfulByDay,
         shortStreakCount: _shortStreakCount,
         longStreakCount: _longStreakCount,
         timeSpanDays: _timeSpanDays,

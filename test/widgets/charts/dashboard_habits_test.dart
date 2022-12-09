@@ -3,7 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:lotti/widgets/charts/dashboard_habits_chart.dart';
+import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';

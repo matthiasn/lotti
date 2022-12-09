@@ -172,6 +172,13 @@ TextStyle chartTitleStyle() => TextStyle(
       fontWeight: FontWeight.w300,
     );
 
+TextStyle chartTitleStyleSmall() => TextStyle(
+      fontFamily: mainFont,
+      fontSize: fontSizeSmall,
+      color: styleConfig().primaryTextColor,
+      fontWeight: FontWeight.w300,
+    );
+
 const taskFormFieldStyle = TextStyle(color: Colors.black87);
 
 TextStyle saveButtonStyle() => TextStyle(
