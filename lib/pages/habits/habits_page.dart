@@ -131,6 +131,7 @@ class HabitsTabPage extends StatelessWidget {
                       showGaps: days < 180,
                     );
                   }),
+                  const HabitStreaksCounter(),
                 ],
               ),
             ),
@@ -152,19 +153,44 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
     final localizations = AppLocalizations.of(context)!;
     final title = localizations.settingsHabitsTitle;
 
+    return Column(
+      children: [
+        TitleAppBar(title: title, showBackButton: false),
+        //const HabitsPageProgressBar(),
+        const HabitCompletionRateChart(),
+      ],
+    );
+  }
+}
+
+class HabitStreaksCounter extends StatelessWidget {
+  const HabitStreaksCounter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return BlocBuilder<HabitsCubit, HabitsState>(
       builder: (context, HabitsState state) {
         final total = state.habitDefinitions.length;
         final todayCount = state.completedToday.length;
 
-        final habitCounters =
-            '($total / $todayCount / ${state.shortStreakCount} / ${state.longStreakCount})';
-
         return Column(
           children: [
-            TitleAppBar(title: '$title $habitCounters', showBackButton: false),
-            //const HabitsPageProgressBar(),
-            const HabitCompletionRateChart(),
+            Text(
+              '$total habits total',
+              style: chartTitleStyle(),
+            ),
+            Text(
+              '$todayCount completed today',
+              style: chartTitleStyle(),
+            ),
+            Text(
+              '${state.shortStreakCount} short streaks of 3+ days',
+              style: chartTitleStyle(),
+            ),
+            Text(
+              '${state.longStreakCount} long streaks of 7+ days',
+              style: chartTitleStyle(),
+            ),
           ],
         );
       },

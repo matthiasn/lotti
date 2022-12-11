@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Tooltips for habit completions, showing date
 
+### Changed:
+- Show habit streaks count at bottom of habits page, with labels
+
 ## [0.8.206] - 2022-12-10
 ### Changed:
 - Remove autofocus on measurement value field
