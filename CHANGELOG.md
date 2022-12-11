@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 - Show habit streaks count at bottom of habits page, with labels
+- Extract habit streak lists & use adaptive header
 
 ## [0.8.206] - 2022-12-10
 ### Changed:
