@@ -136,6 +136,9 @@ class MyBeamerApp extends StatelessWidget {
       appBarTheme: AppBarTheme(
         iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
       ),
+      tooltipTheme: TooltipThemeData(
+        textStyle: chartTitleStyleSmall(),
+      ),
     );
 
     return StreamBuilder<Set<String>>(
