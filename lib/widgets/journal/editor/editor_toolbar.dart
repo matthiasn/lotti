@@ -13,12 +13,14 @@ class ToolbarWidget extends StatelessWidget {
     super.key,
     this.toolbarIconSize = 20,
     this.iconTheme,
+    this.unlinkFn,
   });
 
   final LinkService linkService = getIt<LinkService>();
   final double toolbarIconSize;
   final WrapAlignment toolbarIconAlignment = WrapAlignment.start;
   final QuillIconTheme? iconTheme;
+  final Future<void> Function()? unlinkFn;
 
   @override
   Widget build(BuildContext context) {
@@ -118,6 +120,13 @@ class ToolbarWidget extends StatelessWidget {
               tooltip: localizations.journalLinkToHint,
               onPressed: () => linkService.linkTo(id),
             ),
+            if (unlinkFn != null)
+              IconButton(
+                icon: const Icon(MdiIcons.closeCircleOutline),
+                iconSize: toolbarIconSize,
+                tooltip: localizations.journalUnlinkHint,
+                onPressed: unlinkFn,
+              ),
           ],
         );
       },

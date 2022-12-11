@@ -94,6 +94,7 @@
   "journalLinkedFromLabel": "Linked from:",
   "journalLinkFromHint": "Link from",
   "journalLinkToHint": "Link to",
+  "journalUnlinkHint": "Unlink",
   "journalPrivateTooltip": "Private",
   "journalSearchHint": "Search journal...",
   "journalShareAudioHint": "Share audio",

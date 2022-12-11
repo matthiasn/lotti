@@ -56,14 +56,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                 (int index) {
                   final itemId = itemIds.elementAt(index);
 
-                  Future<void> onDismissed(DismissDirection _) async {
-                    await _db.removeLink(
-                      fromId: widget.itemId,
-                      toId: itemId,
-                    );
-                  }
-
-                  Future<bool> confirmDismiss(DismissDirection _) async {
+                  Future<void> unlink() async {
                     const unlinkKey = 'unlinkKey';
                     final result = await showModalActionSheet<String>(
                       context: context,
@@ -79,45 +72,18 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                       ],
                     );
 
-                    return result == unlinkKey;
+                    if (result == unlinkKey) {
+                      await _db.removeLink(
+                        fromId: widget.itemId,
+                        toId: itemId,
+                      );
+                    }
                   }
 
-                  return Dismissible(
-                    key: ValueKey('Dismissible-$itemId'),
-                    onDismissed: onDismissed,
-                    confirmDismiss: confirmDismiss,
-                    background: ColoredBox(
-                      color: styleConfig().alarm,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: Text(
-                              localizations.journalUnlinkText,
-                              style: TextStyle(
-                                color: styleConfig().secondaryTextColor,
-                                fontFamily: 'Oswald',
-                                fontWeight: FontWeight.w300,
-                                fontSize: 24,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.link_off,
-                              size: 32,
-                              color: styleConfig().secondaryTextColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    child: EntryDetailWidget(
-                      itemId: itemId,
-                      popOnDelete: false,
-                    ),
+                  return EntryDetailWidget(
+                    itemId: itemId,
+                    popOnDelete: false,
+                    unlinkFn: unlink,
                   );
                 },
               )
