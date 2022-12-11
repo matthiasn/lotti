@@ -13,6 +13,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardHabitsChart extends StatefulWidget {
   const DashboardHabitsChart({
@@ -260,13 +261,17 @@ class _HabitChartLineState extends State<HabitChartLine> {
                         : const SizedBox.shrink(),
                     results.map((res) {
                       return Flexible(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(
-                            widget.showGaps ? 2 : 0,
-                          ),
-                          child: Container(
-                            height: 25,
-                            color: habitCompletionColor(res.completionType),
+                        child: Tooltip(
+                          excludeFromSemantics: true,
+                          message: chartDateFormatter(res.dayString),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              widget.showGaps ? 2 : 0,
+                            ),
+                            child: Container(
+                              height: 25,
+                              color: habitCompletionColor(res.completionType),
+                            ),
                           ),
                         ),
                       );
