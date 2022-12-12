@@ -24,11 +24,13 @@ class EntryDetailWidget extends StatelessWidget {
     required this.itemId,
     required this.popOnDelete,
     this.showTaskDetails = false,
+    this.unlinkFn,
   });
 
   final String itemId;
   final bool popOnDelete;
   final bool showTaskDetails;
+  final Future<void> Function()? unlinkFn;
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +87,7 @@ class EntryDetailWidget extends StatelessWidget {
                       quantitative: (_) => const SizedBox.shrink(),
                       workout: (_) => const SizedBox.shrink(),
                       orElse: () {
-                        return const EditorWidget();
+                        return EditorWidget(unlinkFn: unlinkFn);
                       },
                     ),
                     Padding(

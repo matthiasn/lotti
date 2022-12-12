@@ -16,12 +16,14 @@ class EditorWidget extends StatelessWidget {
     this.maxHeight = double.maxFinite,
     this.padding = 16,
     this.autoFocus = false,
+    this.unlinkFn,
   });
 
   final double maxHeight;
   final double minHeight;
   final bool autoFocus;
   final double padding;
+  final Future<void> Function()? unlinkFn;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +79,7 @@ class EditorWidget extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ToolbarWidget(),
+                  ToolbarWidget(unlinkFn: unlinkFn),
                   Flexible(
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: padding),

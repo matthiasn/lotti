@@ -5,15 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Unlink icon in editor toolbar instead of using Dismissable
+
+## [0.8.206] - 2022-12-11
 ### Added:
 - Tooltips for habit completions, showing date
 
 ### Changed:
 - Show habit streaks count at bottom of habits page, with labels
 - Extract habit streak lists & use adaptive header
-
-## [0.8.206] - 2022-12-10
-### Changed:
 - Remove autofocus on measurement value field
 - Unify segmented time span controls on dashboard and habit pages
 - Increase analyzed habit completion time span to 90 days
