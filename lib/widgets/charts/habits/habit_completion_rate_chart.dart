@@ -23,7 +23,14 @@ const gridOpacity = 0.3;
 const labelOpacity = 0.5;
 
 class HabitCompletionRateChart extends StatelessWidget {
-  const HabitCompletionRateChart({super.key});
+  const HabitCompletionRateChart({
+    this.showSuccessful = true,
+    this.showSkipped = true,
+    super.key,
+  });
+
+  final bool showSuccessful;
+  final bool showSkipped;
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +152,9 @@ class HabitCompletionRateChart extends StatelessWidget {
                   barData(
                     days: days,
                     successfulByDay: state.successfulByDay,
+                    skippedByDay: state.skippedByDay,
+                    showSkipped: showSkipped,
+                    showSuccessful: showSuccessful,
                     habitCount: habitCount,
                   ),
                 ],
@@ -162,9 +172,24 @@ LineChartBarData barData({
   required List<String> days,
   required int habitCount,
   required Map<String, Set<String>> successfulByDay,
+  required Map<String, Set<String>> skippedByDay,
+  required bool showSuccessful,
+  required bool showSkipped,
 }) {
   final spots = days.mapIndexed((idx, day) {
-    final value = successfulByDay[day]?.length ?? 0;
+    final successCount = successfulByDay[day]?.length ?? 0;
+    final skippedCount = skippedByDay[day]?.length ?? 0;
+
+    var value = 0;
+
+    if (showSuccessful) {
+      value = value + successCount;
+    }
+
+    if (showSkipped) {
+      value = value + skippedCount;
+    }
+
     return FlSpot(
       idx.toDouble(),
       habitCount > 0 ? value * 100 / habitCount : 0,

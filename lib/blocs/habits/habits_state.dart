@@ -16,6 +16,7 @@ class HabitsState with _$HabitsState {
     required Set<String> completedToday,
     required Set<String> successfulToday,
     required Map<String, Set<String>> successfulByDay,
+    required Map<String, Set<String>> skippedByDay,
     required int shortStreakCount,
     required int longStreakCount,
     required int timeSpanDays,
