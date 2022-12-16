@@ -36,7 +36,6 @@ class HabitCompletionRateChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<HabitsCubit, HabitsState>(
       builder: (context, HabitsState state) {
-        final habitCount = state.habitDefinitions.length;
         final timeSpanDays = state.timeSpanDays;
 
         final days = daysInRange(
@@ -155,7 +154,7 @@ class HabitCompletionRateChart extends StatelessWidget {
                     skippedByDay: state.skippedByDay,
                     showSkipped: showSkipped,
                     showSuccessful: showSuccessful,
-                    habitCount: habitCount,
+                    habitCount: state.habitCount,
                   ),
                 ],
               ),

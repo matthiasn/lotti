@@ -27,6 +27,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             shortStreakCount: 0,
             longStreakCount: 0,
             timeSpanDays: 14,
+            habitCount: 0,
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
@@ -34,6 +35,13 @@ class HabitsCubit extends Cubit<HabitsState> {
     _definitionsSubscription = _definitionsStream.listen((habitDefinitions) {
       _habitDefinitions =
           habitDefinitions.where((habit) => habit.active).toList();
+
+      _habitDefinitionsMap = <String, HabitDefinition>{};
+
+      for (final habitDefinition in _habitDefinitions) {
+        _habitDefinitionsMap[habitDefinition.id] = habitDefinition;
+      }
+
       determineHabitSuccessByDays();
     });
 
@@ -64,7 +72,8 @@ class HabitsCubit extends Cubit<HabitsState> {
     for (final item in _habitCompletions) {
       final day = ymd(item.meta.dateFrom);
 
-      if (item is HabitCompletionEntry) {
+      if (item is HabitCompletionEntry &&
+          _habitDefinitionsMap.containsKey(item.data.habitId)) {
         final completionType = item.data.completionType;
 
         if (day == today) {
@@ -122,6 +131,7 @@ class HabitsCubit extends Cubit<HabitsState> {
 
     for (final item in _habitCompletions) {
       if (item is HabitCompletionEntry &&
+          _habitDefinitionsMap.containsKey(item.data.habitId) &&
           (item.data.completionType == HabitCompletionType.success ||
               item.data.completionType == HabitCompletionType.skip ||
               item.data.completionType == null)) {
@@ -152,7 +162,7 @@ class HabitsCubit extends Cubit<HabitsState> {
   }
 
   List<HabitDefinition> _habitDefinitions = [];
-
+  Map<String, HabitDefinition> _habitDefinitionsMap = {};
   List<HabitDefinition> _openHabits = [];
   List<HabitDefinition> _openNow = [];
   List<HabitDefinition> _pendingLater = [];
@@ -197,6 +207,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         shortStreakCount: _shortStreakCount,
         longStreakCount: _longStreakCount,
         timeSpanDays: _timeSpanDays,
+        habitCount: _habitDefinitions.length,
       ),
     );
   }
