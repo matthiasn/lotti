@@ -71,7 +71,7 @@ Map<String, num> durationsByDayInRange(
   return minutesByDay;
 }
 
-List<MeasuredObservation> aggregateStoryDailyTimeSum(
+List<Observation> aggregateStoryDailyTimeSum(
   List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
@@ -96,11 +96,11 @@ List<MeasuredObservation> aggregateStoryDailyTimeSum(
     });
   }
 
-  final aggregated = <MeasuredObservation>[];
+  final aggregated = <Observation>[];
 
   for (final dayString in minutesByDay.keys) {
     final day = DateTime.parse(dayString);
-    aggregated.add(MeasuredObservation(day, minutesByDay[dayString] ?? 0));
+    aggregated.add(Observation(day, minutesByDay[dayString] ?? 0));
   }
 
   return aggregated;
@@ -148,7 +148,7 @@ List<WeeklyAggregate> aggregateStoryWeeklyTimeSum(
   return aggregated;
 }
 
-List<MeasuredObservation> aggregateStoryTimeSum(
+List<Observation> aggregateStoryTimeSum(
   List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,

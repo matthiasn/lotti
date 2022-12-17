@@ -8,7 +8,7 @@ class MeasurablesChartInfoCubit extends Cubit<MeasurablesChartInfoState> {
   MeasurablesChartInfoCubit()
       : super(MeasurablesChartInfoState(selected: null));
 
-  void setSelected(MeasuredObservation? observation) {
+  void setSelected(Observation? observation) {
     emit(MeasurablesChartInfoState(selected: observation));
   }
 
@@ -20,6 +20,6 @@ class MeasurablesChartInfoCubit extends Cubit<MeasurablesChartInfoState> {
 @freezed
 class MeasurablesChartInfoState with _$MeasurablesChartInfoState {
   factory MeasurablesChartInfoState({
-    required MeasuredObservation? selected,
+    required Observation? selected,
   }) = _MeasurablesChartInfoState;
 }

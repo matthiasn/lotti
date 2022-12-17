@@ -98,7 +98,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                 defaultRenderer = defaultBarRenderer;
               }
 
-              List<MeasuredObservation> data;
+              List<Observation> data;
               if (aggregationType == AggregationType.none) {
                 data = aggregateMeasurementNone(measurements);
               } else if (aggregationType == AggregationType.dailyMax) {
@@ -126,7 +126,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               ) {
                 if (model.hasDatumSelection) {
                   final newSelection =
-                      model.selectedDatum.first.datum as MeasuredObservation;
+                      model.selectedDatum.first.datum as Observation;
                   context
                       .read<MeasurablesChartInfoCubit>()
                       .setSelected(newSelection);
@@ -141,13 +141,13 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
               }
 
               final seriesList = [
-                charts.Series<MeasuredObservation, DateTime>(
+                charts.Series<Observation, DateTime>(
                   id: measurableDataType.displayName,
-                  colorFn: (MeasuredObservation val, _) {
+                  colorFn: (Observation val, _) {
                     return charts.Color.fromHex(code: '#82E6CE');
                   },
-                  domainFn: (MeasuredObservation val, _) => val.dateTime,
-                  measureFn: (MeasuredObservation val, _) => val.value,
+                  domainFn: (Observation val, _) => val.dateTime,
+                  measureFn: (Observation val, _) => val.value,
                   data: data,
                 )
               ];

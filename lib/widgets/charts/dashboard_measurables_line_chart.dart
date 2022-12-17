@@ -67,7 +67,7 @@ class DashboardMeasurablesLineChart extends StatelessWidget {
               final aggregationType =
                   measurableDataType.aggregationType ?? AggregationType.none;
 
-              List<MeasuredObservation> data;
+              List<Observation> data;
               if (aggregationType == AggregationType.none) {
                 data = aggregateMeasurementNone(measurements);
               } else if (aggregationType == AggregationType.dailyMax) {

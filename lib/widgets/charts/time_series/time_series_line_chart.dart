@@ -56,7 +56,7 @@ class TimeSeriesLineChart extends StatelessWidget {
     super.key,
   });
 
-  final List<MeasuredObservation> data;
+  final List<Observation> data;
   final DateTime rangeStart;
   final DateTime rangeEnd;
 
