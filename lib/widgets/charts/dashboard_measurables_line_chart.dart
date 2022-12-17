@@ -98,14 +98,12 @@ class DashboardMeasurablesLineChart extends StatelessWidget {
                   enableCreate: enableCreate,
                   aggregationType: aggregationType,
                 ),
-                height: 220,
-                chart: SizedBox(
-                  height: 200,
-                  child: TimeSeriesLineChart(
-                    data: data,
-                    rangeStart: rangeStart,
-                    rangeEnd: rangeEnd,
-                  ),
+                height: 180,
+                chart: TimeSeriesLineChart(
+                  data: data,
+                  rangeStart: rangeStart,
+                  rangeEnd: rangeEnd,
+                  unit: measurableDataType.unitName,
                 ),
               );
             },

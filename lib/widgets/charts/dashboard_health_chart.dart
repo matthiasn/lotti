@@ -158,9 +158,10 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                     data: data,
                     rangeStart: widget.rangeStart,
                     rangeEnd: widget.rangeEnd,
+                    unit: healthType?.unit ?? '',
                   ),
             chartHeader: HealthChartInfoWidget(widget.chartConfig),
-            height: 120,
+            height: isBarChart ? 120 : 150,
           );
         },
       ),

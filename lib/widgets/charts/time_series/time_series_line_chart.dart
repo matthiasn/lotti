@@ -4,7 +4,9 @@ import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 const gridOpacity = 0.3;
 const labelOpacity = 0.5;
@@ -53,12 +55,14 @@ class TimeSeriesLineChart extends StatelessWidget {
     required this.data,
     required this.rangeStart,
     required this.rangeEnd,
+    this.unit = '',
     super.key,
   });
 
   final List<Observation> data;
   final DateTime rangeStart;
   final DateTime rangeEnd;
+  final String unit;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +80,15 @@ class TimeSeriesLineChart extends StatelessWidget {
                 ? 7
                 : 1;
 
+    final spots = data
+        .map(
+          (item) => FlSpot(
+            item.dateTime.millisecondsSinceEpoch.toDouble(),
+            item.value.toDouble(),
+          ),
+        )
+        .toList();
+
     return Padding(
       padding: const EdgeInsets.only(
         top: 20,
@@ -91,6 +104,39 @@ class TimeSeriesLineChart extends StatelessWidget {
                 Duration.millisecondsPerDay.toDouble() * gridInterval,
             getDrawingHorizontalLine: (value) => gridLine,
             getDrawingVerticalLine: (value) => gridLine,
+          ),
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              tooltipMargin: isMobile ? 24 : 16,
+              tooltipPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 3,
+              ),
+              tooltipBgColor: styleConfig().primaryColor.desaturate(),
+              tooltipRoundedRadius: 8,
+              getTooltipItems: (List<LineBarSpot> spots) {
+                return spots.map((spot) {
+                  return LineTooltipItem(
+                    '',
+                    const TextStyle(
+                      fontSize: fontSizeSmall,
+                      fontFamily: mainFont,
+                      fontWeight: FontWeight.w300,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '${spot.y.toInt()} $unit\n',
+                        style: chartTooltipStyleBold(),
+                      ),
+                      TextSpan(
+                        text: chartDateFormatter2(spot.x),
+                        style: chartTooltipStyle(),
+                      ),
+                    ],
+                  );
+                }).toList();
+              },
+            ),
           ),
           titlesData: FlTitlesData(
             show: true,
@@ -129,14 +175,7 @@ class TimeSeriesLineChart extends StatelessWidget {
           maxY: maxVal + valRange * 0.2,
           lineBarsData: [
             LineChartBarData(
-              spots: data
-                  .map(
-                    (item) => FlSpot(
-                      item.dateTime.millisecondsSinceEpoch.toDouble(),
-                      item.value.toDouble(),
-                    ),
-                  )
-                  .toList(),
+              spots: spots,
               isCurved: true,
               curveSmoothness: 0.1,
               gradient: LinearGradient(
