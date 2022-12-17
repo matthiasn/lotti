@@ -175,6 +175,7 @@ void main() {
         healthType: 'cumulative_step_count',
         chartType: HealthChartType.barChart,
         aggregationType: HealthAggregationType.dailyMax,
+        unit: 'steps',
         colorByValue: {
           10000: '#4BB543',
           6000: '#FF5F1F',

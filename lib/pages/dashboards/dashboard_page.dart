@@ -41,7 +41,7 @@ class _DashboardPageState extends State<DashboardPage> {
   double scale = 10;
   double horizontalPan = 0;
   bool zoomInProgress = false;
-  int timeSpanDays = isDesktop ? 30 : 7;
+  int timeSpanDays = isDesktop ? 30 : 14;
 
   @override
   Widget build(BuildContext context) {

@@ -129,7 +129,7 @@ class TimeSeriesLineChart extends StatelessWidget {
                         style: chartTooltipStyleBold(),
                       ),
                       TextSpan(
-                        text: chartDateFormatter2(spot.x),
+                        text: chartDateFormatterFull(spot.x),
                         style: chartTooltipStyle(),
                       ),
                     ],
@@ -152,7 +152,8 @@ class TimeSeriesLineChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 30,
-                interval: Duration.millisecondsPerDay.toDouble() * 30,
+                interval:
+                    Duration.millisecondsPerDay.toDouble() * gridInterval * 5,
                 getTitlesWidget: bottomTitleWidgets,
               ),
             ),

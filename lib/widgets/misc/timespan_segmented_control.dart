@@ -24,7 +24,7 @@ class TimeSpanSegmentedControl extends StatelessWidget {
       groupValue: timeSpanDays,
       onValueChanged: onValueChanged,
       children: {
-        if (isMobile) 7: DaysSegment(shortLabels ? '7d' : '7 days'),
+        7: DaysSegment(shortLabels ? '7d' : '7 days'),
         14: DaysSegment(shortLabels ? '14d' : '14 days'),
         30: DaysSegment(shortLabels ? '30d' : '30 days'),
         90: DaysSegment(shortLabels ? '90d' : '90 days'),
