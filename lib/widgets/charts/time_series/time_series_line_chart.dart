@@ -29,13 +29,6 @@ class ChartLabel extends StatelessWidget {
   }
 }
 
-Widget bottomTitleWidgets(double value, TitleMeta meta) {
-  return SideTitleWidget(
-    axisSide: meta.axisSide,
-    child: ChartLabel(chartDateFormatter2(value)),
-  );
-}
-
 List<Color> gradientColors = [
   styleConfig().primaryColorLight,
   styleConfig().primaryColor,
@@ -89,6 +82,20 @@ class TimeSeriesLineChart extends StatelessWidget {
         )
         .toList();
 
+    Widget bottomTitleWidgets(double value, TitleMeta meta) {
+      final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+      if (ymd.day == 1 ||
+          (rangeInDays < 90 && ymd.day == 15) ||
+          (rangeInDays < 30 && ymd.day == 8) ||
+          (rangeInDays < 30 && ymd.day == 22)) {
+        return SideTitleWidget(
+          axisSide: meta.axisSide,
+          child: ChartLabel(chartDateFormatter2(value)),
+        );
+      }
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.only(
         top: 20,
@@ -97,7 +104,7 @@ class TimeSeriesLineChart extends StatelessWidget {
       child: LineChart(
         LineChartData(
           gridData: FlGridData(
-            show: true,
+            show: false,
             drawVerticalLine: true,
             horizontalInterval: double.maxFinite,
             verticalInterval:
@@ -152,8 +159,7 @@ class TimeSeriesLineChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 30,
-                interval:
-                    Duration.millisecondsPerDay.toDouble() * gridInterval * 5,
+                interval: Duration.millisecondsPerDay.toDouble(),
                 getTitlesWidget: bottomTitleWidgets,
               ),
             ),
@@ -182,7 +188,7 @@ class TimeSeriesLineChart extends StatelessWidget {
               gradient: LinearGradient(
                 colors: gradientColors,
               ),
-              barWidth: 3,
+              barWidth: 2,
               isStrokeCapRound: true,
               dotData: FlDotData(
                 show: false,
