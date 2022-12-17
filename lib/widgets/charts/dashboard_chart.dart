@@ -26,6 +26,7 @@ class DashboardChart extends StatelessWidget {
       height: height,
       child: Stack(
         children: [
+          chartHeader,
           Padding(
             padding: EdgeInsets.only(
               top: 25 + topMargin,
@@ -40,7 +41,6 @@ class DashboardChart extends StatelessWidget {
               child: chart,
             ),
           ),
-          chartHeader,
           if (overlay != null) overlay!,
         ],
       ),
