@@ -18,14 +18,13 @@ import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-class DashboardMeasurablesChart2 extends StatefulWidget {
-  const DashboardMeasurablesChart2({
+class DashboardMeasurablesLineChart extends StatelessWidget {
+  const DashboardMeasurablesLineChart({
     super.key,
     required this.measurableDataTypeId,
     required this.dashboardId,
     required this.rangeStart,
     required this.rangeEnd,
-    this.aggregationType,
     this.enableCreate = false,
   });
 
@@ -34,21 +33,13 @@ class DashboardMeasurablesChart2 extends StatefulWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final bool enableCreate;
-  final AggregationType? aggregationType;
-
-  @override
-  State<DashboardMeasurablesChart2> createState() =>
-      _DashboardMeasurablesChartState2();
-}
-
-class _DashboardMeasurablesChartState2
-    extends State<DashboardMeasurablesChart2> {
-  final JournalDb _db = getIt<JournalDb>();
 
   @override
   Widget build(BuildContext context) {
+    final db = getIt<JournalDb>();
+
     return StreamBuilder<MeasurableDataType?>(
-      stream: _db.watchMeasurableDataTypeById(widget.measurableDataTypeId),
+      stream: db.watchMeasurableDataTypeById(measurableDataTypeId),
       builder: (
         BuildContext context,
         AsyncSnapshot<MeasurableDataType?> typeSnapshot,
@@ -62,10 +53,10 @@ class _DashboardMeasurablesChartState2
         return BlocProvider<MeasurablesChartInfoCubit>(
           create: (BuildContext context) => MeasurablesChartInfoCubit(),
           child: StreamBuilder<List<JournalEntity>>(
-            stream: _db.watchMeasurementsByType(
+            stream: db.watchMeasurementsByType(
               type: measurableDataType.id,
-              rangeStart: widget.rangeStart.subtract(const Duration(hours: 12)),
-              rangeEnd: widget.rangeEnd,
+              rangeStart: rangeStart.subtract(const Duration(hours: 12)),
+              rangeEnd: rangeEnd,
             ),
             builder: (
               BuildContext context,
@@ -73,9 +64,8 @@ class _DashboardMeasurablesChartState2
             ) {
               final measurements = measurementsSnapshot.data ?? [];
 
-              final aggregationType = widget.aggregationType ??
-                  measurableDataType.aggregationType ??
-                  AggregationType.none;
+              final aggregationType =
+                  measurableDataType.aggregationType ?? AggregationType.none;
 
               List<MeasuredObservation> data;
               if (aggregationType == AggregationType.none) {
@@ -83,20 +73,20 @@ class _DashboardMeasurablesChartState2
               } else if (aggregationType == AggregationType.dailyMax) {
                 data = aggregateMaxByDay(
                   measurements,
-                  rangeStart: widget.rangeStart,
-                  rangeEnd: widget.rangeEnd,
+                  rangeStart: rangeStart,
+                  rangeEnd: rangeEnd,
                 );
               } else if (aggregationType == AggregationType.hourlySum) {
                 data = aggregateSumByHour(
                   measurements,
-                  rangeStart: widget.rangeStart,
-                  rangeEnd: widget.rangeEnd,
+                  rangeStart: rangeStart,
+                  rangeEnd: rangeEnd,
                 );
               } else {
                 data = aggregateSumByDay(
                   measurements,
-                  rangeStart: widget.rangeStart,
-                  rangeEnd: widget.rangeEnd,
+                  rangeStart: rangeStart,
+                  rangeEnd: rangeEnd,
                 );
               }
 
@@ -104,8 +94,8 @@ class _DashboardMeasurablesChartState2
                 topMargin: 20,
                 chartHeader: MeasurablesChartInfoWidget(
                   measurableDataType,
-                  dashboardId: widget.dashboardId,
-                  enableCreate: widget.enableCreate,
+                  dashboardId: dashboardId,
+                  enableCreate: enableCreate,
                   aggregationType: aggregationType,
                 ),
                 height: 220,
@@ -113,8 +103,8 @@ class _DashboardMeasurablesChartState2
                   height: 200,
                   child: TimeSeriesLineChart(
                     data: data,
-                    rangeStart: widget.rangeStart,
-                    rangeEnd: widget.rangeEnd,
+                    rangeStart: rangeStart,
+                    rangeEnd: rangeEnd,
                   ),
                 ),
               );

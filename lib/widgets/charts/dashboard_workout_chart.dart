@@ -12,7 +12,6 @@ import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/wait.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 

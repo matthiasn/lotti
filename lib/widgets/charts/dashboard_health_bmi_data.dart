@@ -3,6 +3,7 @@ import 'dart:core';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 num calculateBMI(num height, num weight) {
   final heightSquare = height * height;

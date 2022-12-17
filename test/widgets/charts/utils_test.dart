@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 

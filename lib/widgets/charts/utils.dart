@@ -9,10 +9,24 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 
 class MeasuredObservation extends Equatable {
   const MeasuredObservation(this.dateTime, this.value);
+
+  final DateTime dateTime;
+  final num value;
+
+  @override
+  String toString() {
+    return '$dateTime $value';
+  }
+
+  @override
+  List<Object?> get props => [dateTime, value];
+}
+
+class Observation extends Equatable {
+  const Observation(this.dateTime, this.value);
 
   final DateTime dateTime;
   final num value;

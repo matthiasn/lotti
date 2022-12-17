@@ -16,9 +16,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/widgets/charts/dashboard_measurables_line_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-
-import 'dashboard_measurables_chart2.dart';
 
 class DashboardMeasurablesChart extends StatefulWidget {
   const DashboardMeasurablesChart({
@@ -68,10 +67,9 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
         final aggregationNone = aggregationType == AggregationType.none;
 
         if (aggregationNone) {
-          return DashboardMeasurablesChart2(
+          return DashboardMeasurablesLineChart(
             measurableDataTypeId: widget.measurableDataTypeId,
             dashboardId: widget.dashboardId,
-            aggregationType: widget.aggregationType,
             rangeStart: widget.rangeStart,
             rangeEnd: widget.rangeEnd,
             enableCreate: true,

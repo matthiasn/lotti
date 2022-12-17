@@ -40,28 +40,13 @@ List<Color> gradientColors = [
 ];
 
 Widget leftTitleWidgets(double value, TitleMeta meta) {
-  String text;
   return ChartLabel(value.toInt().toString());
-
-  switch (value.toInt()) {
-    case 25:
-      text = '25%';
-      break;
-    case 50:
-      text = '50%';
-      break;
-    case 75:
-      text = '75%';
-      break;
-    case 100:
-      text = '100%';
-      break;
-    default:
-      return Container();
-  }
-
-  return ChartLabel(text);
 }
+
+final gridLine = FlLine(
+  color: styleConfig().chartTextColor.withOpacity(gridOpacity),
+  strokeWidth: 1,
+);
 
 class TimeSeriesLineChart extends StatelessWidget {
   const TimeSeriesLineChart({
@@ -90,6 +75,7 @@ class TimeSeriesLineChart extends StatelessWidget {
             : rangeInDays > 30
                 ? 7
                 : 1;
+
     return Padding(
       padding: const EdgeInsets.only(
         top: 20,
@@ -100,21 +86,11 @@ class TimeSeriesLineChart extends StatelessWidget {
           gridData: FlGridData(
             show: true,
             drawVerticalLine: true,
-            horizontalInterval: 100,
+            horizontalInterval: double.maxFinite,
             verticalInterval:
                 Duration.millisecondsPerDay.toDouble() * gridInterval,
-            getDrawingHorizontalLine: (value) {
-              return FlLine(
-                color: const Color(0xff37434d),
-                strokeWidth: 1,
-              );
-            },
-            getDrawingVerticalLine: (value) {
-              return FlLine(
-                color: const Color(0xff37434d),
-                strokeWidth: 1,
-              );
-            },
+            getDrawingHorizontalLine: (value) => gridLine,
+            getDrawingVerticalLine: (value) => gridLine,
           ),
           titlesData: FlTitlesData(
             show: true,
@@ -137,7 +113,7 @@ class TimeSeriesLineChart extends StatelessWidget {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                interval: 100,
+                interval: double.maxFinite,
                 getTitlesWidget: leftTitleWidgets,
                 reservedSize: 30,
               ),
