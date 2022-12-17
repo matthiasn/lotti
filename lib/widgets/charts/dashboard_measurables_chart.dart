@@ -61,6 +61,23 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
           return const SizedBox.shrink();
         }
 
+        final aggregationType = widget.aggregationType ??
+            measurableDataType.aggregationType ??
+            AggregationType.none;
+
+        final aggregationNone = aggregationType == AggregationType.none;
+
+        if (aggregationNone) {
+          return DashboardMeasurablesChart2(
+            measurableDataTypeId: widget.measurableDataTypeId,
+            dashboardId: widget.dashboardId,
+            aggregationType: widget.aggregationType,
+            rangeStart: widget.rangeStart,
+            rangeEnd: widget.rangeEnd,
+            enableCreate: true,
+          );
+        }
+
         return BlocProvider<MeasurablesChartInfoCubit>(
           create: (BuildContext context) => MeasurablesChartInfoCubit(),
           child: StreamBuilder<List<JournalEntity>>(
@@ -77,23 +94,8 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
 
               charts.SeriesRendererConfig<DateTime>? defaultRenderer;
 
-              final aggregationType = widget.aggregationType ??
-                  measurableDataType.aggregationType ??
-                  AggregationType.none;
-
-              final aggregationNone = aggregationType == AggregationType.none;
-
               if (aggregationNone) {
                 defaultRenderer = charts.LineRendererConfig<DateTime>();
-
-                return DashboardMeasurablesChart2(
-                  measurableDataTypeId: widget.measurableDataTypeId,
-                  dashboardId: widget.dashboardId,
-                  aggregationType: widget.aggregationType,
-                  rangeStart: widget.rangeStart,
-                  rangeEnd: widget.rangeEnd,
-                  enableCreate: true,
-                );
               } else {
                 defaultRenderer = defaultBarRenderer;
               }
