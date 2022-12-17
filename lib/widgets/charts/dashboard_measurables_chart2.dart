@@ -1,7 +1,6 @@
 import 'dart:core';
 
 import 'package:beamer/beamer.dart';
-import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,12 +15,11 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-import 'dashboard_measurables_chart2.dart';
-
-class DashboardMeasurablesChart extends StatefulWidget {
-  const DashboardMeasurablesChart({
+class DashboardMeasurablesChart2 extends StatefulWidget {
+  const DashboardMeasurablesChart2({
     super.key,
     required this.measurableDataTypeId,
     required this.dashboardId,
@@ -39,12 +37,12 @@ class DashboardMeasurablesChart extends StatefulWidget {
   final AggregationType? aggregationType;
 
   @override
-  State<DashboardMeasurablesChart> createState() =>
-      _DashboardMeasurablesChartState();
+  State<DashboardMeasurablesChart2> createState() =>
+      _DashboardMeasurablesChartState2();
 }
 
-class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
-  final _chartState = charts.UserManagedState<DateTime>();
+class _DashboardMeasurablesChartState2
+    extends State<DashboardMeasurablesChart2> {
   final JournalDb _db = getIt<JournalDb>();
 
   @override
@@ -75,28 +73,9 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
             ) {
               final measurements = measurementsSnapshot.data ?? [];
 
-              charts.SeriesRendererConfig<DateTime>? defaultRenderer;
-
               final aggregationType = widget.aggregationType ??
                   measurableDataType.aggregationType ??
                   AggregationType.none;
-
-              final aggregationNone = aggregationType == AggregationType.none;
-
-              if (aggregationNone) {
-                defaultRenderer = charts.LineRendererConfig<DateTime>();
-
-                return DashboardMeasurablesChart2(
-                  measurableDataTypeId: widget.measurableDataTypeId,
-                  dashboardId: widget.dashboardId,
-                  aggregationType: widget.aggregationType,
-                  rangeStart: widget.rangeStart,
-                  rangeEnd: widget.rangeEnd,
-                  enableCreate: true,
-                );
-              } else {
-                defaultRenderer = defaultBarRenderer;
-              }
 
               List<MeasuredObservation> data;
               if (aggregationType == AggregationType.none) {
@@ -121,77 +100,23 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                 );
               }
 
-              void infoSelectionModelUpdated(
-                charts.SelectionModel<DateTime> model,
-              ) {
-                if (model.hasDatumSelection) {
-                  final newSelection =
-                      model.selectedDatum.first.datum as MeasuredObservation;
-                  context
-                      .read<MeasurablesChartInfoCubit>()
-                      .setSelected(newSelection);
-
-                  _chartState.selectionModels[charts.SelectionModelType.info] =
-                      charts.UserManagedSelectionModel(model: model);
-                } else {
-                  context.read<MeasurablesChartInfoCubit>().clearSelected();
-                  _chartState.selectionModels[charts.SelectionModelType.info] =
-                      charts.UserManagedSelectionModel();
-                }
-              }
-
-              final seriesList = [
-                charts.Series<MeasuredObservation, DateTime>(
-                  id: measurableDataType.displayName,
-                  colorFn: (MeasuredObservation val, _) {
-                    return charts.Color.fromHex(code: '#82E6CE');
-                  },
-                  domainFn: (MeasuredObservation val, _) => val.dateTime,
-                  measureFn: (MeasuredObservation val, _) => val.value,
-                  data: data,
-                )
-              ];
               return DashboardChart(
-                topMargin: 10,
-                chart: charts.TimeSeriesChart(
-                  seriesList,
-                  animate: false,
-                  defaultRenderer: defaultRenderer,
-                  selectionModels: [
-                    charts.SelectionModelConfig(
-                      updatedListener: infoSelectionModelUpdated,
-                    )
-                  ],
-                  behaviors: [
-                    chartRangeAnnotation(
-                      aggregationType == AggregationType.none
-                          ? widget.rangeStart
-                              .subtract(const Duration(hours: 36))
-                          : aggregationType == AggregationType.hourlySum
-                              ? widget.rangeStart
-                                  .subtract(const Duration(days: 1))
-                              : widget.rangeStart,
-                      widget.rangeEnd,
-                    )
-                  ],
-                  domainAxis: timeSeriesAxis,
-                  primaryMeasureAxis: charts.NumericAxisSpec(
-                    tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                      zeroBound: !aggregationNone,
-                      dataIsInWholeNumbers: false,
-                      desiredMinTickCount: 4,
-                      desiredMaxTickCount: 5,
-                    ),
-                    renderSpec: numericRenderSpec,
-                  ),
-                ),
+                topMargin: 20,
                 chartHeader: MeasurablesChartInfoWidget(
                   measurableDataType,
                   dashboardId: widget.dashboardId,
                   enableCreate: widget.enableCreate,
                   aggregationType: aggregationType,
                 ),
-                height: aggregationNone ? 272 : 136,
+                height: 220,
+                chart: SizedBox(
+                  height: 200,
+                  child: TimeSeriesLineChart(
+                    data: data,
+                    rangeStart: widget.rangeStart,
+                    rangeEnd: widget.rangeEnd,
+                  ),
+                ),
               );
             },
           ),

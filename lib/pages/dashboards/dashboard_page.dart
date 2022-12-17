@@ -10,7 +10,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
-import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
@@ -19,6 +18,8 @@ import 'package:lotti/widgets/charts/stories/dashboard_story_chart.dart';
 import 'package:lotti/widgets/charts/stories/wildcard_story_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
+
+import '../../widgets/charts/dashboard_measurables_chart.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({

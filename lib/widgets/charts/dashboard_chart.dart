@@ -33,7 +33,9 @@ class DashboardChart extends StatelessWidget {
               right: 10,
             ),
             child: Container(
-              color: transparent ? Colors.transparent : styleConfig().cardColor,
+              color: transparent
+                  ? Colors.transparent
+                  : styleConfig().cardColor.withOpacity(0.6),
               padding: const EdgeInsets.only(left: 10),
               child: chart,
             ),

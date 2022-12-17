@@ -78,6 +78,11 @@ String chartDateFormatter(String ymd) {
   return DateFormat('MMM dd').format(day);
 }
 
+String chartDateFormatter2(double millis) {
+  final day = DateTime.fromMillisecondsSinceEpoch(millis.toInt());
+  return DateFormat('MMM dd').format(day);
+}
+
 List<MeasuredObservation> aggregateSumByHour(
   List<JournalEntity> entities, {
   required DateTime rangeStart,
