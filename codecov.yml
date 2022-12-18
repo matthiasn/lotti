@@ -1,5 +1,5 @@
 coverage:
-  round: up
-  precision: 1
   status:
-    patch: off
+    project:
+      default:
+        threshold: 0.2%
