@@ -43,7 +43,8 @@ class TagsViewWidget extends StatelessWidget {
               Wrap(
                 spacing: 4,
                 runSpacing: 4,
-                children: tagsFromTagIds.map(TagChip.new).toList(),
+                // ignore: unnecessary_lambdas
+                children: tagsFromTagIds.map((tag) => TagChip(tag)).toList(),
               ),
             ],
           ),
@@ -73,8 +74,8 @@ class TagChip extends StatelessWidget {
           child: Text(
             tagEntity.tag,
             style: const TextStyle(
-              fontSize: 12,
-              fontFamily: 'Oswald',
+              fontSize: 11,
+              fontFamily: mainFont,
             ),
           ),
         ),
