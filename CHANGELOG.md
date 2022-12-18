@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Header position on image entries
+
+### Fixed:
+- Duplicate display issue
+- Tag display issue in JournalCard
+
+## [0.8.210] - 2022-12-17
+### Changed:
 - Improve line charts by using fl_chart library
 - Improve blood pressure chart by using fl_chart library
 

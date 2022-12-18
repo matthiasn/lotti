@@ -12,20 +12,10 @@ import 'package:lotti/widgets/journal/entry_details/save_button.dart';
 import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
 import 'package:lotti/widgets/journal/tags/tag_add.dart';
 
-class EntryDetailHeader extends StatefulWidget {
+class EntryDetailHeader extends StatelessWidget {
   const EntryDetailHeader({
     super.key,
   });
-
-  @override
-  State<EntryDetailHeader> createState() => _EntryDetailHeaderState();
-}
-
-class _EntryDetailHeaderState extends State<EntryDetailHeader> {
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
