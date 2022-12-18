@@ -21,7 +21,7 @@ const double chipBorderRadius = 8;
 const mainFont = 'PlusJakartaSans';
 
 const chipPadding = EdgeInsets.symmetric(
-  vertical: 2,
+  vertical: 3,
   horizontal: 8,
 );
 
