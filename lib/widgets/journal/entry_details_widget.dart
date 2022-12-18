@@ -76,12 +76,12 @@ class EntryDetailWidget extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const EntryDetailHeader(),
-                    TagsListWidget(),
                     item.maybeMap(
                       journalImage: EntryImageWidget.new,
                       orElse: () => const SizedBox.shrink(),
                     ),
+                    const EntryDetailHeader(),
+                    TagsListWidget(),
                     item.maybeMap(
                       task: (_) => const SizedBox.shrink(),
                       quantitative: (_) => const SizedBox.shrink(),
