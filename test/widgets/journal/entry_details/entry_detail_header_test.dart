@@ -33,7 +33,6 @@ void main() {
           entryId: testTextEntry.meta.id,
           entry: testTextEntry,
           showMap: false,
-          showEditor: true,
         ),
       );
     });
@@ -110,7 +109,6 @@ void main() {
           entryId: testTextEntry.meta.id,
           entry: testTextEntry,
           showMap: false,
-          showEditor: true,
         ),
       );
 
@@ -135,7 +133,6 @@ void main() {
           entryId: testTextEntry.meta.id,
           entry: testTextEntry,
           showMap: false,
-          showEditor: true,
         ),
       );
 
@@ -167,7 +164,6 @@ void main() {
           entryId: testTextEntry.meta.id,
           entry: testTextEntry.copyWith(geolocation: null),
           showMap: false,
-          showEditor: true,
         ),
       );
 
@@ -194,7 +190,6 @@ void main() {
           entryId: testTextEntry.meta.id,
           entry: testTextEntry,
           showMap: false,
-          showEditor: true,
         ),
       );
 

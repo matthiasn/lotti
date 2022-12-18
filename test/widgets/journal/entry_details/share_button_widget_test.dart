@@ -38,7 +38,6 @@ void main() {
           entryId: testImageEntry.meta.id,
           entry: testImageEntry,
           showMap: false,
-          showEditor: true,
         ),
       );
 
@@ -64,7 +63,6 @@ void main() {
           entryId: testAudioEntry.meta.id,
           entry: testAudioEntry,
           showMap: false,
-          showEditor: true,
         ),
       );
 

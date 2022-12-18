@@ -29,7 +29,6 @@ void main() {
           entryId: testTextEntry.meta.id,
           entry: testTextEntry,
           showMap: false,
-          showEditor: true,
         ),
       );
     });
