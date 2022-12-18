@@ -6,37 +6,20 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 
-class LinkedFromEntriesWidget extends StatefulWidget {
+class LinkedFromEntriesWidget extends StatelessWidget {
   const LinkedFromEntriesWidget({
     super.key,
-    this.navigatorKey,
     required this.item,
   });
 
-  final GlobalKey? navigatorKey;
   final JournalEntity item;
-
-  @override
-  State<LinkedFromEntriesWidget> createState() =>
-      _LinkedFromEntriesWidgetState();
-}
-
-class _LinkedFromEntriesWidgetState extends State<LinkedFromEntriesWidget> {
-  final JournalDb _db = getIt<JournalDb>();
-  late Stream<List<JournalEntity>> stream;
-
-  @override
-  void initState() {
-    super.initState();
-    stream = _db.watchLinkedToEntities(linkedTo: widget.item.meta.id);
-  }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder<List<JournalEntity>>(
-      stream: stream,
+      stream: getIt<JournalDb>().watchLinkedToEntities(linkedTo: item.meta.id),
       builder: (
         BuildContext context,
         AsyncSnapshot<List<JournalEntity>> snapshot,
@@ -62,10 +45,16 @@ class _LinkedFromEntriesWidgetState extends State<LinkedFromEntriesWidget> {
                     final item = items.elementAt(index);
                     return item.maybeMap(
                       journalImage: (JournalImage image) {
-                        return JournalImageCard(item: image);
+                        return JournalImageCard(
+                          item: image,
+                          key: Key('${item.meta.id}-${item.meta.id}'),
+                        );
                       },
                       orElse: () {
-                        return JournalCard(item: item);
+                        return JournalCard(
+                          item: item,
+                          key: Key('${item.meta.id}-${item.meta.id}'),
+                        );
                       },
                     );
                   },
