@@ -4,6 +4,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 void addDiscreteQuantEntity({
   required DateTime dt,
@@ -174,6 +175,7 @@ void main() {
         healthType: 'cumulative_step_count',
         chartType: HealthChartType.barChart,
         aggregationType: HealthAggregationType.dailyMax,
+        unit: 'steps',
         colorByValue: {
           10000: '#4BB543',
           6000: '#FF5F1F',

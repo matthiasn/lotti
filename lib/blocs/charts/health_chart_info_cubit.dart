@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 part 'health_chart_info_cubit.freezed.dart';
 

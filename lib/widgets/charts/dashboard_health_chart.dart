@@ -17,6 +17,7 @@ import 'package:lotti/widgets/charts/dashboard_health_bmi_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bp_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
+import 'package:lotti/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardHealthChart extends StatefulWidget {
@@ -87,6 +88,9 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
           BuildContext context,
           AsyncSnapshot<List<JournalEntity>> snapshot,
         ) {
+          final items = snapshot.data ?? [];
+          final data = aggregateByType(items, dataType);
+
           void infoSelectionModelUpdated(
             charts.SelectionModel<DateTime> model,
           ) {
@@ -104,8 +108,6 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
             }
           }
 
-          final items = snapshot.data ?? [];
-
           final seriesList = <charts.Series<Observation, DateTime>>[
             charts.Series<Observation, DateTime>(
               id: dataType,
@@ -114,44 +116,52 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
               },
               domainFn: (Observation val, _) => val.dateTime,
               measureFn: (Observation val, _) => val.value,
-              data: aggregateByType(items, dataType),
+              data: data,
             )
           ];
 
           return DashboardChart(
-            chart: charts.TimeSeriesChart(
-              seriesList,
-              animate: false,
-              behaviors: [
-                chartRangeAnnotation(
-                  widget.rangeStart,
-                  widget.rangeEnd,
-                ),
-              ],
-              domainAxis: timeSeriesAxis,
-              defaultRenderer:
-                  isBarChart ? defaultBarRenderer : defaultLineRenderer,
-              selectionModels: [
-                charts.SelectionModelConfig(
-                  updatedListener: infoSelectionModelUpdated,
-                ),
-              ],
-              primaryMeasureAxis: charts.NumericAxisSpec(
-                tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                  zeroBound: isBarChart,
-                  desiredTickCount: 5,
-                  dataIsInWholeNumbers: false,
-                ),
-                renderSpec: numericRenderSpec,
-                tickFormatterSpec: healthType != null && healthType.hoursMinutes
-                    ? const charts.BasicNumericTickFormatterSpec(
-                        hoursToHhMm,
-                      )
-                    : null,
-              ),
-            ),
+            chart: isBarChart
+                ? charts.TimeSeriesChart(
+                    seriesList,
+                    animate: false,
+                    behaviors: [
+                      chartRangeAnnotation(
+                        widget.rangeStart,
+                        widget.rangeEnd,
+                      ),
+                    ],
+                    domainAxis: timeSeriesAxis,
+                    defaultRenderer:
+                        isBarChart ? defaultBarRenderer : defaultLineRenderer,
+                    selectionModels: [
+                      charts.SelectionModelConfig(
+                        updatedListener: infoSelectionModelUpdated,
+                      ),
+                    ],
+                    primaryMeasureAxis: charts.NumericAxisSpec(
+                      tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                        zeroBound: isBarChart,
+                        desiredTickCount: 5,
+                        dataIsInWholeNumbers: false,
+                      ),
+                      renderSpec: numericRenderSpec,
+                      tickFormatterSpec:
+                          healthType != null && healthType.hoursMinutes
+                              ? const charts.BasicNumericTickFormatterSpec(
+                                  hoursToHhMm,
+                                )
+                              : null,
+                    ),
+                  )
+                : TimeSeriesLineChart(
+                    data: data,
+                    rangeStart: widget.rangeStart,
+                    rangeEnd: widget.rangeEnd,
+                    unit: healthType?.unit ?? '',
+                  ),
             chartHeader: HealthChartInfoWidget(widget.chartConfig),
-            height: 120,
+            height: isBarChart ? 120 : 150,
           );
         },
       ),

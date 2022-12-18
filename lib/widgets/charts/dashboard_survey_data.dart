@@ -6,7 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/surveys/cfq11_survey.dart';
 import 'package:lotti/surveys/panas_survey.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 import 'package:research_package/model.dart';
 
 Map<String, RPOrderedTask> surveyTasks = {

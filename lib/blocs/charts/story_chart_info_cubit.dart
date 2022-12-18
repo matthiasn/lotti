@@ -8,7 +8,7 @@ part 'story_chart_info_cubit.freezed.dart';
 class StoryChartInfoCubit extends Cubit<StoryChartInfoState> {
   StoryChartInfoCubit() : super(StoryChartInfoState(selected: null));
 
-  void setSelected(MeasuredObservation? observation) {
+  void setSelected(Observation? observation) {
     emit(StoryChartInfoState(selected: observation));
   }
 
@@ -20,7 +20,7 @@ class StoryChartInfoCubit extends Cubit<StoryChartInfoState> {
 @freezed
 class StoryChartInfoState with _$StoryChartInfoState {
   factory StoryChartInfoState({
-    required MeasuredObservation? selected,
+    required Observation? selected,
   }) = _StoryChartInfoState;
 }
 

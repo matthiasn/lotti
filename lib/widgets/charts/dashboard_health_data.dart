@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:charts_flutter/flutter.dart';
-import 'package:equatable/equatable.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
@@ -33,21 +32,6 @@ Color colorByValue(
   }
 
   return color;
-}
-
-class Observation extends Equatable {
-  const Observation(this.dateTime, this.value);
-
-  final DateTime dateTime;
-  final num value;
-
-  @override
-  String toString() {
-    return '$dateTime $value';
-  }
-
-  @override
-  List<Object?> get props => [dateTime, value];
 }
 
 List<Observation> aggregateNone(

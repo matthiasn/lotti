@@ -130,12 +130,12 @@ void main() {
             timeframe: AggregationTimeframe.daily,
           ),
           [
-            MeasuredObservation(DateTime(2022, 7, 1), 0),
-            MeasuredObservation(DateTime(2022, 7, 2), 0),
-            MeasuredObservation(DateTime(2022, 7, 3), 0),
-            MeasuredObservation(DateTime(2022, 7, 4), 0),
-            MeasuredObservation(DateTime(2022, 7, 5), 0),
-            MeasuredObservation(DateTime(2022, 7, 6), 0),
+            Observation(DateTime(2022, 7, 1), 0),
+            Observation(DateTime(2022, 7, 2), 0),
+            Observation(DateTime(2022, 7, 3), 0),
+            Observation(DateTime(2022, 7, 4), 0),
+            Observation(DateTime(2022, 7, 5), 0),
+            Observation(DateTime(2022, 7, 6), 0),
           ],
         );
       },
@@ -156,10 +156,10 @@ void main() {
             timeframe: AggregationTimeframe.daily,
           ),
           [
-            MeasuredObservation(DateTime(2022, 7, 1), 0),
-            MeasuredObservation(DateTime(2022, 7, 2), 0),
-            MeasuredObservation(DateTime(2022, 7, 3), 60.0),
-            MeasuredObservation(DateTime(2022, 7, 4), 251.55),
+            Observation(DateTime(2022, 7, 1), 0),
+            Observation(DateTime(2022, 7, 2), 0),
+            Observation(DateTime(2022, 7, 3), 60.0),
+            Observation(DateTime(2022, 7, 4), 251.55),
           ],
         );
       },
@@ -179,11 +179,11 @@ void main() {
             timeframe: AggregationTimeframe.daily,
           ),
           [
-            MeasuredObservation(DateTime(2022, 7, 1), 60.0),
-            MeasuredObservation(DateTime(2022, 7, 2), 240.0),
-            MeasuredObservation(DateTime(2022, 7, 3), 1440.0),
-            MeasuredObservation(DateTime(2022, 7, 4), 1440.0),
-            MeasuredObservation(DateTime(2022, 7, 5), 60.0),
+            Observation(DateTime(2022, 7, 1), 60.0),
+            Observation(DateTime(2022, 7, 2), 240.0),
+            Observation(DateTime(2022, 7, 3), 1440.0),
+            Observation(DateTime(2022, 7, 4), 1440.0),
+            Observation(DateTime(2022, 7, 5), 60.0),
           ],
         );
       },
@@ -204,9 +204,9 @@ void main() {
             timeframe: AggregationTimeframe.daily,
           ),
           [
-            MeasuredObservation(DateTime(2022, 7, 1), 60.0),
-            MeasuredObservation(DateTime(2022, 7, 2), 240.0),
-            MeasuredObservation(DateTime(2022, 7, 3), 1440.0),
+            Observation(DateTime(2022, 7, 1), 60.0),
+            Observation(DateTime(2022, 7, 2), 240.0),
+            Observation(DateTime(2022, 7, 3), 1440.0),
           ],
         );
       },

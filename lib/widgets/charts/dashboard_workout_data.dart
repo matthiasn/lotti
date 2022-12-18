@@ -2,7 +2,6 @@ import 'dart:core';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 List<Observation> aggregateWorkoutDailySum(

@@ -9,10 +9,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 
-class MeasuredObservation extends Equatable {
-  const MeasuredObservation(this.dateTime, this.value);
+class Observation extends Equatable {
+  const Observation(this.dateTime, this.value);
 
   final DateTime dateTime;
   final num value;
@@ -38,7 +37,7 @@ String ymdh(DateTime dt) {
   return beginningOfHour.toIso8601String();
 }
 
-List<MeasuredObservation> aggregateSumByDay(
+List<Observation> aggregateSumByDay(
   List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
@@ -59,11 +58,11 @@ List<MeasuredObservation> aggregateSumByDay(
     }
   }
 
-  final aggregated = <MeasuredObservation>[];
+  final aggregated = <Observation>[];
   for (final dayString in sumsByDay.keys) {
     final day = DateTime.parse(dayString);
     // final midDay = day.add(const Duration(hours: 12));
-    aggregated.add(MeasuredObservation(day, sumsByDay[dayString] ?? 0));
+    aggregated.add(Observation(day, sumsByDay[dayString] ?? 0));
   }
 
   return aggregated;
@@ -78,7 +77,17 @@ String chartDateFormatter(String ymd) {
   return DateFormat('MMM dd').format(day);
 }
 
-List<MeasuredObservation> aggregateSumByHour(
+String chartDateFormatter2(double millis) {
+  final day = DateTime.fromMillisecondsSinceEpoch(millis.toInt());
+  return DateFormat('MMM dd').format(day);
+}
+
+String chartDateFormatterFull(double millis) {
+  final day = DateTime.fromMillisecondsSinceEpoch(millis.toInt());
+  return DateFormat('MMM dd, HH:mm').format(day);
+}
+
+List<Observation> aggregateSumByHour(
   List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
@@ -102,10 +111,10 @@ List<MeasuredObservation> aggregateSumByHour(
     }
   }
 
-  final aggregated = <MeasuredObservation>[];
+  final aggregated = <Observation>[];
   for (final beginningOfHour in sumsByHour.keys) {
     final dt = DateTime.parse(beginningOfHour);
-    aggregated.add(MeasuredObservation(dt, sumsByHour[beginningOfHour] ?? 0));
+    aggregated.add(Observation(dt, sumsByHour[beginningOfHour] ?? 0));
   }
 
   return aggregated;
@@ -126,7 +135,7 @@ List<String> daysInRange({
   return getDayStrings(range.inDays, rangeStart);
 }
 
-List<MeasuredObservation> aggregateMaxByDay(
+List<Observation> aggregateMaxByDay(
   List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
@@ -148,25 +157,25 @@ List<MeasuredObservation> aggregateMaxByDay(
     }
   }
 
-  final aggregated = <MeasuredObservation>[];
+  final aggregated = <Observation>[];
   for (final dayString in sumsByDay.keys) {
     final day = DateTime.parse(dayString);
-    aggregated.add(MeasuredObservation(day, sumsByDay[dayString] ?? 0));
+    aggregated.add(Observation(day, sumsByDay[dayString] ?? 0));
   }
 
   return aggregated;
 }
 
-List<MeasuredObservation> aggregateMeasurementNone(
+List<Observation> aggregateMeasurementNone(
   List<JournalEntity> entities,
 ) {
-  final aggregated = <MeasuredObservation>[];
+  final aggregated = <Observation>[];
 
   for (final entity in entities) {
     entity.maybeMap(
       measurement: (MeasurementEntry entry) {
         aggregated.add(
-          MeasuredObservation(
+          Observation(
             entry.data.dateFrom,
             entry.data.value,
           ),

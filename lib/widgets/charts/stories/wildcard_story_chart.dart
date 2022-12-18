@@ -65,10 +65,10 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
           );
 
           final seriesList = [
-            charts.Series<MeasuredObservation, DateTime>(
+            charts.Series<Observation, DateTime>(
               id: widget.chartConfig.storySubstring,
-              domainFn: (MeasuredObservation val, _) => val.dateTime,
-              measureFn: (MeasuredObservation val, _) => val.value,
+              domainFn: (Observation val, _) => val.dateTime,
+              measureFn: (Observation val, _) => val.value,
               colorFn: (_, __) => charts.Color.fromHex(code: '#82E6CE'),
               data: data,
             )
@@ -79,7 +79,7 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
           ) {
             if (model.hasDatumSelection) {
               final newSelection =
-                  model.selectedDatum.first.datum as MeasuredObservation;
+                  model.selectedDatum.first.datum as Observation;
               context.read<StoryChartInfoCubit>().setSelected(newSelection);
               _chartState.selectionModels[charts.SelectionModelType.info] =
                   charts.UserManagedSelectionModel(model: model);
