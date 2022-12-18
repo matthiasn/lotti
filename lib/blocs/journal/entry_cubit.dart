@@ -18,20 +18,6 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:tuple/tuple.dart';
 
-bool showEditorByDefault(JournalEntity entry) {
-  return entry.map(
-    journalEntry: (_) => true,
-    task: (_) => true,
-    journalImage: (entry) => entry.entryText != null,
-    quantitative: (entry) => entry.entryText != null,
-    survey: (entry) => entry.entryText != null,
-    measurement: (entry) => entry.entryText != null,
-    workout: (entry) => entry.entryText != null,
-    journalAudio: (_) => true,
-    habitCompletion: (_) => true,
-  );
-}
-
 class EntryCubit extends Cubit<EntryState> {
   EntryCubit({
     required this.entryId,
@@ -41,11 +27,9 @@ class EntryCubit extends Cubit<EntryState> {
             entryId: entryId,
             entry: entry,
             showMap: false,
-            showEditor: showEditorByDefault(entry),
           ),
         ) {
     final lastSaved = entry.meta.updatedAt;
-    showEditor = showEditorByDefault(entry);
 
     _editorStateService
         .getUnsavedStream(entryId, lastSaved)
@@ -97,7 +81,6 @@ class EntryCubit extends Cubit<EntryState> {
   JournalEntity entry;
   bool dirty = false;
   bool showMap = false;
-  bool showEditor = false;
 
   late final QuillController controller;
   late final GlobalKey<FormBuilderState>? formKey;
@@ -153,7 +136,6 @@ class EntryCubit extends Cubit<EntryState> {
           entryId: entryId,
           entry: entry,
           showMap: showMap,
-          showEditor: showEditor,
         ),
       );
     } else {
@@ -162,7 +144,6 @@ class EntryCubit extends Cubit<EntryState> {
           entryId: entryId,
           entry: entry,
           showMap: showMap,
-          showEditor: showEditor,
         ),
       );
     }
@@ -191,11 +172,6 @@ class EntryCubit extends Cubit<EntryState> {
       showMap = !showMap;
       emitState();
     }
-  }
-
-  void toggleShowEditor() {
-    showEditor = !showEditor;
-    emitState();
   }
 
   Future<void> togglePrivate() async {

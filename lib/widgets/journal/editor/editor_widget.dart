@@ -59,10 +59,6 @@ class EditorWidget extends StatelessWidget {
           }
         }
 
-        if (!snapshot.showEditor) {
-          return const SizedBox.shrink();
-        }
-
         return RawKeyboardListener(
           focusNode: FocusNode(),
           onKey: (RawKeyEvent event) {

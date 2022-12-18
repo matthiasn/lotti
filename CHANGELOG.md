@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Remove useless entry text toggle icon
+
+## [0.8.211] - 2022-12-18
+### Changed:
 - Header position on image entries
 
 ### Fixed:
