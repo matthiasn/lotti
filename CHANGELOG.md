@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Throttle habits success scoring
 
+### Fixed:
+- Condition where sync inbox could fail during processing and be skipped
+
 ## [0.8.212] - 2022-12-19
 ### Changed:
 - Remove useless entry text toggle icon

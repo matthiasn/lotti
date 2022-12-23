@@ -85,6 +85,7 @@ Future<void> processMessage(SyncConfig? syncConfig, MimeMessage message) async {
       subDomain: 'processMessage',
       stackTrace: stackTrace,
     );
+    rethrow;
   }
 }
 
@@ -114,6 +115,7 @@ Future<void> fetchByUid({
       domain: 'INBOX_SERVICE',
       subDomain: '_fetchByUid',
     );
+    rethrow;
   } catch (e, stackTrace) {
     loggingDb.captureException(
       e,
@@ -121,5 +123,6 @@ Future<void> fetchByUid({
       subDomain: '_fetchByUid',
       stackTrace: stackTrace,
     );
+    rethrow;
   }
 }
