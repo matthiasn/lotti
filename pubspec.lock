@@ -1673,7 +1673,7 @@ packages:
     source: hosted
     version: "3.1.0"
   rxdart:
-    dependency: "direct overridden"
+    dependency: "direct main"
     description:
       name: rxdart
       url: "https://pub.dartlang.org"

@@ -9,6 +9,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:rxdart/rxdart.dart';
 
 class HabitsCubit extends Cubit<HabitsState> {
   HabitsCubit()
@@ -49,11 +50,17 @@ class HabitsCubit extends Cubit<HabitsState> {
   }
 
   void startWatching() {
-    _completionsStream = _journalDb.watchHabitCompletionsInRange(
-      rangeStart: getStartOfDay(
-        DateTime.now().subtract(const Duration(days: 90)),
-      ),
-    );
+    _completionsStream = _journalDb
+        .watchHabitCompletionsInRange(
+          rangeStart: getStartOfDay(
+            DateTime.now().subtract(const Duration(days: 90)),
+          ),
+        )
+        .throttleTime(
+          const Duration(seconds: 5),
+          trailing: true,
+          leading: true,
+        );
 
     _completionsSubscription = _completionsStream.listen((habitCompletions) {
       _habitCompletions = habitCompletions;
