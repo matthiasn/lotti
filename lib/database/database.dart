@@ -274,7 +274,7 @@ class JournalDb extends _$JournalDb {
     required List<bool> privateStatuses,
     required List<int> flaggedStatuses,
     required List<String>? ids,
-    int limit = 1000,
+    int limit = 500,
   }) {
     if (ids != null) {
       return filteredByTagJournal(

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed:
 - Condition where sync inbox could fail during processing and be skipped
+- Performance issues when syncing health-related entries
 
 ## [0.8.212] - 2022-12-19
 ### Changed:
