@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -5,14 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
-
-List<Color> gradientColors = [
-  styleConfig().primaryColorLight,
-  styleConfig().primaryColor,
-];
 
 final gridLine = FlLine(
   color: styleConfig().chartTextColor.withOpacity(gridOpacity),
@@ -60,6 +56,10 @@ class HabitCompletionRateChart extends StatelessWidget {
           );
         }
 
+        final skipColor = styleConfig()
+            .primaryColorLight
+            .mix(styleConfig().alarm.complement());
+
         return SizedBox(
           height: 110,
           width: MediaQuery.of(context).size.width,
@@ -72,15 +72,15 @@ class HabitCompletionRateChart extends StatelessWidget {
               LineChartData(
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
-                    tooltipMargin: isMobile ? 24 : 16,
+                    tooltipMargin: -150,
                     tooltipPadding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 3,
                     ),
-                    tooltipBgColor: styleConfig().primaryColor.desaturate(),
+                    tooltipBgColor: styleConfig().primaryColor,
                     tooltipRoundedRadius: 8,
                     getTooltipItems: (List<LineBarSpot> spots) {
-                      return spots.map((spot) {
+                      return spots.mapIndexed((index, spot) {
                         return LineTooltipItem(
                           '',
                           const TextStyle(
@@ -89,12 +89,22 @@ class HabitCompletionRateChart extends StatelessWidget {
                             fontWeight: FontWeight.w300,
                           ),
                           children: [
+                            if (index == 0)
+                              TextSpan(
+                                text:
+                                    '${chartDateFormatter(days[spot.x.toInt()])}\n\n',
+                                style: chartTooltipStyleBold(),
+                              ),
                             TextSpan(
-                              text: '${spot.y.toInt()} %\n',
+                              text: '${min(spot.y.toInt(), 100)} % ',
                               style: chartTooltipStyleBold(),
                             ),
                             TextSpan(
-                              text: chartDateFormatter(days[spot.x.toInt()]),
+                              text: index == 0
+                                  ? 'tracked'
+                                  : index == 1
+                                      ? 'with skipped'
+                                      : 'successful',
                               style: chartTooltipStyle(),
                             ),
                           ],
@@ -152,9 +162,35 @@ class HabitCompletionRateChart extends StatelessWidget {
                     days: days,
                     successfulByDay: state.successfulByDay,
                     skippedByDay: state.skippedByDay,
-                    showSkipped: showSkipped,
-                    showSuccessful: showSuccessful,
+                    failedByDay: state.failedByDay,
+                    showSkipped: true,
+                    showSuccessful: true,
+                    showFailed: true,
                     habitCount: state.habitCount,
+                    color: styleConfig().alarm.lighten().desaturate(),
+                    aboveColor: styleConfig().alarm.withOpacity(0.5),
+                  ),
+                  barData(
+                    days: days,
+                    successfulByDay: state.successfulByDay,
+                    skippedByDay: state.skippedByDay,
+                    failedByDay: state.failedByDay,
+                    showSkipped: true,
+                    showSuccessful: true,
+                    showFailed: false,
+                    habitCount: state.habitCount,
+                    color: skipColor,
+                  ),
+                  barData(
+                    days: days,
+                    successfulByDay: state.successfulByDay,
+                    skippedByDay: state.skippedByDay,
+                    failedByDay: state.failedByDay,
+                    showSkipped: false,
+                    showSuccessful: true,
+                    showFailed: false,
+                    habitCount: state.habitCount,
+                    color: styleConfig().primaryColor,
                   ),
                 ],
               ),
@@ -172,12 +208,17 @@ LineChartBarData barData({
   required int habitCount,
   required Map<String, Set<String>> successfulByDay,
   required Map<String, Set<String>> skippedByDay,
+  required Map<String, Set<String>> failedByDay,
   required bool showSuccessful,
   required bool showSkipped,
+  required bool showFailed,
+  required Color color,
+  Color? aboveColor,
 }) {
   final spots = days.mapIndexed((idx, day) {
     final successCount = successfulByDay[day]?.length ?? 0;
     final skippedCount = skippedByDay[day]?.length ?? 0;
+    final failedCount = failedByDay[day]?.length ?? 0;
 
     var value = 0;
 
@@ -189,25 +230,38 @@ LineChartBarData barData({
       value = value + skippedCount;
     }
 
+    if (showFailed) {
+      value = value + failedCount;
+    }
+
     return FlSpot(
       idx.toDouble(),
-      habitCount > 0 ? value * 100 / habitCount : 0,
+      min(
+        habitCount > 0 ? value * 100 / habitCount : 0,
+        100,
+      ),
     );
   }).toList();
 
   return LineChartBarData(
     spots: spots,
     isCurved: true,
-    gradient: LinearGradient(colors: gradientColors),
-    barWidth: 2,
+    preventCurveOverShooting: true,
+    preventCurveOvershootingThreshold: 0,
+    color: color,
+    barWidth: 1,
     isStrokeCapRound: true,
     dotData: FlDotData(show: false),
     belowBarData: BarAreaData(
       show: true,
-      gradient: LinearGradient(
-        colors: gradientColors.map((color) => color.withOpacity(0.3)).toList(),
-      ),
+      color: color.withOpacity(0.5),
     ),
+    aboveBarData: aboveColor != null
+        ? BarAreaData(
+            show: true,
+            color: aboveColor,
+          )
+        : null,
   );
 }
 

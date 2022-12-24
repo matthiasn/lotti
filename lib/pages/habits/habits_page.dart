@@ -5,7 +5,6 @@ import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
-import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/habits/habit_page_app_bar.dart';
 import 'package:lotti/widgets/habits/habit_streaks.dart';
@@ -112,30 +111,6 @@ class HabitsTabPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   const HabitStreaksCounter(),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20, bottom: 5),
-                    child: Text(
-                      'Checked off',
-                      style: chartTitleStyle(),
-                    ),
-                  ),
-                  const HabitCompletionRateChart(),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20, bottom: 5),
-                    child: Text(
-                      'Successful',
-                      style: chartTitleStyle(),
-                    ),
-                  ),
-                  const HabitCompletionRateChart(showSkipped: false),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20, bottom: 5),
-                    child: Text(
-                      'Skipped',
-                      style: chartTitleStyle(),
-                    ),
-                  ),
-                  const HabitCompletionRateChart(showSuccessful: false),
                 ],
               ),
             ),

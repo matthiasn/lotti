@@ -58,7 +58,7 @@ TextStyle chartTooltipStyle() => const TextStyle(
     );
 
 TextStyle chartTooltipStyleBold() => const TextStyle(
-      fontSize: fontSizeMedium,
+      fontSize: fontSizeSmall,
       fontFamily: mainFont,
       fontWeight: FontWeight.bold,
     );
