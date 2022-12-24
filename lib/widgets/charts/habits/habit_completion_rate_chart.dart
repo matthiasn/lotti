@@ -148,13 +148,31 @@ class HabitCompletionRateChart extends StatelessWidget {
                 minY: 0,
                 maxY: 100,
                 lineBarsData: [
+                  // barData(
+                  //   days: days,
+                  //   successfulByDay: state.successfulByDay,
+                  //   skippedByDay: state.skippedByDay,
+                  //   showSkipped: showSkipped,
+                  //   showSuccessful: showSuccessful,
+                  //   habitCount: state.habitCount,
+                  // ),
                   barData(
                     days: days,
                     successfulByDay: state.successfulByDay,
                     skippedByDay: state.skippedByDay,
-                    showSkipped: showSkipped,
-                    showSuccessful: showSuccessful,
+                    showSkipped: true,
+                    showSuccessful: true,
                     habitCount: state.habitCount,
+                    color: styleConfig().primaryColorLight,
+                  ),
+                  barData(
+                    days: days,
+                    successfulByDay: state.successfulByDay,
+                    skippedByDay: state.skippedByDay,
+                    showSkipped: false,
+                    showSuccessful: true,
+                    habitCount: state.habitCount,
+                    color: styleConfig().primaryColor,
                   ),
                 ],
               ),
@@ -174,6 +192,7 @@ LineChartBarData barData({
   required Map<String, Set<String>> skippedByDay,
   required bool showSuccessful,
   required bool showSkipped,
+  required Color color,
 }) {
   final spots = days.mapIndexed((idx, day) {
     final successCount = successfulByDay[day]?.length ?? 0;
@@ -198,15 +217,17 @@ LineChartBarData barData({
   return LineChartBarData(
     spots: spots,
     isCurved: true,
-    gradient: LinearGradient(colors: gradientColors),
-    barWidth: 2,
+    //gradient: LinearGradient(colors: gradientColors),
+    color: color,
+    barWidth: 1,
     isStrokeCapRound: true,
     dotData: FlDotData(show: false),
     belowBarData: BarAreaData(
       show: true,
-      gradient: LinearGradient(
-        colors: gradientColors.map((color) => color.withOpacity(0.3)).toList(),
-      ),
+      color: color.withOpacity(0.5),
+      // gradient: LinearGradient(
+      //   colors: gradientColors.map((color) => color.withOpacity(0.3)).toList(),
+      // ),
     ),
   );
 }

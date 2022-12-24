@@ -113,29 +113,29 @@ class HabitsTabPage extends StatelessWidget {
                   const SizedBox(height: 20),
                   const HabitStreaksCounter(),
                   Padding(
-                    padding: const EdgeInsets.only(top: 20, bottom: 5),
+                    padding: const EdgeInsets.only(top: 50, bottom: 20),
                     child: Text(
-                      'Checked off',
+                      'Successful and skipped habits',
                       style: chartTitleStyle(),
                     ),
                   ),
                   const HabitCompletionRateChart(),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20, bottom: 5),
-                    child: Text(
-                      'Successful',
-                      style: chartTitleStyle(),
-                    ),
-                  ),
-                  const HabitCompletionRateChart(showSkipped: false),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20, bottom: 5),
-                    child: Text(
-                      'Skipped',
-                      style: chartTitleStyle(),
-                    ),
-                  ),
-                  const HabitCompletionRateChart(showSuccessful: false),
+                  // Padding(
+                  //   padding: const EdgeInsets.only(top: 20, bottom: 5),
+                  //   child: Text(
+                  //     'Successful',
+                  //     style: chartTitleStyle(),
+                  //   ),
+                  // ),
+                  // const HabitCompletionRateChart(showSkipped: false),
+                  // Padding(
+                  //   padding: const EdgeInsets.only(top: 20, bottom: 5),
+                  //   child: Text(
+                  //     'Skipped',
+                  //     style: chartTitleStyle(),
+                  //   ),
+                  // ),
+                  // const HabitCompletionRateChart(showSuccessful: false),
                 ],
               ),
             ),

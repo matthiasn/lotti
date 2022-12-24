@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Stacked habit success chart
+
+## [0.8.213] - 2022-12-23
+### Added:
 - Throttle habits success scoring
 - Habit completions via click on habits success indicator
 
