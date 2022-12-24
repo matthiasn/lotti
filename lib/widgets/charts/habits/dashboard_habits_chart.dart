@@ -264,13 +264,23 @@ class _HabitChartLineState extends State<HabitChartLine> {
                         child: Tooltip(
                           excludeFromSemantics: true,
                           message: chartDateFormatter(res.dayString),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              widget.showGaps ? 2 : 0,
-                            ),
-                            child: Container(
-                              height: 25,
-                              color: habitCompletionColor(res.completionType),
+                          child: GestureDetector(
+                            onTap: () {
+                              beamToNamed(
+                                '/habits/complete/${widget.habitDefinition.id}',
+                                data: ymd(DateTime.now()) != res.dayString
+                                    ? res.dayString
+                                    : null,
+                              );
+                            },
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                widget.showGaps ? 2 : 0,
+                              ),
+                              child: Container(
+                                height: 25,
+                                color: habitCompletionColor(res.completionType),
+                              ),
                             ),
                           ),
                         ),

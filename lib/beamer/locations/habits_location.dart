@@ -38,6 +38,8 @@ class HabitsLocation extends BeamLocation<BeamState> {
             RouteSettings settings,
             Widget child,
           ) {
+            final data = context.currentBeamLocation.data;
+
             return DialogRoute<void>(
               context: context,
               builder: (context) => child,
@@ -49,6 +51,7 @@ class HabitsLocation extends BeamLocation<BeamState> {
           child: HabitDialog(
             habitId: habitId,
             beamerDelegate: habitsBeamerDelegate,
+            data: data,
           ),
           onPopPage: (context, delegate, _, page) {
             habitsBeamerDelegate.beamBack();

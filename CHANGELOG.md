@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Throttle habits success scoring
+- Habit completions via click on habits success indicator
 
 ### Fixed:
 - Condition where sync inbox could fail during processing and be skipped
