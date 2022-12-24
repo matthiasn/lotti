@@ -12,6 +12,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -20,9 +21,12 @@ class HabitDialog extends StatefulWidget {
     super.key,
     required this.habitId,
     required this.beamerDelegate,
+    this.data,
   });
 
   final String habitId;
+  final Object? data;
+
   final BeamerDelegate beamerDelegate;
 
   @override
@@ -50,7 +54,9 @@ class _HabitDialogState extends State<HabitDialog> {
 
       final habitCompletion = HabitCompletionData(
         habitId: widget.habitId,
-        dateTo: formDate == _started ? DateTime.now() : formDate,
+        dateTo: formDate == _started && widget.data == null
+            ? DateTime.now()
+            : formDate,
         dateFrom: formDate,
         completionType: completionType,
       );
@@ -72,7 +78,18 @@ class _HabitDialogState extends State<HabitDialog> {
   @override
   void initState() {
     super.initState();
-    _started = DateTime.now();
+
+    _started = widget.data != null &&
+            widget.data is String &&
+            ymd(DateTime.now()) != widget.data
+        ? DateTime.parse(widget.data.toString()).add(
+            const Duration(
+              hours: 23,
+              minutes: 59,
+              seconds: 59,
+            ),
+          )
+        : DateTime.now();
 
     hotKeyManager.register(
       hotkeyCmdS,
