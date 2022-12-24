@@ -48,10 +48,10 @@ final List<String> defaultTypes = [
   'JournalImage',
   'SurveyEntry',
   'Task',
-  'QuantitativeEntry',
+  // 'QuantitativeEntry',
   'MeasurementEntry',
   'WorkoutEntry',
-  'HabitCompletionEntry',
+  // 'HabitCompletionEntry',
 ];
 
 class _JournalPageState extends State<JournalPage> {
@@ -62,11 +62,11 @@ class _JournalPageState extends State<JournalPage> {
     FilterBy(typeName: 'JournalEntry', name: 'Text'),
     FilterBy(typeName: 'JournalAudio', name: 'Audio'),
     FilterBy(typeName: 'JournalImage', name: 'Photo'),
-    FilterBy(typeName: 'QuantitativeEntry', name: 'Quant'),
     FilterBy(typeName: 'MeasurementEntry', name: 'Measured'),
     FilterBy(typeName: 'SurveyEntry', name: 'Survey'),
     FilterBy(typeName: 'WorkoutEntry', name: 'Workout'),
     FilterBy(typeName: 'HabitCompletionEntry', name: 'Habit'),
+    FilterBy(typeName: 'QuantitativeEntry', name: 'Quant'),
   ];
 
   late Stream<List<JournalEntity>> stream;

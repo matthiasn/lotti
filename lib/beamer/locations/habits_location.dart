@@ -49,6 +49,7 @@ class HabitsLocation extends BeamLocation<BeamState> {
           child: HabitDialog(
             habitId: habitId,
             beamerDelegate: habitsBeamerDelegate,
+            data: data.toString(),
           ),
           onPopPage: (context, delegate, _, page) {
             habitsBeamerDelegate.beamBack();
