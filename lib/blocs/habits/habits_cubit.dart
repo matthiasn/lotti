@@ -25,6 +25,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             successfulToday: <String>{},
             successfulByDay: <String, Set<String>>{},
             skippedByDay: <String, Set<String>>{},
+            failedByDay: <String, Set<String>>{},
             shortStreakCount: 0,
             longStreakCount: 0,
             timeSpanDays: 14,
@@ -75,6 +76,7 @@ class HabitsCubit extends Cubit<HabitsState> {
     _successfulToday = <String>{};
     _successfulByDay = <String, Set<String>>{};
     _skippedByDay = <String, Set<String>>{};
+    _failedByDay = <String, Set<String>>{};
 
     final today = ymd(DateTime.now());
 
@@ -109,6 +111,13 @@ class HabitsCubit extends Cubit<HabitsState> {
           if (day == today) {
             _successfulToday.add(item.data.habitId);
           }
+        }
+
+        if (completionType == HabitCompletionType.fail) {
+          final failedForDay = _failedByDay[day] ?? <String>{}
+            ..add(item.data.habitId);
+
+          _failedByDay[day] = failedForDay;
         }
       }
     }
@@ -182,6 +191,7 @@ class HabitsCubit extends Cubit<HabitsState> {
   var _successfulToday = <String>{};
   var _successfulByDay = <String, Set<String>>{};
   var _skippedByDay = <String, Set<String>>{};
+  var _failedByDay = <String, Set<String>>{};
 
   var _shortStreakCount = 0;
   var _longStreakCount = 0;
@@ -212,6 +222,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         completed: _completed,
         successfulToday: _successfulToday,
         successfulByDay: _successfulByDay,
+        failedByDay: _failedByDay,
         skippedByDay: _skippedByDay,
         shortStreakCount: _shortStreakCount,
         longStreakCount: _longStreakCount,

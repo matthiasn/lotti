@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
-- Stacked habit success chart
+- Stacked habit success chart, with success, skipped, explicitly failed, implicitly failed
 
 ## [0.8.213] - 2022-12-23
 ### Added:
