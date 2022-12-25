@@ -287,7 +287,7 @@ packages:
       name: code_builder
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.3.0"
+    version: "4.4.0"
   collection:
     dependency: "direct main"
     description:
@@ -1504,7 +1504,7 @@ packages:
       name: photo_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.5.1+1"
+    version: "2.5.2"
   photo_view:
     dependency: "direct main"
     description:
@@ -1632,7 +1632,7 @@ packages:
       name: quiver
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.1.0"
+    version: "3.2.1"
   radial_button:
     dependency: "direct main"
     description:
@@ -1963,14 +1963,14 @@ packages:
       name: syncfusion_flutter_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.3.61"
+    version: "20.4.38"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.3.61"
+    version: "20.4.38"
   synchronized:
     dependency: transitive
     description:
