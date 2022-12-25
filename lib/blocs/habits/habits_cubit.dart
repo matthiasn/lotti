@@ -26,6 +26,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             successfulByDay: <String, Set<String>>{},
             skippedByDay: <String, Set<String>>{},
             failedByDay: <String, Set<String>>{},
+            selectedInfoYmd: '',
             shortStreakCount: 0,
             longStreakCount: 0,
             timeSpanDays: 14,
@@ -196,9 +197,15 @@ class HabitsCubit extends Cubit<HabitsState> {
   var _shortStreakCount = 0;
   var _longStreakCount = 0;
   var _timeSpanDays = isDesktop ? 14 : 7;
+  var _selectedInfoYmd = '';
 
   void setTimeSpan(int timeSpanDays) {
     _timeSpanDays = timeSpanDays;
+    emitState();
+  }
+
+  void setInfoYmd(String ymd) {
+    _selectedInfoYmd = ymd;
     emitState();
   }
 
@@ -223,6 +230,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         successfulToday: _successfulToday,
         successfulByDay: _successfulByDay,
         failedByDay: _failedByDay,
+        selectedInfoYmd: _selectedInfoYmd,
         skippedByDay: _skippedByDay,
         shortStreakCount: _shortStreakCount,
         longStreakCount: _longStreakCount,

@@ -7,7 +7,7 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
   HabitsPageAppBar({super.key});
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 110);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 130);
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,6 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
     return Column(
       children: [
         TitleAppBar(title: title, showBackButton: false),
-        //const HabitsPageProgressBar(),
         const HabitCompletionRateChart(),
       ],
     );
