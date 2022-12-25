@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Improved habit chart info on tap
-- Clear habit chart info within 5 seconds of mouse exit on desktop
+- Clear habit chart info within 15 seconds
 
 ## [0.8.214] - 2022-12-24
 ### Added:

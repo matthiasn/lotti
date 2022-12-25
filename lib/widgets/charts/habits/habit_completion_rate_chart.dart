@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
@@ -94,120 +93,115 @@ class HabitCompletionRateChart extends StatelessWidget {
                     )
                   : null,
             ),
-            MouseRegion(
-              onExit: (_) {
-                Timer(const Duration(seconds: 5), () => cubit.setInfoYmd(''));
-              },
-              child: SizedBox(
-                height: 110,
-                width: MediaQuery.of(context).size.width,
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    right: 25,
-                    left: 20,
-                  ),
-                  child: LineChart(
-                    LineChartData(
-                      lineTouchData: LineTouchData(
-                        touchTooltipData: LineTouchTooltipData(
-                          tooltipMargin: -150,
-                          tooltipPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          tooltipBgColor: styleConfig().primaryColor,
-                          tooltipRoundedRadius: 8,
-                          getTooltipItems: (List<LineBarSpot> spots) {
-                            final ymd = days[spots.first.x.toInt()];
-                            cubit.setInfoYmd(ymd);
-                            return [];
-                          },
+            SizedBox(
+              height: 110,
+              width: MediaQuery.of(context).size.width,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  right: 25,
+                  left: 20,
+                ),
+                child: LineChart(
+                  LineChartData(
+                    lineTouchData: LineTouchData(
+                      touchTooltipData: LineTouchTooltipData(
+                        tooltipMargin: -150,
+                        tooltipPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
                         ),
+                        tooltipBgColor: styleConfig().primaryColor,
+                        tooltipRoundedRadius: 8,
+                        getTooltipItems: (List<LineBarSpot> spots) {
+                          final ymd = days[spots.first.x.toInt()];
+                          cubit.setInfoYmd(ymd);
+                          return [];
+                        },
                       ),
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: true,
-                        horizontalInterval: 12.5,
-                        verticalInterval: 1,
-                        getDrawingHorizontalLine: (value) => gridLine,
-                        getDrawingVerticalLine: (value) => gridLine,
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        rightTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 30,
-                            interval: 1,
-                            getTitlesWidget: bottomTitleWidgets,
-                          ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            interval: 12.5,
-                            getTitlesWidget: leftTitleWidgets,
-                            reservedSize: 35,
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(
-                        show: true,
-                        border: Border.all(
-                          color: styleConfig()
-                              .chartTextColor
-                              .withOpacity(labelOpacity),
-                        ),
-                      ),
-                      minX: 0,
-                      maxX: timeSpanDays.toDouble(),
-                      minY: 0,
-                      maxY: 100,
-                      lineBarsData: [
-                        barData(
-                          days: days,
-                          successfulByDay: state.successfulByDay,
-                          skippedByDay: state.skippedByDay,
-                          failedByDay: state.failedByDay,
-                          showSkipped: true,
-                          showSuccessful: true,
-                          showFailed: true,
-                          habitCount: state.habitCount,
-                          color: styleConfig().alarm.lighten().desaturate(),
-                          aboveColor: styleConfig().alarm.withOpacity(0.5),
-                        ),
-                        barData(
-                          days: days,
-                          successfulByDay: state.successfulByDay,
-                          skippedByDay: state.skippedByDay,
-                          failedByDay: state.failedByDay,
-                          showSkipped: true,
-                          showSuccessful: true,
-                          showFailed: false,
-                          habitCount: state.habitCount,
-                          color: skipColor,
-                        ),
-                        barData(
-                          days: days,
-                          successfulByDay: state.successfulByDay,
-                          skippedByDay: state.skippedByDay,
-                          failedByDay: state.failedByDay,
-                          showSkipped: false,
-                          showSuccessful: true,
-                          showFailed: false,
-                          habitCount: state.habitCount,
-                          color: styleConfig().primaryColor,
-                        ),
-                      ],
                     ),
-                    swapAnimationCurve: Curves.bounceInOut,
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: true,
+                      horizontalInterval: 12.5,
+                      verticalInterval: 1,
+                      getDrawingHorizontalLine: (value) => gridLine,
+                      getDrawingVerticalLine: (value) => gridLine,
+                    ),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      rightTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 30,
+                          interval: 1,
+                          getTitlesWidget: bottomTitleWidgets,
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: 12.5,
+                          getTitlesWidget: leftTitleWidgets,
+                          reservedSize: 35,
+                        ),
+                      ),
+                    ),
+                    borderData: FlBorderData(
+                      show: true,
+                      border: Border.all(
+                        color: styleConfig()
+                            .chartTextColor
+                            .withOpacity(labelOpacity),
+                      ),
+                    ),
+                    minX: 0,
+                    maxX: timeSpanDays.toDouble(),
+                    minY: 0,
+                    maxY: 100,
+                    lineBarsData: [
+                      barData(
+                        days: days,
+                        successfulByDay: state.successfulByDay,
+                        skippedByDay: state.skippedByDay,
+                        failedByDay: state.failedByDay,
+                        showSkipped: true,
+                        showSuccessful: true,
+                        showFailed: true,
+                        habitCount: state.habitCount,
+                        color: styleConfig().alarm.lighten().desaturate(),
+                        aboveColor: styleConfig().alarm.withOpacity(0.5),
+                      ),
+                      barData(
+                        days: days,
+                        successfulByDay: state.successfulByDay,
+                        skippedByDay: state.skippedByDay,
+                        failedByDay: state.failedByDay,
+                        showSkipped: true,
+                        showSuccessful: true,
+                        showFailed: false,
+                        habitCount: state.habitCount,
+                        color: skipColor,
+                      ),
+                      barData(
+                        days: days,
+                        successfulByDay: state.successfulByDay,
+                        skippedByDay: state.skippedByDay,
+                        failedByDay: state.failedByDay,
+                        showSkipped: false,
+                        showSuccessful: true,
+                        showFailed: false,
+                        habitCount: state.habitCount,
+                        color: styleConfig().primaryColor,
+                      ),
+                    ],
                   ),
+                  swapAnimationCurve: Curves.bounceInOut,
                 ),
               ),
             ),

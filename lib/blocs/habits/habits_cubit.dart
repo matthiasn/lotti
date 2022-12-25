@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:collection/collection.dart';
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -207,6 +208,12 @@ class HabitsCubit extends Cubit<HabitsState> {
   void setInfoYmd(String ymd) {
     _selectedInfoYmd = ymd;
     emitState();
+
+    EasyDebounce.debounce(
+      'clearInfoYmd',
+      const Duration(seconds: 15),
+      () => setInfoYmd(''),
+    );
   }
 
   final JournalDb _journalDb = getIt<JournalDb>();
