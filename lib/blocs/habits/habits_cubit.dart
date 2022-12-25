@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:collection/collection.dart';
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -26,6 +27,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             successfulByDay: <String, Set<String>>{},
             skippedByDay: <String, Set<String>>{},
             failedByDay: <String, Set<String>>{},
+            selectedInfoYmd: '',
             shortStreakCount: 0,
             longStreakCount: 0,
             timeSpanDays: 14,
@@ -196,10 +198,22 @@ class HabitsCubit extends Cubit<HabitsState> {
   var _shortStreakCount = 0;
   var _longStreakCount = 0;
   var _timeSpanDays = isDesktop ? 14 : 7;
+  var _selectedInfoYmd = '';
 
   void setTimeSpan(int timeSpanDays) {
     _timeSpanDays = timeSpanDays;
     emitState();
+  }
+
+  void setInfoYmd(String ymd) {
+    _selectedInfoYmd = ymd;
+    emitState();
+
+    EasyDebounce.debounce(
+      'clearInfoYmd',
+      const Duration(seconds: 15),
+      () => setInfoYmd(''),
+    );
   }
 
   final JournalDb _journalDb = getIt<JournalDb>();
@@ -223,6 +237,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         successfulToday: _successfulToday,
         successfulByDay: _successfulByDay,
         failedByDay: _failedByDay,
+        selectedInfoYmd: _selectedInfoYmd,
         skippedByDay: _skippedByDay,
         shortStreakCount: _shortStreakCount,
         longStreakCount: _longStreakCount,

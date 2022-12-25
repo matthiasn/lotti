@@ -32,6 +32,7 @@ class HabitCompletionRateChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<HabitsCubit, HabitsState>(
       builder: (context, HabitsState state) {
+        final cubit = context.read<HabitsCubit>();
         final timeSpanDays = state.timeSpanDays;
 
         final days = daysInRange(
@@ -60,143 +61,151 @@ class HabitCompletionRateChart extends StatelessWidget {
             .primaryColorLight
             .mix(styleConfig().alarm.complement());
 
-        return SizedBox(
-          height: 110,
-          width: MediaQuery.of(context).size.width,
-          child: Padding(
-            padding: const EdgeInsets.only(
-              right: 25,
-              left: 20,
+        String completionRate(
+          Map<String, Set<String>> byDay,
+          String label,
+        ) {
+          final n = byDay[state.selectedInfoYmd]?.length ?? 0;
+          final total = state.habitCount;
+          final percentage = (n / total) * 100;
+          return '${percentage.floor()}% $label';
+        }
+
+        return Column(
+          children: [
+            SizedBox(
+              height: 20,
+              child: state.selectedInfoYmd.isNotEmpty
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        InfoLabel('${state.selectedInfoYmd}:'),
+                        InfoLabel(
+                          completionRate(state.successfulByDay, 'successful'),
+                        ),
+                        InfoLabel(
+                          completionRate(state.skippedByDay, 'skipped'),
+                        ),
+                        InfoLabel(
+                          completionRate(state.failedByDay, 'recorded fails'),
+                        ),
+                      ],
+                    )
+                  : null,
             ),
-            child: LineChart(
-              LineChartData(
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    tooltipMargin: -150,
-                    tooltipPadding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+            SizedBox(
+              height: 110,
+              width: MediaQuery.of(context).size.width,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  right: 25,
+                  left: 20,
+                ),
+                child: LineChart(
+                  LineChartData(
+                    lineTouchData: LineTouchData(
+                      touchTooltipData: LineTouchTooltipData(
+                        tooltipMargin: -150,
+                        tooltipPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        tooltipBgColor: styleConfig().primaryColor,
+                        tooltipRoundedRadius: 8,
+                        getTooltipItems: (List<LineBarSpot> spots) {
+                          final ymd = days[spots.first.x.toInt()];
+                          cubit.setInfoYmd(ymd);
+                          return [];
+                        },
+                      ),
                     ),
-                    tooltipBgColor: styleConfig().primaryColor,
-                    tooltipRoundedRadius: 8,
-                    getTooltipItems: (List<LineBarSpot> spots) {
-                      return spots.mapIndexed((index, spot) {
-                        return LineTooltipItem(
-                          '',
-                          const TextStyle(
-                            fontSize: fontSizeSmall,
-                            fontFamily: mainFont,
-                            fontWeight: FontWeight.w300,
-                          ),
-                          children: [
-                            if (index == 0)
-                              TextSpan(
-                                text:
-                                    '${chartDateFormatter(days[spot.x.toInt()])}\n\n',
-                                style: chartTooltipStyleBold(),
-                              ),
-                            TextSpan(
-                              text: '${min(spot.y.toInt(), 100)} % ',
-                              style: chartTooltipStyleBold(),
-                            ),
-                            TextSpan(
-                              text: index == 0
-                                  ? 'tracked'
-                                  : index == 1
-                                      ? 'with skipped'
-                                      : 'successful',
-                              style: chartTooltipStyle(),
-                            ),
-                          ],
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: true,
-                  horizontalInterval: 12.5,
-                  verticalInterval: 1,
-                  getDrawingHorizontalLine: (value) => gridLine,
-                  getDrawingVerticalLine: (value) => gridLine,
-                ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      interval: 1,
-                      getTitlesWidget: bottomTitleWidgets,
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: true,
+                      horizontalInterval: 12.5,
+                      verticalInterval: 1,
+                      getDrawingHorizontalLine: (value) => gridLine,
+                      getDrawingVerticalLine: (value) => gridLine,
                     ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: 12.5,
-                      getTitlesWidget: leftTitleWidgets,
-                      reservedSize: 35,
+                    titlesData: FlTitlesData(
+                      show: true,
+                      rightTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 30,
+                          interval: 1,
+                          getTitlesWidget: bottomTitleWidgets,
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: 12.5,
+                          getTitlesWidget: leftTitleWidgets,
+                          reservedSize: 35,
+                        ),
+                      ),
                     ),
+                    borderData: FlBorderData(
+                      show: true,
+                      border: Border.all(
+                        color: styleConfig()
+                            .chartTextColor
+                            .withOpacity(labelOpacity),
+                      ),
+                    ),
+                    minX: 0,
+                    maxX: timeSpanDays.toDouble(),
+                    minY: 0,
+                    maxY: 100,
+                    lineBarsData: [
+                      barData(
+                        days: days,
+                        successfulByDay: state.successfulByDay,
+                        skippedByDay: state.skippedByDay,
+                        failedByDay: state.failedByDay,
+                        showSkipped: true,
+                        showSuccessful: true,
+                        showFailed: true,
+                        habitCount: state.habitCount,
+                        color: styleConfig().alarm.lighten().desaturate(),
+                        aboveColor: styleConfig().alarm.withOpacity(0.5),
+                      ),
+                      barData(
+                        days: days,
+                        successfulByDay: state.successfulByDay,
+                        skippedByDay: state.skippedByDay,
+                        failedByDay: state.failedByDay,
+                        showSkipped: true,
+                        showSuccessful: true,
+                        showFailed: false,
+                        habitCount: state.habitCount,
+                        color: skipColor,
+                      ),
+                      barData(
+                        days: days,
+                        successfulByDay: state.successfulByDay,
+                        skippedByDay: state.skippedByDay,
+                        failedByDay: state.failedByDay,
+                        showSkipped: false,
+                        showSuccessful: true,
+                        showFailed: false,
+                        habitCount: state.habitCount,
+                        color: styleConfig().primaryColor,
+                      ),
+                    ],
                   ),
+                  swapAnimationCurve: Curves.bounceInOut,
                 ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border.all(
-                    color:
-                        styleConfig().chartTextColor.withOpacity(labelOpacity),
-                  ),
-                ),
-                minX: 0,
-                maxX: timeSpanDays.toDouble(),
-                minY: 0,
-                maxY: 100,
-                lineBarsData: [
-                  barData(
-                    days: days,
-                    successfulByDay: state.successfulByDay,
-                    skippedByDay: state.skippedByDay,
-                    failedByDay: state.failedByDay,
-                    showSkipped: true,
-                    showSuccessful: true,
-                    showFailed: true,
-                    habitCount: state.habitCount,
-                    color: styleConfig().alarm.lighten().desaturate(),
-                    aboveColor: styleConfig().alarm.withOpacity(0.5),
-                  ),
-                  barData(
-                    days: days,
-                    successfulByDay: state.successfulByDay,
-                    skippedByDay: state.skippedByDay,
-                    failedByDay: state.failedByDay,
-                    showSkipped: true,
-                    showSuccessful: true,
-                    showFailed: false,
-                    habitCount: state.habitCount,
-                    color: skipColor,
-                  ),
-                  barData(
-                    days: days,
-                    successfulByDay: state.successfulByDay,
-                    skippedByDay: state.skippedByDay,
-                    failedByDay: state.failedByDay,
-                    showSkipped: false,
-                    showSuccessful: true,
-                    showFailed: false,
-                    habitCount: state.habitCount,
-                    color: styleConfig().primaryColor,
-                  ),
-                ],
               ),
-              swapAnimationCurve: Curves.bounceInOut,
             ),
-          ),
+          ],
         );
       },
     );
@@ -303,4 +312,24 @@ Widget leftTitleWidgets(double value, TitleMeta meta) {
   }
 
   return ChartLabel(text);
+}
+
+class InfoLabel extends StatelessWidget {
+  const InfoLabel(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: 0.5,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Text(
+          text,
+          style: chartTitleStyleSmall(),
+        ),
+      ),
+    );
+  }
 }
