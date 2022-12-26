@@ -150,6 +150,13 @@ TextStyle appBarTextStyleNew() => TextStyle(
       fontWeight: FontWeight.bold,
     );
 
+TextStyle appBarTextStyleNewLarge() => TextStyle(
+      color: styleConfig().primaryTextColor,
+      fontFamily: mainFont,
+      fontSize: fontSizeLarge,
+      fontWeight: FontWeight.w100,
+    );
+
 TextStyle settingsCardTextStyle() => TextStyle(
       //color: colorConfig().entryTextColor,
       color: styleConfig().primaryTextColor,

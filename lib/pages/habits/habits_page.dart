@@ -30,7 +30,7 @@ class HabitsTabPage extends StatelessWidget {
         final showGaps = timeSpanDays < 180;
 
         return Scaffold(
-          appBar: HabitsPageAppBar(),
+          appBar: const HabitsPageAppBar(),
           backgroundColor: styleConfig().negspace,
           body: SingleChildScrollView(
             child: Padding(
