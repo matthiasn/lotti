@@ -275,6 +275,7 @@ class JournalDb extends _$JournalDb {
     required List<int> flaggedStatuses,
     required List<String>? ids,
     int limit = 500,
+    int offset = 0,
   }) {
     if (ids != null) {
       return filteredByTagJournal(
@@ -284,6 +285,7 @@ class JournalDb extends _$JournalDb {
         privateStatuses,
         flaggedStatuses,
         limit,
+        offset,
       ).watch().where(makeDuplicateFilter()).map(entityStreamMapper);
     } else {
       return filteredJournal(
@@ -292,6 +294,7 @@ class JournalDb extends _$JournalDb {
         privateStatuses,
         flaggedStatuses,
         limit,
+        offset,
       ).watch().where(makeDuplicateFilter()).map(entityStreamMapper);
     }
   }

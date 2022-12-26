@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Journal page with infinite scroll
+
+## [0.8.217] - 2022-12-26
+### Changed:
 - Improved blood pressure chart
 
 ## [0.8.216] - 2022-12-26
