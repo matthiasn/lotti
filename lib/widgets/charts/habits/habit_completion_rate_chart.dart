@@ -18,12 +18,16 @@ final gridLine = FlLine(
 const gridOpacity = 0.3;
 const labelOpacity = 0.5;
 
-class HabitCompletionRateChart extends StatelessWidget {
+class HabitCompletionRateChart extends StatelessWidget
+    with PreferredSizeWidget {
   const HabitCompletionRateChart({
     this.showSuccessful = true,
     this.showSkipped = true,
     super.key,
   });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   final bool showSuccessful;
   final bool showSkipped;
@@ -74,10 +78,11 @@ class HabitCompletionRateChart extends StatelessWidget {
         return Column(
           children: [
             SizedBox(
-              height: 20,
+              height: 25,
               child: state.selectedInfoYmd.isNotEmpty
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         InfoLabel('${state.selectedInfoYmd}:'),
                         InfoLabel(
