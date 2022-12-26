@@ -15,6 +15,12 @@ final gridLine = FlLine(
   strokeWidth: 1,
 );
 
+final gridLineEmphasized = FlLine(
+  color: styleConfig().chartTextColor,
+  strokeWidth: 2,
+  dashArray: [5, 3],
+);
+
 const gridOpacity = 0.3;
 const labelOpacity = 0.5;
 
@@ -127,9 +133,15 @@ class HabitCompletionRateChart extends StatelessWidget
                     gridData: FlGridData(
                       show: true,
                       drawVerticalLine: true,
-                      horizontalInterval: 12.5,
+                      horizontalInterval: 20,
                       verticalInterval: 1,
-                      getDrawingHorizontalLine: (value) => gridLine,
+                      getDrawingHorizontalLine: (value) {
+                        if (value == 80.0) {
+                          return gridLineEmphasized;
+                        }
+
+                        return gridLine;
+                      },
                       getDrawingVerticalLine: (value) => gridLine,
                     ),
                     titlesData: FlTitlesData(
@@ -151,7 +163,7 @@ class HabitCompletionRateChart extends StatelessWidget
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          interval: 12.5,
+                          interval: 20,
                           getTitlesWidget: leftTitleWidgets,
                           reservedSize: 35,
                         ),
@@ -300,14 +312,17 @@ class ChartLabel extends StatelessWidget {
 Widget leftTitleWidgets(double value, TitleMeta meta) {
   String text;
   switch (value.toInt()) {
-    case 25:
-      text = '25%';
+    case 20:
+      text = '20%';
       break;
-    case 50:
-      text = '50%';
+    case 40:
+      text = '40%';
       break;
-    case 75:
-      text = '75%';
+    case 60:
+      text = '60%';
+      break;
+    case 80:
+      text = '80%';
       break;
     case 100:
       text = '100%';
