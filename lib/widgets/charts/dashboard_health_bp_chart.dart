@@ -73,8 +73,20 @@ class DashboardHealthBpChart extends StatelessWidget {
                   drawVerticalLine: true,
                   horizontalInterval: 10,
                   verticalInterval: double.maxFinite,
-                  //verticalInterval: Duration.millisecondsPerDay.toDouble(),
-                  getDrawingHorizontalLine: (value) => gridLine,
+                  getDrawingHorizontalLine: (value) {
+                    if (value == 80.0) {
+                      return gridLineEmphasized.copyWith(
+                        color: Colors.blue.withOpacity(0.4),
+                      );
+                    }
+                    if (value == 120.0) {
+                      return gridLineEmphasized.copyWith(
+                        color: Colors.red.withOpacity(0.4),
+                      );
+                    }
+
+                    return gridLine;
+                  },
                   getDrawingVerticalLine: (value) => gridLine,
                 ),
                 lineTouchData: LineTouchData(
