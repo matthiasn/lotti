@@ -13,6 +13,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags/selected_tags_widget.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
@@ -409,12 +410,31 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
                         pagingController: _pagingController,
                         builderDelegate:
                             PagedChildBuilderDelegate<JournalEntity>(
-                          //animateTransitions: true,
-                          itemBuilder: (context, item, index) =>
-                              JournalCard(item: item),
+                          itemBuilder: (context, item, index) {
+                            return item.maybeMap(
+                              journalImage: (JournalImage image) {
+                                return JournalImageCard(
+                                  item: image,
+                                  key: ValueKey(item.meta.id),
+                                );
+                              },
+                              orElse: () {
+                                return JournalCard(
+                                  item: item,
+                                  key: ValueKey(item.meta.id),
+                                );
+                              },
+                            );
+                          },
                         ),
                       ),
                     ),
+                  ),
+                  floatingActionButton: RadialAddActionButtons(
+                    radius: isMobile ? 180 : 120,
+                    isMacOS: isMacOS,
+                    isIOS: isIOS,
+                    isAndroid: isAndroid,
                   ),
                 ),
                 buildFloatingSearchBar(),
