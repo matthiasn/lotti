@@ -27,10 +27,12 @@ class JournalCardTitle extends StatelessWidget {
     super.key,
     required this.item,
     required this.maxHeight,
+    this.showLinkedDuration = false,
   });
 
   final JournalEntity item;
   final double? maxHeight;
+  final bool showLinkedDuration;
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +135,7 @@ class JournalCardTitle extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    LinkedDuration(task: task),
+                    if (showLinkedDuration) LinkedDuration(task: task),
                     TextViewerWidget(
                       entryText: task.entryText,
                       maxHeight: maxHeight,
@@ -173,10 +175,12 @@ class JournalCard extends StatelessWidget {
     super.key,
     required this.item,
     this.maxHeight = 120,
+    this.showLinkedDuration = false,
   });
 
   final JournalEntity item;
   final double? maxHeight;
+  final bool showLinkedDuration;
 
   @override
   Widget build(BuildContext context) {
@@ -219,6 +223,7 @@ class JournalCard extends StatelessWidget {
             title: JournalCardTitle(
               item: item,
               maxHeight: maxHeight,
+              showLinkedDuration: showLinkedDuration,
             ),
             onTap: onTap,
           ),
