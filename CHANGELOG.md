@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Improved whitespace in habit page header
+- Habit chart grid: lines at 20, 40, 60, 80, 100%
+- Emphasized 80%-line (sensible minimum target)
+
+## [0.8.215] - 2022-12-25
+### Changed:
 - Improved habit chart info on tap
 - Clear habit chart info within 15 seconds
 
