@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -27,8 +26,6 @@ class EntryDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<JournalEntity?>(
       stream: getIt<JournalDb>().watchEntityById(itemId),
       builder: (
@@ -37,7 +34,7 @@ class EntryDetailPage extends StatelessWidget {
       ) {
         final item = snapshot.data;
         if (item == null) {
-          return EmptyScaffoldWithTitle(localizations.entryNotFound);
+          return const EmptyScaffoldWithTitle('');
         }
 
         return Scaffold(
