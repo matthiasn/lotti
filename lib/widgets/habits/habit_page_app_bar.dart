@@ -9,7 +9,7 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 120);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 160);
 
   @override
   Widget build(BuildContext context) {

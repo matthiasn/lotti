@@ -37,7 +37,7 @@ class EntryDetailPage extends StatelessWidget {
       ) {
         final item = snapshot.data;
         if (item == null) {
-          return EmptyScaffoldWithTitle(localizations.entryNotFound);
+          return const EmptyScaffoldWithTitle('');
         }
 
         return Scaffold(

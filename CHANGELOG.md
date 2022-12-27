@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Disable smooth curved lines in habits chart: sharp lines are not overshooting
+- Improved chart layout and CTA (tap chart for daily breakdown)
+
+## [0.8.218] - 2022-12-27
+### Changed:
 - Journal page with infinite scroll
 
 ## [0.8.217] - 2022-12-26
