@@ -332,6 +332,7 @@ class _TasksPageState extends State<TasksPage> {
                                       return JournalCard(
                                         item: item,
                                         key: ValueKey(item.meta.id),
+                                        showLinkedDuration: true,
                                       );
                                     },
                                   );

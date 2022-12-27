@@ -11,7 +11,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/journal/journal_page.dart';
+import 'package:lotti/pages/journal/infinite_journal_page.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/themes.dart';
@@ -115,6 +115,7 @@ void main() {
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
           ids: null,
+          limit: 50,
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
@@ -127,7 +128,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPage(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -170,6 +171,7 @@ void main() {
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
           ids: null,
+          limit: 50,
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
@@ -184,7 +186,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPage(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -225,6 +227,7 @@ void main() {
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
           ids: null,
+          limit: 50,
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
@@ -239,7 +242,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPage(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -304,6 +307,7 @@ void main() {
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
           ids: null,
+          limit: 50,
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
@@ -328,7 +332,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPage(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -395,6 +399,7 @@ void main() {
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
           ids: null,
+          limit: 50,
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
@@ -417,7 +422,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPage(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );

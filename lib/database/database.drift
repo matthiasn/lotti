@@ -166,7 +166,8 @@ SELECT * FROM journal
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
   ORDER BY date_from DESC
-  LIMIT :limit;
+  LIMIT :limit
+  OFFSET :offset;
 
 filteredByTagJournal:
 SELECT * FROM journal
@@ -178,7 +179,8 @@ SELECT * FROM journal
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
   ORDER BY date_from DESC
-  LIMIT :limit;
+  LIMIT :limit
+  OFFSET :offset;
 
 filteredByTaggedWithId:
 SELECT * FROM journal
