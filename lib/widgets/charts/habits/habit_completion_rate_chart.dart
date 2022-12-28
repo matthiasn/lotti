@@ -102,10 +102,19 @@ class HabitCompletionRateChart extends StatelessWidget
                         ),
                       ],
                     )
-                  : null,
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        InfoLabel(
+                          '${state.habitCount} active habits.'
+                          ' Tap chart for daily breakdown.',
+                        ),
+                      ],
+                    ),
             ),
             SizedBox(
-              height: 110,
+              height: 150,
               width: MediaQuery.of(context).size.width,
               child: Padding(
                 padding: const EdgeInsets.only(
@@ -116,13 +125,6 @@ class HabitCompletionRateChart extends StatelessWidget
                   LineChartData(
                     lineTouchData: LineTouchData(
                       touchTooltipData: LineTouchTooltipData(
-                        tooltipMargin: -150,
-                        tooltipPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        tooltipBgColor: styleConfig().primaryColor,
-                        tooltipRoundedRadius: 8,
                         getTooltipItems: (List<LineBarSpot> spots) {
                           final ymd = days[spots.first.x.toInt()];
                           cubit.setInfoYmd(ymd);
@@ -218,7 +220,7 @@ class HabitCompletionRateChart extends StatelessWidget
                       ),
                     ],
                   ),
-                  swapAnimationCurve: Curves.bounceInOut,
+                  swapAnimationCurve: Curves.easeInOut,
                 ),
               ),
             ),
@@ -271,12 +273,8 @@ LineChartBarData barData({
 
   return LineChartBarData(
     spots: spots,
-    isCurved: true,
-    preventCurveOverShooting: true,
-    preventCurveOvershootingThreshold: 0,
     color: color,
     barWidth: 1,
-    isStrokeCapRound: true,
     dotData: FlDotData(show: false),
     belowBarData: BarAreaData(
       show: true,
