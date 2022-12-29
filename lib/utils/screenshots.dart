@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -25,6 +26,8 @@ Future<ImageData> takeScreenshotMac() async {
     if (hide) {
       await windowManager.minimize();
     }
+
+    await Future<void>.delayed(const Duration(seconds: 1));
 
     final process = await Process.start(
       'screencapture',

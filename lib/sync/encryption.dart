@@ -57,12 +57,13 @@ Future<void> decryptFile(
   await decryptedFile.writeAsBytes(decryptedBytes);
 }
 
+final algorithm = AesGcm.with256bits();
+
 Future<String> encryptString({
   required String plainText,
   required String b64Secret,
 }) async {
   final message = utf8.encode(plainText);
-  final algorithm = AesGcm.with256bits();
   final secretKey = await algorithm.newSecretKeyFromBytes(
     base64Decode(b64Secret),
   );
@@ -80,7 +81,6 @@ Future<String> decryptString({
   required String encrypted,
   required String b64Secret,
 }) async {
-  final algorithm = AesGcm.with256bits();
   final List<int> bytes = base64.decode(encrypted);
   final deserializedSecretBox =
       SecretBox.fromConcatenation(bytes, nonceLength: 12, macLength: 16);
