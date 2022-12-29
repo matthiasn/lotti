@@ -2,46 +2,96 @@
 
 [![CodeFactor](https://www.codefactor.io/repository/github/matthiasn/lotti/badge)](https://www.codefactor.io/repository/github/matthiasn/lotti) [![Flutter Test](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml/badge.svg)](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml)
 
-Lotti is a smart journaling app that allows you to track relevant data about your life, in complete privacy. What you deem relevant is up to you. For example:
+## Core beliefs / the WHY
 
-* Health-related data which can be imported automatically, such as steps, weight, sleep, etc.
-* Custom data types, such as the intake of water, food, alcohol, coffee, but also exercises such as pull-ups, you name (and define) it.
-* Time, as in defining tasks and then recording time spent on these tasks in the process in order to improve the use of this limited resource.
-* Stories
-* Tags
-* People
+Lotti is a tool for self-improvement centered around these core beliefs:
 
-Through the collection and monitoring of such data, Lotti enables you to not only track the evolution of the data but also to implement many different kinds of interventions based on the user’s analysis, interpretations and conclusions, such as - but not limited to -health, weight, fitness, etc. Ultimately, these aim at living a better life. Please share your success stories and ideas on what can be improved.
+1. Long-term outcomes in life can be improved by following good routines and establishing good 
+   habits, such as healthy sleep, mindfulness and improved self-awareness, healthy eating, 
+   enough physical activity and the like. Technology is essential when trying to establish and 
+   monitor good habits. Paper-based checklists are undesirable.
+2. Habits need to be monitored long-term. The 21-day habit theory, stating that it takes three 
+   weeks to form a new habit and then subsequently sticking with it automatically is 
+   questionable at best, and the only way to ensure that habits identified as important are 
+   actually followed is to monitor them.
+3. Any comprehensive attempt at tracking and monitoring the aforementioned areas of life 
+   will result in collecting far more data than anyone should be willing to share with anyone 
+   else, especially not a startup.
+
+Lotti is a tool for improving life via establishing good habits and monitoring their outcome, 
+without having to give up any information. All collected data stays on your devices, with 
+encrypted and entirely private synchronisation between your devices.
+
+Lotti currently supports recording the following data types:
+
+* Habits, which can be defined and tracked. Habit tracking then involves recording daily 
+  completions, which can successes, failures, and also skipping the completion in case a habit 
+  could not be completed due to external circumstances.
+* Health-related data which can be imported automatically, such as steps, weight, sleep, blood 
+  pressure, resting heart rate, and whatever else can be recorded in Apple Health (or the 
+  Android equivalent).
+* Custom data types, such as the intake of water, food, alcohol, coffee, but also exercises such 
+  as pull-ups, you name (and define) it.
+* Text journal entries.
+* Tasks, with different statuses to track their lifecycle: open, groomed, in progress, blocked, 
+  on hold, done, rejected.
+* Audio recordings, as spoken journal entries, and also audio notes, for example when working on 
+  a task and documenting progress and doing a quick brain dump that can be useful when picking 
+  up a task again later.
+* Time, as in recording time spent on a tasks, and also a related story.
+* Tags for better organization and discoverability of journal entries.
+* Stories, a special tag type that is useful for reporting time spent on tasks related to their 
+  respective stories.
+* People, a special tag type with no additional functionality yet, only a different tag color.
 
 Example from [blog](https://matthiasnehlsen.com/blog/2022/05/15/switched-to-flutter-lost-10-kilos/):
 
 ![screenshot of dashboard](https://matthiasnehlsen.com/static/37e205eaf8dd59b7d040395a051204b7/a911b/2022-05-14_charts.jpg "user configured dashboard")
 
 
-
 ## Planned improvements:
 
-* **Habit tracking.** The previous Clojure-based version implemented simple habit tracking where habits could be checked off and monitored, such as daily flossing or whatever else you can imagine.
-* **Intervention lifecycle.** The app is already useful for monitoring interventions but the interventions themselves currently remain implicit, insofar as I can imagine and invent such interventions in my mind and then build a dashboard for tracking success and failure. In future versions, the lifecycle of interventions shall be made explicit, by defining them in the first place, and then reviewing and refining them.
-* **Reporting** how time is spent.
+* **Intervention lifecycle.** The app is already useful for monitoring interventions but the 
+  interventions themselves currently remain implicit, insofar as I can imagine and invent such 
+  interventions in my mind and then build a dashboard for tracking success and failure. In 
+  future versions, the lifecycle of interventions shall be made explicit, by defining them in 
+  the first place, and then reviewing and refining them.
+* Better **Reporting** how time is spent.
 * **Upfront planning** of time budgets. 
 
-Please check out [HISTORY.md](https://github.com/matthiasn/lotti/blob/main/docs/HISTORY.md) for all the information on the project's history and back-story. You can find the previous version in the [meins subdirectory](https://github.com/matthiasn/lotti/tree/main/meins).
+Please check out [HISTORY.md](https://github.com/matthiasn/lotti/blob/main/docs/HISTORY.md) for 
+all the information on the project's history and back-story. You can find the previous version 
+in the [meins subdirectory](https://github.com/matthiasn/lotti/tree/main/meins).
 
 
 ## Principles
 
-- Lotti is **private** and does not share any information with anyone - see the [Privacy Policy](https://github.com/matthiasn/lotti/blob/main/PRIVACY.md).
-- Lotti is **open-source** and everyone is encouraged to contribute, be it via contributing to code, providing feedback, testing, identifying bugs, etc.
-- Lotti strives to be as **inclusive** as possible and any request for improved accessibility will be addressed.
-- Lotti is supposed to become a **friendly and welcoming community** of people who are interested in data, improving their lives, and not or only very selectively sharing their data in the process. Please head over to [Discussions](https://github.com/matthiasn/lotti/discussions) and say Hi.
-- **Localization**. Lotti aims to be multilingual and to be available in as many different languages as possible. Currently, that is English and German, with [French](https://github.com/matthiasn/lotti/issues/936) in progress. Please create [issues](https://github.com/matthiasn/lotti/issues) for languages you would like to see.
+- Lotti is **private** and does not share any information with anyone - see the [Privacy Policy]
+  (https://github.com/matthiasn/lotti/blob/main/PRIVACY.md).
+- Lotti is **open-source** and everyone is encouraged to contribute, be it via contributing to 
+  code, providing feedback, testing, identifying bugs, etc.
+- Lotti strives to be as **inclusive** as possible and any request for improved accessibility 
+  will be addressed.
+- Lotti is supposed to become a **friendly and welcoming community** of people who are 
+  interested in data, improving their lives, and not or only very selectively sharing their data 
+  in the process. Please head over to [Discussions](https://github.
+  com/matthiasn/lotti/discussions) and say Hi.
+- **Localization**. Lotti aims to be multilingual and to be available in as many different 
+  languages as possible. Currently, that is English and German, with [French](https://github.
+  com/matthiasn/lotti/issues/936) in progress. Please create [issues](https://github.
+  com/matthiasn/lotti/issues) for languages you would like to see.
 
 ## Beta testing
 
-Lotti is currently available for beta testing. The aim is to have pre-release versions available on [GitHub Releases](https://github.com/matthiasn/lotti/releases), specifically for Android, macOS, Linux and Windows. Currently, there are [build issues](https://github.com/matthiasn/lotti/labels/prerelease%20blocker) blocking the pre-release on some of the aforementioned platforms and help would be much appreciated.
+Lotti is currently available for beta testing. The aim is to have pre-release versions available 
+on [GitHub Releases](https://github.com/matthiasn/lotti/releases). Currently, there are 
+[build issues](https://github.com/matthiasn/lotti/labels/prerelease%20blocker) blocking the 
+pre-release on some of the aforementioned platforms and help would be much appreciated.
 
-Development is primarily done on macOS and both the iOS and macOS versions are available for beta testing via Apple's TestFlight. Please get in touch with the [author](https://github.com/matthiasn) if you are interested in participating in the tests, the email address can be found in the profile. The aim is to get Lotti out on all app stores ASAP. More feedback will mean sooner general availability.
+Development is primarily done on macOS and both the iOS and macOS versions are available for 
+beta testing via Apple's TestFlight. Please get in touch with the [author](https://github.
+com/matthiasn) if you are interested in participating in the tests, the email address can be 
+found in the profile. The aim is to get Lotti out on all app stores in 2024.
 
 
 ## Blog posts
@@ -70,6 +120,7 @@ and raise PRs for those.
 
 Please make sure your Flutter environment generally works with a fresh starter
 app however before raising issues that are related to your Flutter installation.
+
 Thanks!
 
 
@@ -112,8 +163,8 @@ setting up a new runner:
 2) Install [create-dmg](https://github.com/sindresorhus/create-dmg) for 
    bundling the DMG file for GitHub releases
 
-HELP WANTED: Linux and Windows versions are not yet published on HitHub 
-releases. Please consider helping out with the pipelines if you can.
+HELP WANTED: The Windows version is not yet published on GitHub releases. On Linux, a snap 
+release could be helpful. Help needed.
 
 
 ## Contributions
