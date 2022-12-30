@@ -22,6 +22,5 @@ class HabitsState with _$HabitsState {
     required int shortStreakCount,
     required int longStreakCount,
     required int timeSpanDays,
-    required int habitCount,
   }) = _HabitsStateSaved;
 }

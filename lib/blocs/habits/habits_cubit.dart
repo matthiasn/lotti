@@ -31,7 +31,6 @@ class HabitsCubit extends Cubit<HabitsState> {
             shortStreakCount: 0,
             longStreakCount: 0,
             timeSpanDays: 14,
-            habitCount: 0,
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
@@ -242,7 +241,6 @@ class HabitsCubit extends Cubit<HabitsState> {
         shortStreakCount: _shortStreakCount,
         longStreakCount: _longStreakCount,
         timeSpanDays: _timeSpanDays,
-        habitCount: _habitDefinitions.length,
       ),
     );
   }

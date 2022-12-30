@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -76,7 +77,15 @@ class HabitCompletionRateChart extends StatelessWidget
           String label,
         ) {
           final n = byDay[state.selectedInfoYmd]?.length ?? 0;
-          final total = state.habitCount;
+          final total = activeBy(
+            state.habitDefinitions,
+            state.selectedInfoYmd,
+          ).length;
+
+          if (total == 0) {
+            return '-';
+          }
+
           final percentage = (n / total) * 100;
           return '${percentage.floor()}% $label';
         }
@@ -107,7 +116,7 @@ class HabitCompletionRateChart extends StatelessWidget
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         InfoLabel(
-                          '${state.habitCount} active habits.'
+                          '${state.habitDefinitions.length} active habits.'
                           ' Tap chart for daily breakdown.',
                         ),
                       ],
@@ -192,7 +201,7 @@ class HabitCompletionRateChart extends StatelessWidget
                         showSkipped: true,
                         showSuccessful: true,
                         showFailed: true,
-                        habitCount: state.habitCount,
+                        habitDefinitions: state.habitDefinitions,
                         color: styleConfig().alarm.lighten().desaturate(),
                         aboveColor: styleConfig().alarm.withOpacity(0.5),
                       ),
@@ -204,7 +213,7 @@ class HabitCompletionRateChart extends StatelessWidget
                         showSkipped: true,
                         showSuccessful: true,
                         showFailed: false,
-                        habitCount: state.habitCount,
+                        habitDefinitions: state.habitDefinitions,
                         color: skipColor,
                       ),
                       barData(
@@ -215,7 +224,7 @@ class HabitCompletionRateChart extends StatelessWidget
                         showSkipped: false,
                         showSuccessful: true,
                         showFailed: false,
-                        habitCount: state.habitCount,
+                        habitDefinitions: state.habitDefinitions,
                         color: styleConfig().primaryColor,
                       ),
                     ],
@@ -231,9 +240,22 @@ class HabitCompletionRateChart extends StatelessWidget
   }
 }
 
+List<HabitDefinition> activeBy(
+  List<HabitDefinition> habitDefinitions,
+  String ymd,
+) {
+  final activeHabits = habitDefinitions.where((habitDefinition) {
+    final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
+    return DateTime(activeFrom.year, activeFrom.month, activeFrom.day)
+        .isBefore(DateTime.parse(ymd));
+  }).toList();
+
+  return activeHabits;
+}
+
 LineChartBarData barData({
   required List<String> days,
-  required int habitCount,
+  required List<HabitDefinition> habitDefinitions,
   required Map<String, Set<String>> successfulByDay,
   required Map<String, Set<String>> skippedByDay,
   required Map<String, Set<String>> failedByDay,
@@ -261,6 +283,8 @@ LineChartBarData barData({
     if (showFailed) {
       value = value + failedCount;
     }
+
+    final habitCount = activeBy(habitDefinitions, day).length;
 
     return FlSpot(
       idx.toDouble(),
