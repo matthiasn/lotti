@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Limit editor height so that editor toolbar always stays visible
+
+## [0.8.221] - 2022-12-30
+### Changed:
 - Fix completion rate by taking into account from when on to count a habit
 
 ## [0.8.220] - 2022-12-29

@@ -77,23 +77,26 @@ class EditorWidget extends StatelessWidget {
                 children: [
                   ToolbarWidget(unlinkFn: unlinkFn),
                   Flexible(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padding),
-                      child: QuillEditor(
-                        controller: controller,
-                        readOnly: false,
-                        scrollController: ScrollController(),
-                        scrollable: true,
-                        focusNode: focusNode,
-                        autoFocus: autoFocus,
-                        expands: false,
-                        minHeight: minHeight,
-                        padding: const EdgeInsets.only(top: 8, bottom: 16),
-                        keyboardAppearance: Brightness.dark,
-                        customStyles: customEditorStyles(
-                          textColor: Colors.black,
-                          codeBlockBackground: styleConfig().primaryColorLight,
-                        ),
+                    child: QuillEditor(
+                      controller: controller,
+                      readOnly: false,
+                      scrollController: ScrollController(),
+                      scrollable: true,
+                      focusNode: focusNode,
+                      autoFocus: autoFocus,
+                      expands: false,
+                      minHeight: minHeight,
+                      maxHeight: MediaQuery.of(context).size.height / 2,
+                      padding: EdgeInsets.only(
+                        top: 8,
+                        bottom: 16,
+                        left: padding,
+                        right: padding,
+                      ),
+                      keyboardAppearance: Brightness.dark,
+                      customStyles: customEditorStyles(
+                        textColor: Colors.black,
+                        codeBlockBackground: styleConfig().primaryColorLight,
                       ),
                     ),
                   ),
