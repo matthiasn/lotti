@@ -97,7 +97,7 @@ class ConfigForm extends StatelessWidget {
             initialValue: imapConfig?.host,
             validator: FormBuilderValidators.required(),
             style: inputStyle(),
-            keyboardAppearance: Brightness.dark,
+            keyboardAppearance: keyboardAppearance(),
             decoration: InputDecoration(
               labelText: localizations.settingsSyncHostLabel,
               labelStyle: settingsLabelStyle(),
@@ -109,7 +109,7 @@ class ConfigForm extends StatelessWidget {
             initialValue: imapConfig?.userName,
             validator: FormBuilderValidators.required(),
             style: inputStyle(),
-            keyboardAppearance: Brightness.dark,
+            keyboardAppearance: keyboardAppearance(),
             decoration: InputDecoration(
               labelText: localizations.settingsSyncUserLabel,
               labelStyle: settingsLabelStyle(),
@@ -122,7 +122,7 @@ class ConfigForm extends StatelessWidget {
             obscureText: true,
             validator: FormBuilderValidators.required(),
             style: inputStyle(),
-            keyboardAppearance: Brightness.dark,
+            keyboardAppearance: keyboardAppearance(),
             decoration: InputDecoration(
               labelText: localizations.settingsSyncPasswordLabel,
               labelStyle: settingsLabelStyle(),
@@ -134,7 +134,7 @@ class ConfigForm extends StatelessWidget {
             initialValue: imapConfig?.port.toString() ?? '993',
             validator: FormBuilderValidators.integer(),
             style: inputStyle(),
-            keyboardAppearance: Brightness.dark,
+            keyboardAppearance: keyboardAppearance(),
             decoration: InputDecoration(
               labelText: localizations.settingsSyncPortLabel,
               labelStyle: settingsLabelStyle(),

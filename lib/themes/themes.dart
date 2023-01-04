@@ -78,6 +78,7 @@ final darkTheme = StyleConfig(
   cardMapIconActive: 'assets/icons/card/DM-icon-map-active.svg',
   cardTagIcon: 'assets/icons/card/DM-icon-tag.svg',
   cardTrashIcon: 'assets/icons/card/DM-icon-trash.svg',
+  keyboardAppearance: Brightness.dark,
 );
 
 final brightTheme = StyleConfig(
@@ -140,4 +141,5 @@ final brightTheme = StyleConfig(
   cardMapIconActive: 'assets/icons/card/LM-icon-map-active.svg',
   cardTagIcon: 'assets/icons/card/LM-icon-tag.svg',
   cardTrashIcon: 'assets/icons/card/LM-icon-trash.svg',
+  keyboardAppearance: Brightness.light,
 );

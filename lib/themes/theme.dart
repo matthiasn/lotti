@@ -110,6 +110,10 @@ TextStyle pickerMonoTextStyle() => monospaceTextStyle().copyWith(
       fontWeight: FontWeight.w100,
     );
 
+Brightness keyboardAppearance() {
+  return styleConfig().keyboardAppearance;
+}
+
 TextStyle formLabelStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
       fontFamily: mainFont,
