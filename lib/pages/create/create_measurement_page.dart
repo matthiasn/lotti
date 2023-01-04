@@ -279,7 +279,7 @@ class _CreateMeasurementPageState extends State<CreateMeasurementPage> {
                                           '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
                                       labelStyle: labelStyle(),
                                     ),
-                                    keyboardAppearance: Brightness.dark,
+                                    keyboardAppearance: keyboardAppearance(),
                                     style: inputStyle(),
                                     autofocus: true,
                                     validator: numericValidator(),

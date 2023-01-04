@@ -93,6 +93,7 @@ class StyleConfig with _$StyleConfig {
     required String cardMapIconActive,
     required String cardTrashIcon,
     required String cardTagIcon,
+    required Brightness keyboardAppearance,
   }) = _StyleConfig;
 
   factory StyleConfig.fromJson(Map<String, dynamic> json) =>

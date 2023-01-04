@@ -93,7 +93,7 @@ class EditorWidget extends StatelessWidget {
                         left: padding,
                         right: padding,
                       ),
-                      keyboardAppearance: Brightness.dark,
+                      keyboardAppearance: keyboardAppearance(),
                       customStyles: customEditorStyles(
                         textColor: Colors.black,
                         codeBlockBackground: styleConfig().primaryColorLight,
