@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Consistently use light and dark keyboard types
+- Upgraded dependencies
 
 ## [0.8.222] - 2022-12-31
 ### Changed:
