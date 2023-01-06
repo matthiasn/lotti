@@ -37,38 +37,43 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
 
     final portraitWidth = MediaQuery.of(context).size.width * 0.5;
 
-    return FloatingSearchBar(
-      clearQueryOnClose: false,
-      automaticallyImplyBackButton: false,
-      hint: AppLocalizations.of(context)!.settingsDashboardsSearchHint,
-      scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
-      transitionDuration: const Duration(milliseconds: 800),
-      transitionCurve: Curves.easeInOut,
-      backgroundColor: styleConfig().cardColor,
-      margins: const EdgeInsets.only(top: 8),
-      queryStyle: const TextStyle(
-        fontFamily: mainFont,
-        fontSize: 20,
+    return Theme(
+      data: ThemeData(
+        brightness: styleConfig().keyboardAppearance,
       ),
-      hintStyle: TextStyle(
-        fontFamily: mainFont,
-        fontSize: 20,
-        color: styleConfig().secondaryTextColor,
+      child: FloatingSearchBar(
+        clearQueryOnClose: false,
+        automaticallyImplyBackButton: false,
+        hint: AppLocalizations.of(context)!.settingsDashboardsSearchHint,
+        scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
+        transitionDuration: const Duration(milliseconds: 800),
+        transitionCurve: Curves.easeInOut,
+        backgroundColor: styleConfig().cardColor,
+        margins: const EdgeInsets.only(top: 8),
+        queryStyle: const TextStyle(
+          fontFamily: mainFont,
+          fontSize: 20,
+        ),
+        hintStyle: TextStyle(
+          fontFamily: mainFont,
+          fontSize: 20,
+          color: styleConfig().secondaryTextColor,
+        ),
+        //physics: const BouncingScrollPhysics(),
+        borderRadius: BorderRadius.circular(8),
+        axisAlignment: isPortrait ? 0 : -1,
+        openAxisAlignment: 0,
+        width: isPortrait ? portraitWidth : MediaQuery.of(context).size.width,
+        onQueryChanged: (query) async {
+          setState(() {
+            match = query.toLowerCase();
+          });
+        },
+        actions: [FloatingSearchBarAction.searchToClear(showIfClosed: false)],
+        builder: (context, transition) {
+          return const SizedBox.shrink();
+        },
       ),
-      //physics: const BouncingScrollPhysics(),
-      borderRadius: BorderRadius.circular(8),
-      axisAlignment: isPortrait ? 0 : -1,
-      openAxisAlignment: 0,
-      width: isPortrait ? portraitWidth : MediaQuery.of(context).size.width,
-      onQueryChanged: (query) async {
-        setState(() {
-          match = query.toLowerCase();
-        });
-      },
-      actions: [FloatingSearchBarAction.searchToClear(showIfClosed: false)],
-      builder: (context, transition) {
-        return const SizedBox.shrink();
-      },
     );
   }
 
