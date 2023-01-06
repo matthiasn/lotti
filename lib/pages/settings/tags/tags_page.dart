@@ -48,9 +48,10 @@ class _TagsPageState extends State<TagsPage> {
         fontFamily: mainFont,
         fontSize: 20,
       ),
-      hintStyle: const TextStyle(
+      hintStyle: TextStyle(
         fontFamily: mainFont,
         fontSize: 20,
+        color: styleConfig().secondaryTextColor,
       ),
       physics: const BouncingScrollPhysics(),
       borderRadius: BorderRadius.circular(8),
