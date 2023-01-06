@@ -34,9 +34,8 @@ const chipPaddingClosable = EdgeInsets.only(
 
 TextStyle inputStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.bold,
       fontFamily: mainFont,
-      fontSize: 18,
+      fontSize: fontSizeMedium,
     );
 
 TextStyle newInputStyle() => TextStyle(

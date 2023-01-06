@@ -9,7 +9,6 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/task_utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -65,14 +64,15 @@ class _TaskFormState extends State<TaskForm> {
                         autofocus: widget.focusOnTitle,
                         initialValue: widget.data?.title ?? '',
                         decoration: InputDecoration(
-                          labelText: localizations.taskNameLabel,
+                          labelText: '${widget.data?.title}'.isEmpty
+                              ? localizations.taskNameLabel
+                              : '',
                           labelStyle: labelStyle(),
                         ),
                         textCapitalization: TextCapitalization.sentences,
                         keyboardAppearance: keyboardAppearance(),
                         maxLines: null,
                         style: inputStyle().copyWith(
-                          fontFamily: 'Oswald',
                           fontSize: 25,
                           fontWeight: FontWeight.normal,
                         ),
@@ -80,117 +80,96 @@ class _TaskFormState extends State<TaskForm> {
                         onChanged: context.read<EntryCubit>().setDirty,
                       ),
                     ),
-                    FormBuilderCupertinoDateTimePicker(
-                      name: 'estimate',
-                      alwaysUse24HourFormat: true,
-                      format: hhMmFormat,
-                      inputType: CupertinoDateTimePickerInputType.time,
-                      style: inputStyle().copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w300,
-                        fontFamily: 'Oswald',
-                      ),
-                      onChanged: (_) => save(),
-                      decoration: InputDecoration(
-                        labelText: localizations.taskEstimateLabel,
-                        labelStyle: labelStyle(),
-                      ),
-                      initialValue: DateTime.fromMillisecondsSinceEpoch(
-                        widget.data?.estimate?.inMilliseconds ?? 0,
-                        isUtc: true,
-                      ),
-                      theme: datePickerTheme(),
-                    ),
-                    FormBuilderChoiceChip(
-                      name: 'status',
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      backgroundColor: styleConfig().unselectedChoiceChipColor,
-                      initialValue: widget.data?.status.map(
-                            open: (_) => 'OPEN',
-                            groomed: (_) => 'GROOMED',
-                            started: (_) => 'STARTED',
-                            inProgress: (_) => 'IN PROGRESS',
-                            blocked: (_) => 'BLOCKED',
-                            onHold: (_) => 'ON HOLD',
-                            done: (_) => 'DONE',
-                            rejected: (_) => 'REJECTED',
-                          ) ??
-                          'OPEN',
-                      decoration: InputDecoration(
-                        labelText: localizations.taskStatusLabel,
-                        labelStyle: labelStyle().copyWith(
-                          height: 0.6,
-                          fontFamily: 'Oswald',
-                        ),
-                      ),
-                      onChanged: (dynamic _) => save(),
-                      selectedColor: widget.data?.status != null
-                          ? taskColor(widget.data!.status)
-                          : styleConfig().unselectedChoiceChipColor,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      runSpacing: 6,
-                      spacing: 4,
-                      labelStyle: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Oswald',
-                        color: styleConfig().unselectedChoiceChipColor,
-                      ),
-                      options: [
-                        FormBuilderChipOption<String>(
-                          value: 'OPEN',
-                          child: Text(
-                            localizations.taskStatusOpen,
-                            style: taskFormFieldStyle,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        SizedBox(
+                          width: 120,
+                          child: FormBuilderCupertinoDateTimePicker(
+                            name: 'estimate',
+                            alwaysUse24HourFormat: true,
+                            format: hhMmFormat,
+                            inputType: CupertinoDateTimePickerInputType.time,
+                            style: inputStyle(),
+                            onChanged: (_) => save(),
+                            decoration: InputDecoration(
+                              labelText: localizations.taskEstimateLabel,
+                              labelStyle: labelStyle(),
+                            ),
+                            initialValue: DateTime.fromMillisecondsSinceEpoch(
+                              widget.data?.estimate?.inMilliseconds ?? 0,
+                              isUtc: true,
+                            ),
+                            theme: datePickerTheme(),
                           ),
                         ),
-                        FormBuilderChipOption<String>(
-                          value: 'GROOMED',
-                          child: Text(
-                            localizations.taskStatusGroomed,
-                            style: taskFormFieldStyle,
-                          ),
-                        ),
-                        FormBuilderChipOption<String>(
-                          value: 'IN PROGRESS',
-                          child: Text(
-                            localizations.taskStatusInProgress,
-                            style: taskFormFieldStyle,
-                          ),
-                        ),
-                        FormBuilderChipOption<String>(
-                          value: 'BLOCKED',
-                          child: Text(
-                            localizations.taskStatusBlocked,
-                            style: taskFormFieldStyle,
-                          ),
-                        ),
-                        FormBuilderChipOption<String>(
-                          value: 'ON HOLD',
-                          child: Text(
-                            localizations.taskStatusOnHold,
-                            style: taskFormFieldStyle,
-                          ),
-                        ),
-                        FormBuilderChipOption<String>(
-                          value: 'DONE',
-                          child: Text(
-                            localizations.taskStatusDone,
-                            style: taskFormFieldStyle,
-                          ),
-                        ),
-                        FormBuilderChipOption<String>(
-                          value: 'REJECTED',
-                          child: Text(
-                            localizations.taskStatusRejected,
-                            style: taskFormFieldStyle,
+                        SizedBox(
+                          width: 160,
+                          child: FormBuilderDropdown<String>(
+                            name: 'status',
+                            borderRadius: BorderRadius.circular(20),
+                            onChanged: (dynamic _) => save(),
+                            initialValue: widget.data?.status.map(
+                                  open: (_) => 'OPEN',
+                                  groomed: (_) => 'GROOMED',
+                                  started: (_) => 'STARTED',
+                                  inProgress: (_) => 'IN PROGRESS',
+                                  blocked: (_) => 'BLOCKED',
+                                  onHold: (_) => 'ON HOLD',
+                                  done: (_) => 'DONE',
+                                  rejected: (_) => 'REJECTED',
+                                ) ??
+                                'OPEN',
+                            items: [
+                              DropdownMenuItem<String>(
+                                value: 'OPEN',
+                                child: TaskStatusLabel(
+                                  localizations.taskStatusOpen,
+                                ),
+                              ),
+                              DropdownMenuItem<String>(
+                                value: 'GROOMED',
+                                child: TaskStatusLabel(
+                                  localizations.taskStatusGroomed,
+                                ),
+                              ),
+                              DropdownMenuItem<String>(
+                                value: 'IN PROGRESS',
+                                child: TaskStatusLabel(
+                                  localizations.taskStatusInProgress,
+                                ),
+                              ),
+                              DropdownMenuItem<String>(
+                                value: 'BLOCKED',
+                                child: TaskStatusLabel(
+                                  localizations.taskStatusBlocked,
+                                ),
+                              ),
+                              DropdownMenuItem<String>(
+                                value: 'ON HOLD',
+                                child: TaskStatusLabel(
+                                  localizations.taskStatusOnHold,
+                                ),
+                              ),
+                              DropdownMenuItem<String>(
+                                value: 'DONE',
+                                child: TaskStatusLabel(
+                                  localizations.taskStatusDone,
+                                ),
+                              ),
+                              DropdownMenuItem<String>(
+                                value: 'REJECTED',
+                                child: TaskStatusLabel(
+                                  localizations.taskStatusRejected,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -199,6 +178,20 @@ class _TaskFormState extends State<TaskForm> {
           ],
         );
       },
+    );
+  }
+}
+
+class TaskStatusLabel extends StatelessWidget {
+  const TaskStatusLabel(this.title, {super.key});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: inputStyle(),
     );
   }
 }
