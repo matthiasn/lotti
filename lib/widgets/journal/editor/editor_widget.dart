@@ -6,8 +6,9 @@ import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/journal/editor/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor/editor_toolbar.dart';
+
+import 'editor_styles.dart';
 
 class EditorWidget extends StatelessWidget {
   const EditorWidget({
@@ -67,7 +68,7 @@ class EditorWidget extends StatelessWidget {
             saveViaKeyboard(event);
           },
           child: ColoredBox(
-            color: Colors.white,
+            color: styleConfig().textEditorBackground,
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: maxHeight,
@@ -95,7 +96,7 @@ class EditorWidget extends StatelessWidget {
                       ),
                       keyboardAppearance: keyboardAppearance(),
                       customStyles: customEditorStyles(
-                        textColor: Colors.black,
+                        textColor: styleConfig().primaryTextColor,
                         codeBlockBackground: styleConfig().primaryColorLight,
                       ),
                     ),
