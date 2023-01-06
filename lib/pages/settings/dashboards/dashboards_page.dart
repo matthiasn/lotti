@@ -50,9 +50,10 @@ class _DashboardSettingsPageState extends State<DashboardSettingsPage> {
         fontFamily: mainFont,
         fontSize: 20,
       ),
-      hintStyle: const TextStyle(
+      hintStyle: TextStyle(
         fontFamily: mainFont,
         fontSize: 20,
+        color: styleConfig().secondaryTextColor,
       ),
       //physics: const BouncingScrollPhysics(),
       borderRadius: BorderRadius.circular(8),

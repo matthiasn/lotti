@@ -54,10 +54,10 @@ class _AppScreenState extends State<AppScreen> {
                 ],
               ),
               const TimeRecordingIndicator(),
-              Positioned(
-                right: MediaQuery.of(context).size.width / 2 - 50,
+              const Positioned(
+                right: 120,
                 bottom: 0,
-                child: const AudioRecordingIndicator(),
+                child: AudioRecordingIndicator(),
               ),
             ],
           ),
@@ -131,6 +131,7 @@ class MyBeamerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = ThemeData(
       primarySwatch: Colors.grey,
+      brightness: styleConfig().keyboardAppearance,
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
       highlightColor: styleConfig().primaryColorLight,
       appBarTheme: AppBarTheme(
