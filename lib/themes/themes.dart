@@ -79,7 +79,7 @@ final darkTheme = StyleConfig(
   cardTagIcon: 'assets/icons/card/DM-icon-tag.svg',
   cardTrashIcon: 'assets/icons/card/DM-icon-trash.svg',
   keyboardAppearance: Brightness.dark,
-  textEditorBackground: Colors.transparent,
+  textEditorBackground: Colors.white.withOpacity(0.1),
 );
 
 final brightTheme = StyleConfig(

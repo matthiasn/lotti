@@ -5,12 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Declutter task form
+
+## [0.8.225] - 2023-01-06
+### Changed:
+- Improved text editor layout
+
+## [0.8.224] - 2023-01-05
 ### Fixed:
 - Disappearing keyboard on mobile
 - Color theme in tag search
-
-### Changed:
-- Improved text editor layout
 
 ## [0.8.223] - 2023-01-04
 ### Changed:
