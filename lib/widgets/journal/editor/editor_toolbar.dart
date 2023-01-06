@@ -80,6 +80,10 @@ class ToolbarWidget extends StatelessWidget {
               controller: controller,
               iconSize: toolbarIconSize,
               iconTheme: iconTheme,
+              attributes: const [
+                Attribute.h1,
+                Attribute.h2,
+              ],
             ),
             ToggleStyleButton(
               attribute: Attribute.ul,
