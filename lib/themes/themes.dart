@@ -79,6 +79,7 @@ final darkTheme = StyleConfig(
   cardTagIcon: 'assets/icons/card/DM-icon-tag.svg',
   cardTrashIcon: 'assets/icons/card/DM-icon-trash.svg',
   keyboardAppearance: Brightness.dark,
+  textEditorBackground: Colors.transparent,
 );
 
 final brightTheme = StyleConfig(
@@ -142,4 +143,5 @@ final brightTheme = StyleConfig(
   cardTagIcon: 'assets/icons/card/LM-icon-tag.svg',
   cardTrashIcon: 'assets/icons/card/LM-icon-trash.svg',
   keyboardAppearance: Brightness.light,
+  textEditorBackground: Colors.white,
 );

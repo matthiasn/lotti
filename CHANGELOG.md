@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed:
 - Disappearing keyboard on mobile
+- Color theme in tag search
+
+### Changed:
+- Improved text editor layout
 
 ## [0.8.223] - 2023-01-04
 ### Changed:

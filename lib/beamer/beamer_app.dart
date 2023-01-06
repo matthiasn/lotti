@@ -131,13 +131,21 @@ class MyBeamerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = ThemeData(
       primarySwatch: Colors.grey,
+      brightness: styleConfig().keyboardAppearance,
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
       highlightColor: styleConfig().primaryColorLight,
       appBarTheme: AppBarTheme(
         iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
       ),
       tooltipTheme: TooltipThemeData(
-        textStyle: chartTitleStyleSmall(),
+        textStyle: chartTitleStyleSmall().copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w400,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(5),
+        ),
       ),
     );
 
