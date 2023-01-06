@@ -64,7 +64,9 @@ class _TaskFormState extends State<TaskForm> {
                         autofocus: widget.focusOnTitle,
                         initialValue: widget.data?.title ?? '',
                         decoration: InputDecoration(
-                          labelText: localizations.taskNameLabel,
+                          labelText: '${widget.data?.title}'.isEmpty
+                              ? localizations.taskNameLabel
+                              : '',
                           labelStyle: labelStyle(),
                         ),
                         textCapitalization: TextCapitalization.sentences,

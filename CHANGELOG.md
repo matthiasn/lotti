@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Declutter task form
 - Simplified editor toolbar
 - Unified searchable list
+- Hide task title label when task defined
 
 ## [0.8.225] - 2023-01-06
 ### Changed:
