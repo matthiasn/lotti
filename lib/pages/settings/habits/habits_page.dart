@@ -16,7 +16,9 @@ class HabitsPage extends StatelessWidget {
 
     return DefinitionsListPage<HabitDefinition>(
       stream: getIt<JournalDb>().watchHabitDefinitions(),
-      createFn: () => beamToNamed('/settings/habits/create'),
+      floatingActionButton: FloatingAddIcon(
+        createFn: () => beamToNamed('/settings/habits/create'),
+      ),
       title: localizations.settingsHabitsTitle,
       getName: (habitDefinition) => habitDefinition.name,
       definitionCard: (int index, HabitDefinition item) {

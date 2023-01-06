@@ -14,17 +14,17 @@ class DefinitionsListPage<T> extends StatefulWidget {
   const DefinitionsListPage({
     super.key,
     required this.stream,
-    required this.createFn,
     required this.title,
     required this.getName,
     required this.definitionCard,
+    required this.floatingActionButton,
   });
 
   final Stream<List<T>> stream;
-  final void Function() createFn;
   final String title;
   final String Function(T) getName;
   final Widget Function(int index, T item) definitionCard;
+  final Widget? floatingActionButton;
 
   @override
   State<DefinitionsListPage<T>> createState() => _DefinitionsListPageState();
@@ -107,14 +107,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
         return Scaffold(
           appBar: TitleAppBar(title: widget.title),
           backgroundColor: styleConfig().negspace,
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: styleConfig().primaryColor,
-            onPressed: widget.createFn,
-            child: SvgPicture.asset(
-              styleConfig().actionAddIcon,
-              width: 25,
-            ),
-          ),
+          floatingActionButton: widget.floatingActionButton,
           body: Stack(
             children: [
               ListView(
