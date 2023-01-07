@@ -17,6 +17,7 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/themes.dart';
 import 'package:lotti/themes/themes_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -52,6 +53,10 @@ void main() {
 
       final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();
+
+      when(() => mockJournalDb.watchConfigFlag(privateFlag)).thenAnswer(
+        (_) => Stream<bool>.fromIterable([true]),
+      );
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
@@ -132,7 +137,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const JournalPageWrapper(),
           ),
         ),
       );
@@ -190,7 +195,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const JournalPageWrapper(),
           ),
         ),
       );
@@ -246,7 +251,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const JournalPageWrapper(),
           ),
         ),
       );
@@ -336,7 +341,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const JournalPageWrapper(),
           ),
         ),
       );
@@ -426,7 +431,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const JournalPageWrapper(),
           ),
         ),
       );

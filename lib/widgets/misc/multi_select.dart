@@ -24,10 +24,12 @@ class MultiSelect<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 300,
+      width: 321,
       child: MultiSelectBottomSheetField<T?>(
         backgroundColor: styleConfig().cardColor,
         items: multiSelectItems,
+        initialChildSize: 0.8,
+        maxChildSize: 0.8,
         title: Text(
           title,
           style: titleStyle(),

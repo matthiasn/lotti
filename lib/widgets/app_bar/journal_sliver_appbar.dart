@@ -40,102 +40,97 @@ class JournalSliverAppBar extends StatelessWidget {
           flexibleSpace: FlexibleSpaceBar(
             background: Padding(
               padding: EdgeInsets.only(top: isIOS ? 30 : 0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                runAlignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 10,
                 children: [
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    runAlignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 10,
-                    runSpacing: 10,
+                  SizedBox(
+                    width: 321,
+                    child: SearchWidget(
+                      margin: EdgeInsets.zero,
+                      text: snapshot.match,
+                      onChanged: cubit.setSearchString,
+                      hintText: 'Search Journal...',
+                    ),
+                  ),
+                  MultiSelect<FilterBy?>(
+                    multiSelectItems: items,
+                    initialValue: snapshot.selectedEntryTypes,
+                    onConfirm: (selected) {
+                      cubit.setSelectedTypes(selected);
+                      resetQuery();
+                      HapticFeedback.heavyImpact();
+                    },
+                    title: 'Entry types',
+                    buttonText: 'Entry types',
+                    iconData: MdiIcons.filter,
+                  ),
+                  const SizedBox(width: 10),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(
-                        width: 300,
-                        child: SearchWidget(
-                          margin: EdgeInsets.zero,
-                          text: snapshot.match,
-                          onChanged: cubit.setSearchString,
-                          hintText: 'Search Journal...',
+                      Visibility(
+                        visible: snapshot.showPrivateEntries,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              localizations.journalPrivateTooltip,
+                              style: TextStyle(
+                                color: styleConfig().secondaryTextColor,
+                              ),
+                            ),
+                            CupertinoSwitch(
+                              value: snapshot.privateEntriesOnly,
+                              activeColor: styleConfig().private,
+                              onChanged: (bool value) {
+                                cubit.togglePrivateEntriesOnly();
+                                resetQuery();
+                              },
+                            ),
+                          ],
                         ),
-                      ),
-                      MultiSelect<FilterBy?>(
-                        multiSelectItems: items,
-                        initialValue: snapshot.selectedEntryTypes,
-                        onConfirm: (selected) {
-                          cubit.setSelectedTypes(selected);
-                          resetQuery();
-                          HapticFeedback.heavyImpact();
-                        },
-                        title: 'Entry types',
-                        buttonText: 'Entry types',
-                        iconData: MdiIcons.filter,
                       ),
                       const SizedBox(width: 10),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Visibility(
-                            visible: snapshot.showPrivateEntries,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  localizations.journalPrivateTooltip,
-                                  style: TextStyle(
-                                    color: styleConfig().secondaryTextColor,
-                                  ),
-                                ),
-                                CupertinoSwitch(
-                                  value: snapshot.privateEntriesOnly,
-                                  activeColor: styleConfig().private,
-                                  onChanged: (bool value) {
-                                    cubit.togglePrivateEntriesOnly();
-                                    resetQuery();
-                                  },
-                                ),
-                              ],
+                          Text(
+                            localizations.journalFavoriteTooltip,
+                            style: TextStyle(
+                              color: styleConfig().secondaryTextColor,
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                localizations.journalFavoriteTooltip,
-                                style: TextStyle(
-                                  color: styleConfig().secondaryTextColor,
-                                ),
-                              ),
-                              CupertinoSwitch(
-                                value: snapshot.starredEntriesOnly,
-                                activeColor: styleConfig().starredGold,
-                                onChanged: (bool value) {
-                                  cubit.toggleStarredEntriesOnly();
-                                  resetQuery();
-                                },
-                              ),
-                            ],
+                          CupertinoSwitch(
+                            value: snapshot.starredEntriesOnly,
+                            activeColor: styleConfig().starredGold,
+                            onChanged: (bool value) {
+                              cubit.toggleStarredEntriesOnly();
+                              resetQuery();
+                            },
                           ),
-                          const SizedBox(width: 10),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                localizations.journalFlaggedTooltip,
-                                style: TextStyle(
-                                  color: styleConfig().secondaryTextColor,
-                                ),
-                              ),
-                              CupertinoSwitch(
-                                value: snapshot.flaggedEntriesOnly,
-                                activeColor: styleConfig().starredGold,
-                                onChanged: (bool value) {
-                                  cubit.toggleFlaggedEntriesOnly();
-                                  resetQuery();
-                                },
-                              ),
-                            ],
+                        ],
+                      ),
+                      const SizedBox(width: 10),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            localizations.journalFlaggedTooltip,
+                            style: TextStyle(
+                              color: styleConfig().secondaryTextColor,
+                            ),
+                          ),
+                          CupertinoSwitch(
+                            value: snapshot.flaggedEntriesOnly,
+                            activeColor: styleConfig().starredGold,
+                            onChanged: (bool value) {
+                              cubit.toggleFlaggedEntriesOnly();
+                              resetQuery();
+                            },
                           ),
                         ],
                       ),
