@@ -76,6 +76,7 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
   final JournalDb _db = getIt<JournalDb>();
 
   late Set<String> types;
+  late List<FilterBy?> types2;
 
   StreamController<List<TagEntity>> matchingTagsController =
       StreamController<List<TagEntity>>();
@@ -99,6 +100,7 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
   void initState() {
     _pagingController.addPageRequestListener(_fetchPage);
     types = defaultTypes.toSet();
+    types2 = _defaultTypes;
     super.initState();
   }
 
@@ -125,8 +127,6 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
             offset: pageKey,
           )
           .first;
-
-      //final newItems = await RemoteApi.getCharacterList(pageKey, _pageSize);
 
       final isLastPage = newItems.length < _pageSize;
       if (isLastPage) {
@@ -158,103 +158,136 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
     });
   }
 
+  String match = '';
+
   Widget searchRow() {
     final localizations = AppLocalizations.of(context)!;
 
-    return Column(
-      children: [
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: [
-            MultiSelect<FilterBy?>(
-              multiSelectItems: _items,
-              initialValue: _defaultTypes,
-              onConfirm: (selected) {
-                types = selected
-                    .map((e) => e?.typeName)
-                    .whereType<String>()
-                    .toSet();
+    return Padding(
+      padding: const EdgeInsets.only(top: 0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.center,
+            runAlignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              SizedBox(
+                width: 300,
+                child: SearchWidget(
+                  margin: EdgeInsets.zero,
+                  text: match,
+                  onChanged: (text) {},
+                  hintText: 'Search Journal...',
+                ),
+              ),
+              MultiSelect<FilterBy?>(
+                multiSelectItems: _items,
+                initialValue: [],
+                onConfirm: (selected) {
+                  debugPrint('SELECTED $selected');
 
-                resetQuery();
-                HapticFeedback.heavyImpact();
-              },
-              title: 'Entry types',
-              buttonText: 'Entry types',
-              iconData: MdiIcons.filter,
-            ),
-            const SizedBox(width: 10),
-            Visibility(
-              visible: showPrivateEntriesSwitch,
-              child: Row(
+                  setState(() {
+                    types = selected
+                        .map((e) => e?.typeName)
+                        .whereType<String>()
+                        .toSet();
+
+                    types2 = selected;
+
+                    debugPrint(types2.toString());
+                    resetQuery();
+                  });
+
+                  HapticFeedback.heavyImpact();
+                },
+                title: 'Entry types',
+                buttonText: 'Entry types',
+                iconData: MdiIcons.filter,
+              ),
+              const SizedBox(width: 10),
+              Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    localizations.journalPrivateTooltip,
-                    style: TextStyle(
-                      color: styleConfig().primaryTextColor,
+                  Visibility(
+                    visible: showPrivateEntriesSwitch,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          localizations.journalPrivateTooltip,
+                          style: TextStyle(
+                            color: styleConfig().secondaryTextColor,
+                          ),
+                        ),
+                        CupertinoSwitch(
+                          value: privateEntriesOnly,
+                          activeColor: styleConfig().private,
+                          onChanged: (bool value) {
+                            setState(() {
+                              privateEntriesOnly = value;
+                              resetQuery();
+                            });
+                          },
+                        ),
+                      ],
                     ),
                   ),
-                  CupertinoSwitch(
-                    value: privateEntriesOnly,
-                    activeColor: styleConfig().private,
-                    onChanged: (bool value) {
-                      setState(() {
-                        privateEntriesOnly = value;
-                        resetQuery();
-                      });
-                    },
+                  const SizedBox(width: 10),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        localizations.journalFavoriteTooltip,
+                        style:
+                            TextStyle(color: styleConfig().secondaryTextColor),
+                      ),
+                      CupertinoSwitch(
+                        value: starredEntriesOnly,
+                        activeColor: styleConfig().starredGold,
+                        onChanged: (bool value) {
+                          setState(() {
+                            starredEntriesOnly = value;
+                            resetQuery();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 10),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        localizations.journalFlaggedTooltip,
+                        style:
+                            TextStyle(color: styleConfig().secondaryTextColor),
+                      ),
+                      CupertinoSwitch(
+                        value: flaggedEntriesOnly,
+                        activeColor: styleConfig().starredGold,
+                        onChanged: (bool value) {
+                          setState(() {
+                            flaggedEntriesOnly = value;
+                            resetQuery();
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 10),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  localizations.journalFavoriteTooltip,
-                  style: TextStyle(color: styleConfig().primaryTextColor),
-                ),
-                CupertinoSwitch(
-                  value: starredEntriesOnly,
-                  activeColor: styleConfig().starredGold,
-                  onChanged: (bool value) {
-                    setState(() {
-                      starredEntriesOnly = value;
-                      resetQuery();
-                    });
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(width: 10),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  localizations.journalFlaggedTooltip,
-                  style: TextStyle(color: styleConfig().primaryTextColor),
-                ),
-                CupertinoSwitch(
-                  value: flaggedEntriesOnly,
-                  activeColor: styleConfig().starredGold,
-                  onChanged: (bool value) {
-                    setState(() {
-                      flaggedEntriesOnly = value;
-                      resetQuery();
-                    });
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-        SelectedTagsWidget(
-          removeTag: removeTag,
-          tagIds: tagIds.toList(),
-        ),
-      ],
+            ],
+          ),
+          SelectedTagsWidget(
+            removeTag: removeTag,
+            tagIds: tagIds.toList(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -268,41 +301,51 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
           builder: (BuildContext context) {
             return Scaffold(
               backgroundColor: styleConfig().negspace,
-              appBar: JournalPageAppBar(
-                title: 'Journal',
-                match: '',
-                onQueryChanged: (text) {},
-                searchRow: searchRow(),
-              ),
-              body: RefreshIndicator(
-                onRefresh: () => Future.sync(_pagingController.refresh),
-                child: PagedListView<int, JournalEntity>(
-                  pagingController: _pagingController,
-                  builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
-                    itemBuilder: (context, item, index) {
-                      return item.maybeMap(
-                        journalImage: (JournalImage image) {
-                          return JournalImageCard(
-                            item: image,
-                            key: ValueKey(item.meta.id),
-                          );
-                        },
-                        orElse: () {
-                          return JournalCard(
-                            item: item,
-                            key: ValueKey(item.meta.id),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ),
               floatingActionButton: RadialAddActionButtons(
                 radius: isMobile ? 180 : 120,
                 isMacOS: isMacOS,
                 isIOS: isIOS,
                 isAndroid: isAndroid,
+              ),
+              body: RefreshIndicator(
+                onRefresh: () => Future.sync(_pagingController.refresh),
+                child: CustomScrollView(
+                  slivers: <Widget>[
+                    SliverAppBar(
+                      backgroundColor: styleConfig().negspace,
+                      expandedHeight: isIOS ? 230 : 210,
+                      flexibleSpace: FlexibleSpaceBar(
+                        background: JournalPageAppBar(
+                          title: 'Journal',
+                          match: '',
+                          onQueryChanged: (text) {},
+                          searchRow: searchRow(),
+                        ),
+                      ),
+                    ),
+                    PagedSliverList<int, JournalEntity>(
+                      pagingController: _pagingController,
+                      builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
+                        itemBuilder: (context, item, index) {
+                          return item.maybeMap(
+                            journalImage: (JournalImage image) {
+                              return JournalImageCard(
+                                item: image,
+                                key: ValueKey(item.meta.id),
+                              );
+                            },
+                            orElse: () {
+                              return JournalCard(
+                                item: item,
+                                key: ValueKey(item.meta.id),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -318,7 +361,7 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
   }
 }
 
-class JournalPageAppBar extends StatelessWidget with PreferredSizeWidget {
+class JournalPageAppBar extends StatelessWidget {
   const JournalPageAppBar({
     super.key,
     required this.title,
@@ -333,20 +376,10 @@ class JournalPageAppBar extends StatelessWidget with PreferredSizeWidget {
   final Widget searchRow;
 
   @override
-  Size get preferredSize => const Size.fromHeight(200);
-
-  @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        SearchWidget(
-          text: match,
-          onChanged: onQueryChanged,
-          hintText: 'Search $title...',
-        ),
-        searchRow,
-      ],
+    return Padding(
+      padding: EdgeInsets.only(top: isIOS ? 30 : 0),
+      child: searchRow,
     );
   }
 }
@@ -376,7 +409,6 @@ class MultiSelect<T> extends StatelessWidget {
       child: MultiSelectBottomSheetField<T?>(
         backgroundColor: styleConfig().cardColor,
         items: multiSelectItems,
-        initialValue: initialValue,
         title: Text(
           title,
           style: titleStyle(),
@@ -384,13 +416,9 @@ class MultiSelect<T> extends StatelessWidget {
         checkColor: styleConfig().primaryTextColor,
         selectedColor: styleConfig().primaryColor,
         decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.1),
-          borderRadius: const BorderRadius.all(
-            Radius.circular(40),
-          ),
-          border: Border.all(
-            color: styleConfig().secondaryTextColor,
-          ),
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white.withOpacity(0.2),
+          border: Border.all(color: Colors.black26),
         ),
         itemsTextStyle: multiSelectStyle(),
         selectedItemsTextStyle: multiSelectStyle().copyWith(
@@ -406,15 +434,9 @@ class MultiSelect<T> extends StatelessWidget {
         searchHintStyle: formLabelStyle(),
         buttonIcon: Icon(
           iconData,
-          color: styleConfig().primaryTextColor,
+          color: styleConfig().secondaryTextColor,
         ),
-        buttonText: Text(
-          buttonText,
-          style: TextStyle(
-            color: styleConfig().primaryTextColor,
-            fontSize: fontSizeMedium,
-          ),
-        ),
+        buttonText: Text(buttonText, style: searchFieldHintStyle()),
         onConfirm: onConfirm,
       ),
     );

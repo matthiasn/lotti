@@ -64,7 +64,7 @@
   "journalDeleteHint": "Eintrag löschen",
   "journalDeleteQuestion": "Eintrag wirklich löschen?",
   "journalFavoriteTooltip": "Favorit",
-  "journalFlaggedTooltip": "Wiedervorlage",
+  "journalFlaggedTooltip": "Flag",
   "journalHideMapHint": "Karte verstecken",
   "journalLinkedEntriesLabel": "Verlinkte Einträge:",
   "journalLinkedFromLabel": "Verlinkt von:",
