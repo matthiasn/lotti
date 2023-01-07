@@ -15,6 +15,8 @@ import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags/selected_tags_widget.dart';
 import 'package:lotti/widgets/misc/search_widget.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:multi_select_flutter/bottom_sheet/multi_select_bottom_sheet_field.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
 
 class FilterBy {
@@ -31,11 +33,11 @@ final List<String> defaultTypes = [
   'JournalEntry',
   'JournalAudio',
   'JournalImage',
-  'SurveyEntry',
+  // 'SurveyEntry',
   'Task',
   // 'QuantitativeEntry',
-  'MeasurementEntry',
-  'WorkoutEntry',
+  // 'MeasurementEntry',
+  // 'WorkoutEntry',
   // 'HabitCompletionEntry',
 ];
 
@@ -49,6 +51,13 @@ final List<FilterBy> _entryTypes = [
   FilterBy(typeName: 'WorkoutEntry', name: 'Workout'),
   FilterBy(typeName: 'HabitCompletionEntry', name: 'Habit'),
   FilterBy(typeName: 'QuantitativeEntry', name: 'Quant'),
+];
+
+final List<FilterBy?> _defaultTypes = [
+  FilterBy(typeName: 'Task', name: 'Task'),
+  FilterBy(typeName: 'JournalEntry', name: 'Text'),
+  FilterBy(typeName: 'JournalAudio', name: 'Audio'),
+  FilterBy(typeName: 'JournalImage', name: 'Photo'),
 ];
 
 class InfiniteJournalPage extends StatefulWidget {
@@ -79,7 +88,7 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
   bool starredEntriesOnly = false;
   bool flaggedEntriesOnly = false;
   bool privateEntriesOnly = false;
-  bool showPrivateEntriesSwitch = false;
+  bool showPrivateEntriesSwitch = true;
 
   static const _pageSize = 50;
 
@@ -89,9 +98,7 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
   @override
   void initState() {
     _pagingController.addPageRequestListener(_fetchPage);
-
     types = defaultTypes.toSet();
-
     super.initState();
   }
 
@@ -155,114 +162,45 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Column(
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
           children: [
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: [
-                ..._items.map(
-                  (MultiSelectItem<FilterBy?> item) => GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        final typeName = item.value?.typeName;
-                        if (typeName != null) {
-                          if (types.contains(typeName)) {
-                            types.remove(typeName);
-                          } else {
-                            types.add(typeName);
-                          }
-                          resetQuery();
-                          HapticFeedback.heavyImpact();
-                        }
-                      });
-                    },
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: ColoredBox(
-                          color: types.contains(item.value?.typeName)
-                              ? styleConfig().selectedChoiceChipColor
-                              : styleConfig().unselectedChoiceChipColor,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 1,
-                              horizontal: 8,
-                            ),
-                            child: Text(
-                              item.label,
-                              style: TextStyle(
-                                fontFamily: 'Oswald',
-                                fontSize: 14,
-                                color: types.contains(item.value?.typeName)
-                                    ? styleConfig().selectedChoiceChipTextColor
-                                    : styleConfig()
-                                        .unselectedChoiceChipTextColor,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            MultiSelect<FilterBy?>(
+              multiSelectItems: _items,
+              initialValue: _defaultTypes,
+              onConfirm: (selected) {
+                types = selected
+                    .map((e) => e?.typeName)
+                    .whereType<String>()
+                    .toSet();
+
+                resetQuery();
+                HapticFeedback.heavyImpact();
+              },
+              title: 'Entry types',
+              buttonText: 'Entry types',
+              iconData: MdiIcons.filter,
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+            const SizedBox(width: 10),
+            Visibility(
+              visible: showPrivateEntriesSwitch,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Visibility(
-                    visible: showPrivateEntriesSwitch,
-                    child: Row(
-                      children: [
-                        Text(
-                          localizations.journalPrivateTooltip,
-                          style: TextStyle(
-                            color: styleConfig().primaryTextColor,
-                          ),
-                        ),
-                        CupertinoSwitch(
-                          value: privateEntriesOnly,
-                          activeColor: styleConfig().private,
-                          onChanged: (bool value) {
-                            setState(() {
-                              privateEntriesOnly = value;
-                              resetQuery();
-                            });
-                          },
-                        ),
-                      ],
+                  Text(
+                    localizations.journalPrivateTooltip,
+                    style: TextStyle(
+                      color: styleConfig().primaryTextColor,
                     ),
                   ),
-                  Text(
-                    localizations.journalFavoriteTooltip,
-                    style: TextStyle(color: styleConfig().primaryTextColor),
-                  ),
                   CupertinoSwitch(
-                    value: starredEntriesOnly,
-                    activeColor: styleConfig().starredGold,
+                    value: privateEntriesOnly,
+                    activeColor: styleConfig().private,
                     onChanged: (bool value) {
                       setState(() {
-                        starredEntriesOnly = value;
-                        resetQuery();
-                      });
-                    },
-                  ),
-                  Text(
-                    localizations.journalFlaggedTooltip,
-                    style: TextStyle(color: styleConfig().primaryTextColor),
-                  ),
-                  CupertinoSwitch(
-                    value: flaggedEntriesOnly,
-                    activeColor: styleConfig().starredGold,
-                    onChanged: (bool value) {
-                      setState(() {
-                        flaggedEntriesOnly = value;
+                        privateEntriesOnly = value;
                         resetQuery();
                       });
                     },
@@ -270,12 +208,52 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
                 ],
               ),
             ),
-            SelectedTagsWidget(
-              removeTag: removeTag,
-              tagIds: tagIds.toList(),
+            const SizedBox(width: 10),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  localizations.journalFavoriteTooltip,
+                  style: TextStyle(color: styleConfig().primaryTextColor),
+                ),
+                CupertinoSwitch(
+                  value: starredEntriesOnly,
+                  activeColor: styleConfig().starredGold,
+                  onChanged: (bool value) {
+                    setState(() {
+                      starredEntriesOnly = value;
+                      resetQuery();
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(width: 10),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  localizations.journalFlaggedTooltip,
+                  style: TextStyle(color: styleConfig().primaryTextColor),
+                ),
+                CupertinoSwitch(
+                  value: flaggedEntriesOnly,
+                  activeColor: styleConfig().starredGold,
+                  onChanged: (bool value) {
+                    setState(() {
+                      flaggedEntriesOnly = value;
+                      resetQuery();
+                    });
+                  },
+                ),
+              ],
             ),
           ],
-        )
+        ),
+        SelectedTagsWidget(
+          removeTag: removeTag,
+          tagIds: tagIds.toList(),
+        ),
       ],
     );
   }
@@ -355,14 +333,13 @@ class JournalPageAppBar extends StatelessWidget with PreferredSizeWidget {
   final Widget searchRow;
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight * 3);
+  Size get preferredSize => const Size.fromHeight(200);
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        const SizedBox(height: 5),
         SearchWidget(
           text: match,
           onChanged: onQueryChanged,
@@ -370,6 +347,76 @@ class JournalPageAppBar extends StatelessWidget with PreferredSizeWidget {
         ),
         searchRow,
       ],
+    );
+  }
+}
+
+class MultiSelect<T> extends StatelessWidget {
+  const MultiSelect({
+    super.key,
+    required this.multiSelectItems,
+    required this.onConfirm,
+    required this.title,
+    required this.buttonText,
+    required this.iconData,
+    required this.initialValue,
+  });
+
+  final List<MultiSelectItem<T?>> multiSelectItems;
+  final void Function(List<T?>) onConfirm;
+  final String title;
+  final String buttonText;
+  final IconData iconData;
+  final List<T> initialValue;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 300,
+      child: MultiSelectBottomSheetField<T?>(
+        backgroundColor: styleConfig().cardColor,
+        items: multiSelectItems,
+        initialValue: initialValue,
+        title: Text(
+          title,
+          style: titleStyle(),
+        ),
+        checkColor: styleConfig().primaryTextColor,
+        selectedColor: styleConfig().primaryColor,
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.1),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(40),
+          ),
+          border: Border.all(
+            color: styleConfig().secondaryTextColor,
+          ),
+        ),
+        itemsTextStyle: multiSelectStyle(),
+        selectedItemsTextStyle: multiSelectStyle().copyWith(
+          fontWeight: FontWeight.normal,
+        ),
+        unselectedColor: styleConfig().primaryTextColor,
+        searchIcon: Icon(
+          Icons.search,
+          size: fontSizeLarge,
+          color: styleConfig().primaryTextColor,
+        ),
+        searchTextStyle: formLabelStyle(),
+        searchHintStyle: formLabelStyle(),
+        buttonIcon: Icon(
+          iconData,
+          color: styleConfig().primaryTextColor,
+        ),
+        buttonText: Text(
+          buttonText,
+          style: TextStyle(
+            color: styleConfig().primaryTextColor,
+            fontSize: fontSizeMedium,
+          ),
+        ),
+        onConfirm: onConfirm,
+      ),
     );
   }
 }

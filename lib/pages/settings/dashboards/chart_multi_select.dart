@@ -21,14 +21,10 @@ class ChartMultiSelect<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-      ),
-      child: MultiSelectDialogField<T?>(
+      padding: const EdgeInsets.all(16),
+      child: MultiSelectBottomSheetField<T?>(
         searchable: true,
-        backgroundColor: styleConfig().secondaryTextColor,
+        backgroundColor: styleConfig().cardColor,
         items: multiSelectItems,
         initialValue: const [],
         title: Text(
@@ -36,15 +32,14 @@ class ChartMultiSelect<T> extends StatelessWidget {
           style: titleStyle(),
         ),
         checkColor: styleConfig().primaryTextColor,
-        selectedColor: Colors.blue,
+        selectedColor: styleConfig().primaryColor,
         decoration: BoxDecoration(
           color: Colors.blue.withOpacity(0.1),
           borderRadius: const BorderRadius.all(
             Radius.circular(40),
           ),
           border: Border.all(
-            color: styleConfig().primaryTextColor,
-            width: 2,
+            color: styleConfig().secondaryTextColor,
           ),
         ),
         itemsTextStyle: multiSelectStyle(),
@@ -54,7 +49,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
         unselectedColor: styleConfig().primaryTextColor,
         searchIcon: Icon(
           Icons.search,
-          size: 32,
+          size: fontSizeLarge,
           color: styleConfig().primaryTextColor,
         ),
         searchTextStyle: formLabelStyle(),
@@ -67,7 +62,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
           buttonText,
           style: TextStyle(
             color: styleConfig().primaryTextColor,
-            fontSize: 16,
+            fontSize: fontSizeMedium,
           ),
         ),
         onConfirm: onConfirm,
