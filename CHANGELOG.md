@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- New search header in journal
+- Upgraded dependencies
+
+## [0.8.226] - 2023-01-07
+### Changed:
 - Declutter task form
 - Simplified editor toolbar
 - Unified searchable list

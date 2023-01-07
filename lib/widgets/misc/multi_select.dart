@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:multi_select_flutter/multi_select_flutter.dart';
+import 'package:multi_select_flutter/bottom_sheet/multi_select_bottom_sheet_field.dart';
+import 'package:multi_select_flutter/util/multi_select_item.dart';
 
-class ChartMultiSelect<T> extends StatelessWidget {
-  const ChartMultiSelect({
+class MultiSelect<T> extends StatelessWidget {
+  const MultiSelect({
     super.key,
     required this.multiSelectItems,
     required this.onConfirm,
     required this.title,
     required this.buttonText,
     required this.iconData,
+    required this.initialValue,
   });
 
   final List<MultiSelectItem<T?>> multiSelectItems;
@@ -17,16 +19,17 @@ class ChartMultiSelect<T> extends StatelessWidget {
   final String title;
   final String buttonText;
   final IconData iconData;
+  final List<T> initialValue;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+    return SizedBox(
+      width: 321,
       child: MultiSelectBottomSheetField<T?>(
-        searchable: true,
         backgroundColor: styleConfig().cardColor,
         items: multiSelectItems,
-        initialValue: const [],
+        initialChildSize: 0.8,
+        maxChildSize: 0.8,
         title: Text(
           title,
           style: titleStyle(),
@@ -34,13 +37,9 @@ class ChartMultiSelect<T> extends StatelessWidget {
         checkColor: styleConfig().primaryTextColor,
         selectedColor: styleConfig().primaryColor,
         decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.1),
-          borderRadius: const BorderRadius.all(
-            Radius.circular(40),
-          ),
-          border: Border.all(
-            color: styleConfig().secondaryTextColor,
-          ),
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white.withOpacity(0.2),
+          border: Border.all(color: Colors.black26),
         ),
         itemsTextStyle: multiSelectStyle(),
         selectedItemsTextStyle: multiSelectStyle().copyWith(
@@ -56,15 +55,9 @@ class ChartMultiSelect<T> extends StatelessWidget {
         searchHintStyle: formLabelStyle(),
         buttonIcon: Icon(
           iconData,
-          color: styleConfig().primaryTextColor,
+          color: styleConfig().secondaryTextColor,
         ),
-        buttonText: Text(
-          buttonText,
-          style: TextStyle(
-            color: styleConfig().primaryTextColor,
-            fontSize: fontSizeMedium,
-          ),
-        ),
+        buttonText: Text(buttonText, style: searchFieldHintStyle()),
         onConfirm: onConfirm,
       ),
     );

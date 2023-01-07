@@ -167,6 +167,10 @@ TextStyle searchFieldStyle() => TextStyle(
       fontWeight: FontWeight.w100,
     );
 
+TextStyle searchFieldHintStyle() => searchFieldStyle().copyWith(
+      color: styleConfig().secondaryTextColor,
+    );
+
 TextStyle settingsCardTextStyle() => TextStyle(
       //color: colorConfig().entryTextColor,
       color: styleConfig().primaryTextColor,
