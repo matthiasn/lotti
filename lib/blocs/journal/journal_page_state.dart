@@ -11,8 +11,7 @@ class JournalPageState with _$JournalPageState {
     required bool starredEntriesOnly,
     required bool flaggedEntriesOnly,
     required bool privateEntriesOnly,
-    required bool showPrivateEntriesSwitch,
-    required Set<String> types,
-    required Set<FilterBy?> selectedEntryTypes,
+    required bool showPrivateEntries,
+    required List<FilterBy?> selectedEntryTypes,
   }) = _JournalPageState;
 }

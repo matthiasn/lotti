@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/get_it.dart';
 
 class FilterBy {
   FilterBy({
@@ -41,18 +43,23 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             starredEntriesOnly: false,
             flaggedEntriesOnly: false,
             privateEntriesOnly: false,
-            showPrivateEntriesSwitch: true,
-            types: defaultTypes.map((e) => e.typeName).toSet(),
-            selectedEntryTypes: defaultTypes.toSet(),
+            showPrivateEntries: false,
+            selectedEntryTypes: defaultTypes,
           ),
-        );
+        ) {
+    getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
+      _showPrivateEntries = showPrivate;
+      emitState();
+    });
+  }
 
-  Set<FilterBy?> _selectedEntryTypes = <FilterBy?>{};
+  List<FilterBy?> _selectedEntryTypes = <FilterBy?>[];
 
   String _match = '';
   bool _starredEntriesOnly = false;
   bool _flaggedEntriesOnly = false;
   bool _privateEntriesOnly = false;
+  bool _showPrivateEntries = false;
 
   void emitState() {
     emit(
@@ -62,18 +69,14 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         starredEntriesOnly: _starredEntriesOnly,
         flaggedEntriesOnly: _flaggedEntriesOnly,
         privateEntriesOnly: _privateEntriesOnly,
-        showPrivateEntriesSwitch: true,
-        types: _selectedEntryTypes
-            .map((e) => e?.typeName)
-            .whereType<String>()
-            .toSet(),
+        showPrivateEntries: _showPrivateEntries,
         selectedEntryTypes: _selectedEntryTypes,
       ),
     );
   }
 
   void setSelectedTypes(List<FilterBy?> selected) {
-    _selectedEntryTypes = selected.toSet();
+    _selectedEntryTypes = selected;
     emitState();
   }
 

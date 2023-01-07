@@ -61,7 +61,7 @@ class JournalSliverAppBar extends StatelessWidget {
                       ),
                       MultiSelect<FilterBy?>(
                         multiSelectItems: items,
-                        initialValue: snapshot.selectedEntryTypes.toList(),
+                        initialValue: snapshot.selectedEntryTypes,
                         onConfirm: (selected) {
                           cubit.setSelectedTypes(selected);
                           resetQuery();
@@ -76,7 +76,7 @@ class JournalSliverAppBar extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Visibility(
-                            visible: snapshot.showPrivateEntriesSwitch,
+                            visible: snapshot.showPrivateEntries,
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
