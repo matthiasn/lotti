@@ -160,6 +160,13 @@ TextStyle appBarTextStyleNewLarge() => TextStyle(
       fontWeight: FontWeight.w100,
     );
 
+TextStyle searchFieldStyle() => TextStyle(
+      color: styleConfig().primaryTextColor,
+      fontFamily: mainFont,
+      fontSize: fontSizeLarge,
+      fontWeight: FontWeight.w100,
+    );
+
 TextStyle settingsCardTextStyle() => TextStyle(
       //color: colorConfig().entryTextColor,
       color: styleConfig().primaryTextColor,

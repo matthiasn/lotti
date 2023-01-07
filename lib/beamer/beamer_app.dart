@@ -80,22 +80,26 @@ class _AppScreenState extends State<AppScreen> {
                 icon: SvgPicture.asset(styleConfig().navTasksIcon),
                 activeIcon: SvgPicture.asset(styleConfig().navTasksIconActive),
                 label: localizations.navTabTitleHabits,
+                tooltip: '',
               ),
               BottomNavigationBarItem(
                 icon: SvgPicture.asset(styleConfig().navHomeIcon),
                 activeIcon: SvgPicture.asset(styleConfig().navHomeIconActive),
                 label: localizations.navTabTitleInsights,
+                tooltip: '',
               ),
               BottomNavigationBarItem(
                 icon: FlaggedBadgeIcon(),
                 activeIcon: FlaggedBadgeIcon(active: true),
                 label: localizations.navTabTitleJournal,
+                tooltip: '',
               ),
               if (showTasks)
                 BottomNavigationBarItem(
                   icon: TasksBadgeIcon(),
                   activeIcon: TasksBadgeIcon(active: true),
                   label: localizations.navTabTitleTasks,
+                  tooltip: '',
                 ),
               BottomNavigationBarItem(
                 icon: OutboxBadgeIcon(
@@ -105,6 +109,7 @@ class _AppScreenState extends State<AppScreen> {
                   icon: SvgPicture.asset(styleConfig().navSettingsIconActive),
                 ),
                 label: localizations.navTabTitleSettings,
+                tooltip: '',
               ),
             ],
             onTap: navService.tapIndex,
