@@ -8,11 +8,13 @@ class SearchWidget extends StatefulWidget with PreferredSizeWidget {
     required this.text,
     required this.onChanged,
     required this.hintText,
+    this.margin = const EdgeInsets.all(20),
   });
 
   final String text;
   final ValueChanged<String> onChanged;
   final String hintText;
+  final EdgeInsets margin;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -27,17 +29,16 @@ class _SearchWidgetState extends State<SearchWidget> {
   @override
   Widget build(BuildContext context) {
     final styleActive = searchFieldStyle();
-    final styleHint = styleActive.copyWith(
-      color: styleActive.color?.withOpacity(0.5),
-    );
+    final styleHint = searchFieldHintStyle();
+
     final style = widget.text.isEmpty ? styleHint : styleActive;
 
     return Container(
-      height: 42,
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      margin: widget.margin,
+      height: 53,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withOpacity(0.3),
+        color: Colors.white.withOpacity(0.2),
         border: Border.all(color: Colors.black26),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8),
