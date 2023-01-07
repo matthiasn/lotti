@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
+import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -31,6 +32,9 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
+
+  final entryTypes =
+      defaultTypes.map((e) => e.typeName).whereType<String>().toList();
 
   group('JournalPage Widget Tests - ', () {
     setUpAll(() {
@@ -110,7 +114,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: defaultTypes.toList(),
+          types: entryTypes,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -166,7 +170,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: defaultTypes.toList(),
+          types: entryTypes,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -222,7 +226,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: defaultTypes.toList(),
+          types: entryTypes,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -302,7 +306,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: defaultTypes.toList(),
+          types: entryTypes,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -394,7 +398,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: defaultTypes.toList(),
+          types: entryTypes,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
