@@ -20,7 +20,7 @@ class DefinitionsListAppBar extends StatelessWidget with PreferredSizeWidget {
   final void Function(String) onQueryChanged;
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight * 2);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight * 2.5);
 
   @override
   Widget build(BuildContext context) {

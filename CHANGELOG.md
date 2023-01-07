@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unified searchable list
 - Hide task title label when task defined
 - Floating search bar replaced in settings
+- Floating search bar replaced in journal
 
 ## [0.8.225] - 2023-01-06
 ### Changed:
