@@ -7,11 +7,12 @@ import 'package:lotti/pages/create/create_measurement_page.dart';
 import 'package:lotti/pages/create/fill_survey_page.dart';
 import 'package:lotti/pages/create/record_audio_page.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
-import 'package:lotti/pages/journal/infinite_journal_page.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/journal/tags/tags_modal.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+
+import '../../pages/journal/infinite_journal_page.dart';
 
 class JournalLocation extends BeamLocation<BeamState> {
   JournalLocation(RouteInformation super.routeInformation);
@@ -41,7 +42,6 @@ class JournalLocation extends BeamLocation<BeamState> {
         key: ValueKey('journal'),
         title: 'Journal',
         type: BeamPageType.noTransition,
-        //child: JournalPage(),
         child: InfiniteJournalPage(),
       ),
       if (isUuid(entryId))
