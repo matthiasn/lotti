@@ -14,9 +14,9 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags/selected_tags_widget.dart';
+import 'package:lotti/widgets/misc/multi_select.dart';
 import 'package:lotti/widgets/misc/search_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:multi_select_flutter/bottom_sheet/multi_select_bottom_sheet_field.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
 
 class FilterBy {
@@ -163,131 +163,122 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
   Widget searchRow() {
     final localizations = AppLocalizations.of(context)!;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Wrap(
-            alignment: WrapAlignment.center,
-            runAlignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              SizedBox(
-                width: 300,
-                child: SearchWidget(
-                  margin: EdgeInsets.zero,
-                  text: match,
-                  onChanged: (text) {},
-                  hintText: 'Search Journal...',
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.center,
+          runAlignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            SizedBox(
+              width: 300,
+              child: SearchWidget(
+                margin: EdgeInsets.zero,
+                text: match,
+                onChanged: (text) {},
+                hintText: 'Search Journal...',
+              ),
+            ),
+            MultiSelect<FilterBy?>(
+              multiSelectItems: _items,
+              initialValue: const [],
+              onConfirm: (selected) {
+                setState(() {
+                  types = selected
+                      .map((e) => e?.typeName)
+                      .whereType<String>()
+                      .toSet();
+
+                  types2 = selected;
+                  resetQuery();
+                });
+
+                HapticFeedback.heavyImpact();
+              },
+              title: 'Entry types',
+              buttonText: 'Entry types',
+              iconData: MdiIcons.filter,
+            ),
+            const SizedBox(width: 10),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Visibility(
+                  visible: showPrivateEntriesSwitch,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        localizations.journalPrivateTooltip,
+                        style: TextStyle(
+                          color: styleConfig().secondaryTextColor,
+                        ),
+                      ),
+                      CupertinoSwitch(
+                        value: privateEntriesOnly,
+                        activeColor: styleConfig().private,
+                        onChanged: (bool value) {
+                          setState(() {
+                            privateEntriesOnly = value;
+                            resetQuery();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              MultiSelect<FilterBy?>(
-                multiSelectItems: _items,
-                initialValue: [],
-                onConfirm: (selected) {
-                  debugPrint('SELECTED $selected');
-
-                  setState(() {
-                    types = selected
-                        .map((e) => e?.typeName)
-                        .whereType<String>()
-                        .toSet();
-
-                    types2 = selected;
-
-                    debugPrint(types2.toString());
-                    resetQuery();
-                  });
-
-                  HapticFeedback.heavyImpact();
-                },
-                title: 'Entry types',
-                buttonText: 'Entry types',
-                iconData: MdiIcons.filter,
-              ),
-              const SizedBox(width: 10),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Visibility(
-                    visible: showPrivateEntriesSwitch,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          localizations.journalPrivateTooltip,
-                          style: TextStyle(
-                            color: styleConfig().secondaryTextColor,
-                          ),
-                        ),
-                        CupertinoSwitch(
-                          value: privateEntriesOnly,
-                          activeColor: styleConfig().private,
-                          onChanged: (bool value) {
-                            setState(() {
-                              privateEntriesOnly = value;
-                              resetQuery();
-                            });
-                          },
-                        ),
-                      ],
+                const SizedBox(width: 10),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      localizations.journalFavoriteTooltip,
+                      style: TextStyle(color: styleConfig().secondaryTextColor),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        localizations.journalFavoriteTooltip,
-                        style:
-                            TextStyle(color: styleConfig().secondaryTextColor),
-                      ),
-                      CupertinoSwitch(
-                        value: starredEntriesOnly,
-                        activeColor: styleConfig().starredGold,
-                        onChanged: (bool value) {
-                          setState(() {
-                            starredEntriesOnly = value;
-                            resetQuery();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 10),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        localizations.journalFlaggedTooltip,
-                        style:
-                            TextStyle(color: styleConfig().secondaryTextColor),
-                      ),
-                      CupertinoSwitch(
-                        value: flaggedEntriesOnly,
-                        activeColor: styleConfig().starredGold,
-                        onChanged: (bool value) {
-                          setState(() {
-                            flaggedEntriesOnly = value;
-                            resetQuery();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          SelectedTagsWidget(
-            removeTag: removeTag,
-            tagIds: tagIds.toList(),
-          ),
-        ],
-      ),
+                    CupertinoSwitch(
+                      value: starredEntriesOnly,
+                      activeColor: styleConfig().starredGold,
+                      onChanged: (bool value) {
+                        setState(() {
+                          starredEntriesOnly = value;
+                          resetQuery();
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 10),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      localizations.journalFlaggedTooltip,
+                      style: TextStyle(color: styleConfig().secondaryTextColor),
+                    ),
+                    CupertinoSwitch(
+                      value: flaggedEntriesOnly,
+                      activeColor: styleConfig().starredGold,
+                      onChanged: (bool value) {
+                        setState(() {
+                          flaggedEntriesOnly = value;
+                          resetQuery();
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+        SelectedTagsWidget(
+          removeTag: removeTag,
+          tagIds: tagIds.toList(),
+        ),
+      ],
     );
   }
 
@@ -311,17 +302,10 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
                 onRefresh: () => Future.sync(_pagingController.refresh),
                 child: CustomScrollView(
                   slivers: <Widget>[
-                    SliverAppBar(
-                      backgroundColor: styleConfig().negspace,
-                      expandedHeight: isIOS ? 230 : 210,
-                      flexibleSpace: FlexibleSpaceBar(
-                        background: JournalPageAppBar(
-                          title: 'Journal',
-                          match: '',
-                          onQueryChanged: (text) {},
-                          searchRow: searchRow(),
-                        ),
-                      ),
+                    JournalSliverAppBar(
+                      match: '',
+                      onQueryChanged: (text) {},
+                      searchRow: searchRow(),
                     ),
                     PagedSliverList<int, JournalEntity>(
                       pagingController: _pagingController,
@@ -361,83 +345,28 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
   }
 }
 
-class JournalPageAppBar extends StatelessWidget {
-  const JournalPageAppBar({
+class JournalSliverAppBar extends StatelessWidget {
+  const JournalSliverAppBar({
     super.key,
-    required this.title,
     required this.match,
     required this.onQueryChanged,
     required this.searchRow,
   });
 
-  final String title;
   final String match;
   final void Function(String) onQueryChanged;
   final Widget searchRow;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(top: isIOS ? 30 : 0),
-      child: searchRow,
-    );
-  }
-}
-
-class MultiSelect<T> extends StatelessWidget {
-  const MultiSelect({
-    super.key,
-    required this.multiSelectItems,
-    required this.onConfirm,
-    required this.title,
-    required this.buttonText,
-    required this.iconData,
-    required this.initialValue,
-  });
-
-  final List<MultiSelectItem<T?>> multiSelectItems;
-  final void Function(List<T?>) onConfirm;
-  final String title;
-  final String buttonText;
-  final IconData iconData;
-  final List<T> initialValue;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 300,
-      child: MultiSelectBottomSheetField<T?>(
-        backgroundColor: styleConfig().cardColor,
-        items: multiSelectItems,
-        title: Text(
-          title,
-          style: titleStyle(),
+    return SliverAppBar(
+      backgroundColor: styleConfig().negspace,
+      expandedHeight: isIOS ? 230 : 210,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Padding(
+          padding: EdgeInsets.only(top: isIOS ? 30 : 0),
+          child: searchRow,
         ),
-        checkColor: styleConfig().primaryTextColor,
-        selectedColor: styleConfig().primaryColor,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.white.withOpacity(0.2),
-          border: Border.all(color: Colors.black26),
-        ),
-        itemsTextStyle: multiSelectStyle(),
-        selectedItemsTextStyle: multiSelectStyle().copyWith(
-          fontWeight: FontWeight.normal,
-        ),
-        unselectedColor: styleConfig().primaryTextColor,
-        searchIcon: Icon(
-          Icons.search,
-          size: fontSizeLarge,
-          color: styleConfig().primaryTextColor,
-        ),
-        searchTextStyle: formLabelStyle(),
-        searchHintStyle: formLabelStyle(),
-        buttonIcon: Icon(
-          iconData,
-          color: styleConfig().secondaryTextColor,
-        ),
-        buttonText: Text(buttonText, style: searchFieldHintStyle()),
-        onConfirm: onConfirm,
       ),
     );
   }
