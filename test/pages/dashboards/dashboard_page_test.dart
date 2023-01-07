@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
+import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/dashboards/dashboard_page.dart';
-import 'package:lotti/pages/journal/journal_page.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/themes_service.dart';
@@ -144,7 +144,8 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: defaultTypes.toList(),
+          types:
+              defaultTypes.map((e) => e.typeName).whereType<String>().toList(),
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
