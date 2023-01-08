@@ -121,14 +121,20 @@ class Maintenance {
   Future<void> deleteFts5Db() async {
     final file = await getDatabaseFile(fts5DbFileName);
     file.deleteSync();
+
+    getIt<LoggingDb>().captureEvent(
+      'FTS5 database DELETED',
+      domain: 'MAINTENANCE',
+      subDomain: 'recreateFts5',
+    );
   }
 
   Future<void> recreateFts5() async {
     final fts5Db = getIt<Fts5Db>();
 
-    final count = await _db.getJournalCount();
+    final entryCount = await _db.getJournalCount();
     const pageSize = 100;
-    final pages = (count / pageSize).ceil();
+    final pages = (entryCount / pageSize).ceil();
 
     for (var page = 0; page <= pages; page++) {
       final dbEntities =
@@ -138,6 +144,15 @@ class Maintenance {
       for (final entry in entries) {
         await fts5Db.insertText(entry);
       }
+
+      final completed = page * pageSize;
+      final progress = entryCount > 0 ? completed / entryCount : 0;
+
+      getIt<LoggingDb>().captureEvent(
+        'Progress: ${(progress * 100).floor()}%, $completed/$entryCount',
+        domain: 'MAINTENANCE',
+        subDomain: 'recreateFts5',
+      );
     }
   }
 }
