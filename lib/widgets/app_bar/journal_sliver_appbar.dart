@@ -67,7 +67,6 @@ class JournalSliverAppBar extends StatelessWidget {
                             initialValue: snapshot.selectedEntryTypes,
                             onConfirm: (selected) {
                               cubit.setSelectedTypes(selected);
-                              snapshot.pagingController.refresh();
                               HapticFeedback.heavyImpact();
                             },
                             title: 'Entry types',
@@ -93,10 +92,8 @@ class JournalSliverAppBar extends StatelessWidget {
                                   CupertinoSwitch(
                                     value: snapshot.privateEntriesOnly,
                                     activeColor: styleConfig().private,
-                                    onChanged: (bool value) {
-                                      cubit.togglePrivateEntriesOnly();
-                                      snapshot.pagingController.refresh();
-                                    },
+                                    onChanged: (_) =>
+                                        cubit.togglePrivateEntriesOnly(),
                                   ),
                                 ],
                               ),
@@ -114,10 +111,8 @@ class JournalSliverAppBar extends StatelessWidget {
                                 CupertinoSwitch(
                                   value: snapshot.starredEntriesOnly,
                                   activeColor: styleConfig().starredGold,
-                                  onChanged: (bool value) {
-                                    cubit.toggleStarredEntriesOnly();
-                                    snapshot.pagingController.refresh();
-                                  },
+                                  onChanged: (_) =>
+                                      cubit.toggleStarredEntriesOnly(),
                                 ),
                               ],
                             ),
@@ -134,10 +129,8 @@ class JournalSliverAppBar extends StatelessWidget {
                                 CupertinoSwitch(
                                   value: snapshot.flaggedEntriesOnly,
                                   activeColor: styleConfig().starredGold,
-                                  onChanged: (bool value) {
-                                    cubit.toggleFlaggedEntriesOnly();
-                                    snapshot.pagingController.refresh();
-                                  },
+                                  onChanged: (_) =>
+                                      cubit.toggleFlaggedEntriesOnly(),
                                 ),
                               ],
                             ),

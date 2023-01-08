@@ -60,21 +60,25 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   void setSelectedTypes(List<FilterBy?> selected) {
     _selectedEntryTypes = selected;
+    refreshQuery();
     emitState();
   }
 
   void toggleStarredEntriesOnly() {
     _starredEntriesOnly = !_starredEntriesOnly;
+    refreshQuery();
     emitState();
   }
 
   void toggleFlaggedEntriesOnly() {
     _flaggedEntriesOnly = !_flaggedEntriesOnly;
+    refreshQuery();
     emitState();
   }
 
   void togglePrivateEntriesOnly() {
     _privateEntriesOnly = !_privateEntriesOnly;
+    refreshQuery();
     emitState();
   }
 
@@ -82,7 +86,12 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     _query = query;
     final res = await getIt<Fts5Db>().watchFullTextMatches(query).first;
     _fullTextMatches = res.toSet();
+    refreshQuery();
     emitState();
+  }
+
+  void refreshQuery() {
+    state.pagingController.refresh();
   }
 
   Future<void> _fetchPage(int pageKey) async {
@@ -93,13 +102,11 @@ class JournalPageCubit extends Cubit<JournalPageState> {
           .toList();
 
       final fullTextMatches = _fullTextMatches.toList();
-      final ids = fullTextMatches.isNotEmpty ? fullTextMatches : null;
+      final ids = _query.isNotEmpty ? fullTextMatches : null;
 
       final newItems = await _db
           .watchJournalEntities(
             types: types,
-            // TODO: bring back tags matching
-            // ids: entryIds?.toList(),
             ids: ids,
             starredStatuses: _starredEntriesOnly ? [true] : [true, false],
             privateStatuses: _privateEntriesOnly ? [true] : [true, false],
