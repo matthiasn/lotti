@@ -71,11 +71,13 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
     super.initState();
   }
 
+  // TODO: move all this to the new JournalPageCubit
   Future<void> _fetchPage(int pageKey) async {
     final cubit = context.read<JournalPageCubit>();
 
     try {
       Set<String>? entryIds;
+      // TODO: rethink tags
       for (final tagId in tagIds) {
         final entryIdsForTag = (await _db.entryIdsByTagId(tagId)).toSet();
         if (entryIds == null) {
@@ -93,7 +95,9 @@ class _InfiniteJournalPageState extends State<InfiniteJournalPage> {
       final newItems = await _db
           .watchJournalEntities(
             types: types,
-            ids: entryIds?.toList(),
+            // TODO: bring back tags matching
+            // ids: entryIds?.toList(),
+            ids: cubit.state.fullTextMatches.toList(),
             starredStatuses:
                 cubit.state.starredEntriesOnly ? [true] : [true, false],
             privateStatuses:

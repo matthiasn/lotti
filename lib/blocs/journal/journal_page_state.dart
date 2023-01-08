@@ -13,5 +13,6 @@ class JournalPageState with _$JournalPageState {
     required bool privateEntriesOnly,
     required bool showPrivateEntries,
     required List<FilterBy?> selectedEntryTypes,
+    required Set<String> fullTextMatches,
   }) = _JournalPageState;
 }
