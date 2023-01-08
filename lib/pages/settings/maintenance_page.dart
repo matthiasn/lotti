@@ -97,6 +97,11 @@ class _MaintenancePageState extends State<MaintenancePage> {
                       title: localizations.maintenanceCancelNotifications,
                       onTap: () => getIt<NotificationService>().cancelAll(),
                     ),
+                    const SettingsDivider(),
+                    SettingsCard(
+                      title: 'Recreate FTS5',
+                      onTap: () => getIt<Maintenance>().recreateFts5(),
+                    ),
                   ],
                 ),
               );

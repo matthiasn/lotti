@@ -1,0 +1,9 @@
+CREATE VIRTUAL TABLE
+  journal_fts USING fts5(plain_text, title, summary, uuid UNINDEXED);
+
+insertJournalEntry:
+INSERT INTO journal_fts(plain_text, title, summary, uuid)
+  VALUES(:plain_text, :title, :summary, :uuid);
+
+findMatching:
+SELECT uuid FROM journal_fts WHERE journal_fts MATCH :query;
