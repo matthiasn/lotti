@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 
@@ -31,6 +31,7 @@ class Fts5Db extends _$Fts5Db {
 
   Future<void> insertText(JournalEntity entry) async {
     final tagsService = getIt<TagsService>();
+    final entitiesCacheService = getIt<EntitiesCacheService>();
 
     final plainText = entry.entryText?.plainText ?? '';
     final title = entry.maybeMap(
@@ -39,26 +40,26 @@ class Fts5Db extends _$Fts5Db {
       orElse: () => '',
     );
 
-    final summary = await entry.maybeMap(
-      measurement: (m) async {
-        final dataType = await getIt<JournalDb>()
-            .getMeasurableDataTypeById(m.data.dataTypeId);
+    final summary = entry.maybeMap(
+      measurement: (m) {
+        final dataType =
+            entitiesCacheService.getDataTypeById(m.data.dataTypeId);
         final value = m.data.value;
         return '${dataType?.displayName} $value ${dataType?.unitName}';
       },
-      survey: (survey) async {
+      survey: (survey) {
         final scores = survey.data.calculatedScores.entries
             .map((mapEntry) => '${mapEntry.key}: ${mapEntry.value}');
         return scores.join('\n');
       },
-      quantitative: (q) async {
+      quantitative: (q) {
         final healthType = healthTypes[q.data.dataType];
         final unit = healthType?.unit ?? q.data.unit;
         final displayName = healthType?.displayName ?? q.data.dataType;
 
         return '${q.data.value} $unit $displayName';
       },
-      orElse: () async => '',
+      orElse: () => '',
     );
 
     final tagsString = entry.meta.tagIds

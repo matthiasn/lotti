@@ -13,6 +13,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -46,6 +47,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<ThemesService>(ThemesService())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
+    ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())
     ..registerSingleton<Future<DriftIsolate>>(
       createDriftIsolate(syncDbFileName),
       instanceName: syncDbFileName,
