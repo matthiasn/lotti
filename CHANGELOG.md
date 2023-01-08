@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wire full-text database search (no refresh yet)
 - Add tags in full-text search
 - Add entities cache for faster lookup of measurable data types
+- Use entities cache in measurement summary
 
 ## [0.8.227] - 2023-01-07
 ### Changed:
