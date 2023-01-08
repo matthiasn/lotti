@@ -41,7 +41,7 @@ class JournalLocation extends BeamLocation<BeamState> {
         key: ValueKey('journal'),
         title: 'Journal',
         type: BeamPageType.noTransition,
-        child: JournalPageWrapper(),
+        child: InfiniteJournalPage(),
       ),
       if (isUuid(entryId))
         BeamPage(

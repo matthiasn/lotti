@@ -140,7 +140,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPageWrapper(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -198,7 +198,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPageWrapper(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -254,7 +254,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPageWrapper(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -350,7 +350,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPageWrapper(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -446,7 +446,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPageWrapper(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );

@@ -15,10 +15,10 @@ import 'package:multi_select_flutter/multi_select_flutter.dart';
 class JournalSliverAppBar extends StatelessWidget {
   const JournalSliverAppBar({
     super.key,
-    required this.resetQuery,
+    //required this.resetQuery,
   });
 
-  final void Function() resetQuery;
+  //final void Function() resetQuery;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +36,7 @@ class JournalSliverAppBar extends StatelessWidget {
 
         return SliverAppBar(
           backgroundColor: styleConfig().negspace,
-          expandedHeight: isIOS ? 230 : 210,
+          expandedHeight: isIOS ? 250 : 230,
           flexibleSpace: FlexibleSpaceBar(
             background: Padding(
               padding: EdgeInsets.only(top: isIOS ? 30 : 0),
@@ -67,7 +67,7 @@ class JournalSliverAppBar extends StatelessWidget {
                             initialValue: snapshot.selectedEntryTypes,
                             onConfirm: (selected) {
                               cubit.setSelectedTypes(selected);
-                              resetQuery();
+                              snapshot.pagingController.refresh();
                               HapticFeedback.heavyImpact();
                             },
                             title: 'Entry types',
@@ -95,7 +95,7 @@ class JournalSliverAppBar extends StatelessWidget {
                                     activeColor: styleConfig().private,
                                     onChanged: (bool value) {
                                       cubit.togglePrivateEntriesOnly();
-                                      resetQuery();
+                                      snapshot.pagingController.refresh();
                                     },
                                   ),
                                 ],
@@ -116,7 +116,7 @@ class JournalSliverAppBar extends StatelessWidget {
                                   activeColor: styleConfig().starredGold,
                                   onChanged: (bool value) {
                                     cubit.toggleStarredEntriesOnly();
-                                    resetQuery();
+                                    snapshot.pagingController.refresh();
                                   },
                                 ),
                               ],
@@ -136,7 +136,7 @@ class JournalSliverAppBar extends StatelessWidget {
                                   activeColor: styleConfig().starredGold,
                                   onChanged: (bool value) {
                                     cubit.toggleFlaggedEntriesOnly();
-                                    resetQuery();
+                                    snapshot.pagingController.refresh();
                                   },
                                 ),
                               ],
