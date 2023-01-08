@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 
 part 'fts5_db.g.dart';
@@ -29,6 +30,8 @@ class Fts5Db extends _$Fts5Db {
   }
 
   Future<void> insertText(JournalEntity entry) async {
+    final tagsService = getIt<TagsService>();
+
     final plainText = entry.entryText?.plainText ?? '';
     final title = entry.maybeMap(
       task: (task) => task.data.title,
@@ -58,6 +61,10 @@ class Fts5Db extends _$Fts5Db {
       orElse: () async => '',
     );
 
+    final tagsString = entry.meta.tagIds
+        ?.map((tagId) => tagsService.getTagById(tagId)?.tag ?? '')
+        .join(' , ');
+
     final uuid = entry.meta.id;
 
     if (plainText.trim().isNotEmpty ||
@@ -67,6 +74,7 @@ class Fts5Db extends _$Fts5Db {
         plainText,
         title,
         summary,
+        tagsString ?? '',
         uuid,
       );
     }

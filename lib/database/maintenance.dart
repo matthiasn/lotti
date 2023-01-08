@@ -118,6 +118,11 @@ class Maintenance {
     file.deleteSync();
   }
 
+  Future<void> deleteFts5Db() async {
+    final file = await getDatabaseFile(fts5DbFileName);
+    file.deleteSync();
+  }
+
   Future<void> recreateFts5() async {
     final fts5Db = getIt<Fts5Db>();
 
