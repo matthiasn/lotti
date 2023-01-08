@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,6 +18,7 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   final mockHealthImport = MockHealthImport();
+  final mockEntitiesCacheService = MockEntitiesCacheService();
 
   group('MeasurementSummary Widget Tests -', () {
     setUp(() {
@@ -25,7 +27,14 @@ void main() {
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<HealthImport>(mockHealthImport);
+
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(
+          measurableCoverage.id,
+        ),
+      ).thenAnswer((_) => measurableCoverage);
     });
     tearDown(getIt.reset);
 

@@ -61,7 +61,7 @@ class JournalSliverAppBar extends StatelessWidget {
                       runSpacing: 10,
                       children: [
                         SizedBox(
-                          width: 180,
+                          width: 321,
                           child: MultiSelect<FilterBy?>(
                             multiSelectItems: items,
                             initialValue: snapshot.selectedEntryTypes,

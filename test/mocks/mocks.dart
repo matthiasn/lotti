@@ -15,6 +15,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -40,6 +41,8 @@ MockTagsService mockTagsServiceWithTags(
 }
 
 class MockJournalDb extends Mock implements JournalDb {}
+
+class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 MockJournalDb mockJournalDbWithMeasurableTypes(
   List<MeasurableDataType> dataTypes,

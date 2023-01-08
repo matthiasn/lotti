@@ -13,6 +13,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/journal/infinite_journal_page.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/themes.dart';
@@ -33,6 +34,7 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
+  final mockEntitiesCacheService = MockEntitiesCacheService();
 
   final entryTypes =
       defaultTypes.map((e) => e.typeName).whereType<String>().toList();
@@ -64,6 +66,7 @@ void main() {
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
@@ -296,6 +299,12 @@ void main() {
       );
 
       when(
+        () => mockEntitiesCacheService.getDataTypeById(
+          measurableChocolate.id,
+        ),
+      ).thenAnswer((_) => measurableChocolate);
+
+      when(
         () => mockJournalDb.watchMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
@@ -386,6 +395,12 @@ void main() {
           measurableCoverage,
         ]),
       );
+
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(
+          measurableCoverage.id,
+        ),
+      ).thenAnswer((_) => measurableCoverage);
 
       when(
         () => mockJournalDb.watchMeasurementsByType(
