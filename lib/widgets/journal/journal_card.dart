@@ -4,6 +4,8 @@ import 'package:getwidget/components/list_tile/gf_list_tile.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
@@ -184,49 +186,63 @@ class JournalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
-      builder: (BuildContext context, AudioPlayerState state) {
-        void onTap() {
-          item.mapOrNull(
-            journalAudio: (JournalAudio audioNote) {
-              context.read<AudioPlayerCubit>().setAudioNote(audioNote);
-            },
-          );
-
-          final path = item.maybeMap(
-            task: (_) => '/tasks',
-            orElse: () => '/journal',
-          );
-          beamToNamed('$path/${item.meta.id}');
+    return StreamBuilder<JournalEntity?>(
+      stream: getIt<JournalDb>().watchEntityById(item.meta.id),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<JournalEntity?> snapshot,
+      ) {
+        final updatedItem = snapshot.data ?? item;
+        if (updatedItem.meta.deletedAt != null) {
+          return const SizedBox.shrink();
         }
 
-        return Card(
-          color: styleConfig().cardColor,
-          elevation: 1,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(0),
-          ),
-          child: ListTile(
-            leading: item.maybeMap(
-              journalAudio: (_) => const LeadingIcon(Icons.mic),
-              journalEntry: (_) => const LeadingIcon(Icons.article),
-              quantitative: (_) => const LeadingIcon(MdiIcons.heart),
-              task: (task) => LeadingIcon(
-                task.data.status.maybeMap(
-                  done: (_) => MdiIcons.checkboxMarkedOutline,
-                  orElse: () => MdiIcons.checkboxBlankOutline,
-                ),
+        return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
+          builder: (BuildContext context, AudioPlayerState state) {
+            void onTap() {
+              updatedItem.mapOrNull(
+                journalAudio: (JournalAudio audioNote) {
+                  context.read<AudioPlayerCubit>().setAudioNote(audioNote);
+                },
+              );
+
+              final path = updatedItem.maybeMap(
+                task: (_) => '/tasks',
+                orElse: () => '/journal',
+              );
+              beamToNamed('$path/${updatedItem.meta.id}');
+            }
+
+            return Card(
+              color: styleConfig().cardColor,
+              elevation: 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(0),
               ),
-              habitCompletion: (_) => const LeadingIcon(MdiIcons.lightningBolt),
-              orElse: () => null,
-            ),
-            title: JournalCardTitle(
-              item: item,
-              maxHeight: maxHeight,
-              showLinkedDuration: showLinkedDuration,
-            ),
-            onTap: onTap,
-          ),
+              child: ListTile(
+                leading: updatedItem.maybeMap(
+                  journalAudio: (_) => const LeadingIcon(Icons.mic),
+                  journalEntry: (_) => const LeadingIcon(Icons.article),
+                  quantitative: (_) => const LeadingIcon(MdiIcons.heart),
+                  task: (task) => LeadingIcon(
+                    task.data.status.maybeMap(
+                      done: (_) => MdiIcons.checkboxMarkedOutline,
+                      orElse: () => MdiIcons.checkboxBlankOutline,
+                    ),
+                  ),
+                  habitCompletion: (_) =>
+                      const LeadingIcon(MdiIcons.lightningBolt),
+                  orElse: () => null,
+                ),
+                title: JournalCardTitle(
+                  item: updatedItem,
+                  maxHeight: maxHeight,
+                  showLinkedDuration: showLinkedDuration,
+                ),
+                onTap: onTap,
+              ),
+            );
+          },
         );
       },
     );

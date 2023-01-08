@@ -135,6 +135,12 @@ void main() {
         ]),
       );
 
+      when(
+        () => mockJournalDb.watchEntityById(testTextEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([testTextEntry]),
+      );
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<AudioPlayerCubit>(
@@ -247,6 +253,12 @@ void main() {
         ]),
       );
 
+      when(
+        () => mockJournalDb.watchEntityById(testWeightEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([testWeightEntry]),
+      );
+
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
@@ -287,6 +299,14 @@ void main() {
           private: false,
         );
       }
+
+      when(
+        () => mockJournalDb
+            .watchEntityById(testMeasurementChocolateEntry.meta.id),
+      ).thenAnswer(
+        (_) =>
+            Stream<JournalEntity>.fromIterable([testMeasurementChocolateEntry]),
+      );
 
       when(
         () => mockJournalDb.watchMeasurableDataTypeById(
@@ -394,6 +414,12 @@ void main() {
         (_) => Stream<MeasurableDataType>.fromIterable([
           measurableCoverage,
         ]),
+      );
+
+      when(
+        () => mockJournalDb.watchEntityById(testMeasuredCoverageEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([testMeasuredCoverageEntry]),
       );
 
       when(

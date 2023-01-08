@@ -56,6 +56,12 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets('Render card for text entry', (tester) async {
+      when(
+        () => mockJournalDb.watchEntityById(testTextEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([testTextEntry]),
+      );
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<AudioPlayerCubit>(
@@ -90,6 +96,12 @@ void main() {
     });
 
     testWidgets('Render card for audio entry', (tester) async {
+      when(
+        () => mockJournalDb.watchEntityById(testAudioEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([testAudioEntry]),
+      );
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<AudioPlayerCubit>(

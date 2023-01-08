@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactor: move fetch logic to cubit
 - Refresh query when typing in full-text search
 
+### Fixed:
+- Update JournalCard in infinite scroll automatically on change, e.g. after navigating back
+
 ## [0.8.227] - 2023-01-07
 ### Changed:
 - New search header in journal
