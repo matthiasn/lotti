@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/get_it.dart';
 
 class FilterBy {
@@ -45,6 +46,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             privateEntriesOnly: false,
             showPrivateEntries: false,
             selectedEntryTypes: defaultTypes,
+            fullTextMatches: {},
           ),
         ) {
     getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
@@ -55,22 +57,25 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   List<FilterBy?> _selectedEntryTypes = <FilterBy?>[];
 
-  String _match = '';
+  String _query = '';
   bool _starredEntriesOnly = false;
   bool _flaggedEntriesOnly = false;
   bool _privateEntriesOnly = false;
   bool _showPrivateEntries = false;
 
+  Set<String> _fullTextMatches = {};
+
   void emitState() {
     emit(
       JournalPageState(
-        match: _match,
+        match: _query,
         tagIds: <String>{},
         starredEntriesOnly: _starredEntriesOnly,
         flaggedEntriesOnly: _flaggedEntriesOnly,
         privateEntriesOnly: _privateEntriesOnly,
         showPrivateEntries: _showPrivateEntries,
         selectedEntryTypes: _selectedEntryTypes,
+        fullTextMatches: _fullTextMatches,
       ),
     );
   }
@@ -95,8 +100,10 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     emitState();
   }
 
-  void setSearchString(String match) {
-    _match = match;
+  Future<void> setSearchString(String query) async {
+    _query = query;
+    final res = await getIt<Fts5Db>().watchFullTextMatches(query).first;
+    _fullTextMatches = res.toSet();
     emitState();
   }
 

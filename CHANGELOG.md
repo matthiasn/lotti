@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Full-text search database using FTS5
+- Wire full-text database search (no refresh yet)
 
 ## [0.8.227] - 2023-01-07
 ### Changed:
