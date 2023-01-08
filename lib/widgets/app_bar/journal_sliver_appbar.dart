@@ -52,7 +52,7 @@ class JournalSliverAppBar extends StatelessWidget {
                     hintText: 'Search Journal...',
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Wrap(
                       alignment: WrapAlignment.center,
                       runAlignment: WrapAlignment.center,
@@ -60,17 +60,20 @@ class JournalSliverAppBar extends StatelessWidget {
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        MultiSelect<FilterBy?>(
-                          multiSelectItems: items,
-                          initialValue: snapshot.selectedEntryTypes,
-                          onConfirm: (selected) {
-                            cubit.setSelectedTypes(selected);
-                            resetQuery();
-                            HapticFeedback.heavyImpact();
-                          },
-                          title: 'Entry types',
-                          buttonText: 'Entry types',
-                          iconData: MdiIcons.filter,
+                        SizedBox(
+                          width: 180,
+                          child: MultiSelect<FilterBy?>(
+                            multiSelectItems: items,
+                            initialValue: snapshot.selectedEntryTypes,
+                            onConfirm: (selected) {
+                              cubit.setSelectedTypes(selected);
+                              resetQuery();
+                              HapticFeedback.heavyImpact();
+                            },
+                            title: 'Entry types',
+                            buttonText: 'Entry types',
+                            iconData: MdiIcons.filter,
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Row(
