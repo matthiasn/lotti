@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add entities cache for faster lookup of measurable data types
 - Use entities cache in measurement summary
 - Refactor: move fetch logic to cubit
-- Refresh query when typing in full-text search
+- Refresh results when typing in full-text search field
+- Add new and updated text to full-text index
 
 ### Fixed:
 - Update JournalCard in infinite scroll automatically on change, e.g. after navigating back

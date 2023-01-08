@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -85,6 +86,8 @@ MockJournalDb mockJournalDbWithHabits(
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
+
+class MockFts5Db extends Mock implements Fts5Db {}
 
 class MockTimeService extends Mock implements TimeService {}
 
