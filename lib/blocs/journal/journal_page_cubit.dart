@@ -80,10 +80,14 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   Future<void> setSearchString(String query) async {
     _query = query;
-    final res = await getIt<Fts5Db>().watchFullTextMatches(query).first;
-    _fullTextMatches = res.toSet();
+    if (query.isEmpty) {
+      _fullTextMatches = {};
+    } else {
+      final res = await getIt<Fts5Db>().watchFullTextMatches(query).first;
+      _fullTextMatches = res.toSet();
+    }
+
     refreshQuery();
-    emitState();
   }
 
   void refreshQuery() {

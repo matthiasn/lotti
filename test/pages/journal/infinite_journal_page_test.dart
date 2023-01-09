@@ -36,8 +36,8 @@ void main() {
   var mockPersistenceLogic = MockPersistenceLogic();
   final mockEntitiesCacheService = MockEntitiesCacheService();
 
-  final entryTypes =
-      defaultTypes.map((e) => e.typeName).whereType<String>().toList();
+  final entryTypeStrings =
+      entryTypes.map((e) => e.typeName).whereType<String>().toList();
 
   group('JournalPage Widget Tests - ', () {
     setUpAll(() {
@@ -122,7 +122,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: entryTypes,
+          types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -184,7 +184,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: entryTypes,
+          types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -240,7 +240,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: entryTypes,
+          types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -340,7 +340,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: entryTypes,
+          types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -444,7 +444,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: entryTypes,
+          types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
