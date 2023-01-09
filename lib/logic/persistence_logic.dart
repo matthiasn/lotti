@@ -937,7 +937,11 @@ class PersistenceLogic {
   }) async {
     try {
       await _journalDb.updateJournalEntity(journalEntity);
-      await getIt<Fts5Db>().insertText(journalEntity);
+
+      await getIt<Fts5Db>().insertText(
+        journalEntity,
+        removePrevious: true,
+      );
 
       if (enqueueSync) {
         await _outboxService.enqueueMessage(

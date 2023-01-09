@@ -78,15 +78,17 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     refreshQuery();
   }
 
-  Future<void> setSearchString(String query) async {
-    _query = query;
-    if (query.isEmpty) {
+  Future<void> _fts5Search() async {
+    if (_query.isEmpty) {
       _fullTextMatches = {};
     } else {
-      final res = await getIt<Fts5Db>().watchFullTextMatches(query).first;
+      final res = await getIt<Fts5Db>().watchFullTextMatches(_query).first;
       _fullTextMatches = res.toSet();
     }
+  }
 
+  Future<void> setSearchString(String query) async {
+    _query = query;
     refreshQuery();
   }
 
@@ -101,6 +103,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
           .map((e) => e?.typeName)
           .whereType<String>()
           .toList();
+
+      await _fts5Search();
 
       final fullTextMatches = _fullTextMatches.toList();
       final ids = _query.isNotEmpty ? fullTextMatches : null;
@@ -156,11 +160,4 @@ final List<FilterBy> entryTypes = [
   FilterBy(typeName: 'WorkoutEntry', name: 'Workout'),
   FilterBy(typeName: 'HabitCompletionEntry', name: 'Habit'),
   FilterBy(typeName: 'QuantitativeEntry', name: 'Quant'),
-];
-
-final List<FilterBy> defaultTypes = [
-  FilterBy(typeName: 'Task', name: 'Task'),
-  FilterBy(typeName: 'JournalEntry', name: 'Text'),
-  FilterBy(typeName: 'JournalAudio', name: 'Audio'),
-  FilterBy(typeName: 'JournalImage', name: 'Photo'),
 ];

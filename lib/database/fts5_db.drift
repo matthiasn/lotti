@@ -1,5 +1,5 @@
 CREATE VIRTUAL TABLE
-  journal_fts USING fts5(plain_text, title, summary, tags, uuid UNINDEXED);
+  journal_fts USING fts5(plain_text, title, summary, tags, uuid);
 
 insertJournalEntry:
 INSERT INTO journal_fts(plain_text, title, summary, tags, uuid)
@@ -7,3 +7,6 @@ INSERT INTO journal_fts(plain_text, title, summary, tags, uuid)
 
 findMatching:
 SELECT uuid FROM journal_fts WHERE journal_fts MATCH :query;
+
+deleteEntry:
+DELETE FROM journal_fts WHERE journal_fts MATCH :uuid;

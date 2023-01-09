@@ -29,7 +29,17 @@ class Fts5Db extends _$Fts5Db {
     return findMatching(query).watch();
   }
 
-  Future<void> insertText(JournalEntity entry) async {
+  Future<void> insertText(
+    JournalEntity entry, {
+    bool removePrevious = false,
+  }) async {
+    final uuid = entry.meta.id;
+
+    // TODO: add test that previous entry is removed
+    if (removePrevious) {
+      await deleteEntry('"$uuid"');
+    }
+
     final tagsService = getIt<TagsService>();
     final entitiesCacheService = getIt<EntitiesCacheService>();
 
@@ -65,8 +75,6 @@ class Fts5Db extends _$Fts5Db {
     final tagsString = entry.meta.tagIds
         ?.map((tagId) => tagsService.getTagById(tagId)?.tag ?? '')
         .join(' , ');
-
-    final uuid = entry.meta.id;
 
     if (plainText.trim().isNotEmpty ||
         title.trim().isNotEmpty ||
