@@ -133,19 +133,21 @@ class Maintenance {
     final fts5Db = getIt<Fts5Db>();
 
     final entryCount = await _db.getJournalCount();
-    const pageSize = 100;
+    const pageSize = 500;
     final pages = (entryCount / pageSize).ceil();
+    var completed = 0;
 
     for (var page = 0; page <= pages; page++) {
       final dbEntities =
           await _db.orderedJournal(pageSize, page * pageSize).get();
 
       final entries = entityStreamMapper(dbEntities);
+      completed = completed + entries.length;
+
       for (final entry in entries) {
         await fts5Db.insertText(entry);
       }
 
-      final completed = page * pageSize;
       final progress = entryCount > 0 ? completed / entryCount : 0;
 
       getIt<LoggingDb>().captureEvent(
