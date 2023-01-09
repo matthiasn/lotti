@@ -15,10 +15,7 @@ import 'package:multi_select_flutter/multi_select_flutter.dart';
 class JournalSliverAppBar extends StatelessWidget {
   const JournalSliverAppBar({
     super.key,
-    //required this.resetQuery,
   });
-
-  //final void Function() resetQuery;
 
   @override
   Widget build(BuildContext context) {

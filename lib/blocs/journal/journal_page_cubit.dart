@@ -17,7 +17,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             flaggedEntriesOnly: false,
             privateEntriesOnly: false,
             showPrivateEntries: false,
-            selectedEntryTypes: defaultTypes,
+            selectedEntryTypes: entryTypes,
             fullTextMatches: {},
             pagingController: PagingController(firstPageKey: 0),
           ),
@@ -32,7 +32,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   final JournalDb _db = getIt<JournalDb>();
   static const _pageSize = 50;
-  List<FilterBy?> _selectedEntryTypes = <FilterBy?>[];
+  List<FilterBy?> _selectedEntryTypes = entryTypes;
 
   String _query = '';
   bool _starredEntriesOnly = false;
@@ -61,25 +61,21 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   void setSelectedTypes(List<FilterBy?> selected) {
     _selectedEntryTypes = selected;
     refreshQuery();
-    emitState();
   }
 
   void toggleStarredEntriesOnly() {
     _starredEntriesOnly = !_starredEntriesOnly;
     refreshQuery();
-    emitState();
   }
 
   void toggleFlaggedEntriesOnly() {
     _flaggedEntriesOnly = !_flaggedEntriesOnly;
     refreshQuery();
-    emitState();
   }
 
   void togglePrivateEntriesOnly() {
     _privateEntriesOnly = !_privateEntriesOnly;
     refreshQuery();
-    emitState();
   }
 
   Future<void> setSearchString(String query) async {
@@ -91,6 +87,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   }
 
   void refreshQuery() {
+    emitState();
     state.pagingController.refresh();
   }
 
