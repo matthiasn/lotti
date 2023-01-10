@@ -43,7 +43,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
 
   final beamBack = dashboardsBeamerDelegate.beamBack;
 
-  Future<void> saveMeasurement() async {
+  Future<void> saveMeasurement({num? value}) async {
     _formKey.currentState!.save();
     if (validate()) {
       final formData = _formKey.currentState?.value;
@@ -63,7 +63,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
         dataTypeId: selected!.id,
         dateTo: formData!['date'] as DateTime,
         dateFrom: formData['date'] as DateTime,
-        value: nf.parse('${formData['value']}'.replaceAll(',', '.')),
+        value: value ?? nf.parse('${formData['value']}'.replaceAll(',', '.')),
       );
 
       await persistenceLogic.createMeasurementEntry(
@@ -238,8 +238,11 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         name: 'comment',
                       ),
                       const SizedBox(height: 20),
-                      if (selected != null && dirty == false)
-                        MeasurementSuggestions(measurableDataType: selected!),
+                      if (selected != null)
+                        MeasurementSuggestions(
+                          measurableDataType: selected!,
+                          saveMeasurement: saveMeasurement,
+                        ),
                     ],
                   ),
                 ),
