@@ -12,9 +12,14 @@ import '../../test_data/test_data.dart';
 import '../../utils/measurable_utils_test.dart';
 import '../../widget_test_utils.dart';
 
+class MeasurementMock extends Mock {
+  Future<void> saveMeasurement({num? value});
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   registerFallbackValue(FakeMeasurementData());
+  final mock = MeasurementMock();
 
   group(' - ', () {
     final mockJournalDb = MockJournalDb();
@@ -34,15 +39,8 @@ void main() {
       ]),
     );
 
-    Future<MeasurementEntry?> mockCreateMeasurementEntry() {
-      return mockPersistenceLogic.createMeasurementEntry(
-        data: any(named: 'data'),
-        comment: any(named: 'comment'),
-        private: false,
-      );
-    }
-
-    when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+    Future<void> mockSaveMeasurement() => mock.saveMeasurement(value: 500);
+    when(mockSaveMeasurement).thenAnswer((_) async => true);
 
     setUp(() async {
       getIt
@@ -59,6 +57,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             MeasurementSuggestions(
               measurableDataType: measurableWater,
+              saveMeasurement: mock.saveMeasurement,
             ),
           ),
         );
@@ -72,7 +71,7 @@ void main() {
         await tester.tap(find.text('500 ml'));
         await tester.pumpAndSettle();
 
-        verify(mockCreateMeasurementEntry).called(1);
+        verify(mockSaveMeasurement).called(1);
       },
     );
   });
