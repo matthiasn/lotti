@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/measurable_utils.dart';
 
 class MeasurementSuggestions extends StatelessWidget {
   const MeasurementSuggestions({
     required this.measurableDataType,
+    required this.saveMeasurement,
     super.key,
   });
 
   final MeasurableDataType measurableDataType;
+  final Future<void> Function({num? value}) saveMeasurement;
 
   @override
   Widget build(BuildContext context) {
@@ -40,19 +40,7 @@ class MeasurementSuggestions extends StatelessWidget {
             final label = value.toDouble().toString().replaceAll(regex, '');
             final unit = measurableDataType.unitName;
 
-            void onTap() {
-              final now = DateTime.now();
-              getIt<PersistenceLogic>().createMeasurementEntry(
-                data: MeasurementData(
-                  dataTypeId: measurableDataType.id,
-                  dateTo: now,
-                  dateFrom: now,
-                  value: value,
-                ),
-                private: measurableDataType.private ?? false,
-              );
-              dashboardsBeamerDelegate.beamBack();
-            }
+            void onTap() => saveMeasurement(value: value);
 
             return MouseRegion(
               cursor: SystemMouseCursors.click,

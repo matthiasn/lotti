@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Show popular values in capture dialog for past dates
+
+## [0.8.228] - 2023-01-10
 ### Added:
 - Full-text search database using FTS5
 - Wire full-text database search (no refresh yet)
