@@ -114,6 +114,7 @@
   "maintenanceDeleteLoggingDb": "Delete logging database",
   "maintenanceDeleteTagged": "Delete tagged",
   "maintenancePurgeDeleted": "Purge deleted items",
+  "maintenanceRecreateFts5": "Recreate full-text index",
   "maintenanceRecreateTagged": "Recreate tagged",
   "maintenanceReprocessSync": "Reprocess sync messages",
   "maintenanceStories": "Assign stories from parent entries",

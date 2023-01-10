@@ -130,6 +130,23 @@ class Maintenance {
   }
 
   Future<void> recreateFts5() async {
+    try {
+      await deleteFts5Db();
+    } catch (e, stackTrace) {
+      getIt<LoggingDb>().captureException(
+        e,
+        domain: 'MAINTENANCE',
+        subDomain: 'deleteFts5Db',
+        stackTrace: stackTrace,
+      );
+    }
+
+    await getIt<Fts5Db>().close();
+
+    getIt
+      ..unregister<Fts5Db>()
+      ..registerSingleton<Fts5Db>(Fts5Db());
+
     final fts5Db = getIt<Fts5Db>();
 
     final entryCount = await _db.getJournalCount();

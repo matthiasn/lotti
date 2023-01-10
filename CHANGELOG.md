@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add new and updated text to full-text index
 - Fix index creation maintenance task
 - Remove previous entry in FTS5 index when updated
+- One-step index recreation
 
 ### Fixed:
 - Update JournalCard in infinite scroll automatically on change, e.g. after navigating back

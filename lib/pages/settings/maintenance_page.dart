@@ -99,12 +99,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
                     ),
                     const SettingsDivider(),
                     SettingsCard(
-                      title: 'Delete FTS5 index (kill & restart app)',
-                      onTap: () => getIt<Maintenance>().deleteFts5Db(),
-                    ),
-                    const SettingsDivider(),
-                    SettingsCard(
-                      title: 'Recreate FTS5',
+                      title: localizations.maintenanceRecreateFts5,
                       onTap: () => getIt<Maintenance>().recreateFts5(),
                     ),
                   ],
