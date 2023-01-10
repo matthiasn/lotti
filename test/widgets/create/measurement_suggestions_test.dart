@@ -59,6 +59,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             MeasurementSuggestions(
               measurableDataType: measurableWater,
+              saveMeasurement: ({num? value}) async {},
             ),
           ),
         );
