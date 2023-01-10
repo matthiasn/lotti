@@ -86,6 +86,7 @@
   "maintenanceDeleteLoggingDb": "Loggingdatenbank löschen",
   "maintenanceDeleteTagged": "Tag Links löschen",
   "maintenancePurgeDeleted": "Papierkorb leeren",
+  "maintenanceRecreateFts5": "Volltextindex neu erstellen",
   "maintenanceRecreateTagged": "Tag Links wiederherstellen",
   "maintenanceStories": "Stories von verlinkten Einträgen zuweisen",
   "navTabTitleFlagged": "Markiert",

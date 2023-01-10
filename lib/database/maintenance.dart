@@ -3,6 +3,7 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -115,5 +116,62 @@ class Maintenance {
   Future<void> deleteLoggingDb() async {
     final file = await getDatabaseFile(loggingDbFileName);
     file.deleteSync();
+  }
+
+  Future<void> deleteFts5Db() async {
+    final file = await getDatabaseFile(fts5DbFileName);
+    file.deleteSync();
+
+    getIt<LoggingDb>().captureEvent(
+      'FTS5 database DELETED',
+      domain: 'MAINTENANCE',
+      subDomain: 'recreateFts5',
+    );
+  }
+
+  Future<void> recreateFts5() async {
+    try {
+      await deleteFts5Db();
+    } catch (e, stackTrace) {
+      getIt<LoggingDb>().captureException(
+        e,
+        domain: 'MAINTENANCE',
+        subDomain: 'deleteFts5Db',
+        stackTrace: stackTrace,
+      );
+    }
+
+    await getIt<Fts5Db>().close();
+
+    getIt
+      ..unregister<Fts5Db>()
+      ..registerSingleton<Fts5Db>(Fts5Db());
+
+    final fts5Db = getIt<Fts5Db>();
+
+    final entryCount = await _db.getJournalCount();
+    const pageSize = 500;
+    final pages = (entryCount / pageSize).ceil();
+    var completed = 0;
+
+    for (var page = 0; page <= pages; page++) {
+      final dbEntities =
+          await _db.orderedJournal(pageSize, page * pageSize).get();
+
+      final entries = entityStreamMapper(dbEntities);
+      completed = completed + entries.length;
+
+      for (final entry in entries) {
+        await fts5Db.insertText(entry);
+      }
+
+      final progress = entryCount > 0 ? completed / entryCount : 0;
+
+      getIt<LoggingDb>().captureEvent(
+        'Progress: ${(progress * 100).floor()}%, $completed/$entryCount',
+        domain: 'MAINTENANCE',
+        subDomain: 'recreateFts5',
+      );
+    }
   }
 }

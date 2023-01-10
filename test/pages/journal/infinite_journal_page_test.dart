@@ -13,6 +13,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/journal/infinite_journal_page.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/themes.dart';
@@ -33,9 +34,10 @@ void main() {
 
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
+  final mockEntitiesCacheService = MockEntitiesCacheService();
 
-  final entryTypes =
-      defaultTypes.map((e) => e.typeName).whereType<String>().toList();
+  final entryTypeStrings =
+      entryTypes.map((e) => e.typeName).whereType<String>().toList();
 
   group('JournalPage Widget Tests - ', () {
     setUpAll(() {
@@ -64,6 +66,7 @@ void main() {
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
@@ -119,7 +122,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: entryTypes,
+          types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -132,12 +135,18 @@ void main() {
         ]),
       );
 
+      when(
+        () => mockJournalDb.watchEntityById(testTextEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([testTextEntry]),
+      );
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPageWrapper(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -175,7 +184,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: entryTypes,
+          types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -195,7 +204,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPageWrapper(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -231,7 +240,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: entryTypes,
+          types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -244,6 +253,12 @@ void main() {
         ]),
       );
 
+      when(
+        () => mockJournalDb.watchEntityById(testWeightEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([testWeightEntry]),
+      );
+
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
@@ -251,7 +266,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPageWrapper(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -286,6 +301,14 @@ void main() {
       }
 
       when(
+        () => mockJournalDb
+            .watchEntityById(testMeasurementChocolateEntry.meta.id),
+      ).thenAnswer(
+        (_) =>
+            Stream<JournalEntity>.fromIterable([testMeasurementChocolateEntry]),
+      );
+
+      when(
         () => mockJournalDb.watchMeasurableDataTypeById(
           measurableChocolate.id,
         ),
@@ -294,6 +317,12 @@ void main() {
           measurableChocolate,
         ]),
       );
+
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(
+          measurableChocolate.id,
+        ),
+      ).thenAnswer((_) => measurableChocolate);
 
       when(
         () => mockJournalDb.watchMeasurementsByType(
@@ -311,7 +340,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: entryTypes,
+          types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -341,7 +370,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPageWrapper(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );
@@ -388,6 +417,18 @@ void main() {
       );
 
       when(
+        () => mockJournalDb.watchEntityById(testMeasuredCoverageEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([testMeasuredCoverageEntry]),
+      );
+
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(
+          measurableCoverage.id,
+        ),
+      ).thenAnswer((_) => measurableCoverage);
+
+      when(
         () => mockJournalDb.watchMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
@@ -403,7 +444,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: entryTypes,
+          types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
@@ -431,7 +472,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const JournalPageWrapper(),
+            child: const InfiniteJournalPage(),
           ),
         ),
       );

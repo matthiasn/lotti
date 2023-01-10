@@ -9,12 +9,14 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -40,6 +42,8 @@ MockTagsService mockTagsServiceWithTags(
 }
 
 class MockJournalDb extends Mock implements JournalDb {}
+
+class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 MockJournalDb mockJournalDbWithMeasurableTypes(
   List<MeasurableDataType> dataTypes,
@@ -82,6 +86,8 @@ MockJournalDb mockJournalDbWithHabits(
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
+
+class MockFts5Db extends Mock implements Fts5Db {}
 
 class MockTimeService extends Mock implements TimeService {}
 

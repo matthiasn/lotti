@@ -5,6 +5,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Full-text search database using FTS5
+- Wire full-text database search (no refresh yet)
+- Add tags in full-text search
+- Add entities cache for faster lookup of measurable data types
+- Use entities cache in measurement summary
+- Refactor: move fetch logic to cubit
+- Refresh results when typing in full-text search field
+- Add new and updated text to full-text index
+- Fix index creation maintenance task
+- Remove previous entry in FTS5 index when updated
+- One-step index recreation
+
+### Fixed:
+- Update JournalCard in infinite scroll automatically on change, e.g. after navigating back
+- Clear query
+
+### Changed:
+- Upgraded dependencies
+
+## [0.8.227] - 2023-01-07
 ### Changed:
 - New search header in journal
 - Upgraded dependencies
