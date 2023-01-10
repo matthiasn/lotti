@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update JournalCard in infinite scroll automatically on change, e.g. after navigating back
 - Clear query
 
+### Changed:
+- Upgraded dependencies
+
 ## [0.8.227] - 2023-01-07
 ### Changed:
 - New search header in journal

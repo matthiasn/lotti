@@ -1984,14 +1984,14 @@ packages:
       name: syncfusion_flutter_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.4.42"
+    version: "20.4.43"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.4.42"
+    version: "20.4.43"
   synchronized:
     dependency: transitive
     description:
