@@ -79,6 +79,12 @@ void main() {
     });
 
     testWidgets('Render card for image entry', (tester) async {
+      when(
+        () => mockJournalDb.watchEntityById(testImageEntry.meta.id),
+      ).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([testImageEntry]),
+      );
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<AudioPlayerCubit>(

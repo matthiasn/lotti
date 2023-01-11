@@ -279,35 +279,48 @@ class JournalImageCard extends StatelessWidget {
   Widget build(BuildContext context) {
     void onTap() => beamToNamed('/journal/${item.meta.id}');
 
-    return Card(
-      color: styleConfig().cardColor,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: GFListTile(
-          margin: EdgeInsets.zero,
-          padding: const EdgeInsets.only(right: 8),
-          avatar: LimitedBox(
-            maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
-            child: CardImageWidget(
-              journalImage: item,
-              height: 160,
-              fit: BoxFit.cover,
+    return StreamBuilder<JournalEntity?>(
+      stream: getIt<JournalDb>().watchEntityById(item.meta.id),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<JournalEntity?> snapshot,
+      ) {
+        final updatedItem = snapshot.data ?? item;
+        if (updatedItem.meta.deletedAt != null) {
+          return const SizedBox.shrink();
+        }
+
+        return Card(
+          color: styleConfig().cardColor,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: GFListTile(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.only(right: 8),
+              avatar: LimitedBox(
+                maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
+                child: CardImageWidget(
+                  journalImage: updatedItem as JournalImage,
+                  height: 160,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              title: SizedBox(
+                height: 160,
+                child: JournalCardTitle(
+                  item: updatedItem,
+                  maxHeight: 200,
+                ),
+              ),
+              onTap: onTap,
             ),
           ),
-          title: SizedBox(
-            height: 160,
-            child: JournalCardTitle(
-              item: item,
-              maxHeight: 200,
-            ),
-          ),
-          onTap: onTap,
-        ),
-      ),
+        );
+      },
     );
   }
 }
