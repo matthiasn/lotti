@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Update of JournalImage after change
+
+## [0.8.229] - 2023-01-10
 ### Changed:
 - Show popular values in capture dialog for past dates
 
