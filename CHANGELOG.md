@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Simplify settings by removing irrelevant favorite status switch in measurables (not used)
+- Story time chart selections removed, will need to be simplified and/or rethought
+- Dashboard notification time removed, will be handled better by notifications on habits, such as the habit of looking at a particular dashboard
 
 ## [0.8.229] - 2023-01-11
 ### Fixed:

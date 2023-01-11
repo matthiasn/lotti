@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -20,11 +19,7 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
-import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class DashboardDefinitionPage extends StatefulWidget {
@@ -226,16 +221,17 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
               );
             }).toList();
 
-            final storySelectItems =
-                tagsService.getAllStoryTags().map((StoryTag storyTag) {
-              return MultiSelectItem<DashboardStoryTimeItem>(
-                DashboardStoryTimeItem(
-                  storyTagId: storyTag.id,
-                  color: '#82E6CE',
-                ),
-                storyTag.tag,
-              );
-            }).toList();
+            // TODO: bring back or remove
+            // final storySelectItems =
+            //     tagsService.getAllStoryTags().map((StoryTag storyTag) {
+            //   return MultiSelectItem<DashboardStoryTimeItem>(
+            //     DashboardStoryTimeItem(
+            //       storyTagId: storyTag.id,
+            //       color: '#82E6CE',
+            //     ),
+            //     storyTag.tag,
+            //   );
+            // }).toList();
 
             Future<DashboardDefinition> saveDashboard() async {
               formKey.currentState!.save();
@@ -368,25 +364,26 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                 ),
                                 activeColor: styleConfig().starredGold,
                               ),
-                              FormBuilderCupertinoDateTimePicker(
-                                name: 'review_at',
-                                alwaysUse24HourFormat: true,
-                                format: hhMmFormat,
-                                inputType:
-                                    CupertinoDateTimePickerInputType.time,
-                                style: inputStyle().copyWith(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w300,
-                                  fontFamily: 'Oswald',
-                                ),
-                                initialValue: widget.dashboard.reviewAt,
-                                decoration: InputDecoration(
-                                  labelText:
-                                      localizations.dashboardReviewTimeLabel,
-                                  labelStyle: labelStyle(),
-                                ),
-                                theme: datePickerTheme(),
-                              ),
+                              // TODO: rethink notifications - probably better as part of habits
+                              // FormBuilderCupertinoDateTimePicker(
+                              //   name: 'review_at',
+                              //   alwaysUse24HourFormat: true,
+                              //   format: hhMmFormat,
+                              //   inputType:
+                              //       CupertinoDateTimePickerInputType.time,
+                              //   style: inputStyle().copyWith(
+                              //     fontSize: 18,
+                              //     fontWeight: FontWeight.w300,
+                              //     fontFamily: 'Oswald',
+                              //   ),
+                              //   initialValue: widget.dashboard.reviewAt,
+                              //   decoration: InputDecoration(
+                              //     labelText:
+                              //         localizations.dashboardReviewTimeLabel,
+                              //     labelStyle: labelStyle(),
+                              //   ),
+                              //   theme: datePickerTheme(),
+                              // ),
                             ],
                           ),
                         ),
@@ -476,58 +473,59 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           buttonText: localizations.dashboardAddWorkoutButton,
                           iconData: Icons.sports_gymnastics,
                         ),
-                        ChartMultiSelect<DashboardStoryTimeItem>(
-                          multiSelectItems: storySelectItems,
-                          onConfirm: onConfirmAddStoryTimeType,
-                          title: localizations.dashboardAddStoryTitle,
-                          buttonText: localizations.dashboardAddStoryButton,
-                          iconData: MdiIcons.watch,
-                        ),
+                        // TODO: better time reporting, this is cumbersome
+                        // ChartMultiSelect<DashboardStoryTimeItem>(
+                        //   multiSelectItems: storySelectItems,
+                        //   onConfirm: onConfirmAddStoryTimeType,
+                        //   title: localizations.dashboardAddStoryTitle,
+                        //   buttonText: localizations.dashboardAddStoryButton,
+                        //   iconData: MdiIcons.watch,
+                        // ),
                         const SizedBox(height: 16),
-                        RoundedButton(
-                          'Add story containing substring',
-                          onPressed: () {
-                            showCupertinoModalBottomSheet<void>(
-                              context: context,
-                              backgroundColor: styleConfig().cardColor,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(16),
-                                ),
-                              ),
-                              clipBehavior: Clip.antiAliasWithSaveLayer,
-                              builder: (BuildContext context) {
-                                final controller = TextEditingController();
-                                return Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 2,
-                                        horizontal: 32,
-                                      ),
-                                      child: TextField(
-                                        controller: controller,
-                                        style: TextStyle(
-                                          color: styleConfig().primaryTextColor,
-                                        ),
-                                      ),
-                                    ),
-                                    Button(
-                                      'Add story match',
-                                      onPressed: () async {
-                                        addWildcardStoryItem(
-                                          controller.text,
-                                        );
-                                        maybePop();
-                                      },
-                                    )
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                        ),
+                        // RoundedButton(
+                        //   'Add story containing substring',
+                        //   onPressed: () {
+                        //     showCupertinoModalBottomSheet<void>(
+                        //       context: context,
+                        //       backgroundColor: styleConfig().cardColor,
+                        //       shape: const RoundedRectangleBorder(
+                        //         borderRadius: BorderRadius.vertical(
+                        //           top: Radius.circular(16),
+                        //         ),
+                        //       ),
+                        //       clipBehavior: Clip.antiAliasWithSaveLayer,
+                        //       builder: (BuildContext context) {
+                        //         final controller = TextEditingController();
+                        //         return Column(
+                        //           mainAxisSize: MainAxisSize.min,
+                        //           children: [
+                        //             Padding(
+                        //               padding: const EdgeInsets.symmetric(
+                        //                 vertical: 2,
+                        //                 horizontal: 32,
+                        //               ),
+                        //               child: TextField(
+                        //                 controller: controller,
+                        //                 style: TextStyle(
+                        //                   color: styleConfig().primaryTextColor,
+                        //                 ),
+                        //               ),
+                        //             ),
+                        //             Button(
+                        //               'Add story match',
+                        //               onPressed: () async {
+                        //                 addWildcardStoryItem(
+                        //                   controller.text,
+                        //                 );
+                        //                 maybePop();
+                        //               },
+                        //             )
+                        //           ],
+                        //         );
+                        //       },
+                        //     );
+                        //   },
+                        // ),
                         Padding(
                           padding: const EdgeInsets.only(top: 16),
                           child: Row(
