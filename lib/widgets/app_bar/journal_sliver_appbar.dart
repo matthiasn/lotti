@@ -33,8 +33,6 @@ class JournalSliverAppBar extends StatelessWidget {
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
 
-        debugPrint('JournalSliverAppBar');
-
         return SliverAppBar(
           backgroundColor: styleConfig().negspace,
           expandedHeight: 280,
