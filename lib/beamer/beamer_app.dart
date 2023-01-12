@@ -135,6 +135,7 @@ class MyBeamerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ThemeData(
+      backgroundColor: styleConfig().negspace,
       primarySwatch: Colors.grey,
       brightness: styleConfig().keyboardAppearance,
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
