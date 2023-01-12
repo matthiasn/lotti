@@ -9,6 +9,8 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/misc/multi_select.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
+import 'package:lotti/widgets/search/task_status_filter.dart';
+import 'package:lotti/widgets/search/tasks_segmented_control.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -31,9 +33,11 @@ class JournalSliverAppBar extends StatelessWidget {
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
 
+        debugPrint('JournalSliverAppBar');
+
         return SliverAppBar(
           backgroundColor: styleConfig().negspace,
-          expandedHeight: isIOS ? 250 : 230,
+          expandedHeight: 280,
           flexibleSpace: FlexibleSpaceBar(
             background: Padding(
               padding: EdgeInsets.only(top: isIOS ? 30 : 0),
@@ -57,19 +61,11 @@ class JournalSliverAppBar extends StatelessWidget {
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        SizedBox(
-                          width: 321,
-                          child: MultiSelect<FilterBy?>(
-                            multiSelectItems: items,
-                            initialValue: snapshot.selectedEntryTypes,
-                            onConfirm: (selected) {
-                              cubit.setSelectedTypes(selected);
-                              HapticFeedback.heavyImpact();
-                            },
-                            title: 'Entry types',
-                            buttonText: 'Entry types',
-                            iconData: MdiIcons.filter,
-                          ),
+                        TasksSegmentedControl(
+                          showTasks: snapshot.showTasks,
+                          onValueChanged: (showTasks) {
+                            cubit.setShowTasks(showTasks: showTasks);
+                          },
                         ),
                         const SizedBox(width: 10),
                         Row(
@@ -133,6 +129,22 @@ class JournalSliverAppBar extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (!snapshot.showTasks)
+                          SizedBox(
+                            width: 321,
+                            child: MultiSelect<FilterBy?>(
+                              multiSelectItems: items,
+                              initialValue: snapshot.selectedEntryTypes,
+                              onConfirm: (selected) {
+                                cubit.setSelectedTypes(selected);
+                                HapticFeedback.heavyImpact();
+                              },
+                              title: 'Entry types',
+                              buttonText: 'Entry types',
+                              iconData: MdiIcons.filter,
+                            ),
+                          ),
+                        if (snapshot.showTasks) const TaskStatusFilter(),
                       ],
                     ),
                   ),

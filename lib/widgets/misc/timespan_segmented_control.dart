@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/misc/segmented_control.dart';
 
 class TimeSpanSegmentedControl extends StatelessWidget {
   const TimeSpanSegmentedControl({
@@ -24,12 +24,12 @@ class TimeSpanSegmentedControl extends StatelessWidget {
       groupValue: timeSpanDays,
       onValueChanged: onValueChanged,
       children: {
-        7: DaysSegment(shortLabels ? '7d' : '7 days'),
-        14: DaysSegment(shortLabels ? '14d' : '14 days'),
-        30: DaysSegment(shortLabels ? '30d' : '30 days'),
-        90: DaysSegment(shortLabels ? '90d' : '90 days'),
-        180: DaysSegment(shortLabels ? '180d' : '180 days'),
-        if (isDesktop) 365: DaysSegment(shortLabels ? '1y' : '1 year'),
+        7: TextSegment(shortLabels ? '7d' : '7 days'),
+        14: TextSegment(shortLabels ? '14d' : '14 days'),
+        30: TextSegment(shortLabels ? '30d' : '30 days'),
+        90: TextSegment(shortLabels ? '90d' : '90 days'),
+        180: TextSegment(shortLabels ? '180d' : '180 days'),
+        if (isDesktop) 365: TextSegment(shortLabels ? '1y' : '1 year'),
       },
     );
   }
