@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tasks tab removed
 - Task card navigation adapted
 - CMD-R for reloading journal page
+- Flagged entries count badge move into search header
+- In-progress tasks count badge move into search header
 
 ## [0.8.231] - 2023-01-12
 - Fix keyboard dismissal in search field by always showing the X icon

@@ -360,6 +360,13 @@ countImportFlagEntries:
 SELECT COUNT(*) FROM journal
   WHERE deleted = false AND flag = 1;
 
+countInProgressTasks:
+SELECT COUNT(*) FROM journal
+  WHERE deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND task = 1
+  AND task_status IN :taskStatuses;
+
 allTagEntities:
 SELECT * FROM tag_entities
   WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))

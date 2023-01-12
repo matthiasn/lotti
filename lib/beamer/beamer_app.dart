@@ -15,7 +15,6 @@ import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
-import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/theme/theme_config.dart';
@@ -86,8 +85,9 @@ class _AppScreenState extends State<AppScreen> {
                 tooltip: '',
               ),
               BottomNavigationBarItem(
-                icon: FlaggedBadgeIcon(),
-                activeIcon: FlaggedBadgeIcon(active: true),
+                icon: SvgPicture.asset(styleConfig().navJournalIcon),
+                activeIcon:
+                    SvgPicture.asset(styleConfig().navJournalIconActive),
                 label: localizations.navTabTitleJournal,
                 tooltip: '',
               ),

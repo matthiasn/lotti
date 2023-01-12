@@ -565,6 +565,13 @@ class JournalDb extends _$JournalDb {
         .map((event) => event.first);
   }
 
+  Stream<int> watchInProgressTasksCount() {
+    return countInProgressTasks(['IN PROGRESS'])
+        .watch()
+        .where(makeDuplicateFilter())
+        .map((event) => event.first);
+  }
+
   Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
     return activeMeasurableTypes()
         .watch()
