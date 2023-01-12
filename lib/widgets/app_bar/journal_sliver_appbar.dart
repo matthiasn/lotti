@@ -7,6 +7,8 @@ import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/badges/flagged_badge.dart';
+import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/multi_select.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:lotti/widgets/search/task_status_filter.dart';
@@ -40,6 +42,7 @@ class JournalSliverAppBar extends StatelessWidget {
             background: Padding(
               padding: EdgeInsets.only(top: isIOS ? 30 : 0),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   SearchWidget(
                     margin: const EdgeInsets.symmetric(
@@ -59,13 +62,15 @@ class JournalSliverAppBar extends StatelessWidget {
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        TasksSegmentedControl(
-                          showTasks: snapshot.showTasks,
-                          onValueChanged: (showTasks) {
-                            cubit.setShowTasks(showTasks: showTasks);
-                          },
+                        TasksBadge(
+                          child: TasksSegmentedControl(
+                            showTasks: snapshot.showTasks,
+                            onValueChanged: (showTasks) {
+                              cubit.setShowTasks(showTasks: showTasks);
+                            },
+                          ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 5),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -89,7 +94,7 @@ class JournalSliverAppBar extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 5),
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -107,24 +112,27 @@ class JournalSliverAppBar extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(width: 10),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  localizations.journalFlaggedTooltip,
-                                  style: TextStyle(
-                                    color: styleConfig().secondaryTextColor,
+                            const SizedBox(width: 5),
+                            FlaggedBadge(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    localizations.journalFlaggedTooltip,
+                                    style: TextStyle(
+                                      color: styleConfig().secondaryTextColor,
+                                    ),
                                   ),
-                                ),
-                                CupertinoSwitch(
-                                  value: snapshot.flaggedEntriesOnly,
-                                  activeColor: styleConfig().starredGold,
-                                  onChanged: (_) =>
-                                      cubit.toggleFlaggedEntriesOnly(),
-                                ),
-                              ],
+                                  CupertinoSwitch(
+                                    value: snapshot.flaggedEntriesOnly,
+                                    activeColor: styleConfig().starredGold,
+                                    onChanged: (_) =>
+                                        cubit.toggleFlaggedEntriesOnly(),
+                                  ),
+                                ],
+                              ),
                             ),
+                            const SizedBox(width: 5),
                           ],
                         ),
                         if (!snapshot.showTasks)

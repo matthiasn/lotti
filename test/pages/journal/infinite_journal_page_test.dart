@@ -60,6 +60,12 @@ void main() {
         (_) => Stream<bool>.fromIterable([true]),
       );
 
+      when(mockJournalDb.watchCountImportFlagEntries)
+          .thenAnswer((_) => Stream<int>.fromIterable([42]));
+
+      when(mockJournalDb.watchInProgressTasksCount)
+          .thenAnswer((_) => Stream<int>.fromIterable([42]));
+
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
