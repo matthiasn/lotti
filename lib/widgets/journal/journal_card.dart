@@ -206,11 +206,7 @@ class JournalCard extends StatelessWidget {
                 },
               );
 
-              final path = updatedItem.maybeMap(
-                task: (_) => '/tasks',
-                orElse: () => '/journal',
-              );
-              beamToNamed('$path/${updatedItem.meta.id}');
+              beamToNamed('/journal/${updatedItem.meta.id}');
             }
 
             return Card(
