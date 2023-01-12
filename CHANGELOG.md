@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Fix keyboard dismissal in search field by always showing the X icon
+- 
+
+## [0.8.230] - 2023-01-11
 ### Changed:
 - Simplify settings by removing irrelevant favorite status switch in measurables (not used)
 - Story time chart selections removed, will need to be simplified and/or rethought

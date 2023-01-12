@@ -8,7 +8,7 @@ import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/misc/multi_select.dart';
-import 'package:lotti/widgets/misc/search_widget.dart';
+import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -46,7 +46,7 @@ class JournalSliverAppBar extends StatelessWidget {
                     ),
                     text: snapshot.match,
                     onChanged: cubit.setSearchString,
-                    hintText: 'Search Journal...',
+                    hintText: 'Search...',
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
