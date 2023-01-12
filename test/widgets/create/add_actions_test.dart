@@ -409,7 +409,7 @@ void main() {
 
         verify(
           () => mockNavService
-              .beamToNamed('/tasks/79ef5021-12df-4651-ac6e-c9a5b58a859c'),
+              .beamToNamed('/journal/79ef5021-12df-4651-ac6e-c9a5b58a859c'),
         ).called(1);
       },
     );
