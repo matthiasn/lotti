@@ -132,16 +132,6 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                         ),
                         activeColor: styleConfig().private,
                       ),
-                      FormBuilderSwitch(
-                        name: 'favorite',
-                        initialValue: item.favorite,
-                        title: Text(
-                          AppLocalizations.of(context)!
-                              .settingsMeasurableFavoriteLabel,
-                          style: formLabelStyle(),
-                        ),
-                        activeColor: styleConfig().starredGold,
-                      ),
                       FormBuilderDropdown(
                         name: 'aggregationType',
                         initialValue: item.aggregationType,
