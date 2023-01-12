@@ -3,7 +3,6 @@ import 'package:lotti/beamer/locations/dashboards_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
-import 'package:lotti/beamer/locations/tasks_location.dart';
 
 final habitsBeamerDelegate = BeamerDelegate(
   initialPath: '/habits',
@@ -36,18 +35,6 @@ final journalBeamerDelegate = BeamerDelegate(
   locationBuilder: (routeInformation, _) {
     if (routeInformation.location!.contains('journal')) {
       return JournalLocation(routeInformation);
-    }
-    return NotFound(path: routeInformation.location!);
-  },
-);
-
-final tasksBeamerDelegate = BeamerDelegate(
-  initialPath: '/tasks',
-  updateParent: false,
-  updateFromParent: false,
-  locationBuilder: (routeInformation, _) {
-    if (routeInformation.location!.contains('tasks')) {
-      return TasksLocation(routeInformation);
     }
     return NotFound(path: routeInformation.location!);
   },
