@@ -152,6 +152,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       final newItems = _showTasks
           ? await _db
               .watchTasks(
+                ids: ids,
                 starredStatuses: _starredEntriesOnly ? [true] : [true, false],
                 taskStatuses: _selectedTaskStatuses.toList(),
                 limit: _pageSize,
