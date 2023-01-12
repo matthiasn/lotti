@@ -139,32 +139,39 @@ class HabitDetailsPage extends StatelessWidget {
                                 labelText: AppLocalizations.of(context)!
                                     .settingsHabitsStoryLabel,
                                 labelStyle: formLabelStyle(),
-                                suffixIcon: Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: Icon(
-                                    Icons.close,
-                                    color: styleConfig().primaryTextColor,
-                                  ),
-                                ),
                               ),
                               iconEnabledColor: styleConfig().primaryTextColor,
                               style: const TextStyle(fontSize: 40),
                               dropdownColor: styleConfig().cardColor,
-                              items: state.storyTags.map((storyTag) {
-                                return DropdownMenuItem(
-                                  value: storyTag,
+                              items: [
+                                DropdownMenuItem(
                                   child: Padding(
                                     padding: const EdgeInsets.all(8),
                                     child: Text(
-                                      storyTag.tag,
+                                      '',
                                       style: TextStyle(
                                         fontSize: fontSizeMedium,
                                         color: styleConfig().primaryTextColor,
                                       ),
                                     ),
                                   ),
-                                );
-                              }).toList(),
+                                ),
+                                ...state.storyTags.map((storyTag) {
+                                  return DropdownMenuItem(
+                                    value: storyTag,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: Text(
+                                        storyTag.tag,
+                                        style: TextStyle(
+                                          fontSize: fontSizeMedium,
+                                          color: styleConfig().primaryTextColor,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                })
+                              ],
                             ),
                         ],
                       ),

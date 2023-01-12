@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Fix keyboard dismissal in search field by always showing the X icon
-- 
+- Fix clearing story selection in habit definition
 
 ## [0.8.230] - 2023-01-11
 ### Changed:
