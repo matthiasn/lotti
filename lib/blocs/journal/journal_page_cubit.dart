@@ -19,7 +19,22 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             showPrivateEntries: false,
             selectedEntryTypes: entryTypes,
             fullTextMatches: {},
+            showTasks: false,
             pagingController: PagingController(firstPageKey: 0),
+            taskStatuses: [
+              'OPEN',
+              'GROOMED',
+              'IN PROGRESS',
+              'BLOCKED',
+              'ON HOLD',
+              'DONE',
+              'REJECTED',
+            ],
+            selectedTaskStatuses: {
+              'OPEN',
+              'GROOMED',
+              'IN PROGRESS',
+            },
           ),
         ) {
     getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
@@ -39,8 +54,15 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool _flaggedEntriesOnly = false;
   bool _privateEntriesOnly = false;
   bool _showPrivateEntries = false;
+  bool _showTasks = false;
 
   Set<String> _fullTextMatches = {};
+
+  Set<String> _selectedTaskStatuses = {
+    'OPEN',
+    'GROOMED',
+    'IN PROGRESS',
+  };
 
   void emitState() {
     emit(
@@ -51,9 +73,12 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         flaggedEntriesOnly: _flaggedEntriesOnly,
         privateEntriesOnly: _privateEntriesOnly,
         showPrivateEntries: _showPrivateEntries,
+        showTasks: _showTasks,
         selectedEntryTypes: _selectedEntryTypes,
         fullTextMatches: _fullTextMatches,
         pagingController: state.pagingController,
+        taskStatuses: state.taskStatuses,
+        selectedTaskStatuses: _selectedTaskStatuses,
       ),
     );
   }
@@ -63,8 +88,23 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     refreshQuery();
   }
 
+  void setShowTasks({required bool showTasks}) {
+    _showTasks = showTasks;
+    refreshQuery();
+  }
+
   void toggleStarredEntriesOnly() {
     _starredEntriesOnly = !_starredEntriesOnly;
+    refreshQuery();
+  }
+
+  void toggleSelectedTaskStatus(String status) {
+    if (_selectedTaskStatuses.contains(status)) {
+      _selectedTaskStatuses = _selectedTaskStatuses.difference({status});
+    } else {
+      _selectedTaskStatuses = _selectedTaskStatuses.union({status});
+    }
+
     refreshQuery();
   }
 

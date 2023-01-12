@@ -14,8 +14,11 @@ class JournalPageState with _$JournalPageState {
     required bool flaggedEntriesOnly,
     required bool privateEntriesOnly,
     required bool showPrivateEntries,
+    required bool showTasks,
     required List<FilterBy?> selectedEntryTypes,
     required Set<String> fullTextMatches,
     required PagingController<int, JournalEntity> pagingController,
+    required List<String> taskStatuses,
+    required Set<String> selectedTaskStatuses,
   }) = _JournalPageState;
 }
