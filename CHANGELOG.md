@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full-text search in tasks
 - Tasks tab removed
 - Task card navigation adapted
+- CMD-R for reloading journal page
 
 ## [0.8.231] - 2023-01-12
 - Fix keyboard dismissal in search field by always showing the X icon

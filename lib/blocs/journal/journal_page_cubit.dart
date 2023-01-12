@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
@@ -43,6 +44,15 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     });
 
     state.pagingController.addPageRequestListener(_fetchPage);
+
+    hotKeyManager.register(
+      HotKey(
+        KeyCode.keyR,
+        modifiers: [KeyModifier.meta],
+        scope: HotKeyScope.inapp,
+      ),
+      keyDownHandler: (hotKey) => refreshQuery(),
+    );
   }
 
   final JournalDb _db = getIt<JournalDb>();
