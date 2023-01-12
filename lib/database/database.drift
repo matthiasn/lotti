@@ -225,7 +225,8 @@ SELECT * FROM journal
   AND task = 1
   AND task_status IN :taskStatuses
   ORDER BY date_from DESC
-  LIMIT :limit;
+  LIMIT :limit
+  OFFSET :offset;
 
 filteredTasksByTag:
 SELECT * FROM journal
@@ -237,7 +238,8 @@ SELECT * FROM journal
   AND task = 1
   AND task_status IN :taskStatuses
   ORDER BY date_from DESC
-  LIMIT :limit;
+  LIMIT :limit
+  OFFSET :offset;
 
 orderedJournal:
 SELECT * FROM journal

@@ -149,17 +149,26 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       final fullTextMatches = _fullTextMatches.toList();
       final ids = _query.isNotEmpty ? fullTextMatches : null;
 
-      final newItems = await _db
-          .watchJournalEntities(
-            types: types,
-            ids: ids,
-            starredStatuses: _starredEntriesOnly ? [true] : [true, false],
-            privateStatuses: _privateEntriesOnly ? [true] : [true, false],
-            flaggedStatuses: _flaggedEntriesOnly ? [1] : [1, 0],
-            limit: _pageSize,
-            offset: pageKey,
-          )
-          .first;
+      final newItems = _showTasks
+          ? await _db
+              .watchTasks(
+                starredStatuses: _starredEntriesOnly ? [true] : [true, false],
+                taskStatuses: _selectedTaskStatuses.toList(),
+                limit: _pageSize,
+                offset: pageKey,
+              )
+              .first
+          : await _db
+              .watchJournalEntities(
+                types: types,
+                ids: ids,
+                starredStatuses: _starredEntriesOnly ? [true] : [true, false],
+                privateStatuses: _privateEntriesOnly ? [true] : [true, false],
+                flaggedStatuses: _flaggedEntriesOnly ? [1] : [1, 0],
+                limit: _pageSize,
+                offset: pageKey,
+              )
+              .first;
 
       final isLastPage = newItems.length < _pageSize;
       if (isLastPage) {
