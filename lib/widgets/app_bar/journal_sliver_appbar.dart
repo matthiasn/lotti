@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
@@ -9,13 +8,11 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/badges/flagged_badge.dart';
 import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
-import 'package:lotti/widgets/misc/multi_select.dart';
 import 'package:lotti/widgets/misc/tasks_counts.dart';
+import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:lotti/widgets/search/task_status_filter.dart';
 import 'package:lotti/widgets/search/tasks_segmented_control.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class JournalSliverAppBar extends StatelessWidget {
   const JournalSliverAppBar({
@@ -25,12 +22,6 @@ class JournalSliverAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-
-    final items = entryTypes
-        .map(
-          (entryType) => MultiSelectItem<FilterBy?>(entryType, entryType.name),
-        )
-        .toList();
 
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
@@ -55,13 +46,13 @@ class JournalSliverAppBar extends StatelessWidget {
                     hintText: 'Search...',
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
                     child: Wrap(
                       alignment: WrapAlignment.center,
                       runAlignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 10,
-                      runSpacing: 10,
+                      spacing: 5,
+                      runSpacing: 5,
                       children: [
                         TasksBadge(
                           child: TasksSegmentedControl(
@@ -130,21 +121,7 @@ class JournalSliverAppBar extends StatelessWidget {
                             const SizedBox(width: 5),
                           ],
                         ),
-                        if (!snapshot.showTasks)
-                          SizedBox(
-                            width: 321,
-                            child: MultiSelect<FilterBy?>(
-                              multiSelectItems: items,
-                              initialValue: snapshot.selectedEntryTypes,
-                              onConfirm: (selected) {
-                                cubit.setSelectedTypes(selected);
-                                HapticFeedback.heavyImpact();
-                              },
-                              title: 'Entry types',
-                              buttonText: 'Entry types',
-                              iconData: MdiIcons.filter,
-                            ),
-                          ),
+                        if (!snapshot.showTasks) const EntryTypeFilter(),
                         if (snapshot.showTasks) const TaskStatusFilter(),
                         if (snapshot.showTasks) const TaskCounts(),
                       ],

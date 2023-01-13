@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
 part 'journal_page_state.freezed.dart';
@@ -15,7 +14,7 @@ class JournalPageState with _$JournalPageState {
     required bool privateEntriesOnly,
     required bool showPrivateEntries,
     required bool showTasks,
-    required List<FilterBy?> selectedEntryTypes,
+    required List<String> selectedEntryTypes,
     required Set<String> fullTextMatches,
     required PagingController<int, JournalEntity> pagingController,
     required List<String> taskStatuses,
