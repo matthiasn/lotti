@@ -28,17 +28,10 @@ class TagAddIconWidget extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        void onTapAdd() {
-          final path = item.maybeMap(
-            task: (_) => '/tasks',
-            orElse: () => '/journal',
-          );
-
-          beamToNamed(
-            '$path/${state.entryId}/manage_tags',
-            data: context.read<EntryCubit>(),
-          );
-        }
+        void onTapAdd() => beamToNamed(
+              '/journal/${state.entryId}/manage_tags',
+              data: context.read<EntryCubit>(),
+            );
 
         return SizedBox(
           width: 40,
