@@ -7,8 +7,12 @@ import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/badges/flagged_badge.dart';
+import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/multi_select.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
+import 'package:lotti/widgets/search/task_status_filter.dart';
+import 'package:lotti/widgets/search/tasks_segmented_control.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -33,11 +37,12 @@ class JournalSliverAppBar extends StatelessWidget {
 
         return SliverAppBar(
           backgroundColor: styleConfig().negspace,
-          expandedHeight: isIOS ? 250 : 230,
+          expandedHeight: 280,
           flexibleSpace: FlexibleSpaceBar(
             background: Padding(
               padding: EdgeInsets.only(top: isIOS ? 30 : 0),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   SearchWidget(
                     margin: const EdgeInsets.symmetric(
@@ -57,21 +62,15 @@ class JournalSliverAppBar extends StatelessWidget {
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        SizedBox(
-                          width: 321,
-                          child: MultiSelect<FilterBy?>(
-                            multiSelectItems: items,
-                            initialValue: snapshot.selectedEntryTypes,
-                            onConfirm: (selected) {
-                              cubit.setSelectedTypes(selected);
-                              HapticFeedback.heavyImpact();
+                        TasksBadge(
+                          child: TasksSegmentedControl(
+                            showTasks: snapshot.showTasks,
+                            onValueChanged: (showTasks) {
+                              cubit.setShowTasks(showTasks: showTasks);
                             },
-                            title: 'Entry types',
-                            buttonText: 'Entry types',
-                            iconData: MdiIcons.filter,
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 5),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -95,7 +94,7 @@ class JournalSliverAppBar extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 5),
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -113,26 +112,45 @@ class JournalSliverAppBar extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(width: 10),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  localizations.journalFlaggedTooltip,
-                                  style: TextStyle(
-                                    color: styleConfig().secondaryTextColor,
+                            const SizedBox(width: 5),
+                            FlaggedBadge(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    localizations.journalFlaggedTooltip,
+                                    style: TextStyle(
+                                      color: styleConfig().secondaryTextColor,
+                                    ),
                                   ),
-                                ),
-                                CupertinoSwitch(
-                                  value: snapshot.flaggedEntriesOnly,
-                                  activeColor: styleConfig().starredGold,
-                                  onChanged: (_) =>
-                                      cubit.toggleFlaggedEntriesOnly(),
-                                ),
-                              ],
+                                  CupertinoSwitch(
+                                    value: snapshot.flaggedEntriesOnly,
+                                    activeColor: styleConfig().starredGold,
+                                    onChanged: (_) =>
+                                        cubit.toggleFlaggedEntriesOnly(),
+                                  ),
+                                ],
+                              ),
                             ),
+                            const SizedBox(width: 5),
                           ],
                         ),
+                        if (!snapshot.showTasks)
+                          SizedBox(
+                            width: 321,
+                            child: MultiSelect<FilterBy?>(
+                              multiSelectItems: items,
+                              initialValue: snapshot.selectedEntryTypes,
+                              onConfirm: (selected) {
+                                cubit.setSelectedTypes(selected);
+                                HapticFeedback.heavyImpact();
+                              },
+                              title: 'Entry types',
+                              buttonText: 'Entry types',
+                              iconData: MdiIcons.filter,
+                            ),
+                          ),
+                        if (snapshot.showTasks) const TaskStatusFilter(),
                       ],
                     ),
                   ),

@@ -149,23 +149,6 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
-class DaysSegment extends StatelessWidget {
-  const DaysSegment(this.days, {super.key});
-
-  final String days;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-      child: Text(
-        days,
-        style: segmentItemStyle,
-      ),
-    );
-  }
-}
-
 class DashboardWidget extends StatelessWidget {
   const DashboardWidget({
     super.key,

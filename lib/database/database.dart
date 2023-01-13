@@ -329,7 +329,8 @@ class JournalDb extends _$JournalDb {
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
     List<String>? ids,
-    int limit = 1000,
+    int limit = 500,
+    int offset = 0,
   }) {
     final types = <String>['Task'];
     if (ids != null) {
@@ -339,19 +340,27 @@ class JournalDb extends _$JournalDb {
         starredStatuses,
         taskStatuses,
         limit,
+        offset,
       ).watch().where(makeDuplicateFilter()).map(entityStreamMapper);
     } else {
-      return filteredTasks(types, starredStatuses, taskStatuses, limit)
-          .watch()
-          .where(makeDuplicateFilter())
-          .map(entityStreamMapper);
+      return filteredTasks(
+        types,
+        starredStatuses,
+        taskStatuses,
+        limit,
+        offset,
+      ).watch().where(makeDuplicateFilter()).map(entityStreamMapper);
     }
   }
 
   Future<int> getWipCount() async {
-    final res =
-        await filteredTasks(['Task'], [true, false], ['IN PROGRESS'], 1000)
-            .get();
+    final res = await filteredTasks(
+      ['Task'],
+      [true, false],
+      ['IN PROGRESS'],
+      1000,
+      0,
+    ).get();
     return res.length;
   }
 
@@ -431,10 +440,13 @@ class JournalDb extends _$JournalDb {
   }
 
   Stream<int> watchTaskCount(String status) {
-    return filteredTasks(['Task'], [true, false], [status], 10000)
-        .watch()
-        .where(makeDuplicateFilter())
-        .map((res) => res.length);
+    return filteredTasks(
+      ['Task'],
+      [true, false],
+      [status],
+      10000,
+      0,
+    ).watch().where(makeDuplicateFilter()).map((res) => res.length);
   }
 
   Stream<int> watchTaggedCount() {
@@ -548,6 +560,13 @@ class JournalDb extends _$JournalDb {
 
   Stream<int> watchCountImportFlagEntries() {
     return countImportFlagEntries()
+        .watch()
+        .where(makeDuplicateFilter())
+        .map((event) => event.first);
+  }
+
+  Stream<int> watchInProgressTasksCount() {
+    return countInProgressTasks(['IN PROGRESS'])
         .watch()
         .where(makeDuplicateFilter())
         .map((event) => event.first);

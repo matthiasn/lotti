@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
@@ -19,7 +20,22 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             showPrivateEntries: false,
             selectedEntryTypes: entryTypes,
             fullTextMatches: {},
+            showTasks: false,
             pagingController: PagingController(firstPageKey: 0),
+            taskStatuses: [
+              'OPEN',
+              'GROOMED',
+              'IN PROGRESS',
+              'BLOCKED',
+              'ON HOLD',
+              'DONE',
+              'REJECTED',
+            ],
+            selectedTaskStatuses: {
+              'OPEN',
+              'GROOMED',
+              'IN PROGRESS',
+            },
           ),
         ) {
     getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
@@ -28,6 +44,15 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     });
 
     state.pagingController.addPageRequestListener(_fetchPage);
+
+    hotKeyManager.register(
+      HotKey(
+        KeyCode.keyR,
+        modifiers: [KeyModifier.meta],
+        scope: HotKeyScope.inapp,
+      ),
+      keyDownHandler: (hotKey) => refreshQuery(),
+    );
   }
 
   final JournalDb _db = getIt<JournalDb>();
@@ -39,8 +64,15 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool _flaggedEntriesOnly = false;
   bool _privateEntriesOnly = false;
   bool _showPrivateEntries = false;
+  bool _showTasks = false;
 
   Set<String> _fullTextMatches = {};
+
+  Set<String> _selectedTaskStatuses = {
+    'OPEN',
+    'GROOMED',
+    'IN PROGRESS',
+  };
 
   void emitState() {
     emit(
@@ -51,9 +83,12 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         flaggedEntriesOnly: _flaggedEntriesOnly,
         privateEntriesOnly: _privateEntriesOnly,
         showPrivateEntries: _showPrivateEntries,
+        showTasks: _showTasks,
         selectedEntryTypes: _selectedEntryTypes,
         fullTextMatches: _fullTextMatches,
         pagingController: state.pagingController,
+        taskStatuses: state.taskStatuses,
+        selectedTaskStatuses: _selectedTaskStatuses,
       ),
     );
   }
@@ -63,8 +98,23 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     refreshQuery();
   }
 
+  void setShowTasks({required bool showTasks}) {
+    _showTasks = showTasks;
+    refreshQuery();
+  }
+
   void toggleStarredEntriesOnly() {
     _starredEntriesOnly = !_starredEntriesOnly;
+    refreshQuery();
+  }
+
+  void toggleSelectedTaskStatus(String status) {
+    if (_selectedTaskStatuses.contains(status)) {
+      _selectedTaskStatuses = _selectedTaskStatuses.difference({status});
+    } else {
+      _selectedTaskStatuses = _selectedTaskStatuses.union({status});
+    }
+
     refreshQuery();
   }
 
@@ -109,17 +159,27 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       final fullTextMatches = _fullTextMatches.toList();
       final ids = _query.isNotEmpty ? fullTextMatches : null;
 
-      final newItems = await _db
-          .watchJournalEntities(
-            types: types,
-            ids: ids,
-            starredStatuses: _starredEntriesOnly ? [true] : [true, false],
-            privateStatuses: _privateEntriesOnly ? [true] : [true, false],
-            flaggedStatuses: _flaggedEntriesOnly ? [1] : [1, 0],
-            limit: _pageSize,
-            offset: pageKey,
-          )
-          .first;
+      final newItems = _showTasks
+          ? await _db
+              .watchTasks(
+                ids: ids,
+                starredStatuses: _starredEntriesOnly ? [true] : [true, false],
+                taskStatuses: _selectedTaskStatuses.toList(),
+                limit: _pageSize,
+                offset: pageKey,
+              )
+              .first
+          : await _db
+              .watchJournalEntities(
+                types: types,
+                ids: ids,
+                starredStatuses: _starredEntriesOnly ? [true] : [true, false],
+                privateStatuses: _privateEntriesOnly ? [true] : [true, false],
+                flaggedStatuses: _flaggedEntriesOnly ? [1] : [1, 0],
+                limit: _pageSize,
+                offset: pageKey,
+              )
+              .first;
 
       final isLastPage = newItems.length < _pageSize;
       if (isLastPage) {

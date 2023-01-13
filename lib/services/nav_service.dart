@@ -21,7 +21,6 @@ class NavService {
   final BeamerDelegate habitsDelegate = habitsBeamerDelegate;
   final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
   final BeamerDelegate journalDelegate = journalBeamerDelegate;
-  final BeamerDelegate tasksDelegate = tasksBeamerDelegate;
   final BeamerDelegate settingsDelegate = settingsBeamerDelegate;
 
   Future<void> restoreRoute() async {
@@ -47,11 +46,8 @@ class NavService {
     if (path.startsWith('/journal')) {
       setIndex(2);
     }
-    if (path.startsWith('/tasks')) {
-      setIndex(3);
-    }
     if (path.startsWith('/settings')) {
-      setIndex(4);
+      setIndex(3);
     }
 
     emitState();
@@ -62,7 +58,6 @@ class NavService {
       habitsBeamerDelegate,
       dashboardsDelegate,
       journalDelegate,
-      tasksBeamerDelegate,
       settingsBeamerDelegate,
     ];
 
@@ -80,9 +75,6 @@ class NavService {
       beamToNamed('/journal');
     }
     if (index == 3) {
-      beamToNamed('/tasks');
-    }
-    if (index == 4) {
       beamToNamed('/settings');
     }
   }

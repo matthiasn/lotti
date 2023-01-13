@@ -15,8 +15,6 @@ import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
-import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
-import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/theme/theme_config.dart';
@@ -33,7 +31,6 @@ class _AppScreenState extends State<AppScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const showTasks = true;
     final localizations = AppLocalizations.of(context)!;
 
     return StreamBuilder<int>(
@@ -49,7 +46,6 @@ class _AppScreenState extends State<AppScreen> {
                   Beamer(routerDelegate: navService.habitsDelegate),
                   Beamer(routerDelegate: navService.dashboardsDelegate),
                   Beamer(routerDelegate: navService.journalDelegate),
-                  Beamer(routerDelegate: navService.tasksDelegate),
                   Beamer(routerDelegate: navService.settingsDelegate),
                 ],
               ),
@@ -89,18 +85,12 @@ class _AppScreenState extends State<AppScreen> {
                 tooltip: '',
               ),
               BottomNavigationBarItem(
-                icon: FlaggedBadgeIcon(),
-                activeIcon: FlaggedBadgeIcon(active: true),
+                icon: SvgPicture.asset(styleConfig().navJournalIcon),
+                activeIcon:
+                    SvgPicture.asset(styleConfig().navJournalIconActive),
                 label: localizations.navTabTitleJournal,
                 tooltip: '',
               ),
-              if (showTasks)
-                BottomNavigationBarItem(
-                  icon: TasksBadgeIcon(),
-                  activeIcon: TasksBadgeIcon(active: true),
-                  label: localizations.navTabTitleTasks,
-                  tooltip: '',
-                ),
               BottomNavigationBarItem(
                 icon: OutboxBadgeIcon(
                   icon: SvgPicture.asset(styleConfig().navSettingsIcon),

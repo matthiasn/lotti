@@ -183,8 +183,9 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           rebuild();
           final linkedId = widget.linked?.meta.id;
           final task = await createTask(linkedId: linkedId);
+
           if (task != null) {
-            beamToNamed('/tasks/${task.meta.id}');
+            beamToNamed('/journal/${task.meta.id}');
           }
         },
         child: const Icon(
