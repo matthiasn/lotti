@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Unlinking entries
+
+## [0.8.235] - 2023-01-13
 ### Added:
 - Remove habit streaks section - not useful, streaks are apparent without
 - Chore: upgraded dependencies
