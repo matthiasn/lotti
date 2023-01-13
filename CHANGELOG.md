@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
-- Remove habit streaks section - streaks are visible
+- Remove habit streaks section - not useful, streaks are apparent without
+- Chore: upgraded dependencies
 
 ## [0.8.234] - 2023-01-13
 ### Changed:
