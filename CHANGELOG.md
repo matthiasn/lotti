@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Decluttered task view: only show editor toolbar on first focus
+
+## [0.8.232] - 2023-01-13
+### Changed:
 - Tasks by status can now be found in the journal tab
 - Full-text search in tasks
 - Tasks tab removed

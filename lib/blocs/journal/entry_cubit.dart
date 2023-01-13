@@ -27,6 +27,7 @@ class EntryCubit extends Cubit<EntryState> {
             entryId: entryId,
             entry: entry,
             showMap: false,
+            isFocused: false,
           ),
         ) {
     final lastSaved = entry.meta.updatedAt;
@@ -34,13 +35,19 @@ class EntryCubit extends Cubit<EntryState> {
     _editorStateService
         .getUnsavedStream(entryId, lastSaved)
         .listen((bool dirtyFromEditorDrafts) {
-      dirty = dirtyFromEditorDrafts;
+      _dirty = dirtyFromEditorDrafts;
       emitState();
     });
 
     if (entry is Task) {
       formKey = GlobalKey<FormBuilderState>();
     }
+
+    focusNode.addListener(() {
+      debugPrint('$entryId focus: ${focusNode.hasFocus}');
+      _isFocused = true;
+      emitState();
+    });
 
     try {
       controller = makeController(
@@ -56,7 +63,7 @@ class EntryCubit extends Cubit<EntryState> {
           json: quillJsonFromDelta(delta),
           lastSaved: entry.meta.updatedAt,
         );
-        dirty = true;
+        _dirty = true;
         emitState();
       });
 
@@ -79,8 +86,10 @@ class EntryCubit extends Cubit<EntryState> {
 
   String entryId;
   JournalEntity entry;
-  bool dirty = false;
   bool showMap = false;
+
+  bool _dirty = false;
+  bool _isFocused = false;
 
   late final QuillController controller;
   late final GlobalKey<FormBuilderState>? formKey;
@@ -124,18 +133,19 @@ class EntryCubit extends Cubit<EntryState> {
       lastSaved: entry.meta.updatedAt,
       controller: controller,
     );
-    dirty = false;
+    _dirty = false;
     emitState();
     await HapticFeedback.heavyImpact();
   }
 
   void emitState() {
-    if (dirty) {
+    if (_dirty) {
       emit(
         EntryState.dirty(
           entryId: entryId,
           entry: entry,
           showMap: showMap,
+          isFocused: _isFocused,
         ),
       );
     } else {
@@ -144,13 +154,14 @@ class EntryCubit extends Cubit<EntryState> {
           entryId: entryId,
           entry: entry,
           showMap: showMap,
+          isFocused: _isFocused,
         ),
       );
     }
   }
 
   void setDirty(dynamic _) {
-    dirty = true;
+    _dirty = true;
     emitState();
   }
 
