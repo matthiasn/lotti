@@ -12,7 +12,7 @@ class TaskCounts extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return Container(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(top: 4),
       width: MediaQuery.of(context).size.width,
       child: Wrap(
         alignment: WrapAlignment.center,

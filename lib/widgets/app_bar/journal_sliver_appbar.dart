@@ -10,6 +10,7 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/badges/flagged_badge.dart';
 import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/multi_select.dart';
+import 'package:lotti/widgets/misc/tasks_counts.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:lotti/widgets/search/task_status_filter.dart';
 import 'package:lotti/widgets/search/tasks_segmented_control.dart';
@@ -151,6 +152,7 @@ class JournalSliverAppBar extends StatelessWidget {
                             ),
                           ),
                         if (snapshot.showTasks) const TaskStatusFilter(),
+                        if (snapshot.showTasks) const TaskCounts(),
                       ],
                     ),
                   ),
