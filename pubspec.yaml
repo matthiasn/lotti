@@ -122,6 +122,7 @@ dependencies:
   package_info_plus: ^3.0.1
   path: ^1.8.1
   path_provider: ^2.0.8
+  path_provider_macos: 2.0.6
   permission_handler: ^10.0.0
   photo_view: ^0.14.0
 
