@@ -75,7 +75,7 @@ class EditorWidget extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ToolbarWidget(unlinkFn: unlinkFn),
+                  if (snapshot.isFocused) ToolbarWidget(unlinkFn: unlinkFn),
                   Flexible(
                     child: QuillEditor(
                       controller: controller,

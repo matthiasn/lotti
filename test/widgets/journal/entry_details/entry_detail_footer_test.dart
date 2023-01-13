@@ -40,6 +40,7 @@ void main() {
           entryId: testTextEntry.meta.id,
           entry: testTextEntry,
           showMap: false,
+          isFocused: false,
         ),
       );
     });
@@ -136,6 +137,7 @@ void main() {
           entryId: testEntry.meta.id,
           entry: testEntry,
           showMap: false,
+          isFocused: false,
         ),
       );
       Future<void> mockStartTimer() => mockTimeService.start(testEntry);
@@ -184,6 +186,7 @@ void main() {
           entryId: testEntry.meta.id,
           entry: testEntry,
           showMap: false,
+          isFocused: false,
         ),
       );
 
