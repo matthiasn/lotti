@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.233+1698
+version: 0.8.233+1699
 
 msix_config:
   display_name: Lotti
@@ -133,6 +133,7 @@ dependencies:
 
   qr_flutter: ^4.0.0
 
+  quiver: ^3.2.1
   radial_button:
     git:
       url: https://github.com/redinterface/radial_button
