@@ -98,7 +98,7 @@ void main() {
 
       when(
         () => mockJournalDb.watchJournalEntities(
-          types: entryTypes.map((e) => e.typeName).whereType<String>().toList(),
+          types: entryTypes.toList(),
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],

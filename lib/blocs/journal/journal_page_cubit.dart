@@ -57,7 +57,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   final JournalDb _db = getIt<JournalDb>();
   static const _pageSize = 50;
-  List<FilterBy?> _selectedEntryTypes = entryTypes;
+  Set<String> _selectedEntryTypes = entryTypes.toSet();
 
   String _query = '';
   bool _starredEntriesOnly = false;
@@ -84,18 +84,13 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         privateEntriesOnly: _privateEntriesOnly,
         showPrivateEntries: _showPrivateEntries,
         showTasks: _showTasks,
-        selectedEntryTypes: _selectedEntryTypes,
+        selectedEntryTypes: _selectedEntryTypes.toList(),
         fullTextMatches: _fullTextMatches,
         pagingController: state.pagingController,
         taskStatuses: state.taskStatuses,
         selectedTaskStatuses: _selectedTaskStatuses,
       ),
     );
-  }
-
-  void setSelectedTypes(List<FilterBy?> selected) {
-    _selectedEntryTypes = selected;
-    refreshQuery();
   }
 
   void setShowTasks({required bool showTasks}) {
@@ -113,6 +108,16 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       _selectedTaskStatuses = _selectedTaskStatuses.difference({status});
     } else {
       _selectedTaskStatuses = _selectedTaskStatuses.union({status});
+    }
+
+    refreshQuery();
+  }
+
+  void toggleSelectedEntryTypes(String entryType) {
+    if (_selectedEntryTypes.contains(entryType)) {
+      _selectedEntryTypes = _selectedEntryTypes.difference({entryType});
+    } else {
+      _selectedEntryTypes = _selectedEntryTypes.union({entryType});
     }
 
     refreshQuery();
@@ -149,10 +154,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   Future<void> _fetchPage(int pageKey) async {
     try {
-      final types = state.selectedEntryTypes
-          .map((e) => e?.typeName)
-          .whereType<String>()
-          .toList();
+      final types = state.selectedEntryTypes.toList();
 
       await _fts5Search();
 
@@ -210,14 +212,14 @@ class FilterBy {
   final String name;
 }
 
-final List<FilterBy> entryTypes = [
-  FilterBy(typeName: 'Task', name: 'Task'),
-  FilterBy(typeName: 'JournalEntry', name: 'Text'),
-  FilterBy(typeName: 'JournalAudio', name: 'Audio'),
-  FilterBy(typeName: 'JournalImage', name: 'Photo'),
-  FilterBy(typeName: 'MeasurementEntry', name: 'Measured'),
-  FilterBy(typeName: 'SurveyEntry', name: 'Survey'),
-  FilterBy(typeName: 'WorkoutEntry', name: 'Workout'),
-  FilterBy(typeName: 'HabitCompletionEntry', name: 'Habit'),
-  FilterBy(typeName: 'QuantitativeEntry', name: 'Health'),
+final List<String> entryTypes = [
+  'Task',
+  'JournalEntry',
+  'JournalAudio',
+  'JournalImage',
+  'MeasurementEntry',
+  'SurveyEntry',
+  'WorkoutEntry',
+  'HabitCompletionEntry',
+  'QuantitativeEntry',
 ];

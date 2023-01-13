@@ -36,8 +36,7 @@ void main() {
   var mockPersistenceLogic = MockPersistenceLogic();
   final mockEntitiesCacheService = MockEntitiesCacheService();
 
-  final entryTypeStrings =
-      entryTypes.map((e) => e.typeName).whereType<String>().toList();
+  final entryTypeStrings = entryTypes.toList();
 
   group('JournalPage Widget Tests - ', () {
     setUpAll(() {
