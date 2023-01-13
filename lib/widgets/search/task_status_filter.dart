@@ -1,3 +1,4 @@
+import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,12 +19,16 @@ class _TaskStatusFilterState extends State<TaskStatusFilter> {
   Widget build(BuildContext context) {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
-        return Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: [
-            ...snapshot.taskStatuses.map(TaskStatusChip.new),
-          ],
+        return Padding(
+          padding: const EdgeInsets.only(top: 5),
+          child: WrapSuper(
+            alignment: WrapSuperAlignment.center,
+            spacing: 4,
+            lineSpacing: 4,
+            children: [
+              ...snapshot.taskStatuses.map(TaskStatusChip.new),
+            ],
+          ),
         );
       },
     );
@@ -68,17 +73,18 @@ class TaskStatusChip extends StatelessWidget {
               child: ColoredBox(
                 color: snapshot.selectedTaskStatuses.contains(status)
                     ? styleConfig().selectedChoiceChipColor
-                    : styleConfig().unselectedChoiceChipColor,
+                    : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    vertical: 4,
-                    horizontal: 16,
+                    vertical: 5,
+                    horizontal: 15,
                   ),
                   child: Text(
                     '${localizationLookup[status]}',
                     style: TextStyle(
                       fontFamily: 'Oswald',
-                      fontSize: 16,
+                      fontSize: fontSizeMedium,
+                      fontWeight: FontWeight.w300,
                       color: snapshot.selectedTaskStatuses.contains(status)
                           ? styleConfig().selectedChoiceChipTextColor
                           : styleConfig().unselectedChoiceChipTextColor,

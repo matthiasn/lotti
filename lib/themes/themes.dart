@@ -35,9 +35,9 @@ final darkTheme = StyleConfig(
   audioMeterBarBackground:
       TinyColor.fromColor(defaultBaseColor).lighten(30).color,
   selectedChoiceChipColor: Colors.lightBlue,
-  selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
+  selectedChoiceChipTextColor: const Color.fromRGBO(255, 245, 240, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
-  unselectedChoiceChipTextColor: colorFromCssHex('#474b40'),
+  unselectedChoiceChipTextColor: const Color.fromRGBO(33, 33, 33, 1),
   negspace: coal,
   primaryTextColor: white,
   secondaryTextColor: iron,
@@ -99,9 +99,9 @@ final brightTheme = StyleConfig(
   audioMeterBarBackground:
       TinyColor.fromColor(defaultBaseColor).lighten(30).color,
   selectedChoiceChipColor: Colors.lightBlue,
-  selectedChoiceChipTextColor: const Color.fromRGBO(200, 195, 190, 1),
+  selectedChoiceChipTextColor: const Color.fromRGBO(255, 245, 240, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
-  unselectedChoiceChipTextColor: colorFromCssHex('#474b40'),
+  unselectedChoiceChipTextColor: const Color.fromRGBO(33, 33, 33, 1),
   negspace: white,
   primaryTextColor: coal,
   secondaryTextColor: iron,

@@ -9,11 +9,13 @@ class EntryState with _$EntryState {
     required String entryId,
     required JournalEntity? entry,
     required bool showMap,
+    required bool isFocused,
   }) = _EntryStateSaved;
 
   factory EntryState.dirty({
     required String entryId,
     required JournalEntity? entry,
     required bool showMap,
+    required bool isFocused,
   }) = EntryStateDirty;
 }

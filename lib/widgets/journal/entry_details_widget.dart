@@ -25,12 +25,14 @@ class EntryDetailWidget extends StatelessWidget {
     required this.popOnDelete,
     this.showTaskDetails = false,
     this.unlinkFn,
+    this.parentTags,
   });
 
   final String itemId;
   final bool popOnDelete;
   final bool showTaskDetails;
   final Future<void> Function()? unlinkFn;
+  final Set<String>? parentTags;
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +83,7 @@ class EntryDetailWidget extends StatelessWidget {
                       orElse: () => const SizedBox.shrink(),
                     ),
                     const EntryDetailHeader(),
-                    TagsListWidget(),
+                    TagsListWidget(parentTags: parentTags),
                     item.maybeMap(
                       task: (_) => const SizedBox.shrink(),
                       quantitative: (_) => const SizedBox.shrink(),

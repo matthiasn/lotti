@@ -6,11 +6,13 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/journal/tags/tag_widget.dart';
+import 'package:quiver/collection.dart';
 
 class TagsListWidget extends StatelessWidget {
-  TagsListWidget({super.key});
+  TagsListWidget({this.parentTags, super.key});
 
   final TagsService tagsService = getIt<TagsService>();
+  final Set<String>? parentTags;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +43,7 @@ class TagsListWidget extends StatelessWidget {
               }
             }
 
-            if (tagIds.isEmpty) {
+            if (tagIds.isEmpty || setsEqual(tagIds.toSet(), parentTags)) {
               return const SizedBox.shrink();
             }
 

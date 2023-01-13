@@ -12,7 +12,7 @@ class TaskCounts extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return Container(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(top: 4),
       width: MediaQuery.of(context).size.width,
       child: Wrap(
         alignment: WrapAlignment.center,
@@ -69,12 +69,7 @@ class TasksCountWidget extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
               '$label: ${snapshot.data}',
-              style: TextStyle(
-                color: styleConfig().primaryTextColor,
-                fontFamily: 'Oswald',
-                fontSize: 12,
-                fontWeight: FontWeight.w100,
-              ),
+              style: searchLabelStyle(),
             ),
           );
         }

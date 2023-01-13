@@ -60,7 +60,7 @@ class EntryDetailPage extends StatelessWidget {
                   popOnDelete: true,
                   showTaskDetails: true,
                 ),
-                LinkedEntriesWidget(itemId: itemId),
+                LinkedEntriesWidget(item: item),
                 LinkedFromEntriesWidget(item: item),
               ],
             ),
