@@ -21,49 +21,51 @@ class SurveySummary extends StatelessWidget {
     final surveyKey = surveyEntry.data.taskResult.identifier;
     final chartConfig = surveyTypes[surveyKey];
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ...surveyEntry.data.calculatedScores.entries.map(
-          (mapEntry) => Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 4,
-            ),
-            child: Row(
-              children: [
-                Text(
-                  '${mapEntry.key}:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontFamily: mainFont,
-                    color: styleConfig().primaryTextColor,
-                    fontSize: fontSizeMedium,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ...surveyEntry.data.calculatedScores.entries.map(
+            (mapEntry) => Padding(
+              padding: const EdgeInsets.only(
+                bottom: 5,
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '${mapEntry.key}:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontFamily: monospaceFont,
+                      color: styleConfig().primaryTextColor,
+                      fontSize: fontSizeMedium,
+                    ),
                   ),
-                ),
-                Text(
-                  ' ${mapEntry.value}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w400,
-                    fontSize: fontSizeMedium,
-                    color: styleConfig().primaryTextColor,
-                    fontFamily: mainFont,
+                  Text(
+                    ' ${mapEntry.value}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w400,
+                      fontSize: fontSizeMedium,
+                      color: styleConfig().primaryTextColor,
+                      fontFamily: monospaceFont,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-        if (showChart)
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: DashboardSurveyChart(
-              chartConfig: chartConfig!,
-              rangeStart: getRangeStart(context: context),
-              rangeEnd: getRangeEnd(),
+          if (showChart)
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: DashboardSurveyChart(
+                chartConfig: chartConfig!,
+                rangeStart: getRangeStart(context: context),
+                rangeEnd: getRangeEnd(),
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
