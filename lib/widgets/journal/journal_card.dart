@@ -177,7 +177,7 @@ class JournalCard extends StatelessWidget {
     super.key,
     required this.item,
     this.maxHeight = 120,
-    this.showLinkedDuration = false,
+    this.showLinkedDuration = true,
   });
 
   final JournalEntity item;
