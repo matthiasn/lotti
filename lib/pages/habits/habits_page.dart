@@ -97,18 +97,6 @@ class HabitsTabPage extends StatelessWidget {
                       showGaps: showGaps,
                     );
                   }),
-                  HabitsStreaks(
-                    header: state.shortStreakCount > 0
-                        ? localizations.habitsShortStreaksHeader
-                        : localizations.habitsShortStreaksEmptyHeader,
-                    days: 2,
-                  ),
-                  HabitsStreaks(
-                    header: state.longStreakCount > 0
-                        ? localizations.habitsLongerStreaksHeader
-                        : localizations.habitsLongerStreaksEmptyHeader,
-                    days: 6,
-                  ),
                   const SizedBox(height: 20),
                   const HabitStreaksCounter(),
                 ],
