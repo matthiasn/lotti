@@ -229,12 +229,13 @@ TextStyle cancelButtonStyle() => TextStyle(
     );
 
 const segmentItemStyle = TextStyle(
-  fontFamily: mainFont,
-  fontSize: fontSizeSmall,
+  fontFamily: 'Oswald',
+  fontSize: fontSizeMedium,
+  fontWeight: FontWeight.w100,
 );
 
 const badgeStyle = TextStyle(
-  fontFamily: mainFont,
+  fontFamily: 'Oswald',
   fontWeight: FontWeight.w300,
   fontSize: fontSizeSmall,
 );
@@ -284,3 +285,10 @@ const habitCompletionHeaderStyle = TextStyle(
   fontFamily: mainFont,
   fontSize: 20,
 );
+
+TextStyle searchLabelStyle() => TextStyle(
+      color: styleConfig().secondaryTextColor,
+      fontFamily: 'Oswald',
+      fontSize: fontSizeMedium,
+      fontWeight: FontWeight.w100,
+    );

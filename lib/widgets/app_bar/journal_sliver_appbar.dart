@@ -82,9 +82,7 @@ class JournalSliverAppBar extends StatelessWidget {
                                 children: [
                                   Text(
                                     localizations.journalPrivateTooltip,
-                                    style: TextStyle(
-                                      color: styleConfig().secondaryTextColor,
-                                    ),
+                                    style: searchLabelStyle(),
                                   ),
                                   CupertinoSwitch(
                                     value: snapshot.privateEntriesOnly,
@@ -101,9 +99,7 @@ class JournalSliverAppBar extends StatelessWidget {
                               children: [
                                 Text(
                                   localizations.journalFavoriteTooltip,
-                                  style: TextStyle(
-                                    color: styleConfig().secondaryTextColor,
-                                  ),
+                                  style: searchLabelStyle(),
                                 ),
                                 CupertinoSwitch(
                                   value: snapshot.starredEntriesOnly,
@@ -120,9 +116,7 @@ class JournalSliverAppBar extends StatelessWidget {
                                 children: [
                                   Text(
                                     localizations.journalFlaggedTooltip,
-                                    style: TextStyle(
-                                      color: styleConfig().secondaryTextColor,
-                                    ),
+                                    style: searchLabelStyle(),
                                   ),
                                   CupertinoSwitch(
                                     value: snapshot.flaggedEntriesOnly,

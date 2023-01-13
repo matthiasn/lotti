@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Decluttered task view: only show tags in task comments when not equal to parent tags
 - Show total time spent on a task
 - Show task stats
+- Task search header styling
 
 ## [0.8.232] - 2023-01-13
 ### Changed:
