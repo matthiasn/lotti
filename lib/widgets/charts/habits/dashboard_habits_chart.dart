@@ -184,14 +184,12 @@ class HabitChartLine extends StatefulWidget {
     required this.habitDefinition,
     required this.rangeStart,
     required this.rangeEnd,
-    this.streakDuration = 0,
     required this.showGaps,
   });
 
   final HabitDefinition habitDefinition;
   final DateTime rangeStart;
   final DateTime rangeEnd;
-  final int streakDuration;
   final bool showGaps;
 
   @override
@@ -228,16 +226,6 @@ class _HabitChartLineState extends State<HabitChartLine> {
           rangeStart: widget.rangeStart,
           rangeEnd: widget.rangeEnd,
         );
-
-        final streak = results.reversed.toList().skip(1).takeWhile(
-              (value) =>
-                  value.completionType == HabitCompletionType.success ||
-                  value.completionType == HabitCompletionType.skip,
-            );
-
-        if (streak.length < widget.streakDuration) {
-          return const SizedBox.shrink();
-        }
 
         final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
 
