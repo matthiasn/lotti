@@ -19,6 +19,7 @@ class AppTheme {
 
 const double chipBorderRadius = 8;
 const mainFont = 'PlusJakartaSans';
+const monospaceFont = 'Inconsolata';
 
 const chipPadding = EdgeInsets.symmetric(
   vertical: 3,
@@ -71,7 +72,7 @@ TextStyle textStyleLargerUnderlined() => textStyle().copyWith(
       fontSize: 20,
       fontWeight: FontWeight.w100,
       decoration: TextDecoration.underline,
-      fontFamily: 'Inconsolata',
+      fontFamily: monospaceFont,
     );
 
 TextStyle labelStyleLarger() => textStyleLarger().copyWith(
@@ -91,7 +92,7 @@ TextStyle newLabelStyle() => TextStyle(
     );
 
 TextStyle monospaceTextStyle() => TextStyle(
-      fontFamily: 'Inconsolata',
+      fontFamily: monospaceFont,
       fontWeight: FontWeight.w300,
       fontSize: fontSizeMedium,
       color: styleConfig().primaryTextColor,

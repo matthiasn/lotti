@@ -220,6 +220,7 @@ class JournalCard extends StatelessWidget {
                   journalAudio: (_) => const LeadingIcon(Icons.mic),
                   journalEntry: (_) => const LeadingIcon(Icons.article),
                   quantitative: (_) => const LeadingIcon(MdiIcons.heart),
+                  measurement: (_) => const LeadingIcon(MdiIcons.numeric),
                   task: (task) => LeadingIcon(
                     task.data.status.maybeMap(
                       done: (_) => MdiIcons.checkboxMarkedOutline,

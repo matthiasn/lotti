@@ -18,7 +18,7 @@ class HealthSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 5),
+      padding: const EdgeInsets.only(bottom: 15),
       child: Column(
         children: [
           if (showChart)

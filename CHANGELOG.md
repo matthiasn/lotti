@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Journal card styling
+
+## [0.8.233] - 2023-01-13
+### Changed:
 - Decluttered task view: only show editor toolbar on first focus
 - Decluttered task view: only show tags in task comments when not equal to parent tags
 - Show total time spent on a task

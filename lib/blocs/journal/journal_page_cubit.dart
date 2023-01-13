@@ -219,5 +219,5 @@ final List<FilterBy> entryTypes = [
   FilterBy(typeName: 'SurveyEntry', name: 'Survey'),
   FilterBy(typeName: 'WorkoutEntry', name: 'Workout'),
   FilterBy(typeName: 'HabitCompletionEntry', name: 'Habit'),
-  FilterBy(typeName: 'QuantitativeEntry', name: 'Quant'),
+  FilterBy(typeName: 'QuantitativeEntry', name: 'Health'),
 ];
