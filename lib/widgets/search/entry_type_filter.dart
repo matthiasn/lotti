@@ -48,6 +48,10 @@ class EntryTypeChip extends StatelessWidget {
             cubit.toggleSelectedEntryTypes(entryType);
             HapticFeedback.heavyImpact();
           },
+          onLongPress: () {
+            cubit.setSingleEntryType(entryType);
+            HapticFeedback.heavyImpact();
+          },
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             child: ClipRRect(
