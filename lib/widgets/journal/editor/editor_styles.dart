@@ -54,7 +54,7 @@ DefaultStyles customEditorStyles({
       radius: const Radius.circular(8),
       style: GoogleFonts.inconsolata(
         fontSize: fontSizeMedium,
-        color: textColor,
+        color: Colors.black,
       ),
       backgroundColor: codeBlockBackground,
     ),
@@ -71,7 +71,7 @@ DefaultStyles customEditorStyles({
     code: DefaultTextBlockStyle(
       GoogleFonts.inconsolata(
         fontSize: fontSizeMedium,
-        color: textColor,
+        color: Colors.black,
       ),
       const Tuple2(0, 0),
       const Tuple2(0, 0),

@@ -49,12 +49,7 @@ class JournalCardTitle extends StatelessWidget {
             children: [
               Text(
                 df.format(item.meta.dateFrom),
-                style: TextStyle(
-                  color: styleConfig().primaryTextColor,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w300,
-                  fontFamily: 'Inconsolata',
-                ),
+                style: monospaceTextStyle(),
               ),
               if (item is Task) TaskStatusWidget(item as Task),
               Row(

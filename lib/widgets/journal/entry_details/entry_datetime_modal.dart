@@ -168,7 +168,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                         style: textStyleLarger().copyWith(
                           fontWeight: FontWeight.w100,
                           fontSize: 20,
-                          fontFamily: 'Inconsolata',
+                          fontFamily: monospaceFont,
                         ),
                       ),
                     ),

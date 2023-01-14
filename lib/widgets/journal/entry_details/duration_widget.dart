@@ -171,15 +171,13 @@ class FormattedTime extends StatelessWidget {
           padding: const EdgeInsets.only(right: 4),
           child: Icon(
             MdiIcons.timerOutline,
-            color: labelColor,
+            color: styleConfig().primaryTextColor,
             size: 15,
           ),
         ),
         Text(
           formatDuration(entryDuration(displayed)),
-          style: monospaceTextStyle().copyWith(
-            color: labelColor,
-          ),
+          style: monospaceTextStyle(),
         ),
       ],
     );

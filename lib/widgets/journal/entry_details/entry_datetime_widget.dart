@@ -47,7 +47,7 @@ class EntryDatetimeWidget extends StatelessWidget {
             },
             child: Text(
               df.format(item.meta.dateFrom),
-              style: textStyle().copyWith(fontFamily: 'Inconsolata'),
+              style: monospaceTextStyle(),
             ),
           ),
         );
