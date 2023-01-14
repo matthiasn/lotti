@@ -60,7 +60,7 @@ class LinkedEntriesWidget extends StatelessWidget {
 
                     if (result == unlinkKey) {
                       await db.removeLink(
-                        fromId: itemId,
+                        fromId: item.meta.id,
                         toId: itemId,
                       );
                     }
