@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed:
 - Text color for entry duration when timer running
+- Fix possibility of accidentally overwriting task title, estimate, and status
 
 ## [0.8.239] - 2023-01-14
 ### Changed:
