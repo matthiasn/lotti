@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:quiver/collection.dart';
 
 class EntryTypeFilter extends StatelessWidget {
   const EntryTypeFilter({super.key});
@@ -21,6 +22,7 @@ class EntryTypeFilter extends StatelessWidget {
             lineSpacing: 5,
             children: [
               ...entryTypes.map(EntryTypeChip.new),
+              const EntryTypeAllChip(),
             ],
           ),
         );
@@ -42,10 +44,15 @@ class EntryTypeChip extends StatelessWidget {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
+        final isSelected = snapshot.selectedEntryTypes.contains(entryType);
 
         return GestureDetector(
           onTap: () {
             cubit.toggleSelectedEntryTypes(entryType);
+            HapticFeedback.heavyImpact();
+          },
+          onLongPress: () {
+            cubit.setSingleEntryType(entryType);
             HapticFeedback.heavyImpact();
           },
           child: MouseRegion(
@@ -53,7 +60,7 @@ class EntryTypeChip extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: ColoredBox(
-                color: snapshot.selectedEntryTypes.contains(entryType)
+                color: isSelected
                     ? styleConfig().selectedChoiceChipColor
                     : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
                 child: Padding(
@@ -67,7 +74,61 @@ class EntryTypeChip extends StatelessWidget {
                       fontFamily: 'Oswald',
                       fontSize: fontSizeMedium,
                       fontWeight: FontWeight.w300,
-                      color: snapshot.selectedEntryTypes.contains(entryType)
+                      color: isSelected
+                          ? styleConfig().selectedChoiceChipTextColor
+                          : styleConfig().unselectedChoiceChipTextColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class EntryTypeAllChip extends StatelessWidget {
+  const EntryTypeAllChip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<JournalPageCubit, JournalPageState>(
+      builder: (context, snapshot) {
+        final cubit = context.read<JournalPageCubit>();
+        final isSelected =
+            setsEqual(snapshot.selectedEntryTypes.toSet(), entryTypes.toSet());
+
+        return GestureDetector(
+          onTap: () {
+            if (isSelected) {
+              cubit.clearSelectedEntryTypes();
+            } else {
+              cubit.selectAllEntryTypes();
+            }
+            HapticFeedback.heavyImpact();
+          },
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: ColoredBox(
+                color: isSelected
+                    ? styleConfig().selectedChoiceChipColor
+                    : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 5,
+                    horizontal: 15,
+                  ),
+                  child: Text(
+                    'All',
+                    style: TextStyle(
+                      fontFamily: 'Oswald',
+                      fontSize: fontSizeMedium,
+                      fontWeight: FontWeight.w300,
+                      color: isSelected
                           ? styleConfig().selectedChoiceChipTextColor
                           : styleConfig().unselectedChoiceChipTextColor,
                     ),

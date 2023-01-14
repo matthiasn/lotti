@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Long press on entry type filter to select only one type
+- Select all entry types toggle button
+
 ### Fixed:
 - Add missing habit completion summary in entry detail view
 
