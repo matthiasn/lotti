@@ -9,6 +9,7 @@ import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_footer.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
+import 'package:lotti/widgets/journal/entry_details/habit_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
@@ -108,7 +109,7 @@ class EntryDetailWidget extends StatelessWidget {
                             task: task,
                           );
                         },
-                        habitCompletion: (_) => const SizedBox.shrink(),
+                        habitCompletion: HabitSummary.new,
                         journalEntry: (_) => const SizedBox.shrink(),
                         journalImage: (_) => const SizedBox.shrink(),
                       ),

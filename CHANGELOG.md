@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Add missing habit completion summary in entry detail view
+
+## [0.8.238] - 2023-01-14
+### Fixed:
 - Code font color in text editor
 - Consolidate monospace text styles
 
