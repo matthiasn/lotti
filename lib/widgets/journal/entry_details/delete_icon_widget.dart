@@ -15,7 +15,6 @@ class DeleteIconWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    void maybePop() => Navigator.of(context).maybePop();
 
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (
@@ -42,7 +41,6 @@ class DeleteIconWidget extends StatelessWidget {
 
           if (result == deleteKey) {
             await cubit.delete();
-            maybePop();
           }
         }
 
