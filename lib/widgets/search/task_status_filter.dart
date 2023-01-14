@@ -5,7 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
-import 'package:lotti/themes/theme.dart';
+
+import 'filter_choice_chip.dart';
 
 class TaskStatusFilter extends StatefulWidget {
   const TaskStatusFilter({super.key});
@@ -59,41 +60,15 @@ class TaskStatusChip extends StatelessWidget {
 
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
-        final cubit = context.read<JournalPageCubit>();
+        void onTap() {
+          context.read<JournalPageCubit>().toggleSelectedTaskStatus(status);
+          HapticFeedback.heavyImpact();
+        }
 
-        return GestureDetector(
-          onTap: () {
-            cubit.toggleSelectedTaskStatus(status);
-            HapticFeedback.heavyImpact();
-          },
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: ColoredBox(
-                color: snapshot.selectedTaskStatuses.contains(status)
-                    ? styleConfig().selectedChoiceChipColor
-                    : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 5,
-                    horizontal: 15,
-                  ),
-                  child: Text(
-                    '${localizationLookup[status]}',
-                    style: TextStyle(
-                      fontFamily: 'Oswald',
-                      fontSize: fontSizeMedium,
-                      fontWeight: FontWeight.w300,
-                      color: snapshot.selectedTaskStatuses.contains(status)
-                          ? styleConfig().selectedChoiceChipTextColor
-                          : styleConfig().unselectedChoiceChipTextColor,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+        return FilterChoiceChip(
+          label: '${localizationLookup[status]}',
+          isSelected: snapshot.selectedTaskStatuses.contains(status),
+          onTap: onTap,
         );
       },
     );

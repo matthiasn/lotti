@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:quiver/collection.dart';
 
 class EntryTypeFilter extends StatelessWidget {
@@ -44,45 +44,24 @@ class EntryTypeChip extends StatelessWidget {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
+
         final isSelected = snapshot.selectedEntryTypes.contains(entryType);
 
-        return GestureDetector(
-          onTap: () {
-            cubit.toggleSelectedEntryTypes(entryType);
-            HapticFeedback.heavyImpact();
-          },
-          onLongPress: () {
-            cubit.setSingleEntryType(entryType);
-            HapticFeedback.heavyImpact();
-          },
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: ColoredBox(
-                color: isSelected
-                    ? styleConfig().selectedChoiceChipColor
-                    : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 5,
-                    horizontal: 15,
-                  ),
-                  child: Text(
-                    entryTypeDisplayNames[entryType] ?? '',
-                    style: TextStyle(
-                      fontFamily: 'Oswald',
-                      fontSize: fontSizeMedium,
-                      fontWeight: FontWeight.w300,
-                      color: isSelected
-                          ? styleConfig().selectedChoiceChipTextColor
-                          : styleConfig().unselectedChoiceChipTextColor,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+        void onTap() {
+          cubit.toggleSelectedEntryTypes(entryType);
+          HapticFeedback.heavyImpact();
+        }
+
+        void onLongPress() {
+          cubit.setSingleEntryType(entryType);
+          HapticFeedback.heavyImpact();
+        }
+
+        return FilterChoiceChip(
+          label: entryTypeDisplayNames[entryType] ?? '',
+          isSelected: isSelected,
+          onTap: onTap,
+          onLongPress: onLongPress,
         );
       },
     );
@@ -97,46 +76,25 @@ class EntryTypeAllChip extends StatelessWidget {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
-        final isSelected =
-            setsEqual(snapshot.selectedEntryTypes.toSet(), entryTypes.toSet());
 
-        return GestureDetector(
-          onTap: () {
-            if (isSelected) {
-              cubit.clearSelectedEntryTypes();
-            } else {
-              cubit.selectAllEntryTypes();
-            }
-            HapticFeedback.heavyImpact();
-          },
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: ColoredBox(
-                color: isSelected
-                    ? styleConfig().selectedChoiceChipColor
-                    : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 5,
-                    horizontal: 15,
-                  ),
-                  child: Text(
-                    'All',
-                    style: TextStyle(
-                      fontFamily: 'Oswald',
-                      fontSize: fontSizeMedium,
-                      fontWeight: FontWeight.w300,
-                      color: isSelected
-                          ? styleConfig().selectedChoiceChipTextColor
-                          : styleConfig().unselectedChoiceChipTextColor,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+        final isSelected = setsEqual(
+          snapshot.selectedEntryTypes.toSet(),
+          entryTypes.toSet(),
+        );
+
+        void onTap() {
+          if (isSelected) {
+            cubit.clearSelectedEntryTypes();
+          } else {
+            cubit.selectAllEntryTypes();
+          }
+          HapticFeedback.heavyImpact();
+        }
+
+        return FilterChoiceChip(
+          label: 'All',
+          isSelected: isSelected,
+          onTap: onTap,
         );
       },
     );
