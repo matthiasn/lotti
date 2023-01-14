@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Code font color in text editor
+
+## [0.8.237] - 2023-01-14
+### Fixed:
 - Navigate back after entry deletion
 
 ## [0.8.236] - 2023-01-14
