@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Long press on entry type filter to select only one type
 - Select all entry types toggle button
+- Long press on task status filter to select only one status
+- Select all task statuses toggle button
 
 ### Fixed:
 - Add missing habit completion summary in entry detail view
