@@ -60,7 +60,6 @@ class DurationWidget extends StatelessWidget {
                   FormattedTime(
                     labelColor: labelColor,
                     displayed: displayed,
-                    style: style,
                   ),
                   Visibility(
                     visible: isRecent && showRecordIcon,
@@ -112,12 +111,10 @@ class DurationViewWidget extends StatelessWidget {
   DurationViewWidget({
     super.key,
     required this.item,
-    this.style,
   });
 
   final TimeService _timeService = getIt<TimeService>();
   final JournalEntity item;
-  final TextStyle? style;
 
   @override
   Widget build(BuildContext context) {
@@ -136,14 +133,14 @@ class DurationViewWidget extends StatelessWidget {
           isRecording = true;
         }
 
-        final labelColor = isRecording ? styleConfig().alarm : style?.color;
+        final labelColor =
+            isRecording ? styleConfig().alarm : styleConfig().primaryTextColor;
 
         return Visibility(
           visible: entryDuration(displayed).inMilliseconds > 0,
           child: FormattedTime(
             labelColor: labelColor,
             displayed: displayed,
-            style: style,
           ),
         );
       },
@@ -156,12 +153,10 @@ class FormattedTime extends StatelessWidget {
     super.key,
     required this.labelColor,
     required this.displayed,
-    required this.style,
   });
 
   final Color? labelColor;
   final JournalEntity displayed;
-  final TextStyle? style;
 
   @override
   Widget build(BuildContext context) {
@@ -171,13 +166,13 @@ class FormattedTime extends StatelessWidget {
           padding: const EdgeInsets.only(right: 4),
           child: Icon(
             MdiIcons.timerOutline,
-            color: styleConfig().primaryTextColor,
+            color: labelColor,
             size: 15,
           ),
         ),
         Text(
           formatDuration(entryDuration(displayed)),
-          style: monospaceTextStyle(),
+          style: monospaceTextStyle().copyWith(color: labelColor),
         ),
       ],
     );

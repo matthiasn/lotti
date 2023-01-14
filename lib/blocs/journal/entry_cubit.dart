@@ -114,9 +114,12 @@ class EntryCubit extends Cubit<EntryState> {
         entryText: entryTextFromController(controller),
         journalEntityId: entryId,
         taskData: task.data.copyWith(
-          title: title ?? '',
-          estimate: Duration(hours: dt?.hour ?? 0, minutes: dt?.minute ?? 0),
-          status: taskStatusFromString(status ?? ''),
+          title: title ?? task.data.title,
+          estimate: dt != null
+              ? Duration(hours: dt.hour, minutes: dt.minute)
+              : task.data.estimate,
+          status:
+              status != null ? taskStatusFromString(status) : task.data.status,
         ),
       );
     } else {

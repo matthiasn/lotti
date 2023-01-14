@@ -154,11 +154,6 @@ class JournalCardTitle extends StatelessWidget {
             task: (_) => const SizedBox.shrink(),
             orElse: () => DurationViewWidget(
               item: item,
-              style: TextStyle(
-                color: styleConfig().primaryTextColor,
-                fontSize: 15,
-                fontWeight: FontWeight.w300,
-              ),
             ),
           ),
         ],
