@@ -51,6 +51,15 @@ TextStyle textStyle() => TextStyle(
       fontSize: fontSizeMedium,
     );
 
+TextStyle choiceChipTextStyle({required bool isSelected}) => TextStyle(
+      fontFamily: 'Oswald',
+      fontSize: fontSizeMedium,
+      fontWeight: FontWeight.w300,
+      color: isSelected
+          ? styleConfig().selectedChoiceChipTextColor
+          : styleConfig().unselectedChoiceChipTextColor,
+    );
+
 TextStyle chartTooltipStyle() => const TextStyle(
       fontSize: fontSizeSmall,
       fontFamily: mainFont,

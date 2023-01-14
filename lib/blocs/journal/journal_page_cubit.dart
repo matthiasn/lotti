@@ -123,7 +123,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     refreshQuery();
   }
 
-  void setSingleEntryType(String entryType) {
+  void selectSingleEntryType(String entryType) {
     _selectedEntryTypes = {entryType};
     refreshQuery();
   }
@@ -135,6 +135,21 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   void clearSelectedEntryTypes() {
     _selectedEntryTypes = {};
+    refreshQuery();
+  }
+
+  void selectSingleTaskStatus(String taskStatus) {
+    _selectedTaskStatuses = {taskStatus};
+    refreshQuery();
+  }
+
+  void selectAllTaskStatuses() {
+    _selectedTaskStatuses = state.taskStatuses.toSet();
+    refreshQuery();
+  }
+
+  void clearSelectedTaskStatuses() {
+    _selectedTaskStatuses = {};
     refreshQuery();
   }
 

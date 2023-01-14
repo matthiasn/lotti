@@ -5,7 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/search/filter_choice_chip.dart';
+import 'package:quiver/collection.dart';
 
 class TaskStatusFilter extends StatefulWidget {
   const TaskStatusFilter({super.key});
@@ -27,6 +28,7 @@ class _TaskStatusFilterState extends State<TaskStatusFilter> {
             lineSpacing: 5,
             children: [
               ...snapshot.taskStatuses.map(TaskStatusChip.new),
+              const TaskStatusAllChip(),
             ],
           ),
         );
@@ -61,39 +63,54 @@ class TaskStatusChip extends StatelessWidget {
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
 
-        return GestureDetector(
-          onTap: () {
-            cubit.toggleSelectedTaskStatus(status);
-            HapticFeedback.heavyImpact();
-          },
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: ColoredBox(
-                color: snapshot.selectedTaskStatuses.contains(status)
-                    ? styleConfig().selectedChoiceChipColor
-                    : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 5,
-                    horizontal: 15,
-                  ),
-                  child: Text(
-                    '${localizationLookup[status]}',
-                    style: TextStyle(
-                      fontFamily: 'Oswald',
-                      fontSize: fontSizeMedium,
-                      fontWeight: FontWeight.w300,
-                      color: snapshot.selectedTaskStatuses.contains(status)
-                          ? styleConfig().selectedChoiceChipTextColor
-                          : styleConfig().unselectedChoiceChipTextColor,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+        void onTap() {
+          cubit.toggleSelectedTaskStatus(status);
+          HapticFeedback.heavyImpact();
+        }
+
+        void onLongPress() {
+          cubit.selectSingleTaskStatus(status);
+          HapticFeedback.heavyImpact();
+        }
+
+        return FilterChoiceChip(
+          label: '${localizationLookup[status]}',
+          isSelected: snapshot.selectedTaskStatuses.contains(status),
+          onTap: onTap,
+          onLongPress: onLongPress,
+        );
+      },
+    );
+  }
+}
+
+class TaskStatusAllChip extends StatelessWidget {
+  const TaskStatusAllChip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<JournalPageCubit, JournalPageState>(
+      builder: (context, snapshot) {
+        final cubit = context.read<JournalPageCubit>();
+
+        final isSelected = setsEqual(
+          snapshot.selectedTaskStatuses,
+          snapshot.taskStatuses.toSet(),
+        );
+
+        void onTap() {
+          if (isSelected) {
+            cubit.clearSelectedTaskStatuses();
+          } else {
+            cubit.selectAllTaskStatuses();
+          }
+          HapticFeedback.heavyImpact();
+        }
+
+        return FilterChoiceChip(
+          label: 'ALL',
+          isSelected: isSelected,
+          onTap: onTap,
         );
       },
     );
