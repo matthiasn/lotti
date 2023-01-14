@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -213,7 +214,9 @@ class EntryCubit extends Cubit<EntryState> {
   }
 
   Future<bool> delete() async {
-    return _persistenceLogic.deleteJournalEntity(entryId);
+    final res = await _persistenceLogic.deleteJournalEntity(entryId);
+    journalBeamerDelegate.beamBack();
+    return res;
   }
 
   Future<bool> updateFromTo({
