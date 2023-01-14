@@ -128,6 +128,16 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     refreshQuery();
   }
 
+  void selectAllEntryTypes() {
+    _selectedEntryTypes = entryTypes.toSet();
+    refreshQuery();
+  }
+
+  void clearSelectedEntryTypes() {
+    _selectedEntryTypes = {};
+    refreshQuery();
+  }
+
   void toggleFlaggedEntriesOnly() {
     _flaggedEntriesOnly = !_flaggedEntriesOnly;
     refreshQuery();

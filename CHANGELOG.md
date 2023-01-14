@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Long press on entry type filter to select only one type
+- Select all entry types toggle button
 
 ### Fixed:
 - Add missing habit completion summary in entry detail view
