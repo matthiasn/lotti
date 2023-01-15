@@ -17,6 +17,8 @@ import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
+import '../../../utils/platform.dart';
+
 class HabitDetailsPage extends StatelessWidget {
   const HabitDetailsPage({super.key});
 
@@ -70,14 +72,16 @@ class HabitDetailsPage extends StatelessWidget {
                             labelText: localizations.settingsHabitsNameLabel,
                             name: 'name',
                           ),
-                          FormTextField(
-                            key: const Key('habit_description_field'),
-                            initialValue: item.description,
-                            labelText:
-                                localizations.settingsHabitsDescriptionLabel,
-                            fieldRequired: false,
-                            name: 'description',
-                          ),
+                          // TODO: remove after migration
+                          if (!isTestEnv)
+                            FormTextField(
+                              key: const Key('habit_description_field'),
+                              initialValue: item.description,
+                              labelText:
+                                  localizations.settingsHabitsDescriptionLabel,
+                              fieldRequired: false,
+                              name: 'description',
+                            ),
                           FormTextField(
                             key: const Key(
                               'habit_implementation_intentions',
