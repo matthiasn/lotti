@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Record audio note as comment to other entry types
+
+## [0.8.240] - 2023-01-14
+### Fixed:
 - Text color for entry duration when timer running
 - Fix possibility of accidentally overwriting task title, estimate, and status
 
