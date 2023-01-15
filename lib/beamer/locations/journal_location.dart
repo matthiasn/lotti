@@ -62,7 +62,7 @@ class JournalLocation extends BeamLocation<BeamState> {
         ),
       if (pathContains('record_audio/'))
         BeamPage(
-          key: ValueKey('journal-$linkedId'),
+          key: ValueKey('record_audio-$linkedId'),
           child: RecordAudioPage(linkedId: linkedId),
         ),
       if (pathContains('measure_linked/'))
