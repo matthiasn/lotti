@@ -28,6 +28,8 @@ final habitFlossing = HabitDefinition(
   id: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
   name: 'Flossing',
   description: 'Maintain healthy teeth and gums',
+  implementationIntentions:
+      'When in the bathroom and after brushing my teeth, I will floss.',
   createdAt: testEpochDateTime,
   updatedAt: testEpochDateTime,
   vectorClock: null,
@@ -40,6 +42,8 @@ final habitFlossingDueLater = HabitDefinition(
   id: '4325b06e-a24c-4d90-b42b-5006f5f82f48',
   name: 'Flossing later today',
   description: 'Maintain healthy teeth and gums',
+  implementationIntentions:
+      'When in the bathroom and after brushing my teeth, I will floss.',
   createdAt: testEpochDateTime,
   updatedAt: testEpochDateTime,
   vectorClock: null,

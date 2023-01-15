@@ -73,6 +73,8 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
       final dataType = _habitDefinition.copyWith(
         name: '${formData!['name']}'.trim(),
         description: '${formData['description']}'.trim(),
+        implementationIntentions:
+            '${formData['implementation_intentions']}'.trim(),
         private: private,
         active: active,
         activeFrom: activeFrom,

@@ -257,10 +257,6 @@ class HabitDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (habitDefinition?.description == null) {
-      return const SizedBox.shrink();
-    }
-
     Future<void> onOpen(LinkableElement link) async {
       final uri = Uri.tryParse(link.url);
 
@@ -278,10 +274,10 @@ class HabitDescription extends StatelessWidget {
 
     return Linkify(
       onOpen: onOpen,
-      text: habitDefinition!.description,
-      style: habitCompletionHeaderStyle.copyWith(fontSize: 15),
+      text: habitDefinition!.implementationIntentions ?? '',
+      style: habitCompletionHeaderStyle.copyWith(fontSize: fontSizeMedium),
       linkStyle: habitCompletionHeaderStyle.copyWith(
-        fontSize: 15,
+        fontSize: fontSizeMedium,
         color: styleConfig().primaryColor,
       ),
     );

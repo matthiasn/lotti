@@ -43,7 +43,7 @@ class HabitDetailsPage extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
-                      AppLocalizations.of(context)!.settingsHabitsSaveLabel,
+                      localizations.settingsHabitsSaveLabel,
                       style: saveButtonStyle(),
                     ),
                   ),
@@ -67,24 +67,32 @@ class HabitDetailsPage extends StatelessWidget {
                           FormTextField(
                             key: const Key('habit_name_field'),
                             initialValue: item.name,
-                            labelText: AppLocalizations.of(context)!
-                                .settingsHabitsNameLabel,
+                            labelText: localizations.settingsHabitsNameLabel,
                             name: 'name',
                           ),
                           FormTextField(
                             key: const Key('habit_description_field'),
                             initialValue: item.description,
-                            labelText: AppLocalizations.of(context)!
-                                .settingsHabitsDescriptionLabel,
+                            labelText:
+                                localizations.settingsHabitsDescriptionLabel,
                             fieldRequired: false,
                             name: 'description',
+                          ),
+                          FormTextField(
+                            key: const Key(
+                              'habit_implementation_intentions',
+                            ),
+                            initialValue: item.implementationIntentions ?? '',
+                            labelText: localizations
+                                .settingsImplementationIntentionsLabel,
+                            fieldRequired: false,
+                            name: 'implementation_intentions',
                           ),
                           FormBuilderSwitch(
                             name: 'private',
                             initialValue: item.private,
                             title: Text(
-                              AppLocalizations.of(context)!
-                                  .settingsHabitsPrivateLabel,
+                              localizations.settingsHabitsPrivateLabel,
                               style: formLabelStyle(),
                             ),
                             activeColor: styleConfig().private,
@@ -136,8 +144,8 @@ class HabitDetailsPage extends StatelessWidget {
                               name: 'default_story_id',
                               initialValue: state.defaultStory,
                               decoration: InputDecoration(
-                                labelText: AppLocalizations.of(context)!
-                                    .settingsHabitsStoryLabel,
+                                labelText:
+                                    localizations.settingsHabitsStoryLabel,
                                 labelStyle: formLabelStyle(),
                               ),
                               iconEnabledColor: styleConfig().primaryTextColor,
@@ -184,8 +192,7 @@ class HabitDetailsPage extends StatelessWidget {
                           IconButton(
                             icon: const Icon(MdiIcons.trashCanOutline),
                             iconSize: settingsIconSize,
-                            tooltip: AppLocalizations.of(context)!
-                                .settingsHabitsDeleteTooltip,
+                            tooltip: localizations.settingsHabitsDeleteTooltip,
                             color: styleConfig().secondaryTextColor,
                             onPressed: () async {
                               const deleteKey = 'deleteKey';

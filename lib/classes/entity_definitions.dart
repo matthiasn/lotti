@@ -98,6 +98,7 @@ class EntityDefinition with _$EntityDefinition {
     required DateTime updatedAt,
     required String name,
     required String description,
+    required String? implementationIntentions,
     required HabitSchedule habitSchedule,
     AutoCompleteRule? autoCompleteRule,
     String? version,

@@ -148,6 +148,7 @@
   "settingsHabitsTitle": "Habits",
   "settingsHabitsDeleteTooltip": "Delete Habit",
   "settingsHabitsDescriptionLabel": "Description (optional):",
+  "settingsImplementationIntentionsLabel": "Implementation intentions:",
   "settingsHabitsFavoriteLabel": "Favorite: ",
   "settingsHabitsNameLabel": "Habit name:",
   "settingsHabitsPrivateLabel": "Private: ",
