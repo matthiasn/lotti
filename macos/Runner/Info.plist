@@ -39,6 +39,8 @@
 	<string>Obtain location for journal entries</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Obtain location for journal entries</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Obtain location for journal entries</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPhotoLibraryUsageDescription</key>

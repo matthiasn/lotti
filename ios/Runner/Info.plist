@@ -45,6 +45,8 @@
 	<string>Update Health data</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Obtain location for journal entries</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Obtain location for journal entries</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record audio and video</string>
 	<key>NSPhotoLibraryUsageDescription</key>
