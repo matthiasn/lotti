@@ -72,24 +72,6 @@ class HabitCompletionRateChart extends StatelessWidget
             .primaryColorLight
             .mix(styleConfig().alarm.complement());
 
-        String completionRate(
-          Map<String, Set<String>> byDay,
-          String label,
-        ) {
-          final n = byDay[state.selectedInfoYmd]?.length ?? 0;
-          final total = activeBy(
-            state.habitDefinitions,
-            state.selectedInfoYmd,
-          ).length;
-
-          if (total == 0) {
-            return '-';
-          }
-
-          final percentage = (n / total) * 100;
-          return '${percentage.floor()}% $label';
-        }
-
         return Column(
           children: [
             SizedBox(
@@ -100,15 +82,9 @@ class HabitCompletionRateChart extends StatelessWidget
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         InfoLabel('${state.selectedInfoYmd}:'),
-                        InfoLabel(
-                          completionRate(state.successfulByDay, 'successful'),
-                        ),
-                        InfoLabel(
-                          completionRate(state.skippedByDay, 'skipped'),
-                        ),
-                        InfoLabel(
-                          completionRate(state.failedByDay, 'recorded fails'),
-                        ),
+                        InfoLabel('${state.successPercentage}% successful'),
+                        InfoLabel('${state.skippedPercentage}% skipped'),
+                        InfoLabel('${state.failedPercentage}% recorded fails'),
                       ],
                     )
                   : Row(
@@ -190,11 +166,12 @@ class HabitCompletionRateChart extends StatelessWidget
                     ),
                     minX: 0,
                     maxX: timeSpanDays.toDouble(),
-                    minY: 0,
+                    minY: minY(days: days, state: state),
                     maxY: 100,
                     lineBarsData: [
                       barData(
                         days: days,
+                        state: state,
                         successfulByDay: state.successfulByDay,
                         skippedByDay: state.skippedByDay,
                         failedByDay: state.failedByDay,
@@ -207,6 +184,7 @@ class HabitCompletionRateChart extends StatelessWidget
                       ),
                       barData(
                         days: days,
+                        state: state,
                         successfulByDay: state.successfulByDay,
                         skippedByDay: state.skippedByDay,
                         failedByDay: state.failedByDay,
@@ -218,6 +196,7 @@ class HabitCompletionRateChart extends StatelessWidget
                       ),
                       barData(
                         days: days,
+                        state: state,
                         successfulByDay: state.successfulByDay,
                         skippedByDay: state.skippedByDay,
                         failedByDay: state.failedByDay,
@@ -240,25 +219,13 @@ class HabitCompletionRateChart extends StatelessWidget
   }
 }
 
-List<HabitDefinition> activeBy(
-  List<HabitDefinition> habitDefinitions,
-  String ymd,
-) {
-  final activeHabits = habitDefinitions.where((habitDefinition) {
-    final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
-    return DateTime(activeFrom.year, activeFrom.month, activeFrom.day)
-        .isBefore(DateTime.parse(ymd));
-  }).toList();
-
-  return activeHabits;
-}
-
 LineChartBarData barData({
   required List<String> days,
   required List<HabitDefinition> habitDefinitions,
   required Map<String, Set<String>> successfulByDay,
   required Map<String, Set<String>> skippedByDay,
   required Map<String, Set<String>> failedByDay,
+  required HabitsState state,
   required bool showSuccessful,
   required bool showSkipped,
   required bool showFailed,
@@ -284,7 +251,7 @@ LineChartBarData barData({
       value = value + failedCount;
     }
 
-    final habitCount = activeBy(habitDefinitions, day).length;
+    final habitCount = totalForDay(day, state);
 
     return FlSpot(
       idx.toDouble(),
@@ -311,6 +278,20 @@ LineChartBarData barData({
           )
         : null,
   );
+}
+
+double minY({
+  required List<String> days,
+  required HabitsState state,
+}) {
+  var lowest = 100.0;
+
+  for (final day in days) {
+    final n = state.successfulByDay[day]?.length ?? 0;
+    final total = totalForDay(day, state);
+    lowest = total > 0 ? min(lowest, 100 * n / total) : 0;
+  }
+  return max(lowest - 20, 0);
 }
 
 class ChartLabel extends StatelessWidget {
