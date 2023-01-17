@@ -290,14 +290,7 @@ int completionRate(
 ) {
   final completionsByTypeOnDay = byDay[state.selectedInfoYmd] ?? {};
   final n = completionsByTypeOnDay.length;
-
-  final activeHabitIds = activeBy(
-    state.habitDefinitions,
-    state.selectedInfoYmd,
-  ).map((habitDefinition) => habitDefinition.id).toSet();
-
-  final allByDay = state.allByDay[state.selectedInfoYmd] ?? {};
-  final total = allByDay.union(activeHabitIds).length;
+  final total = totalForDay(state.selectedInfoYmd, state);
 
   if (total == 0) {
     return 0;
@@ -305,6 +298,15 @@ int completionRate(
 
   final percentage = (n / total) * 100;
   return percentage.round();
+}
+
+int totalForDay(String ymd, HabitsState state) {
+  final activeHabitIds = activeBy(
+    state.habitDefinitions,
+    ymd,
+  ).map((habitDefinition) => habitDefinition.id).toSet();
+  final allByDay = state.allByDay[ymd] ?? {};
+  return allByDay.union(activeHabitIds).length;
 }
 
 List<HabitDefinition> activeBy(

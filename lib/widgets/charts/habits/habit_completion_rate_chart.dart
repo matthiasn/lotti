@@ -166,11 +166,12 @@ class HabitCompletionRateChart extends StatelessWidget
                     ),
                     minX: 0,
                     maxX: timeSpanDays.toDouble(),
-                    minY: 0,
+                    minY: minY(days: days, state: state),
                     maxY: 100,
                     lineBarsData: [
                       barData(
                         days: days,
+                        state: state,
                         successfulByDay: state.successfulByDay,
                         skippedByDay: state.skippedByDay,
                         failedByDay: state.failedByDay,
@@ -183,6 +184,7 @@ class HabitCompletionRateChart extends StatelessWidget
                       ),
                       barData(
                         days: days,
+                        state: state,
                         successfulByDay: state.successfulByDay,
                         skippedByDay: state.skippedByDay,
                         failedByDay: state.failedByDay,
@@ -194,6 +196,7 @@ class HabitCompletionRateChart extends StatelessWidget
                       ),
                       barData(
                         days: days,
+                        state: state,
                         successfulByDay: state.successfulByDay,
                         skippedByDay: state.skippedByDay,
                         failedByDay: state.failedByDay,
@@ -222,6 +225,7 @@ LineChartBarData barData({
   required Map<String, Set<String>> successfulByDay,
   required Map<String, Set<String>> skippedByDay,
   required Map<String, Set<String>> failedByDay,
+  required HabitsState state,
   required bool showSuccessful,
   required bool showSkipped,
   required bool showFailed,
@@ -247,7 +251,7 @@ LineChartBarData barData({
       value = value + failedCount;
     }
 
-    final habitCount = activeBy(habitDefinitions, day).length;
+    final habitCount = totalForDay(day, state);
 
     return FlSpot(
       idx.toDouble(),
@@ -274,6 +278,20 @@ LineChartBarData barData({
           )
         : null,
   );
+}
+
+double minY({
+  required List<String> days,
+  required HabitsState state,
+}) {
+  var lowest = 100.0;
+
+  for (final day in days) {
+    final n = state.successfulByDay[day]?.length ?? 0;
+    final total = totalForDay(day, state);
+    lowest = total > 0 ? min(lowest, 100 * n / total) : 0;
+  }
+  return max(lowest - 20, 0);
 }
 
 class ChartLabel extends StatelessWidget {
