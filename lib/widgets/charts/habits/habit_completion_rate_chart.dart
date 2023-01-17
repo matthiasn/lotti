@@ -72,23 +72,30 @@ class HabitCompletionRateChart extends StatelessWidget
             .primaryColorLight
             .mix(styleConfig().alarm.complement());
 
-        String completionRate(
+        int completionRate(
           Map<String, Set<String>> byDay,
-          String label,
         ) {
-          final n = byDay[state.selectedInfoYmd]?.length ?? 0;
-          final total = activeBy(
+          final completionsByTypeOnDay = byDay[state.selectedInfoYmd] ?? {};
+          final n = completionsByTypeOnDay.length;
+
+          final activeHabitIds = activeBy(
             state.habitDefinitions,
             state.selectedInfoYmd,
-          ).length;
+          ).map((habitDefinition) => habitDefinition.id).toSet();
+
+          final allByDay = state.allByDay[state.selectedInfoYmd] ?? {};
+          final total = allByDay.union(activeHabitIds).length;
 
           if (total == 0) {
-            return '-';
+            return 0;
           }
 
           final percentage = (n / total) * 100;
-          return '${percentage.floor()}% $label';
+          return percentage.round();
         }
+
+        final successPercentage = completionRate(state.successfulByDay);
+        final skippedPercentage = completionRate(state.skippedByDay);
 
         return Column(
           children: [
@@ -100,15 +107,11 @@ class HabitCompletionRateChart extends StatelessWidget
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         InfoLabel('${state.selectedInfoYmd}:'),
+                        InfoLabel('$successPercentage % successful'),
+                        InfoLabel('$skippedPercentage % skipped'),
                         InfoLabel(
-                          completionRate(state.successfulByDay, 'successful'),
-                        ),
-                        InfoLabel(
-                          completionRate(state.skippedByDay, 'skipped'),
-                        ),
-                        InfoLabel(
-                          completionRate(state.failedByDay, 'recorded fails'),
-                        ),
+                            '${100 - successPercentage - skippedPercentage} '
+                            '% recorded fails'),
                       ],
                     )
                   : Row(
@@ -244,6 +247,9 @@ List<HabitDefinition> activeBy(
   List<HabitDefinition> habitDefinitions,
   String ymd,
 ) {
+  if (ymd.isEmpty) {
+    return [];
+  }
   final activeHabits = habitDefinitions.where((habitDefinition) {
     final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
     return DateTime(activeFrom.year, activeFrom.month, activeFrom.day)
