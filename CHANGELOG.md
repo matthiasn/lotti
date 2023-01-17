@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- AppStore Connect warning
+
+## [0.8.241] - 2023-01-15
+### Fixed:
 - Record audio note as comment to other entry types
 
 ## [0.8.240] - 2023-01-14
