@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Habit completion percentages
+
+## [0.8.242] - 2023-01-16
+### Fixed:
 - AppStore Connect warning
 
 ## [0.8.241] - 2023-01-15

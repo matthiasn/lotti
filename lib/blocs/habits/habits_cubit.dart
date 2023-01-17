@@ -27,6 +27,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             successfulByDay: <String, Set<String>>{},
             skippedByDay: <String, Set<String>>{},
             failedByDay: <String, Set<String>>{},
+            allByDay: <String, Set<String>>{},
             selectedInfoYmd: '',
             shortStreakCount: 0,
             longStreakCount: 0,
@@ -81,22 +82,34 @@ class HabitsCubit extends Cubit<HabitsState> {
 
     final today = ymd(DateTime.now());
 
+    void addId(Map<String, Set<String>> byDay, String day, String habitId) {
+      byDay[day] = byDay[day] ?? <String>{}
+        ..add(habitId);
+    }
+
+    void removeId(Map<String, Set<String>> byDay, String day, String habitId) {
+      byDay[day] = byDay[day] ?? <String>{}
+        ..remove(habitId);
+    }
+
     for (final item in _habitCompletions) {
       final day = ymd(item.meta.dateFrom);
 
       if (item is HabitCompletionEntry &&
           _habitDefinitionsMap.containsKey(item.data.habitId)) {
         final completionType = item.data.completionType;
+        final habitId = item.data.habitId;
 
         if (day == today) {
           _completedToday.add(item.data.habitId);
         }
 
-        if (completionType == HabitCompletionType.success) {
-          final successfulForDay = _successfulByDay[day] ?? <String>{}
-            ..add(item.data.habitId);
+        addId(_allByDay, day, habitId);
 
-          _successfulByDay[day] = successfulForDay;
+        if (completionType == HabitCompletionType.success) {
+          addId(_successfulByDay, day, habitId);
+          removeId(_skippedByDay, day, habitId);
+          removeId(_failedByDay, day, habitId);
 
           if (day == today) {
             _successfulToday.add(item.data.habitId);
@@ -104,10 +117,9 @@ class HabitsCubit extends Cubit<HabitsState> {
         }
 
         if (completionType == HabitCompletionType.skip) {
-          final skippedForDay = _skippedByDay[day] ?? <String>{}
-            ..add(item.data.habitId);
-
-          _skippedByDay[day] = skippedForDay;
+          addId(_skippedByDay, day, habitId);
+          removeId(_successfulByDay, day, habitId);
+          removeId(_failedByDay, day, habitId);
 
           if (day == today) {
             _successfulToday.add(item.data.habitId);
@@ -115,10 +127,9 @@ class HabitsCubit extends Cubit<HabitsState> {
         }
 
         if (completionType == HabitCompletionType.fail) {
-          final failedForDay = _failedByDay[day] ?? <String>{}
-            ..add(item.data.habitId);
-
-          _failedByDay[day] = failedForDay;
+          addId(_failedByDay, day, habitId);
+          removeId(_skippedByDay, day, habitId);
+          removeId(_successfulByDay, day, habitId);
         }
       }
     }
@@ -190,6 +201,7 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   var _completedToday = <String>{};
   var _successfulToday = <String>{};
+  final _allByDay = <String, Set<String>>{};
   var _successfulByDay = <String, Set<String>>{};
   var _skippedByDay = <String, Set<String>>{};
   var _failedByDay = <String, Set<String>>{};
@@ -238,6 +250,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         failedByDay: _failedByDay,
         selectedInfoYmd: _selectedInfoYmd,
         skippedByDay: _skippedByDay,
+        allByDay: _allByDay,
         shortStreakCount: _shortStreakCount,
         longStreakCount: _longStreakCount,
         timeSpanDays: _timeSpanDays,
