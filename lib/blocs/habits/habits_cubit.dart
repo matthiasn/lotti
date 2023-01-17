@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:collection/collection.dart';
@@ -29,6 +30,9 @@ class HabitsCubit extends Cubit<HabitsState> {
             failedByDay: <String, Set<String>>{},
             allByDay: <String, Set<String>>{},
             selectedInfoYmd: '',
+            successPercentage: 0,
+            skippedPercentage: 0,
+            failedPercentage: 0,
             shortStreakCount: 0,
             longStreakCount: 0,
             timeSpanDays: 14,
@@ -206,6 +210,10 @@ class HabitsCubit extends Cubit<HabitsState> {
   var _skippedByDay = <String, Set<String>>{};
   var _failedByDay = <String, Set<String>>{};
 
+  var _successPercentage = 0;
+  var _skippedPercentage = 0;
+  var _failedPercentage = 0;
+
   var _shortStreakCount = 0;
   var _longStreakCount = 0;
   var _timeSpanDays = isDesktop ? 14 : 7;
@@ -218,6 +226,13 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   void setInfoYmd(String ymd) {
     _selectedInfoYmd = ymd;
+    _successPercentage = completionRate(state, state.successfulByDay);
+    _skippedPercentage = completionRate(state, state.skippedByDay);
+    _failedPercentage = min(
+      completionRate(state, state.failedByDay),
+      100 - _successPercentage - _skippedPercentage,
+    );
+
     emitState();
 
     EasyDebounce.debounce(
@@ -249,6 +264,9 @@ class HabitsCubit extends Cubit<HabitsState> {
         successfulByDay: _successfulByDay,
         failedByDay: _failedByDay,
         selectedInfoYmd: _selectedInfoYmd,
+        successPercentage: _successPercentage,
+        skippedPercentage: _skippedPercentage,
+        failedPercentage: _failedPercentage,
         skippedByDay: _skippedByDay,
         allByDay: _allByDay,
         shortStreakCount: _shortStreakCount,
@@ -264,4 +282,43 @@ class HabitsCubit extends Cubit<HabitsState> {
     await _completionsSubscription.cancel();
     await super.close();
   }
+}
+
+int completionRate(
+  HabitsState state,
+  Map<String, Set<String>> byDay,
+) {
+  final completionsByTypeOnDay = byDay[state.selectedInfoYmd] ?? {};
+  final n = completionsByTypeOnDay.length;
+
+  final activeHabitIds = activeBy(
+    state.habitDefinitions,
+    state.selectedInfoYmd,
+  ).map((habitDefinition) => habitDefinition.id).toSet();
+
+  final allByDay = state.allByDay[state.selectedInfoYmd] ?? {};
+  final total = allByDay.union(activeHabitIds).length;
+
+  if (total == 0) {
+    return 0;
+  }
+
+  final percentage = (n / total) * 100;
+  return percentage.round();
+}
+
+List<HabitDefinition> activeBy(
+  List<HabitDefinition> habitDefinitions,
+  String ymd,
+) {
+  if (ymd.isEmpty) {
+    return [];
+  }
+  final activeHabits = habitDefinitions.where((habitDefinition) {
+    final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
+    return DateTime(activeFrom.year, activeFrom.month, activeFrom.day)
+        .isBefore(DateTime.parse(ymd));
+  }).toList();
+
+  return activeHabits;
 }

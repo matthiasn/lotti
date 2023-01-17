@@ -72,31 +72,6 @@ class HabitCompletionRateChart extends StatelessWidget
             .primaryColorLight
             .mix(styleConfig().alarm.complement());
 
-        int completionRate(
-          Map<String, Set<String>> byDay,
-        ) {
-          final completionsByTypeOnDay = byDay[state.selectedInfoYmd] ?? {};
-          final n = completionsByTypeOnDay.length;
-
-          final activeHabitIds = activeBy(
-            state.habitDefinitions,
-            state.selectedInfoYmd,
-          ).map((habitDefinition) => habitDefinition.id).toSet();
-
-          final allByDay = state.allByDay[state.selectedInfoYmd] ?? {};
-          final total = allByDay.union(activeHabitIds).length;
-
-          if (total == 0) {
-            return 0;
-          }
-
-          final percentage = (n / total) * 100;
-          return percentage.round();
-        }
-
-        final successPercentage = completionRate(state.successfulByDay);
-        final skippedPercentage = completionRate(state.skippedByDay);
-
         return Column(
           children: [
             SizedBox(
@@ -107,11 +82,9 @@ class HabitCompletionRateChart extends StatelessWidget
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         InfoLabel('${state.selectedInfoYmd}:'),
-                        InfoLabel('$successPercentage % successful'),
-                        InfoLabel('$skippedPercentage % skipped'),
-                        InfoLabel(
-                            '${100 - successPercentage - skippedPercentage} '
-                            '% recorded fails'),
+                        InfoLabel('${state.successPercentage}% successful'),
+                        InfoLabel('${state.skippedPercentage}% skipped'),
+                        InfoLabel('${state.failedPercentage}% recorded fails'),
                       ],
                     )
                   : Row(
@@ -241,22 +214,6 @@ class HabitCompletionRateChart extends StatelessWidget
       },
     );
   }
-}
-
-List<HabitDefinition> activeBy(
-  List<HabitDefinition> habitDefinitions,
-  String ymd,
-) {
-  if (ymd.isEmpty) {
-    return [];
-  }
-  final activeHabits = habitDefinitions.where((habitDefinition) {
-    final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
-    return DateTime(activeFrom.year, activeFrom.month, activeFrom.day)
-        .isBefore(DateTime.parse(ymd));
-  }).toList();
-
-  return activeHabits;
 }
 
 LineChartBarData barData({
