@@ -24,6 +24,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             openNow: [],
             pendingLater: [],
             completed: [],
+            days: getDays(14),
             successfulToday: <String>{},
             successfulByDay: <String, Set<String>>{},
             skippedByDay: <String, Set<String>>{},
@@ -36,6 +37,8 @@ class HabitsCubit extends Cubit<HabitsState> {
             shortStreakCount: 0,
             longStreakCount: 0,
             timeSpanDays: 14,
+            zeroBased: false,
+            minY: 0,
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
@@ -216,11 +219,17 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   var _shortStreakCount = 0;
   var _longStreakCount = 0;
+  var _zeroBased = true;
   var _timeSpanDays = isDesktop ? 14 : 7;
   var _selectedInfoYmd = '';
 
   void setTimeSpan(int timeSpanDays) {
     _timeSpanDays = timeSpanDays;
+    emitState();
+  }
+
+  void toggleZeroBased() {
+    _zeroBased = !_zeroBased;
     emitState();
   }
 
@@ -260,6 +269,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         openNow: _openNow,
         pendingLater: _pendingLater,
         completed: _completed,
+        days: getDays(_timeSpanDays),
         successfulToday: _successfulToday,
         successfulByDay: _successfulByDay,
         failedByDay: _failedByDay,
@@ -272,6 +282,11 @@ class HabitsCubit extends Cubit<HabitsState> {
         shortStreakCount: _shortStreakCount,
         longStreakCount: _longStreakCount,
         timeSpanDays: _timeSpanDays,
+        zeroBased: _zeroBased,
+        minY: minY(
+          days: getDays(_timeSpanDays),
+          state: state,
+        ),
       ),
     );
   }
@@ -323,4 +338,25 @@ List<HabitDefinition> activeBy(
   }).toList();
 
   return activeHabits;
+}
+
+double minY({
+  required List<String> days,
+  required HabitsState state,
+}) {
+  var lowest = 100.0;
+
+  for (final day in days) {
+    final n = state.successfulByDay[day]?.length ?? 0;
+    final total = totalForDay(day, state);
+    lowest = total > 0 ? min(lowest, 100 * n / total) : 0;
+  }
+  return max(lowest - 20, 0);
+}
+
+List<String> getDays(int timeSpanDays) {
+  return daysInRange(
+    rangeStart: DateTime.now().subtract(Duration(days: timeSpanDays)),
+    rangeEnd: DateTime.now().add(const Duration(days: 1)),
+  )..sort();
 }

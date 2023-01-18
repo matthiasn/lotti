@@ -46,20 +46,15 @@ class HabitCompletionRateChart extends StatelessWidget
         final cubit = context.read<HabitsCubit>();
         final timeSpanDays = state.timeSpanDays;
 
-        final days = daysInRange(
-          rangeStart: DateTime.now().subtract(Duration(days: timeSpanDays)),
-          rangeEnd: DateTime.now().add(const Duration(days: 1)),
-        )..sort();
-
         Widget bottomTitleWidgets(double value, TitleMeta meta) {
           var ymd = '';
 
           if (value.toInt() == 1) {
-            ymd = days[1];
+            ymd = state.days[1];
           }
 
           if (value.toInt() == timeSpanDays - 1) {
-            ymd = days[timeSpanDays - 1];
+            ymd = state.days[timeSpanDays - 1];
           }
 
           return SideTitleWidget(
@@ -111,7 +106,7 @@ class HabitCompletionRateChart extends StatelessWidget
                     lineTouchData: LineTouchData(
                       touchTooltipData: LineTouchTooltipData(
                         getTooltipItems: (List<LineBarSpot> spots) {
-                          final ymd = days[spots.first.x.toInt()];
+                          final ymd = state.days[spots.first.x.toInt()];
                           cubit.setInfoYmd(ymd);
                           return [];
                         },
@@ -166,11 +161,11 @@ class HabitCompletionRateChart extends StatelessWidget
                     ),
                     minX: 0,
                     maxX: timeSpanDays.toDouble(),
-                    minY: minY(days: days, state: state),
+                    minY: state.zeroBased ? 0 : state.minY,
                     maxY: 100,
                     lineBarsData: [
                       barData(
-                        days: days,
+                        days: state.days,
                         state: state,
                         successfulByDay: state.successfulByDay,
                         skippedByDay: state.skippedByDay,
@@ -183,7 +178,7 @@ class HabitCompletionRateChart extends StatelessWidget
                         aboveColor: styleConfig().alarm.withOpacity(0.5),
                       ),
                       barData(
-                        days: days,
+                        days: state.days,
                         state: state,
                         successfulByDay: state.successfulByDay,
                         skippedByDay: state.skippedByDay,
@@ -195,7 +190,7 @@ class HabitCompletionRateChart extends StatelessWidget
                         color: skipColor,
                       ),
                       barData(
-                        days: days,
+                        days: state.days,
                         state: state,
                         successfulByDay: state.successfulByDay,
                         skippedByDay: state.skippedByDay,
@@ -278,20 +273,6 @@ LineChartBarData barData({
           )
         : null,
   );
-}
-
-double minY({
-  required List<String> days,
-  required HabitsState state,
-}) {
-  var lowest = 100.0;
-
-  for (final day in days) {
-    final n = state.successfulByDay[day]?.length ?? 0;
-    final total = totalForDay(day, state);
-    lowest = total > 0 ? min(lowest, 100 * n / total) : 0;
-  }
-  return max(lowest - 20, 0);
 }
 
 class ChartLabel extends StatelessWidget {
