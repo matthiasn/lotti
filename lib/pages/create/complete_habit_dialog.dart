@@ -186,10 +186,13 @@ class _HabitDialogState extends State<HabitDialog> {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        habitDefinition?.name ?? '',
-                        style: habitCompletionHeaderStyle,
+                      Expanded(
+                        child: Text(
+                          habitDefinition?.name ?? '',
+                          style: habitCompletionHeaderStyle,
+                        ),
                       ),
                       IconButton(
                         padding: const EdgeInsets.all(10),
@@ -257,7 +260,7 @@ class HabitDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (habitDefinition?.description == null) {
+    if ('${habitDefinition?.description}'.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -276,13 +279,16 @@ class HabitDescription extends StatelessWidget {
       }
     }
 
-    return Linkify(
-      onOpen: onOpen,
-      text: habitDefinition!.description,
-      style: habitCompletionHeaderStyle.copyWith(fontSize: 15),
-      linkStyle: habitCompletionHeaderStyle.copyWith(
-        fontSize: 15,
-        color: styleConfig().primaryColor,
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Linkify(
+        onOpen: onOpen,
+        text: habitDefinition!.description,
+        style: habitCompletionHeaderStyle.copyWith(fontSize: 15),
+        linkStyle: habitCompletionHeaderStyle.copyWith(
+          fontSize: 15,
+          color: styleConfig().primaryColor,
+        ),
       ),
     );
   }
