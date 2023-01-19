@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Chore: redundant dependencies removed
+- Chore: upgraded dependencies
 
 ## [0.8.243] - 2023-01-18
 ### Changed:
