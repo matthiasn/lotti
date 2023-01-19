@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Adaptive minY value in habit completion chart
 - Toggle between zero-based and adaptive charts
+- Upgraded dependencies
 
 ### Fixed:
 - Habit completion percentages
