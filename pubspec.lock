@@ -365,13 +365,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.17.2"
-  cupertino_icons:
-    dependency: "direct main"
-    description:
-      name: cupertino_icons
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.5"
   dart_code_metrics:
     dependency: "direct dev"
     description:
@@ -596,13 +589,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_app_badger:
-    dependency: "direct main"
-    description:
-      name: flutter_app_badger
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.5.0"
   flutter_bloc:
     dependency: "direct main"
     description:
@@ -638,13 +624,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.5.1"
-  flutter_dotenv:
-    dependency: "direct main"
-    description:
-      name: flutter_dotenv
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "5.0.2"
   flutter_driver:
     dependency: transitive
     description: flutter
@@ -694,13 +673,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.4"
-  flutter_isolate:
-    dependency: "direct main"
-    description:
-      name: flutter_isolate
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.0.4"
   flutter_keyboard_visibility:
     dependency: transitive
     description:
@@ -900,13 +872,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_typeahead:
-    dependency: "direct main"
-    description:
-      name: flutter_typeahead
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "4.1.1"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -980,13 +945,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.6"
-  glass:
-    dependency: "direct main"
-    description:
-      name: glass
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.1+1"
   glob:
     dependency: transitive
     description:
@@ -1337,13 +1295,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.1.3"
-  mutex:
-    dependency: "direct main"
-    description:
-      name: mutex
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.0.1"
   nested:
     dependency: transitive
     description:
@@ -1624,13 +1575,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.2.1"
-  pull_to_refresh:
-    dependency: "direct main"
-    description:
-      name: pull_to_refresh
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.0.0"
   qr:
     dependency: transitive
     description:
@@ -1707,13 +1651,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.27.7"
-  salomon_bottom_bar:
-    dependency: "direct main"
-    description:
-      name: salomon_bottom_bar
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.3.1"
   screen_retriever:
     dependency: transitive
     description:
@@ -2287,7 +2224,7 @@ packages:
     source: hosted
     version: "6.2.2"
   yaml:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: yaml
       url: "https://pub.dartlang.org"
