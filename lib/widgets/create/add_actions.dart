@@ -8,6 +8,8 @@ import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
 
+const actionIconSize = 32.0;
+
 class RadialAddActionButtons extends StatefulWidget {
   const RadialAddActionButtons({
     super.key,
@@ -61,7 +63,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           },
           child: const Icon(
             MdiIcons.monitorScreenshot,
-            size: 32,
+            size: actionIconSize,
           ),
         ),
       );
@@ -80,7 +82,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           },
           child: const Icon(
             Icons.insights,
-            size: 32,
+            size: actionIconSize,
           ),
         ),
       )
@@ -96,7 +98,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           },
           child: const Icon(
             MdiIcons.clipboardOutline,
-            size: 32,
+            size: actionIconSize,
           ),
         ),
       )
@@ -115,7 +117,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           },
           child: const Icon(
             Icons.add_a_photo_outlined,
-            size: 32,
+            size: actionIconSize,
           ),
         ),
       )
@@ -131,7 +133,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           },
           child: const Icon(
             MdiIcons.textLong,
-            size: 32,
+            size: actionIconSize,
           ),
         ),
       );
@@ -149,14 +151,14 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           },
           child: const Icon(
             MdiIcons.timerOutline,
-            size: 32,
+            size: actionIconSize,
           ),
         ),
       );
     }
 
-    if (widget.isIOS || widget.isAndroid) {
-      items.add(
+    items
+      ..add(
         FloatingActionButton(
           heroTag: 'audio',
           tooltip: localizations.addActionAddAudioRecording,
@@ -168,32 +170,30 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           },
           child: const Icon(
             MdiIcons.microphone,
-            size: 32,
+            size: actionIconSize,
+          ),
+        ),
+      )
+      ..add(
+        FloatingActionButton(
+          heroTag: 'task',
+          tooltip: localizations.addActionAddTask,
+          backgroundColor: styleConfig().primaryColor,
+          onPressed: () async {
+            rebuild();
+            final linkedId = widget.linked?.meta.id;
+            final task = await createTask(linkedId: linkedId);
+
+            if (task != null) {
+              beamToNamed('/journal/${task.meta.id}');
+            }
+          },
+          child: const Icon(
+            Icons.task_outlined,
+            size: actionIconSize,
           ),
         ),
       );
-    }
-
-    items.add(
-      FloatingActionButton(
-        heroTag: 'task',
-        tooltip: localizations.addActionAddTask,
-        backgroundColor: styleConfig().primaryColor,
-        onPressed: () async {
-          rebuild();
-          final linkedId = widget.linked?.meta.id;
-          final task = await createTask(linkedId: linkedId);
-
-          if (task != null) {
-            beamToNamed('/journal/${task.meta.id}');
-          }
-        },
-        child: const Icon(
-          Icons.task_outlined,
-          size: 32,
-        ),
-      ),
-    );
 
     return CircleFloatingButton.floatingActionButton(
       radius: items.length * 32,
