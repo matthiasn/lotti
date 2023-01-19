@@ -39,15 +39,19 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
               Text(title, style: appBarTextStyleNewLarge()),
               const Spacer(),
               Opacity(
-                opacity: state.minY > 0 ? 1 : 0,
+                opacity: state.minY > 20 ? 1 : 0,
                 child: GestureDetector(
                   onTap: cubit.toggleZeroBased,
                   child: Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 15,
+                    ),
                     child: Icon(
                       state.zeroBased
                           ? MdiIcons.unfoldLessHorizontal
                           : MdiIcons.unfoldMoreHorizontal,
+                      color: styleConfig().secondaryTextColor,
                     ),
                   ),
                 ),
