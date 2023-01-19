@@ -47,5 +47,7 @@
 	<string>Import photos and videos</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSMicrophoneUsageDescription</key>
+    <string>Record audio notes</string>
 </dict>
 </plist>

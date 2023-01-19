@@ -9,6 +9,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   hotkey_manager
   pasteboard
   permission_handler_windows
+  record_windows
   screen_retriever
   sqlite3_flutter_libs
   url_launcher_windows
