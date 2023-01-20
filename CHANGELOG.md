@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Audio recording lib replaced
+
+### Added:
+- Audio recording on macOS
+
+## [0.8.246] - 2023-01-19
+### Changed:
 - Chore: redundant dependencies removed
 - Chore: upgraded dependencies
 
