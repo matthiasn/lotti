@@ -471,7 +471,7 @@ void main() {
     );
 
     testWidgets(
-      'add audio icon is not shown when not on mobile',
+      'add audio icon is shown',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -489,7 +489,7 @@ void main() {
         await tester.tap(addIconFinder);
         await tester.pumpAndSettle();
 
-        expect(addAudioIconFinder, findsNothing);
+        expect(addAudioIconFinder, findsOneWidget);
       },
     );
 
