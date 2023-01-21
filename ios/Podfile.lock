@@ -26,11 +26,6 @@ PODS:
     - Flutter
   - flutter_secure_storage (6.0.0):
     - Flutter
-  - flutter_sound (8.5.0):
-    - Flutter
-    - flutter_sound_core (= 8.5.0)
-    - mobile-ffmpeg-audio (= 4.4.LTS)
-  - flutter_sound_core (8.5.0)
   - FMDB (2.7.5):
     - FMDB/standard (= 2.7.5)
   - FMDB/standard (2.7.5)
@@ -54,7 +49,6 @@ PODS:
   - Mantle (2.2.0):
     - Mantle/extobjc (= 2.2.0)
   - Mantle/extobjc (2.2.0)
-  - mobile-ffmpeg-audio (4.4.LTS)
   - MTBBarcodeScanner (5.0.11)
   - package_info_plus (0.4.5):
     - Flutter
@@ -71,6 +65,8 @@ PODS:
     - Flutter
     - MTBBarcodeScanner
   - ReachabilitySwift (5.0.0)
+  - record (0.0.1):
+    - Flutter
   - SDWebImage (5.14.2):
     - SDWebImage/Core (= 5.14.2)
   - SDWebImage/Core (5.14.2)
@@ -118,7 +114,6 @@ DEPENDENCIES:
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_native_timezone (from `.symlinks/plugins/flutter_native_timezone/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
-  - flutter_sound (from `.symlinks/plugins/flutter_sound/ios`)
   - health (from `.symlinks/plugins/health/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/ios`)
@@ -129,6 +124,7 @@ DEPENDENCIES:
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - photo_manager (from `.symlinks/plugins/photo_manager/ios`)
   - qr_code_scanner (from `.symlinks/plugins/qr_code_scanner/ios`)
+  - record (from `.symlinks/plugins/record/ios`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/ios`)
   - sqflite (from `.symlinks/plugins/sqflite/ios`)
@@ -138,11 +134,9 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - flutter_sound_core
     - FMDB
     - libwebp
     - Mantle
-    - mobile-ffmpeg-audio
     - MTBBarcodeScanner
     - ReachabilitySwift
     - SDWebImage
@@ -174,8 +168,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_native_timezone/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
-  flutter_sound:
-    :path: ".symlinks/plugins/flutter_sound/ios"
   health:
     :path: ".symlinks/plugins/health/ios"
   integration_test:
@@ -196,6 +188,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/photo_manager/ios"
   qr_code_scanner:
     :path: ".symlinks/plugins/qr_code_scanner/ios"
+  record:
+    :path: ".symlinks/plugins/record/ios"
   share_plus:
     :path: ".symlinks/plugins/share_plus/ios"
   shared_preferences_foundation:
@@ -222,8 +216,6 @@ SPEC CHECKSUMS:
   flutter_native_splash: 52501b97d1c0a5f898d687f1646226c1f93c56ef
   flutter_native_timezone: 5f05b2de06c9776b4cc70e1839f03de178394d22
   flutter_secure_storage: 23fc622d89d073675f2eaa109381aefbcf5a49be
-  flutter_sound: ba7daf658dea78e9f18b79657338bfc222489f4f
-  flutter_sound_core: d9396f10752a0df9aa3197f4c431d62d934918cc
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   health: e7a5807e45ec58fe6b89a730c97abc6caafe94a0
   integration_test: a1e7d09bd98eca2fc37aefd79d4f41ad37bdbbe5
@@ -231,7 +223,6 @@ SPEC CHECKSUMS:
   libwebp: f62cb61d0a484ba548448a4bd52aabf150ff6eef
   location: 3a2eed4dd2fab25e7b7baf2a9efefe82b512d740
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
-  mobile-ffmpeg-audio: 1e0a053f8a6de57114e50ff48b3a85ff1c60f902
   MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
   package_info_plus: 6c92f08e1f853dc01228d6f553146438dafcd14e
   pasteboard: 982969ebaa7c78af3e6cc7761e8f5e77565d9ce0
@@ -240,6 +231,7 @@ SPEC CHECKSUMS:
   photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
   qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
+  record: cae05d8dd3cdb1dea3511b20e5a5811a1ae00d0d
   SDWebImage: b9a731e1d6307f44ca703b3976d18c24ca561e84
   SDWebImageWebPCoder: 18503de6621dd2c420d680e33d46bf8e1d5169b0
   share_plus: 056a1e8ac890df3e33cb503afffaf1e9b4fbae68

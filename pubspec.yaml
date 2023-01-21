@@ -1,14 +1,14 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.246+1729
+version: 0.8.247+1732
 
 msix_config:
   display_name: Lotti
   publisher_display_name: Matthias Nehlsen
   publisher: CN=Matthias Nehlsen, O=Matthias Nehlsen, C=DE
   identity_name: com.matthiasnehlsen.lotti
-  capabilities: internetClient, location, microphone, webcam
+  capabilities: internetClient, location, microphone
   languages: en-us, de-de, ro-ro
   install_certificate: false
   sign_msix: false
@@ -81,7 +81,6 @@ dependencies:
   flutter_quill: ^6.1.0
   flutter_secure_storage: ^6.0.0
   flutter_sliding_tutorial: ^2.0.0
-  flutter_sound: ^8.3.12
   flutter_svg: ^1.0.3
   form_builder_validators: ^8.1.1
   freezed_annotation: ^2.0.3
@@ -135,6 +134,7 @@ dependencies:
 
   # research_package: ^0.6.7
   random_password_generator: ^0.2.1
+  record: ^4.4.4
   research_package:
     git:
       url: https://github.com/matthiasn/research.package.git

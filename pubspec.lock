@@ -839,27 +839,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.0+1"
-  flutter_sound:
-    dependency: "direct main"
-    description:
-      name: flutter_sound
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "8.5.0"
-  flutter_sound_platform_interface:
-    dependency: transitive
-    description:
-      name: flutter_sound_platform_interface
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "8.5.0"
-  flutter_sound_web:
-    dependency: transitive
-    description:
-      name: flutter_sound_web
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "8.5.0"
   flutter_svg:
     dependency: "direct main"
     description:
@@ -1183,13 +1162,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.1.1"
-  logger:
-    dependency: transitive
-    description:
-      name: logger
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.1.0"
   logging:
     dependency: transitive
     description:
@@ -1628,6 +1600,48 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.1.0"
+  record:
+    dependency: "direct main"
+    description:
+      name: record
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.4.4"
+  record_linux:
+    dependency: transitive
+    description:
+      name: record_linux
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.4.1"
+  record_macos:
+    dependency: transitive
+    description:
+      name: record_macos
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.2"
+  record_platform_interface:
+    dependency: transitive
+    description:
+      name: record_platform_interface
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.5.0"
+  record_web:
+    dependency: transitive
+    description:
+      name: record_web
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.5.0"
+  record_windows:
+    dependency: transitive
+    description:
+      name: record_windows
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.7.1"
   research_package:
     dependency: "direct main"
     description:
