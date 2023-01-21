@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgraded dependencies
+
+## [0.8.247] - 2023-01-20
+### Changed:
 - Audio recording lib replaced
 
 ### Added:
