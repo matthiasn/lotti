@@ -300,7 +300,7 @@ SELECT * FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND date_from >= :rangeStart
   AND deleted = false
-  ORDER BY date_from DESC;
+  ORDER BY created_at ASC;
 
 quantitativeByType:
 SELECT * FROM journal
