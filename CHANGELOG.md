@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Differentiate between failed and missing habit completion
+- Upgraded dependencies
+
+## [0.8.248] - 2023-01-22
+### Changed:
 - Upgraded dependencies
 
 ### Fixed:
