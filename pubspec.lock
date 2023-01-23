@@ -14,7 +14,7 @@ packages:
       name: adaptive_dialog
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.8.0+1"
+    version: "1.8.1+1"
   analyzer:
     dependency: "direct main"
     description:
@@ -1539,7 +1539,7 @@ packages:
       name: pub_updater
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.3"
+    version: "0.2.4"
   pubspec_parse:
     dependency: transitive
     description:
