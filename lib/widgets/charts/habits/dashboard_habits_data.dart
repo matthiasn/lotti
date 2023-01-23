@@ -47,7 +47,9 @@ Color habitCompletionColor(HabitCompletionType completionType) {
       ? alarm
       : completionType == HabitCompletionType.skip
           ? styleConfig().secondaryTextColor.withOpacity(0.4)
-          : primaryColor;
+          : completionType == HabitCompletionType.success
+              ? primaryColor
+              : alarm.withOpacity(0.6);
 }
 
 List<HabitResult> habitResultsByDay(
@@ -70,7 +72,7 @@ List<HabitResult> habitResultsByDay(
     final day = DateTime.parse(dayString);
     final completionType = (day.isAfter(activeFrom) || day == activeFrom) &&
             day.isBefore(activeUntil)
-        ? HabitCompletionType.fail
+        ? HabitCompletionType.open
         : HabitCompletionType.skip;
 
     resultsByDay[dayString] = HabitResult(

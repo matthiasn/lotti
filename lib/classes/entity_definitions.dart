@@ -6,7 +6,7 @@ part 'entity_definitions.g.dart';
 
 enum AggregationType { none, dailySum, dailyMax, dailyAvg, hourlySum }
 
-enum HabitCompletionType { success, skip, fail }
+enum HabitCompletionType { success, skip, fail, open }
 
 @freezed
 class HabitSchedule with _$HabitSchedule {
