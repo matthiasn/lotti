@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Remove redundant config flag: enable_beamer_nav
+
+## [0.8.249] - 2023-01-23
+### Changed:
 - Differentiate between failed and missing habit completion
 - Upgraded dependencies
 

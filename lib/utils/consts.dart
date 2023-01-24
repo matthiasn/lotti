@@ -8,5 +8,4 @@ const showThemeConfigFlag = 'show_theme_config';
 const allowInvalidCertFlag = 'allow_invalid_cert';
 const enableSyncInboxFlag = 'enable_sync_inbox';
 const enableSyncOutboxFlag = 'enable_sync_outbox';
-const enableBeamerNavFlag = 'enable_beamer_nav';
 const listenToScreenshotHotkeyFlag = 'listen_to_global_screenshot_hotkey';

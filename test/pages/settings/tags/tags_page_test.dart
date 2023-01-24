@@ -9,7 +9,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -44,10 +43,6 @@ void main() {
 
       when(() => secureStorageMock.writeValue(lastRouteKey, any()))
           .thenAnswer((_) async {});
-
-      when(() => mockJournalDb.watchConfigFlag(enableBeamerNavFlag)).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
 
       when(mockJournalDb.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([

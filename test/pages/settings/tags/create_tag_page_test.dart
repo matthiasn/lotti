@@ -6,7 +6,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/tags/create_tag_page.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -34,10 +33,6 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
-
-      when(() => mockJournalDb.watchConfigFlag(enableBeamerNavFlag)).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
 
       when(() => mockPersistenceLogic.upsertTagEntity(any()))
           .thenAnswer((_) async => 1);

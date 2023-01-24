@@ -61,13 +61,6 @@ Future<void> initConfigFlags(JournalDb db) async {
       status: true,
     ),
   );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: enableBeamerNavFlag,
-      description: 'Show new navigation (in progress)',
-      status: false,
-    ),
-  );
   if (Platform.isMacOS) {
     await db.insertFlagIfNotExists(
       const ConfigFlag(

@@ -5,7 +5,6 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/advanced_settings_page.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -23,10 +22,6 @@ void main() {
     setUp(() {
       when(mockSyncDatabase.watchOutboxCount)
           .thenAnswer((_) => Stream<int>.fromIterable([n]));
-
-      when(() => mockJournalDb.watchConfigFlag(enableBeamerNavFlag)).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
 
       getIt
         ..registerSingleton<SyncDatabase>(mockSyncDatabase)
