@@ -5,17 +5,10 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/utils/consts.dart';
 
-final expectedActiveFlagNames = Platform.isMacOS
-    ? {
-        privateFlag,
-        enableSyncInboxFlag,
-        enableSyncOutboxFlag,
-      }
-    : {
-        privateFlag,
-        enableSyncInboxFlag,
-        enableSyncOutboxFlag,
-      };
+final expectedActiveFlagNames = {
+  privateFlag,
+  enableSyncFlag,
+};
 
 final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
@@ -34,13 +27,8 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: enableSyncInboxFlag,
-    description: 'Enable sync inbox? (requires restart)',
-    status: true,
-  ),
-  const ConfigFlag(
-    name: enableSyncOutboxFlag,
-    description: 'Enable sync outbox? (requires restart)',
+    name: enableSyncFlag,
+    description: 'Enable sync? (requires restart)',
     status: true,
   ),
 };

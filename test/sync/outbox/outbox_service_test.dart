@@ -51,7 +51,7 @@ void main() {
 
       when(syncConfigMock.getSyncConfig)
           .thenAnswer((_) async => testSyncConfigConfigured);
-      when(() => mockJournalDb.getConfigFlag(enableSyncOutboxFlag))
+      when(() => mockJournalDb.getConfigFlag(enableSyncFlag))
           .thenAnswer((_) async => true);
 
       getIt

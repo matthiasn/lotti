@@ -23,6 +23,7 @@
   "addSurveyTitle": "Fill Survey",
   "addTaskTitle": "Add Task",
   "configFlagEnableNotifications": "Enable desktop notifications?",
+  "configInvalidCert": "Allow invalid SSL certificate?",
   "configFlagPrivate": "Show private entries?",
   "conflictsResolved": "resolved",
   "conflictsUnresolved": "unresolved",

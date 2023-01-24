@@ -8,9 +8,7 @@ import 'package:lotti/utils/consts.dart';
 
 class OutboxCubit extends Cubit<OutboxState> {
   OutboxCubit() : super(OutboxState.initial()) {
-    getIt<JournalDb>()
-        .watchConfigFlag(enableSyncOutboxFlag)
-        .listen((enabled) async {
+    getIt<JournalDb>().watchConfigFlag(enableSyncFlag).listen((enabled) async {
       if (enabled) {
         emit(OutboxState.online());
       } else {
@@ -20,7 +18,7 @@ class OutboxCubit extends Cubit<OutboxState> {
   }
 
   Future<void> toggleStatus() async {
-    await getIt<JournalDb>().toggleConfigFlag(enableSyncOutboxFlag);
+    await getIt<JournalDb>().toggleConfigFlag(enableSyncFlag);
   }
 
   @override

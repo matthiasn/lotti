@@ -27,15 +27,8 @@ Future<void> initConfigFlags(JournalDb db) async {
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: enableSyncInboxFlag,
-      description: 'Enable sync inbox? (requires restart)',
-      status: true,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: enableSyncOutboxFlag,
-      description: 'Enable sync outbox? (requires restart)',
+      name: enableSyncFlag,
+      description: 'Enable sync? (requires restart)',
       status: true,
     ),
   );

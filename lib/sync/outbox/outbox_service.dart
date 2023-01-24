@@ -83,7 +83,7 @@ class OutboxService {
     final syncConfig = await _syncConfigService.getSyncConfig();
 
     final enableSyncOutbox =
-        await getIt<JournalDb>().getConfigFlag(enableSyncOutboxFlag);
+        await getIt<JournalDb>().getConfigFlag(enableSyncFlag);
 
     if (syncConfig != null && enableSyncOutbox) {
       debugPrint('OutboxService init $enableSyncOutbox');
