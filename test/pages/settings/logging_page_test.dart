@@ -5,7 +5,6 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/logging_page.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -22,10 +21,6 @@ void main() {
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
-
-      when(() => mockJournalDb.watchConfigFlag(enableBeamerNavFlag)).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
     });
     tearDown(getIt.reset);
 

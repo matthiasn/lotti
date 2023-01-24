@@ -41,16 +41,28 @@ class _FlagsPageState extends State<FlagsPage> {
         ) {
           final items = snapshot.data?.toList() ?? [];
 
+          const displayedItems = {
+            privateFlag,
+            enableNotificationsFlag,
+            showBrightSchemeFlag,
+            allowInvalidCertFlag,
+            enableSyncInboxFlag,
+            enableSyncOutboxFlag,
+          };
+
+          final filteredItems =
+              items.where((flag) => displayedItems.contains(flag.name));
+
           return ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             children: intersperse(
               const SettingsDivider(),
               List.generate(
-                items.length,
+                filteredItems.length,
                 (int index) {
                   return ConfigFlagCard(
-                    item: items.elementAt(index),
+                    item: filteredItems.elementAt(index),
                     index: index,
                   );
                 },
@@ -82,14 +94,8 @@ class ConfigFlagCard extends StatelessWidget {
       switch (flag.name) {
         case privateFlag:
           return localizations.configFlagPrivate;
-        case notifyExceptionsFlag:
-          return localizations.configFlagNotifyExceptions;
-        case hideForScreenshotFlag:
-          return localizations.configFlagHideForScreenshot;
         case enableNotificationsFlag:
           return localizations.configFlagEnableNotifications;
-        case listenToScreenshotHotkeyFlag:
-          return localizations.configFlagGlobalScreenshotHotkey;
         default:
           return item.description;
       }

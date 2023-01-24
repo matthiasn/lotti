@@ -1,21 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:window_manager/window_manager.dart';
 
 Future<ImageData> takeScreenshotMac() async {
   try {
-    final hide = await getIt<JournalDb>().getConfigFlag(hideForScreenshotFlag);
     final id = uuid.v1();
     final filename = '$id.screenshot.jpg';
     final created = DateTime.now();
@@ -23,9 +19,7 @@ Future<ImageData> takeScreenshotMac() async {
     final relativePath = '/images/$day/';
     final directory = await createAssetDirectory(relativePath);
 
-    if (hide) {
-      await windowManager.minimize();
-    }
+    await windowManager.minimize();
 
     await Future<void>.delayed(const Duration(seconds: 1));
 
@@ -48,9 +42,7 @@ Future<ImageData> takeScreenshotMac() async {
       capturedAt: created,
     );
 
-    if (hide) {
-      await windowManager.show();
-    }
+    await windowManager.show();
 
     return imageData;
   } catch (exception, stackTrace) {
@@ -66,27 +58,4 @@ Future<ImageData> takeScreenshotMac() async {
 Future<void> takeScreenshotWithLinked() async {
   final linkedId = await getIdFromSavedRoute();
   await createScreenshot(linkedId: linkedId);
-}
-
-Future<void> registerScreenshotHotkey() async {
-  if (Platform.isMacOS) {
-    final screenshotKey = HotKey(
-      KeyCode.digit3,
-      modifiers: [
-        KeyModifier.shift,
-        KeyModifier.meta,
-      ],
-    );
-    await hotKeyManager.register(
-      screenshotKey,
-      keyDownHandler: (hotKey) async {
-        final enabled = await getIt<JournalDb>()
-            .getConfigFlag(listenToScreenshotHotkeyFlag);
-
-        if (enabled) {
-          await takeScreenshotWithLinked();
-        }
-      },
-    );
-  }
 }

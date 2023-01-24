@@ -8,14 +8,11 @@ import 'package:lotti/utils/consts.dart';
 final expectedActiveFlagNames = Platform.isMacOS
     ? {
         privateFlag,
-        hideForScreenshotFlag,
-        listenToScreenshotHotkeyFlag,
         enableSyncInboxFlag,
         enableSyncOutboxFlag,
       }
     : {
         privateFlag,
-        hideForScreenshotFlag,
         enableSyncInboxFlag,
         enableSyncOutboxFlag,
       };
@@ -25,21 +22,6 @@ final expectedFlags = <ConfigFlag>{
     name: privateFlag,
     description: 'Show private entries?',
     status: true,
-  ),
-  const ConfigFlag(
-    name: notifyExceptionsFlag,
-    description: 'Notify when exceptions occur?',
-    status: false,
-  ),
-  const ConfigFlag(
-    name: hideForScreenshotFlag,
-    description: 'Hide Lotti when taking screenshots?',
-    status: true,
-  ),
-  const ConfigFlag(
-    name: showTasksTabFlag,
-    description: 'Show Tasks tab?',
-    status: false,
   ),
   const ConfigFlag(
     name: showBrightSchemeFlag,
@@ -66,19 +48,9 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable sync outbox? (requires restart)',
     status: true,
   ),
-  const ConfigFlag(
-    name: enableBeamerNavFlag,
-    description: 'Show new navigation (in progress)',
-    status: false,
-  ),
 };
 
 final expectedMacFlags = <ConfigFlag>{
-  const ConfigFlag(
-    name: listenToScreenshotHotkeyFlag,
-    description: 'Listen to global screenshot hotkey?',
-    status: true,
-  ),
   const ConfigFlag(
     name: enableNotificationsFlag,
     description: 'Enable desktop notifications?',

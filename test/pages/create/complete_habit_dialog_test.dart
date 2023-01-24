@@ -7,7 +7,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -35,10 +34,6 @@ void main() {
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-      when(() => mockJournalDb.watchConfigFlag(enableBeamerNavFlag)).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
     });
     tearDown(getIt.reset);
 

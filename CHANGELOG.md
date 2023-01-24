@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Remove redundant config flag: enable_beamer_nav
+- Remove redundant config flag: listen_to_global_screenshot_hotkey
+- Remove redundant config flag: show_tasks_tab
+- Remove redundant config flag: hide_for_screenshot
+- Remove redundant config flag: notify_exceptions
+
+## [0.8.249] - 2023-01-23
+### Changed:
 - Differentiate between failed and missing habit completion
 - Upgraded dependencies
 

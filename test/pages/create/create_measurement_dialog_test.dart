@@ -8,7 +8,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -42,10 +41,6 @@ void main() {
         () => mockJournalDb
             .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
       ).thenAnswer((_) async => measurableWater);
-
-      when(() => mockJournalDb.watchConfigFlag(enableBeamerNavFlag)).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
 
       when(
         () => mockJournalDb.watchMeasurableDataTypeById(

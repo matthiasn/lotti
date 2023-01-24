@@ -6,7 +6,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -31,10 +30,6 @@ void main() {
         measurableChocolate,
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
-
-      when(() => mockJournalDb.watchConfigFlag(enableBeamerNavFlag)).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)

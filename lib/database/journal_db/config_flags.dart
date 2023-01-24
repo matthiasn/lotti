@@ -14,27 +14,6 @@ Future<void> initConfigFlags(JournalDb db) async {
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: notifyExceptionsFlag,
-      description: 'Notify when exceptions occur?',
-      status: false,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: hideForScreenshotFlag,
-      description: 'Hide Lotti when taking screenshots?',
-      status: true,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: showTasksTabFlag,
-      description: 'Show Tasks tab?',
-      status: false,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: showBrightSchemeFlag,
       description: 'Show Bright ☀️ scheme?',
       status: false,
@@ -61,21 +40,7 @@ Future<void> initConfigFlags(JournalDb db) async {
       status: true,
     ),
   );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: enableBeamerNavFlag,
-      description: 'Show new navigation (in progress)',
-      status: false,
-    ),
-  );
   if (Platform.isMacOS) {
-    await db.insertFlagIfNotExists(
-      const ConfigFlag(
-        name: listenToScreenshotHotkeyFlag,
-        description: 'Listen to global screenshot hotkey?',
-        status: true,
-      ),
-    );
     await db.insertFlagIfNotExists(
       const ConfigFlag(
         name: enableNotificationsFlag,
