@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:lotti/database/database.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/utils/platform.dart';
 
 Future<void> initConfigFlags(JournalDb db) async {
   await db.insertFlagIfNotExists(
@@ -45,15 +44,6 @@ Future<void> initConfigFlags(JournalDb db) async {
       const ConfigFlag(
         name: enableNotificationsFlag,
         description: 'Enable desktop notifications?',
-        status: false,
-      ),
-    );
-  }
-  if (isDesktop) {
-    await db.insertFlagIfNotExists(
-      const ConfigFlag(
-        name: showThemeConfigFlag,
-        description: 'Show Theme Config UI?',
         status: false,
       ),
     );

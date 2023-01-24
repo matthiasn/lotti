@@ -17,7 +17,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
-import 'package:lotti/widgets/theme/theme_config.dart';
 
 class AppScreen extends StatefulWidget {
   const AppScreen({super.key});
@@ -168,24 +167,22 @@ class MyBeamerApp extends StatelessWidget {
             ),
           ],
           child: DesktopMenuWrapper(
-            child: ThemeConfigWrapper(
-              MaterialApp.router(
-                color: styleConfig().negspace,
-                supportedLocales: AppLocalizations.supportedLocales,
-                theme: theme,
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  FormBuilderLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-                debugShowCheckedModeBanner: false,
-                routerDelegate: routerDelegate,
-                routeInformationParser: BeamerParser(),
-                backButtonDispatcher: BeamerBackButtonDispatcher(
-                  delegate: routerDelegate,
-                ),
+            child: MaterialApp.router(
+              color: styleConfig().negspace,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: theme,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                FormBuilderLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              debugShowCheckedModeBanner: false,
+              routerDelegate: routerDelegate,
+              routeInformationParser: BeamerParser(),
+              backButtonDispatcher: BeamerBackButtonDispatcher(
+                delegate: routerDelegate,
               ),
             ),
           ),

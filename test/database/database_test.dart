@@ -29,11 +29,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: showThemeConfigFlag,
-    description: 'Show Theme Config UI?',
-    status: false,
-  ),
-  const ConfigFlag(
     name: allowInvalidCertFlag,
     description: 'Allow invalid certificate? (not recommended)',
     status: false,
