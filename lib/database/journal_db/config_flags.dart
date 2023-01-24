@@ -28,13 +28,6 @@ Future<void> initConfigFlags(JournalDb db) async {
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: showTasksTabFlag,
-      description: 'Show Tasks tab?',
-      status: false,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: showBrightSchemeFlag,
       description: 'Show Bright ☀️ scheme?',
       status: false,

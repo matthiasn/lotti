@@ -36,11 +36,6 @@ final expectedFlags = <ConfigFlag>{
     status: true,
   ),
   const ConfigFlag(
-    name: showTasksTabFlag,
-    description: 'Show Tasks tab?',
-    status: false,
-  ),
-  const ConfigFlag(
     name: showBrightSchemeFlag,
     description: 'Show Bright ☀️ scheme?',
     status: false,
