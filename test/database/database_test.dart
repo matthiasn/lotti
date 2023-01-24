@@ -9,7 +9,6 @@ final expectedActiveFlagNames = Platform.isMacOS
     ? {
         privateFlag,
         hideForScreenshotFlag,
-        listenToScreenshotHotkeyFlag,
         enableSyncInboxFlag,
         enableSyncOutboxFlag,
       }
@@ -69,11 +68,6 @@ final expectedFlags = <ConfigFlag>{
 };
 
 final expectedMacFlags = <ConfigFlag>{
-  const ConfigFlag(
-    name: listenToScreenshotHotkeyFlag,
-    description: 'Listen to global screenshot hotkey?',
-    status: true,
-  ),
   const ConfigFlag(
     name: enableNotificationsFlag,
     description: 'Enable desktop notifications?',

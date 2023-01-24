@@ -23,7 +23,6 @@
   "addSurveyTitle": "Fill Survey",
   "addTaskTitle": "Add Task",
   "configFlagEnableNotifications": "Enable desktop notifications?",
-  "configFlagGlobalScreenshotHotkey": "Listen to global screenshot hotkey?",
   "configFlagHideForScreenshot": "Hide Lotti when taking screenshots?",
   "configFlagNotifyExceptions": "Notify when exceptions occur?",
   "configFlagPrivate": "Show private entries?",

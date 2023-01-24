@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -66,27 +65,4 @@ Future<ImageData> takeScreenshotMac() async {
 Future<void> takeScreenshotWithLinked() async {
   final linkedId = await getIdFromSavedRoute();
   await createScreenshot(linkedId: linkedId);
-}
-
-Future<void> registerScreenshotHotkey() async {
-  if (Platform.isMacOS) {
-    final screenshotKey = HotKey(
-      KeyCode.digit3,
-      modifiers: [
-        KeyModifier.shift,
-        KeyModifier.meta,
-      ],
-    );
-    await hotKeyManager.register(
-      screenshotKey,
-      keyDownHandler: (hotKey) async {
-        final enabled = await getIt<JournalDb>()
-            .getConfigFlag(listenToScreenshotHotkeyFlag);
-
-        if (enabled) {
-          await takeScreenshotWithLinked();
-        }
-      },
-    );
-  }
 }

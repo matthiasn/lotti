@@ -8,7 +8,6 @@
   "addActionAddText": "Ajouter du texte",
   "addActionAddTimeRecording": "Commencer l’enregistrement du temps",
   "configFlagEnableNotifications": "Activer les notifications ?",
-  "configFlagGlobalScreenshotHotkey": "Écouter le raccourci clavier global de capture d’écran ?",
   "configFlagHideForScreenshot": "Masquer Lotti pendant une capture d’écran ?",
   "configFlagNotifyExceptions": "Informer en cas d’exceptions ?",
   "configFlagPrivate": "Afficher les entrées privées ?",

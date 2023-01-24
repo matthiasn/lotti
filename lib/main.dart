@@ -8,7 +8,6 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
-import 'package:lotti/utils/screenshots.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
@@ -38,7 +37,6 @@ Future<void> main() async {
       );
     };
 
-    await registerScreenshotHotkey();
     runApp(MyBeamerApp());
   }, (Object error, StackTrace stackTrace) {
     getIt<LoggingDb>().captureException(

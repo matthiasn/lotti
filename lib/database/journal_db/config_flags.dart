@@ -64,13 +64,6 @@ Future<void> initConfigFlags(JournalDb db) async {
   if (Platform.isMacOS) {
     await db.insertFlagIfNotExists(
       const ConfigFlag(
-        name: listenToScreenshotHotkeyFlag,
-        description: 'Listen to global screenshot hotkey?',
-        status: true,
-      ),
-    );
-    await db.insertFlagIfNotExists(
-      const ConfigFlag(
         name: enableNotificationsFlag,
         description: 'Enable desktop notifications?',
         status: false,
