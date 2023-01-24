@@ -96,8 +96,6 @@ class ConfigFlagCard extends StatelessWidget {
           return localizations.configFlagPrivate;
         case notifyExceptionsFlag:
           return localizations.configFlagNotifyExceptions;
-        case hideForScreenshotFlag:
-          return localizations.configFlagHideForScreenshot;
         case enableNotificationsFlag:
           return localizations.configFlagEnableNotifications;
         default:

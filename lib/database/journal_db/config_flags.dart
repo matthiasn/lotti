@@ -21,13 +21,6 @@ Future<void> initConfigFlags(JournalDb db) async {
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: hideForScreenshotFlag,
-      description: 'Hide Lotti when taking screenshots?',
-      status: true,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: showBrightSchemeFlag,
       description: 'Show Bright ☀️ scheme?',
       status: false,
