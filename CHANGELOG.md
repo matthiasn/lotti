@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Remove unused theme config widget
+- Hide config flag: allow_invalid_cert
+
+## [0.8.250] - 2023-01-24
+### Changed:
 - Remove redundant config flag: enable_beamer_nav
 - Remove redundant config flag: listen_to_global_screenshot_hotkey
 - Remove redundant config flag: show_tasks_tab

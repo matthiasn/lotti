@@ -48,7 +48,7 @@ class InboxService {
     final syncConfig = await _syncConfigService.getSyncConfig();
 
     final enableSyncInbox =
-        await getIt<JournalDb>().getConfigFlag(enableSyncInboxFlag);
+        await getIt<JournalDb>().getConfigFlag(enableSyncFlag);
 
     if (!enableSyncInbox || syncConfig == null) {
       return;

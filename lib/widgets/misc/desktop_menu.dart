@@ -132,20 +132,6 @@ class DesktopMenuWrapper extends StatelessWidget {
                           await _db.toggleConfigFlag(showBrightSchemeFlag);
                         },
                       ),
-                      PlatformMenuItem(
-                        label: snapshot.data?.contains(showThemeConfigFlag) ??
-                                false
-                            ? localizations.viewMenuHideThemeConfig
-                            : localizations.viewMenuShowThemeConfig,
-                        shortcut: const SingleActivator(
-                          LogicalKeyboardKey.keyS,
-                          meta: true,
-                          alt: true,
-                        ),
-                        onSelected: () async {
-                          await _db.toggleConfigFlag(showThemeConfigFlag);
-                        },
-                      ),
                     ],
                   ),
                 ],

@@ -45,9 +45,8 @@ class _FlagsPageState extends State<FlagsPage> {
             privateFlag,
             enableNotificationsFlag,
             showBrightSchemeFlag,
-            allowInvalidCertFlag,
-            enableSyncInboxFlag,
-            enableSyncOutboxFlag,
+            // TODO: is this required? Remove
+            // allowInvalidCertFlag,
           };
 
           final filteredItems =
