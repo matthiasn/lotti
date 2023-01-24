@@ -24,11 +24,6 @@ final expectedFlags = <ConfigFlag>{
     status: true,
   ),
   const ConfigFlag(
-    name: notifyExceptionsFlag,
-    description: 'Notify when exceptions occur?',
-    status: false,
-  ),
-  const ConfigFlag(
     name: showBrightSchemeFlag,
     description: 'Show Bright ☀️ scheme?',
     status: false,

@@ -8,7 +8,6 @@
   "addActionAddText": "Ajouter du texte",
   "addActionAddTimeRecording": "Commencer l’enregistrement du temps",
   "configFlagEnableNotifications": "Activer les notifications ?",
-  "configFlagNotifyExceptions": "Informer en cas d’exceptions ?",
   "configFlagPrivate": "Afficher les entrées privées ?",
   "conflictsResolved": "résolu",
   "conflictsUnresolved": "non résolu",

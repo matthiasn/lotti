@@ -12,7 +12,6 @@
   "addMeasurementSaveButton": "Speichern",
   "addMeasurementTitle": "Messbare Daten erfassen",
   "configFlagEnableNotifications": "Desktop Notifications erlauben?",
-  "configFlagNotifyExceptions": "Notification bei Fehler?",
   "configFlagPrivate": "Private Einträge anzeigen?",
   "conflictsResolved": "gelöst",
   "conflictsUnresolved": "offen",

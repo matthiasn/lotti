@@ -1,6 +1,5 @@
 const privateFlag = 'private';
 const enableNotificationsFlag = 'enable_notifications';
-const notifyExceptionsFlag = 'notify_exceptions';
 const showBrightSchemeFlag = 'show_bright_scheme';
 const showThemeConfigFlag = 'show_theme_config';
 const allowInvalidCertFlag = 'allow_invalid_cert';

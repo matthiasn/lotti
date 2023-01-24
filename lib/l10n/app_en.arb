@@ -23,7 +23,6 @@
   "addSurveyTitle": "Fill Survey",
   "addTaskTitle": "Add Task",
   "configFlagEnableNotifications": "Enable desktop notifications?",
-  "configFlagNotifyExceptions": "Notify when exceptions occur?",
   "configFlagPrivate": "Show private entries?",
   "conflictsResolved": "resolved",
   "conflictsUnresolved": "unresolved",

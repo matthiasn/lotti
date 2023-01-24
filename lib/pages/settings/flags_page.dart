@@ -94,8 +94,6 @@ class ConfigFlagCard extends StatelessWidget {
       switch (flag.name) {
         case privateFlag:
           return localizations.configFlagPrivate;
-        case notifyExceptionsFlag:
-          return localizations.configFlagNotifyExceptions;
         case enableNotificationsFlag:
           return localizations.configFlagEnableNotifications;
         default:
