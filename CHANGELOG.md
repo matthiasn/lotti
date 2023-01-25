@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Improved workout labels
+
+## [0.8.253] - 2023-01-25
+### Changed:
 - Upgrade dependencies - major versions
 
 ## [0.8.252] - 2023-01-25

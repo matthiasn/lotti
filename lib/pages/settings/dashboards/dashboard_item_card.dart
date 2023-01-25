@@ -8,6 +8,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
+import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
@@ -45,9 +46,13 @@ class DashboardItemCard extends StatelessWidget {
         );
       },
       workoutChart: (workoutChart) {
+        final workoutKey =
+            '${workoutChart.workoutType}.${workoutChart.valueType.name}';
+        final workoutType = workoutTypes[workoutKey];
+
         return ItemCard(
           leadingIcon: Icons.sports_gymnastics,
-          title: workoutChart.displayName,
+          title: workoutType?.displayName ?? workoutChart.displayName,
         );
       },
       surveyChart: (surveyChart) {
