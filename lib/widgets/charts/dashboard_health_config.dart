@@ -131,13 +131,6 @@ Map<String, HealthTypeConfig> healthTypes = {
     aggregationType: HealthAggregationType.dailyMax,
     unit: '',
   ),
-  'HealthDataType.WORKOUT': HealthTypeConfig(
-    displayName: 'Workout time',
-    healthType: 'HealthDataType.WORKOUT',
-    chartType: HealthChartType.barChart,
-    aggregationType: HealthAggregationType.dailySum,
-    unit: 'min',
-  ),
   'HealthDataType.SLEEP_ASLEEP': HealthTypeConfig(
     displayName: 'Asleep',
     healthType: 'HealthDataType.SLEEP_ASLEEP',
