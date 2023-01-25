@@ -55,33 +55,41 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   Future<void> record({
     String? linkedId,
   }) async {
+    _linkedId = linkedId;
+
     try {
       if (await _audioRecorder.hasPermission()) {
-        final created = DateTime.now();
-        final fileName =
-            '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
-        final day = DateFormat('yyyy-MM-dd').format(created);
-        final relativePath = '/audio/$day/';
-        final directory = await createAssetDirectory(relativePath);
-        final filePath = '${isMacOS ? 'file://' : ''}$directory$fileName';
+        if (await _audioRecorder.isPaused()) {
+          await resume();
+        } else if (await _audioRecorder.isRecording()) {
+          await stop();
+        } else {
+          final created = DateTime.now();
+          final fileName =
+              '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
+          final day = DateFormat('yyyy-MM-dd').format(created);
+          final relativePath = '/audio/$day/';
+          final directory = await createAssetDirectory(relativePath);
+          final filePath = '${isMacOS ? 'file://' : ''}$directory$fileName';
 
-        _audioNote = AudioNote(
-          id: uuid.v1(),
-          timestamp: created.millisecondsSinceEpoch,
-          createdAt: created,
-          utcOffset: created.timeZoneOffset.inMinutes,
-          timezone: await getLocalTimezone(),
-          audioFile: fileName,
-          audioDirectory: relativePath,
-          duration: Duration.zero,
-        );
+          _audioNote = AudioNote(
+            id: uuid.v1(),
+            timestamp: created.millisecondsSinceEpoch,
+            createdAt: created,
+            utcOffset: created.timeZoneOffset.inMinutes,
+            timezone: await getLocalTimezone(),
+            audioFile: fileName,
+            audioDirectory: relativePath,
+            duration: Duration.zero,
+          );
 
-        unawaited(_addGeolocation());
+          unawaited(_addGeolocation());
 
-        await _audioRecorder.start(
-          path: filePath,
-          samplingRate: 48000,
-        );
+          await _audioRecorder.start(
+            path: filePath,
+            samplingRate: 48000,
+          );
+        }
       } else {
         _loggingDb.captureEvent(
           'no audio recording permission',
@@ -121,6 +129,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   Future<void> pause() async {
     await _audioRecorder.pause();
+    emit(state.copyWith(status: AudioRecorderStatus.paused));
   }
 
   Future<void> resume() async {

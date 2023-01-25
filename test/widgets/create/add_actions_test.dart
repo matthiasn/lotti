@@ -542,7 +542,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockNavService.beamToNamed('/journal/record_audio/null'),
+          () => mockNavService.beamToNamed('/journal/null/record_audio/null'),
         ).called(1);
       },
     );
@@ -596,7 +596,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockNavService.beamToNamed('/journal/record_audio/null'),
+          () => mockNavService.beamToNamed('/journal/null/record_audio/null'),
         ).called(1);
       },
     );
