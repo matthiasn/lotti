@@ -21,14 +21,15 @@ class TasksBadge extends StatelessWidget {
         final count = snapshot.data ?? 0;
 
         return Badge(
-          badgeColor: styleConfig().alarm,
           badgeContent: Text(
             '$count',
             style: badgeStyle,
           ),
           showBadge: count != 0,
-          toAnimate: false,
-          elevation: 3,
+          badgeStyle: BadgeStyle(
+            elevation: 3,
+            badgeColor: styleConfig().alarm,
+          ),
           child: child,
         );
       },

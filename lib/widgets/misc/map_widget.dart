@@ -60,14 +60,14 @@ class _MapWidgetState extends State<MapWidget> {
               options: MapOptions(
                 center: loc,
               ),
-              layers: [
-                TileLayerOptions(
+              children: [
+                TileLayer(
+                  tileProvider: CachedTileProvider(),
                   urlTemplate:
                       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  subdomains: ['a', 'b', 'c'],
-                  tileProvider: CachedTileProvider(),
+                  subdomains: const ['a', 'b', 'c'],
                 ),
-                MarkerLayerOptions(
+                MarkerLayer(
                   markers: [
                     Marker(
                       width: 64,

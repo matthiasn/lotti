@@ -12,7 +12,7 @@ PODS:
     - FlutterMacOS
   - flutter_native_timezone (0.0.1):
     - FlutterMacOS
-  - flutter_secure_storage_macos (3.3.1):
+  - flutter_secure_storage_macos (6.1.1):
     - FlutterMacOS
   - FlutterMacOS (1.0.0)
   - FMDB (2.7.5):
@@ -160,7 +160,7 @@ SPEC CHECKSUMS:
   dynamic_color: 394d6a888650f8534e029b27d2f8bc5c64e44008
   flutter_local_notifications: 3805ca215b2fb7f397d78b66db91f6a747af52e4
   flutter_native_timezone: 3a4724189c47dea215bb3e168e555e18308d312c
-  flutter_secure_storage_macos: 6ceee8fbc7f484553ad17f79361b556259df89aa
+  flutter_secure_storage_macos: 75c8cadfdba05ca007c0fa4ea0c16e5cf85e521b
   FlutterMacOS: ae6af50a8ea7d6103d888583d46bd8328a7e9811
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   HotKey: ad59450195936c10992438c4210f673de5aee43e
@@ -170,7 +170,7 @@ SPEC CHECKSUMS:
   macos_ui: 125c911559d646194386d84c017ad6819122e2db
   package_info_plus: 02d7a575e80f194102bef286361c6c326e4c29ce
   pasteboard: 9b69dba6fedbb04866be632205d532fe2f6b1d99
-  path_provider_macos: 3c0c3b4b0d4a76d2bf989a913c2de869c5641a19
+  path_provider_macos: 05fb0ef0cedf3e5bd179b9e41a638682b37133ea
   photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
   record_macos: 937889e0f2a7a12b6fc14e97a3678e5a18943de6

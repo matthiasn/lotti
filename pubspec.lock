@@ -112,7 +112,7 @@ packages:
       name: badges
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.3"
+    version: "3.0.1"
   basic_utils:
     dependency: transitive
     description:
@@ -371,7 +371,14 @@ packages:
       name: dart_code_metrics
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.21.3"
+    version: "5.5.0"
+  dart_code_metrics_presets:
+    dependency: transitive
+    description:
+      name: dart_code_metrics_presets
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.1.0"
   dart_geohash:
     dependency: "direct main"
     description:
@@ -721,7 +728,7 @@ packages:
       name: flutter_launcher_icons
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.10.0"
+    version: "0.11.0"
   flutter_linkify:
     dependency: "direct main"
     description:
@@ -742,21 +749,21 @@ packages:
       name: flutter_local_notifications
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "9.9.1"
+    version: "13.0.0"
   flutter_local_notifications_linux:
     dependency: transitive
     description:
       name: flutter_local_notifications_linux
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.1"
+    version: "3.0.0"
   flutter_local_notifications_platform_interface:
     dependency: transitive
     description:
       name: flutter_local_notifications_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.0"
+    version: "6.0.0"
   flutter_localizations:
     dependency: "direct main"
     description: flutter
@@ -768,7 +775,7 @@ packages:
       name: flutter_map
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0"
+    version: "3.1.0"
   flutter_native_splash:
     dependency: "direct dev"
     description:
@@ -796,7 +803,7 @@ packages:
       name: flutter_secure_storage
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.0"
+    version: "7.0.1"
   flutter_secure_storage_linux:
     dependency: transitive
     description:
@@ -810,7 +817,7 @@ packages:
       name: flutter_secure_storage_macos
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.2"
+    version: "2.0.1"
   flutter_secure_storage_platform_interface:
     dependency: transitive
     description:
@@ -869,7 +876,7 @@ packages:
       name: freezed
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.1"
+    version: "2.3.2"
   freezed_annotation:
     dependency: "direct main"
     description:
@@ -1175,7 +1182,7 @@ packages:
       name: lottie
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.4.3"
+    version: "2.2.0"
   macos_ui:
     dependency: transitive
     description:
@@ -1203,7 +1210,7 @@ packages:
       name: material_design_icons_flutter
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.6996"
+    version: "6.0.7096"
   material_floating_search_bar:
     dependency: "direct main"
     description:
@@ -1678,7 +1685,7 @@ packages:
       name: share_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.5.3"
+    version: "5.0.0"
   share_plus_linux:
     dependency: transitive
     description:
@@ -1713,7 +1720,7 @@ packages:
       name: share_plus_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.1"
+    version: "4.0.0"
   shared_preferences:
     dependency: transitive
     description:
@@ -1935,7 +1942,7 @@ packages:
       name: syncfusion_flutter_calendar
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "20.3.47"
+    version: "20.4.44"
   syncfusion_flutter_core:
     dependency: transitive
     description:
@@ -1991,7 +1998,7 @@ packages:
       name: timezone
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.0"
+    version: "0.9.1"
   timing:
     dependency: transitive
     description:
@@ -2215,7 +2222,7 @@ packages:
       name: window_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.9"
+    version: "0.3.0"
   wkt_parser:
     dependency: transitive
     description:

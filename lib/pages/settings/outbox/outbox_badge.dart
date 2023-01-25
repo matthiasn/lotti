@@ -33,11 +33,12 @@ class OutboxBadgeIcon extends StatelessWidget {
             label,
             style: badgeStyle,
           ),
-          badgeColor: styleConfig().alarm,
-          padding: EdgeInsets.all(padding.toDouble()),
+          badgeStyle: BadgeStyle(
+            badgeColor: styleConfig().alarm,
+            padding: EdgeInsets.all(padding.toDouble()),
+            elevation: 3,
+          ),
           showBadge: count > 0,
-          toAnimate: false,
-          elevation: 3,
           child: icon,
         );
       },
