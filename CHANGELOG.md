@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Improved workout labels
 
+### Fixed:
+- Remove broken workout time health chart (workouts are a separate category now)
+
 ## [0.8.253] - 2023-01-25
 ### Changed:
 - Upgrade dependencies - major versions
