@@ -20,9 +20,9 @@ class JournalLocation extends BeamLocation<BeamState> {
   List<String> get pathPatterns => [
         '/journal/:entryId',
         '/journal/:entryId/manage_tags',
+        '/journal/:entryId/record_audio/:linkedId',
         '/journal/fill_survey/:surveyType',
         '/journal/fill_survey_linked/:linkedId',
-        '/journal/record_audio/:linkedId',
         '/journal/measure_linked/:linkedId',
         '/journal/measure/:selectedId',
       ];

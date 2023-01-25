@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Repeat tapping of mic overwrote old audio file
+- Pop audio recorder as expected
+
+Added:
+- Pause icon in audio recorder functionality
+
+## [0.8.251] - 2023-01-24
 ### Changed:
 - Remove unused theme config widget
 - Hide config flag: allow_invalid_cert

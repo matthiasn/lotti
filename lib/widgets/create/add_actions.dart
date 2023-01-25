@@ -166,7 +166,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           onPressed: () {
             rebuild();
             final linkedId = widget.linked?.meta.id;
-            beamToNamed('/journal/record_audio/$linkedId');
+            beamToNamed('/journal/$linkedId/record_audio/$linkedId');
           },
           child: const Icon(
             MdiIcons.microphone,
