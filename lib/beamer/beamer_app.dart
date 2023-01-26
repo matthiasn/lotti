@@ -124,6 +124,8 @@ class MyBeamerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ThemeData(
+      // TODO: remove deprecated usage
+      // ignore: deprecated_member_use
       backgroundColor: styleConfig().negspace,
       primarySwatch: Colors.grey,
       brightness: styleConfig().keyboardAppearance,
