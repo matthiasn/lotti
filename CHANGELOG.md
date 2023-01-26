@@ -6,12 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
-- Upgrade dependencies
+- Upgraded to Flutter 3.7
+- Upgraded dependencies
+
+## [0.8.256] - 2023-01-27
+### Changed:
+- Upgraded dependencies
 
 ### Fixed:
 - Keychain locking issue
 
-## [0.8.254] - 2023-01-27
+## [0.8.254] - 2023-01-25
 ### Changed:
 - Improved workout labels
 
