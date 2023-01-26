@@ -53,9 +53,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // charts display expected titles
-      expect(find.text('Running time'), findsOneWidget);
-      expect(find.text('Running calories'), findsOneWidget);
-      expect(find.text('Running distance/m'), findsOneWidget);
+      expect(find.text('Running (time)'), findsOneWidget);
+      expect(find.text('Running (calories)'), findsOneWidget);
+      expect(find.text('Running distance (m)'), findsOneWidget);
     });
   });
 }

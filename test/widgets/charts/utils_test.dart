@@ -87,7 +87,7 @@ void main() {
     test('formatDailyAggregate for other type', () {
       expect(
         formatDailyAggregate(
-          workoutTypes['walking.calories']!,
+          workoutTypes['walking.energy']!,
           Observation(DateTime(2022, 07, 17), 42.1),
         ),
         '42',

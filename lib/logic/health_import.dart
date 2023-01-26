@@ -305,11 +305,6 @@ List<HealthDataType> bodyMeasurementTypes = [
   HealthDataType.HEIGHT,
 ];
 
-List<HealthDataType> workoutTypes = [
-  HealthDataType.EXERCISE_TIME,
-  HealthDataType.WORKOUT,
-];
-
 List<HealthDataType> activityTypes = [
   HealthDataType.STEPS,
   HealthDataType.FLIGHTS_CLIMBED,

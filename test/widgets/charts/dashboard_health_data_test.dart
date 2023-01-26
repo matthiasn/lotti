@@ -140,21 +140,7 @@ void main() {
   );
 
   test(
-    'Workout data is transformed into daily sums',
-    () async {
-      final aggregated = aggregateByType(
-        entities,
-        'HealthDataType.WORKOUT',
-      );
-      expect(aggregated, [
-        Observation(DateTime(2022, 02, 23), 6),
-        Observation(DateTime(2022, 02, 24), 27),
-      ]);
-    },
-  );
-
-  test(
-    'Workout data is transformed into daily sums',
+    'Sleep data is transformed into daily sums',
     () async {
       final aggregated = aggregateByType(
         entities,
