@@ -35,7 +35,6 @@ const chipPaddingClosable = EdgeInsets.only(
 
 TextStyle inputStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeMedium,
     );
 
@@ -46,7 +45,6 @@ TextStyle newInputStyle() => TextStyle(
 
 TextStyle textStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontWeight: FontWeight.w400,
       fontSize: fontSizeMedium,
     );
@@ -62,13 +60,11 @@ TextStyle choiceChipTextStyle({required bool isSelected}) => TextStyle(
 
 TextStyle chartTooltipStyle() => const TextStyle(
       fontSize: fontSizeSmall,
-      fontFamily: mainFont,
       fontWeight: FontWeight.w300,
     );
 
 TextStyle chartTooltipStyleBold() => const TextStyle(
       fontSize: fontSizeSmall,
-      fontFamily: mainFont,
       fontWeight: FontWeight.bold,
     );
 
@@ -125,25 +121,21 @@ Brightness keyboardAppearance() {
 
 TextStyle formLabelStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeMedium,
     );
 
 TextStyle buttonLabelStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeMedium,
     );
 
 TextStyle settingsLabelStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeMedium,
     );
 
 TextStyle choiceLabelStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeMedium,
     );
 
@@ -151,7 +143,6 @@ TextStyle logDetailStyle() => monospaceTextStyle();
 
 TextStyle appBarTextStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
     );
@@ -165,14 +156,12 @@ TextStyle appBarTextStyleNew() => TextStyle(
 
 TextStyle appBarTextStyleNewLarge() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeLarge,
       fontWeight: FontWeight.w100,
     );
 
 TextStyle searchFieldStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeLarge,
       fontWeight: FontWeight.w100,
     );
@@ -184,39 +173,33 @@ TextStyle searchFieldHintStyle() => searchFieldStyle().copyWith(
 TextStyle settingsCardTextStyle() => TextStyle(
       //color: colorConfig().entryTextColor,
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeLarge,
     );
 
 TextStyle titleStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeLarge,
       fontWeight: FontWeight.w300,
     );
 
 TextStyle taskTitleStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeLarge,
     );
 
 TextStyle multiSelectStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontWeight: FontWeight.w100,
       fontSize: fontSizeLarge,
     );
 
 TextStyle chartTitleStyle() => TextStyle(
-      fontFamily: mainFont,
       fontSize: fontSizeMedium,
       color: styleConfig().primaryTextColor,
       fontWeight: FontWeight.w300,
     );
 
 TextStyle chartTitleStyleSmall() => TextStyle(
-      fontFamily: mainFont,
       fontSize: fontSizeSmall,
       color: styleConfig().primaryTextColor,
       fontWeight: FontWeight.w300,
@@ -226,14 +209,12 @@ const taskFormFieldStyle = TextStyle(color: Colors.black87);
 
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
-      fontFamily: mainFont,
       fontWeight: FontWeight.bold,
       color: styleConfig().alarm,
     );
 
 TextStyle cancelButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
-      fontFamily: mainFont,
       fontWeight: FontWeight.w100,
       color: styleConfig().primaryTextColor,
     );
@@ -251,20 +232,17 @@ const badgeStyle = TextStyle(
 );
 
 const bottomNavLabelStyle = TextStyle(
-  fontFamily: mainFont,
   fontWeight: FontWeight.w300,
 );
 
 TextStyle definitionCardTitleStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: fontSizeLarge,
       height: 1.2,
     );
 
 TextStyle definitionCardSubtitleStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontWeight: FontWeight.w200,
       fontSize: fontSizeMedium,
     );
@@ -292,13 +270,33 @@ DatePickerTheme datePickerTheme() => DatePickerTheme(
 
 const habitCompletionHeaderStyle = TextStyle(
   color: Colors.black,
-  fontFamily: mainFont,
   fontSize: 20,
 );
 
 TextStyle searchLabelStyle() => TextStyle(
       color: styleConfig().secondaryTextColor,
-      fontFamily: 'Oswald',
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w100,
+    );
+
+ThemeData appTheme() => ThemeData(
+      backgroundColor: styleConfig().negspace,
+      primarySwatch: Colors.grey,
+      fontFamily: mainFont,
+      brightness: styleConfig().keyboardAppearance,
+      scaffoldBackgroundColor: styleConfig().secondaryTextColor,
+      highlightColor: styleConfig().primaryColorLight,
+      appBarTheme: AppBarTheme(
+        iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
+      ),
+      tooltipTheme: TooltipThemeData(
+        textStyle: chartTitleStyleSmall().copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w400,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(5),
+        ),
+      ),
     );

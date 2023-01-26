@@ -51,7 +51,6 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
-
     });
     tearDown(getIt.reset);
 
@@ -103,7 +102,7 @@ void main() {
       expect(nameFieldFinder, findsOneWidget);
       expect(descriptionFieldFinder, findsOneWidget);
 
-      expect(find.text('Running calories'), findsOneWidget);
+      expect(find.text('Running (calories)'), findsOneWidget);
       expect(find.text('Resting Heart Rate'), findsOneWidget);
 
       // save button is invisible - no changes yet
@@ -188,7 +187,7 @@ void main() {
       expect(nameFieldFinder, findsOneWidget);
       expect(descriptionFieldFinder, findsOneWidget);
 
-      expect(find.text('Running calories'), findsOneWidget);
+      expect(find.text('Running (calories)'), findsOneWidget);
       expect(find.text('Resting Heart Rate'), findsOneWidget);
 
       // save button is invisible - no changes yet
@@ -276,7 +275,7 @@ void main() {
       expect(nameFieldFinder, findsOneWidget);
       expect(descriptionFieldFinder, findsOneWidget);
 
-      expect(find.text('Running calories'), findsOneWidget);
+      expect(find.text('Running (calories)'), findsOneWidget);
       expect(find.text('Resting Heart Rate'), findsOneWidget);
 
       // save button is invisible - no changes yet
@@ -363,7 +362,7 @@ void main() {
       expect(nameFieldFinder, findsOneWidget);
       expect(descriptionFieldFinder, findsOneWidget);
 
-      expect(find.text('Running calories'), findsOneWidget);
+      expect(find.text('Running (calories)'), findsOneWidget);
       expect(find.text('Resting Heart Rate'), findsOneWidget);
 
       // tapping copy copies to clipboard

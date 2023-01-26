@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Refactored:
+- FontFamily in theme
+
+## [0.8.254] - 2023-01-26
+### Changed:
+- Improved workout labels
+
+### Fixed:
+- Remove broken workout time health chart (workouts are a separate category now)
+
+## [0.8.253] - 2023-01-25
 ### Changed:
 - Upgrade dependencies - major versions
 

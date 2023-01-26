@@ -1,16 +1,11 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/themes/themes.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/consts.dart';
-
-import '../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -116,51 +111,6 @@ void main() {
         getTagColor(testTag.copyWith(private: true)),
         getIt<ThemesService>().current.privateTagColor,
       );
-    });
-
-    testWidgets('ColorThemeRefresh widget updates color', (tester) async {
-      const testText = 'testText';
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ColorThemeRefresh(
-            keyPrefix: '',
-            child: Text(
-              testText,
-              style: TextStyle(
-                color: styleConfig().primaryTextColor,
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text(testText),
-        findsOneWidget,
-      );
-
-      expect(
-        (tester.firstWidget(find.text(testText)) as Text).style?.color,
-        darkTheme.primaryTextColor,
-      );
-
-      final testColor = colorFromCssHex('#FF0000');
-      getIt<ThemesService>().setColor('negspace', testColor);
-
-      expect(
-        getIt<ThemesService>().current.negspace,
-        testColor,
-      );
-
-      await tester.pumpAndSettle();
-
-      // TODO: why not updating in test? works in app
-      // expect(
-      //   (tester.firstWidget(find.text(testText)) as Text).style?.color,
-      //   testColor,
-      //);
     });
   });
 }
