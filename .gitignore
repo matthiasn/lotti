@@ -75,3 +75,5 @@ junit.xml
 
 test_resources/test.aac.aes
 test_resources/test.png.aes
+
+.fvm
