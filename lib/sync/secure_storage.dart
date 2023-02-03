@@ -1,10 +1,22 @@
+import 'package:easy_debounce/easy_debounce.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStorage {
   final _storage = const FlutterSecureStorage();
+  final _state = <String, String>{};
 
   Future<String?>? readValue(String key) async {
-    return _storage.read(key: key);
+    final exists = _state[key] != null;
+
+    if (!exists) {
+      final fromSecureStorage = await _storage.read(key: key);
+      if (fromSecureStorage != null) {
+        _state[key] = fromSecureStorage;
+      }
+    }
+
+    return _state[key];
   }
 
   Future<String?>? read({required String key}) async {
@@ -12,11 +24,19 @@ class SecureStorage {
   }
 
   Future<void> writeValue(String key, String value) async {
-    const options = IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock,
+    debugPrint('writeValue $key $value');
+    _state[key] = value;
+    EasyDebounce.debounce(
+      'writeValue-$key',
+      const Duration(seconds: 1),
+      () async {
+        await _storage.write(
+          key: key,
+          value: _state[key],
+          iOptions: IOSOptions.defaultOptions,
+        );
+      },
     );
-    await _storage.write(key: key, value: value, iOptions: options);
-    await readValue(key);
   }
 
   Future<void> write({
@@ -24,7 +44,6 @@ class SecureStorage {
     required String value,
   }) async {
     await writeValue(key, value);
-    await readValue(key);
   }
 
   Future<void> delete({required String key}) async {

@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgrade dependencies
+
+### Fixed:
+- Keychain locking issue
+
+## [0.8.254] - 2023-01-27
+### Changed:
 - Improved workout labels
 
 ### Fixed:
