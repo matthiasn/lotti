@@ -6,15 +6,15 @@ LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 
 .PHONY: test
 test:
-	flutter test --coverage
+	fvm flutter test --coverage
 
 .PHONY: analyze
 analyze:
-	flutter analyze
+	fvm flutter analyze
 
 .PHONY: junit_test
 junit_test:
-	flutter test --coverage --reporter json > TEST-report.jsonl
+	fvm flutter test --coverage --reporter json > TEST-report.jsonl
 
 .PHONY: junit_upload
 junit_upload:
@@ -28,11 +28,11 @@ integration_test:
 
 .PHONY: clean
 clean:
-	flutter clean
+	fvm flutter clean
 
 .PHONY: deps
 deps:
-	flutter pub get
+	fvm flutter pub get
 
 .PHONY: enable_arb_tools
 enable_arb_tools:
@@ -44,13 +44,13 @@ sort_arb_files: enable_arb_tools
 
 .PHONY: l10n
 l10n: #sort_arb_files
-	flutter gen-l10n
+	fvm flutter gen-l10n
 	@echo "Missing translations:"
 	@cat missing_translations.txt
 
 .PHONY: doctor
 doctor:
-	flutter doctor
+	fvm flutter doctor
 
 .PHONY: coverage_report
 coverage_report:
@@ -63,15 +63,15 @@ coverage: test coverage_report
 
 .PHONY: check-null-safety
 check-null-safety:
-	flutter pub outdated --mode=null-safety
+	fvm flutter pub outdated --mode=null-safety
 
 .PHONY: build_runner
 build_runner: l10n
-	flutter pub run build_runner build --delete-conflicting-outputs
+	fvm flutter pub run build_runner build --delete-conflicting-outputs
 
 .PHONY: watch
 watch: l10n
-	flutter pub run build_runner watch --delete-conflicting-outputs
+	fvm flutter pub run build_runner watch --delete-conflicting-outputs
 
 .PHONY: migrate_db
 migrate_db:
@@ -84,13 +84,13 @@ migrate_db:
 
 .PHONY: bundle
 bundle:
-	flutter build bundle
+	fvm flutter build bundle
 
 #######################################
 
 .PHONY: ios_build_ipa
 ios_build_ipa:
-	flutter build ipa
+	fvm flutter build ipa
 
 .PHONY: ios_build
 ios_build: clean_test ios_build_ipa
@@ -132,7 +132,7 @@ ios: ios_build ios_fastlane_build ios_fastlane_upload
 
 .PHONY: macos_build_flutter
 macos_build_flutter:
-	flutter build macos
+	fvm flutter build macos
 
 .PHONY: macos_build
 macos_build: clean_test macos_build_flutter
@@ -193,18 +193,18 @@ macos_local: macos_build
 
 .PHONY: android_build
 android_build:
-	flutter build appbundle
+	fvm flutter build appbundle
 
 .PHONY: linux_build
 linux_build:
-	flutter build linux
+	fvm flutter build linux
 
 .PHONY: linux
 linux: clean_test linux_build
 
 .PHONY: windows
 windows: clean_test
-	flutter build windows
+	fvm flutter build windows
 
 .PHONY: tag_push
 tag_push:
@@ -216,19 +216,19 @@ all: ios macos
 
 .PHONY: find_unused
 find_unused:
-	flutter pub run dart_code_metrics:metrics check-unused-files lib
+	fvm flutter pub run dart_code_metrics:metrics check-unused-files lib
 
 .PHONY: sentry_symbols
 sentry_symbols:
-	flutter packages pub run sentry_dart_plugin
+	fvm flutter packages pub run sentry_dart_plugin
 
 .PHONY: splash
 splash:
-	flutter pub run flutter_native_splash:create
+	fvm flutter pub run flutter_native_splash:create
 
 .PHONY: icons
 icons:
-	flutter pub run flutter_launcher_icons:main
+	fvm flutter pub run flutter_launcher_icons:main
 
 .PHONY: viz
 viz:
