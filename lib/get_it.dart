@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:drift/isolate.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/common.dart';
@@ -9,7 +7,6 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -28,24 +25,15 @@ import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:path_provider/path_provider.dart';
 
 final getIt = GetIt.instance;
 
 Future<void> registerSingletons() async {
-  final docDir = await getApplicationDocumentsDirectory();
-
   getIt
-    ..registerSingleton<Directory>(docDir)
     ..registerSingleton<Future<DriftIsolate>>(
       createDriftIsolate(journalDbFileName),
       instanceName: journalDbFileName,
     )
-    ..registerSingleton<Future<DriftIsolate>>(
-      createDriftIsolate(settingsDbFileName),
-      instanceName: settingsDbFileName,
-    )
-    ..registerSingleton<SettingsDb>(getSettingsDb())
     ..registerSingleton<Fts5Db>(Fts5Db())
     ..registerSingleton<JournalDb>(getJournalDb())
     ..registerSingleton<ConnectivityService>(ConnectivityService())

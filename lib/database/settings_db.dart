@@ -22,12 +22,28 @@ class SettingsDb extends _$SettingsDb {
   @override
   int get schemaVersion => 1;
 
-  Future<int> saveSettingsItem(SettingsItem settingsItem) async {
+  Future<int> saveSettingsItem(String configKey, String value) async {
+    final settingsItem = SettingsItem(
+      configKey: configKey,
+      value: value,
+      updatedAt: DateTime.now(),
+    );
+
     return into(settings).insertOnConflictUpdate(settingsItem);
   }
 
   Stream<List<SettingsItem>> watchSettingsItemByKey(String configKey) {
     return settingsItemByKey(configKey).watch();
+  }
+
+  Future<String?> itemByKey(String configKey) async {
+    final existing = await watchSettingsItemByKey(configKey).first;
+
+    if (existing.isNotEmpty) {
+      return existing.first.value;
+    } else {
+      return null;
+    }
   }
 }
 
