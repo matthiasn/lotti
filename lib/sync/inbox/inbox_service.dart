@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
@@ -94,6 +95,10 @@ class InboxService {
       instanceName: journalDbFileName,
     );
 
+    final settingsDbIsolate = await getIt<Future<DriftIsolate>>(
+      instanceName: settingsDbFileName,
+    );
+
     final allowInvalidCert =
         await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
 
@@ -107,6 +112,7 @@ class InboxService {
           loggingDbConnectPort: loggingDbIsolate.connectPort,
           allowInvalidCert: allowInvalidCert,
           journalDbConnectPort: journalDbIsolate.connectPort,
+          settingsDbConnectPort: settingsDbIsolate.connectPort,
           hostHash: hostHash,
           docDir: getDocumentsDirectory(),
           lastReadUid: lastReadUid,

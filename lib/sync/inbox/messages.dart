@@ -12,6 +12,7 @@ class InboxIsolateMessage with _$InboxIsolateMessage {
     required SyncConfig syncConfig,
     required SendPort loggingDbConnectPort,
     required SendPort journalDbConnectPort,
+    required SendPort settingsDbConnectPort,
     required bool allowInvalidCert,
     required String? hostHash,
     required Directory docDir,
