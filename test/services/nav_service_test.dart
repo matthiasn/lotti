@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
@@ -12,6 +13,7 @@ void main() {
   group('NavService Tests', () {
     setUpAll(() {
       final secureStorageMock = MockSecureStorage();
+      final settingsDb = SettingsDb(inMemoryDatabase: true);
 
       when(() => secureStorageMock.readValue(lastRouteKey))
           .thenAnswer((_) async => '/settings');
@@ -21,6 +23,7 @@ void main() {
 
       getIt
         ..registerSingleton<SecureStorage>(secureStorageMock)
+        ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<NavService>(NavService());
     });
 
