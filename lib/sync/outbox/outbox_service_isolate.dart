@@ -8,6 +8,7 @@ import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/client_runner.dart';
@@ -37,8 +38,15 @@ Future<void> entryPoint(SendPort sendPort) async {
             ),
           );
 
+          final settingsDb = SettingsDb.connect(
+            getDbConnFromIsolate(
+              DriftIsolate.fromConnectPort(initMsg.settingsDbConnectPort),
+            ),
+          );
+
           getIt
             ..registerSingleton<Directory>(initMsg.docDir)
+            ..registerSingleton<SettingsDb>(settingsDb)
             ..registerSingleton<ImapClientManager>(ImapClientManager())
             ..registerSingleton<SyncDatabase>(syncDb)
             ..registerSingleton<LoggingDb>(loggingDb);

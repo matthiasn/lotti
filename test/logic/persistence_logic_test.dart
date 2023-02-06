@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -58,6 +59,7 @@ void main() {
     setUpAll(() async {
       setFakeDocumentsPath();
 
+      final settingsDb = SettingsDb(inMemoryDatabase: true);
       final journalDb = JournalDb(inMemoryDatabase: true);
       await initConfigFlags(journalDb);
 
@@ -91,6 +93,7 @@ void main() {
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<Fts5Db>(mockFts5Db)
         ..registerSingleton<FgBgService>(mockFgBgService)

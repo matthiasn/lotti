@@ -12,6 +12,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
@@ -60,9 +61,15 @@ class OutboxService {
     final syncDbIsolate = await getIt<Future<DriftIsolate>>(
       instanceName: syncDbFileName,
     );
+
     final loggingDbIsolate = await getIt<Future<DriftIsolate>>(
       instanceName: loggingDbFileName,
     );
+
+    final settingsDbIsolate = await getIt<Future<DriftIsolate>>(
+      instanceName: settingsDbFileName,
+    );
+
     final allowInvalidCert =
         await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
 
@@ -72,6 +79,7 @@ class OutboxService {
           syncConfig: syncConfig,
           syncDbConnectPort: syncDbIsolate.connectPort,
           loggingDbConnectPort: loggingDbIsolate.connectPort,
+          settingsDbConnectPort: settingsDbIsolate.connectPort,
           allowInvalidCert: allowInvalidCert,
           docDir: getDocumentsDirectory(),
         ),

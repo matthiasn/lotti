@@ -12,6 +12,7 @@ class OutboxIsolateMessage with _$OutboxIsolateMessage {
     required SyncConfig syncConfig,
     required SendPort syncDbConnectPort,
     required SendPort loggingDbConnectPort,
+    required SendPort settingsDbConnectPort,
     required bool allowInvalidCert,
     required Directory docDir,
   }) = OutboxIsolateInitMessage;

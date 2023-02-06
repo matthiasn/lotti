@@ -94,6 +94,11 @@ class _MaintenancePageState extends State<MaintenancePage> {
                     ),
                     const SettingsDivider(),
                     SettingsCard(
+                      title: localizations.maintenanceResetHostId,
+                      onTap: () => getIt<SyncConfigService>().resetHostId(),
+                    ),
+                    const SettingsDivider(),
+                    SettingsCard(
                       title: localizations.maintenanceCancelNotifications,
                       onTap: () => getIt<NotificationService>().cancelAll(),
                     ),

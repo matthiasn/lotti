@@ -99,9 +99,13 @@ class SyncConfigService {
     return imapConfig;
   }
 
+  Future<void> resetHostId() async {
+    await getIt<VectorClockService>().setNewHost();
+  }
+
   Future<void> resetOffset() async {
     await getIt<SecureStorage>().delete(key: lastReadUidKey);
     await setLastReadUid(0);
-    await getIt<VectorClockService>().setNewHost();
+    await resetHostId();
   }
 }
