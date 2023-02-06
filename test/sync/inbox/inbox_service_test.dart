@@ -6,6 +6,7 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
@@ -64,6 +65,11 @@ void main() {
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<Future<DriftIsolate>>(
+          createDriftIsolate(settingsDbFileName, inMemory: true),
+          instanceName: settingsDbFileName,
+        )
+        ..registerSingleton<SettingsDb>(getSettingsDb())
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<SyncConfigService>(syncConfigMock)
         ..registerSingleton<ConnectivityService>(mockConnectivityService)

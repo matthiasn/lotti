@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:drift/isolate.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/common.dart';
@@ -27,15 +25,11 @@ import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:path_provider/path_provider.dart';
 
 final getIt = GetIt.instance;
 
 Future<void> registerSingletons() async {
-  final docDir = await getApplicationDocumentsDirectory();
-
   getIt
-    ..registerSingleton<Directory>(docDir)
     ..registerSingleton<Future<DriftIsolate>>(
       createDriftIsolate(journalDbFileName),
       instanceName: journalDbFileName,

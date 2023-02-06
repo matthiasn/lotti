@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Locking issue in sync
+
+### Added:
+- Settings DB
+
+### Changed:
+- Window manager persistence moved to settings database
+- Routing persistence moved to settings database
+- Last read UID persistence moved to settings database
+
+## [0.8.255] - 2023-02-02
 ### Changed:
 - Upgrade dependencies
 

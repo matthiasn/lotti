@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';
@@ -27,11 +28,12 @@ void main() {
       final mockTagsService = mockTagsServiceWithTags([]);
       final mockJournalDb = mockJournalDbWithMeasurableTypes([]);
       final mockPersistenceLogic = MockPersistenceLogic();
-
+      final settingsDb = SettingsDb(inMemoryDatabase: true);
       final secureStorageMock = MockSecureStorage();
 
       getIt
         ..registerSingleton<SecureStorage>(secureStorageMock)
+        ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<NavService>(NavService())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb)
