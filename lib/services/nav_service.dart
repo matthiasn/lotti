@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:beamer/beamer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/sync/secure_storage.dart';
 
-const String lastRouteKey = 'LAST_ROUTE_KEY';
+const String lastRouteKey = 'NAV_LAST_ROUTE';
 
 class NavService {
   NavService() {
@@ -105,7 +105,7 @@ class NavService {
 }
 
 Future<String?> getSavedRoute() async {
-  return await getIt<SecureStorage>().readValue(lastRouteKey);
+  return getIt<SettingsDb>().itemByKey(lastRouteKey);
 }
 
 Future<String?> getIdFromSavedRoute() async {
@@ -117,8 +117,8 @@ Future<String?> getIdFromSavedRoute() async {
   return regExp.firstMatch('$route')?.group(0);
 }
 
-void persistNamedRoute(String route) {
-  getIt<SecureStorage>().writeValue(lastRouteKey, route);
+Future<void> persistNamedRoute(String route) async {
+  await getIt<SettingsDb>().saveSettingsItem(lastRouteKey, route);
   getIt<NavService>().currentPath = route;
 }
 
