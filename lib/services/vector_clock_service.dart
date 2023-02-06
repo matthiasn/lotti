@@ -27,14 +27,7 @@ class VectorClockService {
   Future<String> setNewHost() async {
     final host = uuid.v4();
 
-    await getIt<SettingsDb>().saveSettingsItem(
-      SettingsItem(
-        configKey: hostKey,
-        value: host,
-        updatedAt: DateTime.now(),
-      ),
-    );
-
+    await getIt<SettingsDb>().saveSettingsItem(hostKey, host);
     await setNextAvailableCounter(0);
 
     _host = host;
@@ -42,14 +35,7 @@ class VectorClockService {
   }
 
   Future<String?> _getHost() async {
-    final existing =
-        await getIt<SettingsDb>().watchSettingsItemByKey(hostKey).first;
-
-    if (existing.isNotEmpty) {
-      return existing.first.value;
-    }
-
-    return null;
+    return getIt<SettingsDb>().itemByKey(hostKey);
   }
 
   Future<String?> getHost() async {
@@ -60,11 +46,8 @@ class VectorClockService {
     _nextAvailableCounter = nextAvailableCounter;
 
     await getIt<SettingsDb>().saveSettingsItem(
-      SettingsItem(
-        configKey: nextAvailableCounterKey,
-        value: nextAvailableCounter.toString(),
-        updatedAt: DateTime.now(),
-      ),
+      nextAvailableCounterKey,
+      nextAvailableCounter.toString(),
     );
   }
 

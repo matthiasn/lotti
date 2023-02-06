@@ -1,13 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:drift/isolate.dart';
 import 'package:flutter/material.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/database/common.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
@@ -18,9 +22,16 @@ Future<void> main() async {
     await windowManager.ensureInitialized();
     await hotKeyManager.unregisterAll();
   }
+  final docDir = await getApplicationDocumentsDirectory();
 
   getIt
     ..registerSingleton<SecureStorage>(SecureStorage())
+    ..registerSingleton<Directory>(docDir)
+    ..registerSingleton<Future<DriftIsolate>>(
+      createDriftIsolate(settingsDbFileName),
+      instanceName: settingsDbFileName,
+    )
+    ..registerSingleton<SettingsDb>(getSettingsDb())
     ..registerSingleton<WindowService>(WindowService());
 
   await getIt<WindowService>().restore();
