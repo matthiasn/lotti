@@ -5,6 +5,7 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -32,6 +33,7 @@ void main() {
 
     setUpAll(() {
       final secureStorageMock = MockSecureStorage();
+      final settingsDb = SettingsDb(inMemoryDatabase: true);
       final mockConnectivityService = MockConnectivityService();
       final mockFgBgService = MockFgBgService();
       final mockTimeService = MockTimeService();
@@ -63,6 +65,7 @@ void main() {
 
       getIt
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
+        ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<FgBgService>(mockFgBgService)
         ..registerSingleton<SyncConfigService>(syncConfigMock)
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))

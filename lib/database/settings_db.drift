@@ -1,0 +1,11 @@
+CREATE TABLE settings (
+  config_key TEXT NOT NULL UNIQUE,
+  value TEXT NOT NULL,
+  updated_at DATETIME NOT NULL,
+  PRIMARY KEY (config_key)
+) as SettingsItem;
+
+/* Queries ----------------------------------------------------- */
+settingsItemByKey:
+SELECT * FROM settings
+  WHERE config_key = :config_key;

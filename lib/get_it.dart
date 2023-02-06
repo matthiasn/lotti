@@ -9,6 +9,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -40,6 +41,11 @@ Future<void> registerSingletons() async {
       createDriftIsolate(journalDbFileName),
       instanceName: journalDbFileName,
     )
+    ..registerSingleton<Future<DriftIsolate>>(
+      createDriftIsolate(settingsDbFileName),
+      instanceName: settingsDbFileName,
+    )
+    ..registerSingleton<SettingsDb>(getSettingsDb())
     ..registerSingleton<Fts5Db>(Fts5Db())
     ..registerSingleton<JournalDb>(getJournalDb())
     ..registerSingleton<ConnectivityService>(ConnectivityService())
