@@ -33,7 +33,7 @@ class JournalCardTitle extends StatelessWidget {
   });
 
   final JournalEntity item;
-  final double? maxHeight;
+  final double maxHeight;
   final bool showLinkedDuration;
 
   @override
@@ -171,7 +171,7 @@ class JournalCard extends StatelessWidget {
   });
 
   final JournalEntity item;
-  final double? maxHeight;
+  final double maxHeight;
   final bool showLinkedDuration;
 
   @override
