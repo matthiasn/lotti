@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Use Flutter 3.7.1
+
+## [0.8.258] - 2023-02-07
+### Changed:
 - Replace read-only flutter_quill with flutter_markdown for better scroll performance
 
 ### Fixed:
