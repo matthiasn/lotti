@@ -85,7 +85,12 @@ class InboxServiceIsolate {
   }
 
   void restartRunner() {
-    debugPrint('INBOX ISOLATE restart');
+    _loggingDb.captureEvent(
+      'restartRunner()',
+      domain: 'INBOX_ISOLATE',
+      subDomain: 'Runner',
+    );
+
     _timer.cancel();
     _clientRunner.close();
     _startRunner();
