@@ -82,8 +82,8 @@ class HealthImport {
     }
 
     final stepsByDay = <DateTime, num>{};
-    final flightsByDay = <DateTime, num>{};
-    final distanceByDay = <DateTime, num>{};
+    // final flightsByDay = <DateTime, num>{};
+    // final distanceByDay = <DateTime, num>{};
     final range = dateTo.difference(dateFrom);
 
     final days = List<DateTime>.generate(range.inDays + 1, (days) {
@@ -110,21 +110,18 @@ class HealthImport {
         final steps =
             await _healthFactory.getTotalStepsInInterval(dateFrom, dateTo);
 
-        final flightsClimbed = await _healthFactory
-            .getTotalFlightsClimbedInInterval(dateFrom, dateTo);
+        // final flightsClimbed = await _healthFactory.getTotalFlightsClimbedInInterval(dateFrom, dateTo);
+        // final distance = await _healthFactory.getTotalDistanceInInterval(dateFrom, dateTo);
 
-        final distance =
-            await _healthFactory.getTotalDistanceInInterval(dateFrom, dateTo);
-
-        flightsByDay[dateFrom] = flightsClimbed ?? 0;
+        // flightsByDay[dateFrom] = flightsClimbed ?? 0;
         stepsByDay[dateFrom] = steps ?? 0;
-        distanceByDay[dateFrom] = distance ?? 0;
+        // distanceByDay[dateFrom] = distance ?? 0;
       }
     }
 
     await addEntries(stepsByDay, 'cumulative_step_count', 'count');
-    await addEntries(flightsByDay, 'cumulative_flights_climbed', 'count');
-    await addEntries(distanceByDay, 'cumulative_distance', 'meters');
+    // await addEntries(flightsByDay, 'cumulative_flights_climbed', 'count');
+    // await addEntries(distanceByDay, 'cumulative_distance', 'meters');
   }
 
   Future<bool> authorizeHealth(List<HealthDataType> types) async {
@@ -154,34 +151,38 @@ class HealthImport {
 
         for (final dataPoint in dataPoints.reversed) {
           final dataType = dataPoint.type.toString();
-          final discreteQuantity = DiscreteQuantityData(
-            dateFrom: dataPoint.dateFrom,
-            dateTo: dataPoint.dateTo,
-            value: dataPoint.value,
-            dataType: dataType,
-            unit: dataPoint.unit.toString(),
-            deviceType: deviceType,
-            platformType: platform,
-            sourceId: dataPoint.sourceId,
-            sourceName: dataPoint.sourceName,
-            deviceId: dataPoint.deviceId,
-          );
-          await persistenceLogic.createQuantitativeEntry(discreteQuantity);
 
-          // Also save more specific sleep types as generic time asleep
-          // for comparability with data from prior to iOS 16 in combination
-          // with watchOS 9
-          if ({
-            'HealthDataType.SLEEP_ASLEEP_CORE',
-            'HealthDataType.SLEEP_ASLEEP_DEEP',
-            'HealthDataType.SLEEP_ASLEEP_REM',
-            'HealthDataType.SLEEP_ASLEEP_UNSPECIFIED',
-          }.contains(dataType)) {
-            await persistenceLogic.createQuantitativeEntry(
-              discreteQuantity.copyWith(
-                dataType: 'HealthDataType.SLEEP_ASLEEP',
-              ),
+          if (dataPoint.value is NumericHealthValue) {
+            final value = dataPoint.value as NumericHealthValue;
+            final discreteQuantity = DiscreteQuantityData(
+              dateFrom: dataPoint.dateFrom,
+              dateTo: dataPoint.dateTo,
+              value: value.numericValue,
+              dataType: dataType,
+              unit: dataPoint.unit.toString(),
+              deviceType: deviceType,
+              platformType: platform,
+              sourceId: dataPoint.sourceId,
+              sourceName: dataPoint.sourceName,
+              deviceId: dataPoint.deviceId,
             );
+            await persistenceLogic.createQuantitativeEntry(discreteQuantity);
+
+            // Also save more specific sleep types as generic time asleep
+            // for comparability with data from prior to iOS 16 in combination
+            // with watchOS 9
+            if ({
+              'HealthDataType.SLEEP_ASLEEP_CORE',
+              'HealthDataType.SLEEP_ASLEEP_DEEP',
+              'HealthDataType.SLEEP_ASLEEP_REM',
+              'HealthDataType.SLEEP_ASLEEP_UNSPECIFIED',
+            }.contains(dataType)) {
+              await persistenceLogic.createQuantitativeEntry(
+                discreteQuantity.copyWith(
+                  dataType: 'HealthDataType.SLEEP_ASLEEP',
+                ),
+              );
+            }
           }
         }
       } catch (e) {
@@ -280,10 +281,11 @@ class HealthImport {
 List<HealthDataType> sleepTypes = [
   HealthDataType.SLEEP_IN_BED,
   HealthDataType.SLEEP_ASLEEP,
-  HealthDataType.SLEEP_ASLEEP_CORE,
-  HealthDataType.SLEEP_ASLEEP_DEEP,
-  HealthDataType.SLEEP_ASLEEP_REM,
-  HealthDataType.SLEEP_ASLEEP_UNSPECIFIED,
+  // TODO: bring back
+  // HealthDataType.SLEEP_ASLEEP_CORE,
+  // HealthDataType.SLEEP_ASLEEP_DEEP,
+  // HealthDataType.SLEEP_ASLEEP_REM,
+  // HealthDataType.SLEEP_ASLEEP_UNSPECIFIED,
   HealthDataType.SLEEP_AWAKE,
 ];
 
