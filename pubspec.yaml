@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.259+1766
+version: 0.8.259+1767
 
 msix_config:
   display_name: Lotti
@@ -43,7 +43,7 @@ dependencies:
       url: https://github.com/matthiasn/delta_markdown.git
       ref: be47a76
 
-  device_info_plus: ^4.0.0
+  device_info_plus: ^8.0.0
   drift: ^2.2.0
   easy_debounce: ^2.0.2+1
   encrypt: ^5.0.1
@@ -166,7 +166,7 @@ dependencies:
 dependency_overrides:
   analyzer: ^5.1.0
   collection: ^1.17.0
-  device_info_plus: 4.0.3
+  device_info_plus: 8.0.0
   rxdart: ^0.27.1
   sprintf: ^7.0.0
   xml: ^6.1.0
