@@ -11,7 +11,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/stream_helpers.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -220,7 +222,13 @@ class JournalDb extends _$JournalDb {
         if (existingConflict != null) {
           await resolveConflict(existingConflict);
         }
-      } else {}
+      } else {
+        getIt<LoggingDb>().captureEvent(
+          EnumToString.convertToString(status),
+          domain: 'JOURNAL_DB',
+          subDomain: 'Conflict status',
+        );
+      }
     } else {
       rowsAffected = await upsertJournalDbEntity(dbEntity);
     }
