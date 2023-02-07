@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/themes/theme.dart';
 
 class TextViewerWidget extends StatelessWidget {
   const TextViewerWidget({
@@ -19,6 +20,17 @@ class TextViewerWidget extends StatelessWidget {
       child: Markdown(
         data: entryText?.markdown ?? '',
         shrinkWrap: true,
+        styleSheet: MarkdownStyleSheet.fromCupertinoTheme(
+          CupertinoThemeData(
+            textTheme: CupertinoTextThemeData(
+              textStyle: TextStyle(
+                color: styleConfig().primaryTextColor,
+                fontSize: fontSizeMedium,
+                fontFamily: mainFont,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

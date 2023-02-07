@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Replace read-only flutter_quill with flutter_markdown for better scroll performance
 
+### Fixed:
+- Journal card text color when using bright theme
+
 ## [0.8.257] - 2023-02-06
 ### Fixed:
 - Locking issue in sync
