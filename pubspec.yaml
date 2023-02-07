@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.258+1765
+version: 0.8.259+1766
 
 msix_config:
   display_name: Lotti
@@ -79,7 +79,7 @@ dependencies:
   flutter_map: ^3.1.0
   flutter_markdown: ^0.6.9+1
   flutter_native_timezone: ^2.0.0
-  flutter_quill: ^6.1.5
+  flutter_quill: ^6.3.2
   flutter_secure_storage: ^7.0.1
   flutter_sliding_tutorial: ^2.0.0
   flutter_svg: ^1.0.3
@@ -110,7 +110,12 @@ dependencies:
   lottie: ^2.2.0
   material_design_icons_flutter: ^6.0.7096
   material_floating_search_bar: ^0.3.6
-  modal_bottom_sheet: ^2.1.2
+  # TODO: use from pub_dev once merged
+  # modal_bottom_sheet: ^2.1.2
+  modal_bottom_sheet:
+    git:
+      url: https://github.com/danReynolds/modal_bottom_sheet.git
+      path: modal_bottom_sheet
   multi_select_flutter: ^4.0.0
   package_info_plus: ^3.0.1
   path: ^1.8.1
@@ -163,6 +168,7 @@ dependency_overrides:
   collection: ^1.17.0
   device_info_plus: 4.0.3
   rxdart: ^0.27.1
+  sprintf: ^7.0.0
   xml: ^6.1.0
 
 dev_dependencies:

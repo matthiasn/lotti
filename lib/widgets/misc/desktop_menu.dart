@@ -33,7 +33,7 @@ class DesktopMenuWrapper extends StatelessWidget {
           final localizations = AppLocalizations.of(context)!;
 
           return PlatformMenuBar(
-            menus: <MenuItem>[
+            menus: [
               const PlatformMenu(
                 label: 'Lotti',
                 menus: [

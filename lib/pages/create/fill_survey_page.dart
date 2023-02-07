@@ -46,20 +46,28 @@ class SurveyWidget extends StatelessWidget {
               displayColor: styleConfig().primaryTextColor,
             )
             .copyWith(
+              // TODO: remove deprecated usage
+              // ignore: deprecated_member_use
               headline3: TextStyle(
                 fontSize: 24,
                 color: styleConfig().primaryTextColor,
               ),
+              // TODO: remove deprecated usage
+              // ignore: deprecated_member_use
               headline5: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w200,
                 color: styleConfig().primaryTextColor,
               ),
+              // TODO: remove deprecated usage
+              // ignore: deprecated_member_use
               headline6: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w400,
                 color: styleConfig().secondaryTextColor,
               ),
+              // TODO: remove deprecated usage
+              // ignore: deprecated_member_use
               caption: TextStyle(
                 color: styleConfig().secondaryTextColor,
               ),
