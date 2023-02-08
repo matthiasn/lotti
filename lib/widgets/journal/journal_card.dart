@@ -26,9 +26,9 @@ const double iconSize = 18;
 
 class JournalCardTitle extends StatelessWidget {
   const JournalCardTitle({
-    super.key,
     required this.item,
     required this.maxHeight,
+    super.key,
     this.showLinkedDuration = false,
   });
 
@@ -164,8 +164,8 @@ class JournalCardTitle extends StatelessWidget {
 
 class JournalCard extends StatelessWidget {
   const JournalCard({
-    super.key,
     required this.item,
+    super.key,
     this.maxHeight = 120,
     this.showLinkedDuration = true,
   });
@@ -256,8 +256,8 @@ class LeadingIcon extends StatelessWidget {
 
 class JournalImageCard extends StatelessWidget {
   const JournalImageCard({
-    super.key,
     required this.item,
+    super.key,
   });
 
   final JournalImage item;

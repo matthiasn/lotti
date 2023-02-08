@@ -43,7 +43,7 @@ void main() {
           routes: {
             '/': (context, state, data) => Container(),
           },
-        ),
+        ).call,
       );
 
       Future<HabitCompletionEntry?> mockCompleteHabitEntry() {

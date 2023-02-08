@@ -9,8 +9,8 @@ import 'package:lotti/widgets/journal/entry_details_widget.dart';
 
 class LinkedEntriesWidget extends StatelessWidget {
   const LinkedEntriesWidget({
-    super.key,
     required this.item,
+    super.key,
   });
 
   final JournalEntity item;

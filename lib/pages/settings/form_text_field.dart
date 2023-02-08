@@ -5,10 +5,10 @@ import 'package:lotti/themes/theme.dart';
 
 class FormTextField extends StatelessWidget {
   const FormTextField({
-    super.key,
     required this.initialValue,
     required this.name,
     required this.labelText,
+    super.key,
     this.fieldRequired = true,
   });
 

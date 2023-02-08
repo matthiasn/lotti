@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgraded very_good_analysis lib
+
+## [0.8.259] - 2023-02-08
+### Changed:
 - Use Flutter 3.7.1
 - Latest health lib (breaks flights of stairs and sleep types)
 

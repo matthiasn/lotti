@@ -76,9 +76,9 @@ class _FlagsPageState extends State<FlagsPage> {
 
 class ConfigFlagCard extends StatelessWidget {
   ConfigFlagCard({
-    super.key,
     required this.item,
     required this.index,
+    super.key,
   });
 
   final JournalDb _db = getIt<JournalDb>();

@@ -24,8 +24,8 @@ import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class DashboardDefinitionPage extends StatefulWidget {
   const DashboardDefinitionPage({
-    super.key,
     required this.dashboard,
+    super.key,
     this.formKey,
   });
 
@@ -597,8 +597,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
 
 class EditDashboardPage extends StatelessWidget {
   EditDashboardPage({
-    super.key,
     required this.dashboardId,
+    super.key,
   });
 
   final JournalDb _db = getIt<JournalDb>();

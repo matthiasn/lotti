@@ -13,8 +13,8 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class DurationWidget extends StatelessWidget {
   DurationWidget({
-    super.key,
     required this.item,
+    super.key,
     this.style,
   });
 
@@ -109,8 +109,8 @@ class DurationWidget extends StatelessWidget {
 
 class DurationViewWidget extends StatelessWidget {
   DurationViewWidget({
-    super.key,
     required this.item,
+    super.key,
   });
 
   final TimeService _timeService = getIt<TimeService>();
@@ -150,9 +150,9 @@ class DurationViewWidget extends StatelessWidget {
 
 class FormattedTime extends StatelessWidget {
   const FormattedTime({
-    super.key,
     required this.labelColor,
     required this.displayed,
+    super.key,
   });
 
   final Color? labelColor;

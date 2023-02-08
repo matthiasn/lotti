@@ -10,12 +10,12 @@ const double iconSize = 24;
 
 class DefinitionsListPage<T> extends StatefulWidget {
   const DefinitionsListPage({
-    super.key,
     required this.stream,
     required this.title,
     required this.getName,
     required this.definitionCard,
     required this.floatingActionButton,
+    super.key,
   });
 
   final Stream<List<T>> stream;
@@ -97,8 +97,8 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
 
 class FloatingAddIcon extends StatelessWidget {
   const FloatingAddIcon({
-    super.key,
     required this.createFn,
+    super.key,
   });
 
   final void Function() createFn;

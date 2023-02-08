@@ -75,9 +75,9 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
 // from https://github.com/bluefireteam/photo_view/blob/master/example/lib/screens/examples/hero_example.dart
 class HeroPhotoViewRouteWrapper extends StatelessWidget {
   const HeroPhotoViewRouteWrapper({
-    super.key,
     required this.focusNode,
     required this.imageProvider,
+    super.key,
     this.backgroundDecoration,
     this.minScale,
     this.maxScale,

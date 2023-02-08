@@ -13,9 +13,9 @@ enum CupertinoDateTimePickerInputType { date, time, both }
 
 class FormBuilderCupertinoDateTimePicker extends FormBuilderField<DateTime> {
   FormBuilderCupertinoDateTimePicker({
-    super.key,
     //From Super
     required super.name,
+    super.key,
     super.validator,
     super.initialValue,
     super.decoration,

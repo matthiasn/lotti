@@ -18,9 +18,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 class HabitDialog extends StatefulWidget {
   const HabitDialog({
-    super.key,
     required this.habitId,
     required this.beamerDelegate,
+    super.key,
     this.data,
   });
 

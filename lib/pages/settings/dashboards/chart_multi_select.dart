@@ -4,12 +4,12 @@ import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class ChartMultiSelect<T> extends StatelessWidget {
   const ChartMultiSelect({
-    super.key,
     required this.multiSelectItems,
     required this.onConfirm,
     required this.title,
     required this.buttonText,
     required this.iconData,
+    super.key,
   });
 
   final List<MultiSelectItem<T?>> multiSelectItems;

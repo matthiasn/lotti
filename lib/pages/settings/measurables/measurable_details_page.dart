@@ -15,8 +15,8 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class MeasurableDetailsPage extends StatefulWidget {
   const MeasurableDetailsPage({
-    super.key,
     required this.dataType,
+    super.key,
   });
 
   final MeasurableDataType dataType;
@@ -221,8 +221,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
 
 class EditMeasurablePage extends StatelessWidget {
   EditMeasurablePage({
-    super.key,
     required this.measurableId,
+    super.key,
   });
 
   final JournalDb _db = getIt<JournalDb>();

@@ -67,8 +67,8 @@ class _ImapConfigFormState extends State<ImapConfigForm> {
 
 class ConfigForm extends StatelessWidget {
   const ConfigForm({
-    super.key,
     required GlobalKey<FormBuilderState> formKey,
+    super.key,
     this.imapConfig,
   }) : _formKey = formKey;
 

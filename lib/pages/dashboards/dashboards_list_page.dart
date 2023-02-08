@@ -87,9 +87,9 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
 
 class DashboardCard extends StatelessWidget {
   const DashboardCard({
-    super.key,
     required this.dashboard,
     required this.index,
+    super.key,
   });
 
   final DashboardDefinition dashboard;

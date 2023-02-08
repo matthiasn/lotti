@@ -20,12 +20,12 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardMeasurablesLineChart extends StatelessWidget {
   const DashboardMeasurablesLineChart({
-    super.key,
     required this.measurableDataTypeId,
     required this.dashboardId,
     required this.rangeStart,
     required this.rangeEnd,
     this.enableCreate = false,
+    super.key,
   });
 
   final String measurableDataTypeId;

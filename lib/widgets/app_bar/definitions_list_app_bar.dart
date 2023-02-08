@@ -5,12 +5,12 @@ import 'package:lotti/widgets/search/search_widget.dart';
 
 class DefinitionsListAppBar extends StatelessWidget with PreferredSizeWidget {
   const DefinitionsListAppBar({
-    super.key,
     required this.title,
     required this.match,
+    required this.onQueryChanged,
+    super.key,
     this.showBackButton = true,
     this.actions,
-    required this.onQueryChanged,
   });
 
   final String title;

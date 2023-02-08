@@ -8,8 +8,8 @@ import 'package:lotti/themes/utils.dart';
 
 class TagsViewWidget extends StatelessWidget {
   TagsViewWidget({
-    super.key,
     required this.item,
+    super.key,
   });
 
   final TagsService tagsService = getIt<TagsService>();

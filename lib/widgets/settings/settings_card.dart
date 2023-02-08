@@ -4,9 +4,9 @@ import 'package:lotti/themes/theme.dart';
 
 class SettingsCard extends StatelessWidget {
   const SettingsCard({
-    super.key,
     required this.onTap,
     required this.title,
+    super.key,
     this.subtitle,
     this.leading,
     this.trailing,
@@ -55,9 +55,9 @@ class SettingsCard extends StatelessWidget {
 
 class SettingsNavCard extends StatelessWidget {
   const SettingsNavCard({
-    super.key,
     required this.path,
     required this.title,
+    super.key,
     this.subtitle,
     this.leading,
     this.trailing,

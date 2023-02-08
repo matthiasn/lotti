@@ -15,10 +15,10 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardSurveyChart extends StatelessWidget {
   DashboardSurveyChart({
-    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    super.key,
   });
 
   final DashboardSurveyItem chartConfig;

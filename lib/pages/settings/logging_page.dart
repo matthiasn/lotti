@@ -60,9 +60,9 @@ class _LoggingPageState extends State<LoggingPage> {
 
 class LogLineCard extends StatelessWidget {
   const LogLineCard({
-    super.key,
     required this.logEntry,
     required this.index,
+    super.key,
   });
 
   final LogEntry logEntry;
@@ -93,8 +93,8 @@ class LogLineCard extends StatelessWidget {
 
 class LogDetailPage extends StatelessWidget {
   LogDetailPage({
-    super.key,
     required this.logEntryId,
+    super.key,
   });
 
   final LoggingDb _db = getIt<LoggingDb>();

@@ -87,7 +87,7 @@ void main() {
           routes: {
             '/': (context, state, data) => Container(),
           },
-        ),
+        ).call,
       );
 
       await tester.pumpWidget(

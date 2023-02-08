@@ -89,12 +89,12 @@ class EntryDetailHeader extends StatelessWidget {
 
 class SwitchIconWidget extends StatelessWidget {
   const SwitchIconWidget({
-    super.key,
     required this.tooltip,
     required this.onPressed,
     required this.value,
     required this.icon,
     required this.activeIcon,
+    super.key,
   });
 
   final String tooltip;

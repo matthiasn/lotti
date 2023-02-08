@@ -12,10 +12,10 @@ const actionIconSize = 32.0;
 
 class RadialAddActionButtons extends StatefulWidget {
   const RadialAddActionButtons({
+    required this.radius,
     super.key,
     this.navigatorKey,
     this.linked,
-    required this.radius,
     this.isMacOS = false,
     this.isIOS = false,
     this.isAndroid = false,

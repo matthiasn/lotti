@@ -35,8 +35,8 @@ class MobileSyncConfig extends StatelessWidget {
 
 class ImapConfigInfo extends StatelessWidget {
   const ImapConfigInfo({
-    super.key,
     required this.imapConfig,
+    super.key,
   });
 
   final ImapConfig imapConfig;

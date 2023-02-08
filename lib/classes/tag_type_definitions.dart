@@ -20,12 +20,12 @@ class TagEntity with _$TagEntity {
   factory TagEntity.personTag({
     required String id,
     required String tag,
-    String? firstName,
-    String? lastName,
     required bool private,
     required DateTime createdAt,
     required DateTime updatedAt,
     required VectorClock? vectorClock,
+    String? firstName,
+    String? lastName,
     DateTime? deletedAt,
     bool? inactive,
   }) = PersonTag;
@@ -33,12 +33,12 @@ class TagEntity with _$TagEntity {
   factory TagEntity.storyTag({
     required String id,
     required String tag,
-    String? description,
-    String? longTitle,
     required bool private,
     required DateTime createdAt,
     required DateTime updatedAt,
     required VectorClock? vectorClock,
+    String? description,
+    String? longTitle,
     DateTime? deletedAt,
     bool? inactive,
   }) = StoryTag;

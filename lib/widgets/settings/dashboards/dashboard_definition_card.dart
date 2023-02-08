@@ -6,9 +6,9 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class DashboardDefinitionCard extends StatelessWidget {
   const DashboardDefinitionCard({
-    super.key,
     required this.dashboard,
     required this.index,
+    super.key,
   });
 
   final DashboardDefinition dashboard;

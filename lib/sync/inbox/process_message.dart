@@ -91,9 +91,9 @@ Future<void> processMessage(SyncConfig? syncConfig, MimeMessage message) async {
 
 Future<void> fetchByUid({
   required int uid,
+  required Future<void> Function(int) setLastReadUid,
   ImapClient? imapClient,
   SyncConfig? syncConfig,
-  required Future<void> Function(int) setLastReadUid,
 }) async {
   final loggingDb = getIt<LoggingDb>();
 
