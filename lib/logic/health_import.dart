@@ -281,11 +281,10 @@ class HealthImport {
 List<HealthDataType> sleepTypes = [
   HealthDataType.SLEEP_IN_BED,
   HealthDataType.SLEEP_ASLEEP,
-  // TODO: bring back
-  // HealthDataType.SLEEP_ASLEEP_CORE,
-  // HealthDataType.SLEEP_ASLEEP_DEEP,
-  // HealthDataType.SLEEP_ASLEEP_REM,
-  // HealthDataType.SLEEP_ASLEEP_UNSPECIFIED,
+  HealthDataType.SLEEP_ASLEEP_CORE,
+  HealthDataType.SLEEP_ASLEEP_DEEP,
+  HealthDataType.SLEEP_ASLEEP_REM,
+  HealthDataType.SLEEP_ASLEEP_UNSPECIFIED,
   HealthDataType.SLEEP_AWAKE,
 ];
 
