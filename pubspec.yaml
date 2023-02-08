@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.258+1765
+version: 0.8.259+1769
 
 msix_config:
   display_name: Lotti
@@ -43,7 +43,7 @@ dependencies:
       url: https://github.com/matthiasn/delta_markdown.git
       ref: be47a76
 
-  device_info_plus: ^4.0.0
+  device_info_plus: ^8.0.0
   drift: ^2.2.0
   easy_debounce: ^2.0.2+1
   encrypt: ^5.0.1
@@ -79,7 +79,7 @@ dependencies:
   flutter_map: ^3.1.0
   flutter_markdown: ^0.6.9+1
   flutter_native_timezone: ^2.0.0
-  flutter_quill: ^6.1.5
+  flutter_quill: ^6.3.2
   flutter_secure_storage: ^7.0.1
   flutter_sliding_tutorial: ^2.0.0
   flutter_svg: ^1.0.3
@@ -90,12 +90,12 @@ dependencies:
   getwidget: ^3.0.1
   google_fonts: ^3.0.0
 
-  # health: ^3.4.3
-  health:
-    git:
-      url: https://github.com/matthiasn/flutter-plugins
-      path: packages/health
-      ref: 918a45c
+  health: ^4.4.0
+  #health:
+  #  git:
+  #    url: https://github.com/matthiasn/flutter-plugins
+  #    path: packages/health
+  #    ref: 918a45c
 
   hotkey_manager: ^0.1.6
   infinite_scroll_pagination: ^3.2.0
@@ -110,12 +110,16 @@ dependencies:
   lottie: ^2.2.0
   material_design_icons_flutter: ^6.0.7096
   material_floating_search_bar: ^0.3.6
-  modal_bottom_sheet: ^2.1.2
+  # TODO: use from pub_dev once merged
+  # modal_bottom_sheet: ^2.1.2
+  modal_bottom_sheet:
+    git:
+      url: https://github.com/danReynolds/modal_bottom_sheet.git
+      path: modal_bottom_sheet
   multi_select_flutter: ^4.0.0
   package_info_plus: ^3.0.1
   path: ^1.8.1
   path_provider: 2.0.11
-  path_provider_macos: 2.0.6
   permission_handler: ^10.0.0
   photo_view: ^0.14.0
 
@@ -159,10 +163,8 @@ dependencies:
   window_manager: ^0.3.0
 
 dependency_overrides:
-  analyzer: ^5.1.0
-  collection: ^1.17.0
-  device_info_plus: 4.0.3
   rxdart: ^0.27.1
+  sprintf: ^7.0.0
   xml: ^6.1.0
 
 dev_dependencies:

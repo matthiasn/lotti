@@ -7,7 +7,7 @@ import Foundation
 
 import audio_session
 import connectivity_plus
-import device_info_plus_macos
+import device_info_plus
 import dynamic_color
 import flutter_local_notifications
 import flutter_native_timezone

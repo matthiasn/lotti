@@ -217,7 +217,7 @@ SPEC CHECKSUMS:
   flutter_native_timezone: 5f05b2de06c9776b4cc70e1839f03de178394d22
   flutter_secure_storage: 23fc622d89d073675f2eaa109381aefbcf5a49be
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
-  health: e7a5807e45ec58fe6b89a730c97abc6caafe94a0
+  health: 5a380c0f6c4f619535845992993964293962e99e
   integration_test: a1e7d09bd98eca2fc37aefd79d4f41ad37bdbbe5
   just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
   libwebp: f62cb61d0a484ba548448a4bd52aabf150ff6eef
@@ -239,9 +239,9 @@ SPEC CHECKSUMS:
   sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
   sqlite3: 88dd99ef4ac3945f5a15facdd752933c52fd93bf
   sqlite3_flutter_libs: c00751e981228acb63595236703da79d31282b63
-  url_launcher_ios: ae1517e5e344f5544fb090b079e11f399dfbe4d2
+  url_launcher_ios: fb12c43172927bb5cf75aeebd073f883801f1993
   video_player_avfoundation: e489aac24ef5cf7af82702979ed16f2a5ef84cff
 
-PODFILE CHECKSUM: ac9213e7d5c6154b28f906f92fd70fbfe6b855e9
+PODFILE CHECKSUM: 5b3398e7604abf76fbba588f5b0fc85f420e288c
 
 COCOAPODS: 1.11.3
