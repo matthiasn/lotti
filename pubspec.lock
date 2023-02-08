@@ -1060,10 +1060,11 @@ packages:
   health:
     dependency: "direct main"
     description:
-      name: health
-      sha256: "9ba4140bb6c233a42f3b93ce2ad9a749bbfa5267938fe97a765c282b93314d07"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/health"
+      ref: "7ec895c"
+      resolved-ref: "7ec895c3741cec2ee90a3344cb38c7c7bce49e7c"
+      url: "https://github.com/matthiasn/flutter-plugins"
+    source: git
     version: "4.4.0"
   hotkey_manager:
     dependency: "direct main"
