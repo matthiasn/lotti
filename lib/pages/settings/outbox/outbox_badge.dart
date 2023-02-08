@@ -38,6 +38,7 @@ class OutboxBadgeIcon extends StatelessWidget {
             padding: EdgeInsets.all(padding.toDouble()),
             elevation: 3,
           ),
+          badgeAnimation: const BadgeAnimation.slide(toAnimate: false),
           showBadge: count > 0,
           child: icon,
         );

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed:
 - Sleep data import
+- Jumpy badge animation
 
 ## [0.8.260] - 2023-02-08
 ### Changed:
