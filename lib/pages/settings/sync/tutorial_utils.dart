@@ -12,9 +12,9 @@ double textBodyWidth(BuildContext context) {
 
 class SyncAssistantHeaderWidget extends StatelessWidget {
   const SyncAssistantHeaderWidget({
-    super.key,
     required this.index,
     required this.pageCount,
+    super.key,
   });
 
   final int index;

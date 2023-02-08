@@ -7,10 +7,10 @@ import 'package:lotti/themes/theme.dart';
 
 class AlignedNavIcon extends StatelessWidget {
   const AlignedNavIcon({
-    super.key,
     required this.onPressed,
     required this.iconData,
     required this.alignment,
+    super.key,
     this.fadeInController,
   });
 
@@ -43,9 +43,9 @@ class AlignedNavIcon extends StatelessWidget {
 
 class SyncNavPrevious extends StatefulWidget {
   const SyncNavPrevious({
-    super.key,
     required this.pageCtrl,
     required this.notifier,
+    super.key,
   });
 
   final PageController pageCtrl;
@@ -87,12 +87,12 @@ class _SyncNavPreviousState extends State<SyncNavPrevious> {
 
 class SyncNavNext extends StatefulWidget {
   const SyncNavNext({
-    super.key,
     required this.pageCtrl,
     required this.guardedPage,
     required this.guardedPagesAllowed,
     required this.notifier,
     required this.pageCount,
+    super.key,
   });
 
   final PageController pageCtrl;

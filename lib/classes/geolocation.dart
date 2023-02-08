@@ -7,11 +7,11 @@ part 'geolocation.g.dart';
 class Geolocation with _$Geolocation {
   factory Geolocation({
     required DateTime createdAt,
-    int? utcOffset,
-    String? timezone,
     required double latitude,
     required double longitude,
     required String geohashString,
+    int? utcOffset,
+    String? timezone,
     double? accuracy,
     double? speed,
     double? speedAccuracy,

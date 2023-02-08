@@ -43,11 +43,11 @@ Future<MimeMessage> createImapMessage({
 }
 
 Future<GenericImapResult> saveImapMessage({
-  File? file,
   required SyncConfig syncConfig,
   required ImapClient imapClient,
   required String subject,
   required String encryptedMessage,
+  File? file,
 }) async {
   final loggingDb = getIt<LoggingDb>();
 

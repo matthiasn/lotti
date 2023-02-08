@@ -8,8 +8,8 @@ import 'package:lotti/widgets/tasks/linked_duration.dart';
 
 class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
   TaskAppBar({
-    super.key,
     required this.itemId,
+    super.key,
   });
 
   final String itemId;

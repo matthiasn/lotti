@@ -118,9 +118,9 @@ String statusString(Conflict conflict) {
 
 class ConflictCard extends StatelessWidget {
   const ConflictCard({
-    super.key,
     required this.conflict,
     required this.index,
+    super.key,
   });
 
   final Conflict conflict;
@@ -154,8 +154,8 @@ class ConflictCard extends StatelessWidget {
 
 class ConflictDetailRoute extends StatelessWidget {
   const ConflictDetailRoute({
-    super.key,
     required this.conflictId,
+    super.key,
   });
 
   final String conflictId;

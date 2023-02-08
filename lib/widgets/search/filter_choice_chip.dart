@@ -3,11 +3,11 @@ import 'package:lotti/themes/theme.dart';
 
 class FilterChoiceChip extends StatelessWidget {
   const FilterChoiceChip({
-    super.key,
     required this.label,
     required this.isSelected,
     required this.onTap,
     this.onLongPress,
+    super.key,
   });
 
   final String label;

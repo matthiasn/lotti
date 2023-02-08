@@ -6,8 +6,8 @@ import 'package:lotti/themes/theme.dart';
 
 class TitleAppBar extends StatelessWidget with PreferredSizeWidget {
   const TitleAppBar({
-    super.key,
     required this.title,
+    super.key,
     this.showBackButton = true,
     this.actions,
   });

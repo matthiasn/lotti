@@ -6,8 +6,8 @@ import 'package:lotti/utils/file_utils.dart';
 
 class CreateTagPage extends StatefulWidget {
   const CreateTagPage({
-    super.key,
     required this.tagType,
+    super.key,
   });
 
   final String tagType;

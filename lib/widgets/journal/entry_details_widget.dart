@@ -21,9 +21,9 @@ import 'package:lotti/widgets/tasks/task_form.dart';
 
 class EntryDetailWidget extends StatelessWidget {
   const EntryDetailWidget({
-    super.key,
     required this.itemId,
     required this.popOnDelete,
+    super.key,
     this.showTaskDetails = false,
     this.unlinkFn,
     this.parentTags,

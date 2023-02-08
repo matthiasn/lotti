@@ -14,11 +14,11 @@ import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
 class DashboardItemCard extends StatelessWidget {
   DashboardItemCard({
-    super.key,
     required this.index,
     required this.item,
     required this.measurableTypes,
     required this.updateItemFn,
+    super.key,
   });
 
   final TagsService tagsService = getIt<TagsService>();
@@ -174,9 +174,9 @@ class HabitItemCard extends StatelessWidget {
 
 class ItemCard extends StatelessWidget {
   const ItemCard({
-    this.onTap,
     required this.title,
     required this.leadingIcon,
+    this.onTap,
     super.key,
     this.leading,
   });

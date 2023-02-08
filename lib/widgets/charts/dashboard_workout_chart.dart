@@ -17,10 +17,10 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardWorkoutChart extends StatefulWidget {
   const DashboardWorkoutChart({
-    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    super.key,
   });
 
   final DashboardWorkoutItem chartConfig;

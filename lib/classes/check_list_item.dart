@@ -10,8 +10,8 @@ class CheckListItem with _$CheckListItem {
     required String id,
     required DateTime createdAt,
     required int utcOffset,
-    String? timezone,
     required String plainText,
+    String? timezone,
     Geolocation? geolocation,
     DateTime? updatedAt,
   }) = _CheckListItem;

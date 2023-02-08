@@ -164,10 +164,10 @@ class _TagsModalState extends State<TagsModal> {
 
 class TagCard extends StatelessWidget {
   const TagCard({
-    super.key,
     required this.tagEntity,
     required this.onTap,
     required this.index,
+    super.key,
   });
 
   final TagEntity tagEntity;

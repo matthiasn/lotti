@@ -4,10 +4,10 @@ import 'package:lotti/themes/theme.dart';
 // adapted from https://github.com/JohannesMilke/filter_listview_example
 class SearchWidget extends StatefulWidget with PreferredSizeWidget {
   const SearchWidget({
-    super.key,
     required this.text,
     required this.onChanged,
     required this.hintText,
+    super.key,
     this.margin = const EdgeInsets.all(20),
   });
 

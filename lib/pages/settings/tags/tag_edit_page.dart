@@ -14,8 +14,8 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class TagEditPage extends StatefulWidget {
   const TagEditPage({
-    super.key,
     required this.tagEntity,
+    super.key,
   });
 
   final TagEntity tagEntity;
@@ -247,8 +247,8 @@ class _TagEditPageState extends State<TagEditPage> {
 
 class EditExistingTagPage extends StatelessWidget {
   EditExistingTagPage({
-    super.key,
     required this.tagEntityId,
+    super.key,
   });
 
   final TagsService tagsService = getIt<TagsService>();

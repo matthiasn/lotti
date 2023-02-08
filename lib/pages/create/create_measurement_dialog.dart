@@ -17,8 +17,8 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class MeasurementDialog extends StatefulWidget {
   const MeasurementDialog({
-    super.key,
     required this.measurableId,
+    super.key,
   });
 
   final String measurableId;

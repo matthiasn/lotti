@@ -225,8 +225,8 @@ class HabitDetailsPage extends StatelessWidget {
 
 class EditHabitPage extends StatelessWidget {
   EditHabitPage({
-    super.key,
     required this.habitId,
+    super.key,
   });
 
   final JournalDb _db = getIt<JournalDb>();

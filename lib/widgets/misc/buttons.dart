@@ -7,10 +7,10 @@ import 'package:lotti/utils/platform.dart';
 class Button extends StatelessWidget {
   const Button(
     this.label, {
+    required this.onPressed,
     this.primaryColor = CupertinoColors.activeBlue,
     this.textColor = CupertinoColors.white,
     this.padding = const EdgeInsets.all(4),
-    required this.onPressed,
     super.key,
   });
 
@@ -45,10 +45,10 @@ class Button extends StatelessWidget {
 class RoundedButton extends StatelessWidget {
   const RoundedButton(
     this.label, {
+    required this.onPressed,
     this.primaryColor = CupertinoColors.activeBlue,
     this.textColor = CupertinoColors.white,
     this.padding = const EdgeInsets.all(4),
-    required this.onPressed,
     super.key,
   });
 
@@ -84,11 +84,11 @@ class RoundedButton extends StatelessWidget {
 class FadeInButton extends StatelessWidget {
   const FadeInButton(
     this.label, {
+    required this.onPressed,
     this.primaryColor = CupertinoColors.activeBlue,
     this.textColor = CupertinoColors.white,
     this.padding = const EdgeInsets.all(4),
     this.duration = const Duration(seconds: 2),
-    required this.onPressed,
     super.key,
   });
 

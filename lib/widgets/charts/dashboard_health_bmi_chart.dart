@@ -22,10 +22,10 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardHealthBmiChart extends StatefulWidget {
   const DashboardHealthBmiChart({
-    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    super.key,
   });
 
   final DashboardHealthItem chartConfig;

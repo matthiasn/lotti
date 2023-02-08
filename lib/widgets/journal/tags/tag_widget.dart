@@ -8,9 +8,9 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class TagWidget extends StatelessWidget {
   const TagWidget({
-    super.key,
     required this.tagEntity,
     required this.onTapRemove,
+    super.key,
   });
 
   final TagEntity tagEntity;

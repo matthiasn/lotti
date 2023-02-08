@@ -118,7 +118,7 @@ class MyBeamerApp extends StatelessWidget {
     initialPath: getIt<NavService>().currentPath,
     locationBuilder: RoutesLocationBuilder(
       routes: {'*': (context, state, data) => const AppScreen()},
-    ),
+    ).call,
   );
 
   @override

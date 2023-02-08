@@ -10,8 +10,8 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class EntryDateTimeModal extends StatefulWidget {
   const EntryDateTimeModal({
-    super.key,
     required this.item,
+    super.key,
     this.readOnly = false,
   });
 

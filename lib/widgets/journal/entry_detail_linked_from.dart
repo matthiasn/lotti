@@ -8,8 +8,8 @@ import 'package:lotti/widgets/journal/journal_card.dart';
 
 class LinkedFromEntriesWidget extends StatelessWidget {
   const LinkedFromEntriesWidget({
-    super.key,
     required this.item,
+    super.key,
   });
 
   final JournalEntity item;

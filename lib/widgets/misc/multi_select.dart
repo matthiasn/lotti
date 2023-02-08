@@ -5,13 +5,13 @@ import 'package:multi_select_flutter/util/multi_select_item.dart';
 
 class MultiSelect<T> extends StatelessWidget {
   const MultiSelect({
-    super.key,
     required this.multiSelectItems,
     required this.onConfirm,
     required this.title,
     required this.buttonText,
     required this.iconData,
     required this.initialValue,
+    super.key,
   });
 
   final List<MultiSelectItem<T?>> multiSelectItems;

@@ -105,7 +105,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   void toggleSelectedTaskStatus(String status) {
     if (_selectedTaskStatuses.contains(status)) {
-      _selectedTaskStatuses = _selectedTaskStatuses.difference({status});
+      _selectedTaskStatuses =
+          _selectedTaskStatuses.difference(<String>{status});
     } else {
       _selectedTaskStatuses = _selectedTaskStatuses.union({status});
     }
@@ -115,7 +116,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   void toggleSelectedEntryTypes(String entryType) {
     if (_selectedEntryTypes.contains(entryType)) {
-      _selectedEntryTypes = _selectedEntryTypes.difference({entryType});
+      _selectedEntryTypes = _selectedEntryTypes.difference(<String>{entryType});
     } else {
       _selectedEntryTypes = _selectedEntryTypes.union({entryType});
     }

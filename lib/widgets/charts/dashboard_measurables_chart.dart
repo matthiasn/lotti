@@ -21,13 +21,13 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardMeasurablesChart extends StatefulWidget {
   const DashboardMeasurablesChart({
-    super.key,
     required this.measurableDataTypeId,
     required this.dashboardId,
     required this.rangeStart,
     required this.rangeEnd,
     this.aggregationType,
     this.enableCreate = false,
+    super.key,
   });
 
   final String measurableDataTypeId;

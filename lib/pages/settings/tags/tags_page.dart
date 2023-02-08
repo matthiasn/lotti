@@ -11,9 +11,9 @@ import 'package:lotti/widgets/settings/settings_card.dart';
 
 class TagCard extends StatelessWidget {
   TagCard({
-    super.key,
     required this.tagEntity,
     required this.index,
+    super.key,
   });
 
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();

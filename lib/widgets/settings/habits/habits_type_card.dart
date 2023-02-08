@@ -7,9 +7,9 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class HabitsTypeCard extends StatelessWidget {
   const HabitsTypeCard({
-    super.key,
     required this.item,
     required this.index,
+    super.key,
   });
 
   final HabitDefinition item;

@@ -8,8 +8,8 @@ import 'package:lotti/themes/theme.dart';
 
 class OutboxBadgeIcon extends StatelessWidget {
   OutboxBadgeIcon({
-    super.key,
     required this.icon,
+    super.key,
   });
 
   final SyncDatabase db = getIt<SyncDatabase>();

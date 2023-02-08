@@ -16,10 +16,10 @@ import 'package:tinycolor2/tinycolor2.dart';
 
 class DashboardHealthBpChart extends StatelessWidget {
   const DashboardHealthBpChart({
-    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    super.key,
   });
 
   final DashboardHealthItem chartConfig;

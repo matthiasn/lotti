@@ -16,10 +16,10 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardStoryChart extends StatefulWidget {
   const DashboardStoryChart({
-    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    super.key,
   });
 
   final DashboardStoryTimeItem chartConfig;

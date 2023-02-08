@@ -16,8 +16,8 @@ import 'package:lotti/widgets/journal/entry_details_widget.dart';
 
 class EntryDetailPage extends StatelessWidget {
   const EntryDetailPage({
-    super.key,
     required this.itemId,
+    super.key,
     this.readOnly = false,
   });
 

@@ -17,12 +17,12 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardHabitsChart extends StatefulWidget {
   const DashboardHabitsChart({
-    super.key,
     required this.habitId,
     required this.dashboardId,
     required this.rangeStart,
     required this.rangeEnd,
     this.tab = 'dashboard',
+    super.key,
   });
 
   final String habitId;
@@ -180,11 +180,11 @@ class HabitChartInfoWidget extends StatelessWidget {
 
 class HabitChartLine extends StatefulWidget {
   const HabitChartLine({
-    super.key,
     required this.habitDefinition,
     required this.rangeStart,
     required this.rangeEnd,
     required this.showGaps,
+    super.key,
   });
 
   final HabitDefinition habitDefinition;

@@ -17,11 +17,11 @@ class ImapClientManager {
 
   Future<ImapClient> _createImapClient(
     SyncConfig? syncConfig, {
+    required bool allowInvalidCert,
     bool reuseClient = true,
     Duration connectionTimeout = const Duration(seconds: 15),
     Duration responseTimeout = const Duration(minutes: 1),
     Duration writeTimeout = const Duration(minutes: 1),
-    required bool allowInvalidCert,
   }) async {
     final clientId = uuid.v1();
     final loggingDb = getIt<LoggingDb>();

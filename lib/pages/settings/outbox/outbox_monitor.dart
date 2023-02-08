@@ -92,9 +92,9 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 
 class OutboxItemCard extends StatelessWidget {
   OutboxItemCard({
-    super.key,
     required this.item,
     required this.index,
+    super.key,
   });
 
   final SyncDatabase _db = getIt<SyncDatabase>();
@@ -184,10 +184,10 @@ const toolbarHeight = 88.0;
 
 class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
   const OutboxAppBar({
-    super.key,
     required this.onlineStatus,
     required this.selectedValue,
     required this.onValueChanged,
+    super.key,
   });
 
   final bool onlineStatus;

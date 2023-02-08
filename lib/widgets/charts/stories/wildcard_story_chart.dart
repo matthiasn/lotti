@@ -16,10 +16,10 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 class WildcardStoryChart extends StatefulWidget {
   const WildcardStoryChart({
-    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    super.key,
   });
 
   final WildcardStoryTimeItem chartConfig;
@@ -192,10 +192,10 @@ class InfoWidget extends StatelessWidget {
 
 class WildcardStoryWeeklyChart extends StatefulWidget {
   const WildcardStoryWeeklyChart({
-    super.key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    super.key,
   });
 
   final WildcardStoryTimeItem chartConfig;

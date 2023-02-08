@@ -5,9 +5,9 @@ import 'package:lotti/themes/theme.dart';
 
 class TextViewerWidget extends StatelessWidget {
   const TextViewerWidget({
-    super.key,
     required this.entryText,
     required this.maxHeight,
+    super.key,
   });
 
   final EntryText? entryText;

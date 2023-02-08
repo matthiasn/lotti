@@ -22,8 +22,8 @@ import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
-    super.key,
     required this.dashboardId,
+    super.key,
     this.showBackButton = true,
   });
 
@@ -151,11 +151,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
 class DashboardWidget extends StatelessWidget {
   const DashboardWidget({
-    super.key,
     required this.dashboard,
     required this.rangeStart,
     required this.rangeEnd,
     required this.dashboardId,
+    super.key,
     this.showTitle = false,
   });
 

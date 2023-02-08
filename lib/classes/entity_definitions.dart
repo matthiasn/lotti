@@ -99,11 +99,11 @@ class EntityDefinition with _$EntityDefinition {
     required String name,
     required String description,
     required HabitSchedule habitSchedule,
-    AutoCompleteRule? autoCompleteRule,
-    String? version,
     required VectorClock? vectorClock,
     required bool active,
     required bool private,
+    AutoCompleteRule? autoCompleteRule,
+    String? version,
     DateTime? activeFrom,
     DateTime? activeUntil,
     DateTime? deletedAt,
@@ -165,8 +165,8 @@ class HabitCompletionData with _$HabitCompletionData {
   factory HabitCompletionData({
     required DateTime dateFrom,
     required DateTime dateTo,
-    HabitCompletionType? completionType,
     required String habitId,
+    HabitCompletionType? completionType,
   }) = _HabitCompletionData;
 
   factory HabitCompletionData.fromJson(Map<String, dynamic> json) =>

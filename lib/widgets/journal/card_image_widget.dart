@@ -9,9 +9,9 @@ import 'package:lotti/utils/platform.dart';
 
 class CardImageWidget extends StatefulWidget {
   const CardImageWidget({
-    super.key,
     required this.journalImage,
     required this.height,
+    super.key,
     this.fit = BoxFit.scaleDown,
   });
 

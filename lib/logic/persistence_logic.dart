@@ -623,8 +623,8 @@ class PersistenceLogic {
 
   Future<bool> updateTask({
     required String journalEntityId,
-    EntryText? entryText,
     required TaskData taskData,
+    EntryText? entryText,
   }) async {
     try {
       final now = DateTime.now();

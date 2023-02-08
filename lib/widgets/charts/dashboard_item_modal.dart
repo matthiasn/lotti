@@ -6,11 +6,11 @@ import 'package:lotti/themes/theme.dart';
 
 class DashboardItemModal extends StatelessWidget {
   const DashboardItemModal({
-    super.key,
     required this.index,
     required this.item,
     required this.updateItemFn,
     required this.title,
+    super.key,
   });
 
   final DashboardMeasurementItem item;
