@@ -82,7 +82,7 @@ class HealthImport {
     }
 
     final stepsByDay = <DateTime, num>{};
-    // final flightsByDay = <DateTime, num>{};
+    final flightsByDay = <DateTime, num>{};
     // final distanceByDay = <DateTime, num>{};
     final range = dateTo.difference(dateFrom);
 
@@ -110,17 +110,18 @@ class HealthImport {
         final steps =
             await _healthFactory.getTotalStepsInInterval(dateFrom, dateTo);
 
-        // final flightsClimbed = await _healthFactory.getTotalFlightsClimbedInInterval(dateFrom, dateTo);
+        final flightsClimbed = await _healthFactory
+            .getTotalFlightsClimbedInInterval(dateFrom, dateTo);
         // final distance = await _healthFactory.getTotalDistanceInInterval(dateFrom, dateTo);
 
-        // flightsByDay[dateFrom] = flightsClimbed ?? 0;
+        flightsByDay[dateFrom] = flightsClimbed ?? 0;
         stepsByDay[dateFrom] = steps ?? 0;
         // distanceByDay[dateFrom] = distance ?? 0;
       }
     }
 
     await addEntries(stepsByDay, 'cumulative_step_count', 'count');
-    // await addEntries(flightsByDay, 'cumulative_flights_climbed', 'count');
+    await addEntries(flightsByDay, 'cumulative_flights_climbed', 'count');
     // await addEntries(distanceByDay, 'cumulative_distance', 'meters');
   }
 
