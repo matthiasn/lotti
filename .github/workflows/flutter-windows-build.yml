@@ -13,6 +13,8 @@ jobs:
       - name: core.symlinks
         run: |
           git config --global core.symlinks true
+      - name: Support long paths
+        run: git config --system core.longpaths true
       - uses: actions/checkout@v2
       - uses: subosito/flutter-action@v1
         with:
