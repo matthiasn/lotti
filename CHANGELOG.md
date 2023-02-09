@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 - Sleep data import
 - Flights of stairs data import
+- Total distance in interval data import
 - Jumpy badge animation
 
 ## [0.8.260] - 2023-02-08
