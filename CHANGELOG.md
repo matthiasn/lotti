@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Refactoring: set main font in theme in one place
+- Material Design 3 enabled
 
 ## [0.8.262] - 2023-02-10
 ### Fixed:

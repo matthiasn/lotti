@@ -124,11 +124,8 @@ class MyBeamerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ThemeData(
-      // TODO: remove deprecated usage
-      // ignore: deprecated_member_use
-      backgroundColor: styleConfig().negspace,
       fontFamily: mainFont,
-      primarySwatch: Colors.grey,
+      useMaterial3: true,
       brightness: styleConfig().keyboardAppearance,
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
       highlightColor: styleConfig().primaryColorLight,
@@ -144,6 +141,10 @@ class MyBeamerApp extends StatelessWidget {
           color: Colors.black54,
           borderRadius: BorderRadius.circular(5),
         ),
+      ),
+      colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.grey).copyWith(
+        background: styleConfig().negspace,
+        brightness: keyboardAppearance(),
       ),
     );
 
