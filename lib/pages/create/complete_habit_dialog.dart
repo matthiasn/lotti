@@ -124,6 +124,10 @@ class _HabitDialogState extends State<HabitDialog> {
       ) {
         final habitDefinition = snapshot.data;
 
+        if (habitDefinition == null) {
+          return const SizedBox.shrink();
+        }
+
         return AlertDialog(
           insetPadding: const EdgeInsets.symmetric(horizontal: 32),
           contentPadding: const EdgeInsets.only(
@@ -189,7 +193,7 @@ class _HabitDialogState extends State<HabitDialog> {
                     children: [
                       Expanded(
                         child: Text(
-                          habitDefinition?.name ?? '',
+                          habitDefinition.name,
                           style: habitCompletionHeaderStyle,
                         ),
                       ),

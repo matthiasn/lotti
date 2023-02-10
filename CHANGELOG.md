@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Display of null title when completing habit
+
+### Changed:
+- Upgrade Flutter and dependencies
+
+## [0.8.261] - 2023-02-09
+### Fixed:
 - Sleep data import
 - Flights of stairs data import
 - Total distance in interval data import
