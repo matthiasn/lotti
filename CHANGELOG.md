@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 - Audio playback restart on navigate to audio entry
 
+### Changed:
+- Improved input field layout
+
 ## [0.8.263] - 2023-02-10
 ### Changed:
 - Refactoring: set main font in theme in one place

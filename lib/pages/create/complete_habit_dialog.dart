@@ -211,7 +211,7 @@ class _HabitDialogState extends State<HabitDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 10),
+                        inputSpacer,
                         FormBuilderCupertinoDateTimePicker(
                           name: 'date',
                           alwaysUse24HourFormat: true,
@@ -219,24 +219,18 @@ class _HabitDialogState extends State<HabitDialog> {
                             "MMMM d, yyyy 'at' HH:mm",
                           ),
                           style: newInputStyle().copyWith(color: Colors.black),
-                          decoration: InputDecoration(
-                            fillColor: styleConfig().negspace,
-                            labelText: localizations.addHabitDateLabel,
-                            labelStyle:
-                                newLabelStyle().copyWith(color: Colors.black),
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                          decoration: inputDecorationWithLabel(
+                            localizations.addHabitDateLabel,
                           ),
                           initialValue: _started,
                           theme: datePickerTheme(),
                         ),
+                        inputSpacer,
                         FormBuilderTextField(
                           initialValue: '',
                           key: const Key('habit_comment_field'),
-                          decoration: InputDecoration(
-                            labelText: localizations.addHabitCommentLabel,
-                            labelStyle:
-                                newLabelStyle().copyWith(color: Colors.black),
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                          decoration: inputDecorationWithLabel(
+                            localizations.addHabitCommentLabel,
                           ),
                           minLines: 1,
                           maxLines: 10,
