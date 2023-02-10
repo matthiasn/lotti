@@ -166,8 +166,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       selected?.displayName ?? '',
                       style: const TextStyle(
                         color: Colors.black,
-                        fontFamily: mainFont,
-                        fontSize: 20,
+                        fontSize: fontSizeMedium,
                       ),
                     ),
                     IconButton(
@@ -188,7 +187,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           '${selected?.description}',
                           style: const TextStyle(
                             color: Colors.black38,
-                            fontFamily: mainFont,
                             fontWeight: FontWeight.w300,
                             fontSize: fontSizeMedium,
                           ),

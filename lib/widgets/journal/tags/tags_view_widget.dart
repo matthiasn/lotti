@@ -73,10 +73,7 @@ class TagChip extends StatelessWidget {
           color: getTagColor(tagEntity),
           child: Text(
             tagEntity.tag,
-            style: const TextStyle(
-              fontSize: 11,
-              fontFamily: mainFont,
-            ),
+            style: const TextStyle(fontSize: fontSizeSmall),
           ),
         ),
       ),

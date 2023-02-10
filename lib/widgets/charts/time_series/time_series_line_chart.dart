@@ -127,7 +127,6 @@ class TimeSeriesLineChart extends StatelessWidget {
                     '',
                     const TextStyle(
                       fontSize: fontSizeSmall,
-                      fontFamily: mainFont,
                       fontWeight: FontWeight.w300,
                     ),
                     children: [
