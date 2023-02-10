@@ -210,8 +210,7 @@ class ItemCard extends StatelessWidget {
           softWrap: true,
           style: TextStyle(
             color: styleConfig().primaryTextColor,
-            fontFamily: mainFont,
-            fontSize: 20,
+            fontSize: fontSizeMedium,
           ),
         ),
       ),

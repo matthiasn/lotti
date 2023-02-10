@@ -103,7 +103,6 @@ class EncryptionQrWidget extends StatelessWidget {
                                 ),
                                 content: Text(
                                   localizations.settingsSyncCopyCfgWarning,
-                                  style: const TextStyle(fontFamily: mainFont),
                                 ),
                                 actions: <Widget>[
                                   Button(
@@ -199,13 +198,8 @@ class EmptyConfigWidget extends StatelessWidget {
                 ),
                 content: Column(
                   children: [
-                    Text(
-                      localizations.settingsSyncPasteCfgWarning,
-                      style: const TextStyle(fontFamily: mainFont),
-                    ),
-                    TextField(
-                      onChanged: (s) => passphrase = s,
-                    ),
+                    Text(localizations.settingsSyncPasteCfgWarning),
+                    TextField(onChanged: (s) => passphrase = s),
                   ],
                 ),
                 actions: <Widget>[

@@ -127,6 +127,7 @@ class MyBeamerApp extends StatelessWidget {
       // TODO: remove deprecated usage
       // ignore: deprecated_member_use
       backgroundColor: styleConfig().negspace,
+      fontFamily: mainFont,
       primarySwatch: Colors.grey,
       brightness: styleConfig().keyboardAppearance,
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
@@ -202,10 +203,7 @@ class NavTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
-      child: Text(
-        title,
-        style: const TextStyle(fontFamily: mainFont),
-      ),
+      child: Text(title),
     );
   }
 }

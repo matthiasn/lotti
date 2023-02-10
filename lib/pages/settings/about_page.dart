@@ -44,7 +44,6 @@ class _AboutPageState extends State<AboutPage> {
 
     final style = TextStyle(
       color: styleConfig().primaryTextColor,
-      fontFamily: mainFont,
       fontSize: 25,
       fontWeight: FontWeight.w300,
     );

@@ -38,7 +38,6 @@ class SettingsCard extends StatelessWidget {
             title,
             style: TextStyle(
               color: styleConfig().primaryTextColor,
-              fontFamily: mainFont,
               fontSize: fontSizeLarge,
               fontWeight: FontWeight.w300,
             ),

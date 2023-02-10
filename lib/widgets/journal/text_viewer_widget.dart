@@ -26,7 +26,6 @@ class TextViewerWidget extends StatelessWidget {
               textStyle: TextStyle(
                 color: styleConfig().primaryTextColor,
                 fontSize: fontSizeMedium,
-                fontFamily: mainFont,
               ),
             ),
           ),
