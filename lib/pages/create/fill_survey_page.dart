@@ -33,6 +33,7 @@ class SurveyWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Theme(
       data: ThemeData(
+        useMaterial3: true,
         primaryColor: styleConfig().primaryColor,
         scaffoldBackgroundColor: styleConfig().cardColor,
         fontFamily: 'PlusJakartaSans',

@@ -389,7 +389,10 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         ),
                         const SizedBox(height: 24),
                         Theme(
-                          data: ThemeData(canvasColor: Colors.transparent),
+                          data: ThemeData(
+                            canvasColor: Colors.transparent,
+                            useMaterial3: true,
+                          ),
                           child: ReorderableListView(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
