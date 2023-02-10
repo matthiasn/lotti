@@ -35,6 +35,10 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   Future<void> setAudioNote(JournalAudio audioNote) async {
     try {
+      if (state.audioNote == audioNote) {
+        return;
+      }
+
       final localPath = await AudioUtils.getFullAudioPath(audioNote);
       final newState = AudioPlayerState(
         status: AudioPlayerStatus.stopped,
