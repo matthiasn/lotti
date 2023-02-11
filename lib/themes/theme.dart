@@ -34,12 +34,16 @@ final inputBorder = OutlineInputBorder(
 final inputBorderFocused = OutlineInputBorder(
   borderRadius: BorderRadius.circular(chipBorderRadius),
   borderSide: BorderSide(
-    color: styleConfig().secondaryTextColor,
+    color: styleConfig().primaryColor,
     width: 2,
   ),
 );
 
-InputDecoration inputDecoration({String? labelText}) => InputDecoration(
+InputDecoration inputDecoration({
+  String? labelText,
+  Widget? suffixIcon,
+}) =>
+    InputDecoration(
       border: inputBorder,
       enabledBorder: inputBorder,
       focusedBorder: inputBorderFocused,
@@ -48,12 +52,15 @@ InputDecoration inputDecoration({String? labelText}) => InputDecoration(
         color: styleConfig().secondaryTextColor,
       ),
       floatingLabelBehavior: FloatingLabelBehavior.always,
+      suffixIcon: suffixIcon,
     );
 
 InputDecoration createDialogInputDecoration({String? labelText}) =>
     inputDecoration(labelText: labelText).copyWith(
       labelStyle: newLabelStyle().copyWith(color: Colors.black),
     );
+
+const switchDecoration = InputDecoration(border: InputBorder.none);
 
 const inputSpacer = SizedBox(height: 25);
 

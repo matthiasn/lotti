@@ -39,7 +39,6 @@ class TagAddIconWidget extends StatelessWidget {
             onPressed: onTapAdd,
             key: Key(styleConfig().cardTagIcon),
             icon: SvgPicture.asset(styleConfig().cardTagIcon),
-            hoverColor: Colors.transparent,
             splashColor: Colors.transparent,
             tooltip: localizations.journalTagPlusHint,
           ),

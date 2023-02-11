@@ -19,6 +19,7 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
+import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -336,6 +337,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                 name: 'name',
                                 key: const Key('dashboard_name_field'),
                               ),
+                              inputSpacer,
                               FormTextField(
                                 initialValue: widget.dashboard.description,
                                 labelText:
@@ -346,22 +348,17 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   'dashboard_description_field',
                                 ),
                               ),
-                              FormBuilderSwitch(
+                              inputSpacer,
+                              FormSwitch(
                                 name: 'private',
                                 initialValue: widget.dashboard.private,
-                                title: Text(
-                                  localizations.dashboardPrivateLabel,
-                                  style: formLabelStyle(),
-                                ),
+                                title: localizations.dashboardPrivateLabel,
                                 activeColor: styleConfig().private,
                               ),
-                              FormBuilderSwitch(
+                              FormSwitch(
                                 name: 'active',
                                 initialValue: widget.dashboard.active,
-                                title: Text(
-                                  localizations.dashboardActiveLabel,
-                                  style: formLabelStyle(),
-                                ),
+                                title: localizations.dashboardActiveLabel,
                                 activeColor: styleConfig().starredGold,
                               ),
                               // TODO: rethink notifications - probably better as part of habits

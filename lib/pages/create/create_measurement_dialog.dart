@@ -172,7 +172,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     IconButton(
                       padding: const EdgeInsets.all(10),
                       icon: SvgPicture.asset('assets/icons/close.svg'),
-                      hoverColor: Colors.transparent,
                       onPressed: beamBack,
                     ),
                   ],

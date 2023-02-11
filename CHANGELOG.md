@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved task input fields layout
 - Improved chip layout
 - Tweak spacing in journal filters
+- Improved styling in settings
 
 ## [0.8.264] - 2023-02-11
 ### Fixed:
