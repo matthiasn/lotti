@@ -112,6 +112,9 @@ class AudioPlayerWidget extends StatelessWidget {
                     onSeek: (newPosition) {
                       context.read<AudioPlayerCubit>().seek(newPosition);
                     },
+                    timeLabelTextStyle: monospaceTextStyle().copyWith(
+                      color: styleConfig().secondaryTextColor,
+                    ),
                   ),
                 ),
               ],

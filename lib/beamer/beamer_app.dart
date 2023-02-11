@@ -125,6 +125,7 @@ class MyBeamerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = ThemeData(
       fontFamily: mainFont,
+      cardColor: styleConfig().cardColor,
       useMaterial3: true,
       brightness: styleConfig().keyboardAppearance,
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
@@ -143,8 +144,12 @@ class MyBeamerApp extends StatelessWidget {
         ),
       ),
       colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.grey).copyWith(
-        background: styleConfig().negspace,
+        background: styleConfig().cardColor,
         brightness: keyboardAppearance(),
+      ),
+      textTheme: TextTheme(
+        bodyLarge: TextStyle(color: styleConfig().primaryTextColor),
+        bodyMedium: TextStyle(color: styleConfig().primaryTextColor),
       ),
     );
 
