@@ -78,7 +78,7 @@ class EntryDetailHeader extends StatelessWidget {
             ),
             Divider(
               height: 0.5,
-              color: styleConfig().secondaryTextColor,
+              color: styleConfig().secondaryTextColor.withOpacity(0.3),
             )
           ],
         );
@@ -110,7 +110,6 @@ class SwitchIconWidget extends StatelessWidget {
       width: 40,
       child: IconButton(
         key: Key(value ? activeIcon : icon),
-        hoverColor: Colors.transparent,
         splashColor: Colors.transparent,
         focusColor: Colors.transparent,
         padding: EdgeInsets.zero,

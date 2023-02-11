@@ -129,7 +129,9 @@ class MyBeamerApp extends StatelessWidget {
       useMaterial3: true,
       brightness: styleConfig().keyboardAppearance,
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
-      highlightColor: styleConfig().primaryColorLight,
+      highlightColor: styleConfig().primaryColor.withOpacity(0.7),
+      hoverColor: styleConfig().primaryColor.withOpacity(0.3),
+      chipTheme: const ChipThemeData(side: BorderSide.none),
       appBarTheme: AppBarTheme(
         iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
       ),
@@ -143,7 +145,7 @@ class MyBeamerApp extends StatelessWidget {
           borderRadius: BorderRadius.circular(5),
         ),
       ),
-      colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.grey).copyWith(
+      colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.red).copyWith(
         background: styleConfig().cardColor,
         brightness: keyboardAppearance(),
       ),

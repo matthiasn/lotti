@@ -132,7 +132,6 @@ class ConflictCard extends StatelessWidget {
       elevation: 0,
       margin: EdgeInsets.zero,
       child: ListTile(
-        hoverColor: styleConfig().primaryColorLight,
         contentPadding: const EdgeInsets.only(left: 24, right: 24),
         title: Padding(
           padding: const EdgeInsets.only(bottom: 4),

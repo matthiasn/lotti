@@ -11,6 +11,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class MeasurableDetailsPage extends StatefulWidget {
@@ -74,7 +75,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  AppLocalizations.of(context)!.settingsMeasurableSaveLabel,
+                  localizations.settingsMeasurableSaveLabel,
                   style: saveButtonStyle(),
                 ),
               ),
@@ -103,42 +104,39 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                       FormTextField(
                         key: const Key('measurable_name_field'),
                         initialValue: item.displayName,
-                        labelText: AppLocalizations.of(context)!
-                            .settingsMeasurableNameLabel,
+                        labelText: localizations.settingsMeasurableNameLabel,
                         name: 'displayName',
                       ),
+                      inputSpacer,
                       FormTextField(
                         key: const Key('measurable_description_field'),
                         initialValue: item.description,
-                        labelText: AppLocalizations.of(context)!
-                            .settingsMeasurableDescriptionLabel,
+                        labelText:
+                            localizations.settingsMeasurableDescriptionLabel,
                         fieldRequired: false,
                         name: 'description',
                       ),
+                      inputSpacer,
                       FormTextField(
                         initialValue: item.unitName,
-                        labelText: AppLocalizations.of(context)!
-                            .settingsMeasurableUnitLabel,
+                        labelText: localizations.settingsMeasurableUnitLabel,
                         fieldRequired: false,
                         name: 'unitName',
                       ),
-                      FormBuilderSwitch(
+                      inputSpacer,
+                      FormSwitch(
                         name: 'private',
                         initialValue: item.private,
-                        title: Text(
-                          AppLocalizations.of(context)!
-                              .settingsMeasurablePrivateLabel,
-                          style: formLabelStyle(),
-                        ),
+                        title: localizations.settingsMeasurablePrivateLabel,
                         activeColor: styleConfig().private,
                       ),
+                      inputSpacer,
                       FormBuilderDropdown(
                         name: 'aggregationType',
                         initialValue: item.aggregationType,
-                        decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)!
-                              .settingsMeasurableAggregationLabel,
-                          labelStyle: formLabelStyle(),
+                        decoration: inputDecoration(
+                          labelText:
+                              localizations.settingsMeasurableAggregationLabel,
                           suffixIcon: Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: Icon(
@@ -179,8 +177,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                       IconButton(
                         icon: const Icon(MdiIcons.trashCanOutline),
                         iconSize: settingsIconSize,
-                        tooltip: AppLocalizations.of(context)!
-                            .settingsMeasurableDeleteTooltip,
+                        tooltip: localizations.settingsMeasurableDeleteTooltip,
                         color: styleConfig().secondaryTextColor,
                         onPressed: () async {
                           const deleteKey = 'deleteKey';

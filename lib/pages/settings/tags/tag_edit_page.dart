@@ -10,6 +10,7 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TagEditPage extends StatefulWidget {
@@ -142,24 +143,20 @@ class _TagEditPageState extends State<TagEditPage> {
                       name: 'tag',
                       key: const Key('tag_name_field'),
                     ),
-                    FormBuilderSwitch(
+                    inputSpacer,
+                    FormSwitch(
                       name: 'private',
                       initialValue: widget.tagEntity.private,
-                      title: Text(
-                        localizations.settingsTagsPrivateLabel,
-                        style: formLabelStyle(),
-                      ),
+                      title: localizations.settingsTagsPrivateLabel,
                       activeColor: styleConfig().private,
                     ),
-                    FormBuilderSwitch(
+                    FormSwitch(
                       name: 'inactive',
                       initialValue: widget.tagEntity.inactive,
-                      title: Text(
-                        localizations.settingsTagsHideLabel,
-                        style: formLabelStyle(),
-                      ),
+                      title: localizations.settingsTagsHideLabel,
                       activeColor: styleConfig().private,
                     ),
+                    inputSpacer,
                     FormBuilderChoiceChip<String>(
                       name: 'type',
                       initialValue: widget.tagEntity.map(
@@ -168,12 +165,8 @@ class _TagEditPageState extends State<TagEditPage> {
                         storyTag: (_) =>
                             localizations.settingsTagsTypeStory, // 'STORY',
                       ),
-                      decoration: InputDecoration(
+                      decoration: inputDecoration(
                         labelText: localizations.settingsTagsTypeLabel,
-                        labelStyle: labelStyle().copyWith(
-                          height: 0.6,
-                          fontFamily: 'Oswald',
-                        ),
                       ),
                       selectedColor: widget.tagEntity.map(
                         genericTag: getTagColor,

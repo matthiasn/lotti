@@ -18,7 +18,9 @@ import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
+  binding.window.physicalSizeTestValue = const Size(1000, 1000);
+  binding.window.devicePixelRatioTestValue = 1.0;
 
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
