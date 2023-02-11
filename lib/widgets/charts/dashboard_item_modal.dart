@@ -24,7 +24,7 @@ class DashboardItemModal extends StatelessWidget {
 
     return Material(
       child: ColoredBox(
-        color: styleConfig().secondaryTextColor,
+        color: styleConfig().cardColor,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(

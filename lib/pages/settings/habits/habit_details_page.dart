@@ -15,6 +15,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class HabitDetailsPage extends StatelessWidget {
@@ -71,6 +72,7 @@ class HabitDetailsPage extends StatelessWidget {
                                 .settingsHabitsNameLabel,
                             name: 'name',
                           ),
+                          inputSpacer,
                           FormTextField(
                             key: const Key('habit_description_field'),
                             initialValue: item.description,
@@ -79,26 +81,21 @@ class HabitDetailsPage extends StatelessWidget {
                             fieldRequired: false,
                             name: 'description',
                           ),
-                          FormBuilderSwitch(
+                          inputSpacer,
+                          FormSwitch(
                             name: 'private',
                             initialValue: item.private,
-                            title: Text(
-                              AppLocalizations.of(context)!
-                                  .settingsHabitsPrivateLabel,
-                              style: formLabelStyle(),
-                            ),
+                            title: localizations.settingsHabitsPrivateLabel,
                             activeColor: styleConfig().private,
                           ),
-                          FormBuilderSwitch(
+                          FormSwitch(
                             name: 'active',
                             key: const Key('habit_active'),
                             initialValue: state.habitDefinition.active,
-                            title: Text(
-                              localizations.dashboardActiveLabel,
-                              style: formLabelStyle(),
-                            ),
+                            title: localizations.dashboardActiveLabel,
                             activeColor: styleConfig().starredGold,
                           ),
+                          inputSpacer,
                           FormBuilderCupertinoDateTimePicker(
                             key: const Key('active_from'),
                             name: 'active_from',
@@ -109,11 +106,11 @@ class HabitDetailsPage extends StatelessWidget {
                               fontWeight: FontWeight.w300,
                             ),
                             initialValue: item.activeFrom,
-                            decoration: InputDecoration(
+                            decoration: inputDecoration(
                               labelText: localizations.habitActiveFromLabel,
-                              labelStyle: labelStyle(),
                             ),
                           ),
+                          inputSpacer,
                           if (isDaily)
                             FormBuilderCupertinoDateTimePicker(
                               name: 'show_from',
@@ -125,20 +122,19 @@ class HabitDetailsPage extends StatelessWidget {
                                 fontWeight: FontWeight.w300,
                               ),
                               initialValue: showFrom,
-                              decoration: InputDecoration(
+                              decoration: inputDecoration(
                                 labelText: localizations.habitShowFromLabel,
-                                labelStyle: labelStyle(),
                               ),
                               theme: datePickerTheme(),
                             ),
+                          inputSpacer,
                           if (state.storyTags.isNotEmpty)
                             FormBuilderDropdown<StoryTag>(
                               name: 'default_story_id',
                               initialValue: state.defaultStory,
-                              decoration: InputDecoration(
-                                labelText: AppLocalizations.of(context)!
-                                    .settingsHabitsStoryLabel,
-                                labelStyle: formLabelStyle(),
+                              decoration: inputDecoration(
+                                labelText:
+                                    localizations.settingsHabitsStoryLabel,
                               ),
                               iconEnabledColor: styleConfig().primaryTextColor,
                               style: const TextStyle(fontSize: 40),

@@ -49,7 +49,6 @@ class DeleteIconWidget extends StatelessWidget {
           child: IconButton(
             key: Key(styleConfig().cardTrashIcon),
             icon: SvgPicture.asset(styleConfig().cardTrashIcon),
-            hoverColor: Colors.transparent,
             splashColor: Colors.transparent,
             tooltip: localizations.journalDeleteHint,
             padding: EdgeInsets.zero,

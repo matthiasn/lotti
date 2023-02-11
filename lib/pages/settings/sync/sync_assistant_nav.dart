@@ -28,7 +28,6 @@ class AlignedNavIcon extends StatelessWidget {
         duration: const Duration(seconds: 1),
         child: IconButton(
           padding: const EdgeInsets.all(12),
-          hoverColor: Colors.transparent,
           icon: Icon(
             iconData,
             color: styleConfig().secondaryTextColor,

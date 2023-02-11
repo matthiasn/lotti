@@ -21,7 +21,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: MultiSelectBottomSheetField<T?>(
         searchable: true,
         backgroundColor: styleConfig().cardColor,
@@ -34,9 +34,9 @@ class ChartMultiSelect<T> extends StatelessWidget {
         checkColor: styleConfig().primaryTextColor,
         selectedColor: styleConfig().primaryColor,
         decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.1),
+          color: styleConfig().secondaryTextColor.withOpacity(0.1),
           borderRadius: const BorderRadius.all(
-            Radius.circular(40),
+            Radius.circular(10),
           ),
           border: Border.all(
             color: styleConfig().secondaryTextColor,

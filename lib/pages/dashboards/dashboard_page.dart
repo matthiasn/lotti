@@ -260,7 +260,6 @@ class DashboardWidget extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.dashboard_customize_outlined),
                 color: styleConfig().primaryTextColor,
-                hoverColor: Colors.transparent,
                 onPressed: () =>
                     beamToNamed('/settings/dashboards/$dashboardId'),
               ),

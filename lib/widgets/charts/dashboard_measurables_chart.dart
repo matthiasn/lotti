@@ -275,7 +275,6 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                   IconButton(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     onPressed: onTapAdd,
-                    hoverColor: Colors.transparent,
                     icon: SvgPicture.asset(styleConfig().addIcon),
                   ),
               ],
