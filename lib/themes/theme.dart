@@ -26,6 +26,19 @@ const chipPadding = EdgeInsets.symmetric(
   horizontal: 8,
 );
 
+final inputBorder = OutlineInputBorder(
+  borderRadius: BorderRadius.circular(chipBorderRadius),
+);
+
+InputDecoration inputDecorationWithLabel(String labelText) => InputDecoration(
+      border: inputBorder,
+      labelText: labelText,
+      labelStyle: newLabelStyle().copyWith(color: Colors.black),
+      floatingLabelBehavior: FloatingLabelBehavior.always,
+    );
+
+const inputSpacer = SizedBox(height: 25);
+
 const chipPaddingClosable = EdgeInsets.only(
   top: 1,
   bottom: 1,

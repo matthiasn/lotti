@@ -191,7 +191,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                             fontSize: fontSizeMedium,
                           ),
                         ),
-                      const SizedBox(height: 10),
+                      inputSpacer,
                       FormBuilderCupertinoDateTimePicker(
                         name: 'date',
                         alwaysUse24HourFormat: true,
@@ -199,20 +199,19 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           "MMMM d, yyyy 'at' HH:mm",
                         ),
                         style: newInputStyle().copyWith(color: Colors.black),
-                        decoration:
-                            InputDecoration(fillColor: styleConfig().negspace),
+                        decoration: inputDecorationWithLabel(
+                          localizations.addMeasurementDateLabel,
+                        ),
                         initialValue: DateTime.now(),
                         theme: datePickerTheme(),
                       ),
+                      inputSpacer,
                       FormBuilderTextField(
                         initialValue: '',
                         key: const Key('measurement_value_field'),
-                        decoration: InputDecoration(
-                          labelText: '${selected?.displayName} '
-                              '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
-                          labelStyle:
-                              newLabelStyle().copyWith(color: Colors.black),
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
+                        decoration: inputDecorationWithLabel(
+                          '${selected?.displayName} '
+                          '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
                         ),
                         keyboardAppearance: keyboardAppearance(),
                         style: newInputStyle().copyWith(color: Colors.black),
@@ -222,20 +221,18 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           decimal: true,
                         ),
                       ),
+                      inputSpacer,
                       FormBuilderTextField(
                         initialValue: '',
                         key: const Key('measurement_comment_field'),
-                        decoration: InputDecoration(
-                          labelText: localizations.addMeasurementCommentLabel,
-                          labelStyle:
-                              newLabelStyle().copyWith(color: Colors.black),
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
+                        decoration: inputDecorationWithLabel(
+                          localizations.addMeasurementCommentLabel,
                         ),
                         keyboardAppearance: keyboardAppearance(),
                         style: newInputStyle().copyWith(color: Colors.black),
                         name: 'comment',
                       ),
-                      const SizedBox(height: 20),
+                      inputSpacer,
                       if (selected != null)
                         MeasurementSuggestions(
                           measurableDataType: selected!,
