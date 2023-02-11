@@ -64,19 +64,13 @@ class TagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 1),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(chipBorderRadius),
-        child: Container(
-          padding: chipPadding,
-          color: getTagColor(tagEntity),
-          child: Text(
-            tagEntity.tag,
-            style: const TextStyle(fontSize: fontSizeSmall),
-          ),
-        ),
+    return Chip(
+      label: Text(
+        tagEntity.tag,
+        style: const TextStyle(fontSize: fontSizeSmall),
       ),
+      backgroundColor: getTagColor(tagEntity),
+      visualDensity: VisualDensity.compact,
     );
   }
 }

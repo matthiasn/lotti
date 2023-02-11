@@ -43,7 +43,7 @@ void main() {
 
       // tag has expected color
       expect(
-        (tester.firstWidget(find.byType(Container)) as Container).color,
+        (tester.firstWidget(find.byType(Chip)) as Chip).backgroundColor,
         styleConfig().tagColor,
       );
 
@@ -74,7 +74,7 @@ void main() {
 
       // tag has expected color
       expect(
-        (tester.firstWidget(find.byType(Container)) as Container).color,
+        (tester.firstWidget(find.byType(Chip)) as Chip).backgroundColor,
         styleConfig().storyTagColor,
       );
 
@@ -105,7 +105,7 @@ void main() {
 
       // tag has expected color
       expect(
-        (tester.firstWidget(find.byType(Container)) as Container).color,
+        (tester.firstWidget(find.byType(Chip)) as Chip).backgroundColor,
         styleConfig().personTagColor,
       );
 

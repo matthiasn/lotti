@@ -20,42 +20,20 @@ class TagWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(chipBorderRadius),
-      child: Container(
-        padding: chipPaddingClosable,
-        color: getTagColor(tagEntity),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GestureDetector(
-              onDoubleTap: () => beamToNamed('/settings/tags/${tagEntity.id}'),
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Text(
-                  tagEntity.tag,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Oswald',
-                    color: styleConfig().tagTextColor,
-                  ),
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: onTapRemove,
-              padding: const EdgeInsets.only(left: 4),
-              constraints: const BoxConstraints(maxHeight: 16, maxWidth: 20),
-              icon: Icon(
-                MdiIcons.close,
-                size: 16,
-                color: styleConfig().tagTextColor,
-              ),
-              tooltip: localizations.journalTagsRemoveHint,
-            ),
-          ],
-        ),
+    return Chip(
+      label: GestureDetector(
+        onDoubleTap: () => beamToNamed('/settings/tags/${tagEntity.id}'),
+        child: Text(tagEntity.tag),
       ),
+      backgroundColor: getTagColor(tagEntity),
+      visualDensity: VisualDensity.compact,
+      onDeleted: onTapRemove,
+      deleteIcon: Icon(
+        MdiIcons.close,
+        size: fontSizeMedium,
+        color: styleConfig().tagTextColor,
+      ),
+      deleteButtonTooltipMessage: localizations.journalTagsRemoveHint,
     );
   }
 }

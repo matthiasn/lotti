@@ -81,7 +81,6 @@ TextStyle textStyle() => TextStyle(
     );
 
 TextStyle choiceChipTextStyle({required bool isSelected}) => TextStyle(
-      fontFamily: 'Oswald',
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w300,
       color: isSelected

@@ -29,7 +29,7 @@ class JournalSliverAppBar extends StatelessWidget {
 
         return SliverAppBar(
           backgroundColor: styleConfig().negspace,
-          expandedHeight: 280,
+          expandedHeight: 290,
           flexibleSpace: FlexibleSpaceBar(
             background: Padding(
               padding: EdgeInsets.only(top: isIOS ? 30 : 0),
@@ -52,7 +52,7 @@ class JournalSliverAppBar extends StatelessWidget {
                       runAlignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       spacing: 5,
-                      runSpacing: 5,
+                      runSpacing: 2,
                       children: [
                         TasksBadge(
                           child: TasksSegmentedControl(

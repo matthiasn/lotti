@@ -20,17 +20,13 @@ class _TaskStatusFilterState extends State<TaskStatusFilter> {
   Widget build(BuildContext context) {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
-        return Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: WrapSuper(
-            alignment: WrapSuperAlignment.center,
-            spacing: 5,
-            lineSpacing: 5,
-            children: [
-              ...snapshot.taskStatuses.map(TaskStatusChip.new),
-              const TaskStatusAllChip(),
-            ],
-          ),
+        return WrapSuper(
+          alignment: WrapSuperAlignment.center,
+          spacing: 5,
+          children: [
+            ...snapshot.taskStatuses.map(TaskStatusChip.new),
+            const TaskStatusAllChip(),
+          ],
         );
       },
     );
