@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
@@ -18,30 +18,23 @@ class TaskStatusWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(chipBorderRadius),
-      child: Container(
-        padding: padding,
-        color: taskColor(task.data.status),
-        child: Text(
-          task.data.status.map(
-            open: (_) => localizations.taskStatusOpen,
-            groomed: (_) => localizations.taskStatusGroomed,
-            // ignore: flutter_style_todos
-            started: (_) => 'STARTED', // TODO: remove DEPRECATED status
-            inProgress: (_) => localizations.taskStatusInProgress,
-            blocked: (_) => localizations.taskStatusBlocked,
-            onHold: (_) => localizations.taskStatusOnHold,
-            done: (_) => localizations.taskStatusDone,
-            rejected: (_) => localizations.taskStatusRejected,
-          ),
-          style: TextStyle(
-            fontFamily: 'Oswald',
-            color: styleConfig().selectedChoiceChipTextColor,
-            fontSize: 11,
-          ),
+    return Chip(
+      label: Text(
+        task.data.status.map(
+          open: (_) => localizations.taskStatusOpen,
+          groomed: (_) => localizations.taskStatusGroomed,
+          // ignore: flutter_style_todos
+          started: (_) => 'STARTED', // TODO: remove DEPRECATED status
+          inProgress: (_) => localizations.taskStatusInProgress,
+          blocked: (_) => localizations.taskStatusBlocked,
+          onHold: (_) => localizations.taskStatusOnHold,
+          done: (_) => localizations.taskStatusDone,
+          rejected: (_) => localizations.taskStatusRejected,
         ),
+        style: const TextStyle(fontSize: fontSizeSmall),
       ),
+      backgroundColor: taskColor(task.data.status),
+      visualDensity: VisualDensity.compact,
     );
   }
 }

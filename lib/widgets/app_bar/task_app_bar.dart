@@ -44,6 +44,8 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
             backgroundColor: styleConfig().cardColor,
             title: LinkedDuration(task: item),
             centerTitle: true,
+            leadingWidth: 100,
+            leading: const BackWidget(),
           );
         }
       },

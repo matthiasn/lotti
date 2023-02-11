@@ -52,6 +52,7 @@ class _TaskFormState extends State<TaskForm> {
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   children: <Widget>[
+                    const SizedBox(height: 10),
                     RawKeyboardListener(
                       focusNode: FocusNode(),
                       onKey: (RawKeyEvent event) {
@@ -63,11 +64,10 @@ class _TaskFormState extends State<TaskForm> {
                       child: FormBuilderTextField(
                         autofocus: widget.focusOnTitle,
                         initialValue: widget.data?.title ?? '',
-                        decoration: InputDecoration(
+                        decoration: inputDecoration(
                           labelText: '${widget.data?.title}'.isEmpty
                               ? localizations.taskNameLabel
                               : '',
-                          labelStyle: labelStyle(),
                         ),
                         textCapitalization: TextCapitalization.sentences,
                         keyboardAppearance: keyboardAppearance(),
@@ -80,6 +80,7 @@ class _TaskFormState extends State<TaskForm> {
                         onChanged: context.read<EntryCubit>().setDirty,
                       ),
                     ),
+                    inputSpacer,
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -93,9 +94,8 @@ class _TaskFormState extends State<TaskForm> {
                             inputType: CupertinoDateTimePickerInputType.time,
                             style: inputStyle(),
                             onChanged: (_) => save(),
-                            decoration: InputDecoration(
+                            decoration: inputDecoration(
                               labelText: localizations.taskEstimateLabel,
-                              labelStyle: labelStyle(),
                             ),
                             initialValue: DateTime.fromMillisecondsSinceEpoch(
                               widget.data?.estimate?.inMilliseconds ?? 0,
@@ -110,6 +110,7 @@ class _TaskFormState extends State<TaskForm> {
                             name: 'status',
                             borderRadius: BorderRadius.circular(20),
                             onChanged: (dynamic _) => save(),
+                            decoration: inputDecoration(),
                             initialValue: widget.data?.status.map(
                                   open: (_) => 'OPEN',
                                   groomed: (_) => 'GROOMED',

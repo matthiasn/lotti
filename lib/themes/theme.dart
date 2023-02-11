@@ -28,13 +28,31 @@ const chipPadding = EdgeInsets.symmetric(
 
 final inputBorder = OutlineInputBorder(
   borderRadius: BorderRadius.circular(chipBorderRadius),
+  borderSide: BorderSide(color: styleConfig().secondaryTextColor),
 );
 
-InputDecoration inputDecorationWithLabel(String labelText) => InputDecoration(
+final inputBorderFocused = OutlineInputBorder(
+  borderRadius: BorderRadius.circular(chipBorderRadius),
+  borderSide: BorderSide(
+    color: styleConfig().secondaryTextColor,
+    width: 2,
+  ),
+);
+
+InputDecoration inputDecoration({String? labelText}) => InputDecoration(
       border: inputBorder,
+      enabledBorder: inputBorder,
+      focusedBorder: inputBorderFocused,
       labelText: labelText,
-      labelStyle: newLabelStyle().copyWith(color: Colors.black),
+      labelStyle: newLabelStyle().copyWith(
+        color: styleConfig().secondaryTextColor,
+      ),
       floatingLabelBehavior: FloatingLabelBehavior.always,
+    );
+
+InputDecoration createDialogInputDecoration({String? labelText}) =>
+    inputDecoration(labelText: labelText).copyWith(
+      labelStyle: newLabelStyle().copyWith(color: Colors.black),
     );
 
 const inputSpacer = SizedBox(height: 25);
@@ -63,7 +81,6 @@ TextStyle textStyle() => TextStyle(
     );
 
 TextStyle choiceChipTextStyle({required bool isSelected}) => TextStyle(
-      fontFamily: 'Oswald',
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w300,
       color: isSelected

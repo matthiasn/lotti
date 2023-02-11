@@ -22,23 +22,15 @@ class FilterChoiceChip extends StatelessWidget {
       onLongPress: onLongPress,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: ColoredBox(
-            color: isSelected
-                ? styleConfig().selectedChoiceChipColor
-                : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 5,
-                horizontal: 15,
-              ),
-              child: Text(
-                label,
-                style: choiceChipTextStyle(isSelected: isSelected),
-              ),
-            ),
+        child: Chip(
+          label: Text(
+            label,
+            style: choiceChipTextStyle(isSelected: isSelected),
           ),
+          visualDensity: VisualDensity.compact,
+          backgroundColor: isSelected
+              ? styleConfig().selectedChoiceChipColor
+              : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
         ),
       ),
     );
