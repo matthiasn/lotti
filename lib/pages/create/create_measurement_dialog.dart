@@ -199,8 +199,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           "MMMM d, yyyy 'at' HH:mm",
                         ),
                         style: newInputStyle().copyWith(color: Colors.black),
-                        decoration: inputDecorationWithLabel(
-                          localizations.addMeasurementDateLabel,
+                        decoration: createDialogInputDecoration(
+                          labelText: localizations.addMeasurementDateLabel,
                         ),
                         initialValue: DateTime.now(),
                         theme: datePickerTheme(),
@@ -209,9 +209,9 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       FormBuilderTextField(
                         initialValue: '',
                         key: const Key('measurement_value_field'),
-                        decoration: inputDecorationWithLabel(
-                          '${selected?.displayName} '
-                          '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
+                        decoration: createDialogInputDecoration(
+                          labelText: '${selected?.displayName} '
+                              '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
                         ),
                         keyboardAppearance: keyboardAppearance(),
                         style: newInputStyle().copyWith(color: Colors.black),
@@ -225,8 +225,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       FormBuilderTextField(
                         initialValue: '',
                         key: const Key('measurement_comment_field'),
-                        decoration: inputDecorationWithLabel(
-                          localizations.addMeasurementCommentLabel,
+                        decoration: createDialogInputDecoration(
+                          labelText: localizations.addMeasurementCommentLabel,
                         ),
                         keyboardAppearance: keyboardAppearance(),
                         style: newInputStyle().copyWith(color: Colors.black),

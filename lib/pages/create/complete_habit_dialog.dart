@@ -219,8 +219,8 @@ class _HabitDialogState extends State<HabitDialog> {
                             "MMMM d, yyyy 'at' HH:mm",
                           ),
                           style: newInputStyle().copyWith(color: Colors.black),
-                          decoration: inputDecorationWithLabel(
-                            localizations.addHabitDateLabel,
+                          decoration: createDialogInputDecoration(
+                            labelText: localizations.addHabitDateLabel,
                           ),
                           initialValue: _started,
                           theme: datePickerTheme(),
@@ -229,8 +229,8 @@ class _HabitDialogState extends State<HabitDialog> {
                         FormBuilderTextField(
                           initialValue: '',
                           key: const Key('habit_comment_field'),
-                          decoration: inputDecorationWithLabel(
-                            localizations.addHabitCommentLabel,
+                          decoration: createDialogInputDecoration(
+                            labelText: localizations.addHabitCommentLabel,
                           ),
                           minLines: 1,
                           maxLines: 10,
