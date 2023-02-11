@@ -46,23 +46,18 @@ class LinkedDuration extends StatelessWidget {
 
                 final total = liveTask.data.estimate ?? Duration.zero;
 
-                return SizedBox(
-                  width: MediaQuery.of(context).size.width - 80,
-                  child: ClipRRect(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: ProgressBar(
-                        progress: progress,
-                        total: total,
-                        progressBarColor:
-                            (progress > total) ? Colors.red : Colors.green,
-                        thumbColor: Colors.white,
-                        barHeight: 4,
-                        thumbRadius: 6,
-                        onSeek: (newPosition) {},
-                        timeLabelTextStyle: monospaceTextStyleSmall(),
-                      ),
-                    ),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: ProgressBar(
+                    progress: progress,
+                    total: total,
+                    progressBarColor:
+                        (progress > total) ? Colors.red : Colors.green,
+                    thumbColor: Colors.white,
+                    barHeight: 4,
+                    thumbRadius: 6,
+                    onSeek: (newPosition) {},
+                    timeLabelTextStyle: monospaceTextStyleSmall(),
                   ),
                 );
               },

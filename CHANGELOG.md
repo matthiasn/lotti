@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Navigate back icon on task page
+
+## [0.8.264] - 2023-02-11
+### Fixed:
 - Audio playback restart on navigate to audio entry
 
 ### Changed:
