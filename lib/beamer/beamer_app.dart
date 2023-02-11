@@ -131,6 +131,7 @@ class MyBeamerApp extends StatelessWidget {
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
       highlightColor: styleConfig().primaryColor.withOpacity(0.7),
       hoverColor: styleConfig().primaryColor.withOpacity(0.3),
+      chipTheme: const ChipThemeData(side: BorderSide.none),
       appBarTheme: AppBarTheme(
         iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
       ),

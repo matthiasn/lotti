@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Navigate back icon on task page
 - Unordered list color in editor
 - Editor menu background color
+- Chip style
 
 ### Changed:
 - Improved task input fields layout
