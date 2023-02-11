@@ -18,6 +18,8 @@ import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 
+import '../themes/themes.dart';
+
 class AppScreen extends StatefulWidget {
   const AppScreen({super.key});
 
@@ -145,7 +147,9 @@ class MyBeamerApp extends StatelessWidget {
           borderRadius: BorderRadius.circular(5),
         ),
       ),
-      colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.red).copyWith(
+      colorScheme: ColorScheme.fromSwatch(
+        primarySwatch: primaryColorMaterial,
+      ).copyWith(
         background: styleConfig().cardColor,
         brightness: keyboardAppearance(),
       ),
