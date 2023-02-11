@@ -8,14 +8,9 @@ import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:quiver/collection.dart';
 
-class TaskStatusFilter extends StatefulWidget {
+class TaskStatusFilter extends StatelessWidget {
   const TaskStatusFilter({super.key});
 
-  @override
-  State<TaskStatusFilter> createState() => _TaskStatusFilterState();
-}
-
-class _TaskStatusFilterState extends State<TaskStatusFilter> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
@@ -23,6 +18,7 @@ class _TaskStatusFilterState extends State<TaskStatusFilter> {
         return WrapSuper(
           alignment: WrapSuperAlignment.center,
           spacing: 5,
+          lineSpacing: 5,
           children: [
             ...snapshot.taskStatuses.map(TaskStatusChip.new),
             const TaskStatusAllChip(),

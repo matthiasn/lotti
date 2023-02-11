@@ -19,6 +19,7 @@ class EntryTypeFilter extends StatelessWidget {
           child: WrapSuper(
             alignment: WrapSuperAlignment.center,
             spacing: 5,
+            lineSpacing: 5,
             children: [
               ...entryTypes.map(EntryTypeChip.new),
               const EntryTypeAllChip(),
