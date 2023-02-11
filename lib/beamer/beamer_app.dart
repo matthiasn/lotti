@@ -14,6 +14,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/themes.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
@@ -145,7 +146,9 @@ class MyBeamerApp extends StatelessWidget {
           borderRadius: BorderRadius.circular(5),
         ),
       ),
-      colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.red).copyWith(
+      colorScheme: ColorScheme.fromSwatch(
+        primarySwatch: primaryColorMaterial,
+      ).copyWith(
         background: styleConfig().cardColor,
         brightness: keyboardAppearance(),
       ),

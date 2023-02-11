@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unordered list color in editor
 - Editor menu background color
 - Chip style
+- Primary material color
 
 ### Changed:
 - Improved task input fields layout
