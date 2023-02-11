@@ -109,10 +109,10 @@ packages:
     dependency: "direct main"
     description:
       name: audio_video_progress_bar
-      sha256: "7be62917604e19e3873e12c8025bbc6dbee5876e1fa4cd7772ea1d0eb0e88d99"
+      sha256: "38d8efe20cd0ff2bfad648396ae3d4ba6f8058b7d8b6ee6cb26e3245eda58ddd"
       url: "https://pub.dev"
     source: hosted
-    version: "0.11.0"
+    version: "1.0.0"
   auto_size_text:
     dependency: "direct main"
     description:
@@ -638,10 +638,10 @@ packages:
     dependency: "direct main"
     description:
       name: fl_chart
-      sha256: "749b3342ea3e95cbf61a0fec31a62606e837377b8b6d0caa7367a7ef80f38b7d"
+      sha256: "155556c4aba56c8474308d51b4e5446b80a07db9ab66a3cb74aff05c110df982"
       url: "https://pub.dev"
     source: hosted
-    version: "0.55.2"
+    version: "0.60.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -878,18 +878,18 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "9e19fe0b812a43f585ebdb4e4e9f26d5785a5bb818469421edd557118d613c7b"
+      sha256: cc30e5ce6575a9180d3b6c3c52d77963877fed90197fd76f5ad906657dc7e2f3
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.3"
+    version: "6.3.4"
   flutter_secure_storage:
     dependency: "direct main"
     description:
       name: flutter_secure_storage
-      sha256: f2afec1f1762c040a349ea2a588e32f442da5d0db3494a52a929a97c9e550bc5
+      sha256: "98352186ee7ad3639ccc77ad7924b773ff6883076ab952437d20f18a61f0a7c5"
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.1"
+    version: "8.0.0"
   flutter_secure_storage_linux:
     dependency: transitive
     description:
@@ -902,10 +902,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_secure_storage_macos
-      sha256: ff0768a6700ea1d9620e03518e2e25eac86a8bd07ca3556e9617bfa5ace4bd00
+      sha256: "083add01847fc1c80a07a08e1ed6927e9acd9618a35e330239d4422cd2a58c50"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.1"
+    version: "3.0.0"
   flutter_secure_storage_platform_interface:
     dependency: transitive
     description:
@@ -926,10 +926,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_secure_storage_windows
-      sha256: ca89c8059cf439985aa83c59619b3674c7ef6cc2e86943d169a7369d6a69cab5
+      sha256: fc2910ec9b28d60598216c29ea763b3a96c401f0ce1d13cdf69ccb0e5c93c3ee
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.3"
+    version: "2.0.0"
   flutter_sliding_tutorial:
     dependency: "direct main"
     description:
@@ -942,10 +942,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_svg
-      sha256: "6ff9fa12892ae074092de2fa6a9938fb21dbabfdaa2ff57dc697ff912fc8d4b2"
+      sha256: f999d84ad2efda1c4c3956e7968b713b3a24b06f0a0e4798e844e16bbb9bb70b
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.6"
+    version: "2.0.0+1"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -1045,10 +1045,10 @@ packages:
     dependency: "direct main"
     description:
       name: google_fonts
-      sha256: "8f099045e2f2a30e4d4d0a35f40c6bc941a8f2ca0e10ad9d214ee9edd3f37483"
+      sha256: "927573f2e8a8d65c17931e21918ad0ab0666b1b636537de7c4932bdb487b190f"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "4.0.3"
   graphs:
     dependency: transitive
     description:
@@ -1504,14 +1504,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.8.2"
-  path_drawing:
-    dependency: transitive
-    description:
-      name: path_drawing
-      sha256: bbb1934c0cbb03091af082a6389ca2080345291ef07a5fa6d6e078ba8682f977
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.1"
   path_parsing:
     dependency: transitive
     description:
@@ -1895,26 +1887,10 @@ packages:
     dependency: "direct main"
     description:
       name: share_plus
-      sha256: "4a4f54a8be58496a9c6d167e8a337fb95510ac7decccfda054ef6903e90cb4bc"
+      sha256: "8c6892037b1824e2d7e8f59d54b3105932899008642e6372e5079c6939b4b625"
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.0"
-  share_plus_linux:
-    dependency: transitive
-    description:
-      name: share_plus_linux
-      sha256: dc32bf9f1151b9864bb86a997c61a487967a08f2e0b4feaa9a10538712224da4
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.1"
-  share_plus_macos:
-    dependency: transitive
-    description:
-      name: share_plus_macos
-      sha256: "44daa946f2845045ecd7abb3569b61cd9a55ae9cc4cbec9895b2067b270697ae"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.1"
+    version: "6.3.1"
   share_plus_platform_interface:
     dependency: transitive
     description:
@@ -1923,22 +1899,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.0"
-  share_plus_web:
-    dependency: transitive
-    description:
-      name: share_plus_web
-      sha256: eaef05fa8548b372253e772837dd1fbe4ce3aca30ea330765c945d7d4f7c9935
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.0"
-  share_plus_windows:
-    dependency: transitive
-    description:
-      name: share_plus_windows
-      sha256: f0bf3109d8cc4722b279b1f54bb16cfe339091b1262c2849263e42a4661897d2
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.0.0"
   shared_preferences:
     dependency: transitive
     description:
@@ -2376,6 +2336,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
+  vector_graphics:
+    dependency: transitive
+    description:
+      name: vector_graphics
+      sha256: "09562ef5f47aa84f6567495adb6b9cb2a3192b82c352623b8bd00b300d62603b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
+  vector_graphics_codec:
+    dependency: transitive
+    description:
+      name: vector_graphics_codec
+      sha256: "886e57742644ebed024dc3ade29712e37eea1b03d294fb314c0a3386243fe5a6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
+  vector_graphics_compiler:
+    dependency: transitive
+    description:
+      name: vector_graphics_compiler
+      sha256: "5d9010c4a292766c55395b2288532579a85673f8148460d1e233d98ffe10d24e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   vector_math:
     dependency: transitive
     description:
@@ -2500,10 +2484,10 @@ packages:
     dependency: transitive
     description:
       name: win32
-      sha256: "6b75ac2ddd42f5c226fdaf4498a2b04071c06f1f2b8f7ab1c3f77cc7f2285ff1"
+      sha256: c9ebe7ee4ab0c2194e65d3a07d8c54c5d00bb001b76081c4a04cdb8448b59e46
       url: "https://pub.dev"
     source: hosted
-    version: "2.7.0"
+    version: "3.1.3"
   window_manager:
     dependency: "direct main"
     description:
