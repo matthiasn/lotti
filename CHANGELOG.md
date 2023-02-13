@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tweak spacing in journal filters
 - Improved styling in settings
 - Upgraded dependencies
-- Enable the Impeller rendering engine on iOS
 
 ## [0.8.264] - 2023-02-11
 ### Fixed:
