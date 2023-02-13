@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.265+1791
+version: 0.8.265+1797
 
 msix_config:
   display_name: Lotti
@@ -22,7 +22,7 @@ dependencies:
   analyzer: ^5.1.0
   arb_utils: ^0.3.0
   assorted_layout_widgets: ^7.0.0
-  audio_video_progress_bar: ^0.11.0
+  audio_video_progress_bar: ^1.0.0
   auto_size_text: ^3.0.0
   badges: ^3.0.1
   beamer: ^1.5.2
@@ -52,7 +52,7 @@ dependencies:
   equatable: ^2.0.3
   exif: ^3.0.1
 
-  fl_chart: ^0.55.2
+  fl_chart: ^0.60.0
   flutter:
     sdk: flutter
 
@@ -80,15 +80,15 @@ dependencies:
   flutter_markdown: ^0.6.9+1
   flutter_native_timezone: ^2.0.0
   flutter_quill: ^6.3.2
-  flutter_secure_storage: ^7.0.1
+  flutter_secure_storage: ^8.0.0
   flutter_sliding_tutorial: ^2.0.0
-  flutter_svg: ^1.0.3
+  flutter_svg: ^2.0.0
   form_builder_validators: ^8.1.1
   freezed_annotation: ^2.0.3
   geoclue: ^0.1.0
   get_it: ^7.2.0
   getwidget: ^3.0.1
-  google_fonts: ^3.0.0
+  google_fonts: ^4.0.3
 
   #health: ^4.4.0
   health:
@@ -147,7 +147,7 @@ dependencies:
 
   retry: ^3.1.0
   rxdart: ^0.27.7
-  share_plus: ^5.0.0
+  share_plus: ^6.3.1
   sqflite: ^2.0.1
   sqlite3_flutter_libs: ^0.5.2
   syncfusion_flutter_calendar: ^20.1.47

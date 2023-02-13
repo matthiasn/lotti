@@ -14,6 +14,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HabitDialog extends StatefulWidget {
@@ -170,7 +171,7 @@ class _HabitDialogState extends State<HabitDialog> {
               child: Text(
                 localizations.completeHabitSuccessButton,
                 style: saveButtonStyle()
-                    .copyWith(color: styleConfig().primaryColor),
+                    .copyWith(color: styleConfig().primaryColor.darken(25)),
               ),
             ),
           ],
@@ -280,10 +281,11 @@ class HabitDescription extends StatelessWidget {
       child: Linkify(
         onOpen: onOpen,
         text: '${habitDefinition?.description}',
-        style: habitCompletionHeaderStyle.copyWith(fontSize: 15),
+        style: habitCompletionHeaderStyle.copyWith(fontSize: fontSizeMedium),
         linkStyle: habitCompletionHeaderStyle.copyWith(
           fontSize: fontSizeMedium,
-          color: styleConfig().primaryColor,
+          color: styleConfig().primaryColor.darken(25),
+          decoration: TextDecoration.none,
         ),
       ),
     );

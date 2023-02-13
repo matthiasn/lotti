@@ -11,6 +11,23 @@ final Color white = colorFromCssHex('#FFFFFF');
 final Color coal = colorFromCssHex('#000000');
 final Color iron = colorFromCssHex('#909090');
 final Color primaryColor = colorFromCssHex('#82E6CE');
+
+final MaterialColor primaryColorMaterial = MaterialColor(
+  primaryColor.value,
+  {
+    50: primaryColor.withOpacity(.1),
+    100: primaryColor.withOpacity(.2),
+    200: primaryColor.withOpacity(.3),
+    300: primaryColor.withOpacity(.4),
+    400: primaryColor.withOpacity(.5),
+    500: primaryColor.withOpacity(.6),
+    600: primaryColor.withOpacity(.7),
+    700: primaryColor.withOpacity(.8),
+    800: primaryColor.withOpacity(.9),
+    900: primaryColor.withOpacity(1),
+  },
+);
+
 final Color primaryColorLight = colorFromCssHex('#CFF3EA');
 final Color ripIce = colorFromCssHex('#EFFFFB');
 final Color alarm = colorFromCssHex('#FF7373');
