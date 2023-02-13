@@ -123,17 +123,21 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
             bottom: 20,
           ),
           actions: [
-            if (dirty && validate())
-              TextButton(
-                key: const Key('measurement_save'),
-                onPressed: () => saveMeasurement(
-                  measurableDataType: dataType,
-                ),
-                child: Text(
-                  localizations.addMeasurementSaveButton,
-                  style: saveButtonStyle(),
-                ),
-              ),
+            SizedBox(
+              height: 25,
+              child: dirty && validate()
+                  ? TextButton(
+                      key: const Key('measurement_save'),
+                      onPressed: () => saveMeasurement(
+                        measurableDataType: dataType,
+                      ),
+                      child: Text(
+                        localizations.addMeasurementSaveButton,
+                        style: saveButtonStyle(),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
           content: FormBuilder(
             key: _formKey,

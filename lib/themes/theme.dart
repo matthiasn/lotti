@@ -4,6 +4,7 @@ import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/themes_service.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 const fontSizeSmall = 11.0;
 const fontSizeMedium = 15.0;
@@ -247,7 +248,7 @@ const taskFormFieldStyle = TextStyle(color: Colors.black87);
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
-      color: styleConfig().alarm,
+      color: styleConfig().primaryColor.darken(25),
     );
 
 TextStyle cancelButtonStyle() => TextStyle(

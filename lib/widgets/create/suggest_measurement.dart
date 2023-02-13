@@ -36,7 +36,7 @@ class MeasurementSuggestions extends StatelessWidget {
         );
 
         return SizedBox(
-          height: 25,
+          height: 20,
           child: Wrap(
             spacing: 10,
             runSpacing: 10,

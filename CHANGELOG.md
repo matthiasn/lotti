@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed:
 - Data capture dialog jumpiness
+- Prevent dialog resize when save button becomes visible
 
 ## [0.8.265] - 2023-02-13
 ### Fixed:
