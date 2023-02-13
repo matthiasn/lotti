@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -13,7 +14,10 @@ import '../../utils/measurable_utils_test.dart';
 import '../../widget_test_utils.dart';
 
 class MeasurementMock extends Mock {
-  Future<void> saveMeasurement({num? value});
+  Future<void> saveMeasurement({
+    required MeasurableDataType measurableDataType,
+    num? value,
+  });
 }
 
 void main() {
@@ -39,7 +43,10 @@ void main() {
       ]),
     );
 
-    Future<void> mockSaveMeasurement() => mock.saveMeasurement(value: 500);
+    Future<void> mockSaveMeasurement() => mock.saveMeasurement(
+          measurableDataType: measurableWater,
+          value: 500,
+        );
     when(mockSaveMeasurement).thenAnswer((_) async => true);
 
     setUp(() async {

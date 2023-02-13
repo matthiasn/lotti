@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Upgraded dependencies
 
+### Fixed:
+- Data capture dialog jumpiness
+
 ## [0.8.265] - 2023-02-13
 ### Fixed:
 - Navigate back icon on task page

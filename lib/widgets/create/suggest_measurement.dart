@@ -14,7 +14,10 @@ class MeasurementSuggestions extends StatelessWidget {
   });
 
   final MeasurableDataType measurableDataType;
-  final Future<void> Function({num? value}) saveMeasurement;
+  final Future<void> Function({
+    required MeasurableDataType measurableDataType,
+    num? value,
+  }) saveMeasurement;
 
   @override
   Widget build(BuildContext context) {
@@ -32,34 +35,40 @@ class MeasurementSuggestions extends StatelessWidget {
           measurements: measurementsSnapshot.data,
         );
 
-        return Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: popularValues.map((num value) {
-            final regex = RegExp(r'([.]*0)(?!.*\d)');
-            final label = value.toDouble().toString().replaceAll(regex, '');
-            final unit = measurableDataType.unitName;
+        return SizedBox(
+          height: 25,
+          child: Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: popularValues.map((num value) {
+              final regex = RegExp(r'([.]*0)(?!.*\d)');
+              final label = value.toDouble().toString().replaceAll(regex, '');
+              final unit = measurableDataType.unitName;
 
-            void onTap() => saveMeasurement(value: value);
+              void onTap() => saveMeasurement(
+                    value: value,
+                    measurableDataType: measurableDataType,
+                  );
 
-            return MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: onTap,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 4,
-                      horizontal: 8,
+              return MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: onTap,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 4,
+                        horizontal: 8,
+                      ),
+                      color: styleConfig().primaryColor,
+                      child: Text('$label $unit'),
                     ),
-                    color: styleConfig().primaryColor,
-                    child: Text('$label $unit'),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         );
       },
     );

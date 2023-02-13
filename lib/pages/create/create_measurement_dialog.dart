@@ -33,8 +33,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
   final _formKey = GlobalKey<FormBuilderState>();
   bool dirty = false;
 
-  MeasurableDataType? selected;
-
   final hotkeyCmdS = HotKey(
     KeyCode.keyS,
     modifiers: [KeyModifier.meta],
@@ -43,24 +41,22 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
 
   final beamBack = dashboardsBeamerDelegate.beamBack;
 
-  Future<void> saveMeasurement({num? value}) async {
+  Future<void> saveMeasurement({
+    required MeasurableDataType measurableDataType,
+    num? value,
+  }) async {
     _formKey.currentState!.save();
     if (validate()) {
       final formData = _formKey.currentState?.value;
-      if (selected == null) {
-        return;
-      }
+
       setState(() {
         dirty = false;
       });
 
       beamBack();
 
-      final dataType =
-          await _db.watchMeasurableDataTypeById(selected!.id).first;
-
       final measurement = MeasurementData(
-        dataTypeId: selected!.id,
+        dataTypeId: measurableDataType.id,
         dateTo: formData!['date'] as DateTime,
         dateFrom: formData['date'] as DateTime,
         value: value ?? nf.parse('${formData['value']}'.replaceAll(',', '.')),
@@ -69,7 +65,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
       await persistenceLogic.createMeasurementEntry(
         data: measurement,
         comment: formData['comment'] as String,
-        private: dataType?.private ?? false,
+        private: measurableDataType.private ?? false,
       );
     }
   }
@@ -77,11 +73,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
   @override
   void initState() {
     super.initState();
-
-    hotKeyManager.register(
-      hotkeyCmdS,
-      keyDownHandler: (hotKey) => saveMeasurement(),
-    );
   }
 
   @override
@@ -101,23 +92,17 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return StreamBuilder<List<MeasurableDataType>>(
-      stream: _db.watchMeasurableDataTypes(),
+    return StreamBuilder<MeasurableDataType?>(
+      stream: _db.watchMeasurableDataTypeById(widget.measurableId),
       builder: (
         BuildContext context,
-        AsyncSnapshot<List<MeasurableDataType>> snapshot,
+        AsyncSnapshot<MeasurableDataType?> snapshot,
       ) {
-        final items = snapshot.data ?? [];
-
-        if (items.length == 1) {
-          selected = items.first;
+        if (snapshot.data == null) {
+          return const SizedBox.shrink();
         }
 
-        for (final dataType in items) {
-          if (dataType.id == widget.measurableId) {
-            selected = dataType;
-          }
-        }
+        final dataType = snapshot.data!;
 
         return AlertDialog(
           insetPadding: const EdgeInsets.symmetric(horizontal: 32),
@@ -141,7 +126,9 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
             if (dirty && validate())
               TextButton(
                 key: const Key('measurement_save'),
-                onPressed: saveMeasurement,
+                onPressed: () => saveMeasurement(
+                  measurableDataType: dataType,
+                ),
                 child: Text(
                   localizations.addMeasurementSaveButton,
                   style: saveButtonStyle(),
@@ -163,7 +150,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      selected?.displayName ?? '',
+                      dataType.displayName,
                       style: const TextStyle(
                         color: Colors.black,
                         fontSize: fontSizeMedium,
@@ -181,9 +168,9 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if ('${selected?.description}'.isNotEmpty)
+                      if (dataType.description.isNotEmpty)
                         Text(
-                          '${selected?.description}',
+                          dataType.description,
                           style: const TextStyle(
                             color: Colors.black38,
                             fontWeight: FontWeight.w300,
@@ -209,8 +196,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         initialValue: '',
                         key: const Key('measurement_value_field'),
                         decoration: createDialogInputDecoration(
-                          labelText: '${selected?.displayName} '
-                              '${'${selected?.unitName}'.isNotEmpty ? '[${selected?.unitName}] ' : ''}',
+                          labelText: '${dataType.displayName} '
+                              '${dataType.unitName.isNotEmpty ? '[${dataType.unitName}] ' : ''}',
                         ),
                         keyboardAppearance: keyboardAppearance(),
                         style: newInputStyle().copyWith(color: Colors.black),
@@ -232,11 +219,10 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         name: 'comment',
                       ),
                       inputSpacer,
-                      if (selected != null)
-                        MeasurementSuggestions(
-                          measurableDataType: selected!,
-                          saveMeasurement: saveMeasurement,
-                        ),
+                      MeasurementSuggestions(
+                        measurableDataType: dataType,
+                        saveMeasurement: saveMeasurement,
+                      ),
                     ],
                   ),
                 ),
