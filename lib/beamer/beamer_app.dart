@@ -57,52 +57,60 @@ class _AppScreenState extends State<AppScreen> {
               ),
             ],
           ),
-          bottomNavigationBar: BottomNavigationBar(
-            backgroundColor: styleConfig().negspace,
-            unselectedItemColor: styleConfig().primaryTextColor,
-            selectedItemColor: styleConfig().primaryColor,
-            selectedFontSize: fontSizeSmall,
-            elevation: 8,
-            unselectedFontSize: fontSizeSmall,
-            selectedLabelStyle: const TextStyle(
-              height: 2,
-              fontWeight: FontWeight.bold,
+          bottomNavigationBar: Theme(
+            data: Theme.of(context).copyWith(
+              focusColor: Colors.transparent,
+              hoverColor: Colors.transparent,
+              splashColor: Colors.transparent,
             ),
-            unselectedLabelStyle: const TextStyle(height: 2),
-            type: BottomNavigationBarType.fixed,
-            currentIndex: index,
-            items: [
-              BottomNavigationBarItem(
-                icon: SvgPicture.asset(styleConfig().navTasksIcon),
-                activeIcon: SvgPicture.asset(styleConfig().navTasksIconActive),
-                label: localizations.navTabTitleHabits,
-                tooltip: '',
+            child: BottomNavigationBar(
+              backgroundColor: styleConfig().negspace,
+              unselectedItemColor: styleConfig().primaryTextColor,
+              selectedItemColor: styleConfig().primaryColor,
+              selectedFontSize: fontSizeSmall,
+              elevation: 8,
+              unselectedFontSize: fontSizeSmall,
+              selectedLabelStyle: const TextStyle(
+                height: 2,
+                fontWeight: FontWeight.bold,
               ),
-              BottomNavigationBarItem(
-                icon: SvgPicture.asset(styleConfig().navHomeIcon),
-                activeIcon: SvgPicture.asset(styleConfig().navHomeIconActive),
-                label: localizations.navTabTitleInsights,
-                tooltip: '',
-              ),
-              BottomNavigationBarItem(
-                icon: SvgPicture.asset(styleConfig().navJournalIcon),
-                activeIcon:
-                    SvgPicture.asset(styleConfig().navJournalIconActive),
-                label: localizations.navTabTitleJournal,
-                tooltip: '',
-              ),
-              BottomNavigationBarItem(
-                icon: OutboxBadgeIcon(
-                  icon: SvgPicture.asset(styleConfig().navSettingsIcon),
+              unselectedLabelStyle: const TextStyle(height: 2),
+              type: BottomNavigationBarType.fixed,
+              currentIndex: index,
+              items: [
+                BottomNavigationBarItem(
+                  icon: SvgPicture.asset(styleConfig().navTasksIcon),
+                  activeIcon:
+                      SvgPicture.asset(styleConfig().navTasksIconActive),
+                  label: localizations.navTabTitleHabits,
+                  tooltip: '',
                 ),
-                activeIcon: OutboxBadgeIcon(
-                  icon: SvgPicture.asset(styleConfig().navSettingsIconActive),
+                BottomNavigationBarItem(
+                  icon: SvgPicture.asset(styleConfig().navHomeIcon),
+                  activeIcon: SvgPicture.asset(styleConfig().navHomeIconActive),
+                  label: localizations.navTabTitleInsights,
+                  tooltip: '',
                 ),
-                label: localizations.navTabTitleSettings,
-                tooltip: '',
-              ),
-            ],
-            onTap: navService.tapIndex,
+                BottomNavigationBarItem(
+                  icon: SvgPicture.asset(styleConfig().navJournalIcon),
+                  activeIcon:
+                      SvgPicture.asset(styleConfig().navJournalIconActive),
+                  label: localizations.navTabTitleJournal,
+                  tooltip: '',
+                ),
+                BottomNavigationBarItem(
+                  icon: OutboxBadgeIcon(
+                    icon: SvgPicture.asset(styleConfig().navSettingsIcon),
+                  ),
+                  activeIcon: OutboxBadgeIcon(
+                    icon: SvgPicture.asset(styleConfig().navSettingsIconActive),
+                  ),
+                  label: localizations.navTabTitleSettings,
+                  tooltip: '',
+                ),
+              ],
+              onTap: navService.tapIndex,
+            ),
           ),
         );
       },
@@ -130,7 +138,7 @@ class MyBeamerApp extends StatelessWidget {
       useMaterial3: true,
       brightness: styleConfig().keyboardAppearance,
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
-      highlightColor: styleConfig().primaryColor.withOpacity(0.7),
+      highlightColor: Colors.transparent,
       hoverColor: styleConfig().primaryColor.withOpacity(0.3),
       chipTheme: const ChipThemeData(side: BorderSide.none),
       appBarTheme: AppBarTheme(
