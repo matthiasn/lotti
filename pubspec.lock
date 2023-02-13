@@ -421,10 +421,10 @@ packages:
     dependency: "direct dev"
     description:
       name: dart_code_metrics
-      sha256: bb4ec5e729788dde5f7e8e9df4c05ec3b78532a5763e635337153ce40085514b
+      sha256: "026e28da197a03caeccccc0b174ec98ef03da3c81c4543314d7add121aab4375"
       url: "https://pub.dev"
     source: hosted
-    version: "5.5.1"
+    version: "5.6.0"
   dart_code_metrics_presets:
     dependency: transitive
     description:
@@ -590,10 +590,10 @@ packages:
     dependency: transitive
     description:
       name: extended_image
-      sha256: "6494c5728d0a8216fafcda7a4125f7a6da3d510ab00677a630d01dbb1125da96"
+      sha256: "75e4b0ad0f8f63eed7935ff2506c809a670f5e6dd0f61304525879d53fc41a17"
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.1"
+    version: "7.0.2"
   extended_image_library:
     dependency: transitive
     description:
@@ -854,10 +854,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_markdown
-      sha256: "818cf6c28377ba2c91ed283c96fd712e9c175dd2d2488eb7fc93b6afb9ad2e08"
+      sha256: "7b25c10de1fea883f3c4f9b8389506b54053cd00807beab69fd65c8653a2711f"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.13+1"
+    version: "0.6.14"
   flutter_native_splash:
     dependency: "direct dev"
     description:
@@ -878,10 +878,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: cc30e5ce6575a9180d3b6c3c52d77963877fed90197fd76f5ad906657dc7e2f3
+      sha256: f8286ab2cdbda0f7d265b2764dbd3b9d90318293d293f584175d956922d98941
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.4"
+    version: "6.3.5"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -942,10 +942,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_svg
-      sha256: f999d84ad2efda1c4c3956e7968b713b3a24b06f0a0e4798e844e16bbb9bb70b
+      sha256: b9be7260c1fdbe0090a11d9d356fc2c88e14cf33407fc0c1829d76ab13808035
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0+1"
+    version: "2.0.1"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -1323,18 +1323,18 @@ packages:
     dependency: transitive
     description:
       name: macos_ui
-      sha256: "2b31858b56d44e807cf192c58cf6660b584c997f4746496d4892a903c1c27a49"
+      sha256: "5c991674895b939e107feeb8efc82f85891af2d1413a3af94f564c64d3034c41"
       url: "https://pub.dev"
     source: hosted
-    version: "1.9.1"
+    version: "1.10.0"
   markdown:
     dependency: transitive
     description:
       name: markdown
-      sha256: c2b81e184067b41d0264d514f7cdaa2c02d38511e39d6521a1ccc238f6d7b3f2
+      sha256: "4ed544d2ce84975b2ab5cbd4268f2d31f47858553ae2295c92fdf5d6e431a927"
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.1"
+    version: "7.0.0"
   matcher:
     dependency: transitive
     description:

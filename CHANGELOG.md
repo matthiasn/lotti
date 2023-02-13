@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Upgraded dependencies
+
+## [0.8.265] - 2023-02-13
 ### Fixed:
 - Navigate back icon on task page
 - Unordered list color in editor
