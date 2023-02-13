@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tweak spacing in journal filters
 - Improved styling in settings
 - Upgraded dependencies
+- Tweak bottom navigation bar styling
+- Darker link and success icon color in habits completion
 
 ## [0.8.264] - 2023-02-11
 ### Fixed:
