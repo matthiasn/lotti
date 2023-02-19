@@ -121,14 +121,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
-  badges:
-    dependency: "direct main"
-    description:
-      name: badges
-      sha256: "461031a60efbb95276f52107f63d5d45008b5ca1eb7f8ca440cadda9ec2143b0"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.2"
   basic_utils:
     dependency: transitive
     description:
@@ -1359,14 +1351,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.7096"
-  material_floating_search_bar:
-    dependency: "direct main"
-    description:
-      name: material_floating_search_bar
-      sha256: "970df4bc17a1ae7cacc745012fba442701daa44224e46bc0fd459e3aff0d5362"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.7"
   matrix4_transform:
     dependency: transitive
     description:
