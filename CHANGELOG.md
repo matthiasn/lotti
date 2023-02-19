@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Upgraded dependencies
 
+## [0.8.266] - 2023-02-13
+### Changed:
+- Upgraded dependencies
+
 ### Fixed:
 - Data capture dialog jumpiness
 - Prevent dialog resize when save button becomes visible

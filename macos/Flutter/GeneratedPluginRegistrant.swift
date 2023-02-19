@@ -18,7 +18,7 @@ import location
 import macos_ui
 import package_info_plus
 import pasteboard
-import path_provider_macos
+import path_provider_foundation
 import photo_manager
 import record_macos
 import screen_retriever

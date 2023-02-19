@@ -36,7 +36,7 @@ class ToolbarWidget extends StatelessWidget {
 
         return QuillToolbar(
           key: key,
-          toolbarHeight: toolbarIconSize * 2,
+          toolbarSize: 44,
           toolbarSectionSpacing: 0,
           toolbarIconAlignment: toolbarIconAlignment,
           multiRowsDisplay: false,
