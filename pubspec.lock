@@ -1407,15 +1407,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.0"
-  modal_bottom_sheet:
-    dependency: "direct main"
-    description:
-      path: modal_bottom_sheet
-      ref: HEAD
-      resolved-ref: d79185a564c6d1b1535568ea7dfef060e20a049d
-      url: "https://github.com/danReynolds/modal_bottom_sheet.git"
-    source: git
-    version: "2.1.2"
   msix:
     dependency: "direct dev"
     description:

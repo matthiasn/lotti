@@ -11,7 +11,6 @@ import 'package:lotti/pages/journal/infinite_journal_page.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/journal/tags/tags_modal.dart';
-import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
 class JournalLocation extends BeamLocation<BeamState> {
   JournalLocation(RouteInformation super.routeInformation);
@@ -82,10 +81,8 @@ class JournalLocation extends BeamLocation<BeamState> {
             RouteSettings settings,
             Widget child,
           ) {
-            return CupertinoModalBottomSheetRoute<void>(
-              expanded: false,
-              duration: const Duration(seconds: 1),
-              animationCurve: Curves.ease,
+            return ModalBottomSheetRoute<void>(
+              isScrollControlled: true,
               builder: (context) {
                 final data = context.currentBeamLocation.data;
 

@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.268+1785
+version: 0.8.269+1786
 
 msix_config:
   display_name: Lotti
@@ -110,12 +110,6 @@ dependencies:
   lottie: ^2.2.0
   material_design_icons_flutter: ^6.0.7096
   material_floating_search_bar: ^0.3.6
-  # TODO: use from pub_dev once merged
-  # modal_bottom_sheet: ^2.1.2
-  modal_bottom_sheet:
-    git:
-      url: https://github.com/danReynolds/modal_bottom_sheet.git
-      path: modal_bottom_sheet
   multi_select_flutter: ^4.0.0
   package_info_plus: ^3.0.1
   path: ^1.8.1
