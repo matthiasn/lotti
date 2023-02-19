@@ -251,6 +251,12 @@ TextStyle saveButtonStyle() => TextStyle(
       color: styleConfig().primaryColor.darken(25),
     );
 
+TextStyle failButtonStyle() => TextStyle(
+      fontSize: fontSizeMedium,
+      fontWeight: FontWeight.bold,
+      color: styleConfig().alarm.darken(),
+    );
+
 TextStyle cancelButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w100,
