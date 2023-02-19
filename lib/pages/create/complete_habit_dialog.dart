@@ -153,7 +153,7 @@ class _HabitDialogState extends State<HabitDialog> {
               onPressed: () => saveHabit(HabitCompletionType.fail),
               child: Text(
                 localizations.completeHabitFailButton,
-                style: saveButtonStyle(),
+                style: failButtonStyle(),
               ),
             ),
             TextButton(
