@@ -1,7 +1,6 @@
 import 'dart:math';
 
-import 'package:badges/badges.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
@@ -29,17 +28,12 @@ class OutboxBadgeIcon extends StatelessWidget {
         final label = '$count';
         final padding = max(6 - '$count'.length, 4);
         return Badge(
-          badgeContent: Text(
+          label: Text(
             label,
             style: badgeStyle,
           ),
-          badgeStyle: BadgeStyle(
-            badgeColor: styleConfig().alarm,
-            padding: EdgeInsets.all(padding.toDouble()),
-            elevation: 3,
-          ),
-          badgeAnimation: const BadgeAnimation.slide(toAnimate: false),
-          showBadge: count > 0,
+          backgroundColor: styleConfig().alarm,
+          isLabelVisible: count > 0,
           child: icon,
         );
       },

@@ -1,5 +1,4 @@
-import 'package:badges/badges.dart';
-import 'package:flutter/material.dart' hide Badge;
+import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
@@ -20,15 +19,12 @@ class FlaggedBadge extends StatelessWidget {
       ) {
         final count = snapshot.data;
         return Badge(
-          badgeContent: Text(
+          label: Text(
             snapshot.data.toString(),
             style: badgeStyle,
           ),
-          showBadge: count != null && count != 0,
-          badgeStyle: BadgeStyle(
-            badgeColor: styleConfig().alarm,
-            elevation: 3,
-          ),
+          isLabelVisible: count != null && count != 0,
+          backgroundColor: styleConfig().alarm,
           child: child,
         );
       },
