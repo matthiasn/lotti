@@ -110,7 +110,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
             left: 30,
             top: 20,
             right: 10,
-            bottom: 20,
           ),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(50)),
@@ -124,7 +123,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
           ),
           actions: [
             SizedBox(
-              height: 25,
+              height: 40,
               child: dirty && validate()
                   ? TextButton(
                       key: const Key('measurement_save'),

@@ -248,7 +248,13 @@ const taskFormFieldStyle = TextStyle(color: Colors.black87);
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
-      color: styleConfig().primaryColor.darken(25),
+      color: styleConfig().alarm.darken(),
+    );
+
+TextStyle failButtonStyle() => TextStyle(
+      fontSize: fontSizeMedium,
+      fontWeight: FontWeight.bold,
+      color: styleConfig().alarm.darken(),
     );
 
 TextStyle cancelButtonStyle() => TextStyle(
