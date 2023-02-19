@@ -31,8 +31,6 @@ class _TagsModalState extends State<TagsModal> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('TagsModal build');
-
     final tagsService = getIt<TagsService>();
     final localizations = AppLocalizations.of(context)!;
     final cubit = context.read<EntryCubit>();

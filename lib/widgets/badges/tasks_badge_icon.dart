@@ -1,5 +1,4 @@
-import 'package:badges/badges.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
@@ -21,15 +20,9 @@ class TasksBadge extends StatelessWidget {
         final count = snapshot.data ?? 0;
 
         return Badge(
-          badgeContent: Text(
-            '$count',
-            style: badgeStyle,
-          ),
-          showBadge: count != 0,
-          badgeStyle: BadgeStyle(
-            elevation: 3,
-            badgeColor: styleConfig().alarm,
-          ),
+          label: Text('$count', style: badgeStyle),
+          isLabelVisible: count != 0,
+          backgroundColor: styleConfig().alarm,
           child: child,
         );
       },

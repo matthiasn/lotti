@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.268+1785
+version: 0.8.269+1789
 
 msix_config:
   display_name: Lotti
@@ -24,7 +24,6 @@ dependencies:
   assorted_layout_widgets: ^7.0.0
   audio_video_progress_bar: ^1.0.0
   auto_size_text: ^3.0.0
-  badges: ^3.0.1
   beamer: ^1.5.2
   bloc: ^8.0.1
   bloc_test: ^9.0.1
@@ -33,7 +32,6 @@ dependencies:
   charts_flutter: ^0.12.0
   collection: ^1.17.0
   connectivity_plus: ^3.0.2
-  cross_file: ^0.3.3+2
   crypto: ^3.0.1
   cryptography: ^2.0.2
   dart_geohash: ^2.0.1
@@ -57,7 +55,6 @@ dependencies:
     sdk: flutter
 
   flutter_bloc: ^8.0.0
-  flutter_colorpicker: ^1.0.3
   flutter_datetime_picker: ^1.5.1
   flutter_fadein: ^2.0.0
   flutter_fgbg: ^0.2.0
@@ -69,7 +66,6 @@ dependencies:
       ref: 37afbc9
 
   flutter_image_compress: ^1.1.0
-  flutter_image_slideshow: ^0.1.2
   flutter_linkify: ^5.0.2
   flutter_local_notifications: ^13.0.0
 
@@ -104,33 +100,18 @@ dependencies:
   jiffy: ^5.0.0
   json_annotation: ^4.6.0
   just_audio: ^0.9.12
-  keyboard_dismisser: ^3.0.0
   latlong2: ^0.8.1
   location: ^4.3.0
   lottie: ^2.2.0
   material_design_icons_flutter: ^6.0.7096
-  material_floating_search_bar: ^0.3.6
-  # TODO: use from pub_dev once merged
-  # modal_bottom_sheet: ^2.1.2
-  modal_bottom_sheet:
-    git:
-      url: https://github.com/danReynolds/modal_bottom_sheet.git
-      path: modal_bottom_sheet
   multi_select_flutter: ^4.0.0
   package_info_plus: ^3.0.1
   path: ^1.8.1
   path_provider: ^2.0.12
   permission_handler: ^10.0.0
   photo_view: ^0.14.0
-
-#  qr_code_scanner: ^0.7.0
-  qr_code_scanner:
-    git:
-      url: https://github.com/xeinebiu/qr_code_scanner.git
-      ref: fix_break_changes_platform
-
+  qr_code_scanner: ^1.0.1
   qr_flutter: ^4.0.0
-
   quiver: ^3.2.1
   radial_button:
     git:

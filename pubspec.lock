@@ -121,14 +121,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
-  badges:
-    dependency: "direct main"
-    description:
-      name: badges
-      sha256: "461031a60efbb95276f52107f63d5d45008b5ca1eb7f8ca440cadda9ec2143b0"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.2"
   basic_utils:
     dependency: transitive
     description:
@@ -386,7 +378,7 @@ packages:
     source: hosted
     version: "1.6.3"
   cross_file:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: cross_file
       sha256: "0b0036e8cccbfbe0555fd83c1d31a6f30b77a96b598b35a5d36dd41f718695e9"
@@ -672,7 +664,7 @@ packages:
     source: hosted
     version: "3.3.0"
   flutter_colorpicker:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: flutter_colorpicker
       sha256: "458a6ed8ea480eb16ff892aedb4b7092b2804affd7e046591fb03127e8d8ef8b"
@@ -733,14 +725,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.3"
-  flutter_image_slideshow:
-    dependency: "direct main"
-    description:
-      name: flutter_image_slideshow
-      sha256: "0192bf6c683fe993e4694d8803c0b4a0c0757333c356900a9b74bb7fe57546da"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.4"
   flutter_keyboard_visibility:
     dependency: transitive
     description:
@@ -1239,14 +1223,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.7"
-  keyboard_dismisser:
-    dependency: "direct main"
-    description:
-      name: keyboard_dismisser
-      sha256: f67e032581fc3dd1f77e1cb54c421b089e015d122aeba2490ba001cfcc42a181
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.0"
   latlong2:
     dependency: "direct main"
     description:
@@ -1359,14 +1335,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.7096"
-  material_floating_search_bar:
-    dependency: "direct main"
-    description:
-      name: material_floating_search_bar
-      sha256: "970df4bc17a1ae7cacc745012fba442701daa44224e46bc0fd459e3aff0d5362"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.7"
   matrix4_transform:
     dependency: transitive
     description:
@@ -1407,15 +1375,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.0"
-  modal_bottom_sheet:
-    dependency: "direct main"
-    description:
-      path: modal_bottom_sheet
-      ref: HEAD
-      resolved-ref: d79185a564c6d1b1535568ea7dfef060e20a049d
-      url: "https://github.com/danReynolds/modal_bottom_sheet.git"
-    source: git
-    version: "2.1.2"
   msix:
     dependency: "direct dev"
     description:
@@ -1747,12 +1706,11 @@ packages:
   qr_code_scanner:
     dependency: "direct main"
     description:
-      path: "."
-      ref: fix_break_changes_platform
-      resolved-ref: "0feca6f15042c279ff575c559a3430df917b623d"
-      url: "https://github.com/xeinebiu/qr_code_scanner.git"
-    source: git
-    version: "0.7.0"
+      name: qr_code_scanner
+      sha256: f23b68d893505a424f0bd2e324ebea71ed88465d572d26bb8d2e78a4749591fd
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   qr_flutter:
     dependency: "direct main"
     description:

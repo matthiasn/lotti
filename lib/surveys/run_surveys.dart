@@ -4,8 +4,6 @@ import 'package:lotti/surveys/calculate.dart';
 import 'package:lotti/surveys/cfq11_survey.dart';
 import 'package:lotti/surveys/panas_survey.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
-import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:research_package/research_package.dart';
 
 Future<void> runSurvey({
@@ -13,8 +11,7 @@ Future<void> runSurvey({
   required void Function(RPTaskResult) resultCallback,
   required BuildContext context,
 }) async {
-  await showCupertinoModalBottomSheet<void>(
-    duration: isTestEnv ? Duration.zero : const Duration(seconds: 1),
+  await showModalBottomSheet<void>(
     context: context,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(

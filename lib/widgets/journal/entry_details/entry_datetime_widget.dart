@@ -3,10 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
 class EntryDatetimeWidget extends StatelessWidget {
   const EntryDatetimeWidget({
@@ -27,9 +25,7 @@ class EntryDatetimeWidget extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           child: TextButton(
             onPressed: () {
-              showCupertinoModalBottomSheet<void>(
-                duration:
-                    isTestEnv ? Duration.zero : const Duration(seconds: 1),
+              showModalBottomSheet<void>(
                 context: context,
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(
