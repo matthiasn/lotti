@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed:
 - Habit fail button color
+- Save button color
 
 ## [0.8.267] - 2023-02-19
 ### Changed:
