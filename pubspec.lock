@@ -725,14 +725,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.3"
-  flutter_image_slideshow:
-    dependency: "direct main"
-    description:
-      name: flutter_image_slideshow
-      sha256: "0192bf6c683fe993e4694d8803c0b4a0c0757333c356900a9b74bb7fe57546da"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.4"
   flutter_keyboard_visibility:
     dependency: transitive
     description:
@@ -1714,12 +1706,11 @@ packages:
   qr_code_scanner:
     dependency: "direct main"
     description:
-      path: "."
-      ref: fix_break_changes_platform
-      resolved-ref: "0feca6f15042c279ff575c559a3430df917b623d"
-      url: "https://github.com/xeinebiu/qr_code_scanner.git"
-    source: git
-    version: "0.7.0"
+      name: qr_code_scanner
+      sha256: f23b68d893505a424f0bd2e324ebea71ed88465d572d26bb8d2e78a4749591fd
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   qr_flutter:
     dependency: "direct main"
     description:
