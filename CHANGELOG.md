@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 - Habit fail button color
 - Save button color
+- Clipped save button on measurement page
 
 ## [0.8.267] - 2023-02-19
 ### Changed:
