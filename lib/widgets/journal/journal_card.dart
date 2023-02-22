@@ -48,7 +48,7 @@ class JournalCardTitle extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                df.format(item.meta.dateFrom),
+                dfShorter.format(item.meta.dateFrom),
                 style: monospaceTextStyle(),
               ),
               if (item is Task) TaskStatusWidget(item as Task),

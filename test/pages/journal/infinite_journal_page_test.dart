@@ -162,7 +162,7 @@ void main() {
 
       // test entry displays expected date
       expect(
-        find.text(df.format(testTextEntry.meta.dateFrom)),
+        find.text(dfShorter.format(testTextEntry.meta.dateFrom)),
         findsOneWidget,
       );
 
@@ -218,7 +218,7 @@ void main() {
 
       // task entry displays expected date
       expect(
-        find.text(df.format(testTask.meta.dateFrom)),
+        find.text(dfShorter.format(testTask.meta.dateFrom)),
         findsOneWidget,
       );
 
@@ -321,7 +321,7 @@ void main() {
 
       // task entry displays expected date
       expect(
-        find.text(df.format(testWeightEntry.meta.dateFrom)),
+        find.text(dfShorter.format(testWeightEntry.meta.dateFrom)),
         findsOneWidget,
       );
 
@@ -425,7 +425,9 @@ void main() {
 
       // measurement entry displays expected date
       expect(
-        find.text(df.format(testMeasurementChocolateEntry.meta.dateFrom)),
+        find.text(
+          dfShorter.format(testMeasurementChocolateEntry.meta.dateFrom),
+        ),
         findsOneWidget,
       );
 
@@ -527,7 +529,9 @@ void main() {
 
       // measurement entry displays expected date
       expect(
-        find.text(df.format(testMeasurementChocolateEntry.meta.dateFrom)),
+        find.text(
+          dfShorter.format(testMeasurementChocolateEntry.meta.dateFrom),
+        ),
         findsOneWidget,
       );
 

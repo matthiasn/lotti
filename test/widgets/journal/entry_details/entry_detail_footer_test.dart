@@ -59,7 +59,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final entryDateFromFinder =
-          find.text(df.format(testTextEntry.meta.dateFrom));
+          find.text(dfShorter.format(testTextEntry.meta.dateFrom));
       expect(entryDateFromFinder, findsOneWidget);
     });
 
