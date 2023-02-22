@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Reduce clutter in entry card
+- Upgraded dependencies
 
 ## [0.8.269] - 2023-02-20
 ### Changed:
