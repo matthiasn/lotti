@@ -74,7 +74,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final dateFinder = find.text('2022-07-07 13:00:00');
+      final dateFinder = find.text('2022-07-07 13:00');
       expect(dateFinder, findsOneWidget);
     });
 
@@ -97,7 +97,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final dateFinder = find.text('2022-07-07 13:00:00');
+      final dateFinder = find.text('2022-07-07 13:00');
       expect(dateFinder, findsOneWidget);
     });
 
@@ -120,7 +120,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final dateFinder = find.text('2022-07-07 13:00:00');
+      final dateFinder = find.text('2022-07-07 13:00');
       expect(dateFinder, findsOneWidget);
     });
   });

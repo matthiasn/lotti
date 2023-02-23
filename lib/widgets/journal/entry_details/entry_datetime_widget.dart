@@ -42,7 +42,7 @@ class EntryDatetimeWidget extends StatelessWidget {
               );
             },
             child: Text(
-              df.format(item.meta.dateFrom),
+              dfShorter.format(item.meta.dateFrom),
               style: monospaceTextStyle(),
             ),
           ),

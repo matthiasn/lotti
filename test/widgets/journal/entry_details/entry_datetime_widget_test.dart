@@ -61,14 +61,15 @@ void main() {
       await tester.pumpAndSettle();
 
       final entryDateFromFinder =
-          find.text(df.format(testTextEntry.meta.dateFrom));
+          find.text(dfShorter.format(testTextEntry.meta.dateFrom));
       expect(entryDateFromFinder, findsOneWidget);
 
       await tester.tap(entryDateFromFinder);
       await tester.pumpAndSettle();
 
-      // entry date displayed in modal, too
-      expect(entryDateFromFinder, findsNWidgets(2));
+      final entryDateFromWithSecondsFinder =
+          find.text(df.format(testTextEntry.meta.dateFrom));
+      expect(entryDateFromWithSecondsFinder, findsOneWidget);
 
       // open and close dateTo selection
       final entryDateToFinder = find.text(df.format(testTextEntry.meta.dateTo));
@@ -84,7 +85,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // open and close dateFrom selection
-      await tester.tap(entryDateFromFinder.last);
+      await tester.tap(entryDateFromWithSecondsFinder.last);
       await tester.pumpAndSettle();
 
       expect(doneButtonFinder, findsOneWidget);
