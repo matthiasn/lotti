@@ -9,6 +9,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:research_package/research_package.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 class SurveyWidget extends StatelessWidget {
   const SurveyWidget(this.task, this.resultCallback, {super.key});
@@ -35,11 +36,9 @@ class SurveyWidget extends StatelessWidget {
       data: ThemeData(
         useMaterial3: true,
         primaryColor: styleConfig().primaryColor,
-        scaffoldBackgroundColor: styleConfig().cardColor,
+        scaffoldBackgroundColor: Colors.transparent,
         fontFamily: 'PlusJakartaSans',
-        // Define the default `TextTheme`. Use this to specify the default
-        // text styling for headlines, titles, bodies of text, and more.
-
+        dialogBackgroundColor: styleConfig().cardColor.lighten(),
         textTheme: Theme.of(context)
             .textTheme
             .apply(
