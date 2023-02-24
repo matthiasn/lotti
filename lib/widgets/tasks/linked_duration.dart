@@ -54,9 +54,9 @@ class LinkedDuration extends StatelessWidget {
                 return Padding(
                   padding: const EdgeInsets.only(right: 20),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(2),
                     child: LinearProgressIndicator(
-                      minHeight: 8,
+                      minHeight: 4,
                       value: min(progress.inSeconds / estimate.inSeconds, 1),
                       color: (progress > estimate) ? Colors.red : Colors.green,
                       backgroundColor:

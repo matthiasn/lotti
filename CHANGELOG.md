@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Upgraded dependencies
+- Progress bar height and opacity
 
 ## [0.8.272] - 2023-02-24
 ### Changed:

@@ -249,7 +249,7 @@ class LeadingIcon extends StatelessWidget {
     return Icon(
       iconData,
       size: 32,
-      color: styleConfig().primaryTextColor,
+      color: styleConfig().secondaryTextColor,
     );
   }
 }
