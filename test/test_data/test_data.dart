@@ -266,7 +266,7 @@ final testTask = Task(
     statusHistory: [],
     dateTo: DateTime(2022, 7, 7, 11),
     dateFrom: DateTime(2022, 7, 7, 9),
-    estimate: const Duration(hours: 3),
+    estimate: const Duration(hours: 4),
   ),
   meta: Metadata(
     id: '79ef5021-12df-4651-ac6e-c9a5b58a859c',

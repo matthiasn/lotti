@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
@@ -292,10 +291,10 @@ void main() {
 
       // test task displays progress bar with 2 hours progress and 3 hours total
       final progressBar =
-          tester.firstWidget(find.byType(ProgressBar)) as ProgressBar;
+          tester.firstWidget(find.byType(LinearProgressIndicator))
+              as LinearProgressIndicator;
       expect(progressBar, isNotNull);
-      expect(progressBar.progress, const Duration(hours: 2));
-      expect(progressBar.total, const Duration(hours: 3));
+      expect(progressBar.value, 0.5);
 
       // test task title is displayed
       expect(find.text(testTask.data.title), findsOneWidget);
