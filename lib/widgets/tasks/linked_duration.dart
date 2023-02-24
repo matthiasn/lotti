@@ -1,4 +1,5 @@
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -44,20 +45,23 @@ class LinkedDuration extends StatelessWidget {
                   progress = progress + duration;
                 }
 
-                final total = liveTask.data.estimate ?? Duration.zero;
+                final estimate = liveTask.data.estimate ?? Duration.zero;
+
+                if (liveTask.data.estimate == Duration.zero) {
+                  return const SizedBox.shrink();
+                }
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: ProgressBar(
-                    progress: progress,
-                    total: total,
-                    progressBarColor:
-                        (progress > total) ? Colors.red : Colors.green,
-                    thumbColor: Colors.white,
-                    barHeight: 4,
-                    thumbRadius: 6,
-                    onSeek: (newPosition) {},
-                    timeLabelTextStyle: monospaceTextStyleSmall(),
+                  padding: const EdgeInsets.only(right: 20),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      minHeight: 8,
+                      value: min(progress.inSeconds / estimate.inSeconds, 1),
+                      color: (progress > estimate) ? Colors.red : Colors.green,
+                      backgroundColor:
+                          styleConfig().secondaryTextColor.withOpacity(0.5),
+                    ),
                   ),
                 );
               },
