@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Upgraded dependencies
 - Progress bar height and opacity
+- Remove entry duration in journal card
 
 ## [0.8.272] - 2023-02-24
 ### Changed:
