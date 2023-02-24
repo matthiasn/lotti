@@ -6,25 +6,29 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class ToolbarWidget extends StatelessWidget {
   ToolbarWidget({
     super.key,
     this.toolbarIconSize = 20,
-    this.iconTheme,
     this.unlinkFn,
   });
 
   final LinkService linkService = getIt<LinkService>();
   final double toolbarIconSize;
   final WrapAlignment toolbarIconAlignment = WrapAlignment.start;
-  final QuillIconTheme? iconTheme;
   final Future<void> Function()? unlinkFn;
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final iconTheme = QuillIconTheme(
+      iconSelectedColor: styleConfig().cardColor,
+      iconSelectedFillColor: styleConfig().primaryColor,
+      iconUnselectedColor: styleConfig().secondaryTextColor,
+    );
 
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (
@@ -113,20 +117,29 @@ class ToolbarWidget extends StatelessWidget {
               iconTheme: iconTheme,
             ),
             IconButton(
-              icon: const Icon(Icons.add_link),
+              icon: Icon(
+                Icons.add_link,
+                color: styleConfig().secondaryTextColor,
+              ),
               iconSize: toolbarIconSize,
               tooltip: localizations.journalLinkFromHint,
               onPressed: () => linkService.linkFrom(id),
             ),
             IconButton(
-              icon: const Icon(MdiIcons.target),
+              icon: Icon(
+                MdiIcons.target,
+                color: styleConfig().secondaryTextColor,
+              ),
               iconSize: toolbarIconSize,
               tooltip: localizations.journalLinkToHint,
               onPressed: () => linkService.linkTo(id),
             ),
             if (unlinkFn != null)
               IconButton(
-                icon: const Icon(MdiIcons.closeCircleOutline),
+                icon: Icon(
+                  MdiIcons.closeCircleOutline,
+                  color: styleConfig().secondaryTextColor,
+                ),
                 iconSize: toolbarIconSize,
                 tooltip: localizations.journalUnlinkHint,
                 onPressed: unlinkFn,
