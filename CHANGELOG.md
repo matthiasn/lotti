@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgraded dependencies
+
+## [0.8.272] - 2023-02-24
+### Changed:
 - Replace task progress indicator with material widget
 - Editor toolbar styling
 
