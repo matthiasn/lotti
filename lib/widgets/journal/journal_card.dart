@@ -9,7 +9,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
-import 'package:lotti/widgets/journal/entry_details/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/habit_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
@@ -148,12 +147,6 @@ class JournalCardTitle extends StatelessWidget {
                 habitCompletion,
                 showChart: false,
               ),
-            ),
-          ),
-          item.maybeMap(
-            task: (_) => const SizedBox.shrink(),
-            orElse: () => DurationViewWidget(
-              item: item,
             ),
           ),
         ],
