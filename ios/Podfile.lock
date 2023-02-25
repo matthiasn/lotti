@@ -68,10 +68,10 @@ PODS:
   - ReachabilitySwift (5.0.0)
   - record (0.0.1):
     - Flutter
-  - SDWebImage (5.15.0):
-    - SDWebImage/Core (= 5.15.0)
-  - SDWebImage/Core (5.15.0)
-  - SDWebImageWebPCoder (0.10.0):
+  - SDWebImage (5.15.4):
+    - SDWebImage/Core (= 5.15.4)
+  - SDWebImage/Core (5.15.4)
+  - SDWebImageWebPCoder (0.10.1):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.15)
   - share_plus (0.0.1):
@@ -82,18 +82,18 @@ PODS:
   - sqflite (0.0.2):
     - Flutter
     - FMDB (>= 2.7.5)
-  - sqlite3 (3.40.0):
-    - sqlite3/common (= 3.40.0)
-  - sqlite3/common (3.40.0)
-  - sqlite3/fts5 (3.40.0):
+  - sqlite3 (3.41.0):
+    - sqlite3/common (= 3.41.0)
+  - sqlite3/common (3.41.0)
+  - sqlite3/fts5 (3.41.0):
     - sqlite3/common
-  - sqlite3/perf-threadsafe (3.40.0):
+  - sqlite3/perf-threadsafe (3.41.0):
     - sqlite3/common
-  - sqlite3/rtree (3.40.0):
+  - sqlite3/rtree (3.41.0):
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - Flutter
-    - sqlite3 (~> 3.40.0)
+    - sqlite3 (~> 3.41.0)
     - sqlite3/fts5
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
@@ -227,21 +227,21 @@ SPEC CHECKSUMS:
   MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
   package_info_plus: 6c92f08e1f853dc01228d6f553146438dafcd14e
   pasteboard: 982969ebaa7c78af3e6cc7761e8f5e77565d9ce0
-  path_provider_foundation: 37748e03f12783f9de2cb2c4eadfaa25fe6d4852
+  path_provider_foundation: c68054786f1b4f3343858c1e1d0caaded73f0be9
   permission_handler_apple: 44366e37eaf29454a1e7b1b7d736c2cceaeb17ce
   photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
   qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
   record: cae05d8dd3cdb1dea3511b20e5a5811a1ae00d0d
-  SDWebImage: 9bec4c5cdd9579e1f57104735ee0c37df274d593
-  SDWebImageWebPCoder: 07b5d53b3adcc3d491312a58ea103e36af1692c1
+  SDWebImage: 1c39de67663e5eebb2f41324d5d580eeea12dd4c
+  SDWebImageWebPCoder: 4851414d9f8894e328e8b97c93ea4f4f4e4418ae
   share_plus: 056a1e8ac890df3e33cb503afffaf1e9b4fbae68
-  shared_preferences_foundation: 297b3ebca31b34ec92be11acd7fb0ba932c822ca
+  shared_preferences_foundation: 986fc17f3d3251412d18b0265f9c64113a8c2472
   sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
-  sqlite3: 88dd99ef4ac3945f5a15facdd752933c52fd93bf
-  sqlite3_flutter_libs: c00751e981228acb63595236703da79d31282b63
-  url_launcher_ios: fb12c43172927bb5cf75aeebd073f883801f1993
-  video_player_avfoundation: e489aac24ef5cf7af82702979ed16f2a5ef84cff
+  sqlite3: d31b2b69d59bd1b4ab30e5c92eb18fd8e82fa392
+  sqlite3_flutter_libs: 78f93cb854d4680595bc2c63c57209a104b2efb1
+  url_launcher_ios: 08a3dfac5fb39e8759aeb0abbd5d9480f30fc8b4
+  video_player_avfoundation: 6d971a232d72e6ee25368378d48a079dea01f1cf
 
 PODFILE CHECKSUM: 5b3398e7604abf76fbba588f5b0fc85f420e288c
 

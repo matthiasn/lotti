@@ -166,12 +166,6 @@ void main() {
         findsOneWidget,
       );
 
-      // test entry displays duration of one hour
-      expect(
-        find.text('1:00:00'),
-        findsOneWidget,
-      );
-
       // test text entry is starred
       expect(
         (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,

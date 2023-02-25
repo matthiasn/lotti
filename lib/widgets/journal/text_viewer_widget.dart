@@ -20,6 +20,7 @@ class TextViewerWidget extends StatelessWidget {
       child: Markdown(
         data: entryText?.markdown ?? '',
         shrinkWrap: true,
+        padding: const EdgeInsets.only(top: 10),
         styleSheet: MarkdownStyleSheet.fromCupertinoTheme(
           CupertinoThemeData(
             textTheme: CupertinoTextThemeData(
