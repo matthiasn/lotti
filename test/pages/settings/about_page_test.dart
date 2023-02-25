@@ -23,6 +23,12 @@ void main() {
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
+
+      when(
+        () => mockJournalDb.watchTaskCount(any()),
+      ).thenAnswer(
+        (_) => Stream<int>.fromIterable([10]),
+      );
     });
     tearDown(getIt.reset);
 

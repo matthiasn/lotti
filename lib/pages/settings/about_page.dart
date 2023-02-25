@@ -7,6 +7,8 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../widgets/misc/tasks_counts.dart';
+
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
 
@@ -71,6 +73,7 @@ class _AboutPageState extends State<AboutPage> {
                   'Entries count: ${snapshot.data}',
                   style: style,
                 ),
+                const TaskCounts(),
               ],
             ),
           );
