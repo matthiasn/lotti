@@ -19,9 +19,7 @@ class EmptyScaffoldWithTitle extends StatelessWidget {
       duration: const Duration(seconds: 2),
       child: Scaffold(
         backgroundColor: styleConfig().negspace,
-        appBar: TitleAppBar(
-          title: title,
-        ),
+        appBar: TitleAppBar(title: title),
         body: body,
       ),
     );
