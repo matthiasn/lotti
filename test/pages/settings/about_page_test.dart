@@ -48,7 +48,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('About Lotti'), findsOneWidget);
-      expect(find.text('Entries count: 111'), findsOneWidget);
+      expect(find.text('Entries: 111'), findsOneWidget);
     });
   });
 }

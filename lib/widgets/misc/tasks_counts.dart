@@ -11,12 +11,16 @@ class TaskCounts extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return Container(
-      padding: const EdgeInsets.only(top: 4),
+    return SizedBox(
       width: MediaQuery.of(context).size.width,
       child: Wrap(
         alignment: WrapAlignment.center,
+        spacing: 5,
         children: [
+          Text(
+            'Tasks:',
+            style: searchLabelStyle(),
+          ),
           TasksCountWidget(
             status: 'OPEN',
             label: localizations.taskStatusOpen,
@@ -68,7 +72,7 @@ class TasksCountWidget extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              '$label: ${snapshot.data}',
+              '${snapshot.data} $label',
               style: searchLabelStyle(),
             ),
           );
