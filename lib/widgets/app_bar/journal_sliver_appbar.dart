@@ -8,7 +8,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/badges/flagged_badge.dart';
 import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
-import 'package:lotti/widgets/misc/tasks_counts.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:lotti/widgets/search/task_status_filter.dart';
@@ -29,12 +28,11 @@ class JournalSliverAppBar extends StatelessWidget {
 
         return SliverAppBar(
           backgroundColor: styleConfig().negspace,
-          expandedHeight: 290,
+          expandedHeight: 280,
           flexibleSpace: FlexibleSpaceBar(
             background: Padding(
               padding: EdgeInsets.only(top: isIOS ? 30 : 0),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   SearchWidget(
                     margin: const EdgeInsets.symmetric(
@@ -52,7 +50,7 @@ class JournalSliverAppBar extends StatelessWidget {
                       runAlignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       spacing: 5,
-                      runSpacing: 2,
+                      runSpacing: 4,
                       children: [
                         TasksBadge(
                           child: TasksSegmentedControl(
@@ -123,7 +121,6 @@ class JournalSliverAppBar extends StatelessWidget {
                         ),
                         if (!snapshot.showTasks) const EntryTypeFilter(),
                         if (snapshot.showTasks) const TaskStatusFilter(),
-                        if (snapshot.showTasks) const TaskCounts(),
                       ],
                     ),
                   ),

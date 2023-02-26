@@ -29,10 +29,7 @@ class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
       ) {
         final item = snapshot.data;
         if (item == null || item.meta.deletedAt != null) {
-          return AppBar(
-            backgroundColor: styleConfig().cardColor,
-            centerTitle: true,
-          );
+          return const TitleAppBar(title: 'Lotti');
         }
 
         final isTask = item is Task;

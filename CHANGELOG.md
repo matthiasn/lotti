@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- More consistent app bar
+- Reduce clutter in tasks header by moving count stats
+- Upgraded dependencies
+- Improved styling of about page
+
+## [0.8.273] - 2023-02-24
+### Changed:
 - Upgraded dependencies
 - Progress bar height and opacity
 - Remove entry duration in journal card

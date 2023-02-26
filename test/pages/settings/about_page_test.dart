@@ -23,6 +23,12 @@ void main() {
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
+
+      when(
+        () => mockJournalDb.watchTaskCount(any()),
+      ).thenAnswer(
+        (_) => Stream<int>.fromIterable([10]),
+      );
     });
     tearDown(getIt.reset);
 
@@ -42,7 +48,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('About Lotti'), findsOneWidget);
-      expect(find.text('Entries count: 111'), findsOneWidget);
+      expect(find.text('Entries: 111'), findsOneWidget);
     });
   });
 }

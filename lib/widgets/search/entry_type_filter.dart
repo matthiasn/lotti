@@ -14,17 +14,14 @@ class EntryTypeFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
-        return Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: WrapSuper(
-            alignment: WrapSuperAlignment.center,
-            spacing: 5,
-            lineSpacing: 5,
-            children: [
-              ...entryTypes.map(EntryTypeChip.new),
-              const EntryTypeAllChip(),
-            ],
-          ),
+        return WrapSuper(
+          alignment: WrapSuperAlignment.center,
+          spacing: 5,
+          lineSpacing: 5,
+          children: [
+            ...entryTypes.map(EntryTypeChip.new),
+            const EntryTypeAllChip(),
+          ],
         );
       },
     );
