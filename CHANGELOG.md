@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Refactor: use showModalBottomSheet for managing tags
+
+## [0.8.274] - 2023-02-26
+### Changed:
 - More consistent app bar
 - Reduce clutter in tasks header by moving count stats
 - Upgraded dependencies

@@ -27,11 +27,6 @@ class EntryDatetimeWidget extends StatelessWidget {
             onPressed: () {
               showModalBottomSheet<void>(
                 context: context,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                ),
                 clipBehavior: Clip.antiAliasWithSaveLayer,
                 builder: (BuildContext _) {
                   return BlocProvider.value(

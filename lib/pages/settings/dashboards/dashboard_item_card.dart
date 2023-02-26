@@ -118,11 +118,6 @@ class MeasurableItemCard extends StatelessWidget {
           onTap: () {
             showModalBottomSheet<void>(
               context: context,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-              ),
               clipBehavior: Clip.antiAliasWithSaveLayer,
               builder: (BuildContext context) {
                 return DashboardItemModal(
