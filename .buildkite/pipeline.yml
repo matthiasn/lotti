@@ -105,6 +105,7 @@ steps:
         retry:
           automatic:
             - exit_status: 24
+            - exit_status: 2
 
       - label: "📱🚀 iOS fastlane TestFlight "
         key: "ios_fastlane_testflight"
