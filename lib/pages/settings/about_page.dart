@@ -61,17 +61,17 @@ class _AboutPageState extends State<AboutPage> {
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Version: $version ($buildNumber)',
-                  style: style,
+                  style: searchLabelStyle(),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Text(
-                  'Entries count: ${snapshot.data}',
-                  style: style,
+                  'Entries: ${snapshot.data}',
+                  style: searchLabelStyle(),
                 ),
+                const SizedBox(height: 10),
                 const TaskCounts(),
               ],
             ),
