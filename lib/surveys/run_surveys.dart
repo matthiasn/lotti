@@ -13,11 +13,6 @@ Future<void> runSurvey({
 }) async {
   await showModalBottomSheet<void>(
     context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(16),
-      ),
-    ),
     backgroundColor: styleConfig().cardColor,
     clipBehavior: Clip.antiAliasWithSaveLayer,
     useRootNavigator: true,

@@ -73,13 +73,6 @@ void main() {
 
       await tester.tap(tagAddIconFinder);
       await tester.pumpAndSettle();
-
-      verify(
-        () => mockNavService.beamToNamed(
-          '/journal/32ea936e-dfc6-43bd-8722-d816c35eb489/manage_tags',
-          data: any(named: 'data'),
-        ),
-      ).called(1);
     });
   });
 }

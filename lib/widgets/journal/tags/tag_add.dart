@@ -5,9 +5,9 @@ import 'package:flutter_svg/svg.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/journal/tags/tags_modal.dart';
 
 class TagAddIconWidget extends StatelessWidget {
   TagAddIconWidget({super.key});
@@ -28,10 +28,18 @@ class TagAddIconWidget extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        void onTapAdd() => beamToNamed(
-              '/journal/${state.entryId}/manage_tags',
-              data: context.read<EntryCubit>(),
-            );
+        void onTapAdd() {
+          showModalBottomSheet<void>(
+            context: context,
+            clipBehavior: Clip.antiAliasWithSaveLayer,
+            builder: (BuildContext _) {
+              return BlocProvider.value(
+                value: BlocProvider.of<EntryCubit>(context),
+                child: const TagsModal(),
+              );
+            },
+          );
+        }
 
         return SizedBox(
           width: 40,
