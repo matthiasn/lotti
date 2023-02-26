@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.275+1804
+version: 0.8.275+1807
 
 msix_config:
   display_name: Lotti
@@ -50,7 +50,7 @@ dependencies:
   equatable: ^2.0.3
   exif: ^3.0.1
 
-  fl_chart: ^0.60.0
+  fl_chart: ^0.61.0
   flutter:
     sdk: flutter
 
