@@ -104,7 +104,6 @@ steps:
           os: "macOS"
         retry:
           automatic:
-            - exit_status: 24
             - exit_status: 2
 
       - label: "📱🚀 iOS fastlane TestFlight "
