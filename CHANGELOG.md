@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- more consistent bottom sheet modals
+
+## [0.8.275] - 2023-02-26
+### Changed:
 - Refactor: use showModalBottomSheet for managing tags
 - CI: retry on exit status 2
 - Upgrade fl_chart library

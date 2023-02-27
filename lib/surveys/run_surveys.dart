@@ -3,7 +3,6 @@ import 'package:lotti/pages/create/fill_survey_page.dart';
 import 'package:lotti/surveys/calculate.dart';
 import 'package:lotti/surveys/cfq11_survey.dart';
 import 'package:lotti/surveys/panas_survey.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:research_package/research_package.dart';
 
 Future<void> runSurvey({
@@ -13,8 +12,6 @@ Future<void> runSurvey({
 }) async {
   await showModalBottomSheet<void>(
     context: context,
-    backgroundColor: styleConfig().cardColor,
-    clipBehavior: Clip.antiAliasWithSaveLayer,
     useRootNavigator: true,
     builder: (BuildContext context) {
       return SurveyWidget(task, resultCallback);

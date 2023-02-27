@@ -31,7 +31,6 @@ class TagAddIconWidget extends StatelessWidget {
         void onTapAdd() {
           showModalBottomSheet<void>(
             context: context,
-            clipBehavior: Clip.antiAliasWithSaveLayer,
             builder: (BuildContext _) {
               return BlocProvider.value(
                 value: BlocProvider.of<EntryCubit>(context),
