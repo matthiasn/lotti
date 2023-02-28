@@ -1,4 +1,6 @@
 // ignore_for_file: equal_keys_in_map
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:lotti/classes/config.dart';
@@ -115,7 +117,7 @@ TextStyle textStyleLargerUnderlined() => textStyle().copyWith(
       fontSize: 20,
       fontWeight: FontWeight.w100,
       decoration: TextDecoration.underline,
-      fontFamily: monospaceFont,
+      fontFeatures: const [FontFeature.tabularFigures()],
     );
 
 TextStyle labelStyleLarger() => textStyleLarger().copyWith(
@@ -135,10 +137,10 @@ TextStyle newLabelStyle() => TextStyle(
     );
 
 TextStyle monospaceTextStyle() => TextStyle(
-      fontFamily: monospaceFont,
       fontWeight: FontWeight.w300,
       fontSize: fontSizeMedium,
       color: styleConfig().primaryTextColor,
+      fontFeatures: const [FontFeature.tabularFigures()],
     );
 
 TextStyle monospaceTextStyleSmall() => monospaceTextStyle().copyWith(

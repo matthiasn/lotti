@@ -163,10 +163,9 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                     padding: const EdgeInsets.only(left: 8),
                     child: Text(
                       formatDuration(dateFrom.difference(dateTo).abs()),
-                      style: textStyleLarger().copyWith(
+                      style: monospaceTextStyleLarge().copyWith(
                         fontWeight: FontWeight.w100,
                         fontSize: 20,
-                        fontFamily: monospaceFont,
                       ),
                     ),
                   ),
