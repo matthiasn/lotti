@@ -144,6 +144,10 @@ class MyBeamerApp extends StatelessWidget {
       appBarTheme: AppBarTheme(
         iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
       ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: styleConfig().cardColor,
+        clipBehavior: Clip.antiAliasWithSaveLayer,
+      ),
       tooltipTheme: TooltipThemeData(
         textStyle: chartTitleStyleSmall().copyWith(
           color: Colors.white,

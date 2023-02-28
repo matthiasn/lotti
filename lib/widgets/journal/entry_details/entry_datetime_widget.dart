@@ -27,7 +27,6 @@ class EntryDatetimeWidget extends StatelessWidget {
             onPressed: () {
               showModalBottomSheet<void>(
                 context: context,
-                clipBehavior: Clip.antiAliasWithSaveLayer,
                 builder: (BuildContext _) {
                   return BlocProvider.value(
                     value: BlocProvider.of<EntryCubit>(context),

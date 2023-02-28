@@ -10,7 +10,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/tags/tags_list_widget.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -67,7 +66,6 @@ class _TagsModalState extends State<TagsModal> {
     Future<void> onChanged(String pattern) async {
       final newSuggestions = await tagsService.getMatchingTags(
         pattern.trim(),
-        limit: isMobile ? 5 : 10,
       );
 
       setState(() {
@@ -75,15 +73,15 @@ class _TagsModalState extends State<TagsModal> {
       });
     }
 
-    return Material(
-      child: ColoredBox(
-        color: styleConfig().cardColor,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListView(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              constraints: const BoxConstraints(maxHeight: 500),
+              child: ListView(
                 shrinkWrap: true,
                 children: intersperse(
                   const SettingsDivider(),
@@ -100,60 +98,60 @@ class _TagsModalState extends State<TagsModal> {
                   ),
                 ).toList(),
               ),
-              Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Text(
-                      localizations.journalTagsLabel,
-                      style: formLabelStyle(),
-                    ),
+            ),
+            Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    localizations.journalTagsLabel,
+                    style: formLabelStyle(),
                   ),
-                  Expanded(
-                    child: CupertinoTextField(
-                      controller: _controller,
-                      onSubmitted: onSubmitted,
-                      onChanged: onChanged,
-                      autofocus: true,
-                      keyboardAppearance: keyboardAppearance(),
-                      style: chartTitleStyle(),
-                      cursorColor: styleConfig().primaryColor,
-                    ),
+                ),
+                Expanded(
+                  child: CupertinoTextField(
+                    controller: _controller,
+                    onSubmitted: onSubmitted,
+                    onChanged: onChanged,
+                    autofocus: true,
+                    keyboardAppearance: keyboardAppearance(),
+                    style: chartTitleStyle(),
+                    cursorColor: styleConfig().primaryColor,
                   ),
-                  IconButton(
-                    onPressed: copyTags,
-                    padding: const EdgeInsets.only(
-                      left: 24,
-                      top: 16,
-                      bottom: 16,
-                    ),
-                    icon: Icon(
-                      MdiIcons.contentCopy,
-                      color: styleConfig().primaryTextColor,
-                    ),
-                    tooltip: localizations.journalTagsCopyHint,
+                ),
+                IconButton(
+                  onPressed: copyTags,
+                  padding: const EdgeInsets.only(
+                    left: 24,
+                    top: 16,
+                    bottom: 16,
                   ),
-                  IconButton(
-                    onPressed: pasteTags,
-                    padding: const EdgeInsets.only(
-                      left: 24,
-                      top: 16,
-                      bottom: 16,
-                    ),
-                    icon: Icon(
-                      MdiIcons.contentPaste,
-                      color: styleConfig().primaryTextColor,
-                    ),
-                    tooltip: localizations.journalTagsPasteHint,
+                  icon: Icon(
+                    MdiIcons.contentCopy,
+                    color: styleConfig().primaryTextColor,
                   ),
-                ],
-              ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 25),
-                child: TagsListWidget(),
-              ),
-            ],
-          ),
+                  tooltip: localizations.journalTagsCopyHint,
+                ),
+                IconButton(
+                  onPressed: pasteTags,
+                  padding: const EdgeInsets.only(
+                    left: 24,
+                    top: 16,
+                    bottom: 16,
+                  ),
+                  icon: Icon(
+                    MdiIcons.contentPaste,
+                    color: styleConfig().primaryTextColor,
+                  ),
+                  tooltip: localizations.journalTagsPasteHint,
+                ),
+              ],
+            ),
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 25),
+              child: TagsListWidget(),
+            ),
+          ],
         ),
       ),
     );

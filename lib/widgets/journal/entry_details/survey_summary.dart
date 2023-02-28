@@ -37,7 +37,6 @@ class SurveySummary extends StatelessWidget {
                     '${mapEntry.key}:',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      fontFamily: monospaceFont,
                       color: styleConfig().primaryTextColor,
                       fontSize: fontSizeMedium,
                     ),
@@ -48,7 +47,6 @@ class SurveySummary extends StatelessWidget {
                       fontWeight: FontWeight.w400,
                       fontSize: fontSizeMedium,
                       color: styleConfig().primaryTextColor,
-                      fontFamily: monospaceFont,
                     ),
                   ),
                 ],

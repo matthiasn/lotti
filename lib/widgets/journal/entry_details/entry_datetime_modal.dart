@@ -69,148 +69,144 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
           return const SizedBox.shrink();
         }
 
-        return ColoredBox(
-          color: styleConfig().cardColor,
-          child: Padding(
-            padding: const EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 24,
-              bottom: 40,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: Text(
-                        localizations.journalDateFromLabel,
-                        textAlign: TextAlign.end,
-                        style: labelStyleLarger(),
-                      ),
+        return Padding(
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 24,
+            bottom: 40,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Row(
+                children: [
+                  SizedBox(
+                    width: 120,
+                    child: Text(
+                      localizations.journalDateFromLabel,
+                      textAlign: TextAlign.end,
+                      style: labelStyleLarger(),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        showDatePicker(
-                          onConfirm: (DateTime date) {
-                            setState(() {
-                              dateFrom = date;
-                            });
-                          },
-                          currentTime: dateFrom,
-                        );
-                      },
-                      child: Text(
-                        df.format(dateFrom),
-                        style: textStyleLargerUnderlined(),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: Text(
-                        localizations.journalDateToLabel,
-                        textAlign: TextAlign.end,
-                        style: labelStyleLarger(),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        showDatePicker(
-                          onConfirm: (DateTime date) {
-                            setState(() {
-                              dateTo = date;
-                            });
-                          },
-                          currentTime: dateTo,
-                        );
-                      },
-                      child: Text(
-                        df.format(dateTo),
-                        style: textStyleLargerUnderlined(),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          dateTo = DateTime.now();
-                        });
-                      },
-                      child: Text(
-                        localizations.journalDateNowButton,
-                        style: textStyleLarger()
-                            .copyWith(decoration: TextDecoration.underline),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: Text(
-                        localizations.journalDurationLabel,
-                        textAlign: TextAlign.end,
-                        style: labelStyleLarger(),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Text(
-                        formatDuration(dateFrom.difference(dateTo).abs()),
-                        style: textStyleLarger().copyWith(
-                          fontWeight: FontWeight.w100,
-                          fontSize: 20,
-                          fontFamily: monospaceFont,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Visibility(
-                        visible: valid && changed,
-                        child: TextButton(
-                          onPressed: () async {
-                            await cubit.updateFromTo(
-                              dateFrom: dateFrom,
-                              dateTo: dateTo,
-                            );
-                            pop();
-                          },
-                          child: Text(
-                            localizations.journalDateSaveButton,
-                            style: textStyleLarger().copyWith(
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Visibility(
-                        visible: !valid,
-                        child: Text(
-                          localizations.journalDateInvalid,
-                          style: textStyleLarger().copyWith(
-                            color: styleConfig().alarm,
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
+                  TextButton(
+                    onPressed: () {
+                      showDatePicker(
+                        onConfirm: (DateTime date) {
+                          setState(() {
+                            dateFrom = date;
+                          });
+                        },
+                        currentTime: dateFrom,
+                      );
+                    },
+                    child: Text(
+                      df.format(dateFrom),
+                      style: textStyleLargerUnderlined(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 120,
+                    child: Text(
+                      localizations.journalDateToLabel,
+                      textAlign: TextAlign.end,
+                      style: labelStyleLarger(),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      showDatePicker(
+                        onConfirm: (DateTime date) {
+                          setState(() {
+                            dateTo = date;
+                          });
+                        },
+                        currentTime: dateTo,
+                      );
+                    },
+                    child: Text(
+                      df.format(dateTo),
+                      style: textStyleLargerUnderlined(),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        dateTo = DateTime.now();
+                      });
+                    },
+                    child: Text(
+                      localizations.journalDateNowButton,
+                      style: textStyleLarger()
+                          .copyWith(decoration: TextDecoration.underline),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 120,
+                    child: Text(
+                      localizations.journalDurationLabel,
+                      textAlign: TextAlign.end,
+                      style: labelStyleLarger(),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Text(
+                      formatDuration(dateFrom.difference(dateTo).abs()),
+                      style: monospaceTextStyleLarge().copyWith(
+                        fontWeight: FontWeight.w100,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Visibility(
+                      visible: valid && changed,
+                      child: TextButton(
+                        onPressed: () async {
+                          await cubit.updateFromTo(
+                            dateFrom: dateFrom,
+                            dateTo: dateTo,
+                          );
+                          pop();
+                        },
+                        child: Text(
+                          localizations.journalDateSaveButton,
+                          style: textStyleLarger().copyWith(
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Visibility(
+                      visible: !valid,
+                      child: Text(
+                        localizations.journalDateInvalid,
+                        style: textStyleLarger().copyWith(
+                          color: styleConfig().alarm,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },

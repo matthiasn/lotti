@@ -22,53 +22,51 @@ class DashboardItemModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return Material(
-      child: ColoredBox(
-        color: styleConfig().cardColor,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                title,
-                style: titleStyle(),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                localizations.dashboardAggregationLabel,
-                textAlign: TextAlign.end,
-                style: labelStyleLarger().copyWith(fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: AggregationType.values.map((aggregationType) {
-                  return ChoiceChip(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    onSelected: (_) {
-                      updateItemFn(
-                        item.copyWith(aggregationType: aggregationType),
-                        index,
-                      );
-                      Navigator.pop(context);
-                    },
-                    label: Text(
-                      EnumToString.convertToString(aggregationType),
-                      style: choiceLabelStyle(),
-                    ),
-                    selectedColor: styleConfig().outboxSuccessColor,
-                    selected: aggregationType == item.aggregationType,
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
+    return ColoredBox(
+      color: styleConfig().cardColor,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              title,
+              style: titleStyle(),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              localizations.dashboardAggregationLabel,
+              textAlign: TextAlign.end,
+              style: labelStyleLarger().copyWith(fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: AggregationType.values.map((aggregationType) {
+                return ChoiceChip(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  onSelected: (_) {
+                    updateItemFn(
+                      item.copyWith(aggregationType: aggregationType),
+                      index,
+                    );
+                    Navigator.pop(context);
+                  },
+                  label: Text(
+                    EnumToString.convertToString(aggregationType),
+                    style: choiceLabelStyle(),
+                  ),
+                  selectedColor: styleConfig().outboxSuccessColor,
+                  selected: aggregationType == item.aggregationType,
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+          ],
         ),
       ),
     );
