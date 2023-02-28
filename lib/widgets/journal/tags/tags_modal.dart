@@ -66,7 +66,6 @@ class _TagsModalState extends State<TagsModal> {
     Future<void> onChanged(String pattern) async {
       final newSuggestions = await tagsService.getMatchingTags(
         pattern.trim(),
-        limit: 10,
       );
 
       setState(() {
@@ -76,81 +75,84 @@ class _TagsModalState extends State<TagsModal> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SingleChildScrollView(
-            child: ListView(
-              shrinkWrap: true,
-              children: intersperse(
-                const SettingsDivider(),
-                List.generate(
-                  suggestions.length,
-                  (int index) {
-                    final tag = suggestions.elementAt(index);
-                    return TagCard(
-                      tagEntity: tag,
-                      index: index,
-                      onTap: () => onSuggestionSelected(tag),
-                    );
-                  },
-                ),
-              ).toList(),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              constraints: const BoxConstraints(maxHeight: 500),
+              child: ListView(
+                shrinkWrap: true,
+                children: intersperse(
+                  const SettingsDivider(),
+                  List.generate(
+                    suggestions.length,
+                    (int index) {
+                      final tag = suggestions.elementAt(index);
+                      return TagCard(
+                        tagEntity: tag,
+                        index: index,
+                        onTap: () => onSuggestionSelected(tag),
+                      );
+                    },
+                  ),
+                ).toList(),
+              ),
             ),
-          ),
-          Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Text(
-                  localizations.journalTagsLabel,
-                  style: formLabelStyle(),
+            Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    localizations.journalTagsLabel,
+                    style: formLabelStyle(),
+                  ),
                 ),
-              ),
-              Expanded(
-                child: CupertinoTextField(
-                  controller: _controller,
-                  onSubmitted: onSubmitted,
-                  onChanged: onChanged,
-                  autofocus: true,
-                  keyboardAppearance: keyboardAppearance(),
-                  style: chartTitleStyle(),
-                  cursorColor: styleConfig().primaryColor,
+                Expanded(
+                  child: CupertinoTextField(
+                    controller: _controller,
+                    onSubmitted: onSubmitted,
+                    onChanged: onChanged,
+                    autofocus: true,
+                    keyboardAppearance: keyboardAppearance(),
+                    style: chartTitleStyle(),
+                    cursorColor: styleConfig().primaryColor,
+                  ),
                 ),
-              ),
-              IconButton(
-                onPressed: copyTags,
-                padding: const EdgeInsets.only(
-                  left: 24,
-                  top: 16,
-                  bottom: 16,
+                IconButton(
+                  onPressed: copyTags,
+                  padding: const EdgeInsets.only(
+                    left: 24,
+                    top: 16,
+                    bottom: 16,
+                  ),
+                  icon: Icon(
+                    MdiIcons.contentCopy,
+                    color: styleConfig().primaryTextColor,
+                  ),
+                  tooltip: localizations.journalTagsCopyHint,
                 ),
-                icon: Icon(
-                  MdiIcons.contentCopy,
-                  color: styleConfig().primaryTextColor,
+                IconButton(
+                  onPressed: pasteTags,
+                  padding: const EdgeInsets.only(
+                    left: 24,
+                    top: 16,
+                    bottom: 16,
+                  ),
+                  icon: Icon(
+                    MdiIcons.contentPaste,
+                    color: styleConfig().primaryTextColor,
+                  ),
+                  tooltip: localizations.journalTagsPasteHint,
                 ),
-                tooltip: localizations.journalTagsCopyHint,
-              ),
-              IconButton(
-                onPressed: pasteTags,
-                padding: const EdgeInsets.only(
-                  left: 24,
-                  top: 16,
-                  bottom: 16,
-                ),
-                icon: Icon(
-                  MdiIcons.contentPaste,
-                  color: styleConfig().primaryTextColor,
-                ),
-                tooltip: localizations.journalTagsPasteHint,
-              ),
-            ],
-          ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 25),
-            child: TagsListWidget(),
-          ),
-        ],
+              ],
+            ),
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 25),
+              child: TagsListWidget(),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -73,7 +73,7 @@ class TagsService {
 
   Future<List<TagEntity>> getMatchingTags(
     String match, {
-    int limit = 10,
+    int limit = 1000,
     bool inactive = false,
   }) async {
     return _db.getMatchingTags(match, limit: limit, inactive: inactive);
