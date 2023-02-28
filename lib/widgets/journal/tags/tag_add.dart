@@ -31,6 +31,7 @@ class TagAddIconWidget extends StatelessWidget {
         void onTapAdd() {
           showModalBottomSheet<void>(
             context: context,
+            isScrollControlled: true,
             builder: (BuildContext _) {
               return BlocProvider.value(
                 value: BlocProvider.of<EntryCubit>(context),
