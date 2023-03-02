@@ -70,24 +70,17 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
         }
 
         return Padding(
-          padding: const EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 24,
-            bottom: 40,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Row(
                 children: [
-                  SizedBox(
-                    width: 120,
-                    child: Text(
-                      localizations.journalDateFromLabel,
-                      textAlign: TextAlign.end,
-                      style: labelStyleLarger(),
-                    ),
+                  Text(
+                    localizations.journalDateFromLabel,
+                    textAlign: TextAlign.end,
+                    style: labelStyleLarger(),
                   ),
                   TextButton(
                     onPressed: () {
@@ -101,22 +94,18 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       );
                     },
                     child: Text(
-                      df.format(dateFrom),
+                      dfShorter.format(dateFrom),
                       style: textStyleLargerUnderlined(),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
               Row(
                 children: [
-                  SizedBox(
-                    width: 120,
-                    child: Text(
-                      localizations.journalDateToLabel,
-                      textAlign: TextAlign.end,
-                      style: labelStyleLarger(),
-                    ),
+                  Text(
+                    localizations.journalDateToLabel,
+                    textAlign: TextAlign.end,
+                    style: labelStyleLarger(),
                   ),
                   TextButton(
                     onPressed: () {
@@ -130,7 +119,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       );
                     },
                     child: Text(
-                      df.format(dateTo),
+                      dfShorter.format(dateTo),
                       style: textStyleLargerUnderlined(),
                     ),
                   ),
@@ -148,16 +137,13 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Row(
                 children: [
-                  SizedBox(
-                    width: 120,
-                    child: Text(
-                      localizations.journalDurationLabel,
-                      textAlign: TextAlign.end,
-                      style: labelStyleLarger(),
-                    ),
+                  Text(
+                    localizations.journalDurationLabel,
+                    textAlign: TextAlign.end,
+                    style: labelStyleLarger(),
                   ),
                   Padding(
                     padding: const EdgeInsets.only(left: 8),
