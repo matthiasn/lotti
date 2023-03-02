@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgraded dependencies
+
+### Fixed:
+- Entry DateTime modal layout
+
+## [0.8.276] - 2023-02-28
+### Changed:
 - more consistent bottom sheet modals
 - remove limit in tag search results
 - replace monospace font with main font & tabularFigures font feature
