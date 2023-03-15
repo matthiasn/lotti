@@ -54,161 +54,166 @@ class HabitDetailsPage extends StatelessWidget {
           body: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Container(
-                color: styleConfig().cardColor,
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    FormBuilder(
-                      key: state.formKey,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      onChanged: cubit.setDirty,
-                      child: Column(
-                        children: <Widget>[
-                          FormTextField(
-                            key: const Key('habit_name_field'),
-                            initialValue: item.name,
-                            labelText: AppLocalizations.of(context)!
-                                .settingsHabitsNameLabel,
-                            name: 'name',
-                          ),
-                          inputSpacer,
-                          FormTextField(
-                            key: const Key('habit_description_field'),
-                            initialValue: item.description,
-                            labelText: AppLocalizations.of(context)!
-                                .settingsHabitsDescriptionLabel,
-                            fieldRequired: false,
-                            name: 'description',
-                          ),
-                          inputSpacer,
-                          FormSwitch(
-                            name: 'private',
-                            initialValue: item.private,
-                            title: localizations.settingsHabitsPrivateLabel,
-                            activeColor: styleConfig().private,
-                          ),
-                          FormSwitch(
-                            name: 'active',
-                            key: const Key('habit_active'),
-                            initialValue: state.habitDefinition.active,
-                            title: localizations.dashboardActiveLabel,
-                            activeColor: styleConfig().starredGold,
-                          ),
-                          inputSpacer,
-                          FormBuilderCupertinoDateTimePicker(
-                            key: const Key('active_from'),
-                            name: 'active_from',
-                            alwaysUse24HourFormat: true,
-                            inputType: CupertinoDateTimePickerInputType.date,
-                            style: inputStyle().copyWith(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w300,
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      FormBuilder(
+                        key: state.formKey,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        onChanged: cubit.setDirty,
+                        child: Column(
+                          children: <Widget>[
+                            FormTextField(
+                              key: const Key('habit_name_field'),
+                              initialValue: item.name,
+                              labelText: AppLocalizations.of(context)!
+                                  .settingsHabitsNameLabel,
+                              name: 'name',
                             ),
-                            initialValue: item.activeFrom,
-                            decoration: inputDecoration(
-                              labelText: localizations.habitActiveFromLabel,
+                            inputSpacer,
+                            FormTextField(
+                              key: const Key('habit_description_field'),
+                              initialValue: item.description,
+                              labelText: AppLocalizations.of(context)!
+                                  .settingsHabitsDescriptionLabel,
+                              fieldRequired: false,
+                              name: 'description',
                             ),
-                          ),
-                          inputSpacer,
-                          if (isDaily)
+                            inputSpacer,
+                            FormSwitch(
+                              name: 'private',
+                              initialValue: item.private,
+                              title: localizations.settingsHabitsPrivateLabel,
+                              activeColor: styleConfig().private,
+                            ),
+                            FormSwitch(
+                              name: 'active',
+                              key: const Key('habit_active'),
+                              initialValue: state.habitDefinition.active,
+                              title: localizations.dashboardActiveLabel,
+                              activeColor: styleConfig().starredGold,
+                            ),
+                            inputSpacer,
                             FormBuilderCupertinoDateTimePicker(
-                              name: 'show_from',
+                              key: const Key('active_from'),
+                              name: 'active_from',
                               alwaysUse24HourFormat: true,
-                              format: hhMmFormat,
-                              inputType: CupertinoDateTimePickerInputType.time,
+                              inputType: CupertinoDateTimePickerInputType.date,
                               style: inputStyle().copyWith(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w300,
                               ),
-                              initialValue: showFrom,
+                              initialValue: item.activeFrom,
                               decoration: inputDecoration(
-                                labelText: localizations.habitShowFromLabel,
+                                labelText: localizations.habitActiveFromLabel,
                               ),
-                              theme: datePickerTheme(),
                             ),
-                          inputSpacer,
-                          if (state.storyTags.isNotEmpty)
-                            FormBuilderDropdown<StoryTag>(
-                              name: 'default_story_id',
-                              initialValue: state.defaultStory,
-                              decoration: inputDecoration(
-                                labelText:
-                                    localizations.settingsHabitsStoryLabel,
-                              ),
-                              iconEnabledColor: styleConfig().primaryTextColor,
-                              style: const TextStyle(fontSize: 40),
-                              dropdownColor: styleConfig().cardColor,
-                              items: [
-                                DropdownMenuItem(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8),
-                                    child: Text(
-                                      '',
-                                      style: TextStyle(
-                                        fontSize: fontSizeMedium,
-                                        color: styleConfig().primaryTextColor,
-                                      ),
-                                    ),
-                                  ),
+                            inputSpacer,
+                            if (isDaily)
+                              FormBuilderCupertinoDateTimePicker(
+                                name: 'show_from',
+                                alwaysUse24HourFormat: true,
+                                format: hhMmFormat,
+                                inputType:
+                                    CupertinoDateTimePickerInputType.time,
+                                style: inputStyle().copyWith(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w300,
                                 ),
-                                ...state.storyTags.map((storyTag) {
-                                  return DropdownMenuItem(
-                                    value: storyTag,
+                                initialValue: showFrom,
+                                decoration: inputDecoration(
+                                  labelText: localizations.habitShowFromLabel,
+                                ),
+                                theme: datePickerTheme(),
+                              ),
+                            inputSpacer,
+                            if (state.storyTags.isNotEmpty)
+                              FormBuilderDropdown<StoryTag>(
+                                name: 'default_story_id',
+                                initialValue: state.defaultStory,
+                                decoration: inputDecoration(
+                                  labelText:
+                                      localizations.settingsHabitsStoryLabel,
+                                ),
+                                iconEnabledColor:
+                                    styleConfig().primaryTextColor,
+                                style: const TextStyle(fontSize: 40),
+                                dropdownColor: styleConfig().cardColor,
+                                items: [
+                                  DropdownMenuItem(
                                     child: Padding(
                                       padding: const EdgeInsets.all(8),
                                       child: Text(
-                                        storyTag.tag,
+                                        '',
                                         style: TextStyle(
                                           fontSize: fontSizeMedium,
                                           color: styleConfig().primaryTextColor,
                                         ),
                                       ),
                                     ),
-                                  );
-                                })
-                              ],
-                            ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          IconButton(
-                            icon: const Icon(MdiIcons.trashCanOutline),
-                            iconSize: settingsIconSize,
-                            tooltip: AppLocalizations.of(context)!
-                                .settingsHabitsDeleteTooltip,
-                            color: styleConfig().secondaryTextColor,
-                            onPressed: () async {
-                              const deleteKey = 'deleteKey';
-                              final result = await showModalActionSheet<String>(
-                                context: context,
-                                title: localizations.habitDeleteQuestion,
-                                actions: [
-                                  SheetAction(
-                                    icon: Icons.warning,
-                                    label: localizations.habitDeleteConfirm,
-                                    key: deleteKey,
-                                    isDestructiveAction: true,
-                                    isDefaultAction: true,
                                   ),
+                                  ...state.storyTags.map((storyTag) {
+                                    return DropdownMenuItem(
+                                      value: storyTag,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: Text(
+                                          storyTag.tag,
+                                          style: TextStyle(
+                                            fontSize: fontSizeMedium,
+                                            color:
+                                                styleConfig().primaryTextColor,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  })
                                 ],
-                              );
-
-                              if (result == deleteKey) {
-                                await cubit.delete();
-                              }
-                            },
-                          ),
-                        ],
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                    // const HabitAutocompleteWrapper(),
-                  ],
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            IconButton(
+                              icon: const Icon(MdiIcons.trashCanOutline),
+                              iconSize: settingsIconSize,
+                              tooltip: AppLocalizations.of(context)!
+                                  .settingsHabitsDeleteTooltip,
+                              color: styleConfig().secondaryTextColor,
+                              onPressed: () async {
+                                const deleteKey = 'deleteKey';
+                                final result =
+                                    await showModalActionSheet<String>(
+                                  context: context,
+                                  title: localizations.habitDeleteQuestion,
+                                  actions: [
+                                    SheetAction(
+                                      icon: Icons.warning,
+                                      label: localizations.habitDeleteConfirm,
+                                      key: deleteKey,
+                                      isDestructiveAction: true,
+                                      isDefaultAction: true,
+                                    ),
+                                  ],
+                                );
+
+                                if (result == deleteKey) {
+                                  await cubit.delete();
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      // const HabitAutocompleteWrapper(),
+                    ],
+                  ),
                 ),
               ),
             ),

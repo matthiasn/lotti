@@ -182,6 +182,7 @@ class ItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
+        tileColor: Colors.transparent,
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(
           vertical: 8,
