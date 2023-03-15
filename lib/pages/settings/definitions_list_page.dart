@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/definitions_list_app_bar.dart';
 
@@ -103,10 +102,7 @@ class FloatingAddIcon extends StatelessWidget {
     return FloatingActionButton(
       backgroundColor: styleConfig().primaryColor,
       onPressed: createFn,
-      child: SvgPicture.asset(
-        styleConfig().actionAddIcon,
-        width: 25,
-      ),
+      child: const Icon(Icons.add),
     );
   }
 }
