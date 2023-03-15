@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -6,7 +6,6 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -50,8 +49,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final starIconActiveFinder =
-          find.byKey(Key(styleConfig().cardStarIconActive));
+      final starIconActiveFinder = find.byIcon(Icons.star);
       expect(starIconActiveFinder, findsOneWidget);
 
       await tester.tap(starIconActiveFinder);
@@ -72,7 +70,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final flagIconFinder = find.byKey(Key(styleConfig().cardFlagIcon));
+      final flagIconFinder = find.byIcon(Icons.flag_outlined);
       expect(flagIconFinder, findsOneWidget);
 
       await tester.tap(flagIconFinder);
@@ -93,7 +91,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final shieldIconFinder = find.byKey(Key(styleConfig().cardShieldIcon));
+      final shieldIconFinder = find.byIcon(Icons.shield_outlined);
 
       expect(shieldIconFinder, findsOneWidget);
 
@@ -212,7 +210,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final mapIconFinder = find.byKey(Key(styleConfig().cardMapIcon));
+      final mapIconFinder = find.byIcon(Icons.map_outlined);
       expect(mapIconFinder, findsOneWidget);
 
       await tester.tap(mapIconFinder);

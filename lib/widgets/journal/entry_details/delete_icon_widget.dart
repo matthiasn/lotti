@@ -2,7 +2,6 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/themes/theme.dart';
@@ -48,7 +47,7 @@ class DeleteIconWidget extends StatelessWidget {
           width: 40,
           child: IconButton(
             key: Key(styleConfig().cardTrashIcon),
-            icon: SvgPicture.asset(styleConfig().cardTrashIcon),
+            icon: const Icon(Icons.delete),
             splashColor: Colors.transparent,
             tooltip: localizations.journalDeleteHint,
             padding: EdgeInsets.zero,

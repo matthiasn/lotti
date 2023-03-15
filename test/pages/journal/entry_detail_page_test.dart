@@ -16,7 +16,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:mocktail/mocktail.dart';
@@ -260,7 +259,7 @@ void main() {
       );
 
       // test text entry is starred
-      expect(find.byKey(Key(styleConfig().cardStarIconActive)), findsOneWidget);
+      expect(find.byIcon(Icons.star), findsOneWidget);
     });
 
     testWidgets('Task Entry is rendered', (tester) async {
@@ -306,7 +305,7 @@ void main() {
       );
 
       // test task is starred
-      expect(find.byKey(Key(styleConfig().cardStarIconActive)), findsOneWidget);
+      expect(find.byIcon(Icons.star), findsOneWidget);
     });
 
     testWidgets('Weight Entry is rendered properly', (tester) async {
@@ -334,7 +333,7 @@ void main() {
       );
 
       // test weight entry is not starred
-      expect(find.byKey(Key(styleConfig().cardStarIcon)), findsOneWidget);
+      expect(find.byIcon(Icons.star_outline), findsOneWidget);
     });
   });
 }
