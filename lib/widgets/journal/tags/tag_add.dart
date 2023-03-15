@@ -5,7 +5,6 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/tags/tags_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -45,7 +44,6 @@ class TagAddIconWidget extends StatelessWidget {
           width: 40,
           child: IconButton(
             onPressed: onTapAdd,
-            key: Key(styleConfig().cardTagIcon),
             icon: const Icon(MdiIcons.tag),
             splashColor: Colors.transparent,
             tooltip: localizations.journalTagPlusHint,

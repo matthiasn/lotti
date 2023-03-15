@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.280+1822
+version: 0.8.280+1823
 
 msix_config:
   display_name: Lotti
@@ -183,7 +183,6 @@ flutter:
 
   assets:
     - assets/icons/
-    - assets/icons/card/
     - assets/icons/editor/
     - assets/sqlite/
     # from https://www.iconfinder.com/paomedia

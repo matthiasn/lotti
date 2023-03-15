@@ -46,7 +46,6 @@ class DeleteIconWidget extends StatelessWidget {
         return SizedBox(
           width: 40,
           child: IconButton(
-            key: Key(styleConfig().cardTrashIcon),
             icon: const Icon(Icons.delete),
             splashColor: Colors.transparent,
             tooltip: localizations.journalDeleteHint,
