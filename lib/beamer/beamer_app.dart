@@ -134,7 +134,11 @@ class MyBeamerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = ThemeData(
       fontFamily: mainFont,
-      cardColor: styleConfig().cardColor,
+      cardTheme: CardTheme(
+        color: styleConfig().cardColor,
+        elevation: 1,
+        clipBehavior: Clip.hardEdge,
+      ),
       useMaterial3: true,
       brightness: styleConfig().keyboardAppearance,
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
@@ -146,7 +150,7 @@ class MyBeamerApp extends StatelessWidget {
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: styleConfig().cardColor,
-        clipBehavior: Clip.antiAliasWithSaveLayer,
+        clipBehavior: Clip.hardEdge,
       ),
       tooltipTheme: TooltipThemeData(
         textStyle: chartTitleStyleSmall().copyWith(

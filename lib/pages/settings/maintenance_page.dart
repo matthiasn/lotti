@@ -57,52 +57,42 @@ class _MaintenancePageState extends State<MaintenancePage> {
                           '${localizations.maintenanceDeleteTagged}, n = ${snapshot.data}',
                       onTap: _maintenance.deleteTaggedLinks,
                     ),
-                    const SettingsDivider(),
                     SettingsCard(
                       title: localizations.maintenanceDeleteEditorDb,
                       onTap: _maintenance.deleteEditorDb,
                     ),
-                    const SettingsDivider(),
                     SettingsCard(
                       title: localizations.maintenanceDeleteLoggingDb,
                       onTap: _maintenance.deleteLoggingDb,
                     ),
-                    const SettingsDivider(),
                     SettingsCard(
                       title: localizations.maintenanceRecreateTagged,
                       onTap: _maintenance.recreateTaggedLinks,
                     ),
-                    const SettingsDivider(),
                     SettingsCard(
                       title: localizations.maintenanceStories,
                       onTap: _maintenance.recreateStoryAssignment,
                     ),
-                    const SettingsDivider(),
                     SettingsCard(
                       title: localizations.maintenanceSyncDefinitions,
                       onTap: _maintenance.syncDefinitions,
                     ),
-                    const SettingsDivider(),
                     SettingsCard(
                       title: localizations.maintenancePurgeDeleted,
                       onTap: _db.purgeDeleted,
                     ),
-                    const SettingsDivider(),
                     SettingsCard(
                       title: localizations.maintenanceReprocessSync,
                       onTap: () => getIt<SyncConfigService>().resetOffset(),
                     ),
-                    const SettingsDivider(),
                     SettingsCard(
                       title: localizations.maintenanceResetHostId,
                       onTap: () => getIt<SyncConfigService>().resetHostId(),
                     ),
-                    const SettingsDivider(),
                     SettingsCard(
                       title: localizations.maintenanceCancelNotifications,
                       onTap: () => getIt<NotificationService>().cancelAll(),
                     ),
-                    const SettingsDivider(),
                     SettingsCard(
                       title: localizations.maintenanceRecreateFts5,
                       onTap: () => getIt<Maintenance>().recreateFts5(),

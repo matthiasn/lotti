@@ -193,11 +193,6 @@ class JournalCard extends StatelessWidget {
             }
 
             return Card(
-              color: styleConfig().cardColor,
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(0),
-              ),
               child: ListTile(
                 leading: updatedItem.maybeMap(
                   journalAudio: (_) => const LeadingIcon(Icons.mic),
@@ -271,11 +266,6 @@ class JournalImageCard extends StatelessWidget {
         }
 
         return Card(
-          color: styleConfig().cardColor,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: GFListTile(

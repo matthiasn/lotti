@@ -30,7 +30,6 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
         return AppBar(
           backgroundColor: styleConfig().negspace,
           automaticallyImplyLeading: false,
-          elevation: 0,
           scrolledUnderElevation: 10,
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

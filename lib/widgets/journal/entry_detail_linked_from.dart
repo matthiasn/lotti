@@ -28,39 +28,36 @@ class LinkedFromEntriesWidget extends StatelessWidget {
           return Container();
         } else {
           final items = snapshot.data!;
-          return Container(
-            margin: const EdgeInsets.all(8),
-            child: Column(
-              children: [
-                Text(
-                  localizations.journalLinkedFromLabel,
-                  style: TextStyle(
-                    color: styleConfig().primaryTextColor,
-                    fontFamily: 'Oswald',
-                  ),
+          return Column(
+            children: [
+              Text(
+                localizations.journalLinkedFromLabel,
+                style: TextStyle(
+                  color: styleConfig().primaryTextColor,
+                  fontFamily: 'Oswald',
                 ),
-                ...List.generate(
-                  items.length,
-                  (int index) {
-                    final item = items.elementAt(index);
-                    return item.maybeMap(
-                      journalImage: (JournalImage image) {
-                        return JournalImageCard(
-                          item: image,
-                          key: Key('${item.meta.id}-${item.meta.id}'),
-                        );
-                      },
-                      orElse: () {
-                        return JournalCard(
-                          item: item,
-                          key: Key('${item.meta.id}-${item.meta.id}'),
-                        );
-                      },
-                    );
-                  },
-                )
-              ],
-            ),
+              ),
+              ...List.generate(
+                items.length,
+                (int index) {
+                  final item = items.elementAt(index);
+                  return item.maybeMap(
+                    journalImage: (JournalImage image) {
+                      return JournalImageCard(
+                        item: image,
+                        key: Key('${item.meta.id}-${item.meta.id}'),
+                      );
+                    },
+                    orElse: () {
+                      return JournalCard(
+                        item: item,
+                        key: Key('${item.meta.id}-${item.meta.id}'),
+                      );
+                    },
+                  );
+                },
+              )
+            ],
           );
         }
       },

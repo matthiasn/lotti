@@ -1,13 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:intersperse/intersperse.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
-import 'package:lotti/widgets/settings/settings_card.dart';
 
 class FlagsPage extends StatefulWidget {
   const FlagsPage({super.key});
@@ -55,18 +53,15 @@ class _FlagsPageState extends State<FlagsPage> {
           return ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            children: intersperse(
-              const SettingsDivider(),
-              List.generate(
-                filteredItems.length,
-                (int index) {
-                  return ConfigFlagCard(
-                    item: filteredItems.elementAt(index),
-                    index: index,
-                  );
-                },
-              ),
-            ).toList(),
+            children: List.generate(
+              filteredItems.length,
+              (int index) {
+                return ConfigFlagCard(
+                  item: filteredItems.elementAt(index),
+                  index: index,
+                );
+              },
+            ),
           );
         },
       ),
@@ -101,9 +96,6 @@ class ConfigFlagCard extends StatelessWidget {
     }
 
     return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: Colors.transparent,
       child: ListTile(
         contentPadding: const EdgeInsets.only(
           left: 24,

@@ -181,11 +181,6 @@ class ItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: styleConfig().secondaryTextColor.withOpacity(0.3),
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(

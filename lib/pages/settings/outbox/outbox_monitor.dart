@@ -137,11 +137,6 @@ class OutboxItemCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(2),
       child: Card(
-        color: cardColor(statusEnum),
-        elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
         child: ListTile(
           contentPadding: const EdgeInsets.only(left: 24, right: 24),
           title: Text(

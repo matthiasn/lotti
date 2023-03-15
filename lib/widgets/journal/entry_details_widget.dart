@@ -4,7 +4,6 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_footer.dart';
@@ -60,64 +59,48 @@ class EntryDetailWidget extends StatelessWidget {
             entryId: itemId,
             entry: item,
           ),
-          child: Container(
+          child: Card(
             margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  spreadRadius: 3,
-                  blurRadius: 5,
-                  offset: const Offset(0, 3), // changes position of shadow
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                item.maybeMap(
+                  journalImage: EntryImageWidget.new,
+                  orElse: () => const SizedBox.shrink(),
                 ),
+                const EntryDetailHeader(),
+                TagsListWidget(parentTags: parentTags),
+                item.maybeMap(
+                  task: (_) => const SizedBox.shrink(),
+                  quantitative: (_) => const SizedBox.shrink(),
+                  workout: (_) => const SizedBox.shrink(),
+                  orElse: () {
+                    return EditorWidget(unlinkFn: unlinkFn);
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: item.map(
+                    journalAudio: (JournalAudio audio) {
+                      return const AudioPlayerWidget();
+                    },
+                    workout: WorkoutSummary.new,
+                    survey: SurveySummary.new,
+                    quantitative: HealthSummary.new,
+                    measurement: MeasurementSummary.new,
+                    task: (Task task) {
+                      return TaskForm(
+                        data: task.data,
+                        task: task,
+                      );
+                    },
+                    habitCompletion: HabitSummary.new,
+                    journalEntry: (_) => const SizedBox.shrink(),
+                    journalImage: (_) => const SizedBox.shrink(),
+                  ),
+                ),
+                const EntryDetailFooter(),
               ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(0),
-              child: ColoredBox(
-                color: styleConfig().cardColor,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    item.maybeMap(
-                      journalImage: EntryImageWidget.new,
-                      orElse: () => const SizedBox.shrink(),
-                    ),
-                    const EntryDetailHeader(),
-                    TagsListWidget(parentTags: parentTags),
-                    item.maybeMap(
-                      task: (_) => const SizedBox.shrink(),
-                      quantitative: (_) => const SizedBox.shrink(),
-                      workout: (_) => const SizedBox.shrink(),
-                      orElse: () {
-                        return EditorWidget(unlinkFn: unlinkFn);
-                      },
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: item.map(
-                        journalAudio: (JournalAudio audio) {
-                          return const AudioPlayerWidget();
-                        },
-                        workout: WorkoutSummary.new,
-                        survey: SurveySummary.new,
-                        quantitative: HealthSummary.new,
-                        measurement: MeasurementSummary.new,
-                        task: (Task task) {
-                          return TaskForm(
-                            data: task.data,
-                            task: task,
-                          );
-                        },
-                        habitCompletion: HabitSummary.new,
-                        journalEntry: (_) => const SizedBox.shrink(),
-                        journalImage: (_) => const SizedBox.shrink(),
-                      ),
-                    ),
-                    const EntryDetailFooter(),
-                  ],
-                ),
-              ),
             ),
           ),
         );

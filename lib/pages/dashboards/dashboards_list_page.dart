@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -63,20 +62,15 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
             shrinkWrap: true,
             padding: const EdgeInsets.only(bottom: 200, top: 70),
             children: [
-              const SettingsDivider(),
-              ...intersperse(
-                const SettingsDivider(),
-                List.generate(
-                  dashboards.length,
-                  (int index) {
-                    return DashboardCard(
-                      dashboard: dashboards.elementAt(index),
-                      index: index,
-                    );
-                  },
-                ),
+              ...List.generate(
+                dashboards.length,
+                (int index) {
+                  return DashboardCard(
+                    dashboard: dashboards.elementAt(index),
+                    index: index,
+                  );
+                },
               ),
-              const SettingsDivider(),
             ],
           ),
         );
