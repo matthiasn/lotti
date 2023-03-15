@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Using Cards from Material Design 3 throughout where appropriate
+- Upgraded dependencies
 
 ## [0.8.278] - 2023-03-13
 ### Changed:

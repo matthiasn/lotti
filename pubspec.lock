@@ -926,10 +926,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_svg
-      sha256: "017cb37b3e9bee44cc800e35469f295d537484602f02ce6ceb5876236cc7e1fe"
+      sha256: "12006889e2987c549c4c1ec1a5ba4ec4b24d34d2469ee5f9476c926dcecff266"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.3"
+    version: "2.0.4"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -1291,10 +1291,10 @@ packages:
     dependency: "direct main"
     description:
       name: lottie
-      sha256: "49bbc544e44bf0c734ccda29b182e3516a12f5021ea98b206cf31a168b0f97da"
+      sha256: "0cf78e7a3dd3431523a7debcf33ce4c41ecbfa113e2d10c24c3fe6667d55b556"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.0"
+    version: "2.3.0"
   macos_ui:
     dependency: transitive
     description:
@@ -2018,18 +2018,18 @@ packages:
     dependency: "direct main"
     description:
       name: sqflite
-      sha256: "851d5040552cf911f4cabda08d003eca76b27da3ed0002978272e27c8fbf8ecc"
+      sha256: "500d6fec583d2c021f2d25a056d96654f910662c64f836cd2063167b8f1fa758"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.5"
+    version: "2.2.6"
   sqflite_common:
     dependency: transitive
     description:
       name: sqflite_common
-      sha256: bfd6973aaeeb93475bc0d875ac9aefddf7965ef22ce09790eb963992ffc5183f
+      sha256: "963dad8c4aa2f814ce7d2d5b1da2f36f31bd1a439d8f27e3dc189bb9d26bc684"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.2+2"
+    version: "2.4.3"
   sqlite3:
     dependency: transitive
     description:
@@ -2098,26 +2098,26 @@ packages:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_calendar
-      sha256: "185e745643a81b018fb3d6ce048a5be1ec01f6fcc5daf1581fc84d21af501bda"
+      sha256: a91ba8f2ae2bd891004515fcae98330eb40b8bece639a5660ed27bdbb9917e54
       url: "https://pub.dev"
     source: hosted
-    version: "20.4.53"
+    version: "20.4.54"
   syncfusion_flutter_core:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
-      sha256: ab3eac31638e80663eae19c71e362012e1e2f67dfd527dc5c07d9397cd4238f2
+      sha256: "3979f0b1c5a97422cadae52d476c21fa3e0fb671ef51de6cae1d646d8b99fe1f"
       url: "https://pub.dev"
     source: hosted
-    version: "20.4.53"
+    version: "20.4.54"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
-      sha256: "3053db34fa62d35d45f99b6b03a91c0042a16e5605a2d20c0cc5032ca1c971f8"
+      sha256: e4d4794d54f3a315046031d431a27e0d7350544b1bef0bcd1d2acf58f940dd37
       url: "https://pub.dev"
     source: hosted
-    version: "20.4.53"
+    version: "20.4.54"
   synchronized:
     dependency: transitive
     description:
@@ -2290,26 +2290,26 @@ packages:
     dependency: transitive
     description:
       name: vector_graphics
-      sha256: "2f317d969a9f1eb59d1890643107da749698b7c08c4b0532fc95c8a7130d2803"
+      sha256: "4cf8e60dbe4d3a693d37dff11255a172594c0793da542183cbfe7fe978ae4aaa"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.3"
+    version: "1.1.4"
   vector_graphics_codec:
     dependency: transitive
     description:
       name: vector_graphics_codec
-      sha256: "13cccfda2dd61232a19dfb769b7a907e2ab23aabfebb9053c81e29c6c11b1766"
+      sha256: "278ad5f816f58b1967396d1f78ced470e3e58c9fe4b27010102c0a595c764468"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.3"
+    version: "1.1.4"
   vector_graphics_compiler:
     dependency: transitive
     description:
       name: vector_graphics_compiler
-      sha256: "524c9889a1327401124fe068840a8867f0d57987c1219a2a696ade629ec2bec3"
+      sha256: "0bf61ad56e6fd6688a2865d3ceaea396bc6a0a90ea0d7ad5049b1b76c09d6163"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.3"
+    version: "1.1.4"
   vector_math:
     dependency: transitive
     description:
@@ -2338,10 +2338,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_android
-      sha256: "86d9d56ffe760a1e3b4855ea94bac6c944e99b9050946464857b3e2818e1662b"
+      sha256: dc31c60ae591aa3ccb2d460c3690ceceb86cbb826e73428d817a37650dc4e229
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.1"
+    version: "2.4.2"
   video_player_avfoundation:
     dependency: transitive
     description:
