@@ -140,6 +140,9 @@ class MyBeamerApp extends StatelessWidget {
         clipBehavior: Clip.hardEdge,
       ),
       useMaterial3: true,
+      iconTheme: IconThemeData(
+        color: styleConfig().secondaryTextColor,
+      ),
       brightness: styleConfig().keyboardAppearance,
       scaffoldBackgroundColor: styleConfig().secondaryTextColor,
       highlightColor: Colors.transparent,

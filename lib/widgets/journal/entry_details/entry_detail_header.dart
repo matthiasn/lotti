@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -41,22 +40,25 @@ class EntryDetailHeader extends StatelessWidget {
                       tooltip: localizations.journalFavoriteTooltip,
                       onPressed: cubit.toggleStarred,
                       value: item.meta.starred ?? false,
-                      icon: styleConfig().cardStarIcon,
-                      activeIcon: styleConfig().cardStarIconActive,
+                      icon: Icons.star_outline,
+                      activeIcon: Icons.star,
+                      activeColor: styleConfig().starredGold,
                     ),
                     SwitchIconWidget(
                       tooltip: localizations.journalPrivateTooltip,
                       onPressed: cubit.togglePrivate,
                       value: item.meta.private ?? false,
-                      icon: styleConfig().cardShieldIcon,
-                      activeIcon: styleConfig().cardShieldIconActive,
+                      icon: Icons.shield_outlined,
+                      activeIcon: Icons.shield,
+                      activeColor: styleConfig().alarm,
                     ),
                     SwitchIconWidget(
                       tooltip: localizations.journalFlaggedTooltip,
                       onPressed: cubit.toggleFlagged,
                       value: item.meta.flag == EntryFlag.import,
-                      icon: styleConfig().cardFlagIcon,
-                      activeIcon: styleConfig().cardFlagIconActive,
+                      icon: Icons.flag_outlined,
+                      activeIcon: Icons.flag,
+                      activeColor: styleConfig().primaryColor,
                     ),
                     if (state.entry?.geolocation != null)
                       SwitchIconWidget(
@@ -65,8 +67,9 @@ class EntryDetailHeader extends StatelessWidget {
                             : localizations.journalShowMapHint,
                         onPressed: cubit.toggleMapVisible,
                         value: cubit.showMap,
-                        icon: styleConfig().cardMapIcon,
-                        activeIcon: styleConfig().cardMapIconActive,
+                        icon: Icons.map_outlined,
+                        activeIcon: Icons.map,
+                        activeColor: styleConfig().primaryColor,
                       ),
                     const DeleteIconWidget(),
                     const ShareButtonWidget(),
@@ -94,6 +97,7 @@ class SwitchIconWidget extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.activeIcon,
+    required this.activeColor,
     super.key,
   });
 
@@ -101,15 +105,15 @@ class SwitchIconWidget extends StatelessWidget {
   final void Function() onPressed;
   final bool value;
 
-  final String icon;
-  final String activeIcon;
+  final IconData icon;
+  final IconData activeIcon;
+  final Color activeColor;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 40,
       child: IconButton(
-        key: Key(value ? activeIcon : icon),
         splashColor: Colors.transparent,
         focusColor: Colors.transparent,
         padding: EdgeInsets.zero,
@@ -123,7 +127,12 @@ class SwitchIconWidget extends StatelessWidget {
           }
           onPressed();
         },
-        icon: value ? SvgPicture.asset(activeIcon) : SvgPicture.asset(icon),
+        icon: value
+            ? Icon(
+                activeIcon,
+                color: activeColor,
+              )
+            : Icon(icon),
       ),
     );
   }

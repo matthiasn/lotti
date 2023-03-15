@@ -2,7 +2,6 @@ import 'dart:core';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -90,7 +89,7 @@ class DashboardSurveyChart extends StatelessWidget {
                   IconButton(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     onPressed: onTapAdd,
-                    icon: SvgPicture.asset(styleConfig().addIcon),
+                    icon: const Icon(Icons.add),
                   ),
                 ],
               ),

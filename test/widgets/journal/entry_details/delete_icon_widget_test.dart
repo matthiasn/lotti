@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:mocktail/mocktail.dart';
@@ -43,7 +42,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final trashIconFinder = find.byKey(Key(styleConfig().cardTrashIcon));
+      final trashIconFinder = find.byIcon(Icons.delete);
       expect(trashIconFinder, findsOneWidget);
 
       await tester.tap(trashIconFinder);

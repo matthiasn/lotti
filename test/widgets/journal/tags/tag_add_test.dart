@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -7,9 +6,9 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/tags/tag_add.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -67,7 +66,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // icon is visible
-      final tagAddIconFinder = find.byKey(Key(styleConfig().cardTagIcon));
+      final tagAddIconFinder = find.byIcon(MdiIcons.tag);
 
       expect(tagAddIconFinder, findsOneWidget);
 
