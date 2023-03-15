@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/themes/theme.dart';
@@ -45,7 +44,9 @@ class AudioRecorderWidget extends StatelessWidget {
                 padding: const EdgeInsets.all(30),
                 child: Text(
                   formatDuration(state.progress.toString()),
-                  style: monospaceTextStyleLarge(),
+                  style: monospaceTextStyleLarge().copyWith(
+                    color: styleConfig().secondaryTextColor,
+                  ),
                 ),
               ),
               Row(
@@ -53,7 +54,7 @@ class AudioRecorderWidget extends StatelessWidget {
                 children: <Widget>[
                   IconButton(
                     key: const Key('pauseIcon'),
-                    icon: SvgPicture.asset(styleConfig().pauseIcon),
+                    icon: const Icon(Icons.pause),
                     padding: const EdgeInsets.only(
                       left: 8,
                       top: 8,
@@ -66,7 +67,7 @@ class AudioRecorderWidget extends StatelessWidget {
                   ),
                   IconButton(
                     key: const Key('stopIcon'),
-                    icon: SvgPicture.asset(styleConfig().stopIcon),
+                    icon: const Icon(Icons.stop_outlined),
                     padding: const EdgeInsets.only(
                       left: 29,
                       top: 8,

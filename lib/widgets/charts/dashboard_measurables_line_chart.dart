@@ -4,7 +4,6 @@ import 'package:beamer/beamer.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/blocs/charts/measurables_chart_info_cubit.dart';
@@ -188,7 +187,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                   IconButton(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     onPressed: onTapAdd,
-                    icon: SvgPicture.asset(styleConfig().addIcon),
+                    icon: const Icon(Icons.add),
                   ),
               ],
             ),

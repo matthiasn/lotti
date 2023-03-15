@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -65,7 +64,7 @@ class BackWidget extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(width: 10),
-                SvgPicture.asset(styleConfig().backIcon),
+                const Icon(Icons.chevron_left, size: 30),
                 const SizedBox(width: 12),
                 Text(
                   localizations.appBarBack,
