@@ -26,7 +26,6 @@ class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
         return AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: styleConfig().negspace,
-          elevation: 0,
           scrolledUnderElevation: 10,
           titleSpacing: 0,
           leadingWidth: 100,

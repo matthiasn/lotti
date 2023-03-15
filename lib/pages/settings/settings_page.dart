@@ -35,42 +35,34 @@ class _SettingsPageState extends State<SettingsPage> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsHabitsTitle,
             path: '/settings/habits',
           ),
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsTagsTitle,
             path: '/settings/tags',
           ),
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsDashboardsTitle,
             path: '/settings/dashboards',
           ),
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsMeasurablesTitle,
             path: '/settings/measurables',
           ),
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsHealthImportTitle,
             path: '/settings/health_import',
           ),
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsFlagsTitle,
             path: '/settings/flags',
           ),
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsAdvancedTitle,
             path: '/settings/advanced',
           ),
-          const SettingsDivider(),
         ],
       ),
     );

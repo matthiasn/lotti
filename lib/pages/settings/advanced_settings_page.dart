@@ -20,12 +20,10 @@ class AdvancedSettingsPage extends StatelessWidget {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsSyncCfgTitle,
             path: '/settings/advanced/sync_settings',
           ),
-          const SettingsDivider(),
           SettingsNavCard(
             trailing: OutboxBadgeIcon(
               icon: const SettingsIcon(MdiIcons.mailboxOutline),
@@ -33,27 +31,22 @@ class AdvancedSettingsPage extends StatelessWidget {
             title: localizations.settingsSyncOutboxTitle,
             path: '/settings/advanced/outbox_monitor',
           ),
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsConflictsTitle,
             path: '/settings/advanced/conflicts',
           ),
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsLogsTitle,
             path: '/settings/advanced/logging',
           ),
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsMaintenanceTitle,
             path: '/settings/advanced/maintenance',
           ),
-          const SettingsDivider(),
           SettingsNavCard(
             title: localizations.settingsAboutTitle,
             path: '/settings/advanced/about',
           ),
-          const SettingsDivider(),
         ],
       ),
     );

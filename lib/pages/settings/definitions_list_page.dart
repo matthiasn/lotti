@@ -1,10 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:intersperse/intersperse.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/definitions_list_app_bar.dart';
-import 'package:lotti/widgets/settings/settings_card.dart';
 
 const double iconSize = 24;
 
@@ -74,18 +72,15 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
                   bottom: 8,
                   top: 8,
                 ),
-                children: intersperse(
-                  const SettingsDivider(),
-                  List.generate(
-                    filtered.length,
-                    (int index) {
-                      return widget.definitionCard(
-                        index,
-                        filtered.elementAt(index),
-                      );
-                    },
-                  ),
-                ).toList(),
+                children: List.generate(
+                  filtered.length,
+                  (int index) {
+                    return widget.definitionCard(
+                      index,
+                      filtered.elementAt(index),
+                    );
+                  },
+                ),
               ),
             ],
           ),

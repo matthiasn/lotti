@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:intersperse/intersperse.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
@@ -17,7 +16,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
-import 'package:lotti/widgets/settings/settings_card.dart';
 
 class ConflictsPage extends StatefulWidget {
   const ConflictsPage({super.key});
@@ -93,18 +91,15 @@ class _ConflictsPageState extends State<ConflictsPage> {
           ),
           body: ListView(
             shrinkWrap: true,
-            children: intersperse(
-              const SettingsDivider(),
-              List.generate(
-                items.length,
-                (int index) {
-                  return ConflictCard(
-                    conflict: items.elementAt(index),
-                    index: index,
-                  );
-                },
-              ),
-            ).toList(),
+            children: List.generate(
+              items.length,
+              (int index) {
+                return ConflictCard(
+                  conflict: items.elementAt(index),
+                  index: index,
+                );
+              },
+            ),
           ),
         );
       },
@@ -129,8 +124,6 @@ class ConflictCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
       child: ListTile(
         contentPadding: const EdgeInsets.only(left: 24, right: 24),
         title: Padding(

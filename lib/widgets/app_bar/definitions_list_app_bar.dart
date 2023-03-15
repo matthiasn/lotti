@@ -28,7 +28,6 @@ class DefinitionsListAppBar extends StatelessWidget with PreferredSizeWidget {
       actions: actions,
       automaticallyImplyLeading: false,
       backgroundColor: styleConfig().negspace,
-      elevation: 0,
       scrolledUnderElevation: 10,
       titleSpacing: 0,
       leadingWidth: 100,

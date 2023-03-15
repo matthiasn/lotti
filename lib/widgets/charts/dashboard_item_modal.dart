@@ -60,7 +60,7 @@ class DashboardItemModal extends StatelessWidget {
                     EnumToString.convertToString(aggregationType),
                     style: choiceLabelStyle(),
                   ),
-                  selectedColor: styleConfig().outboxSuccessColor,
+                  selectedColor: styleConfig().primaryColor,
                   selected: aggregationType == item.aggregationType,
                 );
               }).toList(),

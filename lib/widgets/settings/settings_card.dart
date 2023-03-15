@@ -26,9 +26,6 @@ class SettingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: Colors.transparent,
       child: ListTile(
         contentPadding: contentPadding,
         title: Padding(
@@ -75,21 +72,6 @@ class SettingsNavCard extends StatelessWidget {
       leading: leading,
       trailing: trailing,
       onTap: () => beamToNamed(path),
-    );
-  }
-}
-
-class SettingsDivider extends StatelessWidget {
-  const SettingsDivider({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Divider(
-      color: styleConfig().primaryTextColor,
-      height: 1,
-      thickness: 1,
-      indent: 0,
-      endIndent: 0,
     );
   }
 }

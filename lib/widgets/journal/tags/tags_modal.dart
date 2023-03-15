@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:intersperse/intersperse.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
@@ -83,20 +82,17 @@ class _TagsModalState extends State<TagsModal> {
               constraints: const BoxConstraints(maxHeight: 500),
               child: ListView(
                 shrinkWrap: true,
-                children: intersperse(
-                  const SettingsDivider(),
-                  List.generate(
-                    suggestions.length,
-                    (int index) {
-                      final tag = suggestions.elementAt(index);
-                      return TagCard(
-                        tagEntity: tag,
-                        index: index,
-                        onTap: () => onSuggestionSelected(tag),
-                      );
-                    },
-                  ),
-                ).toList(),
+                children: List.generate(
+                  suggestions.length,
+                  (int index) {
+                    final tag = suggestions.elementAt(index);
+                    return TagCard(
+                      tagEntity: tag,
+                      index: index,
+                      onTap: () => onSuggestionSelected(tag),
+                    );
+                  },
+                ),
               ),
             ),
             Row(

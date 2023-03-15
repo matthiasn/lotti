@@ -122,11 +122,11 @@ class OutboxItemCard extends StatelessWidget {
     Color cardColor(OutboxStatus status) {
       switch (statusEnum) {
         case OutboxStatus.pending:
-          return styleConfig().outboxPendingColor;
+          return styleConfig().primaryColorLight;
         case OutboxStatus.error:
           return styleConfig().alarm;
         case OutboxStatus.sent:
-          return styleConfig().outboxSuccessColor;
+          return styleConfig().primaryColor;
       }
     }
 
@@ -138,10 +138,6 @@ class OutboxItemCard extends StatelessWidget {
       padding: const EdgeInsets.all(2),
       child: Card(
         color: cardColor(statusEnum),
-        elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
         child: ListTile(
           contentPadding: const EdgeInsets.only(left: 24, right: 24),
           title: Text(
