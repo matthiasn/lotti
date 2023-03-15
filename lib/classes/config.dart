@@ -44,8 +44,6 @@ class StyleConfig with _$StyleConfig {
     @ColorConverter() required Color selectedChoiceChipTextColor,
     @ColorConverter() required Color unselectedChoiceChipColor,
     @ColorConverter() required Color unselectedChoiceChipTextColor,
-    @ColorConverter() required Color outboxSuccessColor,
-    @ColorConverter() required Color outboxPendingColor,
     @ColorConverter() required Color activeAudioControl,
     @ColorConverter() required Color audioMeterBar,
     @ColorConverter() required Color audioMeterTooHotBar,

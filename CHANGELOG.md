@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded dependencies
 - Material Cards in Tag, Habit, and Dashboard definition pages
 
+### Fixed:
+- Outbox color by status
+
 ## [0.8.278] - 2023-03-13
 ### Changed:
 - Unused code removed

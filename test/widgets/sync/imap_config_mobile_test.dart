@@ -74,7 +74,7 @@ void main() {
       expect(userFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: styleConfig().outboxSuccessColor);
+          find.byContainerColor(color: styleConfig().primaryColor);
       expect(successIndicatorFinder, findsOneWidget);
     });
 
