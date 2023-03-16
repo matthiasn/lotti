@@ -203,7 +203,7 @@ TextStyle appBarTextStyleNewLarge() => TextStyle(
 TextStyle searchFieldStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
       fontSize: fontSizeLarge,
-      fontWeight: FontWeight.w100,
+      fontWeight: FontWeight.w200,
     );
 
 TextStyle searchFieldHintStyle() => searchFieldStyle().copyWith(

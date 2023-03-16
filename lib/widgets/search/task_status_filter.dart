@@ -1,4 +1,3 @@
-import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +7,8 @@ import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:quiver/collection.dart';
 
+const horizontalChipMargin = 2.0;
+
 class TaskStatusFilter extends StatelessWidget {
   const TaskStatusFilter({super.key});
 
@@ -15,14 +16,18 @@ class TaskStatusFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
-        return WrapSuper(
-          alignment: WrapSuperAlignment.center,
-          spacing: 5,
-          lineSpacing: 5,
-          children: [
-            ...snapshot.taskStatuses.map(TaskStatusChip.new),
-            const TaskStatusAllChip(),
-          ],
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              const SizedBox(width: 5),
+              ...snapshot.taskStatuses.map(
+                TaskStatusChip.new,
+              ),
+              const TaskStatusAllChip(),
+              const SizedBox(width: 5),
+            ],
+          ),
         );
       },
     );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 
+const horizontalChipMargin = 2.0;
+
 class FilterChoiceChip extends StatelessWidget {
   const FilterChoiceChip({
     required this.label,
@@ -22,15 +24,20 @@ class FilterChoiceChip extends StatelessWidget {
       onLongPress: onLongPress,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        child: Chip(
-          label: Text(
-            label,
-            style: choiceChipTextStyle(isSelected: isSelected),
+        child: Container(
+          margin: const EdgeInsets.symmetric(
+            horizontal: horizontalChipMargin,
           ),
-          visualDensity: VisualDensity.compact,
-          backgroundColor: isSelected
-              ? styleConfig().selectedChoiceChipColor
-              : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
+          child: Chip(
+            label: Text(
+              label,
+              style: choiceChipTextStyle(isSelected: isSelected),
+            ),
+            visualDensity: VisualDensity.compact,
+            backgroundColor: isSelected
+                ? styleConfig().selectedChoiceChipColor
+                : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
+          ),
         ),
       ),
     );

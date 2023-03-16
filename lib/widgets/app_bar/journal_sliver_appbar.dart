@@ -28,7 +28,7 @@ class JournalSliverAppBar extends StatelessWidget {
 
         return SliverAppBar(
           backgroundColor: styleConfig().negspace,
-          expandedHeight: 280,
+          expandedHeight: 190,
           flexibleSpace: FlexibleSpaceBar(
             background: Padding(
               padding: EdgeInsets.only(top: isIOS ? 30 : 0),
@@ -119,11 +119,12 @@ class JournalSliverAppBar extends StatelessWidget {
                             const SizedBox(width: 5),
                           ],
                         ),
-                        if (!snapshot.showTasks) const EntryTypeFilter(),
-                        if (snapshot.showTasks) const TaskStatusFilter(),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  if (!snapshot.showTasks) const EntryTypeFilter(),
+                  if (snapshot.showTasks) const TaskStatusFilter(),
                 ],
               ),
             ),
