@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Placeholder text in editor (English and German)
 
+### Changed:
+- Improved journal filters
+
 ## [0.8.281] - 2023-03-16
 ### Changed:
 - Habit cards

@@ -28,7 +28,7 @@ class JournalSliverAppBar extends StatelessWidget {
 
         return SliverAppBar(
           backgroundColor: styleConfig().negspace,
-          expandedHeight: 280,
+          expandedHeight: 200,
           flexibleSpace: FlexibleSpaceBar(
             background: Padding(
               padding: EdgeInsets.only(top: isIOS ? 30 : 0),
@@ -45,85 +45,85 @@ class JournalSliverAppBar extends StatelessWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      runAlignment: WrapAlignment.center,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 5,
-                      runSpacing: 4,
-                      children: [
-                        TasksBadge(
-                          child: TasksSegmentedControl(
-                            showTasks: snapshot.showTasks,
-                            onValueChanged: (showTasks) {
-                              cubit.setShowTasks(showTasks: showTasks);
-                            },
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TasksBadge(
+                            child: TasksSegmentedControl(
+                              showTasks: snapshot.showTasks,
+                              onValueChanged: (showTasks) {
+                                cubit.setShowTasks(showTasks: showTasks);
+                              },
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 5),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Visibility(
-                              visible: snapshot.showPrivateEntries,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    localizations.journalPrivateTooltip,
-                                    style: searchLabelStyle(),
-                                  ),
-                                  CupertinoSwitch(
-                                    value: snapshot.privateEntriesOnly,
-                                    activeColor: styleConfig().private,
-                                    onChanged: (_) =>
-                                        cubit.togglePrivateEntriesOnly(),
-                                  ),
-                                ],
+                          const SizedBox(width: 5),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Visibility(
+                                visible: snapshot.showPrivateEntries,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      localizations.journalPrivateTooltip,
+                                      style: searchLabelStyle(),
+                                    ),
+                                    CupertinoSwitch(
+                                      value: snapshot.privateEntriesOnly,
+                                      activeColor: styleConfig().private,
+                                      onChanged: (_) =>
+                                          cubit.togglePrivateEntriesOnly(),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 5),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  localizations.journalFavoriteTooltip,
-                                  style: searchLabelStyle(),
-                                ),
-                                CupertinoSwitch(
-                                  value: snapshot.starredEntriesOnly,
-                                  activeColor: styleConfig().starredGold,
-                                  onChanged: (_) =>
-                                      cubit.toggleStarredEntriesOnly(),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: 5),
-                            FlaggedBadge(
-                              child: Row(
+                              const SizedBox(width: 5),
+                              Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    localizations.journalFlaggedTooltip,
+                                    localizations.journalFavoriteTooltip,
                                     style: searchLabelStyle(),
                                   ),
                                   CupertinoSwitch(
-                                    value: snapshot.flaggedEntriesOnly,
+                                    value: snapshot.starredEntriesOnly,
                                     activeColor: styleConfig().starredGold,
                                     onChanged: (_) =>
-                                        cubit.toggleFlaggedEntriesOnly(),
+                                        cubit.toggleStarredEntriesOnly(),
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(width: 5),
-                          ],
-                        ),
-                        if (!snapshot.showTasks) const EntryTypeFilter(),
-                        if (snapshot.showTasks) const TaskStatusFilter(),
-                      ],
+                              const SizedBox(width: 5),
+                              FlaggedBadge(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      localizations.journalFlaggedTooltip,
+                                      style: searchLabelStyle(),
+                                    ),
+                                    CupertinoSwitch(
+                                      value: snapshot.flaggedEntriesOnly,
+                                      activeColor: styleConfig().starredGold,
+                                      onChanged: (_) =>
+                                          cubit.toggleFlaggedEntriesOnly(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  if (!snapshot.showTasks) const EntryTypeFilter(),
+                  if (snapshot.showTasks) const TaskStatusFilter(),
                 ],
               ),
             ),

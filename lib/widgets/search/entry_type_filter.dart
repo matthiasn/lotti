@@ -1,4 +1,3 @@
-import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,14 +13,16 @@ class EntryTypeFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
-        return WrapSuper(
-          alignment: WrapSuperAlignment.center,
-          spacing: 5,
-          lineSpacing: 5,
-          children: [
-            ...entryTypes.map(EntryTypeChip.new),
-            const EntryTypeAllChip(),
-          ],
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              const SizedBox(width: 5),
+              ...entryTypes.map(EntryTypeChip.new),
+              const EntryTypeAllChip(),
+              const SizedBox(width: 5),
+            ],
+          ),
         );
       },
     );
