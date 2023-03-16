@@ -30,7 +30,6 @@ class _HowToUsePageState extends State<HowToUsePage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: styleConfig().negspace,
       body: Stack(
         children: [
           Align(

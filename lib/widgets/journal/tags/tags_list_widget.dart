@@ -48,7 +48,12 @@ class TagsListWidget extends StatelessWidget {
             }
 
             return Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.only(
+                top: 10,
+                left: 14,
+                right: 14,
+                bottom: 5,
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width - 24,

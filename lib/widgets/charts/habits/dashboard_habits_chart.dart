@@ -227,99 +227,84 @@ class _HabitChartLineState extends State<HabitChartLine> {
 
         final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 3,
-          ),
-          child: Stack(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(width: 70),
-                  ...intersperse(
-                    widget.showGaps
-                        ? SizedBox(
-                            width: days < 20
-                                ? 6
-                                : days < 40
-                                    ? 4
-                                    : 1,
-                          )
-                        : const SizedBox.shrink(),
-                    results.map((res) {
-                      return Flexible(
-                        child: Tooltip(
-                          excludeFromSemantics: true,
-                          message: chartDateFormatter(res.dayString),
-                          child: GestureDetector(
-                            onTap: () {
-                              beamToNamed(
-                                '/habits/complete/${widget.habitDefinition.id}',
-                                data: ymd(DateTime.now()) != res.dayString
-                                    ? res.dayString
-                                    : ymd(DateTime.now()),
-                              );
-                            },
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                widget.showGaps ? 2 : 0,
-                              ),
-                              child: Container(
-                                height: 25,
-                                color: habitCompletionColor(res.completionType),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(width: 30),
-                ],
-              ),
-              Row(
-                children: [
-                  Container(
-                    height: 25,
-                    padding: const EdgeInsets.only(
-                      top: 1,
-                      right: 10,
-                      bottom: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          styleConfig().negspace.withOpacity(0.8),
-                          styleConfig().negspace.withOpacity(0.4),
-                          Colors.transparent,
-                        ],
-                        stops: const [0, 0.8, 1],
-                      ),
-                    ),
-                    child: Text(
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.only(
+              top: 5,
+              bottom: 10,
+              left: 15,
+              right: 15,
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Text(
                       widget.habitDefinition.name,
-                      style: chartTitleStyle()
-                          .copyWith(fontWeight: FontWeight.bold),
+                      style: chartTitleStyle(),
                       overflow: TextOverflow.ellipsis,
                       softWrap: false,
                     ),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: onTapAdd,
-                    child: const MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: Padding(
-                        padding: EdgeInsets.only(left: 40),
-                        child: Icon(Icons.add),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: onTapAdd,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: Icon(
+                          Icons.add,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ...intersperse(
+                      widget.showGaps
+                          ? SizedBox(
+                              width: days < 20
+                                  ? 6
+                                  : days < 40
+                                      ? 4
+                                      : 1,
+                            )
+                          : const SizedBox.shrink(),
+                      results.map((res) {
+                        return Flexible(
+                          child: Tooltip(
+                            excludeFromSemantics: true,
+                            message: chartDateFormatter(res.dayString),
+                            child: GestureDetector(
+                              onTap: () {
+                                beamToNamed(
+                                  '/habits/complete/${widget.habitDefinition.id}',
+                                  data: ymd(DateTime.now()) != res.dayString
+                                      ? res.dayString
+                                      : ymd(DateTime.now()),
+                                );
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  widget.showGaps ? 2 : 0,
+                                ),
+                                child: Container(
+                                  height: 25,
+                                  color:
+                                      habitCompletionColor(res.completionType),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(width: 30),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },

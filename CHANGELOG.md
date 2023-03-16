@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Habit cards
+- Task status styling
+- Whitespace around cards
+- Task card whitespace
+- Refactoring: extracted theme
+
+## [0.8.279] - 2023-03-16
 ### Changed: 
 - Use Material Design icons
 

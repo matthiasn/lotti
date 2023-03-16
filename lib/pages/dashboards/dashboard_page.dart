@@ -115,7 +115,6 @@ class _DashboardPageState extends State<DashboardPage> {
           }
 
           return Scaffold(
-            backgroundColor: styleConfig().negspace,
             appBar: TitleAppBar(
               title: dashboard.name,
               showBackButton: widget.showBackButton,

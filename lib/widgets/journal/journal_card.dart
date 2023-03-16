@@ -192,29 +192,32 @@ class JournalCard extends StatelessWidget {
               beamToNamed('/journal/${updatedItem.meta.id}');
             }
 
-            return Card(
-              child: ListTile(
-                leading: updatedItem.maybeMap(
-                  journalAudio: (_) => const LeadingIcon(Icons.mic),
-                  journalEntry: (_) => const LeadingIcon(Icons.article),
-                  quantitative: (_) => const LeadingIcon(MdiIcons.heart),
-                  measurement: (_) => const LeadingIcon(MdiIcons.numeric),
-                  task: (task) => LeadingIcon(
-                    task.data.status.maybeMap(
-                      done: (_) => MdiIcons.checkboxMarkedOutline,
-                      orElse: () => MdiIcons.checkboxBlankOutline,
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Card(
+                child: ListTile(
+                  leading: updatedItem.maybeMap(
+                    journalAudio: (_) => const LeadingIcon(Icons.mic),
+                    journalEntry: (_) => const LeadingIcon(Icons.article),
+                    quantitative: (_) => const LeadingIcon(MdiIcons.heart),
+                    measurement: (_) => const LeadingIcon(MdiIcons.numeric),
+                    task: (task) => LeadingIcon(
+                      task.data.status.maybeMap(
+                        done: (_) => MdiIcons.checkboxMarkedOutline,
+                        orElse: () => MdiIcons.checkboxBlankOutline,
+                      ),
                     ),
+                    habitCompletion: (_) =>
+                        const LeadingIcon(MdiIcons.lightningBolt),
+                    orElse: () => null,
                   ),
-                  habitCompletion: (_) =>
-                      const LeadingIcon(MdiIcons.lightningBolt),
-                  orElse: () => null,
+                  title: JournalCardTitle(
+                    item: updatedItem,
+                    maxHeight: maxHeight,
+                    showLinkedDuration: showLinkedDuration,
+                  ),
+                  onTap: onTap,
                 ),
-                title: JournalCardTitle(
-                  item: updatedItem,
-                  maxHeight: maxHeight,
-                  showLinkedDuration: showLinkedDuration,
-                ),
-                onTap: onTap,
               ),
             );
           },

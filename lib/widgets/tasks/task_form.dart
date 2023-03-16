@@ -46,7 +46,7 @@ class _TaskFormState extends State<TaskForm> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 12, right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
               child: FormBuilder(
                 key: formKey,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -105,12 +105,13 @@ class _TaskFormState extends State<TaskForm> {
                           ),
                         ),
                         SizedBox(
-                          width: 160,
+                          width: 180,
                           child: FormBuilderDropdown<String>(
                             name: 'status',
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(10),
+                            elevation: 2,
                             onChanged: (dynamic _) => save(),
-                            decoration: inputDecoration(),
+                            decoration: inputDecoration(labelText: 'Status:'),
                             initialValue: widget.data?.status.map(
                                   open: (_) => 'OPEN',
                                   groomed: (_) => 'GROOMED',
@@ -190,9 +191,13 @@ class TaskStatusLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: inputStyle(),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      child: Text(
+        title,
+        softWrap: false,
+        style: inputStyle(),
+      ),
     );
   }
 }
