@@ -144,7 +144,7 @@ class MyBeamerApp extends StatelessWidget {
         color: styleConfig().secondaryTextColor,
       ),
       brightness: styleConfig().keyboardAppearance,
-      scaffoldBackgroundColor: styleConfig().secondaryTextColor,
+      scaffoldBackgroundColor: styleConfig().negspace,
       highlightColor: Colors.transparent,
       hoverColor: styleConfig().primaryColor.withOpacity(0.3),
       chipTheme: const ChipThemeData(side: BorderSide.none),

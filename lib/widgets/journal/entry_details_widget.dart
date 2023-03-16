@@ -75,7 +75,10 @@ class EntryDetailWidget extends StatelessWidget {
                   quantitative: (_) => const SizedBox.shrink(),
                   workout: (_) => const SizedBox.shrink(),
                   orElse: () {
-                    return EditorWidget(unlinkFn: unlinkFn);
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: EditorWidget(unlinkFn: unlinkFn),
+                    );
                   },
                 ),
                 Padding(

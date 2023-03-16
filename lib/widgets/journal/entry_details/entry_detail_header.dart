@@ -36,6 +36,7 @@ class EntryDetailHeader extends StatelessWidget {
               children: [
                 Row(
                   children: [
+                    const SizedBox(width: 10),
                     SwitchIconWidget(
                       tooltip: localizations.journalFavoriteTooltip,
                       onPressed: cubit.toggleStarred,

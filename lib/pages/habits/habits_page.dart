@@ -34,10 +34,7 @@ class HabitsTabPage extends StatelessWidget {
           backgroundColor: styleConfig().negspace,
           body: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.only(
-                bottom: 10,
-                top: 5,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
               child: Column(
                 children: [
                   Center(

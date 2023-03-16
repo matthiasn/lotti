@@ -33,8 +33,7 @@ class LinkedFromEntriesWidget extends StatelessWidget {
               Text(
                 localizations.journalLinkedFromLabel,
                 style: TextStyle(
-                  color: styleConfig().primaryTextColor,
-                  fontFamily: 'Oswald',
+                  color: styleConfig().secondaryTextColor,
                 ),
               ),
               ...List.generate(

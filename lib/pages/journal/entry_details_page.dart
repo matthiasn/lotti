@@ -51,7 +51,12 @@ class EntryDetailPage extends StatelessWidget {
           ),
           body: SingleChildScrollView(
             physics: const ClampingScrollPhysics(),
-            padding: const EdgeInsets.only(top: 8, bottom: 96),
+            padding: const EdgeInsets.only(
+              top: 8,
+              bottom: 96,
+              left: 2,
+              right: 2,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
