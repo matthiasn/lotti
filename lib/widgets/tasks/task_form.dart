@@ -46,7 +46,7 @@ class _TaskFormState extends State<TaskForm> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
               child: FormBuilder(
                 key: formKey,
                 autovalidateMode: AutovalidateMode.onUserInteraction,

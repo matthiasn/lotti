@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Habit cards
 - Task status styling
 - Whitespace around cards
+- Task card whitespace
 
 ## [0.8.279] - 2023-03-16
 ### Changed: 

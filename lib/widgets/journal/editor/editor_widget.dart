@@ -66,8 +66,9 @@ class EditorWidget extends StatelessWidget {
             keyFormatter(event, 'i', Attribute.italic);
             saveViaKeyboard(event);
           },
-          child: ColoredBox(
+          child: Card(
             color: styleConfig().textEditorBackground,
+            elevation: 0,
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: maxHeight,
