@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Placeholder text in editor (English and German)
+
+## [0.8.281] - 2023-03-16
 ### Changed:
 - Habit cards
 - Task status styling
@@ -12,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task card whitespace
 - Refactoring: extracted theme
 
-## [0.8.279] - 2023-03-16
+## [0.8.280] - 2023-03-16
 ### Changed: 
 - Use Material Design icons
 
