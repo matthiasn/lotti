@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/themes/themes.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
@@ -325,3 +326,50 @@ TextStyle searchLabelStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w100,
     );
+
+ThemeData getTheme() {
+  return ThemeData(
+    fontFamily: mainFont,
+    cardTheme: CardTheme(
+      color: styleConfig().cardColor,
+      elevation: 1,
+      clipBehavior: Clip.hardEdge,
+    ),
+    useMaterial3: true,
+    iconTheme: IconThemeData(
+      color: styleConfig().secondaryTextColor,
+    ),
+    brightness: styleConfig().keyboardAppearance,
+    scaffoldBackgroundColor: styleConfig().negspace,
+    highlightColor: Colors.transparent,
+    hoverColor: styleConfig().primaryColor.withOpacity(0.3),
+    chipTheme: const ChipThemeData(side: BorderSide.none),
+    appBarTheme: AppBarTheme(
+      iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: styleConfig().cardColor,
+      clipBehavior: Clip.hardEdge,
+    ),
+    tooltipTheme: TooltipThemeData(
+      textStyle: chartTitleStyleSmall().copyWith(
+        color: Colors.white,
+        fontWeight: FontWeight.w400,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(5),
+      ),
+    ),
+    colorScheme: ColorScheme.fromSwatch(
+      primarySwatch: primaryColorMaterial,
+    ).copyWith(
+      background: styleConfig().cardColor,
+      brightness: keyboardAppearance(),
+    ),
+    textTheme: TextTheme(
+      bodyLarge: TextStyle(color: styleConfig().primaryTextColor),
+      bodyMedium: TextStyle(color: styleConfig().primaryTextColor),
+    ),
+  );
+}
