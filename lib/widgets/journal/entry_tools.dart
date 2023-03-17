@@ -7,8 +7,6 @@ import 'package:lotti/themes/theme.dart';
 
 NumberFormat nf = NumberFormat('###.##');
 
-NumberFormat latLonFormat = NumberFormat('###.##');
-
 Duration entryDuration(JournalEntity journalEntity) {
   return journalEntity.meta.dateTo.difference(journalEntity.meta.dateFrom);
 }
