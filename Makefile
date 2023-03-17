@@ -214,13 +214,20 @@ tag_push:
 .PHONY: all
 all: ios macos
 
-.PHONY: find_unused
-find_unused:
+.PHONY: check_unused_files
+check_unused_files:
 	flutter pub run dart_code_metrics:metrics check-unused-files lib
 
-.PHONY: find_unused_code
-find_unused_code:
+.PHONY: check_unused_code
+check_unused_code:
 	flutter pub run dart_code_metrics:metrics check-unused-code lib
+
+.PHONY: check_unused_l10n
+check_unused_l10n:
+	flutter pub run dart_code_metrics:metrics check-unused-l10n lib
+
+.PHONY: check_unused
+check_unused: check_unused_code check_unused_files check_unused_l10n
 
 .PHONY: sentry_symbols
 sentry_symbols:
