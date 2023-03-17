@@ -9,8 +9,6 @@ import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/utils.dart';
 
 class SyncConfigService {
-  final sharedSecretKey = 'sharedSecret';
-  final imapConfigKey = 'imapConfig';
   SyncConfig? _syncConfig;
 
   Future<String?> getSharedKey() async {

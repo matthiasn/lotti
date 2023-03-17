@@ -86,18 +86,6 @@ List<JournalEntity> entityStreamMapper(List<JournalDbEntity> dbEntities) {
   return dbEntities.map(fromDbEntity).toList();
 }
 
-List<String> entityIdStreamMapper(List<JournalDbEntity> dbEntities) {
-  return dbEntities.map((dbEntity) => dbEntity.id).toList();
-}
-
-List<JournalEntity> nullAwareEntityStreamMapper(
-  List<JournalDbEntity?> dbEntities,
-) {
-  return entityStreamMapper(
-    dbEntities.whereType<JournalDbEntity>().toList(),
-  );
-}
-
 MeasurableDataType measurableDataType(MeasurableDbEntity dbEntity) {
   return MeasurableDataType.fromJson(
     json.decode(dbEntity.serialized) as Map<String, dynamic>,
@@ -186,12 +174,6 @@ LinkedDbEntry linkedDbEntity(EntryLink link) {
     type: link.map(
       basic: (_) => 'BasicLink',
     ),
-  );
-}
-
-EntryLink entryLinkFromDbEntity(LinkedDbEntry dbEntity) {
-  return EntryLink.fromJson(
-    json.decode(dbEntity.serialized) as Map<String, dynamic>,
   );
 }
 

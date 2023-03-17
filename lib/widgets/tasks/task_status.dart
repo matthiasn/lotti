@@ -8,11 +8,9 @@ class TaskStatusWidget extends StatelessWidget {
   const TaskStatusWidget(
     this.task, {
     super.key,
-    this.padding = chipPadding,
   });
 
   final Task task;
-  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {

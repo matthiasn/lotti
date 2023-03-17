@@ -7,8 +7,6 @@ import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:quiver/collection.dart';
 
-const horizontalChipMargin = 2.0;
-
 class TaskStatusFilter extends StatelessWidget {
   const TaskStatusFilter({super.key});
 

@@ -1,20 +1,8 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/file_utils.dart';
-
-Future<File?> compressAndGetFile(File file) async {
-  final sourcePath = file.absolute.path;
-  final result = await FlutterImageCompress.compressAndGetFile(
-    sourcePath,
-    '$sourcePath.heic',
-    format: CompressFormat.heic,
-  );
-  debugPrint('In: ${file.lengthSync()} out: ${result?.lengthSync()}');
-  return result;
-}
 
 Future<File?> compressAndSave(File file, String targetPath) async {
   final sourcePath = file.absolute.path;
@@ -25,11 +13,6 @@ Future<File?> compressAndSave(File file, String targetPath) async {
     keepExif: true,
   );
   return result;
-}
-
-Future<String> getFullAssetPath(String relativePath) async {
-  final docDir = getDocumentsDirectory();
-  return '${docDir.path}$relativePath';
 }
 
 String? getRelativeAssetPath(String? absolutePath) {

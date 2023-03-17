@@ -82,10 +82,6 @@ Future<GenericImapResult> saveImapMessage({
   }
 }
 
-const String sharedSecretKey = 'sharedSecret';
-const String imapConfigKey = 'imapConfig';
-const String lastReadUidKey = 'lastReadUid';
-
 Future<bool> persistImap({
   required String encryptedMessage,
   required String subject,

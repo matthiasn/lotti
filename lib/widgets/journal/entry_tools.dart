@@ -23,14 +23,6 @@ String formatDuration(Duration? duration) {
   return durationString;
 }
 
-String formatLatLon(double? number) {
-  if (number != null) {
-    return latLonFormat.format(number);
-  } else {
-    return '';
-  }
-}
-
 // ignore: avoid_positional_boolean_parameters
 bool fromNullableBool(bool? value) {
   if (value != null) {
