@@ -8,7 +8,8 @@ linter:
 
 analyzer:
   exclude:
-    - "**/*.g.dart"
+    - '**/*.g.dart'
+    - '**/*.freezed.dart'
   errors:
     invalid_annotation_target: ignore
   language:

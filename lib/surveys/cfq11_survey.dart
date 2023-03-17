@@ -7,6 +7,7 @@ List<RPChoice> cqf11Choices = [
   RPChoice(text: '3—Much worse than usual', value: 3),
 ];
 
+// ignore: unused-code
 RPChoiceAnswerFormat cfq11AnswerFormat = RPChoiceAnswerFormat(
   answerStyle: RPChoiceAnswerStyle.SingleChoice,
   choices: cqf11Choices,

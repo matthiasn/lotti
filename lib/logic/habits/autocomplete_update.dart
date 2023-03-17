@@ -38,6 +38,7 @@ AutoCompleteRule? replaceAtRecursive({
   );
 }
 
+// ignore: unused-code
 AutoCompleteRule? removeAt(
   AutoCompleteRule? rule, {
   required List<int> path,
