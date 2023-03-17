@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
@@ -27,6 +28,8 @@ class EditorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (
         context,
@@ -87,6 +90,7 @@ class EditorWidget extends StatelessWidget {
                       autoFocus: autoFocus,
                       expands: false,
                       minHeight: minHeight,
+                      placeholder: localizations.editorPlaceholder,
                       maxHeight: MediaQuery.of(context).size.height / 2,
                       padding: EdgeInsets.only(
                         top: 8,
