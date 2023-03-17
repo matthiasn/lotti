@@ -218,6 +218,10 @@ all: ios macos
 find_unused:
 	flutter pub run dart_code_metrics:metrics check-unused-files lib
 
+.PHONY: find_unused_code
+find_unused_code:
+	flutter pub run dart_code_metrics:metrics check-unused-code lib
+
 .PHONY: sentry_symbols
 sentry_symbols:
 	flutter packages pub run sentry_dart_plugin

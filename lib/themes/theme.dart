@@ -23,12 +23,6 @@ class AppTheme {
 
 const double chipBorderRadius = 8;
 const mainFont = 'PlusJakartaSans';
-const monospaceFont = 'Inconsolata';
-
-const chipPadding = EdgeInsets.symmetric(
-  vertical: 3,
-  horizontal: 8,
-);
 
 final inputBorder = OutlineInputBorder(
   borderRadius: BorderRadius.circular(chipBorderRadius),
@@ -67,13 +61,6 @@ InputDecoration createDialogInputDecoration({String? labelText}) =>
 const switchDecoration = InputDecoration(border: InputBorder.none);
 
 const inputSpacer = SizedBox(height: 25);
-
-const chipPaddingClosable = EdgeInsets.only(
-  top: 1,
-  bottom: 1,
-  left: 8,
-  right: 4,
-);
 
 TextStyle inputStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
@@ -150,10 +137,6 @@ TextStyle monospaceTextStyleSmall() => monospaceTextStyle().copyWith(
 
 TextStyle monospaceTextStyleLarge() => monospaceTextStyle().copyWith(
       fontSize: fontSizeLarge,
-    );
-
-TextStyle pickerMonoTextStyle() => monospaceTextStyle().copyWith(
-      fontWeight: FontWeight.w100,
     );
 
 Brightness keyboardAppearance() {
@@ -246,8 +229,6 @@ TextStyle chartTitleStyleSmall() => TextStyle(
       fontWeight: FontWeight.w300,
     );
 
-const taskFormFieldStyle = TextStyle(color: Colors.black87);
-
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
@@ -258,12 +239,6 @@ TextStyle failButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
       color: styleConfig().alarm.darken(),
-    );
-
-TextStyle cancelButtonStyle() => TextStyle(
-      fontSize: fontSizeMedium,
-      fontWeight: FontWeight.w100,
-      color: styleConfig().primaryTextColor,
     );
 
 const segmentItemStyle = TextStyle(
@@ -277,22 +252,6 @@ const badgeStyle = TextStyle(
   fontWeight: FontWeight.w300,
   fontSize: fontSizeSmall,
 );
-
-const bottomNavLabelStyle = TextStyle(
-  fontWeight: FontWeight.w300,
-);
-
-TextStyle definitionCardTitleStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeLarge,
-      height: 1.2,
-    );
-
-TextStyle definitionCardSubtitleStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.w200,
-      fontSize: fontSizeMedium,
-    );
 
 const settingsIconSize = 24.0;
 

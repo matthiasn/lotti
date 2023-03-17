@@ -2,10 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:tinycolor2/tinycolor2.dart';
-
-const defaultBaseColor = Color.fromRGBO(51, 77, 118, 1);
-const brightBaseColor = Color.fromRGBO(244, 187, 41, 1);
 
 final Color white = colorFromCssHex('#FFFFFF');
 final Color coal = colorFromCssHex('#000000');
@@ -47,8 +43,6 @@ final darkTheme = StyleConfig(
   audioMeterTooHotBar: Colors.orange,
   audioMeterPeakedBar: alarm,
   private: alarm,
-  audioMeterBarBackground:
-      TinyColor.fromColor(defaultBaseColor).lighten(30).color,
   selectedChoiceChipColor: primaryColor,
   selectedChoiceChipTextColor: const Color.fromRGBO(33, 33, 33, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
@@ -89,8 +83,6 @@ final brightTheme = StyleConfig(
   audioMeterTooHotBar: Colors.orange,
   audioMeterPeakedBar: alarm,
   private: alarm,
-  audioMeterBarBackground:
-      TinyColor.fromColor(defaultBaseColor).lighten(30).color,
   selectedChoiceChipColor: primaryColor,
   selectedChoiceChipTextColor: const Color.fromRGBO(33, 33, 33, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
