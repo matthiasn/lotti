@@ -29,61 +29,53 @@ class EntryDetailHeader extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        return Column(
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const SizedBox(width: 5),
-                    SwitchIconWidget(
-                      tooltip: localizations.journalFavoriteTooltip,
-                      onPressed: cubit.toggleStarred,
-                      value: item.meta.starred ?? false,
-                      icon: Icons.star_outline,
-                      activeIcon: Icons.star,
-                      activeColor: styleConfig().starredGold,
-                    ),
-                    SwitchIconWidget(
-                      tooltip: localizations.journalPrivateTooltip,
-                      onPressed: cubit.togglePrivate,
-                      value: item.meta.private ?? false,
-                      icon: Icons.shield_outlined,
-                      activeIcon: Icons.shield,
-                      activeColor: styleConfig().alarm,
-                    ),
-                    SwitchIconWidget(
-                      tooltip: localizations.journalFlaggedTooltip,
-                      onPressed: cubit.toggleFlagged,
-                      value: item.meta.flag == EntryFlag.import,
-                      icon: Icons.flag_outlined,
-                      activeIcon: Icons.flag,
-                      activeColor: styleConfig().primaryColor,
-                    ),
-                    if (state.entry?.geolocation != null)
-                      SwitchIconWidget(
-                        tooltip: state.showMap
-                            ? localizations.journalHideMapHint
-                            : localizations.journalShowMapHint,
-                        onPressed: cubit.toggleMapVisible,
-                        value: cubit.showMap,
-                        icon: Icons.map_outlined,
-                        activeIcon: Icons.map,
-                        activeColor: styleConfig().primaryColor,
-                      ),
-                    const DeleteIconWidget(),
-                    const ShareButtonWidget(),
-                    TagAddIconWidget(),
-                  ],
+                const SizedBox(width: 5),
+                SwitchIconWidget(
+                  tooltip: localizations.journalFavoriteTooltip,
+                  onPressed: cubit.toggleStarred,
+                  value: item.meta.starred ?? false,
+                  icon: Icons.star_outline,
+                  activeIcon: Icons.star,
+                  activeColor: styleConfig().starredGold,
                 ),
-                const SaveButton(),
+                SwitchIconWidget(
+                  tooltip: localizations.journalPrivateTooltip,
+                  onPressed: cubit.togglePrivate,
+                  value: item.meta.private ?? false,
+                  icon: Icons.shield_outlined,
+                  activeIcon: Icons.shield,
+                  activeColor: styleConfig().alarm,
+                ),
+                SwitchIconWidget(
+                  tooltip: localizations.journalFlaggedTooltip,
+                  onPressed: cubit.toggleFlagged,
+                  value: item.meta.flag == EntryFlag.import,
+                  icon: Icons.flag_outlined,
+                  activeIcon: Icons.flag,
+                  activeColor: styleConfig().primaryColor,
+                ),
+                if (state.entry?.geolocation != null)
+                  SwitchIconWidget(
+                    tooltip: state.showMap
+                        ? localizations.journalHideMapHint
+                        : localizations.journalShowMapHint,
+                    onPressed: cubit.toggleMapVisible,
+                    value: cubit.showMap,
+                    icon: Icons.map_outlined,
+                    activeIcon: Icons.map,
+                    activeColor: styleConfig().primaryColor,
+                  ),
+                const DeleteIconWidget(),
+                const ShareButtonWidget(),
+                TagAddIconWidget(),
               ],
             ),
-            Divider(
-              height: 0.5,
-              color: styleConfig().secondaryTextColor.withOpacity(0.3),
-            )
+            const SaveButton(),
           ],
         );
       },
