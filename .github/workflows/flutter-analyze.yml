@@ -21,3 +21,9 @@ jobs:
           channel: 'stable'
       - name: Run Flutter Analyze
         run: make clean_build_analyze
+      - name: Check unused files
+        run: make check_unused_files
+      - name: Check unused l10n
+        run: make check_unused_l10n
+      - name: Check unused code
+        run: make check_unused_code
