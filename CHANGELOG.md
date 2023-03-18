@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Habit completion icon
+
+## [0.8.283] - 2023-03-18
+### Changed:
 - Refactor: remove unused code
 - Line in header removed
 - Upgraded dependencies
