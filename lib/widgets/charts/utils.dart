@@ -25,9 +25,6 @@ class Observation extends Equatable {
   List<Object?> get props => [dateTime, value];
 }
 
-const days = 30;
-const defaultChartDuration = Duration(days: days + 1);
-
 String ymd(DateTime day) {
   return day.toIso8601String().substring(0, 10);
 }
@@ -196,24 +193,6 @@ RangeAnnotation<DateTime> chartRangeAnnotation(
     RangeAnnotationSegment(
       rangeStart.add(const Duration(days: 1)),
       rangeEnd.subtract(const Duration(days: 1)),
-      RangeAnnotationAxisType.domain,
-      color: Color.transparent,
-    )
-  ]);
-}
-
-RangeAnnotation<DateTime> measurablesChartRangeAnnotation(
-  AggregationType aggregationType,
-  DateTime rangeStart,
-  DateTime rangeEnd,
-) {
-  final shortenRange = aggregationType == AggregationType.dailySum ||
-      aggregationType == AggregationType.dailyMax;
-
-  return RangeAnnotation([
-    RangeAnnotationSegment(
-      shortenRange ? rangeStart.add(const Duration(days: 1)) : rangeStart,
-      shortenRange ? rangeEnd.subtract(const Duration(days: 1)) : rangeEnd,
       RangeAnnotationAxisType.domain,
       color: Color.transparent,
     )

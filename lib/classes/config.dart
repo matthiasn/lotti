@@ -49,7 +49,6 @@ class StyleConfig with _$StyleConfig {
     @ColorConverter() required Color audioMeterTooHotBar,
     @ColorConverter() required Color audioMeterPeakedBar,
     @ColorConverter() required Color private,
-    @ColorConverter() required Color audioMeterBarBackground,
     // new colors
     @ColorConverter() required Color negspace,
     @ColorConverter() required Color primaryTextColor,

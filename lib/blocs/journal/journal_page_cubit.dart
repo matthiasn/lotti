@@ -233,16 +233,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   }
 }
 
-class FilterBy {
-  FilterBy({
-    required this.typeName,
-    required this.name,
-  });
-
-  final String typeName;
-  final String name;
-}
-
 final List<String> entryTypes = [
   'Task',
   'JournalEntry',

@@ -5,8 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/create/create_entry.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -53,9 +51,4 @@ Future<ImageData> takeScreenshotMac() async {
     );
     rethrow;
   }
-}
-
-Future<void> takeScreenshotWithLinked() async {
-  final linkedId = await getIdFromSavedRoute();
-  await createScreenshot(linkedId: linkedId);
 }

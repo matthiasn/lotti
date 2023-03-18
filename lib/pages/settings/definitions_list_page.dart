@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/definitions_list_app_bar.dart';
 
-const double iconSize = 24;
-
 class DefinitionsListPage<T> extends StatefulWidget {
   const DefinitionsListPage({
     required this.stream,

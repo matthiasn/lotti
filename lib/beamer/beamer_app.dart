@@ -178,16 +178,3 @@ class MyBeamerApp extends StatelessWidget {
     );
   }
 }
-
-class NavTitle extends StatelessWidget {
-  const NavTitle(this.title, {super.key});
-
-  final String title;
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Text(title),
-    );
-  }
-}

@@ -107,47 +107,6 @@ class DurationWidget extends StatelessWidget {
   }
 }
 
-class DurationViewWidget extends StatelessWidget {
-  DurationViewWidget({
-    required this.item,
-    super.key,
-  });
-
-  final TimeService _timeService = getIt<TimeService>();
-  final JournalEntity item;
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder(
-      stream: _timeService.getStream(),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<JournalEntity?> snapshot,
-      ) {
-        final recording = snapshot.data;
-        var displayed = item;
-        var isRecording = false;
-
-        if (recording != null && recording.meta.id == item.meta.id) {
-          displayed = recording;
-          isRecording = true;
-        }
-
-        final labelColor =
-            isRecording ? styleConfig().alarm : styleConfig().primaryTextColor;
-
-        return Visibility(
-          visible: entryDuration(displayed).inMilliseconds > 0,
-          child: FormattedTime(
-            labelColor: labelColor,
-            displayed: displayed,
-          ),
-        );
-      },
-    );
-  }
-}
-
 class FormattedTime extends StatelessWidget {
   const FormattedTime({
     required this.labelColor,

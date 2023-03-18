@@ -3,21 +3,8 @@ import 'dart:core';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/surveys/cfq11_survey.dart';
-import 'package:lotti/surveys/panas_survey.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:research_package/model.dart';
-
-Map<String, RPOrderedTask> surveyTasks = {
-  'cfq11SurveyTask': cfq11SurveyTask,
-  'panasSurveyTask': panasSurveyTask,
-};
-
-Map<String, Map<String, Set<String>>> surveyScoreDefinitions = {
-  'cfq11SurveyTask': cfq11ScoreDefinitions,
-  'panasSurveyTask': panasScoreDefinitions,
-};
 
 DashboardSurveyItem cfq11SurveyChart = DashboardSurveyItem(
   surveyType: 'cfq11SurveyTask',

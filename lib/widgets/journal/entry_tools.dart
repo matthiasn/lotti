@@ -7,8 +7,6 @@ import 'package:lotti/themes/theme.dart';
 
 NumberFormat nf = NumberFormat('###.##');
 
-NumberFormat latLonFormat = NumberFormat('###.##');
-
 Duration entryDuration(JournalEntity journalEntity) {
   return journalEntity.meta.dateTo.difference(journalEntity.meta.dateFrom);
 }
@@ -21,14 +19,6 @@ String formatDuration(Duration? duration) {
   }
 
   return durationString;
-}
-
-String formatLatLon(double? number) {
-  if (number != null) {
-    return latLonFormat.format(number);
-  } else {
-    return '';
-  }
 }
 
 // ignore: avoid_positional_boolean_parameters

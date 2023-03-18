@@ -7,7 +7,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class HabitResult extends Equatable {
@@ -26,20 +25,6 @@ class HabitResult extends Equatable {
 
   @override
   List<Object?> get props => [dayString];
-}
-
-final successColor = colorToCssHex(primaryColor);
-final failColor = colorToCssHex(alarm);
-final skipColor = colorToCssHex(
-  styleConfig().secondaryTextColor.withOpacity(0.4),
-);
-
-String hexColorForHabitCompletion(HabitCompletionType completionType) {
-  return completionType == HabitCompletionType.fail
-      ? failColor
-      : completionType == HabitCompletionType.skip
-          ? skipColor
-          : successColor;
 }
 
 Color habitCompletionColor(HabitCompletionType completionType) {
