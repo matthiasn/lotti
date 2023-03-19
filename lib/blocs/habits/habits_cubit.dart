@@ -40,6 +40,9 @@ class HabitsCubit extends Cubit<HabitsState> {
             zeroBased: false,
             minY: 0,
             displayFilter: HabitDisplayFilter.openNow,
+            showSearch: false,
+            showTimeSpan: false,
+            searchString: '',
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
@@ -222,6 +225,9 @@ class HabitsCubit extends Cubit<HabitsState> {
   var _shortStreakCount = 0;
   var _longStreakCount = 0;
   var _zeroBased = true;
+  var _showTimeSpan = false;
+  var _showSearch = false;
+  var _searchString = 'false';
   var _timeSpanDays = isDesktop ? 14 : 7;
   var _selectedInfoYmd = '';
 
@@ -235,8 +241,23 @@ class HabitsCubit extends Cubit<HabitsState> {
     emitState();
   }
 
+  void setSearchString(String searchString) {
+    _searchString = searchString.toLowerCase();
+    emitState();
+  }
+
   void toggleZeroBased() {
     _zeroBased = !_zeroBased;
+    emitState();
+  }
+
+  void toggleShowSearch() {
+    _showSearch = !_showSearch;
+    emitState();
+  }
+
+  void toggleShowTimeSpan() {
+    _showTimeSpan = !_showTimeSpan;
     emitState();
   }
 
@@ -295,6 +316,9 @@ class HabitsCubit extends Cubit<HabitsState> {
           state: state,
         ),
         displayFilter: _displayFilter,
+        showTimeSpan: _showTimeSpan,
+        showSearch: _showSearch,
+        searchString: _searchString,
       ),
     );
   }
