@@ -2,7 +2,6 @@ import 'dart:core';
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:intersperse/intersperse.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -10,10 +9,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/themes/themes.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardHabitsChart extends StatefulWidget {
   const DashboardHabitsChart({
@@ -167,154 +164,6 @@ class HabitChartInfoWidget extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   onPressed: onTapAdd,
                   icon: const Icon(Icons.add),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class HabitChartLine extends StatefulWidget {
-  const HabitChartLine({
-    required this.habitDefinition,
-    required this.rangeStart,
-    required this.rangeEnd,
-    required this.showGaps,
-    super.key,
-  });
-
-  final HabitDefinition habitDefinition;
-  final DateTime rangeStart;
-  final DateTime rangeEnd;
-  final bool showGaps;
-
-  @override
-  State<HabitChartLine> createState() => _HabitChartLineState();
-}
-
-class _HabitChartLineState extends State<HabitChartLine> {
-  final JournalDb _db = getIt<JournalDb>();
-
-  void onTapAdd() {
-    beamToNamed(
-      '/habits/complete/${widget.habitDefinition.id}',
-      data: ymd(DateTime.now()),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<List<JournalEntity>>(
-      stream: _db.watchHabitCompletionsByHabitId(
-        habitId: widget.habitDefinition.id,
-        rangeStart: widget.rangeStart,
-        rangeEnd: widget.rangeEnd,
-      ),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<JournalEntity>> snapshot,
-      ) {
-        final entities = snapshot.data ?? [];
-
-        final results = habitResultsByDay(
-          entities,
-          habitDefinition: widget.habitDefinition,
-          rangeStart: widget.rangeStart,
-          rangeEnd: widget.rangeEnd,
-        );
-
-        final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
-
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.only(
-              top: 5,
-              bottom: 10,
-              left: 15,
-              right: 15,
-            ),
-            child: Stack(
-              children: [
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          widget.habitDefinition.name,
-                          style: chartTitleStyle(),
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: false,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ...intersperse(
-                          widget.showGaps
-                              ? SizedBox(
-                                  width: days < 20
-                                      ? 6
-                                      : days < 40
-                                          ? 4
-                                          : 1,
-                                )
-                              : const SizedBox.shrink(),
-                          results.map((res) {
-                            return Flexible(
-                              child: Tooltip(
-                                excludeFromSemantics: true,
-                                message: chartDateFormatter(res.dayString),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    beamToNamed(
-                                      '/habits/complete/${widget.habitDefinition.id}',
-                                      data: ymd(DateTime.now()) != res.dayString
-                                          ? res.dayString
-                                          : ymd(DateTime.now()),
-                                    );
-                                  },
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(
-                                      widget.showGaps ? 2 : 0,
-                                    ),
-                                    child: Container(
-                                      height: 25,
-                                      color: habitCompletionColor(
-                                        res.completionType,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                        const SizedBox(width: 50),
-                      ],
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 11),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: onTapAdd,
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: Icon(
-                          Icons.check_circle_outline,
-                          color: primaryColor,
-                          size: 32,
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
               ],
             ),

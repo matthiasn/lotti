@@ -4,10 +4,11 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/habits/habit_completion_card.dart';
 import 'package:lotti/widgets/habits/habit_page_app_bar.dart';
 import 'package:lotti/widgets/habits/habit_streaks.dart';
+import 'package:lotti/widgets/habits/status_segmented_control.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class HabitsTabPage extends StatelessWidget {
@@ -29,6 +30,16 @@ class HabitsTabPage extends StatelessWidget {
         final rangeEnd = getEndOfToday();
         final showGaps = timeSpanDays < 180;
 
+        final displayFilter = state.displayFilter;
+        final showAll = displayFilter == HabitDisplayFilter.all;
+
+        final showOpenNow = state.openNow.isNotEmpty &&
+            (displayFilter == HabitDisplayFilter.openNow || showAll);
+        final showCompleted = state.completed.isNotEmpty &&
+            (displayFilter == HabitDisplayFilter.completed || showAll);
+        final showPendingLater = state.pendingLater.isNotEmpty &&
+            (displayFilter == HabitDisplayFilter.pendingLater || showAll);
+
         return Scaffold(
           appBar: const HabitsPageAppBar(),
           backgroundColor: styleConfig().negspace,
@@ -43,57 +54,65 @@ class HabitsTabPage extends StatelessWidget {
                       onValueChanged: cubit.setTimeSpan,
                     ),
                   ),
-                  if (state.openNow.isNotEmpty)
+                  const SizedBox(height: 20),
+                  Center(
+                    child: HabitStatusSegmentedControl(
+                      filter: state.displayFilter,
+                      onValueChanged: cubit.setDisplayFilter,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (showAll)
                     Padding(
-                      padding: const EdgeInsets.only(top: 20),
+                      padding: const EdgeInsets.only(bottom: 15),
                       child: Text(
                         localizations.habitsOpenHeader,
                         style: chartTitleStyle(),
                       ),
                     ),
-                  const SizedBox(height: 15),
-                  ...state.openNow.map((habitDefinition) {
-                    return HabitChartLine(
-                      habitDefinition: habitDefinition,
-                      rangeStart: rangeStart,
-                      rangeEnd: rangeEnd,
-                      showGaps: showGaps,
-                    );
-                  }),
-                  if (state.completed.isNotEmpty)
+                  if (showOpenNow)
+                    ...state.openNow.map((habitDefinition) {
+                      return HabitCompletionCard(
+                        habitDefinition: habitDefinition,
+                        rangeStart: rangeStart,
+                        rangeEnd: rangeEnd,
+                        showGaps: showGaps,
+                      );
+                    }),
+                  if (showAll)
                     Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: Text(
-                        localizations.habitsCompletedHeader,
-                        style: chartTitleStyle(),
-                      ),
-                    ),
-                  const SizedBox(height: 15),
-                  ...state.completed.map((habitDefinition) {
-                    return HabitChartLine(
-                      habitDefinition: habitDefinition,
-                      rangeStart: rangeStart,
-                      rangeEnd: rangeEnd,
-                      showGaps: showGaps,
-                    );
-                  }),
-                  if (state.pendingLater.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
+                      padding: const EdgeInsets.only(top: 20, bottom: 15),
                       child: Text(
                         localizations.habitsPendingLaterHeader,
                         style: chartTitleStyle(),
                       ),
                     ),
-                  const SizedBox(height: 15),
-                  ...state.pendingLater.map((habitDefinition) {
-                    return HabitChartLine(
-                      habitDefinition: habitDefinition,
-                      rangeStart: rangeStart,
-                      rangeEnd: rangeEnd,
-                      showGaps: showGaps,
-                    );
-                  }),
+                  if (showPendingLater)
+                    ...state.pendingLater.map((habitDefinition) {
+                      return HabitCompletionCard(
+                        habitDefinition: habitDefinition,
+                        rangeStart: rangeStart,
+                        rangeEnd: rangeEnd,
+                        showGaps: showGaps,
+                      );
+                    }),
+                  if (showAll)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 20, bottom: 15),
+                      child: Text(
+                        localizations.habitsCompletedHeader,
+                        style: chartTitleStyle(),
+                      ),
+                    ),
+                  if (showCompleted)
+                    ...state.completed.map((habitDefinition) {
+                      return HabitCompletionCard(
+                        habitDefinition: habitDefinition,
+                        rangeStart: rangeStart,
+                        rangeEnd: rangeEnd,
+                        showGaps: showGaps,
+                      );
+                    }),
                   const SizedBox(height: 20),
                   const HabitStreaksCounter(),
                 ],

@@ -4,6 +4,13 @@ import 'package:lotti/classes/journal_entities.dart';
 
 part 'habits_state.freezed.dart';
 
+enum HabitDisplayFilter {
+  openNow,
+  pendingLater,
+  completed,
+  all,
+}
+
 @freezed
 class HabitsState with _$HabitsState {
   factory HabitsState({
@@ -29,5 +36,6 @@ class HabitsState with _$HabitsState {
     required int timeSpanDays,
     required double minY,
     required bool zeroBased,
+    required HabitDisplayFilter displayFilter,
   }) = _HabitsStateSaved;
 }
