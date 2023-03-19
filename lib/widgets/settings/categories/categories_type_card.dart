@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -20,6 +21,14 @@ class CategoriesTypeCard extends StatelessWidget {
     return SettingsNavCard(
       path: '/settings/categories/${categoryDefinition.id}',
       title: categoryDefinition.name,
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 75,
+          height: 50,
+          color: colorFromHex(categoryDefinition.color),
+        ),
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
