@@ -14,11 +14,11 @@ enum AggregationTimeframe {
 }
 
 List<String> daysInEntryRange(
-  DateTime? dateFrom,
-  DateTime? dateTo,
+  DateTime dateFrom,
+  DateTime dateTo,
 ) {
-  final start = Jiffy(dateFrom).startOf(Units.DAY).dateTime;
-  final end = Jiffy(dateTo).endOf(Units.DAY).dateTime.add(
+  final start = Jiffy.parseFromDateTime(dateFrom).startOf(Unit.day).dateTime;
+  final end = Jiffy.parseFromDateTime(dateTo).endOf(Unit.day).dateTime.add(
         const Duration(days: 1),
       );
   return daysInRange(rangeStart: start, rangeEnd: end);
