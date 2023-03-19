@@ -39,6 +39,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             timeSpanDays: 14,
             zeroBased: false,
             minY: 0,
+            displayFilter: HabitDisplayFilter.openNow,
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
@@ -205,6 +206,7 @@ class HabitsCubit extends Cubit<HabitsState> {
   List<HabitDefinition> _pendingLater = [];
   List<HabitDefinition> _completed = [];
   List<JournalEntity> _habitCompletions = [];
+  HabitDisplayFilter _displayFilter = HabitDisplayFilter.openNow;
 
   var _completedToday = <String>{};
   var _successfulToday = <String>{};
@@ -225,6 +227,11 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   void setTimeSpan(int timeSpanDays) {
     _timeSpanDays = timeSpanDays;
+    emitState();
+  }
+
+  void setDisplayFilter(HabitDisplayFilter displayFilter) {
+    _displayFilter = displayFilter;
     emitState();
   }
 
@@ -287,6 +294,7 @@ class HabitsCubit extends Cubit<HabitsState> {
           days: getDays(_timeSpanDays),
           state: state,
         ),
+        displayFilter: _displayFilter,
       ),
     );
   }
