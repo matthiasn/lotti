@@ -7,12 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Segmented control for filtering which habits are shown (due, later today, complete, all)
+- Search field for habits
 
 ### Changed:
 - Selectable habit time spans
 - More obvious habit completion state with strike-trough text and subtle opacity
 - Upgraded dependencies
-- 
+- Toggle display of habits time span
 
 ## [0.8.284] - 2023-03-19
 ### Changed:

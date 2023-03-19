@@ -38,6 +38,7 @@ class HabitsState with _$HabitsState {
     required bool zeroBased,
     required bool showTimeSpan,
     required bool showSearch,
+    required String searchString,
     required HabitDisplayFilter displayFilter,
   }) = _HabitsStateSaved;
 }

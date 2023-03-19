@@ -73,6 +73,7 @@
   "habitsCompletedHeader": "Completed",
   "habitsOpenHeader": "Open",
   "habitsPendingLaterHeader": "Pending later",
+  "habitsSearchHint": "Search...",
   "habitsFilterOpenNow": "due",
   "habitsFilterPendingLater": "later",
   "habitsFilterCompleted": "done",
