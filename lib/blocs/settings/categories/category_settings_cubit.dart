@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/blocs/settings/categories/category_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -33,6 +34,12 @@ class CategorySettingsCubit extends Cubit<CategorySettingsState> {
 
   void setDirty() {
     _dirty = true;
+    emitState();
+  }
+
+  void setColor(Color color) {
+    _dirty = true;
+    categoryDefinition = categoryDefinition.copyWith(color: colorToHex(color));
     emitState();
   }
 

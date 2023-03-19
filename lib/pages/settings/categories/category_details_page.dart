@@ -1,6 +1,7 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/settings/categories/category_settings_cubit.dart';
@@ -26,6 +27,8 @@ class CategoryDetailsPage extends StatelessWidget {
       builder: (context, CategorySettingsState state) {
         final item = state.categoryDefinition;
         final cubit = context.read<CategorySettingsCubit>();
+
+        final pickerColor = colorFromHex(state.categoryDefinition.color)!;
 
         return Scaffold(
           backgroundColor: styleConfig().negspace,
@@ -81,6 +84,12 @@ class CategoryDetailsPage extends StatelessWidget {
                               title: localizations.dashboardActiveLabel,
                               activeColor: styleConfig().starredGold,
                             ),
+                            ColorPicker(
+                              pickerColor: pickerColor,
+                              enableAlpha: false,
+                              labelTypes: const [],
+                              onColorChanged: cubit.setColor,
+                            )
                           ],
                         ),
                       ),

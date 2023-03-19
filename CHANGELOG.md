@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Category entity type
 - Categories list page
 - Categories details page
+- Set category color
 
 ## [0.8.285] - 2023-03-19
 ### Added:
