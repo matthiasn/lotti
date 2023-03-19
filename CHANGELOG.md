@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Selectable habit time spans
+
+## [0.8.284] - 2023-03-19
+### Changed:
 - Habit completion icon
 
 ### Fixed:

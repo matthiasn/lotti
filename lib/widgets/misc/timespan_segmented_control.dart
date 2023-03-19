@@ -28,8 +28,7 @@ class TimeSpanSegmentedControl extends StatelessWidget {
         14: TextSegment(shortLabels ? '14d' : '14 days'),
         30: TextSegment(shortLabels ? '30d' : '30 days'),
         90: TextSegment(shortLabels ? '90d' : '90 days'),
-        180: TextSegment(shortLabels ? '180d' : '180 days'),
-        if (isDesktop) 365: TextSegment(shortLabels ? '1y' : '1 year'),
+        if (isDesktop) 180: TextSegment(shortLabels ? '180d' : '180 days'),
       },
     );
   }
