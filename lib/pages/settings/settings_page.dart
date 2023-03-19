@@ -40,6 +40,10 @@ class _SettingsPageState extends State<SettingsPage> {
             path: '/settings/habits',
           ),
           SettingsNavCard(
+            title: localizations.settingsCategoriesTitle,
+            path: '/settings/categories',
+          ),
+          SettingsNavCard(
             title: localizations.settingsTagsTitle,
             path: '/settings/tags',
           ),

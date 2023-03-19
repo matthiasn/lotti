@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Category entity type
+- Categories list page
+- Categories details page
+
+## [0.8.285] - 2023-03-19
+### Added:
 - Segmented control for filtering which habits are shown (due, later today, complete, all)
 - Search field for habits
 

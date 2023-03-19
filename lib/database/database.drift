@@ -76,6 +76,22 @@ CREATE INDEX idx_habit_definitions_id ON habit_definitions (id);
 CREATE INDEX idx_habit_definitions_name ON habit_definitions (name);
 CREATE INDEX idx_habit_definitions_private ON habit_definitions (private);
 
+CREATE TABLE category_definitions (
+  id TEXT NOT NULL,
+  name TEXT NOT NULL UNIQUE,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  private BOOLEAN NOT NULL DEFAULT FALSE,
+  serialized TEXT NOT NULL,
+  active BOOLEAN NOT NULL,
+  PRIMARY KEY (id)
+) as CategoryDefinitionDbEntity;
+
+CREATE INDEX idx_category_definitions_id ON category_definitions (id);
+CREATE INDEX idx_category_definitions_name ON category_definitions (name);
+CREATE INDEX idx_category_definitions_private ON category_definitions (private);
+
 CREATE TABLE dashboard_definitions (
   id TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -392,6 +408,17 @@ SELECT * FROM habit_definitions
 
 habitById:
 SELECT * FROM habit_definitions
+  WHERE deleted = false
+  AND id = :id
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
+
+allCategoryDefinitions:
+SELECT * FROM category_definitions
+  WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND deleted = false;
+
+categoryById:
+SELECT * FROM category_definitions
   WHERE deleted = false
   AND id = :id
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));

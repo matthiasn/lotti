@@ -92,6 +92,18 @@ class EntityDefinition with _$EntityDefinition {
     AggregationType? aggregationType,
   }) = MeasurableDataType;
 
+  factory EntityDefinition.categoryDefinition({
+    required String id,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required String name,
+    required String color,
+    required VectorClock? vectorClock,
+    required bool private,
+    required bool active,
+    DateTime? deletedAt,
+  }) = CategoryDefinition;
+
   factory EntityDefinition.habit({
     required String id,
     required DateTime createdAt,
