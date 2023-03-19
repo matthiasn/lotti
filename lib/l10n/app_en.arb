@@ -75,7 +75,7 @@
   "habitsPendingLaterHeader": "Pending later",
   "habitsFilterOpenNow": "due",
   "habitsFilterPendingLater": "later",
-  "habitsFilterCompleted": "completed",
+  "habitsFilterCompleted": "done",
   "habitsFilterAll": "all",
   "habitsLongerStreaksHeader": "Week-long streaks (or longer)",
   "habitsLongerStreaksEmptyHeader": "No week-long streaks at the moment",

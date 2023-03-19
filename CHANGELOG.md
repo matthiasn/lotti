@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Selectable habit time spans
 - More obvious habit completion state with strike-trough text and subtle opacity
 - Upgraded dependencies
+- 
 
 ## [0.8.284] - 2023-03-19
 ### Changed:

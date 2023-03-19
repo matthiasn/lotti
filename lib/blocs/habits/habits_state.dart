@@ -36,6 +36,8 @@ class HabitsState with _$HabitsState {
     required int timeSpanDays,
     required double minY,
     required bool zeroBased,
+    required bool showTimeSpan,
+    required bool showSearch,
     required HabitDisplayFilter displayFilter,
   }) = _HabitsStateSaved;
 }

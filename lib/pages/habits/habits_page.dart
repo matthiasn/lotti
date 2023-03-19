@@ -9,7 +9,8 @@ import 'package:lotti/widgets/habits/habit_completion_card.dart';
 import 'package:lotti/widgets/habits/habit_page_app_bar.dart';
 import 'package:lotti/widgets/habits/habit_streaks.dart';
 import 'package:lotti/widgets/habits/status_segmented_control.dart';
-import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
+
+import '../../widgets/misc/timespan_segmented_control.dart';
 
 class HabitsTabPage extends StatelessWidget {
   const HabitsTabPage({super.key});
@@ -48,19 +49,47 @@ class HabitsTabPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
               child: Column(
                 children: [
-                  Center(
-                    child: TimeSpanSegmentedControl(
-                      timeSpanDays: timeSpanDays,
-                      onValueChanged: cubit.setTimeSpan,
-                    ),
+                  Wrap(
+                    children: [
+                      HabitStatusSegmentedControl(
+                        filter: state.displayFilter,
+                        onValueChanged: cubit.setDisplayFilter,
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: cubit.toggleShowSearch,
+                            icon: Icon(
+                              Icons.search,
+                              color: state.showSearch
+                                  ? styleConfig().primaryColor
+                                  : styleConfig().secondaryTextColor,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: cubit.toggleShowTimeSpan,
+                            icon: Icon(
+                              Icons.calendar_month,
+                              color: state.showTimeSpan
+                                  ? styleConfig().primaryColor
+                                  : styleConfig().secondaryTextColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                  Center(
-                    child: HabitStatusSegmentedControl(
-                      filter: state.displayFilter,
-                      onValueChanged: cubit.setDisplayFilter,
+                  if (state.showTimeSpan)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 5),
+                        child: TimeSpanSegmentedControl(
+                          timeSpanDays: timeSpanDays,
+                          onValueChanged: cubit.setTimeSpan,
+                        ),
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 20),
                   if (showAll)
                     Padding(
