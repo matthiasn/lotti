@@ -64,6 +64,7 @@ class SelectCategoryWidget extends StatelessWidget {
                                 context
                                     .read<HabitSettingsCubit>()
                                     .setCategory(category.id);
+                                Navigator.pop(context);
                               },
                               title: category.name,
                               leading: CategoryColorIcon(
@@ -85,6 +86,8 @@ class SelectCategoryWidget extends StatelessWidget {
 
             return TextField(
               onTap: onTap,
+              readOnly: true,
+              focusNode: FocusNode(),
               controller: controller,
               decoration: inputDecoration(
                 labelText:

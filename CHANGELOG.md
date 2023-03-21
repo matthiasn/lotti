@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Whitespace in settings
 - Upgraded dependencies
 
+### Fixed:
+- Focus issue in habit category selection
+
 ## [0.8.285] - 2023-03-19
 ### Added:
 - Segmented control for filtering which habits are shown (due, later today, complete, all)
