@@ -93,7 +93,7 @@ class SelectCategoryWidget extends StatelessWidget {
                 icon: CategoryColorIcon(
                   category != null
                       ? colorFromCssHex(category.color)
-                      : styleConfig().secondaryTextColor.withOpacity(0.5),
+                      : styleConfig().secondaryTextColor.withOpacity(0.2),
                 ),
                 suffixIcon: categoryUndefined
                     ? null
