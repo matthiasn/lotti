@@ -32,42 +32,45 @@ class _SettingsPageState extends State<SettingsPage> {
         title: localizations.navTabTitleSettings,
         showBackButton: false,
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SettingsNavCard(
-            title: localizations.settingsHabitsTitle,
-            path: '/settings/habits',
-          ),
-          SettingsNavCard(
-            title: localizations.settingsCategoriesTitle,
-            path: '/settings/categories',
-          ),
-          SettingsNavCard(
-            title: localizations.settingsTagsTitle,
-            path: '/settings/tags',
-          ),
-          SettingsNavCard(
-            title: localizations.settingsDashboardsTitle,
-            path: '/settings/dashboards',
-          ),
-          SettingsNavCard(
-            title: localizations.settingsMeasurablesTitle,
-            path: '/settings/measurables',
-          ),
-          SettingsNavCard(
-            title: localizations.settingsHealthImportTitle,
-            path: '/settings/health_import',
-          ),
-          SettingsNavCard(
-            title: localizations.settingsFlagsTitle,
-            path: '/settings/flags',
-          ),
-          SettingsNavCard(
-            title: localizations.settingsAdvancedTitle,
-            path: '/settings/advanced',
-          ),
-        ],
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SettingsNavCard(
+              title: localizations.settingsHabitsTitle,
+              path: '/settings/habits',
+            ),
+            SettingsNavCard(
+              title: localizations.settingsCategoriesTitle,
+              path: '/settings/categories',
+            ),
+            SettingsNavCard(
+              title: localizations.settingsTagsTitle,
+              path: '/settings/tags',
+            ),
+            SettingsNavCard(
+              title: localizations.settingsDashboardsTitle,
+              path: '/settings/dashboards',
+            ),
+            SettingsNavCard(
+              title: localizations.settingsMeasurablesTitle,
+              path: '/settings/measurables',
+            ),
+            SettingsNavCard(
+              title: localizations.settingsHealthImportTitle,
+              path: '/settings/health_import',
+            ),
+            SettingsNavCard(
+              title: localizations.settingsFlagsTitle,
+              path: '/settings/flags',
+            ),
+            SettingsNavCard(
+              title: localizations.settingsAdvancedTitle,
+              path: '/settings/advanced',
+            ),
+          ],
+        ),
       ),
     );
   }

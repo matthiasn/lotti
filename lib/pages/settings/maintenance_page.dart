@@ -49,55 +49,58 @@ class _MaintenancePageState extends State<MaintenancePage> {
               AsyncSnapshot<int> snapshot,
             ) {
               return SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SettingsCard(
-                      title:
-                          '${localizations.maintenanceDeleteTagged}, n = ${snapshot.data}',
-                      onTap: _maintenance.deleteTaggedLinks,
-                    ),
-                    SettingsCard(
-                      title: localizations.maintenanceDeleteEditorDb,
-                      onTap: _maintenance.deleteEditorDb,
-                    ),
-                    SettingsCard(
-                      title: localizations.maintenanceDeleteLoggingDb,
-                      onTap: _maintenance.deleteLoggingDb,
-                    ),
-                    SettingsCard(
-                      title: localizations.maintenanceRecreateTagged,
-                      onTap: _maintenance.recreateTaggedLinks,
-                    ),
-                    SettingsCard(
-                      title: localizations.maintenanceStories,
-                      onTap: _maintenance.recreateStoryAssignment,
-                    ),
-                    SettingsCard(
-                      title: localizations.maintenanceSyncDefinitions,
-                      onTap: _maintenance.syncDefinitions,
-                    ),
-                    SettingsCard(
-                      title: localizations.maintenancePurgeDeleted,
-                      onTap: _db.purgeDeleted,
-                    ),
-                    SettingsCard(
-                      title: localizations.maintenanceReprocessSync,
-                      onTap: () => getIt<SyncConfigService>().resetOffset(),
-                    ),
-                    SettingsCard(
-                      title: localizations.maintenanceResetHostId,
-                      onTap: () => getIt<SyncConfigService>().resetHostId(),
-                    ),
-                    SettingsCard(
-                      title: localizations.maintenanceCancelNotifications,
-                      onTap: () => getIt<NotificationService>().cancelAll(),
-                    ),
-                    SettingsCard(
-                      title: localizations.maintenanceRecreateFts5,
-                      onTap: () => getIt<Maintenance>().recreateFts5(),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SettingsCard(
+                        title:
+                            '${localizations.maintenanceDeleteTagged}, n = ${snapshot.data}',
+                        onTap: _maintenance.deleteTaggedLinks,
+                      ),
+                      SettingsCard(
+                        title: localizations.maintenanceDeleteEditorDb,
+                        onTap: _maintenance.deleteEditorDb,
+                      ),
+                      SettingsCard(
+                        title: localizations.maintenanceDeleteLoggingDb,
+                        onTap: _maintenance.deleteLoggingDb,
+                      ),
+                      SettingsCard(
+                        title: localizations.maintenanceRecreateTagged,
+                        onTap: _maintenance.recreateTaggedLinks,
+                      ),
+                      SettingsCard(
+                        title: localizations.maintenanceStories,
+                        onTap: _maintenance.recreateStoryAssignment,
+                      ),
+                      SettingsCard(
+                        title: localizations.maintenanceSyncDefinitions,
+                        onTap: _maintenance.syncDefinitions,
+                      ),
+                      SettingsCard(
+                        title: localizations.maintenancePurgeDeleted,
+                        onTap: _db.purgeDeleted,
+                      ),
+                      SettingsCard(
+                        title: localizations.maintenanceReprocessSync,
+                        onTap: () => getIt<SyncConfigService>().resetOffset(),
+                      ),
+                      SettingsCard(
+                        title: localizations.maintenanceResetHostId,
+                        onTap: () => getIt<SyncConfigService>().resetHostId(),
+                      ),
+                      SettingsCard(
+                        title: localizations.maintenanceCancelNotifications,
+                        onTap: () => getIt<NotificationService>().cancelAll(),
+                      ),
+                      SettingsCard(
+                        title: localizations.maintenanceRecreateFts5,
+                        onTap: () => getIt<Maintenance>().recreateFts5(),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

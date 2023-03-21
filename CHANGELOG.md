@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add priority switch in habit, for more prominent display
 - Add priority icon in habits list card
 
+### Changed:
+- Whitespace in settings
+
 ## [0.8.285] - 2023-03-19
 ### Added:
 - Segmented control for filtering which habits are shown (due, later today, complete, all)
