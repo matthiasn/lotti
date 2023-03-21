@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Category selection in habit definition
 - Category color in habit settings card
 - Habits sorted by priority first
+- Habit color in habit completion card
 
 ### Changed:
 - Whitespace in settings

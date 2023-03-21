@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -24,6 +25,12 @@ void main() {
         habitFlossing,
         habitFlossingDueLater,
       ]);
+
+      when(mockJournalDb.watchCategories).thenAnswer(
+        (_) => Stream<List<CategoryDefinition>>.fromIterable([
+          [categoryMindfulness]
+        ]),
+      );
 
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
