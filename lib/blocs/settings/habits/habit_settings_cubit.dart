@@ -60,6 +60,12 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
     emitState();
   }
 
+  void setCategory(String? categoryId) {
+    _dirty = true;
+    _habitDefinition = _habitDefinition.copyWith(categoryId: categoryId);
+    emitState();
+  }
+
   Future<void> onSavePressed() async {
     state.formKey.currentState!.save();
     if (state.formKey.currentState!.validate()) {

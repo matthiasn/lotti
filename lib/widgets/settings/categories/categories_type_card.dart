@@ -21,13 +21,8 @@ class CategoriesTypeCard extends StatelessWidget {
     return SettingsNavCard(
       path: '/settings/categories/${categoryDefinition.id}',
       title: categoryDefinition.name,
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          width: 75,
-          height: 50,
-          color: colorFromCssHex(categoryDefinition.color),
-        ),
+      leading: CategoryColorIcon(
+        colorFromCssHex(categoryDefinition.color),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -42,6 +37,21 @@ class CategoriesTypeCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class CategoryColorIcon extends StatelessWidget {
+  const CategoryColorIcon(this.color, {super.key});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Icon(
+      Icons.square_rounded,
+      size: 50,
+      color: color,
     );
   }
 }

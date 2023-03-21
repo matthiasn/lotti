@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Priority switch in habit, for more prominent display
 - Priority icon in habit settings list card
 - Priority icon in habits list card
+- Category selection in habit definition
 
 ### Changed:
 - Whitespace in settings

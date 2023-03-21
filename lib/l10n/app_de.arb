@@ -46,6 +46,8 @@
   "fileMenuNewTask": "Aufgabe",
   "fileMenuTitle": "Datei",
   "habitActiveLabel": "Aktiv:",
+  "habitCategoryLabel": "Kategorie:",
+  "habitCategoryHint": "Kategorie auswählen...",
   "habitPriorityLabel": "Priorität:",
   "habitActiveFromLabel": "Erfolg erwartet ab",
   "habitActiveUntilLabel": "Aktiv bis",

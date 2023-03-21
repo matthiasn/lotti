@@ -14,6 +14,7 @@ import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
+import 'package:lotti/widgets/habits/habit_category.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -102,6 +103,9 @@ class HabitDetailsPage extends StatelessWidget {
                               title: localizations.habitActiveLabel,
                               activeColor: styleConfig().starredGold,
                             ),
+                            inputSpacer,
+                            SelectCategoryWidget(),
+                            inputSpacer,
                             inputSpacer,
                             FormBuilderCupertinoDateTimePicker(
                               key: const Key('active_from'),

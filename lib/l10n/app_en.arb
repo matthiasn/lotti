@@ -65,6 +65,8 @@
   "fileMenuNewTask": "Task",
   "fileMenuTitle": "File",
   "habitActiveLabel": "Active:",
+  "habitCategoryLabel": "Category:",
+  "habitCategoryHint": "Select Category...",
   "habitPriorityLabel": "Priority:",
   "habitActiveFromLabel": "Expect success from",
   "habitActiveUntilLabel": "Active until",
