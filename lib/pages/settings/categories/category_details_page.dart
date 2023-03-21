@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -28,7 +29,7 @@ class CategoryDetailsPage extends StatelessWidget {
         final item = state.categoryDefinition;
         final cubit = context.read<CategorySettingsCubit>();
 
-        final pickerColor = colorFromHex(state.categoryDefinition.color)!;
+        final pickerColor = colorFromCssHex(state.categoryDefinition.color);
 
         return Scaffold(
           backgroundColor: styleConfig().negspace,
