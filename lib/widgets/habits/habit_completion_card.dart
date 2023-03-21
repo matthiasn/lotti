@@ -83,6 +83,15 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                     children: [
                       Row(
                         children: [
+                          Visibility(
+                              visible: widget.habitDefinition.priority ?? false,
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 5),
+                                child: Icon(
+                                  Icons.star,
+                                  color: styleConfig().starredGold,
+                                ),
+                              )),
                           Text(
                             widget.habitDefinition.name,
                             style: completedToday
