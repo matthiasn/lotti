@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Priority icon in habit settings list card
 - Priority icon in habits list card
 - Category selection in habit definition
+- Category color in habit settings card
 
 ### Changed:
 - Whitespace in settings
