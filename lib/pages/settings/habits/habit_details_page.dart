@@ -83,6 +83,13 @@ class HabitDetailsPage extends StatelessWidget {
                             ),
                             inputSpacer,
                             FormSwitch(
+                              name: 'priority',
+                              key: const Key('habit_priority'),
+                              initialValue: state.habitDefinition.priority,
+                              title: localizations.habitPriorityLabel,
+                              activeColor: styleConfig().starredGold,
+                            ),
+                            FormSwitch(
                               name: 'private',
                               initialValue: item.private,
                               title: localizations.settingsHabitsPrivateLabel,
@@ -92,7 +99,7 @@ class HabitDetailsPage extends StatelessWidget {
                               name: 'active',
                               key: const Key('habit_active'),
                               initialValue: state.habitDefinition.active,
-                              title: localizations.dashboardActiveLabel,
+                              title: localizations.habitActiveLabel,
                               activeColor: styleConfig().starredGold,
                             ),
                             inputSpacer,

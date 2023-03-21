@@ -45,6 +45,8 @@
   "fileMenuNewScreenshot": "Bildschirmfoto",
   "fileMenuNewTask": "Aufgabe",
   "fileMenuTitle": "Datei",
+  "habitActiveLabel": "Aktiv:",
+  "habitPriorityLabel": "Priorität:",
   "habitActiveFromLabel": "Erfolg erwartet ab",
   "habitActiveUntilLabel": "Aktiv bis",
   "habitNotFound": "Habit nicht gefunden",
