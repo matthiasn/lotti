@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Categories details page
 - Set category color
 - Add priority switch in habit, for more prominent display
+- Add priority icon in habits list card
 
 ## [0.8.285] - 2023-03-19
 ### Added:

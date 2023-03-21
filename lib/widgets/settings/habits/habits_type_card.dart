@@ -24,11 +24,22 @@ class HabitsTypeCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Visibility(
-            visible: fromNullableBool(item.private),
+            visible: fromNullableBool(item.priority),
             child: Icon(
-              MdiIcons.security,
-              color: styleConfig().alarm,
+              Icons.star,
+              color: styleConfig().starredGold,
               size: settingsIconSize,
+            ),
+          ),
+          Visibility(
+            visible: fromNullableBool(item.private),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 10),
+              child: Icon(
+                MdiIcons.security,
+                color: styleConfig().alarm,
+                size: settingsIconSize,
+              ),
             ),
           ),
         ],
