@@ -21,6 +21,8 @@ class CategoriesTypeCard extends StatelessWidget {
     return SettingsNavCard(
       path: '/settings/categories/${categoryDefinition.id}',
       title: categoryDefinition.name,
+      contentPadding:
+          const EdgeInsets.only(left: 10, top: 5, bottom: 5, right: 20),
       leading: CategoryColorIcon(
         colorFromCssHex(categoryDefinition.color),
       ),

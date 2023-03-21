@@ -23,6 +23,12 @@ class HabitsTypeCard extends StatelessWidget {
     return SettingsNavCard(
       path: '/settings/habits/${item.id}',
       title: item.name,
+      contentPadding: const EdgeInsets.only(
+        left: 10,
+        top: 5,
+        bottom: 5,
+        right: 20,
+      ),
       leading: CategoryColorIcon(color),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

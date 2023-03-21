@@ -194,10 +194,9 @@ TextStyle searchFieldHintStyle() => searchFieldStyle().copyWith(
     );
 
 TextStyle settingsCardTextStyle() => TextStyle(
-      //color: colorConfig().entryTextColor,
       color: styleConfig().primaryTextColor,
-
       fontSize: fontSizeLarge,
+      fontWeight: FontWeight.w300,
     );
 
 TextStyle titleStyle() => TextStyle(
