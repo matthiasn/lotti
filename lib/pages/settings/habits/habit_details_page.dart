@@ -14,6 +14,7 @@ import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
+import 'package:lotti/widgets/habits/habit_category.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -83,6 +84,13 @@ class HabitDetailsPage extends StatelessWidget {
                             ),
                             inputSpacer,
                             FormSwitch(
+                              name: 'priority',
+                              key: const Key('habit_priority'),
+                              initialValue: state.habitDefinition.priority,
+                              title: localizations.habitPriorityLabel,
+                              activeColor: styleConfig().starredGold,
+                            ),
+                            FormSwitch(
                               name: 'private',
                               initialValue: item.private,
                               title: localizations.settingsHabitsPrivateLabel,
@@ -92,9 +100,12 @@ class HabitDetailsPage extends StatelessWidget {
                               name: 'active',
                               key: const Key('habit_active'),
                               initialValue: state.habitDefinition.active,
-                              title: localizations.dashboardActiveLabel,
+                              title: localizations.habitActiveLabel,
                               activeColor: styleConfig().starredGold,
                             ),
+                            inputSpacer,
+                            SelectCategoryWidget(),
+                            inputSpacer,
                             inputSpacer,
                             FormBuilderCupertinoDateTimePicker(
                               key: const Key('active_from'),

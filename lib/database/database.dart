@@ -44,7 +44,7 @@ class JournalDb extends _$JournalDb {
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration {
@@ -59,70 +59,11 @@ class JournalDb extends _$JournalDb {
         debugPrint('Migration from v$from to v$to');
 
         await () async {
-          debugPrint('Creating habit_definitions table and indices');
-          await m.createTable(habitDefinitions);
-          await m.createIndex(idxHabitDefinitionsId);
-          await m.createIndex(idxHabitDefinitionsName);
-          await m.createIndex(idxHabitDefinitionsPrivate);
-        }();
-
-        await () async {
-          debugPrint('Creating dashboard_definitions table and indices');
-          await m.createTable(dashboardDefinitions);
-          await m.createIndex(idxDashboardDefinitionsId);
-          await m.createIndex(idxDashboardDefinitionsName);
-          await m.createIndex(idxDashboardDefinitionsPrivate);
-        }();
-
-        await () async {
-          debugPrint('Add last_reviewed column in dashboard_definitions');
-          await m.addColumn(
-            dashboardDefinitions,
-            dashboardDefinitions.lastReviewed,
-          );
-        }();
-
-        await () async {
-          debugPrint('Creating tagged table and indices');
-          await m.createTable(tagged);
-          await m.createIndex(idxTaggedJournalId);
-          await m.createIndex(idxTaggedTagEntityId);
-        }();
-
-        await () async {
-          debugPrint('Creating task columns and indices');
-          await m.addColumn(journal, journal.taskStatus);
-          await m.createIndex(idxJournalTaskStatus);
-          await m.addColumn(journal, journal.task);
-          await m.createIndex(idxJournalTask);
-        }();
-
-        await () async {
-          debugPrint('Creating linked entries table and indices');
-          await m.createTable(linkedEntries);
-          await m.createIndex(idxLinkedEntriesFromId);
-          await m.createIndex(idxLinkedEntriesToId);
-          await m.createIndex(idxLinkedEntriesType);
-        }();
-
-        await () async {
-          debugPrint('Creating tag_entities table and indices');
-          await m.createTable(tagEntities);
-          await m.createIndex(idxTagEntitiesId);
-          await m.createIndex(idxTagEntitiesTag);
-          await m.createIndex(idxTagEntitiesType);
-          await m.createIndex(idxTagEntitiesInactive);
-          await m.createIndex(idxTagEntitiesPrivate);
-        }();
-
-        await () async {
-          debugPrint('Remove journal_tags table');
-          await m.deleteTable('journal_tags');
-        }();
-
-        await () async {
-          debugPrint('Remove tag_definitions table');
-          await m.deleteTable('tag_definitions');
+          debugPrint('Creating category_definitions table and indices');
+          await m.createTable(categoryDefinitions);
+          await m.createIndex(idxCategoryDefinitionsName);
+          await m.createIndex(idxCategoryDefinitionsId);
+          await m.createIndex(idxCategoryDefinitionsPrivate);
         }();
       },
     );
@@ -733,6 +674,21 @@ class JournalDb extends _$JournalDb {
         .map(habitDefinitionsStreamMapper);
   }
 
+  Stream<List<CategoryDefinition>> watchCategories() {
+    return allCategoryDefinitions()
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(categoryDefinitionsStreamMapper);
+  }
+
+  Stream<CategoryDefinition?> watchCategoryById(String id) {
+    return categoryById(id)
+        .watch()
+        .where(makeDuplicateFilter())
+        .map(categoryDefinitionsStreamMapper)
+        .map((List<CategoryDefinition> res) => res.firstOrNull);
+  }
+
   Stream<HabitDefinition?> watchHabitById(String id) {
     return habitById(id)
         .watch()
@@ -791,6 +747,14 @@ class JournalDb extends _$JournalDb {
     );
   }
 
+  Future<int> upsertCategoryDefinition(
+    CategoryDefinition categoryDefinition,
+  ) async {
+    return into(categoryDefinitions).insertOnConflictUpdate(
+      categoryDefinitionDbEntity(categoryDefinition),
+    );
+  }
+
   Future<List<String>> linksForEntryId(String entryId) {
     return linkedEntriesFor(entryId).get();
   }
@@ -817,6 +781,7 @@ class JournalDb extends _$JournalDb {
       },
       habit: upsertHabitDefinition,
       dashboard: upsertDashboardDefinition,
+      categoryDefinition: upsertCategoryDefinition,
     );
     return linesAffected;
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -32,6 +33,13 @@ void main() {
 
     setUp(() {
       mockJournalDb = mockJournalDbWithHabits([habitFlossing]);
+
+      when(mockJournalDb.watchCategories).thenAnswer(
+        (_) => Stream<List<CategoryDefinition>>.fromIterable([
+          [categoryMindfulness]
+        ]),
+      );
+
       mockPersistenceLogic = MockPersistenceLogic();
 
       final mockTagsService = mockTagsServiceWithTags([]);

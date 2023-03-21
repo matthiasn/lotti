@@ -17,37 +17,40 @@ class AdvancedSettingsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: styleConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsAdvancedTitle),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SettingsNavCard(
-            title: localizations.settingsSyncCfgTitle,
-            path: '/settings/advanced/sync_settings',
-          ),
-          SettingsNavCard(
-            trailing: OutboxBadgeIcon(
-              icon: const SettingsIcon(MdiIcons.mailboxOutline),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SettingsNavCard(
+              title: localizations.settingsSyncCfgTitle,
+              path: '/settings/advanced/sync_settings',
             ),
-            title: localizations.settingsSyncOutboxTitle,
-            path: '/settings/advanced/outbox_monitor',
-          ),
-          SettingsNavCard(
-            title: localizations.settingsConflictsTitle,
-            path: '/settings/advanced/conflicts',
-          ),
-          SettingsNavCard(
-            title: localizations.settingsLogsTitle,
-            path: '/settings/advanced/logging',
-          ),
-          SettingsNavCard(
-            title: localizations.settingsMaintenanceTitle,
-            path: '/settings/advanced/maintenance',
-          ),
-          SettingsNavCard(
-            title: localizations.settingsAboutTitle,
-            path: '/settings/advanced/about',
-          ),
-        ],
+            SettingsNavCard(
+              trailing: OutboxBadgeIcon(
+                icon: const SettingsIcon(MdiIcons.mailboxOutline),
+              ),
+              title: localizations.settingsSyncOutboxTitle,
+              path: '/settings/advanced/outbox_monitor',
+            ),
+            SettingsNavCard(
+              title: localizations.settingsConflictsTitle,
+              path: '/settings/advanced/conflicts',
+            ),
+            SettingsNavCard(
+              title: localizations.settingsLogsTitle,
+              path: '/settings/advanced/logging',
+            ),
+            SettingsNavCard(
+              title: localizations.settingsMaintenanceTitle,
+              path: '/settings/advanced/maintenance',
+            ),
+            SettingsNavCard(
+              title: localizations.settingsAboutTitle,
+              path: '/settings/advanced/about',
+            ),
+          ],
+        ),
       ),
     );
   }

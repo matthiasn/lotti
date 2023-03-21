@@ -272,6 +272,11 @@ bool showHabit(HabitDefinition item) {
 int habitSorter(HabitDefinition a, HabitDefinition b) {
   return <Comparator<HabitDefinition>>[
     (o1, o2) {
+      final prio1 = o1.priority ?? false ? 1 : 0;
+      final prio2 = o2.priority ?? false ? 1 : 0;
+      return prio2.compareTo(prio1);
+    },
+    (o1, o2) {
       final showFrom1 = o1.habitSchedule.mapOrNull(daily: (d) => d.showFrom) ??
           getEndOfToday();
       final showFrom2 = o2.habitSchedule.mapOrNull(daily: (d) => d.showFrom) ??

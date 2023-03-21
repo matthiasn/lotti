@@ -185,7 +185,7 @@ TextStyle appBarTextStyleNewLarge() => TextStyle(
 
 TextStyle searchFieldStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
-      fontSize: fontSizeLarge,
+      fontSize: fontSizeMedium,
       fontWeight: FontWeight.w200,
     );
 
@@ -194,10 +194,9 @@ TextStyle searchFieldHintStyle() => searchFieldStyle().copyWith(
     );
 
 TextStyle settingsCardTextStyle() => TextStyle(
-      //color: colorConfig().entryTextColor,
       color: styleConfig().primaryTextColor,
-
       fontSize: fontSizeLarge,
+      fontWeight: FontWeight.w300,
     );
 
 TextStyle titleStyle() => TextStyle(
@@ -307,7 +306,7 @@ ThemeData getTheme() {
       iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
     ),
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: styleConfig().cardColor,
+      backgroundColor: styleConfig().cardColor.darken().withOpacity(0.9),
       clipBehavior: Clip.hardEdge,
     ),
     tooltipTheme: TooltipThemeData(

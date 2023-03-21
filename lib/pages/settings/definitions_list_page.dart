@@ -65,9 +65,9 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
             children: [
               ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.only(
-                  bottom: 8,
-                  top: 8,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 5,
                 ),
                 children: List.generate(
                   filtered.length,

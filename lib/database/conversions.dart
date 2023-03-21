@@ -165,6 +165,21 @@ DashboardDefinitionDbEntity dashboardDefinitionDbEntity(
   );
 }
 
+CategoryDefinitionDbEntity categoryDefinitionDbEntity(
+  CategoryDefinition category,
+) {
+  return CategoryDefinitionDbEntity(
+    id: category.id,
+    createdAt: category.createdAt,
+    updatedAt: category.updatedAt,
+    serialized: jsonEncode(category),
+    private: category.private,
+    active: category.active,
+    name: category.id,
+    deleted: category.deletedAt != null,
+  );
+}
+
 LinkedDbEntry linkedDbEntity(EntryLink link) {
   return LinkedDbEntry(
     id: link.id,
@@ -211,4 +226,18 @@ List<HabitDefinition> habitDefinitionsStreamMapper(
   List<HabitDefinitionDbEntity> dbEntities,
 ) {
   return dbEntities.map(fromHabitDefinitionDbEntity).toList();
+}
+
+CategoryDefinition fromCategoryDefinitionDbEntity(
+  CategoryDefinitionDbEntity dbEntity,
+) {
+  return CategoryDefinition.fromJson(
+    json.decode(dbEntity.serialized) as Map<String, dynamic>,
+  );
+}
+
+List<CategoryDefinition> categoryDefinitionsStreamMapper(
+  List<CategoryDefinitionDbEntity> dbEntities,
+) {
+  return dbEntities.map(fromCategoryDefinitionDbEntity).toList();
 }

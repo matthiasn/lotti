@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Category entity type
+- Categories list page
+- Categories details page
+- Set category color
+- Priority switch in habit, for more prominent display
+- Priority icon in habit settings list card
+- Priority icon in habits list card
+- Category selection in habit definition
+- Category color in habit settings card
+- Habits sorted by priority first
+- Habit color in habit completion card
+
+### Changed:
+- Whitespace in settings
+- Upgraded dependencies
+
+### Fixed:
+- Focus issue in habit category selection
+
+## [0.8.285] - 2023-03-19
+### Added:
 - Segmented control for filtering which habits are shown (due, later today, complete, all)
 - Search field for habits
 

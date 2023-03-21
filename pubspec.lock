@@ -486,18 +486,18 @@ packages:
     dependency: "direct main"
     description:
       name: drift
-      sha256: "2a16754641485ca4eaf31bb7961f3ec26bcddad1ce4869a37f238791e164c073"
+      sha256: a843a73ccb6703b7dec59c0b3ebf9404a1e534d22289ce6399e7a440c604b9b4
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0"
+    version: "2.6.0"
   drift_dev:
     dependency: "direct dev"
     description:
       name: drift_dev
-      sha256: d71542e30e27c920d5a73ccad409a0828a0c9588f5bbbc58aad6407259299a8b
+      sha256: "152bd8cd782e88beef2a5b2eff8036b90f7f9f310b6790be103f4048d6ee9208"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.2"
+    version: "2.6.0"
   dynamic_color:
     dependency: transitive
     description:
@@ -664,7 +664,7 @@ packages:
     source: hosted
     version: "3.3.0"
   flutter_colorpicker:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: flutter_colorpicker
       sha256: "458a6ed8ea480eb16ff892aedb4b7092b2804affd7e046591fb03127e8d8ef8b"
@@ -1203,10 +1203,10 @@ packages:
     dependency: "direct main"
     description:
       name: just_audio
-      sha256: "7a5057a4d05c8f88ee968cec6fdfe1015577d5184e591d5ac15ab16d8f5ecb17"
+      sha256: "7e6d31508dacd01a066e3889caf6282e5f1eb60707c230203b21a83af5c55586"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.31"
+    version: "0.9.32"
   just_audio_platform_interface:
     dependency: transitive
     description:
@@ -1475,10 +1475,10 @@ packages:
     dependency: "direct main"
     description:
       name: path_provider
-      sha256: "04890b994ee89bfa80bf3080bfec40d5a92c5c7a785ebb02c13084a099d2b6f9"
+      sha256: c7edf82217d4b2952b2129a61d3ad60f1075b9299e629e149a8d2e39c2e6aad4
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.13"
+    version: "2.0.14"
   path_provider_android:
     dependency: transitive
     description:
@@ -1619,10 +1619,10 @@ packages:
     dependency: transitive
     description:
       name: pointycastle
-      sha256: "57b6b78df14175658f09c5dfcfc51a46ad9561a3504fe679913dab404d0cc0f2"
+      sha256: ae73e842cdd27a3467a71d70cefd9b198538aab4fc7dde1d0e8c78c96225abf0
       url: "https://pub.dev"
     source: hosted
-    version: "3.7.0"
+    version: "3.7.1"
   polylabel:
     dependency: transitive
     description:
@@ -1853,10 +1853,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences
-      sha256: ee6257848f822b8481691f20c3e6d2bfee2e9eccb2a3d249907fcfb198c55b41
+      sha256: "78528fd87d0d08ffd3e69551173c026e8eacc7b7079c82eb6a77413957b7e394"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.18"
+    version: "2.0.20"
   shared_preferences_android:
     dependency: transitive
     description:
@@ -2034,10 +2034,10 @@ packages:
     dependency: transitive
     description:
       name: sqlite3
-      sha256: "0a9f8fe561aad15b94549c98d55dee6825a401efec83bf92956e337e35e68ae5"
+      sha256: "822d321a008e194d7929357e5b58d2e4a04ab670d137182f9759152aa33180ff"
       url: "https://pub.dev"
     source: hosted
-    version: "1.9.3"
+    version: "1.10.1"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
@@ -2050,10 +2050,10 @@ packages:
     dependency: transitive
     description:
       name: sqlparser
-      sha256: "91f47610aa54d8abf9d795a7b4e49b2a788f65d7493d5a68fbf180c3cbcc6f38"
+      sha256: a96a7851b69b54c40425ef8da15a19701ec4c994fbcebf4fb4fbf53782859160
       url: "https://pub.dev"
     source: hosted
-    version: "0.27.0"
+    version: "0.28.0"
   stack_trace:
     dependency: transitive
     description:
@@ -2226,10 +2226,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_android
-      sha256: "845530e5e05db5500c1a4c1446785d60cbd8f9bd45e21e7dd643a3273bb4bbd1"
+      sha256: dd729390aa936bf1bdf5cd1bc7468ff340263f80a2c4f569416507667de8e3c8
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.25"
+    version: "6.0.26"
   url_launcher_ios:
     dependency: transitive
     description:

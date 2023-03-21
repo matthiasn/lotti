@@ -24,6 +24,17 @@ final measurableWater = MeasurableDataType(
   aggregationType: AggregationType.dailySum,
 );
 
+final categoryMindfulness = CategoryDefinition(
+  id: '3a163404-c80b-11ed-afa1-0242ac120002',
+  name: 'Mindfulness',
+  color: '#0000FFFF',
+  createdAt: testEpochDateTime,
+  updatedAt: testEpochDateTime,
+  vectorClock: null,
+  active: true,
+  private: false,
+);
+
 final habitFlossing = HabitDefinition(
   id: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
   name: 'Flossing',

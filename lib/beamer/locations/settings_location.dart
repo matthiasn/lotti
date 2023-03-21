@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
 import 'package:lotti/pages/settings/about_page.dart';
 import 'package:lotti/pages/settings/advanced_settings_page.dart';
+import 'package:lotti/pages/settings/categories/categories_page.dart';
+import 'package:lotti/pages/settings/categories/category_create_page.dart';
+import 'package:lotti/pages/settings/categories/category_details_page.dart';
 import 'package:lotti/pages/settings/conflicts_page.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
@@ -33,6 +36,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/tags',
         '/settings/tags/:tagEntityId',
         '/settings/tags/create/:tagType',
+        '/settings/categories',
+        '/settings/categories/:categoryId',
+        '/settings/categories/create',
         '/settings/dashboards',
         '/settings/dashboards/:dashboardId',
         '/settings/dashboards/create',
@@ -65,6 +71,31 @@ class SettingsLocation extends BeamLocation<BeamState> {
         type: BeamPageType.noTransition,
         child: SettingsPage(),
       ),
+
+      // Categories
+      if (pathContains('categories'))
+        const BeamPage(
+          key: ValueKey('settings-categories'),
+          child: CategoriesPage(),
+        ),
+
+      if (pathContains('categories') &&
+          !pathContains('create') &&
+          pathContainsKey('categoryId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-categories-${state.pathParameters['categoryId']}',
+          ),
+          child: EditCategoryPage(
+            categoryId: state.pathParameters['categoryId']!,
+          ),
+        ),
+
+      if (pathContains('categories/create'))
+        BeamPage(
+          key: const ValueKey('settings-categories-create'),
+          child: CreateCategoryPage(),
+        ),
 
       // Tags
       if (pathContains('tags'))
