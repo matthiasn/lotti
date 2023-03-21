@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 - Whitespace in settings
+- Upgraded dependencies
 
 ## [0.8.285] - 2023-03-19
 ### Added:
