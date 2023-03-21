@@ -89,6 +89,7 @@ class EntityDefinition with _$EntityDefinition {
     DateTime? deletedAt,
     bool? private,
     bool? favorite,
+    String? categoryId,
     AggregationType? aggregationType,
   }) = MeasurableDataType;
 
@@ -101,6 +102,7 @@ class EntityDefinition with _$EntityDefinition {
     required VectorClock? vectorClock,
     required bool private,
     required bool active,
+    String? categoryId,
     DateTime? deletedAt,
   }) = CategoryDefinition;
 
@@ -120,6 +122,7 @@ class EntityDefinition with _$EntityDefinition {
     DateTime? activeUntil,
     DateTime? deletedAt,
     String? defaultStoryId,
+    String? categoryId,
   }) = HabitDefinition;
 
   factory EntityDefinition.dashboard({
@@ -137,6 +140,7 @@ class EntityDefinition with _$EntityDefinition {
     DateTime? reviewAt,
     @Default(30) int days,
     DateTime? deletedAt,
+    String? categoryId,
   }) = DashboardDefinition;
 
   factory EntityDefinition.fromJson(Map<String, dynamic> json) =>
