@@ -111,7 +111,7 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 2),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -144,7 +144,7 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                                     widget.showGaps ? 2 : 0,
                                   ),
                                   child: Container(
-                                    height: 25,
+                                    height: 14,
                                     color: habitCompletionColor(
                                       res.completionType,
                                     ),
@@ -160,15 +160,13 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                 ],
               ),
               leading: CategoryColorIcon(color),
-              trailing: GestureDetector(
-                onTap: onTapAdd,
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Icon(
-                    Icons.check_circle_outline,
-                    color: primaryColor,
-                    size: 32,
-                  ),
+              trailing: IconButton(
+                padding: EdgeInsets.zero,
+                onPressed: onTapAdd,
+                icon: Icon(
+                  Icons.check_circle_outline,
+                  color: primaryColor,
+                  size: 30,
                 ),
               ),
             ),
