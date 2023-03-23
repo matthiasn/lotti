@@ -41,7 +41,7 @@ class HabitsFilter extends StatelessWidget {
             }).toList();
 
             if (dataMap.isEmpty) {
-              return SizedBox.shrink();
+              return const SizedBox.shrink();
             }
 
             return Padding(

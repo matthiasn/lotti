@@ -51,28 +51,33 @@ class SelectCategoryWidget extends StatelessWidget {
                   return BlocProvider.value(
                     value: BlocProvider.of<HabitSettingsCubit>(context),
                     child: Container(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.8,
+                      ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 20,
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ...categories.map(
-                            (category) => SettingsCard(
-                              onTap: () {
-                                context
-                                    .read<HabitSettingsCubit>()
-                                    .setCategory(category.id);
-                                Navigator.pop(context);
-                              },
-                              title: category.name,
-                              leading: CategoryColorIcon(
-                                colorFromCssHex(category.color),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ...categories.map(
+                              (category) => SettingsCard(
+                                onTap: () {
+                                  context
+                                      .read<HabitSettingsCubit>()
+                                      .setCategory(category.id);
+                                  Navigator.pop(context);
+                                },
+                                title: category.name,
+                                leading: CategoryColorIcon(
+                                  colorFromCssHex(category.color),
+                                ),
                               ),
-                            ),
-                          )
-                        ],
+                            )
+                          ],
+                        ),
                       ),
                     ),
                   );
