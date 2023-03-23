@@ -11,6 +11,8 @@
   "addMeasurementNoneDefined": "Messbaren Datentyp hinzufügen",
   "addMeasurementSaveButton": "Speichern",
   "addMeasurementTitle": "Messbare Daten erfassen",
+  "categoryDeleteConfirm": "JA, KATEGORIE LÖSCHEN",
+  "categoryDeleteQuestion": "Kategorie wirklich löschen?",
   "configFlagEnableNotifications": "Desktop Notifications erlauben?",
   "configFlagPrivate": "Private Einträge anzeigen?",
   "conflictsResolved": "gelöst",

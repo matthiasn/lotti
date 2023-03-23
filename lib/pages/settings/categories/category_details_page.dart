@@ -111,11 +111,12 @@ class CategoryDetailsPage extends StatelessWidget {
                                 final result =
                                     await showModalActionSheet<String>(
                                   context: context,
-                                  title: localizations.habitDeleteQuestion,
+                                  title: localizations.categoryDeleteQuestion,
                                   actions: [
                                     SheetAction(
                                       icon: Icons.warning,
-                                      label: localizations.habitDeleteConfirm,
+                                      label:
+                                          localizations.categoryDeleteConfirm,
                                       key: deleteKey,
                                       isDestructiveAction: true,
                                       isDefaultAction: true,
