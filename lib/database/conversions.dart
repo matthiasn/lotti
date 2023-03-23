@@ -175,7 +175,7 @@ CategoryDefinitionDbEntity categoryDefinitionDbEntity(
     serialized: jsonEncode(category),
     private: category.private,
     active: category.active,
-    name: category.id,
+    name: category.name,
     deleted: category.deletedAt != null,
   );
 }
