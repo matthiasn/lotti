@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Visualization for categories of open habits
+- Category name validation checking for duplicates
 
 ### Changed:
 - Upgraded dependencies
