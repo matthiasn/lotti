@@ -159,6 +159,7 @@
   "settingsFlagsTitle": "Config Flags",
   "settingsCategoriesTitle": "Categories",
   "settingsCategoriesNameLabel": "Category name:",
+  "settingsCategoriesDuplicateError": "Category exists already",
   "settingsHabitsTitle": "Habits",
   "settingsHabitsDeleteTooltip": "Delete Habit",
   "settingsHabitsDescriptionLabel": "Description (optional):",

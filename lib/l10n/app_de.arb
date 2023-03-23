@@ -115,6 +115,7 @@
   "settingsDashboardsTitle": "Konfiguration Dashboards",
   "settingsFlagsTitle": "Konfigurations-Flags",
   "settingsCategoriesTitle": "Kategorien",
+  "settingsCategoriesDuplicateError": "Kategorie existiert bereits",
   "settingsHealthImportTitle": "Import aus Health",
   "settingsLogsTitle": "Aktivitäts- und Fehlerprotokoll",
   "settingsMaintenanceTitle": "Wartung",
