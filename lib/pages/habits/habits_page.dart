@@ -11,6 +11,7 @@ import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/habits/habit_completion_card.dart';
 import 'package:lotti/widgets/habits/habit_page_app_bar.dart';
 import 'package:lotti/widgets/habits/habit_streaks.dart';
+import 'package:lotti/widgets/habits/habits_filter.dart';
 import 'package:lotti/widgets/habits/status_segmented_control.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
@@ -98,23 +99,29 @@ class HabitsTabPage extends StatelessWidget {
                             filter: state.displayFilter,
                             onValueChanged: cubit.setDisplayFilter,
                           ),
-                          IconButton(
-                            onPressed: cubit.toggleShowSearch,
-                            icon: Icon(
-                              Icons.search,
-                              color: state.showSearch
-                                  ? styleConfig().primaryColor
-                                  : styleConfig().secondaryTextColor,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: cubit.toggleShowTimeSpan,
-                            icon: Icon(
-                              Icons.calendar_month,
-                              color: state.showTimeSpan
-                                  ? styleConfig().primaryColor
-                                  : styleConfig().secondaryTextColor,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: cubit.toggleShowSearch,
+                                icon: Icon(
+                                  Icons.search,
+                                  color: state.showSearch
+                                      ? styleConfig().primaryColor
+                                      : styleConfig().secondaryTextColor,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: cubit.toggleShowTimeSpan,
+                                icon: Icon(
+                                  Icons.calendar_month,
+                                  color: state.showTimeSpan
+                                      ? styleConfig().primaryColor
+                                      : styleConfig().secondaryTextColor,
+                                ),
+                              ),
+                              const HabitsFilter(),
+                            ],
                           ),
                         ],
                       ),

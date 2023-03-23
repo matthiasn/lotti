@@ -1591,6 +1591,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.14.0"
+  pie_chart:
+    dependency: "direct main"
+    description:
+      name: pie_chart
+      sha256: "5dba6d0eb4718e8ed00a9079361cd8947c3f84ac5a5d76f05a27f4ec5e27589e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.3.2"
   pigment:
     dependency: transitive
     description:
