@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Visualization for categories of open habits
 - Category name validation checking for duplicates
 - Categories filter bottom sheet with categories toggle
+- Filtered habits view by selected category
 
 ### Changed:
 - Upgraded dependencies
