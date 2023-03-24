@@ -27,6 +27,7 @@ class HabitsFilter extends StatelessWidget {
         return BlocBuilder<HabitsCubit, HabitsState>(
           builder: (context, HabitsState state) {
             final dataMap = <String, double>{};
+            final cubit = context.read<HabitsCubit>();
 
             for (final habit in state.openNow) {
               final categoryId = habit.categoryId ?? 'undefined';
@@ -64,31 +65,52 @@ class HabitsFilter extends StatelessWidget {
               onPressed: () {
                 showModalBottomSheet<void>(
                   context: context,
-                  builder: (BuildContext context) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 10,
-                    ),
-                    child: Wrap(
-                      spacing: 5,
-                      runSpacing: 5,
-                      children: [
-                        ...categories.map((category) {
-                          final color = colorFromCssHex(category.color);
-                          return Chip(
-                            label: Text(
-                              category.name,
-                              style: TextStyle(
-                                color:
-                                    color.isLight ? Colors.black : Colors.white,
-                              ),
+                  useRootNavigator: true,
+                  builder: (BuildContext context) {
+                    return BlocProvider.value(
+                      value: cubit,
+                      child: BlocBuilder<HabitsCubit, HabitsState>(
+                        builder: (context, HabitsState state) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 20,
+                              horizontal: 10,
                             ),
-                            backgroundColor: color,
+                            child: Wrap(
+                              spacing: 5,
+                              runSpacing: 5,
+                              children: [
+                                ...categories.map((category) {
+                                  final color = colorFromCssHex(category.color);
+
+                                  return Opacity(
+                                    opacity: state.selectedCategoryIds
+                                            .contains(category.id)
+                                        ? 1
+                                        : 0.4,
+                                    child: ActionChip(
+                                      onPressed: () =>
+                                          cubit.toggleSelectedCategoryIds(
+                                              category.id),
+                                      label: Text(
+                                        category.name,
+                                        style: TextStyle(
+                                          color: color.isLight
+                                              ? Colors.black
+                                              : Colors.white,
+                                        ),
+                                      ),
+                                      backgroundColor: color,
+                                    ),
+                                  );
+                                })
+                              ],
+                            ),
                           );
-                        })
-                      ],
-                    ),
-                  ),
+                        },
+                      ),
+                    );
+                  },
                 );
               },
             );
