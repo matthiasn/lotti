@@ -120,6 +120,7 @@ class HabitsTabPage extends StatelessWidget {
                                       : styleConfig().secondaryTextColor,
                                 ),
                               ),
+                              const SizedBox(width: 4),
                               const HabitsFilter(),
                             ],
                           ),
