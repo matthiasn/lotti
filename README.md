@@ -2,6 +2,9 @@
 
 [![CodeFactor](https://www.codefactor.io/repository/github/matthiasn/lotti/badge)](https://www.codefactor.io/repository/github/matthiasn/lotti) [![Flutter Test](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml/badge.svg)](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml)
 
+Read more on [Substack](https://matthiasnehlsen.substack.com/p/why-im-building-lotti-an-open-source)
+
+
 ## Core beliefs / the WHY
 
 Lotti is a tool for self-improvement centered around these core beliefs:
@@ -89,9 +92,8 @@ on [GitHub Releases](https://github.com/matthiasn/lotti/releases). Currently, th
 pre-release on some of the aforementioned platforms and help would be much appreciated.
 
 Development is primarily done on macOS and both the iOS and macOS versions are available for 
-beta testing via Apple's TestFlight. Please get in touch with the [author](https://github.
-com/matthiasn) if you are interested in participating in the tests, the email address can be 
-found in the profile. The aim is to get Lotti out on all app stores in 2024.
+beta testing via Apple's TestFlight. Please get in touch with the [author](https://github.com/matthiasn) if you are interested in participating in the tests, the email address can be 
+found in the profile. The aim is to get Lotti out on all app stores in 2023.
 
 
 ## Blog posts
