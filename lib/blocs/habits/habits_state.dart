@@ -22,6 +22,7 @@ class HabitsState with _$HabitsState {
     required List<JournalEntity> habitCompletions,
     required Set<String> completedToday,
     required Set<String> successfulToday,
+    required Set<String> selectedCategoryIds,
     required List<String> days,
     required Map<String, Set<String>> successfulByDay,
     required Map<String, Set<String>> skippedByDay,

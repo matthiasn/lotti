@@ -43,6 +43,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             showSearch: false,
             showTimeSpan: false,
             searchString: '',
+            selectedCategoryIds: <String>{},
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
@@ -212,6 +213,7 @@ class HabitsCubit extends Cubit<HabitsState> {
   HabitDisplayFilter _displayFilter = HabitDisplayFilter.openNow;
 
   var _completedToday = <String>{};
+  var _selectedCategoryIds = <String>{};
   var _successfulToday = <String>{};
   final _allByDay = <String, Set<String>>{};
   var _successfulByDay = <String, Set<String>>{};
@@ -258,6 +260,15 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   void toggleShowTimeSpan() {
     _showTimeSpan = !_showTimeSpan;
+    emitState();
+  }
+
+  void toggleSelectedCategoryIds(String categoryId) {
+    if (_selectedCategoryIds.contains(categoryId)) {
+      _selectedCategoryIds.remove(categoryId);
+    } else {
+      _selectedCategoryIds.add(categoryId);
+    }
     emitState();
   }
 
@@ -319,6 +330,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         showTimeSpan: _showTimeSpan,
         showSearch: _showSearch,
         searchString: _searchString,
+        selectedCategoryIds: <String>{..._selectedCategoryIds},
       ),
     );
   }
