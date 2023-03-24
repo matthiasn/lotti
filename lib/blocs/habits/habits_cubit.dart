@@ -305,7 +305,13 @@ class HabitsCubit extends Cubit<HabitsState> {
         habitCompletions: _habitCompletions,
         completedToday: _completedToday,
         openHabits: _openHabits,
-        openNow: _openNow,
+        openNow: _selectedCategoryIds.isEmpty
+            ? _openNow
+            : _openNow
+                .where(
+                  (habit) => _selectedCategoryIds.contains(habit.categoryId),
+                )
+                .toList(),
         pendingLater: _pendingLater,
         completed: _completed,
         days: getDays(_timeSpanDays),
