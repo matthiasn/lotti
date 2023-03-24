@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:pie_chart/pie_chart.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 class HabitsFilter extends StatelessWidget {
   const HabitsFilter({super.key});
@@ -44,9 +45,9 @@ class HabitsFilter extends StatelessWidget {
               return const SizedBox.shrink();
             }
 
-            return Padding(
+            return IconButton(
               padding: const EdgeInsets.all(5),
-              child: PieChart(
+              icon: PieChart(
                 dataMap: dataMap,
                 animationDuration: const Duration(milliseconds: 800),
                 chartRadius: 25,
@@ -60,6 +61,36 @@ class HabitsFilter extends StatelessWidget {
                   showChartValues: false,
                 ),
               ),
+              onPressed: () {
+                showModalBottomSheet<void>(
+                  context: context,
+                  builder: (BuildContext context) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 20,
+                      horizontal: 10,
+                    ),
+                    child: Wrap(
+                      spacing: 5,
+                      runSpacing: 5,
+                      children: [
+                        ...categories.map((category) {
+                          final color = colorFromCssHex(category.color);
+                          return Chip(
+                            label: Text(
+                              category.name,
+                              style: TextStyle(
+                                color:
+                                    color.isLight ? Colors.black : Colors.white,
+                              ),
+                            ),
+                            backgroundColor: color,
+                          );
+                        })
+                      ],
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
