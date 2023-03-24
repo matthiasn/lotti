@@ -213,7 +213,7 @@ class HabitsCubit extends Cubit<HabitsState> {
   HabitDisplayFilter _displayFilter = HabitDisplayFilter.openNow;
 
   var _completedToday = <String>{};
-  var _selectedCategoryIds = <String>{};
+  final _selectedCategoryIds = <String>{};
   var _successfulToday = <String>{};
   final _allByDay = <String, Set<String>>{};
   var _successfulByDay = <String, Set<String>>{};

@@ -42,26 +42,24 @@ class HabitsFilter extends StatelessWidget {
                   : Colors.grey;
             }).toList();
 
-            if (dataMap.isEmpty) {
-              return const SizedBox.shrink();
-            }
-
             return IconButton(
               padding: const EdgeInsets.all(5),
-              icon: PieChart(
-                dataMap: dataMap,
-                animationDuration: const Duration(milliseconds: 800),
-                chartRadius: 25,
-                colorList: colorList,
-                initialAngleInDegree: 0,
-                chartType: ChartType.ring,
-                ringStrokeWidth: 10,
-                legendOptions: const LegendOptions(showLegends: false),
-                chartValuesOptions: const ChartValuesOptions(
-                  showChartValueBackground: false,
-                  showChartValues: false,
-                ),
-              ),
+              icon: dataMap.isEmpty
+                  ? const Icon(Icons.filter_alt)
+                  : PieChart(
+                      dataMap: dataMap,
+                      animationDuration: const Duration(milliseconds: 800),
+                      chartRadius: 25,
+                      colorList: colorList,
+                      initialAngleInDegree: 0,
+                      chartType: ChartType.ring,
+                      ringStrokeWidth: 10,
+                      legendOptions: const LegendOptions(showLegends: false),
+                      chartValuesOptions: const ChartValuesOptions(
+                        showChartValueBackground: false,
+                        showChartValues: false,
+                      ),
+                    ),
               onPressed: () {
                 showModalBottomSheet<void>(
                   context: context,
@@ -91,7 +89,8 @@ class HabitsFilter extends StatelessWidget {
                                     child: ActionChip(
                                       onPressed: () =>
                                           cubit.toggleSelectedCategoryIds(
-                                              category.id),
+                                        category.id,
+                                      ),
                                       label: Text(
                                         category.name,
                                         style: TextStyle(
