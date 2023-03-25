@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scroll in category bottom sheet
 - Prevent duplicate categories
 - Categories filter not visible when no open habits displayed
+- 180 days in habit completion rate chart
 
 ## [0.8.287] - 2023-03-22
 ### Changed:
