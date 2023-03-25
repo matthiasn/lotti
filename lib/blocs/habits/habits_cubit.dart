@@ -43,6 +43,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             showSearch: false,
             showTimeSpan: false,
             searchString: '',
+            selectedCategoryIds: <String>{},
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
@@ -212,6 +213,7 @@ class HabitsCubit extends Cubit<HabitsState> {
   HabitDisplayFilter _displayFilter = HabitDisplayFilter.openNow;
 
   var _completedToday = <String>{};
+  final _selectedCategoryIds = <String>{};
   var _successfulToday = <String>{};
   final _allByDay = <String, Set<String>>{};
   var _successfulByDay = <String, Set<String>>{};
@@ -261,6 +263,15 @@ class HabitsCubit extends Cubit<HabitsState> {
     emitState();
   }
 
+  void toggleSelectedCategoryIds(String categoryId) {
+    if (_selectedCategoryIds.contains(categoryId)) {
+      _selectedCategoryIds.remove(categoryId);
+    } else {
+      _selectedCategoryIds.add(categoryId);
+    }
+    emitState();
+  }
+
   void setInfoYmd(String ymd) {
     _selectedInfoYmd = ymd;
     _successPercentage = completionRate(state, state.successfulByDay);
@@ -294,7 +305,13 @@ class HabitsCubit extends Cubit<HabitsState> {
         habitCompletions: _habitCompletions,
         completedToday: _completedToday,
         openHabits: _openHabits,
-        openNow: _openNow,
+        openNow: _selectedCategoryIds.isEmpty
+            ? _openNow
+            : _openNow
+                .where(
+                  (habit) => _selectedCategoryIds.contains(habit.categoryId),
+                )
+                .toList(),
         pendingLater: _pendingLater,
         completed: _completed,
         days: getDays(_timeSpanDays),
@@ -319,6 +336,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         showTimeSpan: _showTimeSpan,
         showSearch: _showSearch,
         searchString: _searchString,
+        selectedCategoryIds: <String>{..._selectedCategoryIds},
       ),
     );
   }

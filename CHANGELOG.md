@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Visualization for categories of open habits
 - Category name validation checking for duplicates
+- Categories filter bottom sheet with categories toggle
+- Filtered habits view by selected category
 
 ### Changed:
 - Upgraded dependencies
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Delete category question and confirmation label
 - Scroll in category bottom sheet
 - Prevent duplicate categories
+- Categories filter not visible when no open habits displayed
 
 ## [0.8.287] - 2023-03-22
 ### Changed:
