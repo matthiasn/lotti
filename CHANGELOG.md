@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Category save duplicate warning
 - Disable category save icon when form invalid
 - Recreate category with the same name as previously deleted category
+- Scroll in setting when window is small
 
 ### Changed:
 - Upgraded dependencies
