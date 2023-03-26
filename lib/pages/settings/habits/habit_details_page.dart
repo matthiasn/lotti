@@ -113,13 +113,13 @@ class HabitDetailsPage extends StatelessWidget {
                               alwaysUse24HourFormat: true,
                               inputType: CupertinoDateTimePickerInputType.date,
                               style: inputStyle().copyWith(
-                                fontSize: 15,
                                 fontWeight: FontWeight.w300,
                               ),
                               initialValue: item.activeFrom,
                               decoration: inputDecoration(
                                 labelText: localizations.habitActiveFromLabel,
                               ),
+                              theme: datePickerTheme(),
                             ),
                             inputSpacer,
                             if (isDaily)
@@ -130,7 +130,6 @@ class HabitDetailsPage extends StatelessWidget {
                                 inputType:
                                     CupertinoDateTimePickerInputType.time,
                                 style: inputStyle().copyWith(
-                                  fontSize: 15,
                                   fontWeight: FontWeight.w300,
                                 ),
                                 initialValue: showFrom,
