@@ -59,12 +59,12 @@ class LinkedDuration extends StatelessWidget {
 
                 return Padding(
                   padding: const EdgeInsets.only(right: 20),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
-                    child: Column(
-                      children: [
-                        LinearProgressIndicator(
-                          minHeight: 4,
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          minHeight: 5,
                           value:
                               min(progress.inSeconds / estimate.inSeconds, 1),
                           color: (progress > estimate)
@@ -73,8 +73,11 @@ class LinkedDuration extends StatelessWidget {
                           backgroundColor:
                               styleConfig().secondaryTextColor.withOpacity(0.5),
                         ),
-                        const SizedBox(height: 5),
-                        Row(
+                      ),
+                      const SizedBox(height: 5),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
@@ -87,8 +90,8 @@ class LinkedDuration extends StatelessWidget {
                             )
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 );
               },

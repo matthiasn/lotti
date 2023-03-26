@@ -301,7 +301,7 @@ void main() {
       // task entry duration is rendered
       expect(
         find.text('2:00:00'),
-        findsOneWidget,
+        findsNWidgets(2),
       );
 
       // test task is starred
