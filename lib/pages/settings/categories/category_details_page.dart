@@ -46,7 +46,7 @@ class CategoryDetailsPage extends StatelessWidget {
               appBar: TitleAppBar(
                 title: state.categoryDefinition.name,
                 actions: [
-                  if (state.dirty)
+                  if (state.dirty && state.valid)
                     TextButton(
                       key: const Key('habit_save'),
                       onPressed: cubit.onSavePressed,

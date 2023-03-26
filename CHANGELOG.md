@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed:
 - Category save duplicate warning
+- Disable category save icon when form invalid
 
 ## [0.8.288] - 2023-03-25
 ### Added:

@@ -18,6 +18,7 @@ class CategorySettingsCubit extends Cubit<CategorySettingsState> {
             formKey: GlobalKey<FormBuilderState>(),
             categoryDefinition: categoryDefinition,
             dirty: false,
+            valid: false,
           ),
         );
 
@@ -25,6 +26,7 @@ class CategorySettingsCubit extends Cubit<CategorySettingsState> {
   final BuildContext? context;
   CategoryDefinition categoryDefinition;
   bool _dirty = false;
+  bool _valid = false;
 
   void _maybePop() {
     if (context != null) {
@@ -34,6 +36,7 @@ class CategorySettingsCubit extends Cubit<CategorySettingsState> {
 
   void setDirty() {
     _dirty = true;
+    _valid = state.formKey.currentState!.validate();
     emitState();
   }
 
@@ -77,6 +80,7 @@ class CategorySettingsCubit extends Cubit<CategorySettingsState> {
     emit(
       CategorySettingsState(
         dirty: _dirty,
+        valid: _valid,
         formKey: state.formKey,
         categoryDefinition: categoryDefinition,
       ),
