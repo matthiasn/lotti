@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Category save duplicate warning
+- Disable category save icon when form invalid
+- Recreate category with the same name as previously deleted category
+
+### Changed:
+- Upgraded dependencies
+
+## [0.8.288] - 2023-03-25
 ### Added:
 - Visualization for categories of open habits
 - Category name validation checking for duplicates

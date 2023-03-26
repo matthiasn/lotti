@@ -10,6 +10,7 @@ class CategorySettingsState with _$CategorySettingsState {
   factory CategorySettingsState({
     required CategoryDefinition categoryDefinition,
     required bool dirty,
+    required bool valid,
     required GlobalKey<FormBuilderState> formKey,
   }) = _CategorySettingsState;
 }

@@ -168,6 +168,8 @@ DashboardDefinitionDbEntity dashboardDefinitionDbEntity(
 CategoryDefinitionDbEntity categoryDefinitionDbEntity(
   CategoryDefinition category,
 ) {
+  final deleted = category.deletedAt != null;
+
   return CategoryDefinitionDbEntity(
     id: category.id,
     createdAt: category.createdAt,
@@ -175,8 +177,8 @@ CategoryDefinitionDbEntity categoryDefinitionDbEntity(
     serialized: jsonEncode(category),
     private: category.private,
     active: category.active,
-    name: category.name,
-    deleted: category.deletedAt != null,
+    name: deleted ? category.id : category.name,
+    deleted: deleted,
   );
 }
 
