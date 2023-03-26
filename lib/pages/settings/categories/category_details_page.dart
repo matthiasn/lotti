@@ -28,10 +28,10 @@ class CategoryDetailsPage extends StatelessWidget {
       stream: getIt<JournalDb>().watchCategories(),
       builder: (context, snapshot) {
         final categories = snapshot.data ?? <CategoryDefinition>[];
-        final categoryNames = <String>{};
+        final categoryNames = <String, String>{};
 
         for (final category in categories) {
-          categoryNames.add(category.name.toLowerCase());
+          categoryNames[category.name.toLowerCase()] = category.id;
         }
 
         return BlocBuilder<CategorySettingsCubit, CategorySettingsState>(
@@ -78,8 +78,6 @@ class CategoryDetailsPage extends StatelessWidget {
                                 FormBuilderTextField(
                                   key: const Key('category_name_field1'),
                                   name: 'name',
-                                  minLines: 1,
-                                  maxLines: 3,
                                   initialValue: item.name,
                                   textCapitalization:
                                       TextCapitalization.sentences,
@@ -87,9 +85,10 @@ class CategoryDetailsPage extends StatelessWidget {
                                   validator: FormBuilderValidators.compose([
                                     FormBuilderValidators.required(),
                                     (categoryName) {
-                                      if (categoryNames.contains(
-                                        categoryName?.toLowerCase(),
-                                      )) {
+                                      final existingId = categoryNames[
+                                          categoryName?.toLowerCase()];
+                                      if (existingId != null &&
+                                          existingId != item.id) {
                                         return localizations
                                             .settingsCategoriesDuplicateError;
                                       }
