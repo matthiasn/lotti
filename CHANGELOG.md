@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Category save duplicate warning
 - Disable category save icon when form invalid
 
+### Changed:
+- Upgraded dependencies
+
 ## [0.8.288] - 2023-03-25
 ### Added:
 - Visualization for categories of open habits

@@ -574,10 +574,10 @@ packages:
     dependency: "direct main"
     description:
       name: exif
-      sha256: "542fd8dd8eda3dff65be415f38370541aecf9eb3663e0679d9da4689f6b16c8f"
+      sha256: c154e074234eb6ac4a09831072b4783b55f5f9e84c4b344a472a6d6aa83a9982
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.2"
+    version: "3.1.4"
   extended_image:
     dependency: transitive
     description:
@@ -1547,10 +1547,10 @@ packages:
     dependency: transitive
     description:
       name: permission_handler_apple
-      sha256: "9c370ef6a18b1c4b2f7f35944d644a56aa23576f23abee654cf73968de93f163"
+      sha256: ee96ac32f5a8e6f80756e25b25b9f8e535816c8e6665a96b6d70681f8c4f7e85
       url: "https://pub.dev"
     source: hosted
-    version: "9.0.7"
+    version: "9.0.8"
   permission_handler_platform_interface:
     dependency: transitive
     description:
@@ -1627,10 +1627,10 @@ packages:
     dependency: transitive
     description:
       name: pointycastle
-      sha256: ae73e842cdd27a3467a71d70cefd9b198538aab4fc7dde1d0e8c78c96225abf0
+      sha256: c3120a968135aead39699267f4c74bc9a08e4e909e86bc1b0af5bfd78691123c
       url: "https://pub.dev"
     source: hosted
-    version: "3.7.1"
+    version: "3.7.2"
   polylabel:
     dependency: transitive
     description:
@@ -2426,10 +2426,10 @@ packages:
     dependency: "direct main"
     description:
       name: wechat_assets_picker
-      sha256: "8ddf607e5416b69e25cef1c86c7ffcfe3ad61c368e4cf54e4d4db8e317e9a651"
+      sha256: "93ec8af5670d5c34289ff86d4fd9cfc80930c337112f1f8bf5a57a942a82b337"
       url: "https://pub.dev"
     source: hosted
-    version: "8.4.0"
+    version: "8.4.1"
   week_of_year:
     dependency: "direct main"
     description:
