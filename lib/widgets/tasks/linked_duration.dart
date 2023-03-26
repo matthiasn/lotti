@@ -51,17 +51,47 @@ class LinkedDuration extends StatelessWidget {
                   return const SizedBox.shrink();
                 }
 
+                final durationStyle = monospaceTextStyleSmall().copyWith(
+                  color: (progress > estimate)
+                      ? styleConfig().alarm
+                      : styleConfig().secondaryTextColor,
+                );
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 20),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
-                    child: LinearProgressIndicator(
-                      minHeight: 4,
-                      value: min(progress.inSeconds / estimate.inSeconds, 1),
-                      color: (progress > estimate) ? Colors.red : Colors.green,
-                      backgroundColor:
-                          styleConfig().secondaryTextColor.withOpacity(0.5),
-                    ),
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          minHeight: 5,
+                          value:
+                              min(progress.inSeconds / estimate.inSeconds, 1),
+                          color: (progress > estimate)
+                              ? styleConfig().alarm
+                              : styleConfig().primaryColor,
+                          backgroundColor:
+                              styleConfig().secondaryTextColor.withOpacity(0.5),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              formatDuration(progress),
+                              style: durationStyle,
+                            ),
+                            Text(
+                              formatDuration(estimate),
+                              style: durationStyle,
+                            )
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
