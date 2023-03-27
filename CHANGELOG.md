@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - flutter_datetime_picker removed from entry datetime modal
 - Simpler display of habit completion count
 - FormBuilderCupertinoDateTimePicker replaced in habit definition
+- FormBuilderCupertinoDateTimePicker code removed
 
 ## [0.8.291] - 2023-03-27
 ### Fixed:
