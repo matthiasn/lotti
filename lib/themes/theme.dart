@@ -311,7 +311,7 @@ ThemeData getTheme() {
       iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
     ),
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: styleConfig().cardColor.darken().withOpacity(0.9),
+      backgroundColor: styleConfig().cardColor.darken(),
       clipBehavior: Clip.hardEdge,
     ),
     tooltipTheme: TooltipThemeData(
