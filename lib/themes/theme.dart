@@ -110,13 +110,6 @@ TextStyle textStyleLarger() => textStyle().copyWith(
       fontWeight: FontWeight.normal,
     );
 
-TextStyle textStyleLargerUnderlined() => textStyle().copyWith(
-      fontSize: 20,
-      fontWeight: FontWeight.w100,
-      decoration: TextDecoration.underline,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
-
 TextStyle labelStyleLarger() => textStyleLarger().copyWith(
       fontSize: 18,
       fontWeight: FontWeight.w300,
