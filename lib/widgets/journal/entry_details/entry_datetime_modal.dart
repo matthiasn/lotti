@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/misc/datetime_bottom_sheet.dart';
 
 class EntryDateTimeModal extends StatefulWidget {
   const EntryDateTimeModal({
@@ -31,18 +31,6 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
     super.initState();
     dateFrom = widget.item.meta.dateFrom;
     dateTo = widget.item.meta.dateTo;
-  }
-
-  void showDatePicker({
-    required void Function(DateTime) onConfirm,
-    required DateTime currentTime,
-  }) {
-    DatePicker.showDateTimePicker(
-      context,
-      theme: datePickerTheme(),
-      onConfirm: onConfirm,
-      currentTime: currentTime,
-    );
   }
 
   @override
@@ -75,64 +63,32 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
+              const SizedBox(height: 20),
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    localizations.journalDateFromLabel,
-                    textAlign: TextAlign.end,
-                    style: labelStyleLarger(),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      showDatePicker(
-                        onConfirm: (DateTime date) {
-                          setState(() {
-                            dateFrom = date;
-                          });
-                        },
-                        currentTime: dateFrom,
-                      );
-                    },
-                    child: Text(
-                      dfShorter.format(dateFrom),
-                      style: textStyleLargerUnderlined(),
+                  SizedBox(
+                    width: 220,
+                    child: DateTimeField(
+                      dateTime: dateFrom,
+                      labelText: localizations.journalDateFromLabel,
+                      setDateTime: (picked) {
+                        setState(() {
+                          dateFrom = picked;
+                        });
+                      },
                     ),
                   ),
-                ],
-              ),
-              Row(
-                children: [
-                  Text(
-                    localizations.journalDateToLabel,
-                    textAlign: TextAlign.end,
-                    style: labelStyleLarger(),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      showDatePicker(
-                        onConfirm: (DateTime date) {
-                          setState(() {
-                            dateTo = date;
-                          });
-                        },
-                        currentTime: dateTo,
-                      );
-                    },
-                    child: Text(
-                      dfShorter.format(dateTo),
-                      style: textStyleLargerUnderlined(),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        dateTo = DateTime.now();
-                      });
-                    },
-                    child: Text(
-                      localizations.journalDateNowButton,
-                      style: textStyleLarger()
-                          .copyWith(decoration: TextDecoration.underline),
+                  SizedBox(
+                    width: 220,
+                    child: DateTimeField(
+                      dateTime: dateTo,
+                      labelText: localizations.journalDateToLabel,
+                      setDateTime: (picked) {
+                        setState(() {
+                          dateTo = picked;
+                        });
+                      },
                     ),
                   ),
                 ],

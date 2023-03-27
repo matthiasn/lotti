@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -183,30 +182,14 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           ),
                         ),
                       inputSpacer,
-                      TextField(
-                        decoration: createDialogInputDecoration(
-                          labelText: localizations.addMeasurementDateLabel,
-                        ),
+                      DateTimeField(
+                        dateTime: measurementTime,
+                        labelText: localizations.addMeasurementDateLabel,
                         style: newInputStyle().copyWith(color: Colors.black),
-                        readOnly: true,
-                        controller: TextEditingController(
-                          text: DateFormat(
-                            "MMMM d, yyyy 'at' HH:mm",
-                          ).format(measurementTime),
-                        ),
-                        onTap: () async {
-                          final newDate = await showModalBottomSheet<DateTime>(
-                            context: context,
-                            builder: (context) {
-                              return DateTimeBottomSheet(measurementTime);
-                            },
-                          );
-
-                          if (newDate != null) {
-                            setState(() {
-                              measurementTime = newDate;
-                            });
-                          }
+                        setDateTime: (picked) {
+                          setState(() {
+                            measurementTime = picked;
+                          });
                         },
                       ),
                       inputSpacer,

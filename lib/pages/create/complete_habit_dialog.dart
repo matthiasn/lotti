@@ -4,7 +4,6 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -199,31 +198,15 @@ class _HabitDialogState extends State<HabitDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         inputSpacer,
-                        TextField(
-                          decoration: createDialogInputDecoration(
-                            labelText: localizations.addHabitDateLabel,
-                          ),
+                        DateTimeField(
+                          dateTime: _started,
+                          labelText: localizations.addHabitDateLabel,
                           style: newInputStyle().copyWith(color: Colors.black),
-                          readOnly: true,
-                          controller: TextEditingController(
-                            text: DateFormat(
-                              "MMMM d, yyyy 'at' HH:mm",
-                            ).format(_started),
-                          ),
-                          onTap: () async {
-                            final newDate =
-                                await showModalBottomSheet<DateTime>(
-                              context: context,
-                              builder: (context) {
-                                return DateTimeBottomSheet(_started);
-                              },
-                            );
-                            if (newDate != null) {
-                              setState(() {
-                                _startReset = true;
-                                _started = newDate;
-                              });
-                            }
+                          setDateTime: (picked) {
+                            setState(() {
+                              _startReset = true;
+                              _started = picked;
+                            });
                           },
                         ),
                         inputSpacer,

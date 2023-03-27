@@ -119,7 +119,6 @@ class HabitDetailsPage extends StatelessWidget {
                               decoration: inputDecoration(
                                 labelText: localizations.habitActiveFromLabel,
                               ),
-                              theme: datePickerTheme(),
                             ),
                             inputSpacer,
                             if (isDaily)
@@ -136,7 +135,6 @@ class HabitDetailsPage extends StatelessWidget {
                                 decoration: inputDecoration(
                                   labelText: localizations.habitShowFromLabel,
                                 ),
-                                theme: datePickerTheme(),
                               ),
                             inputSpacer,
                             if (state.storyTags.isNotEmpty)
