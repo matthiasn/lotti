@@ -37,6 +37,7 @@ void main() {
     testWidgets('tap entry date', (WidgetTester tester) async {
       when(entryCubit.togglePrivate).thenAnswer((_) async => true);
 
+      // ignore: unused_local_variable
       DateTime? modifiedDateTo;
 
       when(

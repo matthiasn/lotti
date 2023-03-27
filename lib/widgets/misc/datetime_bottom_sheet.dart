@@ -2,13 +2,17 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/themes/theme.dart';
-
-import '../journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class DateTimeBottomSheet extends StatefulWidget {
-  const DateTimeBottomSheet(this.initial, {super.key});
+  const DateTimeBottomSheet(
+    this.initial, {
+    required this.mode,
+    super.key,
+  });
 
   final DateTime? initial;
+  final CupertinoDatePickerMode mode;
 
   @override
   State<DateTimeBottomSheet> createState() => _DateTimeBottomSheetState();
@@ -87,6 +91,7 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
             height: 265,
             child: CupertinoDatePicker(
               initialDateTime: widget.initial,
+              mode: widget.mode,
               use24hFormat: true,
               onDateTimeChanged: (DateTime value) {
                 dateTime = value;
@@ -104,14 +109,16 @@ class DateTimeField extends StatefulWidget {
     required this.dateTime,
     required this.labelText,
     required this.setDateTime,
+    this.mode = CupertinoDatePickerMode.dateAndTime,
     this.style,
     super.key,
   });
 
-  final DateTime dateTime;
+  final DateTime? dateTime;
   final String labelText;
   final void Function(DateTime) setDateTime;
   final TextStyle? style;
+  final CupertinoDatePickerMode mode;
 
   @override
   State<DateTimeField> createState() => _DateTimeFieldState();
@@ -120,6 +127,12 @@ class DateTimeField extends StatefulWidget {
 class _DateTimeFieldState extends State<DateTimeField> {
   @override
   Widget build(BuildContext context) {
+    final df = widget.mode == CupertinoDatePickerMode.date
+        ? dfYmd
+        : widget.mode == CupertinoDatePickerMode.time
+            ? hhMmFormat
+            : dfShorter;
+
     return TextField(
       decoration: createDialogInputDecoration(
         labelText: widget.labelText,
@@ -128,13 +141,16 @@ class _DateTimeFieldState extends State<DateTimeField> {
       style: widget.style,
       readOnly: true,
       controller: TextEditingController(
-        text: dfShorter.format(widget.dateTime),
+        text: df.format(widget.dateTime ?? DateTime.now()),
       ),
       onTap: () async {
         final newDateTime = await showModalBottomSheet<DateTime>(
           context: context,
           builder: (context) {
-            return DateTimeBottomSheet(widget.dateTime);
+            return DateTimeBottomSheet(
+              widget.dateTime,
+              mode: widget.mode,
+            );
           },
         );
 
