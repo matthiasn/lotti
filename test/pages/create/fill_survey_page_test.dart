@@ -90,32 +90,5 @@ void main() {
 
       await tester.tap(find.text('YES'));
     });
-
-    testWidgets('CFQ 11 button is tappable, opens survey, with linked',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const FillSurveyWithLinkedPage(
-            linkedId: 'some-id',
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final cfq11ButtonFinder = find.text('CFQ 11');
-      expect(cfq11ButtonFinder, findsOneWidget);
-
-      await tester.tap(cfq11ButtonFinder);
-      await tester.pumpAndSettle();
-
-      final cfqTitleFinder = find.text('Chalder Fatigue Scale (CFQ 11)');
-      expect(cfqTitleFinder, findsOneWidget);
-
-      final cancelIconFinder = find.byIcon(Icons.highlight_off);
-
-      await tester.tap(cancelIconFinder);
-      await tester.pumpAndSettle();
-    });
   });
 }

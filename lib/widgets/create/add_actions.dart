@@ -72,22 +72,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
     items
       ..add(
         FloatingActionButton(
-          heroTag: 'survey',
-          tooltip: localizations.addActionAddSurvey,
-          backgroundColor: styleConfig().primaryColor,
-          onPressed: () {
-            rebuild();
-            final linkedId = widget.linked?.meta.id;
-            beamToNamed('/journal/fill_survey_linked/$linkedId');
-          },
-          child: const Icon(
-            MdiIcons.clipboardOutline,
-            size: actionIconSize,
-          ),
-        ),
-      )
-      ..add(
-        FloatingActionButton(
           heroTag: 'photo',
           tooltip: localizations.addActionAddPhotos,
           backgroundColor: styleConfig().primaryColor,
@@ -180,7 +164,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       );
 
     return CircleFloatingButton.floatingActionButton(
-      radius: items.length * 35,
+      radius: 80 + items.length * 24,
       useOpacity: true,
       items: items,
       color: styleConfig().primaryColor,

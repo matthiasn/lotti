@@ -14,7 +14,6 @@ class JournalLocation extends BeamLocation<BeamState> {
         '/journal/:entryId',
         '/journal/:entryId/record_audio/:linkedId',
         '/journal/fill_survey/:surveyType',
-        '/journal/fill_survey_linked/:linkedId',
       ];
 
   @override
@@ -43,11 +42,6 @@ class JournalLocation extends BeamLocation<BeamState> {
           child: FillSurveyWithTypePage(
             surveyType: state.pathParameters['surveyType'],
           ),
-        ),
-      if (pathContains('fill_survey_linked/'))
-        BeamPage(
-          key: ValueKey('fill_survey_linked-$linkedId'),
-          child: FillSurveyWithLinkedPage(linkedId: linkedId),
         ),
       if (pathContains('record_audio/'))
         BeamPage(

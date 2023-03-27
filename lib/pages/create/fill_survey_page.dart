@@ -148,19 +148,3 @@ class FillSurveyWithTypePage extends StatelessWidget {
     );
   }
 }
-
-class FillSurveyWithLinkedPage extends StatelessWidget {
-  const FillSurveyWithLinkedPage({
-    super.key,
-    this.linkedId,
-  });
-
-  final String? linkedId;
-
-  @override
-  Widget build(BuildContext context) {
-    return FillSurveyPage(
-      linkedId: linkedId,
-    );
-  }
-}
