@@ -9,9 +9,9 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/misc/duration_bottom_sheet.dart';
 
 class TaskForm extends StatefulWidget {
   const TaskForm({
@@ -87,21 +87,30 @@ class _TaskFormState extends State<TaskForm> {
                       children: [
                         SizedBox(
                           width: 120,
-                          child: FormBuilderCupertinoDateTimePicker(
-                            name: 'estimate',
-                            alwaysUse24HourFormat: true,
-                            format: hhMmFormat,
-                            inputType: CupertinoDateTimePickerInputType.time,
-                            style: inputStyle(),
-                            onChanged: (_) => save(),
+                          child: TextField(
                             decoration: inputDecoration(
                               labelText: localizations.taskEstimateLabel,
                             ),
-                            initialValue: DateTime.fromMillisecondsSinceEpoch(
-                              widget.data?.estimate?.inMilliseconds ?? 0,
-                              isUtc: true,
+                            style: inputStyle(),
+                            readOnly: true,
+                            controller: TextEditingController(
+                              text: formatDuration(widget.data?.estimate)
+                                  .substring(0, 5),
                             ),
-                            theme: datePickerTheme(),
+                            onTap: () async {
+                              final duration =
+                                  await showModalBottomSheet<Duration>(
+                                context: context,
+                                builder: (context) {
+                                  return DurationBottomSheet(
+                                    widget.data?.estimate,
+                                  );
+                                },
+                              );
+                              if (duration != null) {
+                                await save(estimate: duration);
+                              }
+                            },
                           ),
                         ),
                         SizedBox(

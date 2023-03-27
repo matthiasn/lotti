@@ -16,6 +16,7 @@ import '../../widget_test_utils.dart';
 class MeasurementMock extends Mock {
   Future<void> saveMeasurement({
     required MeasurableDataType measurableDataType,
+    required DateTime measurementTime,
     num? value,
   });
 }
@@ -45,6 +46,10 @@ void main() {
 
     Future<void> mockSaveMeasurement() => mock.saveMeasurement(
           measurableDataType: measurableWater,
+          measurementTime: any(
+            named: 'measurementTime',
+            that: const TypeMatcher<DateTime>(),
+          ),
           value: 500,
         );
     when(mockSaveMeasurement).thenAnswer((_) async => true);
@@ -65,6 +70,7 @@ void main() {
             MeasurementSuggestions(
               measurableDataType: measurableWater,
               saveMeasurement: mock.saveMeasurement,
+              measurementTime: DateTime.now(),
             ),
           ),
         );

@@ -14,7 +14,7 @@ Duration entryDuration(JournalEntity journalEntity) {
 String formatDuration(Duration? duration) {
   var durationString = duration?.toString().split('.').first ?? '';
 
-  if (durationString.substring(0, 2) == '0:') {
+  if (durationString.substring(1, 2) == ':') {
     durationString = '0$durationString';
   }
 
@@ -32,6 +32,7 @@ bool fromNullableBool(bool? value) {
 
 DateFormat df = DateFormat('yyyy-MM-dd HH:mm:ss');
 DateFormat dfShorter = DateFormat('yyyy-MM-dd HH:mm');
+DateFormat dfYmd = DateFormat('yyyy-MM-dd');
 DateFormat hhMmFormat = DateFormat('HH:mm');
 
 String formatType(String s) => s.replaceAll('HealthDataType.', '');

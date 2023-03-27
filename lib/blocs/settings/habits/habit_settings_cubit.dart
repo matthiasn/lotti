@@ -66,6 +66,23 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
     emitState();
   }
 
+  void setActiveFrom(DateTime? activeFrom) {
+    _dirty = true;
+    _habitDefinition = _habitDefinition.copyWith(activeFrom: activeFrom);
+    emitState();
+  }
+
+  void setShowFrom(DateTime? showFrom) {
+    _dirty = true;
+    _habitDefinition = _habitDefinition.copyWith(
+      habitSchedule: HabitSchedule.daily(
+        requiredCompletions: 1,
+        showFrom: showFrom,
+      ),
+    );
+    emitState();
+  }
+
   Future<void> onSavePressed() async {
     state.formKey.currentState!.save();
     if (state.formKey.currentState!.validate()) {
@@ -73,8 +90,6 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
       final private = formData?['private'] as bool? ?? false;
       final active = formData?['active'] as bool? ?? false;
       final priority = formData?['priority'] as bool? ?? false;
-      final activeFrom = formData?['active_from'] as DateTime?;
-      final showFrom = formData?['show_from'] as DateTime?;
       final defaultStory = formData?['default_story_id'] as StoryTag?;
 
       final dataType = _habitDefinition.copyWith(
@@ -83,11 +98,6 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
         private: private,
         active: active,
         priority: priority,
-        activeFrom: activeFrom,
-        habitSchedule: HabitSchedule.daily(
-          requiredCompletions: 1,
-          showFrom: showFrom,
-        ),
         defaultStoryId: defaultStory?.id,
       );
 

@@ -4,7 +4,6 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -12,7 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
+import 'package:lotti/widgets/misc/datetime_bottom_sheet.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -37,7 +36,8 @@ class _HabitDialogState extends State<HabitDialog> {
   final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
-  bool dirty = true;
+
+  bool _startReset = false;
 
   final hotkeyCmdS = HotKey(
     KeyCode.keyS,
@@ -50,26 +50,19 @@ class _HabitDialogState extends State<HabitDialog> {
     if (validate()) {
       final formData = _formKey.currentState?.value;
       final habitDefinition = await _db.watchHabitById(widget.habitId).first;
-      final formDate = formData!['date'] as DateTime;
 
       final habitCompletion = HabitCompletionData(
         habitId: widget.habitId,
-        dateTo: formDate == _started && widget.data == null
-            ? DateTime.now()
-            : formDate,
-        dateFrom: formDate,
+        dateTo: !_startReset ? DateTime.now() : _started,
+        dateFrom: _started,
         completionType: completionType,
       );
 
       await persistenceLogic.createHabitCompletionEntry(
         data: habitCompletion,
-        comment: formData['comment'] as String,
+        comment: formData!['comment'] as String,
         habitDefinition: habitDefinition,
       );
-
-      setState(() {
-        dirty = false;
-      });
 
       widget.beamerDelegate.beamBack();
     }
@@ -79,16 +72,15 @@ class _HabitDialogState extends State<HabitDialog> {
   void initState() {
     super.initState();
 
+    DateTime endOfDay() {
+      final date = DateTime.parse(widget.data.toString());
+      return DateTime(date.year, date.month, date.day, 23, 59, 59);
+    }
+
     _started = widget.data != null &&
             widget.data is String &&
             ymd(DateTime.now()) != widget.data
-        ? DateTime.parse(widget.data.toString()).add(
-            const Duration(
-              hours: 23,
-              minutes: 59,
-              seconds: 59,
-            ),
-          )
+        ? endOfDay()
         : DateTime.now();
 
     hotKeyManager.register(
@@ -110,7 +102,7 @@ class _HabitDialogState extends State<HabitDialog> {
     return false;
   }
 
-  late final DateTime _started;
+  late DateTime _started;
 
   @override
   Widget build(BuildContext context) {
@@ -179,11 +171,6 @@ class _HabitDialogState extends State<HabitDialog> {
             child: FormBuilder(
               key: _formKey,
               autovalidateMode: AutovalidateMode.onUserInteraction,
-              onChanged: () {
-                setState(() {
-                  dirty = true;
-                });
-              },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,18 +198,16 @@ class _HabitDialogState extends State<HabitDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         inputSpacer,
-                        FormBuilderCupertinoDateTimePicker(
-                          name: 'date',
-                          alwaysUse24HourFormat: true,
-                          format: DateFormat(
-                            "MMMM d, yyyy 'at' HH:mm",
-                          ),
+                        DateTimeField(
+                          dateTime: _started,
+                          labelText: localizations.addHabitDateLabel,
                           style: newInputStyle().copyWith(color: Colors.black),
-                          decoration: createDialogInputDecoration(
-                            labelText: localizations.addHabitDateLabel,
-                          ),
-                          initialValue: _started,
-                          theme: datePickerTheme(),
+                          setDateTime: (picked) {
+                            setState(() {
+                              _startReset = true;
+                              _started = picked;
+                            });
+                          },
                         ),
                         inputSpacer,
                         FormBuilderTextField(

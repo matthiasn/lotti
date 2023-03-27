@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -11,8 +10,8 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/form_utils.dart';
 import 'package:lotti/widgets/create/suggest_measurement.dart';
-import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/misc/datetime_bottom_sheet.dart';
 
 class MeasurementDialog extends StatefulWidget {
   const MeasurementDialog({
@@ -31,6 +30,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
   bool dirty = false;
+  DateTime measurementTime = DateTime.now();
 
   final hotkeyCmdS = HotKey(
     KeyCode.keyS,
@@ -42,6 +42,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
 
   Future<void> saveMeasurement({
     required MeasurableDataType measurableDataType,
+    required DateTime measurementTime,
     num? value,
   }) async {
     _formKey.currentState!.save();
@@ -56,14 +57,14 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
 
       final measurement = MeasurementData(
         dataTypeId: measurableDataType.id,
-        dateTo: formData!['date'] as DateTime,
-        dateFrom: formData['date'] as DateTime,
-        value: value ?? nf.parse('${formData['value']}'.replaceAll(',', '.')),
+        dateTo: measurementTime,
+        dateFrom: measurementTime,
+        value: value ?? nf.parse('${formData!['value']}'.replaceAll(',', '.')),
       );
 
       await persistenceLogic.createMeasurementEntry(
         data: measurement,
-        comment: formData['comment'] as String,
+        comment: formData!['comment'] as String,
         private: measurableDataType.private ?? false,
       );
     }
@@ -128,6 +129,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       key: const Key('measurement_save'),
                       onPressed: () => saveMeasurement(
                         measurableDataType: dataType,
+                        measurementTime: measurementTime,
                       ),
                       child: Text(
                         localizations.addMeasurementSaveButton,
@@ -180,18 +182,15 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           ),
                         ),
                       inputSpacer,
-                      FormBuilderCupertinoDateTimePicker(
-                        name: 'date',
-                        alwaysUse24HourFormat: true,
-                        format: DateFormat(
-                          "MMMM d, yyyy 'at' HH:mm",
-                        ),
+                      DateTimeField(
+                        dateTime: measurementTime,
+                        labelText: localizations.addMeasurementDateLabel,
                         style: newInputStyle().copyWith(color: Colors.black),
-                        decoration: createDialogInputDecoration(
-                          labelText: localizations.addMeasurementDateLabel,
-                        ),
-                        initialValue: DateTime.now(),
-                        theme: datePickerTheme(),
+                        setDateTime: (picked) {
+                          setState(() {
+                            measurementTime = picked;
+                          });
+                        },
                       ),
                       inputSpacer,
                       FormBuilderTextField(
@@ -224,6 +223,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       MeasurementSuggestions(
                         measurableDataType: dataType,
                         saveMeasurement: saveMeasurement,
+                        measurementTime: measurementTime,
                       ),
                     ],
                   ),

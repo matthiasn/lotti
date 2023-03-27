@@ -10,12 +10,16 @@ class MeasurementSuggestions extends StatelessWidget {
   const MeasurementSuggestions({
     required this.measurableDataType,
     required this.saveMeasurement,
+    required this.measurementTime,
     super.key,
   });
 
   final MeasurableDataType measurableDataType;
+  final DateTime measurementTime;
+
   final Future<void> Function({
     required MeasurableDataType measurableDataType,
+    required DateTime measurementTime,
     num? value,
   }) saveMeasurement;
 
@@ -48,6 +52,7 @@ class MeasurementSuggestions extends StatelessWidget {
               void onTap() => saveMeasurement(
                     value: value,
                     measurableDataType: measurableDataType,
+                    measurementTime: measurementTime,
                   );
 
               return MouseRegion(

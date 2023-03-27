@@ -101,13 +101,12 @@ class EntryCubit extends Cubit<EntryState> {
   final JournalDb _journalDb = getIt<JournalDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
 
-  Future<void> save() async {
+  Future<void> save({Duration? estimate}) async {
     if (entry is Task) {
       final task = entry as Task;
       formKey?.currentState?.save();
       final formData = formKey?.currentState?.value ?? {};
       final title = formData['title'] as String?;
-      final dt = formData['estimate'] as DateTime?;
       final status = formData['status'] as String?;
 
       await _persistenceLogic.updateTask(
@@ -115,9 +114,7 @@ class EntryCubit extends Cubit<EntryState> {
         journalEntityId: entryId,
         taskData: task.data.copyWith(
           title: title ?? task.data.title,
-          estimate: dt != null
-              ? Duration(hours: dt.hour, minutes: dt.minute)
-              : task.data.estimate,
+          estimate: estimate ?? task.data.estimate,
           status:
               status != null ? taskStatusFromString(status) : task.data.status,
         ),

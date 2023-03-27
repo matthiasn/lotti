@@ -114,9 +114,6 @@ void main() {
 
       final recordIconFinder = find.byIcon(Icons.fiber_manual_record_sharp);
       expect(recordIconFinder, findsNothing);
-
-      final durationFinder = find.text('01:00:00');
-      expect(durationFinder, findsNothing);
     });
 
     testWidgets('time record button is tappable', (WidgetTester tester) async {

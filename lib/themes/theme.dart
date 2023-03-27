@@ -2,7 +2,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/themes.dart';
@@ -53,10 +52,20 @@ InputDecoration inputDecoration({
       suffixIcon: suffixIcon,
     );
 
-InputDecoration createDialogInputDecoration({String? labelText}) =>
-    inputDecoration(labelText: labelText).copyWith(
-      labelStyle: newLabelStyle().copyWith(color: Colors.black),
+InputDecoration createDialogInputDecoration({
+  String? labelText,
+  TextStyle? style,
+}) {
+  final decoration = inputDecoration(labelText: labelText);
+
+  if (style == null) {
+    return decoration;
+  } else {
+    return decoration.copyWith(
+      labelStyle: newLabelStyle().copyWith(color: style.color),
     );
+  }
+}
 
 const switchDecoration = InputDecoration(border: InputBorder.none);
 
@@ -99,13 +108,6 @@ TextStyle chartTooltipStyleBold() => const TextStyle(
 TextStyle textStyleLarger() => textStyle().copyWith(
       fontSize: 18,
       fontWeight: FontWeight.normal,
-    );
-
-TextStyle textStyleLargerUnderlined() => textStyle().copyWith(
-      fontSize: 20,
-      fontWeight: FontWeight.w100,
-      decoration: TextDecoration.underline,
-      fontFeatures: const [FontFeature.tabularFigures()],
     );
 
 TextStyle labelStyleLarger() => textStyleLarger().copyWith(
@@ -151,6 +153,11 @@ TextStyle formLabelStyle() => TextStyle(
 TextStyle buttonLabelStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
       fontSize: fontSizeMedium,
+    );
+
+TextStyle buttonLabelStyleLarger() => TextStyle(
+      color: styleConfig().primaryTextColor,
+      fontSize: 20,
     );
 
 TextStyle settingsLabelStyle() => TextStyle(
@@ -256,23 +263,6 @@ const settingsIconSize = 24.0;
 
 StyleConfig styleConfig() => getIt<ThemesService>().current;
 
-DatePickerTheme datePickerTheme() => DatePickerTheme(
-      headerColor: styleConfig().primaryColor.withOpacity(0.3),
-      backgroundColor: styleConfig().cardColor,
-      itemStyle: TextStyle(
-        color: styleConfig().primaryTextColor,
-        fontSize: 20,
-      ),
-      cancelStyle: TextStyle(
-        color: styleConfig().cardColor,
-        fontSize: 20,
-      ),
-      doneStyle: TextStyle(
-        color: styleConfig().primaryColor,
-        fontSize: 20,
-      ),
-    );
-
 const habitCompletionHeaderStyle = TextStyle(
   color: Colors.black,
   fontSize: 20,
@@ -306,7 +296,7 @@ ThemeData getTheme() {
       iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
     ),
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: styleConfig().cardColor.darken().withOpacity(0.9),
+      backgroundColor: styleConfig().cardColor.darken(),
       clipBehavior: Clip.hardEdge,
     ),
     tooltipTheme: TooltipThemeData(

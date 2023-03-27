@@ -1,4 +1,5 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -13,9 +14,8 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
-import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/habits/habit_category.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/misc/datetime_bottom_sheet.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -107,36 +107,19 @@ class HabitDetailsPage extends StatelessWidget {
                             SelectCategoryWidget(),
                             inputSpacer,
                             inputSpacer,
-                            FormBuilderCupertinoDateTimePicker(
-                              key: const Key('active_from'),
-                              name: 'active_from',
-                              alwaysUse24HourFormat: true,
-                              inputType: CupertinoDateTimePickerInputType.date,
-                              style: inputStyle().copyWith(
-                                fontWeight: FontWeight.w300,
-                              ),
-                              initialValue: item.activeFrom,
-                              decoration: inputDecoration(
-                                labelText: localizations.habitActiveFromLabel,
-                              ),
-                              theme: datePickerTheme(),
+                            DateTimeField(
+                              dateTime: item.activeFrom,
+                              labelText: localizations.habitActiveFromLabel,
+                              setDateTime: cubit.setActiveFrom,
+                              mode: CupertinoDatePickerMode.date,
                             ),
                             inputSpacer,
                             if (isDaily)
-                              FormBuilderCupertinoDateTimePicker(
-                                name: 'show_from',
-                                alwaysUse24HourFormat: true,
-                                format: hhMmFormat,
-                                inputType:
-                                    CupertinoDateTimePickerInputType.time,
-                                style: inputStyle().copyWith(
-                                  fontWeight: FontWeight.w300,
-                                ),
-                                initialValue: showFrom,
-                                decoration: inputDecoration(
-                                  labelText: localizations.habitShowFromLabel,
-                                ),
-                                theme: datePickerTheme(),
+                              DateTimeField(
+                                dateTime: showFrom,
+                                labelText: localizations.habitShowFromLabel,
+                                setDateTime: cubit.setShowFrom,
+                                mode: CupertinoDatePickerMode.time,
                               ),
                             inputSpacer,
                             if (state.storyTags.isNotEmpty)

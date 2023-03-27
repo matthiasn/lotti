@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- FormBuilderCupertinoDateTimePicker replaced in task estimate
+- FormBuilderCupertinoDateTimePicker replaced in habit completion dialog
+- Removed opacity in bottom sheets
+- FormBuilderCupertinoDateTimePicker replaced in new measurement dialog
+- New measurement page removed
+- flutter_datetime_picker removed from entry datetime modal
+- Simpler display of habit completion count
+- FormBuilderCupertinoDateTimePicker replaced in habit definition
+- FormBuilderCupertinoDateTimePicker code removed
+- Upgraded dependencies
+
+## [0.8.291] - 2023-03-27
 ### Fixed:
 - Missing day in habits after switching to DST
 
