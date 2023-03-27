@@ -41,10 +41,9 @@ class CategorySettingsCubit extends Cubit<CategorySettingsState> {
   }
 
   void setColor(Color color) {
-    _dirty = true;
     categoryDefinition =
         categoryDefinition.copyWith(color: colorToCssHex(color));
-    emitState();
+    setDirty();
   }
 
   Future<void> onSavePressed() async {
