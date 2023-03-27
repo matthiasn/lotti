@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - FormBuilderCupertinoDateTimePicker replaced in task estimate
+- FormBuilderCupertinoDateTimePicker replaced in habit completion dialog
 
 ## [0.8.291] - 2023-03-27
 ### Fixed:
