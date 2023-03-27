@@ -254,7 +254,7 @@ void main() {
 
       // test entry displays duration of one hour
       expect(
-        find.text('1:00:00'),
+        find.text('01:00:00'),
         findsOneWidget,
       );
 
@@ -300,7 +300,7 @@ void main() {
 
       // task entry duration is rendered
       expect(
-        find.text('2:00:00'),
+        find.text('02:00:00'),
         findsNWidgets(2),
       );
 
