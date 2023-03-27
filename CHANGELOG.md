@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Fill survey page removed
+
+## [0.8.292] - 2023-03-27
+### Changed:
 - FormBuilderCupertinoDateTimePicker replaced in task estimate
 - FormBuilderCupertinoDateTimePicker replaced in habit completion dialog
 - Removed opacity in bottom sheets
