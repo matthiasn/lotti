@@ -231,6 +231,8 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -248,7 +250,7 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
                   Navigator.pop(context);
                 },
                 child: Text(
-                  'Cancel',
+                  localizations.cancelButton,
                   style: buttonLabelStyle().copyWith(
                     color: styleConfig().secondaryTextColor,
                   ),
@@ -259,7 +261,7 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
                   Navigator.pop(context, duration);
                 },
                 child: Text(
-                  'Done',
+                  localizations.doneButton,
                   style: buttonLabelStyle().copyWith(
                     color: styleConfig().primaryColor,
                   ),
