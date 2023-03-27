@@ -153,6 +153,11 @@ TextStyle buttonLabelStyle() => TextStyle(
       fontSize: fontSizeMedium,
     );
 
+TextStyle buttonLabelStyleLarger() => TextStyle(
+      color: styleConfig().primaryTextColor,
+      fontSize: 20,
+    );
+
 TextStyle settingsLabelStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
       fontSize: fontSizeMedium,

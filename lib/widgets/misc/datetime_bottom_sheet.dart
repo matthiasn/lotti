@@ -43,7 +43,7 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
                 },
                 child: Text(
                   localizations.cancelButton,
-                  style: buttonLabelStyle().copyWith(
+                  style: buttonLabelStyleLarger().copyWith(
                     color: styleConfig().secondaryTextColor,
                   ),
                 ),
@@ -54,7 +54,7 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
                 },
                 child: Text(
                   localizations.doneButton,
-                  style: buttonLabelStyle().copyWith(
+                  style: buttonLabelStyleLarger().copyWith(
                     color: styleConfig().primaryColor,
                   ),
                 ),
@@ -65,8 +65,9 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
         CupertinoTheme(
           data: CupertinoThemeData(
             textTheme: CupertinoTextThemeData(
-              pickerTextStyle: formLabelStyle().copyWith(
+              dateTimePickerTextStyle: formLabelStyle().copyWith(
                 fontSize: fontSizeLarge,
+                color: styleConfig().primaryTextColor,
                 fontWeight: FontWeight.w300,
               ),
             ),

@@ -43,7 +43,7 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
                 },
                 child: Text(
                   localizations.cancelButton,
-                  style: buttonLabelStyle().copyWith(
+                  style: buttonLabelStyleLarger().copyWith(
                     color: styleConfig().secondaryTextColor,
                   ),
                 ),
@@ -54,7 +54,7 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
                 },
                 child: Text(
                   localizations.doneButton,
-                  style: buttonLabelStyle().copyWith(
+                  style: buttonLabelStyleLarger().copyWith(
                     color: styleConfig().primaryColor,
                   ),
                 ),
@@ -66,17 +66,19 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
           data: CupertinoThemeData(
             textTheme: CupertinoTextThemeData(
               pickerTextStyle: formLabelStyle().copyWith(
-                fontSize: fontSizeLarge,
                 fontWeight: FontWeight.w300,
               ),
             ),
           ),
-          child: CupertinoTimerPicker(
-            onTimerDurationChanged: (Duration value) {
-              duration = value;
-            },
-            initialTimerDuration: widget.initial ?? Duration.zero,
-            mode: CupertinoTimerPickerMode.hm,
+          child: SizedBox(
+            width: 500,
+            child: CupertinoTimerPicker(
+              onTimerDurationChanged: (Duration value) {
+                duration = value;
+              },
+              initialTimerDuration: widget.initial ?? Duration.zero,
+              mode: CupertinoTimerPickerMode.hm,
+            ),
           ),
         ),
       ],
