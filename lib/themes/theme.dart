@@ -257,7 +257,7 @@ const settingsIconSize = 24.0;
 StyleConfig styleConfig() => getIt<ThemesService>().current;
 
 DatePickerTheme datePickerTheme() => DatePickerTheme(
-      headerColor: styleConfig().secondaryTextColor,
+      headerColor: styleConfig().primaryColor.withOpacity(0.3),
       backgroundColor: styleConfig().cardColor,
       itemStyle: TextStyle(
         color: styleConfig().primaryTextColor,
@@ -268,7 +268,7 @@ DatePickerTheme datePickerTheme() => DatePickerTheme(
         fontSize: 20,
       ),
       doneStyle: TextStyle(
-        color: styleConfig().primaryTextColor,
+        color: styleConfig().primaryColor,
         fontSize: 20,
       ),
     );
