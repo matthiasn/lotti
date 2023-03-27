@@ -1,6 +1,5 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/pages/create/create_measurement_page.dart';
 import 'package:lotti/pages/create/fill_survey_page.dart';
 import 'package:lotti/pages/create/record_audio_page.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
@@ -16,8 +15,6 @@ class JournalLocation extends BeamLocation<BeamState> {
         '/journal/:entryId/record_audio/:linkedId',
         '/journal/fill_survey/:surveyType',
         '/journal/fill_survey_linked/:linkedId',
-        '/journal/measure_linked/:linkedId',
-        '/journal/measure/:selectedId',
       ];
 
   @override
@@ -27,7 +24,6 @@ class JournalLocation extends BeamLocation<BeamState> {
 
     final entryId = state.pathParameters['entryId'];
     final linkedId = state.pathParameters['linkedId'];
-    final selectedId = state.pathParameters['selectedId'];
 
     return [
       const BeamPage(
@@ -57,16 +53,6 @@ class JournalLocation extends BeamLocation<BeamState> {
         BeamPage(
           key: ValueKey('record_audio-$linkedId'),
           child: RecordAudioPage(linkedId: linkedId),
-        ),
-      if (pathContains('measure_linked/'))
-        BeamPage(
-          key: ValueKey('measure_linked-$linkedId'),
-          child: CreateMeasurementPage(linkedId: linkedId),
-        ),
-      if (pathContains('measure/') && isUuid('selectedId'))
-        BeamPage(
-          key: ValueKey('journal-measure-$selectedId'),
-          child: CreateMeasurementPage(selectedId: selectedId),
         ),
     ];
   }

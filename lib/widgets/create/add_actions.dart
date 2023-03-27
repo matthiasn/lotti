@@ -72,22 +72,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
     items
       ..add(
         FloatingActionButton(
-          heroTag: 'measurement',
-          backgroundColor: styleConfig().primaryColor,
-          tooltip: localizations.addActionAddMeasurable,
-          onPressed: () async {
-            rebuild();
-            final linkedId = widget.linked?.meta.id;
-            beamToNamed('/journal/measure_linked/$linkedId');
-          },
-          child: const Icon(
-            Icons.insights,
-            size: actionIconSize,
-          ),
-        ),
-      )
-      ..add(
-        FloatingActionButton(
           heroTag: 'survey',
           tooltip: localizations.addActionAddSurvey,
           backgroundColor: styleConfig().primaryColor,
@@ -196,7 +180,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       );
 
     return CircleFloatingButton.floatingActionButton(
-      radius: items.length * 32,
+      radius: items.length * 35,
       useOpacity: true,
       items: items,
       color: styleConfig().primaryColor,
