@@ -405,8 +405,10 @@ double minY({
 }
 
 List<String> getDays(int timeSpanDays) {
+  final now = DateTime.now();
+
   return daysInRange(
-    rangeStart: DateTime.now().subtract(Duration(days: timeSpanDays)),
-    rangeEnd: DateTime.now().add(const Duration(days: 1)),
+    rangeStart: now.subtract(Duration(days: timeSpanDays)),
+    rangeEnd: now.add(const Duration(days: 1)),
   )..sort();
 }

@@ -80,7 +80,7 @@ void main() {
         ..registerSingleton<OutboxService>(OutboxService());
     });
 
-    setUp(() {
+    setUp(() async {
       when(mockVectorClockService.getHostHash)
           .thenAnswer((_) async => 'some_host_hash');
       when(mockVectorClockService.getHost)
@@ -88,6 +88,7 @@ void main() {
 
       when(() => mockJournalDb.getConfigFlag(any()))
           .thenAnswer((_) async => true);
+      await getIt<OutboxService>().init();
     });
 
     tearDownAll(() async {
@@ -101,7 +102,6 @@ void main() {
 
     test('SyncMessage with JournalEntry is enqueued into database', () async {
       final outboxService = getIt<OutboxService>();
-      await outboxService.init();
 
       final message = SyncMessage.journalEntity(
         journalEntity: testWeightEntry,
