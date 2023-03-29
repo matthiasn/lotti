@@ -141,14 +141,14 @@ class _DateTimeFieldState extends State<DateTimeField> {
       style: widget.style,
       readOnly: true,
       controller: TextEditingController(
-        text: df.format(widget.dateTime ?? DateTime.now()),
+        text: widget.dateTime != null ? df.format(widget.dateTime!) : '',
       ),
       onTap: () async {
         final newDateTime = await showModalBottomSheet<DateTime>(
           context: context,
           builder: (context) {
             return DateTimeBottomSheet(
-              widget.dateTime,
+              widget.dateTime ?? DateTime.now(),
               mode: widget.mode,
             );
           },
