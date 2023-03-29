@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Upgraded dependencies
+
+## [0.8.294] - 2023-03-28
 ### Fixed:
 - Show save button upon category color change
 
