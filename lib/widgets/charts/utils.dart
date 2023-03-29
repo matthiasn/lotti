@@ -119,7 +119,7 @@ List<Observation> aggregateSumByHour(
 
 List<String> getDayStrings(int rangeDays, DateTime rangeStart) {
   return List<String>.generate(rangeDays, (days) {
-    final day = rangeStart.add(Duration(days: days, hours: 1));
+    final day = rangeStart.add(Duration(days: days));
     return ymd(day);
   });
 }
