@@ -52,7 +52,7 @@
   "habitCategoryLabel": "Kategorie:",
   "habitCategoryHint": "Kategorie auswählen...",
   "habitPriorityLabel": "Priorität:",
-  "habitActiveFromLabel": "Erfolg erwartet ab",
+  "habitActiveFromLabel": "Beginn",
   "habitActiveUntilLabel": "Aktiv bis",
   "habitNotFound": "Habit nicht gefunden",
   "habitDeleteConfirm": "JA, HABIT löschen",

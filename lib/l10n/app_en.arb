@@ -71,7 +71,7 @@
   "habitCategoryLabel": "Category:",
   "habitCategoryHint": "Select Category...",
   "habitPriorityLabel": "Priority:",
-  "habitActiveFromLabel": "Expect success from",
+  "habitActiveFromLabel": "Start Date",
   "habitActiveUntilLabel": "Active until",
   "habitNotFound": "Habit not found",
   "habitDeleteConfirm": "YES, DELETE THIS HABIT",
