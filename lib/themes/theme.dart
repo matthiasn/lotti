@@ -181,7 +181,6 @@ TextStyle appBarTextStyle() => TextStyle(
 TextStyle appBarTextStyleNew() => TextStyle(
       color: styleConfig().primaryTextColor,
       fontSize: fontSizeMedium,
-      fontWeight: FontWeight.bold,
     );
 
 TextStyle appBarTextStyleNewLarge() => TextStyle(
