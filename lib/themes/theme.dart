@@ -137,6 +137,10 @@ TextStyle monospaceTextStyleSmall() => monospaceTextStyle().copyWith(
       fontSize: fontSizeSmall,
     );
 
+TextStyle monospaceTextStyleMedium() => monospaceTextStyle().copyWith(
+      fontSize: fontSizeMedium,
+    );
+
 TextStyle monospaceTextStyleLarge() => monospaceTextStyle().copyWith(
       fontSize: fontSizeLarge,
     );
@@ -181,7 +185,6 @@ TextStyle appBarTextStyle() => TextStyle(
 TextStyle appBarTextStyleNew() => TextStyle(
       color: styleConfig().primaryTextColor,
       fontSize: fontSizeMedium,
-      fontWeight: FontWeight.bold,
     );
 
 TextStyle appBarTextStyleNewLarge() => TextStyle(
