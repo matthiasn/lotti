@@ -111,7 +111,7 @@ TextStyle textStyleLarger() => textStyle().copyWith(
     );
 
 TextStyle labelStyleLarger() => textStyleLarger().copyWith(
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: FontWeight.w300,
     );
 

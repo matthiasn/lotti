@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgrade dependencies
 - Whitespace on entry detail page
 
+### Fixed:
+- Styling of DateTime modal bottom sheet
+
 ## [0.8.296] - 2023-03-30
 ### Fixed:
 - Habit completion chart display range issue

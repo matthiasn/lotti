@@ -58,7 +58,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
         }
 
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 15),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +68,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   SizedBox(
-                    width: 220,
+                    width: 170,
                     child: DateTimeField(
                       dateTime: dateFrom,
                       labelText: localizations.journalDateFromLabel,
@@ -80,7 +80,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                     ),
                   ),
                   SizedBox(
-                    width: 220,
+                    width: 170,
                     child: DateTimeField(
                       dateTime: dateTo,
                       labelText: localizations.journalDateToLabel,
@@ -95,19 +95,18 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
               ),
               const SizedBox(height: 10),
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
                     localizations.journalDurationLabel,
                     textAlign: TextAlign.end,
-                    style: labelStyleLarger(),
                   ),
                   Padding(
                     padding: const EdgeInsets.only(left: 8),
                     child: Text(
                       formatDuration(dateFrom.difference(dateTo).abs()),
-                      style: monospaceTextStyleLarge().copyWith(
+                      style: monospaceTextStyle().copyWith(
                         fontWeight: FontWeight.w100,
-                        fontSize: 20,
                       ),
                     ),
                   ),
