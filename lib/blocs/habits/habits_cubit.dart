@@ -312,8 +312,20 @@ class HabitsCubit extends Cubit<HabitsState> {
                   (habit) => _selectedCategoryIds.contains(habit.categoryId),
                 )
                 .toList(),
-        pendingLater: _pendingLater,
-        completed: _completed,
+        pendingLater: _selectedCategoryIds.isEmpty
+            ? _pendingLater
+            : _pendingLater
+                .where(
+                  (habit) => _selectedCategoryIds.contains(habit.categoryId),
+                )
+                .toList(),
+        completed: _selectedCategoryIds.isEmpty
+            ? _completed
+            : _completed
+                .where(
+                  (habit) => _selectedCategoryIds.contains(habit.categoryId),
+                )
+                .toList(),
         days: getDays(_timeSpanDays),
         successfulToday: _successfulToday,
         successfulByDay: _successfulByDay,
