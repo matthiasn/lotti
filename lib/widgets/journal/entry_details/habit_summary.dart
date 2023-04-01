@@ -10,12 +10,14 @@ class HabitSummary extends StatelessWidget {
   HabitSummary(
     this.habitCompletion, {
     this.showChart = true,
+    this.paddingLeft = 0,
     super.key,
   });
 
   final JournalDb _db = getIt<JournalDb>();
   final HabitCompletionEntry habitCompletion;
   final bool showChart;
+  final double paddingLeft;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +36,7 @@ class HabitSummary extends StatelessWidget {
         }
 
         return Padding(
-          padding: const EdgeInsets.only(top: 5),
+          padding: EdgeInsets.only(top: 5, left: paddingLeft),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

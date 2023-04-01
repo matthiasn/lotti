@@ -111,7 +111,7 @@ TextStyle textStyleLarger() => textStyle().copyWith(
     );
 
 TextStyle labelStyleLarger() => textStyleLarger().copyWith(
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: FontWeight.w300,
     );
 
@@ -181,7 +181,6 @@ TextStyle appBarTextStyle() => TextStyle(
 TextStyle appBarTextStyleNew() => TextStyle(
       color: styleConfig().primaryTextColor,
       fontSize: fontSizeMedium,
-      fontWeight: FontWeight.bold,
     );
 
 TextStyle appBarTextStyleNewLarge() => TextStyle(
