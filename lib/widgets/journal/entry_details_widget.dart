@@ -61,29 +61,26 @@ class EntryDetailWidget extends StatelessWidget {
           ),
           child: Card(
             margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                item.maybeMap(
-                  journalImage: EntryImageWidget.new,
-                  orElse: () => const SizedBox.shrink(),
-                ),
-                const EntryDetailHeader(),
-                TagsListWidget(parentTags: parentTags),
-                item.maybeMap(
-                  task: (_) => const SizedBox.shrink(),
-                  quantitative: (_) => const SizedBox.shrink(),
-                  workout: (_) => const SizedBox.shrink(),
-                  orElse: () {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: EditorWidget(unlinkFn: unlinkFn),
-                    );
-                  },
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: item.map(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  item.maybeMap(
+                    journalImage: EntryImageWidget.new,
+                    orElse: () => const SizedBox.shrink(),
+                  ),
+                  const EntryDetailHeader(),
+                  TagsListWidget(parentTags: parentTags),
+                  item.maybeMap(
+                    task: (_) => const SizedBox.shrink(),
+                    quantitative: (_) => const SizedBox.shrink(),
+                    workout: (_) => const SizedBox.shrink(),
+                    orElse: () {
+                      return EditorWidget(unlinkFn: unlinkFn);
+                    },
+                  ),
+                  item.map(
                     journalAudio: (JournalAudio audio) {
                       return const AudioPlayerWidget();
                     },
@@ -97,13 +94,16 @@ class EntryDetailWidget extends StatelessWidget {
                         task: task,
                       );
                     },
-                    habitCompletion: HabitSummary.new,
+                    habitCompletion: (habit) => HabitSummary(
+                      habit,
+                      paddingLeft: 10,
+                    ),
                     journalEntry: (_) => const SizedBox.shrink(),
                     journalImage: (_) => const SizedBox.shrink(),
                   ),
-                ),
-                const EntryDetailFooter(),
-              ],
+                  const EntryDetailFooter(),
+                ],
+              ),
             ),
           ),
         );

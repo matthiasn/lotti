@@ -22,7 +22,7 @@ class EntryDatetimeWidget extends StatelessWidget {
         }
 
         return Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.symmetric(vertical: 5),
           child: TextButton(
             onPressed: () {
               showModalBottomSheet<void>(
