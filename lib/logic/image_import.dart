@@ -25,8 +25,9 @@ Future<void> importImageAssets(
       textDelegate: EnglishAssetPickerTextDelegate(),
     ),
   );
+
   if (assets != null) {
-    for (final asset in assets) {
+    for (final asset in assets.toList(growable: false)) {
       Geolocation? geolocation;
       final latLng = await asset.latlngAsync();
       final latitude = latLng.latitude ?? asset.latitude;
