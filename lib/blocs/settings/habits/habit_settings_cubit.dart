@@ -88,7 +88,7 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
     if (state.formKey.currentState!.validate()) {
       final formData = state.formKey.currentState?.value;
       final private = formData?['private'] as bool? ?? false;
-      final active = formData?['active'] as bool? ?? false;
+      final active = !(formData?['archived'] as bool? ?? false);
       final priority = formData?['priority'] as bool? ?? false;
       final defaultStory = formData?['default_story_id'] as StoryTag?;
 

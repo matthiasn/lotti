@@ -48,7 +48,7 @@
   "fileMenuNewScreenshot": "Bildschirmfoto",
   "fileMenuNewTask": "Aufgabe",
   "fileMenuTitle": "Datei",
-  "habitActiveLabel": "Aktiv:",
+  "habitArchivedLabel": "Archiviert:",
   "habitCategoryLabel": "Kategorie:",
   "habitCategoryHint": "Kategorie auswählen...",
   "habitPriorityLabel": "Priorität:",
