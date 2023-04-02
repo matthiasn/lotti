@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgraded Flutter
+- Change habit active status to archived status
+
+### Fixed:
+- DateTime form field width
+
+## [0.8.298] - 2023-04-01
+### Changed:
 - Categories filter applies to all sections, not only currently due habits
 
 ## [0.8.297] - 2023-04-01

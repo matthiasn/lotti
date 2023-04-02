@@ -58,7 +58,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
         }
 
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 15),
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +68,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   SizedBox(
-                    width: 170,
+                    width: 180,
                     child: DateTimeField(
                       dateTime: dateFrom,
                       labelText: localizations.journalDateFromLabel,
@@ -80,7 +80,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                     ),
                   ),
                   SizedBox(
-                    width: 170,
+                    width: 180,
                     child: DateTimeField(
                       dateTime: dateTo,
                       labelText: localizations.journalDateToLabel,
