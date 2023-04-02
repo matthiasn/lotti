@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Permission for notifications
+
+## [0.8.300] - 2023-04-02
+### Fixed:
 - Picking multiple images only picking one image
 
 ## [0.8.299] - 2023-04-02
