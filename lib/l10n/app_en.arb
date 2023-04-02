@@ -67,7 +67,7 @@
   "fileMenuNewScreenshot": "Screenshot",
   "fileMenuNewTask": "Task",
   "fileMenuTitle": "File",
-  "habitActiveLabel": "Active:",
+  "habitArchivedLabel": "Archived:",
   "habitCategoryLabel": "Category:",
   "habitCategoryHint": "Select Category...",
   "habitPriorityLabel": "Priority:",

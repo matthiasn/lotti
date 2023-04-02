@@ -111,7 +111,7 @@ class CategoryDetailsPage extends StatelessWidget {
                                 ),
                                 FormSwitch(
                                   name: 'active',
-                                  key: const Key('habit_active'),
+                                  key: const Key('category_active'),
                                   initialValue: state.categoryDefinition.active,
                                   title: localizations.dashboardActiveLabel,
                                   activeColor: styleConfig().starredGold,

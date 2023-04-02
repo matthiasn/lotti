@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Upgraded Flutter
+- Change habit active status to archived status
 
 ### Fixed:
 - DateTime form field width
