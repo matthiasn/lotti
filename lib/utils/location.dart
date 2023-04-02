@@ -16,7 +16,6 @@ class DeviceLocation {
 
   Future<void> init() async {
     bool serviceEnabled;
-    PermissionStatus permissionGranted;
 
     if (isWindows || isTestEnv) {
       return;
@@ -29,14 +28,14 @@ class DeviceLocation {
         return;
       }
     }
+  }
 
-    permissionGranted = await location.hasPermission();
-    if (permissionGranted == PermissionStatus.denied) {
-      permissionGranted = await location.requestPermission();
-      if (permissionGranted != PermissionStatus.granted) {
-        return;
-      }
+  Future<PermissionStatus> _requestPermission() async {
+    var permissionStatus = await location.hasPermission();
+    if (permissionStatus == PermissionStatus.denied) {
+      permissionStatus = await location.requestPermission();
     }
+    return permissionStatus;
   }
 
   static String getGeoHash({
@@ -50,6 +49,13 @@ class DeviceLocation {
     final now = DateTime.now();
 
     if (Platform.isWindows) {
+      return null;
+    }
+
+    final permissionStatus = await _requestPermission();
+
+    if (permissionStatus == PermissionStatus.denied ||
+        permissionStatus == PermissionStatus.deniedForever) {
       return null;
     }
 

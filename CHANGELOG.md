@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 - Permission for notifications
 
+### Changed:
+- Postponed request for geolocation in first-time user experience
+
 ## [0.8.300] - 2023-04-02
 ### Fixed:
 - Picking multiple images only picking one image
