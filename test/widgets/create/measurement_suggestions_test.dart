@@ -77,11 +77,11 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        expect(find.text('500 ml'), findsOneWidget);
-        expect(find.text('250 ml'), findsOneWidget);
-        expect(find.text('100 ml'), findsOneWidget);
+        expect(find.text('500'), findsOneWidget);
+        expect(find.text('250'), findsOneWidget);
+        expect(find.text('100'), findsOneWidget);
 
-        await tester.tap(find.text('500 ml'));
+        await tester.tap(find.text('500'));
         await tester.pumpAndSettle();
 
         verify(mockSaveMeasurement).called(1);

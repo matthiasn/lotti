@@ -115,29 +115,32 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
             borderRadius: BorderRadius.all(Radius.circular(50)),
           ),
           backgroundColor: styleConfig().primaryColorLight,
-          actionsAlignment: MainAxisAlignment.end,
+          actionsAlignment: MainAxisAlignment.spaceBetween,
           actionsPadding: const EdgeInsets.only(
-            left: 20,
+            left: 30,
             right: 20,
             bottom: 20,
           ),
           actions: [
-            SizedBox(
-              height: 40,
-              child: dirty && validate()
-                  ? TextButton(
-                      key: const Key('measurement_save'),
-                      onPressed: () => saveMeasurement(
-                        measurableDataType: dataType,
-                        measurementTime: measurementTime,
-                      ),
-                      child: Text(
-                        localizations.addMeasurementSaveButton,
-                        style: saveButtonStyle(),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+            MeasurementSuggestions(
+              measurableDataType: dataType,
+              saveMeasurement: saveMeasurement,
+              measurementTime: measurementTime,
             ),
+            if (dirty && validate())
+              TextButton(
+                key: const Key('measurement_save'),
+                onPressed: () => saveMeasurement(
+                  measurableDataType: dataType,
+                  measurementTime: measurementTime,
+                ),
+                child: Text(
+                  localizations.addMeasurementSaveButton,
+                  style: saveButtonStyle(),
+                ),
+              )
+            else
+              const SizedBox.shrink(),
           ],
           content: FormBuilder(
             key: _formKey,
@@ -220,11 +223,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         name: 'comment',
                       ),
                       inputSpacer,
-                      MeasurementSuggestions(
-                        measurableDataType: dataType,
-                        saveMeasurement: saveMeasurement,
-                        measurementTime: measurementTime,
-                      ),
                     ],
                   ),
                 ),

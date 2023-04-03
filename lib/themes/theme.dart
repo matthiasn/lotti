@@ -289,8 +289,11 @@ ThemeData getTheme() {
     brightness: styleConfig().keyboardAppearance,
     scaffoldBackgroundColor: styleConfig().negspace,
     highlightColor: Colors.transparent,
-    hoverColor: styleConfig().primaryColor.withOpacity(0.3),
-    chipTheme: const ChipThemeData(side: BorderSide.none),
+    hoverColor: styleConfig().primaryColor.withOpacity(0.5),
+    chipTheme: ChipThemeData(
+      side: BorderSide.none,
+      backgroundColor: styleConfig().primaryColor.withOpacity(0.6),
+    ),
     appBarTheme: AppBarTheme(
       iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
     ),

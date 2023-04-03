@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Suggested previous values in measurement capture dialog cannot be selected
+
+## [0.8.301] - 2023-04-03
+### Fixed:
 - Permission for notifications
 
 ### Changed:

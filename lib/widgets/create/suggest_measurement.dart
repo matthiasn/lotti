@@ -39,41 +39,25 @@ class MeasurementSuggestions extends StatelessWidget {
           measurements: measurementsSnapshot.data,
         );
 
-        return SizedBox(
-          height: 20,
-          child: Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: popularValues.map((num value) {
-              final regex = RegExp(r'([.]*0)(?!.*\d)');
-              final label = value.toDouble().toString().replaceAll(regex, '');
-              final unit = measurableDataType.unitName;
+        return Wrap(
+          spacing: 5,
+          runSpacing: 5,
+          children: popularValues.map((num value) {
+            final regex = RegExp(r'([.]*0)(?!.*\d)');
+            final label = value.toDouble().toString().replaceAll(regex, '');
 
-              void onTap() => saveMeasurement(
-                    value: value,
-                    measurableDataType: measurableDataType,
-                    measurementTime: measurementTime,
-                  );
+            void onPressed() => saveMeasurement(
+                  value: value,
+                  measurableDataType: measurableDataType,
+                  measurementTime: measurementTime,
+                );
 
-              return MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: onTap,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 4,
-                        horizontal: 8,
-                      ),
-                      color: styleConfig().primaryColor,
-                      child: Text('$label $unit'),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+            return ActionChip(
+              onPressed: onPressed,
+              label: Text(label),
+              disabledColor: styleConfig().primaryColor,
+            );
+          }).toList(),
         );
       },
     );
