@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -38,8 +37,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
     scope: HotKeyScope.inapp,
   );
 
-  final beamBack = dashboardsBeamerDelegate.beamBack;
-
   Future<void> saveMeasurement({
     required MeasurableDataType measurableDataType,
     required DateTime measurementTime,
@@ -53,14 +50,13 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
         dirty = false;
       });
 
-      beamBack();
-
       final measurement = MeasurementData(
         dataTypeId: measurableDataType.id,
         dateTo: measurementTime,
         dateFrom: measurementTime,
         value: value ?? nf.parse('${formData!['value']}'.replaceAll(',', '.')),
       );
+      Navigator.pop(context, 'Saved');
 
       await persistenceLogic.createMeasurementEntry(
         data: measurement,
@@ -166,7 +162,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     IconButton(
                       padding: const EdgeInsets.all(10),
                       icon: const Icon(Icons.close),
-                      onPressed: beamBack,
+                      onPressed: () => Navigator.pop(context, 'Close'),
                     ),
                   ],
                 ),

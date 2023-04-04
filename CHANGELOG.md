@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Habit completion in modal bottom sheet instead of dialog
+- Measurement dialog without beamer page
 
 ### Added:
 - Select dashboard to display during habit completion

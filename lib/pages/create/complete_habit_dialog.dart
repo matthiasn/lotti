@@ -132,7 +132,7 @@ class _HabitDialogState extends State<HabitDialog> {
         return SingleChildScrollView(
           child: Column(
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 50),
               AlertDialog(
                 insetPadding: const EdgeInsets.symmetric(horizontal: 32),
                 contentPadding: const EdgeInsets.only(
