@@ -123,6 +123,7 @@ class EntityDefinition with _$EntityDefinition {
     DateTime? deletedAt,
     String? defaultStoryId,
     String? categoryId,
+    String? dashboardId,
     bool? priority,
   }) = HabitDefinition;
 

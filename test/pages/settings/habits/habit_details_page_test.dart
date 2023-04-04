@@ -40,6 +40,12 @@ void main() {
         ]),
       );
 
+      when(mockJournalDb.watchDashboards).thenAnswer(
+        (_) => Stream<List<DashboardDefinition>>.fromIterable([
+          [testDashboardConfig]
+        ]),
+      );
+
       mockPersistenceLogic = MockPersistenceLogic();
 
       final mockTagsService = mockTagsServiceWithTags([]);

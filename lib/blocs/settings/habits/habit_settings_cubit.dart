@@ -66,6 +66,12 @@ class HabitSettingsCubit extends Cubit<HabitSettingsState> {
     emitState();
   }
 
+  void setDashboard(String? dashboardId) {
+    _dirty = true;
+    _habitDefinition = _habitDefinition.copyWith(dashboardId: dashboardId);
+    emitState();
+  }
+
   void setActiveFrom(DateTime? activeFrom) {
     _dirty = true;
     _habitDefinition = _habitDefinition.copyWith(activeFrom: activeFrom);

@@ -51,6 +51,8 @@
   "habitArchivedLabel": "Archiviert:",
   "habitCategoryLabel": "Kategorie:",
   "habitCategoryHint": "Kategorie auswählen...",
+  "habitDashboardLabel": "Dashboard:",
+  "habitDashboardHint": "Dashboard auswählen...",
   "habitPriorityLabel": "Priorität:",
   "habitActiveFromLabel": "Beginn",
   "habitActiveUntilLabel": "Aktiv bis",
