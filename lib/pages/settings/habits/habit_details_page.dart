@@ -19,6 +19,8 @@ import 'package:lotti/widgets/misc/datetime_bottom_sheet.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
+import '../../../widgets/habits/habit_dashboard.dart';
+
 class HabitDetailsPage extends StatelessWidget {
   const HabitDetailsPage({super.key});
 
@@ -105,6 +107,8 @@ class HabitDetailsPage extends StatelessWidget {
                             ),
                             inputSpacer,
                             SelectCategoryWidget(),
+                            inputSpacer,
+                            SelectDashboardWidget(),
                             inputSpacer,
                             inputSpacer,
                             DateTimeField(

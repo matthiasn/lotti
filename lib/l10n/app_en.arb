@@ -70,6 +70,8 @@
   "habitArchivedLabel": "Archived:",
   "habitCategoryLabel": "Category:",
   "habitCategoryHint": "Select Category...",
+  "habitDashboardLabel": "Dashboard:",
+  "habitDashboardHint": "Select Dashboard...",
   "habitPriorityLabel": "Priority:",
   "habitActiveFromLabel": "Start Date",
   "habitActiveUntilLabel": "Active until",
