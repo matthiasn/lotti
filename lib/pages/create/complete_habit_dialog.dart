@@ -245,6 +245,8 @@ class _HabitDialogState extends State<HabitDialog> {
                   ),
                 ),
               ),
+              if (habitDefinition.dashboardId == null)
+                const SizedBox(height: 50),
               if (habitDefinition.dashboardId != null)
                 DashboardWidget(
                   rangeStart: rangeStart,
