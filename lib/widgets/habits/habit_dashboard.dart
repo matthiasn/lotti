@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
 class SelectDashboardWidget extends StatelessWidget {
@@ -23,8 +24,11 @@ class SelectDashboardWidget extends StatelessWidget {
     return StreamBuilder<List<DashboardDefinition>>(
       stream: getIt<JournalDb>().watchDashboards(),
       builder: (context, snapshot) {
-        final dashboards = snapshot.data ?? <DashboardDefinition>[];
         final dashboardsById = <String, DashboardDefinition>{};
+
+        final dashboards = filteredSortedDashboards(
+          snapshot.data ?? <DashboardDefinition>[],
+        );
 
         for (final dashboard in dashboards) {
           dashboardsById[dashboard.id] = dashboard;
