@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Select dashboard to display during habit completion
 - Show dashboard associated with habit in habit completion modal bottom sheet
 
+### Fixed:
+- Sort & filter dashboards in habit definition
+
 ## [0.8.302] - 2023-04-03
 ### Fixed:
 - Suggested previous values in measurement capture dialog cannot be selected
