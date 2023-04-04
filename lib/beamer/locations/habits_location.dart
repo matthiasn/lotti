@@ -5,7 +5,6 @@ import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/pages/habits/habits_page.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/uuid.dart';
 
 class HabitsLocation extends BeamLocation<BeamState> {
@@ -38,11 +37,10 @@ class HabitsLocation extends BeamLocation<BeamState> {
             RouteSettings settings,
             Widget child,
           ) {
-            return DialogRoute<void>(
-              context: context,
+            return ModalBottomSheetRoute<void>(
               builder: (context) => child,
+              isScrollControlled: true,
               settings: settings,
-              barrierColor: styleConfig().negspace.withOpacity(0.54),
             );
           },
           key: ValueKey('habits-complete-$habitId'),
