@@ -1,4 +1,3 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -20,15 +19,12 @@ import 'package:url_launcher/url_launcher.dart';
 class HabitDialog extends StatefulWidget {
   const HabitDialog({
     required this.habitId,
-    required this.beamerDelegate,
     super.key,
     this.data,
   });
 
   final String habitId;
   final Object? data;
-
-  final BeamerDelegate beamerDelegate;
 
   @override
   State<HabitDialog> createState() => _HabitDialogState();
@@ -49,6 +45,8 @@ class _HabitDialogState extends State<HabitDialog> {
 
   Future<void> saveHabit(HabitCompletionType completionType) async {
     _formKey.currentState!.save();
+    Navigator.pop(context);
+
     if (validate()) {
       final formData = _formKey.currentState?.value;
       final habitDefinition = await _db.watchHabitById(widget.habitId).first;
@@ -65,8 +63,6 @@ class _HabitDialogState extends State<HabitDialog> {
         comment: formData!['comment'] as String,
         habitDefinition: habitDefinition,
       );
-
-      widget.beamerDelegate.beamBack();
     }
   }
 
@@ -204,7 +200,7 @@ class _HabitDialogState extends State<HabitDialog> {
                             IconButton(
                               padding: const EdgeInsets.all(10),
                               icon: const Icon(Icons.close),
-                              onPressed: widget.beamerDelegate.beamBack,
+                              onPressed: () => Navigator.pop(context),
                             ),
                           ],
                         ),

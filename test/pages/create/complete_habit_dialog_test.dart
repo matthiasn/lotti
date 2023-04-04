@@ -68,7 +68,6 @@ void main() {
                 ),
                 child: HabitDialog(
                   habitId: habitFlossing.id,
-                  beamerDelegate: delegate,
                 ),
               ),
             ),
