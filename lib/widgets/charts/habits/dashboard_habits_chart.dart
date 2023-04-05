@@ -1,13 +1,10 @@
 import 'dart:core';
 
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
@@ -117,15 +114,7 @@ class HabitChartInfoWidget extends StatelessWidget {
   final String? dashboardId;
   final String tab;
 
-  void onTapAdd() {
-    final beamState =
-        dashboardsBeamerDelegate.currentBeamLocation.state as BeamState;
-
-    final id =
-        beamState.uri.path.contains('carousel') ? 'carousel' : dashboardId;
-
-    beamToNamed('/$tab/$id/complete_habit/${habitDefinition.id}');
-  }
+  void onTapAdd() {}
 
   @override
   Widget build(BuildContext context) {

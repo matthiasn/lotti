@@ -22,10 +22,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
         BuildContext context,
         AsyncSnapshot<List<DashboardDefinition>> snapshot,
       ) {
-        final dashboards = snapshot.data ?? [];
-
         void onPressSettings() => beamToNamed('/settings/dashboards');
-        void onPressCarousel() => beamToNamed('/dashboards/carousel');
 
         return AppBar(
           backgroundColor: styleConfig().negspace,
@@ -34,18 +31,7 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Visibility(
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                visible: dashboards.isNotEmpty,
-                child: IconButton(
-                  padding: const EdgeInsets.all(4),
-                  icon: const Icon(Icons.slideshow_outlined),
-                  color: styleConfig().primaryTextColor,
-                  onPressed: onPressCarousel,
-                ),
-              ),
+              const SizedBox(),
               Text(
                 localizations.navTabTitleInsights,
                 style: appBarTextStyleNew(),
