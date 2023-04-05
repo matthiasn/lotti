@@ -213,8 +213,7 @@ class _HabitDialogState extends State<HabitDialog> {
                               DateTimeField(
                                 dateTime: _started,
                                 labelText: localizations.addHabitDateLabel,
-                                style: newInputStyle()
-                                    .copyWith(color: Colors.black),
+                                style: dialogInputStyle(),
                                 setDateTime: (picked) {
                                   setState(() {
                                     _startReset = true;
@@ -228,12 +227,12 @@ class _HabitDialogState extends State<HabitDialog> {
                                 key: const Key('habit_comment_field'),
                                 decoration: createDialogInputDecoration(
                                   labelText: localizations.addHabitCommentLabel,
+                                  style: dialogInputStyle(),
                                 ),
                                 minLines: 1,
                                 maxLines: 10,
                                 keyboardAppearance: keyboardAppearance(),
-                                style: newInputStyle()
-                                    .copyWith(color: Colors.black),
+                                style: dialogInputStyle(),
                                 name: 'comment',
                               ),
                             ],
