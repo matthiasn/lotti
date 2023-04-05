@@ -30,3 +30,7 @@ jobs:
         run: flutter build windows
       - name: Flutter create MSIX
         run: flutter pub run msix:create
+      - name: Upload to GitHub Releases
+        run: gh release upload $GITHUB_REF_NAME build/windows/runner/Release/lotti.msix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
