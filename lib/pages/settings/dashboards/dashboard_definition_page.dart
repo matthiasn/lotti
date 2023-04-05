@@ -362,26 +362,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   title: localizations.dashboardActiveLabel,
                                   activeColor: styleConfig().starredGold,
                                 ),
-                                // TODO: rethink notifications - probably better as part of habits
-                                // FormBuilderCupertinoDateTimePicker(
-                                //   name: 'review_at',
-                                //   alwaysUse24HourFormat: true,
-                                //   format: hhMmFormat,
-                                //   inputType:
-                                //       CupertinoDateTimePickerInputType.time,
-                                //   style: inputStyle().copyWith(
-                                //     fontSize: 18,
-                                //     fontWeight: FontWeight.w300,
-                                //     fontFamily: 'Oswald',
-                                //   ),
-                                //   initialValue: widget.dashboard.reviewAt,
-                                //   decoration: InputDecoration(
-                                //     labelText:
-                                //         localizations.dashboardReviewTimeLabel,
-                                //     labelStyle: labelStyle(),
-                                //   ),
-                                //   theme: datePickerTheme(),
-                                // ),
                               ],
                             ),
                           ),

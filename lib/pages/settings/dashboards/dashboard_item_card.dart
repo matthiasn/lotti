@@ -191,13 +191,13 @@ class ItemCard extends StatelessWidget {
         leading: Icon(
           leadingIcon,
           size: 32,
-          color: styleConfig().primaryTextColor,
+          color: habitCardTextColor,
         ),
         title: Text(
           title,
           softWrap: true,
-          style: TextStyle(
-            color: styleConfig().primaryTextColor,
+          style: const TextStyle(
+            color: habitCardTextColor,
             fontSize: fontSizeMedium,
           ),
         ),

@@ -23,6 +23,8 @@ class AppTheme {
 const double chipBorderRadius = 8;
 const mainFont = 'PlusJakartaSans';
 
+const habitCardTextColor = Colors.black87;
+
 final inputBorder = OutlineInputBorder(
   borderRadius: BorderRadius.circular(chipBorderRadius),
   borderSide: BorderSide(color: styleConfig().secondaryTextColor),
@@ -78,6 +80,11 @@ TextStyle inputStyle() => TextStyle(
 
 TextStyle newInputStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
+      fontSize: fontSizeMedium,
+    );
+
+TextStyle dialogInputStyle() => const TextStyle(
+      color: habitCardTextColor,
       fontSize: fontSizeMedium,
     );
 

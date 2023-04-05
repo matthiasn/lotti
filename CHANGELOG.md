@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed:
 - Data capture from dashboard line chart
+- Style consistency in dialog input fields
 
 ## [0.8.304] - 2023-04-05
 ### Added:
