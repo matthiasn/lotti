@@ -146,7 +146,6 @@ dependencies:
   window_manager: ^0.3.0
 
 dependency_overrides:
-  image: ^3.3.0
   intl: ^0.18.0
   rxdart: ^0.27.1
   sprintf: ^7.0.0
@@ -157,7 +156,7 @@ dev_dependencies:
   build_runner: ^2.3.0
   dart_code_metrics: ^5.5.0
   drift_dev: ^2.2.0
-  flutter_launcher_icons: ^0.12.0
+  flutter_launcher_icons: ^0.11.0
   flutter_lints: ^2.0.1
   flutter_native_splash: ^2.2.16
   flutter_test:
@@ -168,7 +167,7 @@ dev_dependencies:
     sdk: flutter
   json_serializable: ^6.0.0
   mocktail: ^0.3.0
-  msix: ^3.9.1
+  msix: ^3.7.0
   very_good_analysis: ^4.0.0+1
 
 flutter_icons:
