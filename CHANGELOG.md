@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Android release
 
-
 ## [0.8.303] - 2023-04-04
 ### Changed:
 - Habit completion in modal bottom sheet instead of dialog

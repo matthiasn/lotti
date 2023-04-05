@@ -283,8 +283,10 @@ steps:
           - "android_apks"
         command:
           - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "gh release upload ${BUILDKITE_BRANCH} build/android/universal.apk"
-          - "gh release upload ${BUILDKITE_BRANCH} build/app/outputs/bundle/release/app-release.aab"
+          - "cp build/android/universal.apk build/android/lotti.apk"
+          - "gh release upload ${BUILDKITE_BRANCH} build/android/lotti.apk"
+          - "cp build/app/outputs/bundle/release/app-release.aab build/android/lotti.aab"
+          - "gh release upload ${BUILDKITE_BRANCH} build/android/lotti.aab"
         agents:
           os: "macOS"
         retry:
