@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Carousel in dashboards removed
+
+### Fixed:
+- Data capture from dashboard line chart
+- Style consistency in dialog input fields
+
+## [0.8.304] - 2023-04-05
 ### Added:
 - Android release
 

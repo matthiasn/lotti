@@ -1,17 +1,15 @@
 import 'dart:core';
 
-import 'package:beamer/beamer.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/blocs/charts/measurables_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/time_series/time_series_line_chart.dart';
@@ -127,23 +125,22 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
   final String? dashboardId;
   final bool enableCreate;
 
-  void onTapAdd() {
-    final beamState =
-        dashboardsBeamerDelegate.currentBeamLocation.state as BeamState;
-
-    final id =
-        beamState.uri.path.contains('carousel') ? 'carousel' : dashboardId;
-
-    beamToNamed(
-      '/dashboards/$id/measure/${measurableDataType.id}',
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<MeasurablesChartInfoCubit, MeasurablesChartInfoState>(
       builder: (BuildContext context, MeasurablesChartInfoState state) {
         final selected = state.selected;
+
+        Future<void> captureData() async {
+          await showDialog<void>(
+            context: context,
+            builder: (context) {
+              return MeasurementDialog(
+                measurableId: measurableDataType.id,
+              );
+            },
+          );
+        }
 
         return Positioned(
           top: 0,
@@ -186,7 +183,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                 if (enableCreate)
                   IconButton(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
-                    onPressed: onTapAdd,
+                    onPressed: captureData,
                     icon: const Icon(Icons.add),
                   ),
               ],
