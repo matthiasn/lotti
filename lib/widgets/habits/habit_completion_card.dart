@@ -7,7 +7,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes.dart';
 import 'package:lotti/utils/color.dart';
@@ -38,7 +37,7 @@ class HabitCompletionCard extends StatefulWidget {
 class _HabitCompletionCardState extends State<HabitCompletionCard> {
   final JournalDb _db = getIt<JournalDb>();
 
-  void onTapAdd() {
+  void onTapAdd({String? dateString}) {
     showModalBottomSheet<void>(
       context: context,
       useRootNavigator: true,
@@ -46,7 +45,10 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
       constraints:
           BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.95),
       builder: (BuildContext context) {
-        return HabitDialog(habitId: widget.habitDefinition.id);
+        return HabitDialog(
+          habitId: widget.habitDefinition.id,
+          dateString: dateString,
+        );
       },
     );
   }
@@ -139,11 +141,11 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                               message: chartDateFormatter(res.dayString),
                               child: GestureDetector(
                                 onTap: () {
-                                  beamToNamed(
-                                    '/habits/complete/${widget.habitDefinition.id}',
-                                    data: ymd(DateTime.now()) != res.dayString
-                                        ? res.dayString
-                                        : ymd(DateTime.now()),
+                                  onTapAdd(
+                                    dateString:
+                                        ymd(DateTime.now()) != res.dayString
+                                            ? res.dayString
+                                            : ymd(DateTime.now()),
                                   );
                                 },
                                 child: ClipRRect(

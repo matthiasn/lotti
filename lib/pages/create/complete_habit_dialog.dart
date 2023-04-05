@@ -19,12 +19,12 @@ import 'package:url_launcher/url_launcher.dart';
 class HabitDialog extends StatefulWidget {
   const HabitDialog({
     required this.habitId,
+    this.dateString,
     super.key,
-    this.data,
   });
 
   final String habitId;
-  final Object? data;
+  final String? dateString;
 
   @override
   State<HabitDialog> createState() => _HabitDialogState();
@@ -71,15 +71,14 @@ class _HabitDialogState extends State<HabitDialog> {
     super.initState();
 
     DateTime endOfDay() {
-      final date = DateTime.parse(widget.data.toString());
+      final date = DateTime.parse(widget.dateString.toString());
       return DateTime(date.year, date.month, date.day, 23, 59, 59);
     }
 
-    _started = widget.data != null &&
-            widget.data is String &&
-            ymd(DateTime.now()) != widget.data
-        ? endOfDay()
-        : DateTime.now();
+    _started =
+        widget.dateString is String && ymd(DateTime.now()) != widget.dateString
+            ? endOfDay()
+            : DateTime.now();
 
     hotKeyManager.register(
       hotkeyCmdS,
