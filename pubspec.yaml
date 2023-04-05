@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.8.303+1931
+version: 0.9.304+1932
 
 msix_config:
   display_name: Lotti
@@ -34,6 +34,7 @@ dependencies:
   connectivity_plus: ^3.0.2
   crypto: ^3.0.1
   cryptography: ^2.0.2
+  cupertino_icons: ^1.0.5
   dart_geohash: ^2.0.1
 
   delta_markdown:
