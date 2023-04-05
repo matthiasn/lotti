@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed:
 - Sort & filter dashboards in habit definition
+- Complete habits for prior days
 
 ## [0.8.302] - 2023-04-03
 ### Fixed:
