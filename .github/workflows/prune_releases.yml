@@ -1,5 +1,19 @@
-- uses: dev-drprasad/delete-older-releases@v0.2
-  with:
-    keep_latest: 10
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+name: Prune releases
+
+on:
+  push:
+    branches:
+      - 'prune'
+
+jobs:
+  test:
+    name: Flutter Analyze on Linux
+    runs-on: ubuntu-latest
+    steps:
+    
+    - uses: dev-drprasad/delete-older-releases@v0.2
+      with:
+        keep_latest: 10
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
