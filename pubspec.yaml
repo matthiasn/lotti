@@ -146,7 +146,7 @@ dependencies:
   window_manager: ^0.3.0
 
 dependency_overrides:
-  image: ^4.0.15
+  image: ^3.3.0
   intl: ^0.18.0
   rxdart: ^0.27.1
   sprintf: ^7.0.0
