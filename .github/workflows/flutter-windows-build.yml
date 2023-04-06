@@ -2,23 +2,23 @@ name: Flutter Windows
 
 on:
   push:
-    branches:
+    tags:
       - '**'
 
 jobs:
   build:
     name: Flutter Build on Windows
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       - name: core.symlinks
         run: |
           git config --global core.symlinks true
       - name: Support long paths
         run: git config --system core.longpaths true
-      - uses: actions/checkout@v2
-      - uses: subosito/flutter-action@v1
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.7.3'
+          flutter-version: '3.7.9'
           channel: 'stable'
       - name: Flutter Doctor
         run: make doctor
@@ -26,9 +26,12 @@ jobs:
         run: flutter pub get
       - name: Flutter build_runner
         run: flutter pub run build_runner build --delete-conflicting-outputs
-      - name: Flutter test
-        run: flutter test
       - name: Flutter build
         run: flutter build windows
       - name: Flutter create MSIX
         run: flutter pub run msix:create
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: build/windows/runner/Release/lotti.msix
