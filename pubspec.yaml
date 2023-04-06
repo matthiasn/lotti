@@ -1,13 +1,13 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.9.305+1936
+version: 0.9.306+1941
 
 msix_config:
-  display_name: Lotti
-  publisher_display_name: Matthias Nehlsen
-  publisher: CN=Matthias Nehlsen, O=Matthias Nehlsen, C=DE
-  identity_name: com.matthiasnehlsen.lotti
+  display_name: LottiApp
+  publisher_display_name: Nehlsen EDV Beratung GmbH
+  publisher: CN=ED722F95-3F7E-428E-A642-9B9C121815D1
+  identity_name: NehlsenEDVBeratungGmbH.LottiApp
   capabilities: internetClient, location, microphone
   languages: en-us, de-de, ro-ro
   install_certificate: false
@@ -167,7 +167,7 @@ dev_dependencies:
     sdk: flutter
   json_serializable: ^6.0.0
   mocktail: ^0.3.0
-  msix: ^3.5.1
+  msix: ^3.7.0
   very_good_analysis: ^4.0.0+1
 
 flutter_icons:
