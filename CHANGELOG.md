@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Upgraded dependencies
+- App icon for windows msix
 
 ## [0.8.306] - 2023-04-06
 ### Added:
