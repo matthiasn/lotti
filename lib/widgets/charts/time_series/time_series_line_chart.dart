@@ -203,7 +203,7 @@ class TimeSeriesLineChart extends StatelessWidget {
             ),
           ],
         ),
-        swapAnimationDuration: const Duration(milliseconds: 250),
+        swapAnimationDuration: Duration.zero,
       ),
     );
   }

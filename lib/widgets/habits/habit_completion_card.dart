@@ -43,7 +43,7 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
       useRootNavigator: true,
       isScrollControlled: true,
       constraints:
-          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.95),
+          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
       builder: (BuildContext context) {
         return HabitDialog(
           habitId: widget.habitDefinition.id,

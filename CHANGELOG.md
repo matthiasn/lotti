@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Upgraded dependencies
 - App icon for windows msix
+- Removed chart animation
+- Whitespace in habit completion bottom sheet
 
 ## [0.8.306] - 2023-04-06
 ### Added:
