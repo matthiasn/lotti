@@ -203,7 +203,7 @@ class DashboardHealthBpChart extends StatelessWidget {
                   ),
                 ],
               ),
-              swapAnimationDuration: const Duration(milliseconds: 250),
+              swapAnimationDuration: Duration.zero,
             ),
           ),
           chartHeader: const BpChartInfoWidget(),

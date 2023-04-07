@@ -127,7 +127,7 @@ class _HabitDialogState extends State<HabitDialog> {
         return SingleChildScrollView(
           child: Column(
             children: [
-              const SizedBox(height: 50),
+              const SizedBox(height: 30),
               AlertDialog(
                 insetPadding: const EdgeInsets.symmetric(horizontal: 32),
                 contentPadding: const EdgeInsets.only(
@@ -244,7 +244,7 @@ class _HabitDialogState extends State<HabitDialog> {
                 ),
               ),
               if (habitDefinition.dashboardId == null)
-                const SizedBox(height: 50),
+                const SizedBox(height: 30),
               if (habitDefinition.dashboardId != null)
                 DashboardWidget(
                   rangeStart: rangeStart,
