@@ -2,8 +2,14 @@
 
 [![CodeFactor](https://www.codefactor.io/repository/github/matthiasn/lotti/badge)](https://www.codefactor.io/repository/github/matthiasn/lotti) [![Flutter Test](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml/badge.svg)](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml)
 
-Read more on [Substack](https://matthiasnehlsen.substack.com/p/why-im-building-lotti-an-open-source)
+Read more on **Substack**:
 
+- [#1: Why I'm building Lotti - an open-source self-improvement app](https://matthiasnehlsen.substack.com/p/why-im-building-lotti-an-open-source)
+- [#2: Tracking Habits in Lotti](https://matthiasnehlsen.substack.com/p/tracking-habits-in-lotti)
+- [#3: How to Track Habits in Lotti - A brief manual, Part I](https://matthiasnehlsen.substack.com/p/how-to-track-habits-in-lotti)
+- [#4: How to Track Habits in Lotti - A brief manual - Part II](https://matthiasnehlsen.substack.com/p/how-to-track-habits-in-lotti-6f3)
+- [#5: How to monitor habits - A brief manual, Part III](https://matthiasnehlsen.substack.com/p/5-how-to-monitor-habits)
+- [#6: Development Update](https://matthiasnehlsen.substack.com/p/6-development-update)
 
 ## Core beliefs / the WHY
 

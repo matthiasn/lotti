@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Data capture dialog style
+
+## [0.8.307] - 2023-04-07
+### Changed:
 - Upgraded dependencies
 - App icon for windows msix
 - Removed chart animation
