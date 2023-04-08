@@ -41,7 +41,7 @@ Future<void> importImageAssets(
           createdAt: asset.createDateTime,
           latitude: latitude,
           longitude: longitude,
-          geohashString: DeviceLocation.getGeoHash(
+          geohashString: getGeoHash(
             latitude: latitude,
             longitude: longitude,
           ),

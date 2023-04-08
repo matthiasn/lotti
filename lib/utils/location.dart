@@ -38,13 +38,6 @@ class DeviceLocation {
     return permissionStatus;
   }
 
-  static String getGeoHash({
-    required double latitude,
-    required double longitude,
-  }) {
-    return GeoHasher().encode(longitude, latitude);
-  }
-
   Future<Geolocation?> getCurrentGeoLocation() async {
     final now = DateTime.now();
 
@@ -120,4 +113,14 @@ class DeviceLocation {
     }
     return null;
   }
+}
+
+String getGeoHash({
+  required double latitude,
+  required double longitude,
+}) {
+  return GeoHasher().encode(
+    longitude,
+    latitude,
+  );
 }
