@@ -1,18 +1,14 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/classes/audio_note.dart';
-import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/location.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/utils/timezone.dart';
 import 'package:record/record.dart';
 
 AudioRecorderState initialState = AudioRecorderState(
@@ -26,10 +22,6 @@ const intervalMs = 100;
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   AudioRecorderCubit() : super(initialState) {
-    if (!Platform.isLinux && !Platform.isWindows) {
-      _deviceLocation = DeviceLocation();
-    }
-
     _amplitudeSub = _audioRecorder
         .onAmplitudeChanged(const Duration(milliseconds: intervalMs))
         .listen((Amplitude amp) {
@@ -50,7 +42,6 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   String? _linkedId;
   AudioNote? _audioNote;
-  DeviceLocation? _deviceLocation;
 
   Future<void> record({
     String? linkedId,
@@ -73,17 +64,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           final filePath = '${isMacOS ? 'file://' : ''}$directory$fileName';
 
           _audioNote = AudioNote(
-            id: uuid.v1(),
-            timestamp: created.millisecondsSinceEpoch,
             createdAt: created,
-            utcOffset: created.timeZoneOffset.inMinutes,
-            timezone: await getLocalTimezone(),
             audioFile: fileName,
             audioDirectory: relativePath,
             duration: Duration.zero,
           );
-
-          unawaited(_addGeolocation());
 
           await _audioRecorder.start(
             path: filePath,
@@ -138,24 +123,6 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   void setIndicatorVisible({required bool showIndicator}) {
     emit(state.copyWith(showIndicator: showIndicator));
-  }
-
-  Future<void> _addGeolocation() async {
-    try {
-      await _deviceLocation
-          ?.getCurrentGeoLocation()
-          .then((Geolocation? geolocation) {
-        if (geolocation != null) {
-          _audioNote = _audioNote?.copyWith(geolocation: geolocation);
-        }
-      });
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'recorder_cubit',
-        stackTrace: stackTrace,
-      );
-    }
   }
 
   @override

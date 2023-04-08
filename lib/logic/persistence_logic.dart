@@ -389,13 +389,13 @@ class PersistenceLogic {
           utcOffset: now.timeZoneOffset.inMinutes,
           flag: EntryFlag.import,
         ),
-        geolocation: audioNote.geolocation,
       );
       await createDbEntity(
         journalEntity,
         enqueueSync: true,
         linkedId: linkedId,
       );
+      addGeolocation(journalEntity.meta.id);
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
