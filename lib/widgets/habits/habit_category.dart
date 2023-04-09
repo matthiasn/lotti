@@ -71,7 +71,7 @@ class SelectCategoryWidget extends StatelessWidget {
                                   Navigator.pop(context);
                                 },
                                 title: category.name,
-                                leading: CategoryColorIcon(
+                                leading: ColorIcon(
                                   colorFromCssHex(category.color),
                                 ),
                               ),
@@ -99,7 +99,7 @@ class SelectCategoryWidget extends StatelessWidget {
                     categoryUndefined ? '' : localizations.habitCategoryLabel,
                 semanticsLabel: 'Select category',
               ).copyWith(
-                icon: CategoryColorIcon(
+                icon: ColorIcon(
                   category != null
                       ? colorFromCssHex(category.color)
                       : styleConfig().secondaryTextColor.withOpacity(0.2),

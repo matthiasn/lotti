@@ -21,6 +21,8 @@ import 'package:lotti/widgets/tasks/linked_duration.dart';
 import 'package:lotti/widgets/tasks/task_status.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
+import '../settings/categories/categories_type_card.dart';
+
 const double iconSize = 18;
 
 class JournalCardTitle extends StatelessWidget {
@@ -143,10 +145,7 @@ class JournalCardTitle extends StatelessWidget {
                 workout,
                 showChart: false,
               ),
-              habitCompletion: (habitCompletion) => HabitSummary(
-                habitCompletion,
-                showChart: false,
-              ),
+              habitCompletion: HabitSummary.new,
             ),
           ),
         ],
@@ -207,8 +206,8 @@ class JournalCard extends StatelessWidget {
                         orElse: () => MdiIcons.checkboxBlankOutline,
                       ),
                     ),
-                    habitCompletion: (_) =>
-                        const LeadingIcon(MdiIcons.lightningBolt),
+                    habitCompletion: (habitCompletion) =>
+                        HabitCompletionColorIcon(habitCompletion.data.habitId),
                     orElse: () => null,
                   ),
                   title: JournalCardTitle(

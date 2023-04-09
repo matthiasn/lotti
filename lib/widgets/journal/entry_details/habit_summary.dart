@@ -5,19 +5,22 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/journal/helpers.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
+import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 
 class HabitSummary extends StatelessWidget {
   HabitSummary(
     this.habitCompletion, {
-    this.showChart = true,
     this.paddingLeft = 0,
+    this.showIcon = false,
+    this.showText = true,
     super.key,
   });
 
   final JournalDb _db = getIt<JournalDb>();
   final HabitCompletionEntry habitCompletion;
-  final bool showChart;
   final double paddingLeft;
+  final bool showText;
+  final bool showIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -40,12 +43,23 @@ class HabitSummary extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              EntryTextWidget(
-                'Habit completed: ${habitDefinition.name}',
-                padding: EdgeInsets.zero,
+              Row(
+                children: [
+                  if (showIcon)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 5),
+                      child: CategoryColorIcon(
+                        habitDefinition.categoryId,
+                        size: 30,
+                      ),
+                    ),
+                  EntryTextWidget(
+                    'Habit completed: ${habitDefinition.name}',
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
               ),
-              const SizedBox(height: 5),
-              if (habitCompletion.entryText?.plainText != null && !showChart)
+              if (habitCompletion.entryText?.plainText != null && showText)
                 TextViewerWidget(
                   entryText: habitCompletion.entryText,
                   maxHeight: 120,

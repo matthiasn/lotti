@@ -36,17 +36,17 @@ class TagsViewWidget extends StatelessWidget {
           }
         }
 
+        if (tagsFromTagIds.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Column(
-            children: [
-              Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                // ignore: unnecessary_lambdas
-                children: tagsFromTagIds.map((tag) => TagChip(tag)).toList(),
-              ),
-            ],
+          child: Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            // ignore: unnecessary_lambdas
+            children: tagsFromTagIds.map((tag) => TagChip(tag)).toList(),
           ),
         );
       },

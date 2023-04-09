@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -23,9 +25,7 @@ class CategoriesTypeCard extends StatelessWidget {
       title: categoryDefinition.name,
       contentPadding:
           const EdgeInsets.only(left: 10, top: 5, bottom: 5, right: 20),
-      leading: CategoryColorIcon(
-        colorFromCssHex(categoryDefinition.color),
-      ),
+      leading: ColorIcon(colorFromCssHex(categoryDefinition.color)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -43,17 +43,66 @@ class CategoriesTypeCard extends StatelessWidget {
   }
 }
 
-class CategoryColorIcon extends StatelessWidget {
-  const CategoryColorIcon(this.color, {super.key});
+class ColorIcon extends StatelessWidget {
+  const ColorIcon(
+    this.color, {
+    this.size = 50.0,
+    super.key,
+  });
 
   final Color color;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return Icon(
       Icons.square_rounded,
-      size: 50,
+      size: size,
       color: color,
+    );
+  }
+}
+
+class CategoryColorIcon extends StatelessWidget {
+  const CategoryColorIcon(
+    this.categoryId, {
+    this.size = 50.0,
+    super.key,
+  });
+
+  final String? categoryId;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
+
+    return ColorIcon(
+      category != null
+          ? colorFromCssHex(category.color)
+          : styleConfig().secondaryTextColor.withOpacity(0.2),
+      size: size,
+    );
+  }
+}
+
+class HabitCompletionColorIcon extends StatelessWidget {
+  const HabitCompletionColorIcon(
+    this.habitId, {
+    this.size = 50.0,
+    super.key,
+  });
+
+  final String? habitId;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final habitDefinition = getIt<EntitiesCacheService>().getHabitById(habitId);
+
+    return CategoryColorIcon(
+      habitDefinition?.categoryId,
+      size: size,
     );
   }
 }
