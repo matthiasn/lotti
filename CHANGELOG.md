@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Integration tests using Fluttium
+- Config flag for recording geolocation
 
 ### Changed:
 - Reordered fields in habit config

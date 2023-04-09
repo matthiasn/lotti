@@ -43,6 +43,7 @@ class _FlagsPageState extends State<FlagsPage> {
             privateFlag,
             enableNotificationsFlag,
             showBrightSchemeFlag,
+            recordLocationFlag,
             // TODO: is this required? Remove
             // allowInvalidCertFlag,
           };

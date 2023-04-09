@@ -12,11 +12,25 @@ class EntitiesCacheService {
         dataTypesById[dataType.id] = dataType;
       }
     });
+
+    getIt<JournalDb>().watchCategories().listen((
+      List<CategoryDefinition> categories,
+    ) {
+      categoriesById.clear();
+      for (final category in categories) {
+        categoriesById[category.id] = category;
+      }
+    });
   }
 
   Map<String, MeasurableDataType> dataTypesById = {};
+  Map<String, CategoryDefinition> categoriesById = {};
 
   MeasurableDataType? getDataTypeById(String id) {
     return dataTypesById[id];
+  }
+
+  CategoryDefinition? getCategoryById(String id) {
+    return categoriesById[id];
   }
 }

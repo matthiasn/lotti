@@ -4,6 +4,9 @@ import 'package:dart_geohash/dart_geohash.dart';
 import 'package:geoclue/geoclue.dart';
 import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 
 class DeviceLocation {
@@ -41,7 +44,10 @@ class DeviceLocation {
   Future<Geolocation?> getCurrentGeoLocation() async {
     final now = DateTime.now();
 
-    if (Platform.isWindows) {
+    final recordLocation =
+        await getIt<JournalDb>().getConfigFlag(recordLocationFlag);
+
+    if (!recordLocation || Platform.isWindows) {
       return null;
     }
 

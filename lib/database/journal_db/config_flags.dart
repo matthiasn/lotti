@@ -32,6 +32,13 @@ Future<void> initConfigFlags(JournalDb db) async {
       status: true,
     ),
   );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: recordLocationFlag,
+      description: 'Record geolocation?',
+      status: false,
+    ),
+  );
   if (Platform.isMacOS) {
     await db.insertFlagIfNotExists(
       const ConfigFlag(
