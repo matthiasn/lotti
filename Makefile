@@ -43,7 +43,7 @@ sort_arb_files: enable_arb_tools
 	find lib/l10n/ -type f -exec dart pub global run arb_utils:sort -i {} \;
 
 .PHONY: l10n
-l10n: #sort_arb_files
+l10n: deps
 	flutter gen-l10n
 	@echo "Missing translations:"
 	@cat missing_translations.txt
@@ -260,6 +260,9 @@ clean_test: clean deps l10n build_runner test
 
 .PHONY: clean_build_analyze
 clean_build_analyze: clean deps l10n build_runner analyze
+
+.PHONY: clean_analyze
+clean_analyze: clean deps l10n analyze
 
 .PHONY: clean_integration_test
 clean_integration_test: clean deps build_runner integration_test
