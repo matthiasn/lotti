@@ -13,7 +13,7 @@ jobs:
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
-        run: sudo apt-get install network-manager
+        run: sudo apt-get install network-manager ninja-build
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
         with:
