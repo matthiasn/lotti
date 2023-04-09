@@ -20,8 +20,6 @@ jobs:
         with:
           flutter-version: '3.7.10'
           channel: 'stable'
-      - name: Flutter Doctor
-        run: make doctor
       - name: Flutter get dependencies
         run: flutter pub get
       - name: Flutter generate l10n
