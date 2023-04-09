@@ -20,7 +20,7 @@ jobs:
           flutter-version: '3.7.10'
           channel: 'stable'
       - name: Run Flutter Analyze
-        run: make clean_build_analyze
+        run: make clean_analyze
       - name: Check unused files
         run: make check_unused_files
       - name: Check unused l10n
