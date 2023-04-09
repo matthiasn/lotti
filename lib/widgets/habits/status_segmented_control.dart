@@ -25,12 +25,18 @@ class HabitStatusSegmentedControl extends StatelessWidget {
       groupValue: filter,
       onValueChanged: onValueChanged,
       children: {
-        HabitDisplayFilter.openNow:
-            TextSegment(localizations.habitsFilterOpenNow),
-        HabitDisplayFilter.pendingLater:
-            TextSegment(localizations.habitsFilterPendingLater),
-        HabitDisplayFilter.completed:
-            TextSegment(localizations.habitsFilterCompleted),
+        HabitDisplayFilter.openNow: TextSegment(
+          localizations.habitsFilterOpenNow,
+          semanticsLabel: 'Habits - due',
+        ),
+        HabitDisplayFilter.pendingLater: TextSegment(
+          localizations.habitsFilterPendingLater,
+          semanticsLabel: 'Habits - later',
+        ),
+        HabitDisplayFilter.completed: TextSegment(
+          localizations.habitsFilterCompleted,
+          semanticsLabel: 'Habits - done',
+        ),
         HabitDisplayFilter.all: TextSegment(localizations.habitsFilterAll),
       },
     );

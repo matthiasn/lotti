@@ -63,3 +63,5 @@ description: Simple habit flow
 
 - pressOn: 'Complete 10K+ Steps'
 - pressOn: 'Success'
+
+- pressOn: 'Habits - done'
