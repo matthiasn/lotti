@@ -7,16 +7,15 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/habits/habit_category.dart';
 import 'package:lotti/widgets/habits/habit_dashboard.dart';
-import 'package:lotti/widgets/misc/datetime_bottom_sheet.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -48,6 +47,7 @@ class HabitDetailsPage extends StatelessWidget {
                     child: Text(
                       AppLocalizations.of(context)!.settingsHabitsSaveLabel,
                       style: saveButtonStyle(),
+                      semanticsLabel: 'Save Habit',
                     ),
                   ),
                 )
@@ -73,6 +73,7 @@ class HabitDetailsPage extends StatelessWidget {
                               labelText: AppLocalizations.of(context)!
                                   .settingsHabitsNameLabel,
                               name: 'name',
+                              semanticsLabel: 'Habit name field',
                             ),
                             inputSpacer,
                             FormTextField(
@@ -82,11 +83,17 @@ class HabitDetailsPage extends StatelessWidget {
                                   .settingsHabitsDescriptionLabel,
                               fieldRequired: false,
                               name: 'description',
+                              semanticsLabel: 'Habit description field',
                             ),
+                            inputSpacer,
+                            SelectCategoryWidget(),
+                            inputSpacer,
+                            SelectDashboardWidget(),
                             inputSpacer,
                             FormSwitch(
                               name: 'priority',
                               key: const Key('habit_priority'),
+                              semanticsLabel: 'Habit priority',
                               initialValue: state.habitDefinition.priority,
                               title: localizations.habitPriorityLabel,
                               activeColor: styleConfig().starredGold,
@@ -105,11 +112,6 @@ class HabitDetailsPage extends StatelessWidget {
                               activeColor: styleConfig().secondaryTextColor,
                             ),
                             inputSpacer,
-                            SelectCategoryWidget(),
-                            inputSpacer,
-                            SelectDashboardWidget(),
-                            inputSpacer,
-                            inputSpacer,
                             DateTimeField(
                               dateTime: item.activeFrom,
                               labelText: localizations.habitActiveFromLabel,
@@ -123,50 +125,6 @@ class HabitDetailsPage extends StatelessWidget {
                                 labelText: localizations.habitShowFromLabel,
                                 setDateTime: cubit.setShowFrom,
                                 mode: CupertinoDatePickerMode.time,
-                              ),
-                            inputSpacer,
-                            if (state.storyTags.isNotEmpty)
-                              FormBuilderDropdown<StoryTag>(
-                                name: 'default_story_id',
-                                initialValue: state.defaultStory,
-                                decoration: inputDecoration(
-                                  labelText:
-                                      localizations.settingsHabitsStoryLabel,
-                                ),
-                                iconEnabledColor:
-                                    styleConfig().primaryTextColor,
-                                style: const TextStyle(fontSize: 40),
-                                dropdownColor: styleConfig().cardColor,
-                                items: [
-                                  DropdownMenuItem(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8),
-                                      child: Text(
-                                        '',
-                                        style: TextStyle(
-                                          fontSize: fontSizeMedium,
-                                          color: styleConfig().primaryTextColor,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  ...state.storyTags.map((storyTag) {
-                                    return DropdownMenuItem(
-                                      value: storyTag,
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8),
-                                        child: Text(
-                                          storyTag.tag,
-                                          style: TextStyle(
-                                            fontSize: fontSizeMedium,
-                                            color:
-                                                styleConfig().primaryTextColor,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  })
-                                ],
                               ),
                           ],
                         ),

@@ -31,7 +31,7 @@ class HabitsTypeCard extends StatelessWidget {
           bottom: 5,
           right: 20,
         ),
-        leading: CategoryColorIcon(color),
+        leading: CategoryColorIcon(item.categoryId),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

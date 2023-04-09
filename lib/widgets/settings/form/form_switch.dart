@@ -8,11 +8,13 @@ class FormSwitch extends StatelessWidget {
     required this.name,
     required this.title,
     required this.activeColor,
+    this.semanticsLabel,
     super.key,
   });
 
   final bool? initialValue;
   final String name;
+  final String? semanticsLabel;
   final String title;
   final Color? activeColor;
 
@@ -21,7 +23,11 @@ class FormSwitch extends StatelessWidget {
     return FormBuilderSwitch(
       name: name,
       initialValue: initialValue,
-      title: Text(title, style: formLabelStyle()),
+      title: Text(
+        title,
+        style: formLabelStyle(),
+        semanticsLabel: semanticsLabel,
+      ),
       activeColor: activeColor,
       inactiveThumbColor: styleConfig().secondaryTextColor,
       inactiveTrackColor: styleConfig().secondaryTextColor.withOpacity(0.2),

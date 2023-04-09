@@ -90,17 +90,22 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
 class FloatingAddIcon extends StatelessWidget {
   const FloatingAddIcon({
     required this.createFn,
+    this.semanticLabel,
     super.key,
   });
 
   final void Function() createFn;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
       backgroundColor: styleConfig().primaryColor,
       onPressed: createFn,
-      child: const Icon(Icons.add),
+      child: Icon(
+        Icons.add,
+        semanticLabel: semanticLabel,
+      ),
     );
   }
 }

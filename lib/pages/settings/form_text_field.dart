@@ -8,11 +8,13 @@ class FormTextField extends StatelessWidget {
     required this.initialValue,
     required this.name,
     required this.labelText,
+    this.semanticsLabel,
     super.key,
     this.fieldRequired = true,
   });
 
   final String initialValue;
+  final String? semanticsLabel;
   final String name;
   final String labelText;
   final bool fieldRequired;
@@ -28,7 +30,10 @@ class FormTextField extends StatelessWidget {
       keyboardAppearance: keyboardAppearance(),
       validator: fieldRequired ? FormBuilderValidators.required() : null,
       style: labelStyle(),
-      decoration: inputDecoration(labelText: labelText),
+      decoration: inputDecoration(
+        labelText: labelText,
+        semanticsLabel: semanticsLabel,
+      ),
     );
   }
 }

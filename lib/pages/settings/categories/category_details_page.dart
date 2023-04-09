@@ -55,6 +55,7 @@ class CategoryDetailsPage extends StatelessWidget {
                         child: Text(
                           AppLocalizations.of(context)!.settingsHabitsSaveLabel,
                           style: saveButtonStyle(),
+                          semanticsLabel: 'Save Category',
                         ),
                       ),
                     )
@@ -76,7 +77,7 @@ class CategoryDetailsPage extends StatelessWidget {
                             child: Column(
                               children: <Widget>[
                                 FormBuilderTextField(
-                                  key: const Key('category_name_field1'),
+                                  key: const Key('category_name_field'),
                                   name: 'name',
                                   initialValue: item.name,
                                   textCapitalization:
@@ -99,6 +100,7 @@ class CategoryDetailsPage extends StatelessWidget {
                                   decoration: inputDecoration(
                                     labelText: AppLocalizations.of(context)!
                                         .settingsCategoriesNameLabel,
+                                    semanticsLabel: 'Category name field',
                                   ),
                                 ),
                                 inputSpacer,

@@ -17,6 +17,7 @@ import 'package:lotti/widgets/journal/entry_details/workout_summary.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/tags/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
+import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 import 'package:lotti/widgets/tasks/linked_duration.dart';
 import 'package:lotti/widgets/tasks/task_status.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -143,10 +144,7 @@ class JournalCardTitle extends StatelessWidget {
                 workout,
                 showChart: false,
               ),
-              habitCompletion: (habitCompletion) => HabitSummary(
-                habitCompletion,
-                showChart: false,
-              ),
+              habitCompletion: HabitSummary.new,
             ),
           ),
         ],
@@ -207,8 +205,8 @@ class JournalCard extends StatelessWidget {
                         orElse: () => MdiIcons.checkboxBlankOutline,
                       ),
                     ),
-                    habitCompletion: (_) =>
-                        const LeadingIcon(MdiIcons.lightningBolt),
+                    habitCompletion: (habitCompletion) =>
+                        HabitCompletionColorIcon(habitCompletion.data.habitId),
                     orElse: () => null,
                   ),
                   title: JournalCardTitle(

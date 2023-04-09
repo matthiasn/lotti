@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Integration tests using Fluttium
+- Config flag for recording geolocation
+- Category color icons for habit completion card and entry detail view
+
+### Changed:
+- Reordered fields in habit config
+- Default story removed from habits
+
+### Fixed:
+- Entry DateTime field width
+
+## [0.8.309] - 2023-04-08
 ### Changed:
 - Refactoring in audio recording
 

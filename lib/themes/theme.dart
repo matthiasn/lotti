@@ -40,18 +40,22 @@ final inputBorderFocused = OutlineInputBorder(
 
 InputDecoration inputDecoration({
   String? labelText,
+  String? semanticsLabel,
   Widget? suffixIcon,
 }) =>
     InputDecoration(
       border: inputBorder,
       enabledBorder: inputBorder,
       focusedBorder: inputBorderFocused,
-      labelText: labelText,
-      labelStyle: newLabelStyle().copyWith(
-        color: styleConfig().secondaryTextColor,
-      ),
       floatingLabelBehavior: FloatingLabelBehavior.always,
       suffixIcon: suffixIcon,
+      label: Text(
+        labelText ?? '',
+        style: newLabelStyle().copyWith(
+          color: styleConfig().secondaryTextColor,
+        ),
+        semanticsLabel: semanticsLabel,
+      ),
     );
 
 InputDecoration createDialogInputDecoration({

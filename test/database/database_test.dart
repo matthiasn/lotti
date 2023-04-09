@@ -22,6 +22,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: recordLocationFlag,
+    description: 'Record geolocation?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: allowInvalidCertFlag,
     description: 'Allow invalid certificate? (not recommended)',
     status: false,

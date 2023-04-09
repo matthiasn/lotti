@@ -9,7 +9,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
@@ -20,7 +19,6 @@ class HabitCompletionCard extends StatefulWidget {
     required this.rangeStart,
     required this.rangeEnd,
     required this.showGaps,
-    this.category,
     super.key,
   });
 
@@ -28,7 +26,6 @@ class HabitCompletionCard extends StatefulWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final bool showGaps;
-  final CategoryDefinition? category;
 
   @override
   State<HabitCompletionCard> createState() => _HabitCompletionCardState();
@@ -79,10 +76,6 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                 .contains(results.last.completionType);
 
         final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
-
-        final color = widget.category != null
-            ? colorFromCssHex(widget.category!.color)
-            : styleConfig().secondaryTextColor.withOpacity(0.2);
 
         return Opacity(
           opacity: completedToday ? 0.75 : 1,
@@ -168,7 +161,7 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                   ),
                 ],
               ),
-              leading: CategoryColorIcon(color),
+              leading: CategoryColorIcon(widget.habitDefinition.categoryId),
               trailing: IconButton(
                 padding: EdgeInsets.zero,
                 onPressed: onTapAdd,
@@ -176,6 +169,7 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                   Icons.check_circle_outline,
                   color: primaryColor,
                   size: 30,
+                  semanticLabel: 'Complete ${widget.habitDefinition.name}',
                 ),
               ),
             ),

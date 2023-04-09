@@ -40,22 +40,27 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               SettingsNavCard(
                 title: localizations.settingsHabitsTitle,
+                semanticsLabel: 'Habit Management',
                 path: '/settings/habits',
               ),
               SettingsNavCard(
                 title: localizations.settingsCategoriesTitle,
+                semanticsLabel: 'Category Management',
                 path: '/settings/categories',
               ),
               SettingsNavCard(
                 title: localizations.settingsTagsTitle,
+                semanticsLabel: 'Tag Management',
                 path: '/settings/tags',
               ),
               SettingsNavCard(
                 title: localizations.settingsDashboardsTitle,
+                semanticsLabel: 'Dashboard Management',
                 path: '/settings/dashboards',
               ),
               SettingsNavCard(
                 title: localizations.settingsMeasurablesTitle,
+                semanticsLabel: 'Measurables Management',
                 path: '/settings/measurables',
               ),
               SettingsNavCard(

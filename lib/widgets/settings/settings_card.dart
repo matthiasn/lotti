@@ -7,6 +7,7 @@ class SettingsCard extends StatelessWidget {
     required this.onTap,
     required this.title,
     super.key,
+    this.semanticsLabel,
     this.subtitle,
     this.leading,
     this.trailing,
@@ -17,6 +18,7 @@ class SettingsCard extends StatelessWidget {
   });
 
   final String title;
+  final String? semanticsLabel;
   final void Function() onTap;
   final Widget? subtitle;
   final Widget? leading;
@@ -30,7 +32,11 @@ class SettingsCard extends StatelessWidget {
         contentPadding: contentPadding,
         title: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Text(title, style: settingsCardTextStyle()),
+          child: Text(
+            title,
+            style: settingsCardTextStyle(),
+            semanticsLabel: semanticsLabel,
+          ),
         ),
         subtitle: subtitle,
         leading: leading,
@@ -45,6 +51,7 @@ class SettingsNavCard extends StatelessWidget {
   const SettingsNavCard({
     required this.path,
     required this.title,
+    this.semanticsLabel,
     super.key,
     this.subtitle,
     this.leading,
@@ -56,6 +63,7 @@ class SettingsNavCard extends StatelessWidget {
   });
 
   final String title;
+  final String? semanticsLabel;
   final String path;
   final Widget? subtitle;
   final Widget? leading;
@@ -66,6 +74,7 @@ class SettingsNavCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SettingsCard(
       title: title,
+      semanticsLabel: semanticsLabel,
       subtitle: subtitle,
       leading: leading,
       trailing: trailing,
