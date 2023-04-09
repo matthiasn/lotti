@@ -176,6 +176,7 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                   Icons.check_circle_outline,
                   color: primaryColor,
                   size: 30,
+                  semanticLabel: 'Complete ${widget.habitDefinition.name}',
                 ),
               ),
             ),
