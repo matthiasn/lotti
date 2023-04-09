@@ -19,7 +19,7 @@ jobs:
         with:
           flutter-version: '3.7.10'
           channel: 'stable'
-      - name: Run code generation
-        run: make build_runner
+      - name: Run l10n generation
+        run: make l10n
       - name: Run Fluttium tests
         run: make fluttium
