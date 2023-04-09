@@ -1,4 +1,4 @@
-name: Flutter Test
+name: Fluttium Test
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    name: Flutter Test on Linux
+    name: Fluttium Test on Linux
     runs-on: ubuntu-latest
     steps:
       - name: Update apt-get
@@ -19,6 +19,7 @@ jobs:
         with:
           flutter-version: '3.7.10'
           channel: 'stable'
-      - name: Run Flutter tests
-        run: make clean_test
-      - uses: codecov/codecov-action@v3
+      - name: Run code generation
+        run: make build_runner
+      - name: Run Fluttium tests
+        run: make fluttium

@@ -66,12 +66,20 @@ check-null-safety:
 	flutter pub outdated --mode=null-safety
 
 .PHONY: build_runner
-build_runner: l10n
+build_runner: deps l10n
 	flutter pub run build_runner build --delete-conflicting-outputs
 
 .PHONY: watch
 watch: l10n
 	flutter pub run build_runner watch --delete-conflicting-outputs
+
+.PHONY: activate_fluttium
+activate_fluttium:
+	flutter pub global activate fluttium_cli
+
+.PHONY: fluttium
+fluttium: activate_fluttium
+	fluttium test test_flows/habit_flow.yaml
 
 .PHONY: migrate_db
 migrate_db:
