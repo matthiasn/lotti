@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reordered fields in habit config
 - Default story removed from habits
 
+### Fixed:
+- Entry DateTime field width
+
 ## [0.8.309] - 2023-04-08
 ### Changed:
 - Refactoring in audio recording

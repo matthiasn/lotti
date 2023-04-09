@@ -9,8 +9,8 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/form_utils.dart';
 import 'package:lotti/widgets/create/suggest_measurement.dart';
+import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/misc/datetime_bottom_sheet.dart';
 
 class MeasurementDialog extends StatefulWidget {
   const MeasurementDialog({

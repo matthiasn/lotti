@@ -9,9 +9,9 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/date_time/duration_bottom_sheet.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/misc/duration_bottom_sheet.dart';
 
 class TaskForm extends StatefulWidget {
   const TaskForm({

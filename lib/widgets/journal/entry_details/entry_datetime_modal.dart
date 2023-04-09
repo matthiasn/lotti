@@ -5,8 +5,8 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/misc/datetime_bottom_sheet.dart';
 
 class EntryDateTimeModal extends StatefulWidget {
   const EntryDateTimeModal({
@@ -67,8 +67,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  SizedBox(
-                    width: 180,
+                  IntrinsicWidth(
                     child: DateTimeField(
                       dateTime: dateFrom,
                       labelText: localizations.journalDateFromLabel,
@@ -79,8 +78,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       },
                     ),
                   ),
-                  SizedBox(
-                    width: 180,
+                  IntrinsicWidth(
                     child: DateTimeField(
                       dateTime: dateTo,
                       labelText: localizations.journalDateToLabel,
