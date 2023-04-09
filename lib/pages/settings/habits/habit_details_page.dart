@@ -48,6 +48,7 @@ class HabitDetailsPage extends StatelessWidget {
                     child: Text(
                       AppLocalizations.of(context)!.settingsHabitsSaveLabel,
                       style: saveButtonStyle(),
+                      semanticsLabel: 'Save Habit',
                     ),
                   ),
                 )
@@ -73,6 +74,7 @@ class HabitDetailsPage extends StatelessWidget {
                               labelText: AppLocalizations.of(context)!
                                   .settingsHabitsNameLabel,
                               name: 'name',
+                              semanticsLabel: 'Habit name field',
                             ),
                             inputSpacer,
                             FormTextField(
@@ -82,11 +84,13 @@ class HabitDetailsPage extends StatelessWidget {
                                   .settingsHabitsDescriptionLabel,
                               fieldRequired: false,
                               name: 'description',
+                              semanticsLabel: 'Habit description field',
                             ),
                             inputSpacer,
                             FormSwitch(
                               name: 'priority',
                               key: const Key('habit_priority'),
+                              semanticsLabel: 'Habit priority',
                               initialValue: state.habitDefinition.priority,
                               title: localizations.habitPriorityLabel,
                               activeColor: styleConfig().starredGold,

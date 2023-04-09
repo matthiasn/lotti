@@ -1,0 +1,47 @@
+description: Simple habit flow
+---
+- pressOn: 'Settings Tab'
+- pressOn: 'Category Management'
+
+- pressOn: 'Add Category'
+- pressOn: 'Category name field'
+- writeText: 'Health'
+- pressOn: 'Save Category'
+
+- pressOn: 'Add Category'
+- pressOn: 'Category name field'
+- writeText: 'Dental Health'
+- pressOn: 'Save Category'
+
+- pressOn: 'Add Category'
+- pressOn: 'Category name field'
+- writeText: 'Fitness'
+- pressOn: 'Save Category'
+
+- pressOn: 'Add Category'
+- pressOn: 'Category name field'
+- writeText: 'Mindfulness'
+- pressOn: 'Save Category'
+
+- pressOn: 'Navigate back'
+- pressOn: 'Habit Management'
+
+- pressOn: 'Add Habit'
+- pressOn: 'Habit name field'
+- writeText: 'Floss AM'
+- pressOn: 'Select category'
+- pressOn: 'Dental Health'
+- takeScreenshot: '/tmp/lotti/habit2.png'
+- pressOn: 'Save Habit'
+
+- pressOn: 'Add Habit'
+- pressOn: 'Habit name field'
+- writeText: 'Floss PM'
+- pressOn: 'Select category'
+- pressOn: 'Dental Health'
+- pressOn: 'Habit priority'
+- takeScreenshot: '/tmp/lotti/habit2.png'
+- pressOn: 'Save Habit'
+
+- pressOn: 'Habits Tab'
+- takeScreenshot: '/tmp/lotti/habits.png'

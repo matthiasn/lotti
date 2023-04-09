@@ -97,6 +97,7 @@ class SelectCategoryWidget extends StatelessWidget {
               decoration: inputDecoration(
                 labelText:
                     categoryUndefined ? '' : localizations.habitCategoryLabel,
+                semanticsLabel: 'Select category',
               ).copyWith(
                 icon: CategoryColorIcon(
                   category != null

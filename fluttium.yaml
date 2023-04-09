@@ -1,0 +1,24 @@
+# The following defines the environment for your Fluttium project. It includes 
+# the version of Fluttium that the project requires.
+environment:
+  fluttium: ">=0.1.0-dev.1 <0.1.0"
+
+# The driver can be configured with default values. Uncomment the following 
+# lines to automatically run Fluttium using a different flavor and dart-defines.
+# driver:
+#   target: lib/main_development.dart
+#   flavor: development
+#   dart_defines:
+#     - CUSTOM_DART_DEFINE=1
+
+# Register actions which can be used within your Fluttium flows.
+actions:
+  # The following adds the log action to your project.
+  log_action: 0.1.0+1
+  # Actions can also be imported via git url.
+  # Uncomment the following lines to import
+  # the log_action from a remote git url.
+  # log_action:
+  #   git:
+  #     url: https://github.com/wolfenrain/fluttium.git
+  #     path: actions/log_action

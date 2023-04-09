@@ -78,31 +78,53 @@ class _AppScreenState extends State<AppScreen> {
               currentIndex: index,
               items: [
                 BottomNavigationBarItem(
-                  icon: SvgPicture.asset(styleConfig().navTasksIcon),
-                  activeIcon:
-                      SvgPicture.asset(styleConfig().navTasksIconActive),
+                  icon: SvgPicture.asset(
+                    styleConfig().navTasksIcon,
+                    semanticsLabel: 'Habits Tab',
+                  ),
+                  activeIcon: SvgPicture.asset(
+                    styleConfig().navTasksIconActive,
+                    semanticsLabel: 'Habits Tab',
+                  ),
                   label: localizations.navTabTitleHabits,
                   tooltip: '',
                 ),
                 BottomNavigationBarItem(
-                  icon: SvgPicture.asset(styleConfig().navHomeIcon),
-                  activeIcon: SvgPicture.asset(styleConfig().navHomeIconActive),
+                  icon: SvgPicture.asset(
+                    styleConfig().navHomeIcon,
+                    semanticsLabel: 'Dashboards Tab',
+                  ),
+                  activeIcon: SvgPicture.asset(
+                    styleConfig().navHomeIconActive,
+                    semanticsLabel: 'Dashboards Tab',
+                  ),
                   label: localizations.navTabTitleInsights,
                   tooltip: '',
                 ),
                 BottomNavigationBarItem(
-                  icon: SvgPicture.asset(styleConfig().navJournalIcon),
-                  activeIcon:
-                      SvgPicture.asset(styleConfig().navJournalIconActive),
+                  icon: SvgPicture.asset(
+                    styleConfig().navJournalIcon,
+                    semanticsLabel: 'Journal Tab',
+                  ),
+                  activeIcon: SvgPicture.asset(
+                    styleConfig().navJournalIconActive,
+                    semanticsLabel: 'Journal Tab',
+                  ),
                   label: localizations.navTabTitleJournal,
                   tooltip: '',
                 ),
                 BottomNavigationBarItem(
                   icon: OutboxBadgeIcon(
-                    icon: SvgPicture.asset(styleConfig().navSettingsIcon),
+                    icon: SvgPicture.asset(
+                      styleConfig().navSettingsIcon,
+                      semanticsLabel: 'Settings Tab',
+                    ),
                   ),
                   activeIcon: OutboxBadgeIcon(
-                    icon: SvgPicture.asset(styleConfig().navSettingsIconActive),
+                    icon: SvgPicture.asset(
+                      styleConfig().navSettingsIconActive,
+                      semanticsLabel: 'Settings Tab',
+                    ),
                   ),
                   label: localizations.navTabTitleSettings,
                   tooltip: '',
