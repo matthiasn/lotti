@@ -7,7 +7,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
@@ -87,6 +86,10 @@ class HabitDetailsPage extends StatelessWidget {
                               semanticsLabel: 'Habit description field',
                             ),
                             inputSpacer,
+                            SelectCategoryWidget(),
+                            inputSpacer,
+                            SelectDashboardWidget(),
+                            inputSpacer,
                             FormSwitch(
                               name: 'priority',
                               key: const Key('habit_priority'),
@@ -109,11 +112,6 @@ class HabitDetailsPage extends StatelessWidget {
                               activeColor: styleConfig().secondaryTextColor,
                             ),
                             inputSpacer,
-                            SelectCategoryWidget(),
-                            inputSpacer,
-                            SelectDashboardWidget(),
-                            inputSpacer,
-                            inputSpacer,
                             DateTimeField(
                               dateTime: item.activeFrom,
                               labelText: localizations.habitActiveFromLabel,
@@ -127,50 +125,6 @@ class HabitDetailsPage extends StatelessWidget {
                                 labelText: localizations.habitShowFromLabel,
                                 setDateTime: cubit.setShowFrom,
                                 mode: CupertinoDatePickerMode.time,
-                              ),
-                            inputSpacer,
-                            if (state.storyTags.isNotEmpty)
-                              FormBuilderDropdown<StoryTag>(
-                                name: 'default_story_id',
-                                initialValue: state.defaultStory,
-                                decoration: inputDecoration(
-                                  labelText:
-                                      localizations.settingsHabitsStoryLabel,
-                                ),
-                                iconEnabledColor:
-                                    styleConfig().primaryTextColor,
-                                style: const TextStyle(fontSize: 40),
-                                dropdownColor: styleConfig().cardColor,
-                                items: [
-                                  DropdownMenuItem(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8),
-                                      child: Text(
-                                        '',
-                                        style: TextStyle(
-                                          fontSize: fontSizeMedium,
-                                          color: styleConfig().primaryTextColor,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  ...state.storyTags.map((storyTag) {
-                                    return DropdownMenuItem(
-                                      value: storyTag,
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8),
-                                        child: Text(
-                                          storyTag.tag,
-                                          style: TextStyle(
-                                            fontSize: fontSizeMedium,
-                                            color:
-                                                styleConfig().primaryTextColor,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  })
-                                ],
                               ),
                           ],
                         ),
