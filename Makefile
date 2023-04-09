@@ -81,6 +81,10 @@ activate_fluttium:
 fluttium: activate_fluttium
 	fluttium test test_flows/habit_flow.yaml
 
+.PHONY: fluttium_production
+fluttium_production: activate_fluttium
+	fluttium test test_flows/habit_flow.yaml --flavor production
+
 .PHONY: migrate_db
 migrate_db:
 	@dart pub get

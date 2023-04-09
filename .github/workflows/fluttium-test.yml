@@ -22,4 +22,4 @@ jobs:
       - name: Run l10n generation
         run: make l10n
       - name: Run Fluttium tests
-        run: make fluttium
+        run: make fluttium_production
