@@ -24,8 +24,8 @@ jobs:
         run: make doctor
       - name: Flutter get dependencies
         run: flutter pub get
-      - name: Flutter build_runner
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Flutter generate l10n
+        run: flutter gen-l10n
       - name: Flutter build
         run: flutter build windows
       - name: Flutter create MSIX
