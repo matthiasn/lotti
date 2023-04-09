@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.9.310+1956
+version: 0.9.310+1957
 
 msix_config:
   display_name: LottiApp
@@ -161,6 +161,8 @@ dev_dependencies:
   flutter_native_splash: ^2.2.16
   flutter_test:
     sdk: flutter
+  fluttium_test_runner:
+    path: /var/folders/hb/60lss_4j7g15bjr3038zthsw0000gp/T/fluttium_pcEjpp
   freezed: ^2.3.2
   glados: ^1.1.1
   integration_test:

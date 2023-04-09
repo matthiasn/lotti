@@ -940,6 +940,37 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  fluttium:
+    dependency: transitive
+    description:
+      name: fluttium
+      sha256: "0d74d00ac8baee31bd7cf04ae2e9dcc3a1a96ed2f3a32be62014fa02f965e05b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0-dev.3"
+  fluttium_interfaces:
+    dependency: transitive
+    description:
+      name: fluttium_interfaces
+      sha256: cfc854247798e9c669579ede6c4b274d5b0d7ed262826f318f5009e2d691abe9
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0-dev.2"
+  fluttium_protocol:
+    dependency: transitive
+    description:
+      name: fluttium_protocol
+      sha256: "1fc2aad53c80bd05dbed8daaa50b7f10e7b93ba389651a290c6caaac6bf49abb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0-dev.1"
+  fluttium_test_runner:
+    dependency: "direct dev"
+    description:
+      path: "/var/folders/hb/60lss_4j7g15bjr3038zthsw0000gp/T/fluttium_pcEjpp"
+      relative: false
+    source: path
+    version: "0.0.0"
   form_builder_validators:
     dependency: "direct main"
     description:
@@ -1279,6 +1310,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.1"
+  log_action:
+    dependency: transitive
+    description:
+      name: log_action
+      sha256: "02b5e5f64ff0705e0521eedee352ca6b1013509a5503ef7a515ebc4db8077209"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0+1"
   logging:
     dependency: transitive
     description:
