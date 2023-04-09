@@ -29,4 +29,4 @@ jobs:
       - name: Flutter activate Fluttium
         run: flutter pub global activate fluttium_cli
       - name: Run Fluttium
-        run: fluttium test test_flows/habit_flow.yaml --flavor production --target lib/main.dart
+        run: fluttium test test_flows\habit_flow.yaml --flavor production --target lib\main.dart
