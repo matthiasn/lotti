@@ -28,7 +28,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Test
-        run: make clean_test
+        run: make l10n test
       - name: Build
         run: make linux_build
       - name: Tar

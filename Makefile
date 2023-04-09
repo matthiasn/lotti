@@ -208,7 +208,7 @@ linux_build:
 	flutter build linux
 
 .PHONY: linux
-linux: clean_test linux_build
+linux: l10n test linux_build
 
 .PHONY: windows
 windows: clean_test
