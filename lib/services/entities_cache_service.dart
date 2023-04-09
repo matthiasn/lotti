@@ -21,16 +21,30 @@ class EntitiesCacheService {
         categoriesById[category.id] = category;
       }
     });
+
+    getIt<JournalDb>().watchHabitDefinitions().listen((
+      List<HabitDefinition> habits,
+    ) {
+      habitsById.clear();
+      for (final habit in habits) {
+        habitsById[habit.id] = habit;
+      }
+    });
   }
 
   Map<String, MeasurableDataType> dataTypesById = {};
   Map<String, CategoryDefinition> categoriesById = {};
+  Map<String, HabitDefinition> habitsById = {};
 
   MeasurableDataType? getDataTypeById(String id) {
     return dataTypesById[id];
   }
 
-  CategoryDefinition? getCategoryById(String id) {
+  CategoryDefinition? getCategoryById(String? id) {
     return categoriesById[id];
+  }
+
+  HabitDefinition? getHabitById(String? id) {
+    return habitsById[id];
   }
 }
