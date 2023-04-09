@@ -97,6 +97,8 @@ class EntryDetailWidget extends StatelessWidget {
                     habitCompletion: (habit) => HabitSummary(
                       habit,
                       paddingLeft: 10,
+                      showIcon: true,
+                      showText: false,
                     ),
                     journalEntry: (_) => const SizedBox.shrink(),
                     journalImage: (_) => const SizedBox.shrink(),

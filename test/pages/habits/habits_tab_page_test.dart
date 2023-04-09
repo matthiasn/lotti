@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/habits/habits_page.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -18,6 +19,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   var mockJournalDb = MockJournalDb();
+  final mockEntitiesCacheService = MockEntitiesCacheService();
 
   group('HabitsTabPage Widget Tests - ', () {
     setUp(() {
@@ -32,8 +34,15 @@ void main() {
         ]),
       );
 
+      when(
+        () => mockEntitiesCacheService.getHabitById(
+          habitFlossing.id,
+        ),
+      ).thenAnswer((_) => habitFlossing);
+
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<JournalDb>(mockJournalDb);
 
       when(
