@@ -12,7 +12,7 @@ class TextSegment extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: isMobile
-          ? const EdgeInsets.all(4)
+          ? const EdgeInsets.symmetric(horizontal: 7, vertical: 5)
           : const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: Text(
         text,
