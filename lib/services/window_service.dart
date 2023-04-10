@@ -22,11 +22,9 @@ class WindowService implements WindowListener {
   Future<void> restoreSize() async {
     final sizeString = await getIt<SettingsDb>().itemByKey(sizeKey);
     final values = sizeString?.split(',').map(double.parse).toList();
-    final width = values?.first;
-    final height = values?.last;
-    if (width != null && height != null) {
-      await windowManager.setSize(Size(width, height));
-    }
+    final width = values?.first ?? 400;
+    final height = values?.last ?? 800;
+    await windowManager.setSize(Size(width, height));
   }
 
   Future<void> restoreOffset() async {
