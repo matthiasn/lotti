@@ -32,7 +32,7 @@ steps:
           - "apple_deps"
         commands:
           - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "flutter gen_l10n"
+          - "flutter gen-l10n"
           - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
         agents:
           os: "macOS"
@@ -68,6 +68,24 @@ steps:
         retry:
           automatic:
             - exit_status: 24
+
+  #################
+
+  - label: ":mac: Fluttium 🔬 "
+    key: "fluttium"
+    depends_on:
+      - "apple_codegen"
+    commands:
+      - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
+      - touch ~/Library/Containers/com.matthiasn.lotti.dev
+      - trash ~/Library/Containers/com.matthiasn.lotti.dev
+      - "make fluttium"
+      - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+    agents:
+      os: "macOS"
+    retry:
+      automatic:
+        - exit_status: 24
 
   #################
 
@@ -118,23 +136,6 @@ steps:
         retry:
           automatic:
             - exit_status: 24
-
-  #################
-
-  - label: ":mac: Fluttium 🔬 "
-    key: "fluttium"
-    depends_on:
-      - "apple_codegen"
-    commands:
-      - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-      - trash ~/Library/Containers/com.matthiasn.lotti.dev/
-      - "make fluttium"
-      - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-    agents:
-      os: "macOS"
-    retry:
-      automatic:
-        - exit_status: 24
 
   #################
 
