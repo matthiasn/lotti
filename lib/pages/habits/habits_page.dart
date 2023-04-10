@@ -180,7 +180,6 @@ class HabitsTabPage extends StatelessWidget {
                         }),
                       const SizedBox(height: 20),
                       const HabitStreaksCounter(),
-                      const SizedBox(height: 200),
                     ],
                   ),
                 ),

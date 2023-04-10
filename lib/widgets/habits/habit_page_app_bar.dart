@@ -46,50 +46,46 @@ class HabitsSliverAppBar extends StatelessWidget {
           backgroundColor: styleConfig().negspace,
           expandedHeight: 250,
           primary: false,
-          title: Wrap(
-            runAlignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              HabitStatusSegmentedControl(
-                filter: state.displayFilter,
-                onValueChanged: cubit.setDisplayFilter,
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+          title: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HabitStatusSegmentedControl(
+                  filter: state.displayFilter,
+                  onValueChanged: cubit.setDisplayFilter,
+                ),
+                const HabitsFilter(),
+                IconButton(
+                  onPressed: cubit.toggleShowSearch,
+                  icon: Icon(
+                    Icons.search,
+                    color: state.showSearch
+                        ? styleConfig().primaryColor
+                        : styleConfig().secondaryTextColor,
+                  ),
+                ),
+                IconButton(
+                  onPressed: cubit.toggleShowTimeSpan,
+                  icon: Icon(
+                    Icons.calendar_month,
+                    color: state.showTimeSpan
+                        ? styleConfig().primaryColor
+                        : styleConfig().secondaryTextColor,
+                  ),
+                ),
+                if (state.minY > 20)
                   IconButton(
-                    onPressed: cubit.toggleShowSearch,
+                    onPressed: cubit.toggleZeroBased,
                     icon: Icon(
-                      Icons.search,
-                      color: state.showSearch
-                          ? styleConfig().primaryColor
-                          : styleConfig().secondaryTextColor,
+                      state.zeroBased
+                          ? MdiIcons.unfoldLessHorizontal
+                          : MdiIcons.unfoldMoreHorizontal,
+                      color: styleConfig().secondaryTextColor,
                     ),
                   ),
-                  IconButton(
-                    onPressed: cubit.toggleShowTimeSpan,
-                    icon: Icon(
-                      Icons.calendar_month,
-                      color: state.showTimeSpan
-                          ? styleConfig().primaryColor
-                          : styleConfig().secondaryTextColor,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const HabitsFilter(),
-                  if (state.minY > 20)
-                    IconButton(
-                      onPressed: cubit.toggleZeroBased,
-                      icon: Icon(
-                        state.zeroBased
-                            ? MdiIcons.unfoldLessHorizontal
-                            : MdiIcons.unfoldMoreHorizontal,
-                        color: styleConfig().secondaryTextColor,
-                      ),
-                    ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
           pinned: true,
           automaticallyImplyLeading: false,
