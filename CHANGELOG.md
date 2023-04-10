@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Upgraded dependencies
 - Refactoring on Journal page
+- Improved habits page header
 
 ## [0.8.311] - 2023-04-09
 ### Changed:

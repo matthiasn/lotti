@@ -9,8 +9,6 @@ import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/habits/habit_completion_card.dart';
 import 'package:lotti/widgets/habits/habit_page_app_bar.dart';
 import 'package:lotti/widgets/habits/habit_streaks.dart';
-import 'package:lotti/widgets/habits/habits_filter.dart';
-import 'package:lotti/widgets/habits/status_segmented_control.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class HabitsTabPage extends StatelessWidget {
@@ -68,154 +66,126 @@ class HabitsTabPage extends StatelessWidget {
         final style = state.searchString.isEmpty ? styleHint : styleActive;
 
         return Scaffold(
-          appBar: const HabitsPageAppBar(),
           backgroundColor: styleConfig().negspace,
-          body: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              child: Column(
-                children: [
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    runAlignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
+          body: CustomScrollView(
+            slivers: <Widget>[
+              const HabitsSliverTitleBar(),
+              const HabitsSliverAppBar(),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: Column(
                     children: [
-                      HabitStatusSegmentedControl(
-                        filter: state.displayFilter,
-                        onValueChanged: cubit.setDisplayFilter,
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: cubit.toggleShowSearch,
-                            icon: Icon(
-                              Icons.search,
-                              color: state.showSearch
-                                  ? styleConfig().primaryColor
-                                  : styleConfig().secondaryTextColor,
+                      if (state.showTimeSpan)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 5),
+                            child: TimeSpanSegmentedControl(
+                              timeSpanDays: timeSpanDays,
+                              onValueChanged: cubit.setTimeSpan,
                             ),
                           ),
-                          IconButton(
-                            onPressed: cubit.toggleShowTimeSpan,
-                            icon: Icon(
-                              Icons.calendar_month,
-                              color: state.showTimeSpan
-                                  ? styleConfig().primaryColor
-                                  : styleConfig().secondaryTextColor,
+                        ),
+                      if (state.showSearch)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 5),
+                            child: Container(
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 40),
+                              height: 50,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: styleConfig()
+                                    .secondaryTextColor
+                                    .withOpacity(0.4),
+                              ),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  icon: Icon(Icons.search, color: style.color),
+                                  suffixIcon: GestureDetector(
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      color: style.color,
+                                    ),
+                                    onTap: () {
+                                      cubit.setSearchString('');
+                                      FocusScope.of(context)
+                                          .requestFocus(FocusNode());
+                                    },
+                                  ),
+                                  hintText: localizations.habitsSearchHint,
+                                  hintStyle: style,
+                                  border: InputBorder.none,
+                                ),
+                                style: style,
+                                onChanged: cubit.setSearchString,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          const HabitsFilter(),
-                        ],
-                      ),
+                        ),
+                      const SizedBox(height: 20),
+                      if (showAll)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 15),
+                          child: Text(
+                            localizations.habitsOpenHeader,
+                            style: chartTitleStyle(),
+                          ),
+                        ),
+                      if (showOpenNow)
+                        ...openNow.map((habitDefinition) {
+                          return HabitCompletionCard(
+                            habitDefinition: habitDefinition,
+                            rangeStart: rangeStart,
+                            rangeEnd: rangeEnd,
+                            showGaps: showGaps,
+                          );
+                        }),
+                      if (showAll)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 20, bottom: 15),
+                          child: Text(
+                            localizations.habitsPendingLaterHeader,
+                            style: chartTitleStyle(),
+                          ),
+                        ),
+                      if (showPendingLater)
+                        ...pendingLater.map((habitDefinition) {
+                          return HabitCompletionCard(
+                            habitDefinition: habitDefinition,
+                            rangeStart: rangeStart,
+                            rangeEnd: rangeEnd,
+                            showGaps: showGaps,
+                          );
+                        }),
+                      if (showAll)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 20, bottom: 15),
+                          child: Text(
+                            localizations.habitsCompletedHeader,
+                            style: chartTitleStyle(),
+                          ),
+                        ),
+                      if (showCompleted)
+                        ...completed.map((habitDefinition) {
+                          return HabitCompletionCard(
+                            habitDefinition: habitDefinition,
+                            rangeStart: rangeStart,
+                            rangeEnd: rangeEnd,
+                            showGaps: showGaps,
+                          );
+                        }),
+                      const SizedBox(height: 20),
+                      const HabitStreaksCounter(),
+                      const SizedBox(height: 200),
                     ],
                   ),
-                  if (state.showTimeSpan)
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 5),
-                        child: TimeSpanSegmentedControl(
-                          timeSpanDays: timeSpanDays,
-                          onValueChanged: cubit.setTimeSpan,
-                        ),
-                      ),
-                    ),
-                  if (state.showSearch)
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 5),
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 40),
-                          height: 50,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: styleConfig()
-                                .secondaryTextColor
-                                .withOpacity(0.4),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: TextField(
-                            decoration: InputDecoration(
-                              icon: Icon(Icons.search, color: style.color),
-                              suffixIcon: GestureDetector(
-                                child: Icon(
-                                  Icons.close_rounded,
-                                  color: style.color,
-                                ),
-                                onTap: () {
-                                  cubit.setSearchString('');
-                                  FocusScope.of(context)
-                                      .requestFocus(FocusNode());
-                                },
-                              ),
-                              hintText: localizations.habitsSearchHint,
-                              hintStyle: style,
-                              border: InputBorder.none,
-                            ),
-                            style: style,
-                            onChanged: cubit.setSearchString,
-                          ),
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 20),
-                  if (showAll)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 15),
-                      child: Text(
-                        localizations.habitsOpenHeader,
-                        style: chartTitleStyle(),
-                      ),
-                    ),
-                  if (showOpenNow)
-                    ...openNow.map((habitDefinition) {
-                      return HabitCompletionCard(
-                        habitDefinition: habitDefinition,
-                        rangeStart: rangeStart,
-                        rangeEnd: rangeEnd,
-                        showGaps: showGaps,
-                      );
-                    }),
-                  if (showAll)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20, bottom: 15),
-                      child: Text(
-                        localizations.habitsPendingLaterHeader,
-                        style: chartTitleStyle(),
-                      ),
-                    ),
-                  if (showPendingLater)
-                    ...pendingLater.map((habitDefinition) {
-                      return HabitCompletionCard(
-                        habitDefinition: habitDefinition,
-                        rangeStart: rangeStart,
-                        rangeEnd: rangeEnd,
-                        showGaps: showGaps,
-                      );
-                    }),
-                  if (showAll)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20, bottom: 15),
-                      child: Text(
-                        localizations.habitsCompletedHeader,
-                        style: chartTitleStyle(),
-                      ),
-                    ),
-                  if (showCompleted)
-                    ...completed.map((habitDefinition) {
-                      return HabitCompletionCard(
-                        habitDefinition: habitDefinition,
-                        rangeStart: rangeStart,
-                        rangeEnd: rangeEnd,
-                        showGaps: showGaps,
-                      );
-                    }),
-                  const SizedBox(height: 20),
-                  const HabitStreaksCounter(),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         );
       },
