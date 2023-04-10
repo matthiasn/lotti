@@ -97,7 +97,6 @@ void main() {
 
     tearDown(() async {
       await getIt<SyncDatabase>().deleteOutboxItems();
-      reset(mockVectorClockService);
     });
 
     test('SyncMessage with JournalEntry is enqueued into database', () async {

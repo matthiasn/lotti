@@ -5,59 +5,96 @@ import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
+import 'package:lotti/widgets/habits/habits_filter.dart';
+import 'package:lotti/widgets/habits/status_segmented_control.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class HabitsPageAppBar extends StatelessWidget with PreferredSizeWidget {
-  const HabitsPageAppBar({
+class HabitsSliverTitleBar extends StatelessWidget {
+  const HabitsSliverTitleBar({
     super.key,
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 160);
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return SliverAppBar(
+      backgroundColor: styleConfig().negspace,
+      expandedHeight: 100,
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(
+          localizations.settingsHabitsTitle,
+          style: appBarTextStyleNewLarge(),
+        ),
+      ),
+    );
+  }
+}
+
+class HabitsSliverAppBar extends StatelessWidget {
+  const HabitsSliverAppBar({
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    final title = localizations.settingsHabitsTitle;
-
     return BlocBuilder<HabitsCubit, HabitsState>(
       builder: (context, HabitsState state) {
         final cubit = context.read<HabitsCubit>();
-        return AppBar(
-          automaticallyImplyLeading: false,
+
+        return SliverAppBar(
           backgroundColor: styleConfig().negspace,
-          scrolledUnderElevation: 10,
-          titleSpacing: 0,
-          leadingWidth: 100,
-          bottom: const HabitCompletionRateChart(),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const SizedBox(width: 40),
-              const Spacer(),
-              Text(title, style: appBarTextStyleNewLarge()),
-              const Spacer(),
-              Opacity(
-                opacity: state.minY > 20 ? 1 : 0,
-                child: GestureDetector(
-                  onTap: cubit.toggleZeroBased,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 15,
-                    ),
-                    child: Icon(
+          expandedHeight: 250,
+          primary: false,
+          title: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HabitStatusSegmentedControl(
+                  filter: state.displayFilter,
+                  onValueChanged: cubit.setDisplayFilter,
+                ),
+                const HabitsFilter(),
+                IconButton(
+                  onPressed: cubit.toggleShowSearch,
+                  icon: Icon(
+                    Icons.search,
+                    color: state.showSearch
+                        ? styleConfig().primaryColor
+                        : styleConfig().secondaryTextColor,
+                  ),
+                ),
+                IconButton(
+                  onPressed: cubit.toggleShowTimeSpan,
+                  icon: Icon(
+                    Icons.calendar_month,
+                    color: state.showTimeSpan
+                        ? styleConfig().primaryColor
+                        : styleConfig().secondaryTextColor,
+                  ),
+                ),
+                if (state.minY > 20)
+                  IconButton(
+                    onPressed: cubit.toggleZeroBased,
+                    icon: Icon(
                       state.zeroBased
                           ? MdiIcons.unfoldLessHorizontal
                           : MdiIcons.unfoldMoreHorizontal,
                       color: styleConfig().secondaryTextColor,
                     ),
                   ),
-                ),
-              )
-            ],
+              ],
+            ),
           ),
-          centerTitle: true,
+          pinned: true,
+          automaticallyImplyLeading: false,
+          flexibleSpace: const FlexibleSpaceBar(
+            background: Padding(
+              padding: EdgeInsets.only(top: 70),
+              child: HabitCompletionRateChart(),
+            ),
+          ),
         );
       },
     );

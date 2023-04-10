@@ -5,10 +5,10 @@ packages:
     dependency: transitive
     description:
       name: _fe_analyzer_shared
-      sha256: "503361166f4a100e0d7eb7fb5a62c6f0322512f2bcb48d6922caf98f24b0ab90"
+      sha256: a36ec4843dc30ea6bf652bf25e3448db6c5e8bcf4aa55f063a5d1dad216d8214
       url: "https://pub.dev"
     source: hosted
-    version: "56.0.0"
+    version: "58.0.0"
   adaptive_dialog:
     dependency: "direct main"
     description:
@@ -21,10 +21,10 @@ packages:
     dependency: "direct dev"
     description:
       name: analyzer
-      sha256: "93fcd81a6716e69864516750590cf1e699420615046bda19100238aa7b429785"
+      sha256: cc4242565347e98424ce9945c819c192ec0838cb9d1f6aa4a97cc96becbc5b27
       url: "https://pub.dev"
     source: hosted
-    version: "5.8.0"
+    version: "5.10.0"
   analyzer_plugin:
     dependency: transitive
     description:
@@ -421,10 +421,10 @@ packages:
     dependency: "direct dev"
     description:
       name: dart_code_metrics
-      sha256: "728b1835a8c5b994ae8111148b427236f2f89954eebcb62baf4c476909b3d02d"
+      sha256: "873890861a3d7e06fd5a6cd17d802e215ee1301dfb7cbcc7aeab9576e69330d0"
       url: "https://pub.dev"
     source: hosted
-    version: "5.7.0"
+    version: "5.7.2"
   dart_code_metrics_presets:
     dependency: transitive
     description:
@@ -1970,10 +1970,10 @@ packages:
     dependency: transitive
     description:
       name: sliver_tools
-      sha256: bfa69411ebb203cc1a115b1e8bc7935b893eb381fdcf8d453b40c0d4e1db3247
+      sha256: ccdc502098a8bfa07b3ec582c282620031481300035584e1bb3aca296a505e8c
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.9"
+    version: "0.2.10"
   source_gen:
     dependency: transitive
     description:
@@ -2042,10 +2042,10 @@ packages:
     dependency: transitive
     description:
       name: sqlite3
-      sha256: "822d321a008e194d7929357e5b58d2e4a04ab670d137182f9759152aa33180ff"
+      sha256: a3ba4b66a7ab170ce7aa3f5ac43c19ee8d6637afbe7b7c95c94112b4f4d91566
       url: "https://pub.dev"
     source: hosted
-    version: "1.10.1"
+    version: "1.11.0"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
@@ -2242,10 +2242,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_ios
-      sha256: "3dedc66ca3c0bef9e6a93c0999aee102556a450afcc1b7bcfeace7a424927d92"
+      sha256: "9af7ea73259886b92199f9e42c116072f05ff9bea2dcb339ab935dfc957392c2"
       url: "https://pub.dev"
     source: hosted
-    version: "6.1.3"
+    version: "6.1.4"
   url_launcher_linux:
     dependency: transitive
     description:
@@ -2354,10 +2354,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_avfoundation
-      sha256: af308d08c672d5ff718c60127665249617c37a709cb8f0a18dd28a0360299b7c
+      sha256: "75c6d68cd479a25f34d635149ba6887bc8f1b2b2921841121fd44ea0c5bc1927"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.3"
+    version: "2.4.4"
   video_player_platform_interface:
     dependency: transitive
     description:
@@ -2442,18 +2442,18 @@ packages:
     dependency: transitive
     description:
       name: win32
-      sha256: c9ebe7ee4ab0c2194e65d3a07d8c54c5d00bb001b76081c4a04cdb8448b59e46
+      sha256: a6f0236dbda0f63aa9a25ad1ff9a9d8a4eaaa5012da0dc59d21afdb1dc361ca4
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.3"
+    version: "3.1.4"
   window_manager:
     dependency: "direct main"
     description:
       name: window_manager
-      sha256: "492806c69879f0d28e95472bbe5e8d5940ac8c6e99cc07052fe14946974555ba"
+      sha256: "2b2572442b2a5178642730442dc625ac088244f5827b1f0811371b1b7485eb62"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.1"
+    version: "0.3.2"
   wkt_parser:
     dependency: transitive
     description:

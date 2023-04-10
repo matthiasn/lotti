@@ -19,28 +19,18 @@ class InfiniteJournalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Navigator(
-      key: navigatorKey,
-      onGenerateRoute: (RouteSettings settings) {
-        return MaterialPageRoute(
-          settings: settings,
-          builder: (BuildContext context) {
-            return BlocProvider<JournalPageCubit>(
-              create: (BuildContext context) => JournalPageCubit(),
-              child: Scaffold(
-                backgroundColor: styleConfig().negspace,
-                floatingActionButton: RadialAddActionButtons(
-                  radius: isMobile ? 180 : 120,
-                  isMacOS: isMacOS,
-                  isIOS: isIOS,
-                  isAndroid: isAndroid,
-                ),
-                body: const InfiniteJournalPageBody(),
-              ),
-            );
-          },
-        );
-      },
+    return BlocProvider<JournalPageCubit>(
+      create: (BuildContext context) => JournalPageCubit(),
+      child: Scaffold(
+        backgroundColor: styleConfig().negspace,
+        floatingActionButton: RadialAddActionButtons(
+          radius: isMobile ? 180 : 120,
+          isMacOS: isMacOS,
+          isIOS: isIOS,
+          isAndroid: isAndroid,
+        ),
+        body: const InfiniteJournalPageBody(),
+      ),
     );
   }
 }
