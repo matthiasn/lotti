@@ -67,124 +67,127 @@ class HabitsTabPage extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: styleConfig().negspace,
-          body: CustomScrollView(
-            slivers: <Widget>[
-              const HabitsSliverTitleBar(),
-              const HabitsSliverAppBar(),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: Column(
-                    children: [
-                      if (state.showTimeSpan)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 5),
-                            child: TimeSpanSegmentedControl(
-                              timeSpanDays: timeSpanDays,
-                              onValueChanged: cubit.setTimeSpan,
+          body: SafeArea(
+            child: CustomScrollView(
+              slivers: <Widget>[
+                const HabitsSliverTitleBar(),
+                const HabitsSliverAppBar(),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    child: Column(
+                      children: [
+                        if (state.showTimeSpan)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: TimeSpanSegmentedControl(
+                                timeSpanDays: timeSpanDays,
+                                onValueChanged: cubit.setTimeSpan,
+                              ),
                             ),
                           ),
-                        ),
-                      if (state.showSearch)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 5),
-                            child: Container(
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 40),
-                              height: 50,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: styleConfig()
-                                    .secondaryTextColor
-                                    .withOpacity(0.4),
-                              ),
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child: TextField(
-                                decoration: InputDecoration(
-                                  icon: Icon(Icons.search, color: style.color),
-                                  suffixIcon: GestureDetector(
-                                    child: Icon(
-                                      Icons.close_rounded,
-                                      color: style.color,
-                                    ),
-                                    onTap: () {
-                                      cubit.setSearchString('');
-                                      FocusScope.of(context)
-                                          .requestFocus(FocusNode());
-                                    },
-                                  ),
-                                  hintText: localizations.habitsSearchHint,
-                                  hintStyle: style,
-                                  border: InputBorder.none,
+                        if (state.showSearch)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: Container(
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 40),
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: styleConfig()
+                                      .secondaryTextColor
+                                      .withOpacity(0.4),
                                 ),
-                                style: style,
-                                onChanged: cubit.setSearchString,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                    icon:
+                                        Icon(Icons.search, color: style.color),
+                                    suffixIcon: GestureDetector(
+                                      child: Icon(
+                                        Icons.close_rounded,
+                                        color: style.color,
+                                      ),
+                                      onTap: () {
+                                        cubit.setSearchString('');
+                                        FocusScope.of(context)
+                                            .requestFocus(FocusNode());
+                                      },
+                                    ),
+                                    hintText: localizations.habitsSearchHint,
+                                    hintStyle: style,
+                                    border: InputBorder.none,
+                                  ),
+                                  style: style,
+                                  onChanged: cubit.setSearchString,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      const SizedBox(height: 20),
-                      if (showAll)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 15),
-                          child: Text(
-                            localizations.habitsOpenHeader,
-                            style: chartTitleStyle(),
+                        const SizedBox(height: 20),
+                        if (showAll)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 15),
+                            child: Text(
+                              localizations.habitsOpenHeader,
+                              style: chartTitleStyle(),
+                            ),
                           ),
-                        ),
-                      if (showOpenNow)
-                        ...openNow.map((habitDefinition) {
-                          return HabitCompletionCard(
-                            habitDefinition: habitDefinition,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
-                            showGaps: showGaps,
-                          );
-                        }),
-                      if (showAll)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 20, bottom: 15),
-                          child: Text(
-                            localizations.habitsPendingLaterHeader,
-                            style: chartTitleStyle(),
+                        if (showOpenNow)
+                          ...openNow.map((habitDefinition) {
+                            return HabitCompletionCard(
+                              habitDefinition: habitDefinition,
+                              rangeStart: rangeStart,
+                              rangeEnd: rangeEnd,
+                              showGaps: showGaps,
+                            );
+                          }),
+                        if (showAll)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 20, bottom: 15),
+                            child: Text(
+                              localizations.habitsPendingLaterHeader,
+                              style: chartTitleStyle(),
+                            ),
                           ),
-                        ),
-                      if (showPendingLater)
-                        ...pendingLater.map((habitDefinition) {
-                          return HabitCompletionCard(
-                            habitDefinition: habitDefinition,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
-                            showGaps: showGaps,
-                          );
-                        }),
-                      if (showAll)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 20, bottom: 15),
-                          child: Text(
-                            localizations.habitsCompletedHeader,
-                            style: chartTitleStyle(),
+                        if (showPendingLater)
+                          ...pendingLater.map((habitDefinition) {
+                            return HabitCompletionCard(
+                              habitDefinition: habitDefinition,
+                              rangeStart: rangeStart,
+                              rangeEnd: rangeEnd,
+                              showGaps: showGaps,
+                            );
+                          }),
+                        if (showAll)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 20, bottom: 15),
+                            child: Text(
+                              localizations.habitsCompletedHeader,
+                              style: chartTitleStyle(),
+                            ),
                           ),
-                        ),
-                      if (showCompleted)
-                        ...completed.map((habitDefinition) {
-                          return HabitCompletionCard(
-                            habitDefinition: habitDefinition,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
-                            showGaps: showGaps,
-                          );
-                        }),
-                      const SizedBox(height: 20),
-                      const HabitStreaksCounter(),
-                    ],
+                        if (showCompleted)
+                          ...completed.map((habitDefinition) {
+                            return HabitCompletionCard(
+                              habitDefinition: habitDefinition,
+                              rangeStart: rangeStart,
+                              rangeEnd: rangeEnd,
+                              showGaps: showGaps,
+                            );
+                          }),
+                        const SizedBox(height: 20),
+                        const HabitStreaksCounter(),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

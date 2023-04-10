@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactoring on Journal page
 - Improved habits page header
 
+### Fixed:
+- SafeArea around Habit page
+
 ## [0.8.311] - 2023-04-09
 ### Changed:
 - Initial window size on macOS
