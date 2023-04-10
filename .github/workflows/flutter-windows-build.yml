@@ -18,14 +18,14 @@ jobs:
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.7.9'
+          flutter-version: '3.7.10'
           channel: 'stable'
       - name: Flutter Doctor
         run: make doctor
       - name: Flutter get dependencies
         run: flutter pub get
-      - name: Flutter build_runner
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Flutter generate l10n
+        run: flutter gen-l10n
       - name: Flutter build
         run: flutter build windows
       - name: Flutter create MSIX

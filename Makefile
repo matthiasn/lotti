@@ -43,7 +43,7 @@ sort_arb_files: enable_arb_tools
 	find lib/l10n/ -type f -exec dart pub global run arb_utils:sort -i {} \;
 
 .PHONY: l10n
-l10n: #sort_arb_files
+l10n: deps
 	flutter gen-l10n
 	@echo "Missing translations:"
 	@cat missing_translations.txt
@@ -66,12 +66,24 @@ check-null-safety:
 	flutter pub outdated --mode=null-safety
 
 .PHONY: build_runner
-build_runner: l10n
+build_runner: deps l10n
 	flutter pub run build_runner build --delete-conflicting-outputs
 
 .PHONY: watch
 watch: l10n
 	flutter pub run build_runner watch --delete-conflicting-outputs
+
+.PHONY: activate_fluttium
+activate_fluttium:
+	flutter pub global activate fluttium_cli
+
+.PHONY: fluttium
+fluttium: activate_fluttium
+	fluttium test test_flows/habit_flow.yaml
+
+.PHONY: fluttium_production
+fluttium_production: activate_fluttium
+	fluttium test test_flows/habit_flow.yaml --flavor production --target lib/main.dart
 
 .PHONY: migrate_db
 migrate_db:
@@ -200,7 +212,7 @@ linux_build:
 	flutter build linux
 
 .PHONY: linux
-linux: clean_test linux_build
+linux: l10n test linux_build
 
 .PHONY: windows
 windows: clean_test
@@ -252,6 +264,9 @@ clean_test: clean deps l10n build_runner test
 
 .PHONY: clean_build_analyze
 clean_build_analyze: clean deps l10n build_runner analyze
+
+.PHONY: clean_analyze
+clean_analyze: clean deps l10n analyze
 
 .PHONY: clean_integration_test
 clean_integration_test: clean deps build_runner integration_test
