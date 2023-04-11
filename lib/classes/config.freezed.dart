@@ -454,9 +454,6 @@ mixin _$StyleConfig {
   Color get chartTextColor => throw _privateConstructorUsedError;
   @ColorConverter()
   Color get textEditorBackground => throw _privateConstructorUsedError;
-  String get micIcon => throw _privateConstructorUsedError;
-  String get micHotIcon => throw _privateConstructorUsedError;
-  String get micRecIcon => throw _privateConstructorUsedError;
   Brightness get keyboardAppearance => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -497,9 +494,6 @@ abstract class $StyleConfigCopyWith<$Res> {
       @ColorConverter() Color cardColor,
       @ColorConverter() Color chartTextColor,
       @ColorConverter() Color textEditorBackground,
-      String micIcon,
-      String micHotIcon,
-      String micRecIcon,
       Brightness keyboardAppearance});
 }
 
@@ -541,9 +535,6 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
     Object? cardColor = null,
     Object? chartTextColor = null,
     Object? textEditorBackground = null,
-    Object? micIcon = null,
-    Object? micHotIcon = null,
-    Object? micRecIcon = null,
     Object? keyboardAppearance = null,
   }) {
     return _then(_value.copyWith(
@@ -647,18 +638,6 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
           ? _value.textEditorBackground
           : textEditorBackground // ignore: cast_nullable_to_non_nullable
               as Color,
-      micIcon: null == micIcon
-          ? _value.micIcon
-          : micIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      micHotIcon: null == micHotIcon
-          ? _value.micHotIcon
-          : micHotIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      micRecIcon: null == micRecIcon
-          ? _value.micRecIcon
-          : micRecIcon // ignore: cast_nullable_to_non_nullable
-              as String,
       keyboardAppearance: null == keyboardAppearance
           ? _value.keyboardAppearance
           : keyboardAppearance // ignore: cast_nullable_to_non_nullable
@@ -701,9 +680,6 @@ abstract class _$$_StyleConfigCopyWith<$Res>
       @ColorConverter() Color cardColor,
       @ColorConverter() Color chartTextColor,
       @ColorConverter() Color textEditorBackground,
-      String micIcon,
-      String micHotIcon,
-      String micRecIcon,
       Brightness keyboardAppearance});
 }
 
@@ -743,9 +719,6 @@ class __$$_StyleConfigCopyWithImpl<$Res>
     Object? cardColor = null,
     Object? chartTextColor = null,
     Object? textEditorBackground = null,
-    Object? micIcon = null,
-    Object? micHotIcon = null,
-    Object? micRecIcon = null,
     Object? keyboardAppearance = null,
   }) {
     return _then(_$_StyleConfig(
@@ -849,18 +822,6 @@ class __$$_StyleConfigCopyWithImpl<$Res>
           ? _value.textEditorBackground
           : textEditorBackground // ignore: cast_nullable_to_non_nullable
               as Color,
-      micIcon: null == micIcon
-          ? _value.micIcon
-          : micIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      micHotIcon: null == micHotIcon
-          ? _value.micHotIcon
-          : micHotIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      micRecIcon: null == micRecIcon
-          ? _value.micRecIcon
-          : micRecIcon // ignore: cast_nullable_to_non_nullable
-              as String,
       keyboardAppearance: null == keyboardAppearance
           ? _value.keyboardAppearance
           : keyboardAppearance // ignore: cast_nullable_to_non_nullable
@@ -898,9 +859,6 @@ class _$_StyleConfig implements _StyleConfig {
       @ColorConverter() required this.cardColor,
       @ColorConverter() required this.chartTextColor,
       @ColorConverter() required this.textEditorBackground,
-      required this.micIcon,
-      required this.micHotIcon,
-      required this.micRecIcon,
       required this.keyboardAppearance});
 
   factory _$_StyleConfig.fromJson(Map<String, dynamic> json) =>
@@ -983,17 +941,11 @@ class _$_StyleConfig implements _StyleConfig {
   @ColorConverter()
   final Color textEditorBackground;
   @override
-  final String micIcon;
-  @override
-  final String micHotIcon;
-  @override
-  final String micRecIcon;
-  @override
   final Brightness keyboardAppearance;
 
   @override
   String toString() {
-    return 'StyleConfig(tagColor: $tagColor, tagTextColor: $tagTextColor, personTagColor: $personTagColor, storyTagColor: $storyTagColor, privateTagColor: $privateTagColor, starredGold: $starredGold, selectedChoiceChipColor: $selectedChoiceChipColor, selectedChoiceChipTextColor: $selectedChoiceChipTextColor, unselectedChoiceChipColor: $unselectedChoiceChipColor, unselectedChoiceChipTextColor: $unselectedChoiceChipTextColor, activeAudioControl: $activeAudioControl, audioMeterBar: $audioMeterBar, audioMeterTooHotBar: $audioMeterTooHotBar, audioMeterPeakedBar: $audioMeterPeakedBar, private: $private, negspace: $negspace, primaryTextColor: $primaryTextColor, secondaryTextColor: $secondaryTextColor, primaryColor: $primaryColor, primaryColorLight: $primaryColorLight, hover: $hover, alarm: $alarm, cardColor: $cardColor, chartTextColor: $chartTextColor, textEditorBackground: $textEditorBackground, micIcon: $micIcon, micHotIcon: $micHotIcon, micRecIcon: $micRecIcon, keyboardAppearance: $keyboardAppearance)';
+    return 'StyleConfig(tagColor: $tagColor, tagTextColor: $tagTextColor, personTagColor: $personTagColor, storyTagColor: $storyTagColor, privateTagColor: $privateTagColor, starredGold: $starredGold, selectedChoiceChipColor: $selectedChoiceChipColor, selectedChoiceChipTextColor: $selectedChoiceChipTextColor, unselectedChoiceChipColor: $unselectedChoiceChipColor, unselectedChoiceChipTextColor: $unselectedChoiceChipTextColor, activeAudioControl: $activeAudioControl, audioMeterBar: $audioMeterBar, audioMeterTooHotBar: $audioMeterTooHotBar, audioMeterPeakedBar: $audioMeterPeakedBar, private: $private, negspace: $negspace, primaryTextColor: $primaryTextColor, secondaryTextColor: $secondaryTextColor, primaryColor: $primaryColor, primaryColorLight: $primaryColorLight, hover: $hover, alarm: $alarm, cardColor: $cardColor, chartTextColor: $chartTextColor, textEditorBackground: $textEditorBackground, keyboardAppearance: $keyboardAppearance)';
   }
 
   @override
@@ -1050,11 +1002,8 @@ class _$_StyleConfig implements _StyleConfig {
                 other.chartTextColor == chartTextColor) &&
             (identical(other.textEditorBackground, textEditorBackground) ||
                 other.textEditorBackground == textEditorBackground) &&
-            (identical(other.micIcon, micIcon) || other.micIcon == micIcon) &&
-            (identical(other.micHotIcon, micHotIcon) ||
-                other.micHotIcon == micHotIcon) &&
-            (identical(other.micRecIcon, micRecIcon) || other.micRecIcon == micRecIcon) &&
-            (identical(other.keyboardAppearance, keyboardAppearance) || other.keyboardAppearance == keyboardAppearance));
+            (identical(other.keyboardAppearance, keyboardAppearance) ||
+                other.keyboardAppearance == keyboardAppearance));
   }
 
   @JsonKey(ignore: true)
@@ -1086,9 +1035,6 @@ class _$_StyleConfig implements _StyleConfig {
         cardColor,
         chartTextColor,
         textEditorBackground,
-        micIcon,
-        micHotIcon,
-        micRecIcon,
         keyboardAppearance
       ]);
 
@@ -1133,9 +1079,6 @@ abstract class _StyleConfig implements StyleConfig {
       @ColorConverter() required final Color cardColor,
       @ColorConverter() required final Color chartTextColor,
       @ColorConverter() required final Color textEditorBackground,
-      required final String micIcon,
-      required final String micHotIcon,
-      required final String micRecIcon,
       required final Brightness keyboardAppearance}) = _$_StyleConfig;
 
   factory _StyleConfig.fromJson(Map<String, dynamic> json) =
@@ -1216,12 +1159,6 @@ abstract class _StyleConfig implements StyleConfig {
   @override
   @ColorConverter()
   Color get textEditorBackground;
-  @override
-  String get micIcon;
-  @override
-  String get micHotIcon;
-  @override
-  String get micRecIcon;
   @override
   Brightness get keyboardAppearance;
   @override

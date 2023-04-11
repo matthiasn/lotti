@@ -56,9 +56,6 @@ final darkTheme = StyleConfig(
   alarm: alarm,
   cardColor: mineShaft,
   chartTextColor: nickel,
-  micIcon: 'assets/icons/mic_dark.svg',
-  micHotIcon: 'assets/icons/mic_hot_dark.svg',
-  micRecIcon: 'assets/icons/mic_rec_dark.svg',
   keyboardAppearance: Brightness.dark,
   textEditorBackground: Colors.white.withOpacity(0.1),
 );
@@ -88,9 +85,6 @@ final brightTheme = StyleConfig(
   alarm: alarm,
   cardColor: ice,
   chartTextColor: iron,
-  micIcon: 'assets/icons/mic.svg',
-  micHotIcon: 'assets/icons/mic_hot.svg',
-  micRecIcon: 'assets/icons/mic_rec.svg',
   keyboardAppearance: Brightness.light,
   textEditorBackground: Colors.white,
 );

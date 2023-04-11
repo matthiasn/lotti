@@ -83,9 +83,6 @@ _$_StyleConfig _$$_StyleConfigFromJson(Map<String, dynamic> json) =>
           const ColorConverter().fromJson(json['chartTextColor'] as String),
       textEditorBackground: const ColorConverter()
           .fromJson(json['textEditorBackground'] as String),
-      micIcon: json['micIcon'] as String,
-      micHotIcon: json['micHotIcon'] as String,
-      micRecIcon: json['micRecIcon'] as String,
       keyboardAppearance:
           $enumDecode(_$BrightnessEnumMap, json['keyboardAppearance']),
     );
@@ -129,9 +126,6 @@ Map<String, dynamic> _$$_StyleConfigToJson(_$_StyleConfig instance) =>
       'chartTextColor': const ColorConverter().toJson(instance.chartTextColor),
       'textEditorBackground':
           const ColorConverter().toJson(instance.textEditorBackground),
-      'micIcon': instance.micIcon,
-      'micHotIcon': instance.micHotIcon,
-      'micRecIcon': instance.micRecIcon,
       'keyboardAppearance': _$BrightnessEnumMap[instance.keyboardAppearance]!,
     };
 

@@ -60,9 +60,6 @@ class StyleConfig with _$StyleConfig {
     @ColorConverter() required Color cardColor,
     @ColorConverter() required Color chartTextColor,
     @ColorConverter() required Color textEditorBackground,
-    required String micIcon,
-    required String micHotIcon,
-    required String micRecIcon,
     required Brightness keyboardAppearance,
   }) = _StyleConfig;
 
