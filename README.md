@@ -29,16 +29,16 @@ Lotti is a tool for self-improvement centered around these core beliefs:
    actually followed is to monitor them.
 3. Any comprehensive attempt at tracking and monitoring the aforementioned areas of life 
    will result in collecting far more data than anyone should be willing to share with anyone 
-   else, especially not a startup.
+   else.
 
-Lotti is a tool for improving life via establishing good habits and monitoring their outcome, 
-without having to share any information with anyone. All collected data stays on your devices, with 
-encrypted and entirely private synchronisation between your devices.
+Lotti is a tool for improving life via establishing good habits and monitoring their outcome.
+All collected data stays on your devices. Encrypted and entirely private synchronisation
+between your devices can be set up (instructions will follow).
 
 Lotti currently supports recording the following data types:
 
 * Habits, which can be defined and tracked. Habit tracking then involves recording daily 
-  completions, which can successes, failures, and also skipping the completion in case a habit 
+  completions, which can be successes, failures, and also skipping the completion in case a habit 
   could not be completed due to external circumstances.
 * Health-related data which can be imported automatically, such as steps, weight, sleep, blood 
   pressure, resting heart rate, and whatever else can be recorded in Apple Health (or the 
@@ -70,8 +70,9 @@ Lotti currently supports recording the following data types:
 * **Upfront planning** of time budgets. 
 
 Please check out [HISTORY.md](https://github.com/matthiasn/lotti/blob/main/docs/HISTORY.md) for all
-the information on the project's history and back-story. You can find the previous version in the
-[meins subdirectory](https://github.com/matthiasn/lotti/tree/main/meins).
+the information on the project's history and back-story. You can find the previous version (written
+in Clojure and ClojureScript) in the [meins](https://github.com/matthiasn/lotti/tree/main/meins)
+subdirectory.
 
 
 ## Principles
