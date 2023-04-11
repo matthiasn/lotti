@@ -19,6 +19,7 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
+import 'package:lotti/widgets/settings/dashboards/dashboard_category.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
@@ -46,11 +47,13 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
   bool dirty = false;
 
   late List<DashboardItem> dashboardItems;
+  String? categoryId;
 
   @override
   void initState() {
     super.initState();
     dashboardItems = [...widget.dashboard.items];
+    categoryId = widget.dashboard.categoryId;
   }
 
   void onConfirmAddMeasurement(List<MeasurableDataType?> selection) {
@@ -222,6 +225,14 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
               );
             }).toList();
 
+            void setCategory(String? newCategoryId) {
+              debugPrint('setCategory $newCategoryId');
+              categoryId = newCategoryId;
+              setState(() {
+                dirty = true;
+              });
+            }
+
             // TODO: bring back or remove
             // final storySelectItems =
             //     tagsService.getAllStoryTags().map((StoryTag storyTag) {
@@ -248,6 +259,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                   private: private,
                   active: active,
                   reviewAt: formData['review_at'] as DateTime?,
+                  categoryId: categoryId,
                   updatedAt: DateTime.now(),
                   items: dashboardItems,
                 );
@@ -361,6 +373,10 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   initialValue: widget.dashboard.active,
                                   title: localizations.dashboardActiveLabel,
                                   activeColor: styleConfig().starredGold,
+                                ),
+                                SelectDashboardCategoryWidget(
+                                  setCategory: setCategory,
+                                  categoryId: categoryId,
                                 ),
                               ],
                             ),

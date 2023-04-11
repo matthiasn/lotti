@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/dashboards_app_bar.dart';
 import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
+import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
 class DashboardsListPage extends StatefulWidget {
@@ -45,13 +45,6 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         // if (dashboards.isEmpty) {
         //   return const HowToUsePage();
         // }
-
-        if (dashboards.length == 1) {
-          return DashboardPage(
-            dashboardId: dashboards[0].id,
-            showBackButton: false,
-          );
-        }
 
         return Scaffold(
           appBar: const DashboardsAppBar(),
@@ -96,6 +89,7 @@ class DashboardCard extends StatelessWidget {
     return SettingsNavCard(
       path: '/dashboards/${dashboard.id}',
       title: dashboard.name,
+      leading: CategoryColorIcon(dashboard.categoryId),
     );
   }
 }

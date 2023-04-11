@@ -86,7 +86,7 @@ class HabitDetailsPage extends StatelessWidget {
                               semanticsLabel: 'Habit description field',
                             ),
                             inputSpacer,
-                            SelectCategoryWidget(),
+                            const SelectCategoryWidget(),
                             inputSpacer,
                             SelectDashboardWidget(),
                             inputSpacer,
