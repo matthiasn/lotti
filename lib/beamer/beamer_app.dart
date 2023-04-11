@@ -17,8 +17,6 @@ import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 
-const iconSize = 30.0;
-
 class AppScreen extends StatefulWidget {
   const AppScreen({super.key});
 
@@ -63,87 +61,72 @@ class _AppScreenState extends State<AppScreen> {
               hoverColor: Colors.transparent,
               splashColor: Colors.transparent,
             ),
-            child: BottomNavigationBar(
-              backgroundColor: styleConfig().negspace,
-              unselectedItemColor: styleConfig().primaryTextColor,
-              selectedItemColor: styleConfig().primaryColor,
-              selectedFontSize: fontSizeSmall,
-              elevation: 8,
-              unselectedFontSize: fontSizeSmall,
-              selectedLabelStyle: const TextStyle(
-                height: 2,
-                fontWeight: FontWeight.bold,
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                canvasColor: styleConfig().negspace,
+                hoverColor: Colors.transparent,
+                splashColor: Colors.transparent,
               ),
-              unselectedLabelStyle: const TextStyle(height: 2),
-              type: BottomNavigationBarType.fixed,
-              currentIndex: index,
-              items: [
-                BottomNavigationBarItem(
-                  icon: const Icon(
-                    Icons.checklist_outlined,
-                    size: iconSize,
-                    semanticLabel: 'Habits Tab',
-                  ),
-                  activeIcon: Icon(
-                    Icons.checklist_outlined,
-                    size: iconSize,
-                    color: styleConfig().primaryColor,
-                    semanticLabel: 'Habits Tab',
-                  ),
-                  label: localizations.navTabTitleHabits,
-                  tooltip: '',
+              child: BottomNavigationBar(
+                unselectedItemColor: styleConfig().primaryTextColor,
+                selectedItemColor: styleConfig().primaryColor,
+                selectedFontSize: fontSizeSmall,
+                enableFeedback: true,
+                elevation: 8,
+                iconSize: 30,
+                selectedLabelStyle: const TextStyle(
+                  height: 2,
+                  fontWeight: FontWeight.bold,
                 ),
-                BottomNavigationBarItem(
-                  icon: const Icon(
-                    Icons.insights_outlined,
-                    size: iconSize,
-                    semanticLabel: 'Dashboards Tab',
-                  ),
-                  activeIcon: Icon(
-                    Icons.insights_outlined,
-                    size: iconSize,
-                    color: styleConfig().primaryColor,
-                    semanticLabel: 'Dashboards Tab',
-                  ),
-                  label: localizations.navTabTitleInsights,
-                  tooltip: '',
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(
-                    Icons.auto_stories_outlined,
-                    size: iconSize,
-                    semanticLabel: 'Journal Tab',
-                  ),
-                  activeIcon: Icon(
-                    Icons.auto_stories_outlined,
-                    size: iconSize,
-                    color: styleConfig().primaryColor,
-                    semanticLabel: 'Journal Tab',
-                  ),
-                  label: localizations.navTabTitleJournal,
-                  tooltip: '',
-                ),
-                BottomNavigationBarItem(
-                  icon: OutboxBadgeIcon(
-                    icon: const Icon(
-                      Icons.settings_outlined,
-                      size: iconSize,
-                      semanticLabel: 'Settings Tab',
+                unselectedLabelStyle: const TextStyle(height: 2),
+                type: BottomNavigationBarType.shifting,
+                currentIndex: index,
+                items: [
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Habits Tab',
+                      image: true,
+                      child: const Icon(Icons.checklist_outlined),
                     ),
+                    label: localizations.navTabTitleHabits,
+                    tooltip: '',
                   ),
-                  activeIcon: OutboxBadgeIcon(
-                    icon: Icon(
-                      Icons.settings_outlined,
-                      size: iconSize,
-                      color: styleConfig().primaryColor,
-                      semanticLabel: 'Settings Tab',
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Dashboards Tab',
+                      image: true,
+                      child: const Icon(Icons.insights_outlined),
                     ),
+                    label: localizations.navTabTitleInsights,
+                    tooltip: '',
                   ),
-                  label: localizations.navTabTitleSettings,
-                  tooltip: '',
-                ),
-              ],
-              onTap: navService.tapIndex,
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Journal Tab',
+                      image: true,
+                      child: const Icon(Icons.auto_stories_outlined),
+                    ),
+                    label: localizations.navTabTitleJournal,
+                    tooltip: '',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Settings Tab',
+                      image: true,
+                      child: OutboxBadgeIcon(
+                        icon: const Icon(Icons.settings_outlined),
+                      ),
+                    ),
+                    label: localizations.navTabTitleSettings,
+                    tooltip: '',
+                  ),
+                ],
+                onTap: navService.tapIndex,
+              ),
             ),
           ),
         );
