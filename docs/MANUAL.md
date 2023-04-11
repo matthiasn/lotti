@@ -1,4 +1,4 @@
-# Lotti Manual
+# Lotti Manual [outdated]
 
 Lotti is a behavioral monitoring and journaling app that lets you keep track of anything you can measure. Measurements could, for example, include tracking exercises manually, plus imported data from Apple Health or the equivalent on Android.
 
