@@ -40,7 +40,6 @@ class DefinitionsListAppBar extends StatelessWidget with PreferredSizeWidget {
       bottom: SearchWidget(
         text: match,
         onChanged: onQueryChanged,
-        hintText: 'Search $title...',
       ),
     );
   }

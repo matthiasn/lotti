@@ -82,6 +82,7 @@
   "habitsCompletedHeader": "Completed",
   "habitsOpenHeader": "Due now",
   "habitsPendingLaterHeader": "Later today",
+  "searchHint": "Search...",
   "habitsSearchHint": "Search...",
   "habitsFilterOpenNow": "due",
   "habitsFilterPendingLater": "later",
