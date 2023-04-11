@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 - Improved search field
+- Improved dashboards page header
 
 ## [0.8.314] - 2023-04-11
 ### Changed:

@@ -531,7 +531,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      verify(mockJournalDb.watchDashboards).called(2);
+      verify(mockJournalDb.watchDashboards).called(1);
 
       // finds text in dashboard card
       expect(find.text(testDashboardName), findsOneWidget);

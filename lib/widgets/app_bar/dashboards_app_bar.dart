@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -14,8 +13,6 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<List<DashboardDefinition>>(
       stream: getIt<JournalDb>().watchDashboards(),
       builder: (
@@ -29,17 +26,12 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
           automaticallyImplyLeading: false,
           scrolledUnderElevation: 10,
           title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              const SizedBox(),
-              Text(
-                localizations.navTabTitleInsights,
-                style: appBarTextStyleNew(),
-              ),
               IconButton(
                 padding: const EdgeInsets.all(4),
-                icon: const Icon(Icons.dashboard_customize_outlined),
-                color: styleConfig().primaryTextColor,
+                icon: const Icon(Icons.settings_outlined),
+                color: styleConfig().secondaryTextColor,
                 onPressed: onPressSettings,
               ),
             ],
@@ -47,6 +39,36 @@ class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
           centerTitle: true,
         );
       },
+    );
+  }
+}
+
+class DashboardsSliverAppBar extends StatelessWidget {
+  const DashboardsSliverAppBar({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    void onPressSettings() => beamToNamed('/settings/dashboards');
+
+    return SliverAppBar(
+      backgroundColor: styleConfig().negspace,
+      expandedHeight: 50,
+      primary: false,
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          IconButton(
+            padding: const EdgeInsets.all(4),
+            icon: const Icon(Icons.settings_outlined),
+            color: styleConfig().secondaryTextColor,
+            onPressed: onPressSettings,
+          ),
+        ],
+      ),
+      pinned: true,
+      automaticallyImplyLeading: false,
     );
   }
 }

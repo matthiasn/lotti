@@ -70,7 +70,7 @@ class HabitsTabPage extends StatelessWidget {
           body: SafeArea(
             child: CustomScrollView(
               slivers: <Widget>[
-                const HabitsSliverTitleBar(),
+                SliverTitleBar(localizations.settingsHabitsTitle),
                 const HabitsSliverAppBar(),
                 SliverToBoxAdapter(
                   child: Padding(
