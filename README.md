@@ -2,6 +2,10 @@
 
 [![CodeFactor](https://www.codefactor.io/repository/github/matthiasn/lotti/badge)](https://www.codefactor.io/repository/github/matthiasn/lotti) [![Flutter Test](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml/badge.svg)](https://github.com/matthiasn/lotti/actions/workflows/flutter-test.yml)
 
+Lotti helps you track habits, behavior, any data about yourself, in complete privacy.
+
+![Habits Tab](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.312+1968/habits_screen.png)
+
 Read more on **Substack**:
 
 - [#1: Why I'm building Lotti - an open-source self-improvement app](https://matthiasnehlsen.substack.com/p/why-im-building-lotti-an-open-source)
@@ -28,7 +32,7 @@ Lotti is a tool for self-improvement centered around these core beliefs:
    else, especially not a startup.
 
 Lotti is a tool for improving life via establishing good habits and monitoring their outcome, 
-without having to give up any information. All collected data stays on your devices, with 
+without having to share any information with anyone. All collected data stays on your devices, with 
 encrypted and entirely private synchronisation between your devices.
 
 Lotti currently supports recording the following data types:
@@ -53,53 +57,61 @@ Lotti currently supports recording the following data types:
   respective stories.
 * People, a special tag type with no additional functionality yet, only a different tag color.
 
-Example from [blog](https://matthiasnehlsen.com/blog/2022/05/15/switched-to-flutter-lost-10-kilos/):
-
-![screenshot of dashboard](https://matthiasnehlsen.com/static/37e205eaf8dd59b7d040395a051204b7/a911b/2022-05-14_charts.jpg "user configured dashboard")
-
 
 ## Planned improvements:
 
-* **Intervention lifecycle.** The app is already useful for monitoring interventions but the 
-  interventions themselves currently remain implicit, insofar as I can imagine and invent such 
-  interventions in my mind and then build a dashboard for tracking success and failure. In 
+* **Experiment/Intervention lifecycle.** The app is already useful for monitoring experiments or 
+  interventions but those themselves currently remain implicit. For example, an experiment could be
+  taking Vitamin D and see how that affects health parameters, or have a hypothesis what will happen,
+  and then prove or disprove that, where a dashboard help monitor all relevant parameters. In 
   future versions, the lifecycle of interventions shall be made explicit, by defining them in 
   the first place, and then reviewing and refining them.
 * Better **Reporting** how time is spent.
 * **Upfront planning** of time budgets. 
 
-Please check out [HISTORY.md](https://github.com/matthiasn/lotti/blob/main/docs/HISTORY.md) for 
-all the information on the project's history and back-story. You can find the previous version 
-in the [meins subdirectory](https://github.com/matthiasn/lotti/tree/main/meins).
+Please check out [HISTORY.md](https://github.com/matthiasn/lotti/blob/main/docs/HISTORY.md) for all
+the information on the project's history and back-story. You can find the previous version in the
+[meins subdirectory](https://github.com/matthiasn/lotti/tree/main/meins).
 
 
 ## Principles
 
-- Lotti is **private** and does not share any information with anyone - see the [Privacy Policy]
-  (https://github.com/matthiasn/lotti/blob/main/PRIVACY.md).
+- Lotti is **private** and does not share any information with anyone - see the
+  [Privacy Policy](https://github.com/matthiasn/lotti/blob/main/PRIVACY.md).
 - Lotti is **open-source** and everyone is encouraged to contribute, be it via contributing to 
   code, providing feedback, testing, identifying bugs, etc.
 - Lotti strives to be as **inclusive** as possible and any request for improved accessibility 
   will be addressed.
 - Lotti is supposed to become a **friendly and welcoming community** of people who are 
   interested in data, improving their lives, and not or only very selectively sharing their data 
-  in the process. Please head over to [Discussions](https://github.
-  com/matthiasn/lotti/discussions) and say Hi.
-- **Localization**. Lotti aims to be multilingual and to be available in as many different 
-  languages as possible. Currently, that is English and German, with [French](https://github.
-  com/matthiasn/lotti/issues/936) in progress. Please create [issues](https://github.
-  com/matthiasn/lotti/issues) for languages you would like to see.
+  in the process. Please head over to [Discussions](https://github.com/matthiasn/lotti/discussions) and say Hi.
+- **Localization**. Lotti is multilingual and should be available in as many different languages as 
+  possible. English is the primary language, and there are French, German, and Romanian translations. 
+  Those need some update love, as the are many new UI labels that didn't exist when translations
+  were last looked at. Please help, and also create [issues](https://github.com/matthiasn/lotti/issues)
+  and PRs for languages you would like to see. Thanks!
 
 ## Beta testing
 
-Lotti is currently available for beta testing. The aim is to have pre-release versions available 
-on [GitHub Releases](https://github.com/matthiasn/lotti/releases). Currently, there are 
-[build issues](https://github.com/matthiasn/lotti/labels/prerelease%20blocker) blocking the 
-pre-release on some of the aforementioned platforms and help would be much appreciated.
+Lotti is currently available for beta testing for these platforms:
 
-Development is primarily done on macOS and both the iOS and macOS versions are available for 
-beta testing via Apple's TestFlight. Please get in touch with the [author](https://github.com/matthiasn) if you are interested in participating in the tests, the email address can be 
-found in the profile. The aim is to get Lotti out on all app stores in 2023.
+- **iOS** and **macOS** versions are available via a [Public Beta on TestFlight](https://testflight.apple.com/join/ZPgbDLGY).
+  Development is primarily done on macOS and both the iOS and macOS versions are in constant use by
+  the author. You can expect Lotti to work on these two platforms.
+- The **Android** app is available as both `aab` and `apk` files on [GitHub Releases](https://github.com/matthiasn/lotti/releases).
+  Both appeared to be working fine in some limited testing on both an Android phone and an Android
+  tablet.
+- **Windows** there's an installer named `lotti.msix` in [GitHub Releases](https://github.com/matthiasn/lotti/releases).
+  That's not signed though. There's also a (currently hidden) release on the Microsoft Store which 
+  appears to be working fine on Windows. However, some issues in the Microsoft Partner Center need
+  to be resolved before making Lotti available on the Microsoft Store.
+- **Linux**: the simplest way to release would be on the [Snap Store](https://snapcraft.io/snap-store),
+  with automatic updates, but that's blocked by this [issue](https://github.com/matthiasn/lotti/issues/941).
+  There's a file named `linux.x64.tar.gz` [GitHub Releases](https://github.com/matthiasn/lotti/releases)
+  that contains the app. From limited testing, the app works fine on Linux, but is missing an app
+  icon (could be a nice small PR).
+
+**The goal is to get Lotti out on all app stores in 2023.**
 
 
 ## Blog posts
@@ -110,39 +122,25 @@ found in the profile. The aim is to get Lotti out on all app stores in 2023.
 
 ## Getting Started
 
-1. Install Flutter manually,
-   see [instructions](https://docs.flutter.dev/get-started/install).
-2. Download and install [Android Studio](https://developer.android.com/studio)
-3. Clone repository and go to `./lotti`
-4. Run `flutter pub get`
-5. Run `make watch` or `make build_runner` for code generation
-6. Open `./lotti` in **Android Studio**
+1. Install Flutter, see [instructions](https://docs.flutter.dev/get-started/install).
+2. Clone repository and go to `./lotti`
+3. Run `flutter pub get`
+4. Run `make watch` or `make build_runner` for code generation
+5. Open in your favorite IDE, e.g. [Android Studio](https://developer.android.com/studio) 
+6. Run, either from the IDE or using e.g. `flutter run -d macos`
 
 
 ## Platform-specific setup
 
-These purpose of these instructions is mainly to reproduce the dev environment
-quickly, for the distribution or operating system versions named below. Please
-feel free to amend missing steps or add a section for your favorite distribution
-and raise PRs for those.
-
-Please make sure your Flutter environment generally works with a fresh starter
-app however before raising issues that are related to your Flutter installation.
-
-Thanks!
-
-
 ### Mac
 
-Tested on `macOS 12.3`: no additional steps necessary. You only need to have 
-Xcode installed.
+Tested on `macOS 13.3`: no additional steps necessary. You only need to have Xcode installed.
 
 
 ### Linux
 
-Tested on `Ubuntu 20.04.3 LTS` inside a virtual machine on VMWare Fusion:
-
-1. In addition to the common steps above, install missing dependencies:
+Tested on `Ubuntu 20.04.3 LTS` inside a virtual machine on VMWare Fusion In addition to the common
+steps above, install missing dependencies:
 
 ```
 $ sudo apt-get install libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev
@@ -150,29 +148,19 @@ $ flutter packages get
 $ make build_runner
 ``` 
 
-In case the network in virtual machine not connecting after
-resuming: `$ sudo dhclient ens33`
+In case the network in the virtual machine is not connecting after resuming: `$ sudo dhclient ens33`
 
 
 ### Windows
 
-Please create a PR with instructions for Windows if you find anything that is
-required.
+If your system is set up to run the Flutter counter example app, you should be good to go.
 
 
 ## Continuous Integration
 
-This project uses Buildkite for releasing to TestFlight on iOS and macOS, 
-plus publishing to GitHub releases. The following steps are necessary for 
-setting up a new runner:
-
-1) Install [Buildkite agent for macOS](https://buildkite.
-   com/docs/agent/v3/macos)
-2) Install [create-dmg](https://github.com/sindresorhus/create-dmg) for 
-   bundling the DMG file for GitHub releases
-
-HELP WANTED: The Windows version is not yet published on GitHub releases. On Linux, a snap 
-release could be helpful. Help needed.
+This project uses [Buildkite](https://buildkite.com/docs/agent/v3/macos) on macOS for releasing to
+TestFlight on iOS and macOS, and GitHub Actions for publishing to GitHub Releases for all other
+platforms. 
 
 
 ## Contributions
@@ -181,9 +169,9 @@ Contributions to this project are very welcome. How can you help?
 
 1. Please check under issues if there is anything specific that needs helping
    hands, or features to be discussed or implemented.
-2. Now that the project is coming out of the initial prototyping stage, the test
-   coverage needs to become much better. Any additional tests are welcome,
+2. Improve the test coverage (currently at around 71%). Any additional tests are welcome,
    including code changes to make the code easier to test.
-3. For new feature ideas, please create an issue first and pitch the idea and
-   we'll discuss.
-   
+3. Create issues for feedback and ideas.
+4. Help translate into more languages, and improve the existing translations.
+
+Thanks!

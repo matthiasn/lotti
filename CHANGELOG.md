@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Updated README
+
+## [0.8.312] - 2023-04-10
+### Changed:
 - Upgraded dependencies
 - Refactoring on Journal page
 - Improved habits page header
