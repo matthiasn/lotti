@@ -83,17 +83,6 @@ _$_StyleConfig _$$_StyleConfigFromJson(Map<String, dynamic> json) =>
           const ColorConverter().fromJson(json['chartTextColor'] as String),
       textEditorBackground: const ColorConverter()
           .fromJson(json['textEditorBackground'] as String),
-      navHomeIcon: json['navHomeIcon'] as String,
-      navHomeIconActive: json['navHomeIconActive'] as String,
-      navJournalIcon: json['navJournalIcon'] as String,
-      navJournalIconActive: json['navJournalIconActive'] as String,
-      navTasksIcon: json['navTasksIcon'] as String,
-      navTasksIconActive: json['navTasksIconActive'] as String,
-      navSettingsIcon: json['navSettingsIcon'] as String,
-      navSettingsIconActive: json['navSettingsIconActive'] as String,
-      micIcon: json['micIcon'] as String,
-      micHotIcon: json['micHotIcon'] as String,
-      micRecIcon: json['micRecIcon'] as String,
       keyboardAppearance:
           $enumDecode(_$BrightnessEnumMap, json['keyboardAppearance']),
     );
@@ -137,17 +126,6 @@ Map<String, dynamic> _$$_StyleConfigToJson(_$_StyleConfig instance) =>
       'chartTextColor': const ColorConverter().toJson(instance.chartTextColor),
       'textEditorBackground':
           const ColorConverter().toJson(instance.textEditorBackground),
-      'navHomeIcon': instance.navHomeIcon,
-      'navHomeIconActive': instance.navHomeIconActive,
-      'navJournalIcon': instance.navJournalIcon,
-      'navJournalIconActive': instance.navJournalIconActive,
-      'navTasksIcon': instance.navTasksIcon,
-      'navTasksIconActive': instance.navTasksIconActive,
-      'navSettingsIcon': instance.navSettingsIcon,
-      'navSettingsIconActive': instance.navSettingsIconActive,
-      'micIcon': instance.micIcon,
-      'micHotIcon': instance.micHotIcon,
-      'micRecIcon': instance.micRecIcon,
       'keyboardAppearance': _$BrightnessEnumMap[instance.keyboardAppearance]!,
     };
 

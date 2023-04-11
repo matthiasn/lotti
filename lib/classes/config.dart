@@ -60,17 +60,6 @@ class StyleConfig with _$StyleConfig {
     @ColorConverter() required Color cardColor,
     @ColorConverter() required Color chartTextColor,
     @ColorConverter() required Color textEditorBackground,
-    required String navHomeIcon,
-    required String navHomeIconActive,
-    required String navJournalIcon,
-    required String navJournalIconActive,
-    required String navTasksIcon,
-    required String navTasksIconActive,
-    required String navSettingsIcon,
-    required String navSettingsIconActive,
-    required String micIcon,
-    required String micHotIcon,
-    required String micRecIcon,
     required Brightness keyboardAppearance,
   }) = _StyleConfig;
 

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
@@ -62,75 +61,72 @@ class _AppScreenState extends State<AppScreen> {
               hoverColor: Colors.transparent,
               splashColor: Colors.transparent,
             ),
-            child: BottomNavigationBar(
-              backgroundColor: styleConfig().negspace,
-              unselectedItemColor: styleConfig().primaryTextColor,
-              selectedItemColor: styleConfig().primaryColor,
-              selectedFontSize: fontSizeSmall,
-              elevation: 8,
-              unselectedFontSize: fontSizeSmall,
-              selectedLabelStyle: const TextStyle(
-                height: 2,
-                fontWeight: FontWeight.bold,
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                canvasColor: styleConfig().negspace,
+                hoverColor: Colors.transparent,
+                splashColor: Colors.transparent,
               ),
-              unselectedLabelStyle: const TextStyle(height: 2),
-              type: BottomNavigationBarType.fixed,
-              currentIndex: index,
-              items: [
-                BottomNavigationBarItem(
-                  icon: SvgPicture.asset(
-                    styleConfig().navTasksIcon,
-                    semanticsLabel: 'Habits Tab',
-                  ),
-                  activeIcon: SvgPicture.asset(
-                    styleConfig().navTasksIconActive,
-                    semanticsLabel: 'Habits Tab',
-                  ),
-                  label: localizations.navTabTitleHabits,
-                  tooltip: '',
+              child: BottomNavigationBar(
+                unselectedItemColor: styleConfig().primaryTextColor,
+                selectedItemColor: styleConfig().primaryColor,
+                selectedFontSize: fontSizeSmall,
+                enableFeedback: true,
+                elevation: 8,
+                iconSize: 30,
+                selectedLabelStyle: const TextStyle(
+                  height: 2,
+                  fontWeight: FontWeight.bold,
                 ),
-                BottomNavigationBarItem(
-                  icon: SvgPicture.asset(
-                    styleConfig().navHomeIcon,
-                    semanticsLabel: 'Dashboards Tab',
-                  ),
-                  activeIcon: SvgPicture.asset(
-                    styleConfig().navHomeIconActive,
-                    semanticsLabel: 'Dashboards Tab',
-                  ),
-                  label: localizations.navTabTitleInsights,
-                  tooltip: '',
-                ),
-                BottomNavigationBarItem(
-                  icon: SvgPicture.asset(
-                    styleConfig().navJournalIcon,
-                    semanticsLabel: 'Journal Tab',
-                  ),
-                  activeIcon: SvgPicture.asset(
-                    styleConfig().navJournalIconActive,
-                    semanticsLabel: 'Journal Tab',
-                  ),
-                  label: localizations.navTabTitleJournal,
-                  tooltip: '',
-                ),
-                BottomNavigationBarItem(
-                  icon: OutboxBadgeIcon(
-                    icon: SvgPicture.asset(
-                      styleConfig().navSettingsIcon,
-                      semanticsLabel: 'Settings Tab',
+                unselectedLabelStyle: const TextStyle(height: 2),
+                type: BottomNavigationBarType.shifting,
+                currentIndex: index,
+                items: [
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Habits Tab',
+                      image: true,
+                      child: const Icon(Icons.checklist_outlined),
                     ),
+                    label: localizations.navTabTitleHabits,
+                    tooltip: '',
                   ),
-                  activeIcon: OutboxBadgeIcon(
-                    icon: SvgPicture.asset(
-                      styleConfig().navSettingsIconActive,
-                      semanticsLabel: 'Settings Tab',
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Dashboards Tab',
+                      image: true,
+                      child: const Icon(Icons.insights_outlined),
                     ),
+                    label: localizations.navTabTitleInsights,
+                    tooltip: '',
                   ),
-                  label: localizations.navTabTitleSettings,
-                  tooltip: '',
-                ),
-              ],
-              onTap: navService.tapIndex,
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Journal Tab',
+                      image: true,
+                      child: const Icon(Icons.auto_stories_outlined),
+                    ),
+                    label: localizations.navTabTitleJournal,
+                    tooltip: '',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Settings Tab',
+                      image: true,
+                      child: OutboxBadgeIcon(
+                        icon: const Icon(Icons.settings_outlined),
+                      ),
+                    ),
+                    label: localizations.navTabTitleSettings,
+                    tooltip: '',
+                  ),
+                ],
+                onTap: navService.tapIndex,
+              ),
             ),
           ),
         );

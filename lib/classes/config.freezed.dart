@@ -454,17 +454,6 @@ mixin _$StyleConfig {
   Color get chartTextColor => throw _privateConstructorUsedError;
   @ColorConverter()
   Color get textEditorBackground => throw _privateConstructorUsedError;
-  String get navHomeIcon => throw _privateConstructorUsedError;
-  String get navHomeIconActive => throw _privateConstructorUsedError;
-  String get navJournalIcon => throw _privateConstructorUsedError;
-  String get navJournalIconActive => throw _privateConstructorUsedError;
-  String get navTasksIcon => throw _privateConstructorUsedError;
-  String get navTasksIconActive => throw _privateConstructorUsedError;
-  String get navSettingsIcon => throw _privateConstructorUsedError;
-  String get navSettingsIconActive => throw _privateConstructorUsedError;
-  String get micIcon => throw _privateConstructorUsedError;
-  String get micHotIcon => throw _privateConstructorUsedError;
-  String get micRecIcon => throw _privateConstructorUsedError;
   Brightness get keyboardAppearance => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -505,17 +494,6 @@ abstract class $StyleConfigCopyWith<$Res> {
       @ColorConverter() Color cardColor,
       @ColorConverter() Color chartTextColor,
       @ColorConverter() Color textEditorBackground,
-      String navHomeIcon,
-      String navHomeIconActive,
-      String navJournalIcon,
-      String navJournalIconActive,
-      String navTasksIcon,
-      String navTasksIconActive,
-      String navSettingsIcon,
-      String navSettingsIconActive,
-      String micIcon,
-      String micHotIcon,
-      String micRecIcon,
       Brightness keyboardAppearance});
 }
 
@@ -557,17 +535,6 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
     Object? cardColor = null,
     Object? chartTextColor = null,
     Object? textEditorBackground = null,
-    Object? navHomeIcon = null,
-    Object? navHomeIconActive = null,
-    Object? navJournalIcon = null,
-    Object? navJournalIconActive = null,
-    Object? navTasksIcon = null,
-    Object? navTasksIconActive = null,
-    Object? navSettingsIcon = null,
-    Object? navSettingsIconActive = null,
-    Object? micIcon = null,
-    Object? micHotIcon = null,
-    Object? micRecIcon = null,
     Object? keyboardAppearance = null,
   }) {
     return _then(_value.copyWith(
@@ -671,50 +638,6 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
           ? _value.textEditorBackground
           : textEditorBackground // ignore: cast_nullable_to_non_nullable
               as Color,
-      navHomeIcon: null == navHomeIcon
-          ? _value.navHomeIcon
-          : navHomeIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      navHomeIconActive: null == navHomeIconActive
-          ? _value.navHomeIconActive
-          : navHomeIconActive // ignore: cast_nullable_to_non_nullable
-              as String,
-      navJournalIcon: null == navJournalIcon
-          ? _value.navJournalIcon
-          : navJournalIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      navJournalIconActive: null == navJournalIconActive
-          ? _value.navJournalIconActive
-          : navJournalIconActive // ignore: cast_nullable_to_non_nullable
-              as String,
-      navTasksIcon: null == navTasksIcon
-          ? _value.navTasksIcon
-          : navTasksIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      navTasksIconActive: null == navTasksIconActive
-          ? _value.navTasksIconActive
-          : navTasksIconActive // ignore: cast_nullable_to_non_nullable
-              as String,
-      navSettingsIcon: null == navSettingsIcon
-          ? _value.navSettingsIcon
-          : navSettingsIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      navSettingsIconActive: null == navSettingsIconActive
-          ? _value.navSettingsIconActive
-          : navSettingsIconActive // ignore: cast_nullable_to_non_nullable
-              as String,
-      micIcon: null == micIcon
-          ? _value.micIcon
-          : micIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      micHotIcon: null == micHotIcon
-          ? _value.micHotIcon
-          : micHotIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      micRecIcon: null == micRecIcon
-          ? _value.micRecIcon
-          : micRecIcon // ignore: cast_nullable_to_non_nullable
-              as String,
       keyboardAppearance: null == keyboardAppearance
           ? _value.keyboardAppearance
           : keyboardAppearance // ignore: cast_nullable_to_non_nullable
@@ -757,17 +680,6 @@ abstract class _$$_StyleConfigCopyWith<$Res>
       @ColorConverter() Color cardColor,
       @ColorConverter() Color chartTextColor,
       @ColorConverter() Color textEditorBackground,
-      String navHomeIcon,
-      String navHomeIconActive,
-      String navJournalIcon,
-      String navJournalIconActive,
-      String navTasksIcon,
-      String navTasksIconActive,
-      String navSettingsIcon,
-      String navSettingsIconActive,
-      String micIcon,
-      String micHotIcon,
-      String micRecIcon,
       Brightness keyboardAppearance});
 }
 
@@ -807,17 +719,6 @@ class __$$_StyleConfigCopyWithImpl<$Res>
     Object? cardColor = null,
     Object? chartTextColor = null,
     Object? textEditorBackground = null,
-    Object? navHomeIcon = null,
-    Object? navHomeIconActive = null,
-    Object? navJournalIcon = null,
-    Object? navJournalIconActive = null,
-    Object? navTasksIcon = null,
-    Object? navTasksIconActive = null,
-    Object? navSettingsIcon = null,
-    Object? navSettingsIconActive = null,
-    Object? micIcon = null,
-    Object? micHotIcon = null,
-    Object? micRecIcon = null,
     Object? keyboardAppearance = null,
   }) {
     return _then(_$_StyleConfig(
@@ -921,50 +822,6 @@ class __$$_StyleConfigCopyWithImpl<$Res>
           ? _value.textEditorBackground
           : textEditorBackground // ignore: cast_nullable_to_non_nullable
               as Color,
-      navHomeIcon: null == navHomeIcon
-          ? _value.navHomeIcon
-          : navHomeIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      navHomeIconActive: null == navHomeIconActive
-          ? _value.navHomeIconActive
-          : navHomeIconActive // ignore: cast_nullable_to_non_nullable
-              as String,
-      navJournalIcon: null == navJournalIcon
-          ? _value.navJournalIcon
-          : navJournalIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      navJournalIconActive: null == navJournalIconActive
-          ? _value.navJournalIconActive
-          : navJournalIconActive // ignore: cast_nullable_to_non_nullable
-              as String,
-      navTasksIcon: null == navTasksIcon
-          ? _value.navTasksIcon
-          : navTasksIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      navTasksIconActive: null == navTasksIconActive
-          ? _value.navTasksIconActive
-          : navTasksIconActive // ignore: cast_nullable_to_non_nullable
-              as String,
-      navSettingsIcon: null == navSettingsIcon
-          ? _value.navSettingsIcon
-          : navSettingsIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      navSettingsIconActive: null == navSettingsIconActive
-          ? _value.navSettingsIconActive
-          : navSettingsIconActive // ignore: cast_nullable_to_non_nullable
-              as String,
-      micIcon: null == micIcon
-          ? _value.micIcon
-          : micIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      micHotIcon: null == micHotIcon
-          ? _value.micHotIcon
-          : micHotIcon // ignore: cast_nullable_to_non_nullable
-              as String,
-      micRecIcon: null == micRecIcon
-          ? _value.micRecIcon
-          : micRecIcon // ignore: cast_nullable_to_non_nullable
-              as String,
       keyboardAppearance: null == keyboardAppearance
           ? _value.keyboardAppearance
           : keyboardAppearance // ignore: cast_nullable_to_non_nullable
@@ -1002,17 +859,6 @@ class _$_StyleConfig implements _StyleConfig {
       @ColorConverter() required this.cardColor,
       @ColorConverter() required this.chartTextColor,
       @ColorConverter() required this.textEditorBackground,
-      required this.navHomeIcon,
-      required this.navHomeIconActive,
-      required this.navJournalIcon,
-      required this.navJournalIconActive,
-      required this.navTasksIcon,
-      required this.navTasksIconActive,
-      required this.navSettingsIcon,
-      required this.navSettingsIconActive,
-      required this.micIcon,
-      required this.micHotIcon,
-      required this.micRecIcon,
       required this.keyboardAppearance});
 
   factory _$_StyleConfig.fromJson(Map<String, dynamic> json) =>
@@ -1095,33 +941,11 @@ class _$_StyleConfig implements _StyleConfig {
   @ColorConverter()
   final Color textEditorBackground;
   @override
-  final String navHomeIcon;
-  @override
-  final String navHomeIconActive;
-  @override
-  final String navJournalIcon;
-  @override
-  final String navJournalIconActive;
-  @override
-  final String navTasksIcon;
-  @override
-  final String navTasksIconActive;
-  @override
-  final String navSettingsIcon;
-  @override
-  final String navSettingsIconActive;
-  @override
-  final String micIcon;
-  @override
-  final String micHotIcon;
-  @override
-  final String micRecIcon;
-  @override
   final Brightness keyboardAppearance;
 
   @override
   String toString() {
-    return 'StyleConfig(tagColor: $tagColor, tagTextColor: $tagTextColor, personTagColor: $personTagColor, storyTagColor: $storyTagColor, privateTagColor: $privateTagColor, starredGold: $starredGold, selectedChoiceChipColor: $selectedChoiceChipColor, selectedChoiceChipTextColor: $selectedChoiceChipTextColor, unselectedChoiceChipColor: $unselectedChoiceChipColor, unselectedChoiceChipTextColor: $unselectedChoiceChipTextColor, activeAudioControl: $activeAudioControl, audioMeterBar: $audioMeterBar, audioMeterTooHotBar: $audioMeterTooHotBar, audioMeterPeakedBar: $audioMeterPeakedBar, private: $private, negspace: $negspace, primaryTextColor: $primaryTextColor, secondaryTextColor: $secondaryTextColor, primaryColor: $primaryColor, primaryColorLight: $primaryColorLight, hover: $hover, alarm: $alarm, cardColor: $cardColor, chartTextColor: $chartTextColor, textEditorBackground: $textEditorBackground, navHomeIcon: $navHomeIcon, navHomeIconActive: $navHomeIconActive, navJournalIcon: $navJournalIcon, navJournalIconActive: $navJournalIconActive, navTasksIcon: $navTasksIcon, navTasksIconActive: $navTasksIconActive, navSettingsIcon: $navSettingsIcon, navSettingsIconActive: $navSettingsIconActive, micIcon: $micIcon, micHotIcon: $micHotIcon, micRecIcon: $micRecIcon, keyboardAppearance: $keyboardAppearance)';
+    return 'StyleConfig(tagColor: $tagColor, tagTextColor: $tagTextColor, personTagColor: $personTagColor, storyTagColor: $storyTagColor, privateTagColor: $privateTagColor, starredGold: $starredGold, selectedChoiceChipColor: $selectedChoiceChipColor, selectedChoiceChipTextColor: $selectedChoiceChipTextColor, unselectedChoiceChipColor: $unselectedChoiceChipColor, unselectedChoiceChipTextColor: $unselectedChoiceChipTextColor, activeAudioControl: $activeAudioControl, audioMeterBar: $audioMeterBar, audioMeterTooHotBar: $audioMeterTooHotBar, audioMeterPeakedBar: $audioMeterPeakedBar, private: $private, negspace: $negspace, primaryTextColor: $primaryTextColor, secondaryTextColor: $secondaryTextColor, primaryColor: $primaryColor, primaryColorLight: $primaryColorLight, hover: $hover, alarm: $alarm, cardColor: $cardColor, chartTextColor: $chartTextColor, textEditorBackground: $textEditorBackground, keyboardAppearance: $keyboardAppearance)';
   }
 
   @override
@@ -1178,19 +1002,8 @@ class _$_StyleConfig implements _StyleConfig {
                 other.chartTextColor == chartTextColor) &&
             (identical(other.textEditorBackground, textEditorBackground) ||
                 other.textEditorBackground == textEditorBackground) &&
-            (identical(other.navHomeIcon, navHomeIcon) ||
-                other.navHomeIcon == navHomeIcon) &&
-            (identical(other.navHomeIconActive, navHomeIconActive) || other.navHomeIconActive == navHomeIconActive) &&
-            (identical(other.navJournalIcon, navJournalIcon) || other.navJournalIcon == navJournalIcon) &&
-            (identical(other.navJournalIconActive, navJournalIconActive) || other.navJournalIconActive == navJournalIconActive) &&
-            (identical(other.navTasksIcon, navTasksIcon) || other.navTasksIcon == navTasksIcon) &&
-            (identical(other.navTasksIconActive, navTasksIconActive) || other.navTasksIconActive == navTasksIconActive) &&
-            (identical(other.navSettingsIcon, navSettingsIcon) || other.navSettingsIcon == navSettingsIcon) &&
-            (identical(other.navSettingsIconActive, navSettingsIconActive) || other.navSettingsIconActive == navSettingsIconActive) &&
-            (identical(other.micIcon, micIcon) || other.micIcon == micIcon) &&
-            (identical(other.micHotIcon, micHotIcon) || other.micHotIcon == micHotIcon) &&
-            (identical(other.micRecIcon, micRecIcon) || other.micRecIcon == micRecIcon) &&
-            (identical(other.keyboardAppearance, keyboardAppearance) || other.keyboardAppearance == keyboardAppearance));
+            (identical(other.keyboardAppearance, keyboardAppearance) ||
+                other.keyboardAppearance == keyboardAppearance));
   }
 
   @JsonKey(ignore: true)
@@ -1222,17 +1035,6 @@ class _$_StyleConfig implements _StyleConfig {
         cardColor,
         chartTextColor,
         textEditorBackground,
-        navHomeIcon,
-        navHomeIconActive,
-        navJournalIcon,
-        navJournalIconActive,
-        navTasksIcon,
-        navTasksIconActive,
-        navSettingsIcon,
-        navSettingsIconActive,
-        micIcon,
-        micHotIcon,
-        micRecIcon,
         keyboardAppearance
       ]);
 
@@ -1277,17 +1079,6 @@ abstract class _StyleConfig implements StyleConfig {
       @ColorConverter() required final Color cardColor,
       @ColorConverter() required final Color chartTextColor,
       @ColorConverter() required final Color textEditorBackground,
-      required final String navHomeIcon,
-      required final String navHomeIconActive,
-      required final String navJournalIcon,
-      required final String navJournalIconActive,
-      required final String navTasksIcon,
-      required final String navTasksIconActive,
-      required final String navSettingsIcon,
-      required final String navSettingsIconActive,
-      required final String micIcon,
-      required final String micHotIcon,
-      required final String micRecIcon,
       required final Brightness keyboardAppearance}) = _$_StyleConfig;
 
   factory _StyleConfig.fromJson(Map<String, dynamic> json) =
@@ -1368,28 +1159,6 @@ abstract class _StyleConfig implements StyleConfig {
   @override
   @ColorConverter()
   Color get textEditorBackground;
-  @override
-  String get navHomeIcon;
-  @override
-  String get navHomeIconActive;
-  @override
-  String get navJournalIcon;
-  @override
-  String get navJournalIconActive;
-  @override
-  String get navTasksIcon;
-  @override
-  String get navTasksIconActive;
-  @override
-  String get navSettingsIcon;
-  @override
-  String get navSettingsIconActive;
-  @override
-  String get micIcon;
-  @override
-  String get micHotIcon;
-  @override
-  String get micRecIcon;
   @override
   Brightness get keyboardAppearance;
   @override

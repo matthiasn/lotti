@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Material icons in bottom nav
+- Material icons in audio recorder
+- Remove unused code
+- Upgraded dependencies
+
+## [0.8.313] - 2023-04-11
+### Changed:
 - Updated README
 
 ## [0.8.312] - 2023-04-10

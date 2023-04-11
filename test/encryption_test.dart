@@ -5,8 +5,6 @@ import 'package:encrypt/encrypt.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/sync/encryption.dart';
 
-Function eq = const ListEquality<int>().equals;
-
 void main() {
   test('File encryption', () async {
     final originalFile = File('test_resources/test.aac');

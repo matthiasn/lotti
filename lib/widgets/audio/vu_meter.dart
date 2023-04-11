@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/themes/theme.dart';
@@ -26,6 +25,8 @@ class CustomRect extends CustomClipper<Rect> {
   }
 }
 
+const iconSize = 200.0;
+
 class VuMeterButtonWidget extends StatelessWidget {
   const VuMeterButtonWidget({super.key});
 
@@ -41,18 +42,33 @@ class VuMeterButtonWidget extends StatelessWidget {
           child: Stack(
             alignment: Alignment.bottomCenter,
             children: [
-              SvgPicture.asset(styleConfig().micIcon),
+              Icon(
+                Icons.mic,
+                size: iconSize,
+                color: styleConfig().secondaryTextColor.withOpacity(0.5),
+                semanticLabel: 'Microphone',
+              ),
               if (!hot)
                 ClipRect(
                   key: Key(state.decibels.toString()),
                   clipper: CustomRect(audioLevel),
-                  child: SvgPicture.asset(styleConfig().micRecIcon),
+                  child: Icon(
+                    Icons.mic,
+                    size: iconSize,
+                    color: styleConfig().alarm.withOpacity(0.6),
+                    semanticLabel: 'Microphone',
+                  ),
                 ),
               if (hot)
                 ClipRect(
                   key: Key(state.decibels.toString()),
                   clipper: CustomRect(audioLevel),
-                  child: SvgPicture.asset(styleConfig().micHotIcon),
+                  child: Icon(
+                    Icons.mic,
+                    size: iconSize,
+                    color: styleConfig().alarm,
+                    semanticLabel: 'Microphone',
+                  ),
                 ),
             ],
           ),
