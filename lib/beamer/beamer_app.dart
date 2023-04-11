@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
@@ -17,6 +16,8 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
+
+const iconSize = 30.0;
 
 class AppScreen extends StatefulWidget {
   const AppScreen({super.key});
@@ -78,52 +79,64 @@ class _AppScreenState extends State<AppScreen> {
               currentIndex: index,
               items: [
                 BottomNavigationBarItem(
-                  icon: SvgPicture.asset(
-                    styleConfig().navTasksIcon,
-                    semanticsLabel: 'Habits Tab',
+                  icon: const Icon(
+                    Icons.checklist_outlined,
+                    size: iconSize,
+                    semanticLabel: 'Habits Tab',
                   ),
-                  activeIcon: SvgPicture.asset(
-                    styleConfig().navTasksIconActive,
-                    semanticsLabel: 'Habits Tab',
+                  activeIcon: Icon(
+                    Icons.checklist_outlined,
+                    size: iconSize,
+                    color: styleConfig().primaryColor,
+                    semanticLabel: 'Habits Tab',
                   ),
                   label: localizations.navTabTitleHabits,
                   tooltip: '',
                 ),
                 BottomNavigationBarItem(
-                  icon: SvgPicture.asset(
-                    styleConfig().navHomeIcon,
-                    semanticsLabel: 'Dashboards Tab',
+                  icon: const Icon(
+                    Icons.insights_outlined,
+                    size: iconSize,
+                    semanticLabel: 'Dashboards Tab',
                   ),
-                  activeIcon: SvgPicture.asset(
-                    styleConfig().navHomeIconActive,
-                    semanticsLabel: 'Dashboards Tab',
+                  activeIcon: Icon(
+                    Icons.insights_outlined,
+                    size: iconSize,
+                    color: styleConfig().primaryColor,
+                    semanticLabel: 'Dashboards Tab',
                   ),
                   label: localizations.navTabTitleInsights,
                   tooltip: '',
                 ),
                 BottomNavigationBarItem(
-                  icon: SvgPicture.asset(
-                    styleConfig().navJournalIcon,
-                    semanticsLabel: 'Journal Tab',
+                  icon: const Icon(
+                    Icons.auto_stories_outlined,
+                    size: iconSize,
+                    semanticLabel: 'Journal Tab',
                   ),
-                  activeIcon: SvgPicture.asset(
-                    styleConfig().navJournalIconActive,
-                    semanticsLabel: 'Journal Tab',
+                  activeIcon: Icon(
+                    Icons.auto_stories_outlined,
+                    size: iconSize,
+                    color: styleConfig().primaryColor,
+                    semanticLabel: 'Journal Tab',
                   ),
                   label: localizations.navTabTitleJournal,
                   tooltip: '',
                 ),
                 BottomNavigationBarItem(
                   icon: OutboxBadgeIcon(
-                    icon: SvgPicture.asset(
-                      styleConfig().navSettingsIcon,
-                      semanticsLabel: 'Settings Tab',
+                    icon: const Icon(
+                      Icons.settings_outlined,
+                      size: iconSize,
+                      semanticLabel: 'Settings Tab',
                     ),
                   ),
                   activeIcon: OutboxBadgeIcon(
-                    icon: SvgPicture.asset(
-                      styleConfig().navSettingsIconActive,
-                      semanticsLabel: 'Settings Tab',
+                    icon: Icon(
+                      Icons.settings_outlined,
+                      size: iconSize,
+                      color: styleConfig().primaryColor,
+                      semanticLabel: 'Settings Tab',
                     ),
                   ),
                   label: localizations.navTabTitleSettings,
