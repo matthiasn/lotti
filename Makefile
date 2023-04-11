@@ -228,7 +228,7 @@ all: ios macos
 
 .PHONY: check_unused_files
 check_unused_files:
-	flutter pub run dart_code_metrics:metrics check-unused-files lib
+	flutter pub run dart_code_metrics:metrics check-unused-files lib test
 
 .PHONY: check_unused_code
 check_unused_code:
