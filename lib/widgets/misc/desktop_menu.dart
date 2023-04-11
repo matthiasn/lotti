@@ -27,6 +27,7 @@ class DesktopMenuWrapper extends StatelessWidget {
     return MaterialApp(
       localizationsDelegates: const [AppLocalizations.delegate],
       supportedLocales: AppLocalizations.supportedLocales,
+      debugShowCheckedModeBanner: false,
       home: StreamBuilder<Set<String>>(
         stream: _db.watchActiveConfigFlagNames(),
         builder: (context, snapshot) {
