@@ -15,10 +15,6 @@ import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
-class TestCallbackClass {
-  void onTapRemove() {}
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

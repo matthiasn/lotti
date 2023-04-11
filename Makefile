@@ -232,7 +232,7 @@ check_unused_files:
 
 .PHONY: check_unused_code
 check_unused_code:
-	flutter pub run dart_code_metrics:metrics check-unused-code lib
+	flutter pub run dart_code_metrics:metrics check-unused-code lib test
 
 .PHONY: check_unused_l10n
 check_unused_l10n:
