@@ -32,7 +32,7 @@ jobs:
       - name: Build
         run: make linux_build
       - name: Tar
-        run: tar cfvz build/linux.x64.tar.gz build/linux
+        run: tar cfvz build/linux.x64.tar.gz -C build/linux/x64/release/bundle .
       - name: Upload to GitHub Releases
         run: gh release upload $GITHUB_REF_NAME build/linux.x64.tar.gz
         env:
