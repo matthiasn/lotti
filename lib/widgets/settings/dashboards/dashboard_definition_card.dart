@@ -4,6 +4,8 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
+import '../categories/categories_type_card.dart';
+
 class DashboardDefinitionCard extends StatelessWidget {
   const DashboardDefinitionCard({
     required this.dashboard,
@@ -19,6 +21,7 @@ class DashboardDefinitionCard extends StatelessWidget {
     return SettingsNavCard(
       path: '/settings/dashboards/${dashboard.id}',
       title: dashboard.name,
+      leading: CategoryColorIcon(dashboard.categoryId),
       trailing: Visibility(
         visible: dashboard.private,
         child: Icon(

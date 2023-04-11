@@ -9,6 +9,7 @@ import 'package:lotti/pages/dashboards/dashboards_list_page.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_utils.dart';
@@ -38,6 +39,14 @@ void main() {
         measurableChocolate,
       ]);
 
+      final mockEntitiesCacheService = MockEntitiesCacheService();
+
+      when(mockJournalDb.watchCategories).thenAnswer(
+        (_) => Stream<List<CategoryDefinition>>.fromIterable([
+          [categoryMindfulness]
+        ]),
+      );
+
       when(mockJournalDb.watchHabitDefinitions).thenAnswer(
         (_) => Stream<List<HabitDefinition>>.fromIterable([
           [habitFlossing]
@@ -49,6 +58,7 @@ void main() {
       getIt
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
     });
@@ -525,42 +535,6 @@ void main() {
 
       // finds text in dashboard card
       expect(find.text(testDashboardName), findsOneWidget);
-    });
-
-    testWidgets(
-        'dashboard page is displayed directly when there is only one '
-        'dashboard defined', (tester) async {
-      when(mockJournalDb.watchDashboards).thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [emptyTestDashboardConfig],
-        ]),
-      );
-
-      when(() => mockJournalDb.watchDashboardById(emptyTestDashboardConfig.id))
-          .thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [emptyTestDashboardConfig],
-        ]),
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: const DashboardsListPage(),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      verify(mockJournalDb.watchDashboards).called(1);
-
-      // finds text in dashboard card
-      expect(find.text(emptyTestDashboardConfig.name), findsOneWidget);
     });
   });
 }

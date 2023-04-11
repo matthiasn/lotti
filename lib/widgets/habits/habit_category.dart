@@ -6,16 +6,13 @@ import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
 class SelectCategoryWidget extends StatelessWidget {
-  SelectCategoryWidget({super.key});
-
-  final TagsService tagsService = getIt<TagsService>();
+  const SelectCategoryWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
