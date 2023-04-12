@@ -48,23 +48,25 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
         );
 
         return Scaffold(
-          body: CustomScrollView(
-            slivers: <Widget>[
-              SliverTitleBar(localizations.navTabTitleInsights),
-              const DashboardsSliverAppBar(),
-              SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    ...dashboards.mapIndexed(
-                      (index, dashboard) => DashboardCard(
-                        dashboard: dashboard,
-                        index: index,
-                      ),
-                    )
-                  ],
+          body: SafeArea(
+            child: CustomScrollView(
+              slivers: <Widget>[
+                SliverTitleBar(localizations.navTabTitleInsights),
+                const DashboardsSliverAppBar(),
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      ...dashboards.mapIndexed(
+                        (index, dashboard) => DashboardCard(
+                          dashboard: dashboard,
+                          index: index,
+                        ),
+                      )
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

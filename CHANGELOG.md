@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Settings icon on Habits page
 
+### Fixed:
+- SafeArea around Dashboards page
+
 ## [0.8.316] - 2023-04-12
 ### Fixed:
 - Clear categories filter visibility
