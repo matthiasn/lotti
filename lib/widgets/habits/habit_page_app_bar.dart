@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/themes/theme.dart';
@@ -9,21 +8,22 @@ import 'package:lotti/widgets/habits/habits_filter.dart';
 import 'package:lotti/widgets/habits/status_segmented_control.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class HabitsSliverTitleBar extends StatelessWidget {
-  const HabitsSliverTitleBar({
+class SliverTitleBar extends StatelessWidget {
+  const SliverTitleBar(
+    this.title, {
     super.key,
   });
 
+  final String title;
+
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return SliverAppBar(
       backgroundColor: styleConfig().negspace,
       expandedHeight: 100,
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
-          localizations.settingsHabitsTitle,
+          title,
           style: appBarTextStyleNewLarge(),
         ),
       ),

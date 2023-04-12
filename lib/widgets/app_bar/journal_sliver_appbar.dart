@@ -41,7 +41,6 @@ class JournalSliverAppBar extends StatelessWidget {
                     ),
                     text: snapshot.match,
                     onChanged: cubit.setSearchString,
-                    hintText: 'Search...',
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 5),

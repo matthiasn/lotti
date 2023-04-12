@@ -1,10 +1,13 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/app_bar/dashboards_app_bar.dart';
 import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
+import 'package:lotti/widgets/habits/habit_page_app_bar.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
@@ -27,6 +30,8 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder<List<DashboardDefinition>>(
       stream: stream,
       builder: (
@@ -42,29 +47,22 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
           match: match,
         );
 
-        // if (dashboards.isEmpty) {
-        //   return const HowToUsePage();
-        // }
-
         return Scaffold(
-          appBar: const DashboardsAppBar(),
-          body: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.only(
-              bottom: 200,
-              top: 70,
-              left: 2,
-              right: 2,
-            ),
-            children: [
-              ...List.generate(
-                dashboards.length,
-                (int index) {
-                  return DashboardCard(
-                    dashboard: dashboards.elementAt(index),
-                    index: index,
-                  );
-                },
+          body: CustomScrollView(
+            slivers: <Widget>[
+              SliverTitleBar(localizations.navTabTitleInsights),
+              const DashboardsSliverAppBar(),
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    ...dashboards.mapIndexed(
+                      (index, dashboard) => DashboardCard(
+                        dashboard: dashboard,
+                        index: index,
+                      ),
+                    )
+                  ],
+                ),
               ),
             ],
           ),
