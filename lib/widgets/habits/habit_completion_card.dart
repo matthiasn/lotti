@@ -99,17 +99,20 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                           ),
                         ),
                       ),
-                      Text(
-                        widget.habitDefinition.name,
-                        style: completedToday
-                            ? chartTitleStyle().copyWith(
-                                decoration: TextDecoration.lineThrough,
-                                decorationColor: Theme.of(context).primaryColor,
-                                decorationThickness: 3,
-                              )
-                            : chartTitleStyle(),
-                        overflow: TextOverflow.ellipsis,
-                        softWrap: false,
+                      Flexible(
+                        child: Text(
+                          widget.habitDefinition.name,
+                          style: completedToday
+                              ? chartTitleStyle().copyWith(
+                                  decoration: TextDecoration.lineThrough,
+                                  decorationColor:
+                                      Theme.of(context).primaryColor,
+                                  decorationThickness: 3,
+                                )
+                              : chartTitleStyle(),
+                          overflow: TextOverflow.fade,
+                          softWrap: false,
+                        ),
                       ),
                     ],
                   ),
