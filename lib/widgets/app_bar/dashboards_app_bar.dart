@@ -4,6 +4,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/settings/settings_icon.dart';
 
 class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
   const DashboardsAppBar({super.key});
@@ -50,21 +51,14 @@ class DashboardsSliverAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    void onPressSettings() => beamToNamed('/settings/dashboards');
-
     return SliverAppBar(
       backgroundColor: styleConfig().negspace,
       expandedHeight: 50,
       primary: false,
       title: Row(
         mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          IconButton(
-            padding: const EdgeInsets.all(4),
-            icon: const Icon(Icons.settings_outlined),
-            color: styleConfig().secondaryTextColor,
-            onPressed: onPressSettings,
-          ),
+        children: const [
+          SettingsButton('/settings/dashboards'),
         ],
       ),
       pinned: true,

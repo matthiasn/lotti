@@ -265,10 +265,6 @@ class HabitDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if ('${habitDefinition?.description}'.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
     Future<void> onOpen(LinkableElement link) async {
       final uri = Uri.tryParse(link.url);
 

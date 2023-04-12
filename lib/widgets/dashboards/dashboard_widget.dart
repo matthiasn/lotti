@@ -3,7 +3,6 @@ import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 import 'package:lotti/widgets/charts/stories/dashboard_story_chart.dart';
 import 'package:lotti/widgets/charts/stories/wildcard_story_chart.dart';
+import 'package:lotti/widgets/settings/settings_icon.dart';
 
 class DashboardWidget extends StatelessWidget {
   const DashboardWidget({
@@ -133,12 +133,7 @@ class DashboardWidget extends StatelessWidget {
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.dashboard_customize_outlined),
-                    color: styleConfig().primaryTextColor,
-                    onPressed: () =>
-                        beamToNamed('/settings/dashboards/$dashboardId'),
-                  ),
+                  SettingsButton('/settings/dashboards/$dashboardId'),
                 ],
               ),
             ],
