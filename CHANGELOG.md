@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Measurable setting page layout
+
+## [0.8.318] - 2023-04-13
+### Changed:
 - New app icon
 
 ## [0.8.317] - 2023-04-12
