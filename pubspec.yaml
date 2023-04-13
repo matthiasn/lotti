@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.9.319+1986
+version: 0.9.320+1987
 
 msix_config:
   display_name: LottiApp
@@ -12,7 +12,7 @@ msix_config:
   languages: en-us, de-de, ro-ro
   install_certificate: false
   sign_msix: false
-  logo_path: .\assets\icon\logo_1024_android.png
+  logo_path: .\assets\icon\app_icon_1024.png
 
 environment:
   sdk: ">=2.17.0 <3.0.0"
