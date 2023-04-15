@@ -52,7 +52,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
         widget.hexColor != null ? searchFieldHintStyle() : searchFieldStyle();
 
     final color = widget.hexColor != null
-        ? colorFromCssHex(widget.hexColor!)
+        ? colorFromCssHex(widget.hexColor)
         : styleConfig().secondaryTextColor.withOpacity(0.2);
 
     Future<void> onTap() async {
@@ -97,7 +97,9 @@ class _SelectColorFieldState extends State<SelectColorField> {
       ).copyWith(
         icon: ColorIcon(color),
         hintText: localizations.colorPickerHint,
-        hintStyle: style,
+        hintStyle: style.copyWith(
+          color: styleConfig().secondaryTextColor.withOpacity(0.5),
+        ),
         suffixIcon: IconButton(
           onPressed: onTap,
           icon: Icon(

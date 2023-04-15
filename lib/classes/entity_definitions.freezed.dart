@@ -2507,10 +2507,10 @@ mixin _$EntityDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)
         categoryDefinition,
@@ -2575,10 +2575,10 @@ mixin _$EntityDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)?
         categoryDefinition,
@@ -2643,10 +2643,10 @@ mixin _$EntityDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)?
         categoryDefinition,
@@ -3033,10 +3033,10 @@ class _$MeasurableDataType implements MeasurableDataType {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)
         categoryDefinition,
@@ -3117,10 +3117,10 @@ class _$MeasurableDataType implements MeasurableDataType {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)?
         categoryDefinition,
@@ -3201,10 +3201,10 @@ class _$MeasurableDataType implements MeasurableDataType {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)?
         categoryDefinition,
@@ -3369,10 +3369,10 @@ abstract class _$$CategoryDefinitionCopyWith<$Res>
       DateTime createdAt,
       DateTime updatedAt,
       String name,
-      String color,
       VectorClock? vectorClock,
       bool private,
       bool active,
+      String? color,
       String? categoryId,
       DateTime? deletedAt});
 }
@@ -3392,10 +3392,10 @@ class __$$CategoryDefinitionCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? name = null,
-    Object? color = null,
     Object? vectorClock = freezed,
     Object? private = null,
     Object? active = null,
+    Object? color = freezed,
     Object? categoryId = freezed,
     Object? deletedAt = freezed,
   }) {
@@ -3416,10 +3416,6 @@ class __$$CategoryDefinitionCopyWithImpl<$Res>
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as String,
       vectorClock: freezed == vectorClock
           ? _value.vectorClock
           : vectorClock // ignore: cast_nullable_to_non_nullable
@@ -3432,6 +3428,10 @@ class __$$CategoryDefinitionCopyWithImpl<$Res>
           ? _value.active
           : active // ignore: cast_nullable_to_non_nullable
               as bool,
+      color: freezed == color
+          ? _value.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as String?,
       categoryId: freezed == categoryId
           ? _value.categoryId
           : categoryId // ignore: cast_nullable_to_non_nullable
@@ -3452,10 +3452,10 @@ class _$CategoryDefinition implements CategoryDefinition {
       required this.createdAt,
       required this.updatedAt,
       required this.name,
-      required this.color,
       required this.vectorClock,
       required this.private,
       required this.active,
+      this.color,
       this.categoryId,
       this.deletedAt,
       final String? $type})
@@ -3473,13 +3473,13 @@ class _$CategoryDefinition implements CategoryDefinition {
   @override
   final String name;
   @override
-  final String color;
-  @override
   final VectorClock? vectorClock;
   @override
   final bool private;
   @override
   final bool active;
+  @override
+  final String? color;
   @override
   final String? categoryId;
   @override
@@ -3490,7 +3490,7 @@ class _$CategoryDefinition implements CategoryDefinition {
 
   @override
   String toString() {
-    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, color: $color, vectorClock: $vectorClock, private: $private, active: $active, categoryId: $categoryId, deletedAt: $deletedAt)';
+    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, color: $color, categoryId: $categoryId, deletedAt: $deletedAt)';
   }
 
   @override
@@ -3504,11 +3504,11 @@ class _$CategoryDefinition implements CategoryDefinition {
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.color, color) || other.color == color) &&
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
             (identical(other.private, private) || other.private == private) &&
             (identical(other.active, active) || other.active == active) &&
+            (identical(other.color, color) || other.color == color) &&
             (identical(other.categoryId, categoryId) ||
                 other.categoryId == categoryId) &&
             (identical(other.deletedAt, deletedAt) ||
@@ -3518,7 +3518,7 @@ class _$CategoryDefinition implements CategoryDefinition {
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, id, createdAt, updatedAt, name,
-      color, vectorClock, private, active, categoryId, deletedAt);
+      vectorClock, private, active, color, categoryId, deletedAt);
 
   @JsonKey(ignore: true)
   @override
@@ -3550,10 +3550,10 @@ class _$CategoryDefinition implements CategoryDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)
         categoryDefinition,
@@ -3595,8 +3595,8 @@ class _$CategoryDefinition implements CategoryDefinition {
             String? categoryId)
         dashboard,
   }) {
-    return categoryDefinition(id, createdAt, updatedAt, name, color,
-        vectorClock, private, active, categoryId, deletedAt);
+    return categoryDefinition(id, createdAt, updatedAt, name, vectorClock,
+        private, active, color, categoryId, deletedAt);
   }
 
   @override
@@ -3622,10 +3622,10 @@ class _$CategoryDefinition implements CategoryDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)?
         categoryDefinition,
@@ -3667,8 +3667,8 @@ class _$CategoryDefinition implements CategoryDefinition {
             String? categoryId)?
         dashboard,
   }) {
-    return categoryDefinition?.call(id, createdAt, updatedAt, name, color,
-        vectorClock, private, active, categoryId, deletedAt);
+    return categoryDefinition?.call(id, createdAt, updatedAt, name, vectorClock,
+        private, active, color, categoryId, deletedAt);
   }
 
   @override
@@ -3694,10 +3694,10 @@ class _$CategoryDefinition implements CategoryDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)?
         categoryDefinition,
@@ -3741,8 +3741,8 @@ class _$CategoryDefinition implements CategoryDefinition {
     required TResult orElse(),
   }) {
     if (categoryDefinition != null) {
-      return categoryDefinition(id, createdAt, updatedAt, name, color,
-          vectorClock, private, active, categoryId, deletedAt);
+      return categoryDefinition(id, createdAt, updatedAt, name, vectorClock,
+          private, active, color, categoryId, deletedAt);
     }
     return orElse();
   }
@@ -3798,10 +3798,10 @@ abstract class CategoryDefinition implements EntityDefinition {
       required final DateTime createdAt,
       required final DateTime updatedAt,
       required final String name,
-      required final String color,
       required final VectorClock? vectorClock,
       required final bool private,
       required final bool active,
+      final String? color,
       final String? categoryId,
       final DateTime? deletedAt}) = _$CategoryDefinition;
 
@@ -3815,12 +3815,12 @@ abstract class CategoryDefinition implements EntityDefinition {
   @override
   DateTime get updatedAt;
   String get name;
-  String get color;
   @override
   VectorClock? get vectorClock;
   @override
   bool get private;
   bool get active;
+  String? get color;
   @override
   String? get categoryId;
   @override
@@ -4153,10 +4153,10 @@ class _$HabitDefinition implements HabitDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)
         categoryDefinition,
@@ -4242,10 +4242,10 @@ class _$HabitDefinition implements HabitDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)?
         categoryDefinition,
@@ -4331,10 +4331,10 @@ class _$HabitDefinition implements HabitDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)?
         categoryDefinition,
@@ -4771,10 +4771,10 @@ class _$DashboardDefinition implements DashboardDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)
         categoryDefinition,
@@ -4857,10 +4857,10 @@ class _$DashboardDefinition implements DashboardDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)?
         categoryDefinition,
@@ -4943,10 +4943,10 @@ class _$DashboardDefinition implements DashboardDefinition {
             DateTime createdAt,
             DateTime updatedAt,
             String name,
-            String color,
             VectorClock? vectorClock,
             bool private,
             bool active,
+            String? color,
             String? categoryId,
             DateTime? deletedAt)?
         categoryDefinition,

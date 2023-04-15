@@ -16,7 +16,6 @@ class CreateCategoryPage extends StatelessWidget {
     private: false,
     vectorClock: null,
     active: true,
-    color: '#999999',
   );
 
   @override

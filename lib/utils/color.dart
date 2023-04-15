@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 // Converts CSS style color string in the form #RRGGBB or #RRGGBBAA, where AA
 // represents the alpha channel. Returns substitute color if string is invalid.
 Color colorFromCssHex(
-  String input, {
+  String? input, {
   Color substitute = Colors.pink,
 }) {
   final regex = RegExp('#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?');
 
-  if (!regex.hasMatch(input)) {
+  if (input == null || !regex.hasMatch(input)) {
     return substitute;
   }
 
