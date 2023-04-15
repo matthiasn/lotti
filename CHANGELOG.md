@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - App icon on Windows
 - Upgraded dependencies
+- Improved color picker
 
 ### Added:
 - Category color text field for HEX color, with ColorPicker moved to bottom sheet

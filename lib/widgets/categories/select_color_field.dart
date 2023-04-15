@@ -5,7 +5,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
 
-class SelectColorField extends StatelessWidget {
+class SelectColorField extends StatefulWidget {
   const SelectColorField({
     required this.hexColor,
     required this.onColorChanged,
@@ -16,25 +16,43 @@ class SelectColorField extends StatelessWidget {
   final ValueChanged<Color> onColorChanged;
 
   @override
+  State<SelectColorField> createState() => _SelectColorFieldState();
+}
+
+class _SelectColorFieldState extends State<SelectColorField> {
+  bool valid = true;
+
+  final controller = TextEditingController();
+
+  @override
+  void initState() {
+    controller.text = widget.hexColor ?? '';
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final controller = TextEditingController()..text = hexColor ?? '';
 
     controller.addListener(() {
       final regex = RegExp('#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?');
       final text = controller.text;
       final validHex = regex.hasMatch(text);
-      debugPrint('$text $validHex');
+
+      setState(() {
+        valid = validHex;
+      });
+
       if (validHex) {
-        onColorChanged(colorFromCssHex(text));
+        widget.onColorChanged(colorFromCssHex(text));
       }
     });
 
     final style =
-        hexColor != null ? searchFieldHintStyle() : searchFieldStyle();
+        widget.hexColor != null ? searchFieldHintStyle() : searchFieldStyle();
 
-    final color = hexColor != null
-        ? colorFromCssHex(hexColor!)
+    final color = widget.hexColor != null
+        ? colorFromCssHex(widget.hexColor!)
         : styleConfig().secondaryTextColor.withOpacity(0.2);
 
     void onTap() {
@@ -58,7 +76,7 @@ class SelectColorField extends StatelessWidget {
                     pickerColor: color,
                     enableAlpha: false,
                     labelTypes: const [],
-                    onColorChanged: onColorChanged,
+                    onColorChanged: widget.onColorChanged,
                     pickerAreaBorderRadius: BorderRadius.circular(10),
                   )
                 ],
@@ -70,16 +88,15 @@ class SelectColorField extends StatelessWidget {
     }
 
     return TextField(
-      focusNode: FocusNode(),
       controller: controller,
       decoration: inputDecoration(
-        labelText: hexColor == null ? '' : localizations.colorLabel,
+        labelText:
+            widget.hexColor == null || !valid ? '' : localizations.colorLabel,
         semanticsLabel: 'Select color',
       ).copyWith(
         icon: ColorIcon(color),
         hintText: localizations.colorPickerHint,
         hintStyle: style,
-        border: InputBorder.none,
         suffixIcon: IconButton(
           onPressed: onTap,
           icon: Icon(
@@ -87,6 +104,7 @@ class SelectColorField extends StatelessWidget {
             color: styleConfig().secondaryTextColor,
           ),
         ),
+        errorText: valid ? null : localizations.colorPickerError,
       ),
       style: style,
       //onChanged: widget.onChanged,
