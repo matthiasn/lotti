@@ -55,8 +55,8 @@ class _SelectColorFieldState extends State<SelectColorField> {
         ? colorFromCssHex(widget.hexColor!)
         : styleConfig().secondaryTextColor.withOpacity(0.2);
 
-    void onTap() {
-      showModalBottomSheet<void>(
+    Future<void> onTap() async {
+      await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         builder: (BuildContext _) {
@@ -85,6 +85,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
           );
         },
       );
+      controller.text = widget.hexColor ?? '';
     }
 
     return TextField(

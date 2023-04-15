@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Category color text field for HEX color, with ColorPicker moved to bottom sheet
 
+### Fixed:
+- Update color HEX field after picking new color
+
 ## [0.8.319] - 2023-04-13
 ### Changed:
 - Measurable setting page layout
