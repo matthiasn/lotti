@@ -238,12 +238,12 @@ _$CategoryDefinition _$$CategoryDefinitionFromJson(Map<String, dynamic> json) =>
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       name: json['name'] as String,
-      color: json['color'] as String,
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       private: json['private'] as bool,
       active: json['active'] as bool,
+      color: json['color'] as String?,
       categoryId: json['categoryId'] as String?,
       deletedAt: json['deletedAt'] == null
           ? null
@@ -258,10 +258,10 @@ Map<String, dynamic> _$$CategoryDefinitionToJson(
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'name': instance.name,
-      'color': instance.color,
       'vectorClock': instance.vectorClock,
       'private': instance.private,
       'active': instance.active,
+      'color': instance.color,
       'categoryId': instance.categoryId,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,

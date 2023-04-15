@@ -6,22 +6,32 @@ description: Simple habit flow
 - pressOn: 'Add Category'
 - pressOn: 'Category name field'
 - writeText: 'Health'
+- pressOn: 'Select color'
+- writeText: '#20923C'
 - pressOn: 'Save Category'
 
 - pressOn: 'Add Category'
 - pressOn: 'Category name field'
 - writeText: 'Dental Health'
+- pressOn: 'Select color'
+- writeText: '#BFECF4'
 - pressOn: 'Save Category'
 
 - pressOn: 'Add Category'
 - pressOn: 'Category name field'
 - writeText: 'Fitness'
+- pressOn: 'Select color'
+- writeText: '##1ED2E9'
 - pressOn: 'Save Category'
 
 - pressOn: 'Add Category'
 - pressOn: 'Category name field'
 - writeText: 'Mindfulness'
+- pressOn: 'Select color'
+- writeText: '#2D5FB2'
 - pressOn: 'Save Category'
+
+- takeScreenshot: '/tmp/lotti/categories.png'
 
 - pressOn: 'Navigate back'
 - pressOn: 'Habit Management'

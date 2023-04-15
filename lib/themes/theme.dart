@@ -30,6 +30,11 @@ final inputBorder = OutlineInputBorder(
   borderSide: BorderSide(color: styleConfig().secondaryTextColor),
 );
 
+final errorBorder = OutlineInputBorder(
+  borderRadius: BorderRadius.circular(chipBorderRadius),
+  borderSide: BorderSide(color: styleConfig().alarm),
+);
+
 final inputBorderFocused = OutlineInputBorder(
   borderRadius: BorderRadius.circular(chipBorderRadius),
   borderSide: BorderSide(
@@ -45,6 +50,7 @@ InputDecoration inputDecoration({
 }) =>
     InputDecoration(
       border: inputBorder,
+      errorBorder: errorBorder,
       enabledBorder: inputBorder,
       focusedBorder: inputBorderFocused,
       floatingLabelBehavior: FloatingLabelBehavior.always,

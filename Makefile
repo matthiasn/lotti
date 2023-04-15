@@ -79,7 +79,7 @@ activate_fluttium:
 
 .PHONY: fluttium
 fluttium: activate_fluttium
-	fluttium test test_flows/habit_flow.yaml
+	fluttium test -d macOS test_flows/habit_flow.yaml
 
 .PHONY: fluttium_production
 fluttium_production: activate_fluttium

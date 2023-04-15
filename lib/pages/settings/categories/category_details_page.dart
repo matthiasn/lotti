@@ -1,7 +1,6 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -12,8 +11,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/categories/select_color_field.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -38,8 +37,6 @@ class CategoryDetailsPage extends StatelessWidget {
           builder: (context, CategorySettingsState state) {
             final item = state.categoryDefinition;
             final cubit = context.read<CategorySettingsCubit>();
-
-            final pickerColor = colorFromCssHex(state.categoryDefinition.color);
 
             return Scaffold(
               backgroundColor: styleConfig().negspace,
@@ -118,53 +115,48 @@ class CategoryDetailsPage extends StatelessWidget {
                                   title: localizations.dashboardActiveLabel,
                                   activeColor: styleConfig().starredGold,
                                 ),
-                                ColorPicker(
-                                  pickerColor: pickerColor,
-                                  enableAlpha: false,
-                                  labelTypes: const [],
+                                inputSpacer,
+                                SelectColorField(
+                                  hexColor: state.categoryDefinition.color,
                                   onColorChanged: cubit.setColor,
-                                )
+                                ),
+                                inputSpacer,
                               ],
                             ),
                           ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                icon: const Icon(MdiIcons.trashCanOutline),
+                                iconSize: settingsIconSize,
+                                tooltip: AppLocalizations.of(context)!
+                                    .settingsHabitsDeleteTooltip,
+                                color: styleConfig().secondaryTextColor,
+                                onPressed: () async {
+                                  const deleteKey = 'deleteKey';
+                                  final result =
+                                      await showModalActionSheet<String>(
+                                    context: context,
+                                    title: localizations.categoryDeleteQuestion,
+                                    actions: [
+                                      SheetAction(
+                                        icon: Icons.warning,
+                                        label:
+                                            localizations.categoryDeleteConfirm,
+                                        key: deleteKey,
+                                        isDestructiveAction: true,
+                                        isDefaultAction: true,
+                                      ),
+                                    ],
+                                  );
 
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(MdiIcons.trashCanOutline),
-                                  iconSize: settingsIconSize,
-                                  tooltip: AppLocalizations.of(context)!
-                                      .settingsHabitsDeleteTooltip,
-                                  color: styleConfig().secondaryTextColor,
-                                  onPressed: () async {
-                                    const deleteKey = 'deleteKey';
-                                    final result =
-                                        await showModalActionSheet<String>(
-                                      context: context,
-                                      title:
-                                          localizations.categoryDeleteQuestion,
-                                      actions: [
-                                        SheetAction(
-                                          icon: Icons.warning,
-                                          label: localizations
-                                              .categoryDeleteConfirm,
-                                          key: deleteKey,
-                                          isDestructiveAction: true,
-                                          isDefaultAction: true,
-                                        ),
-                                      ],
-                                    );
-
-                                    if (result == deleteKey) {
-                                      await cubit.delete();
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
+                                  if (result == deleteKey) {
+                                    await cubit.delete();
+                                  }
+                                },
+                              ),
+                            ],
                           ),
                           // const HabitAutocompleteWrapper(),
                         ],

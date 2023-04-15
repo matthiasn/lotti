@@ -98,10 +98,10 @@ class EntityDefinition with _$EntityDefinition {
     required DateTime createdAt,
     required DateTime updatedAt,
     required String name,
-    required String color,
     required VectorClock? vectorClock,
     required bool private,
     required bool active,
+    String? color,
     String? categoryId,
     DateTime? deletedAt,
   }) = CategoryDefinition;

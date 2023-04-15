@@ -58,7 +58,7 @@ class _$HabitSettingsStateCopyWithImpl<$Res, $Val extends HabitSettingsState>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? habitDefinition = freezed,
+    Object? habitDefinition = null,
     Object? dirty = null,
     Object? formKey = null,
     Object? storyTags = null,
@@ -66,7 +66,7 @@ class _$HabitSettingsStateCopyWithImpl<$Res, $Val extends HabitSettingsState>
     Object? defaultStory = freezed,
   }) {
     return _then(_value.copyWith(
-      habitDefinition: freezed == habitDefinition
+      habitDefinition: null == habitDefinition
           ? _value.habitDefinition
           : habitDefinition // ignore: cast_nullable_to_non_nullable
               as HabitDefinition,
@@ -137,7 +137,7 @@ class __$$_HabitSettingsStateSavedCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? habitDefinition = freezed,
+    Object? habitDefinition = null,
     Object? dirty = null,
     Object? formKey = null,
     Object? storyTags = null,
@@ -145,7 +145,7 @@ class __$$_HabitSettingsStateSavedCopyWithImpl<$Res>
     Object? defaultStory = freezed,
   }) {
     return _then(_$_HabitSettingsStateSaved(
-      habitDefinition: freezed == habitDefinition
+      habitDefinition: null == habitDefinition
           ? _value.habitDefinition
           : habitDefinition // ignore: cast_nullable_to_non_nullable
               as HabitDefinition,
@@ -214,27 +214,27 @@ class _$_HabitSettingsStateSaved implements _HabitSettingsStateSaved {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$_HabitSettingsStateSaved &&
-            const DeepCollectionEquality()
-                .equals(other.habitDefinition, habitDefinition) &&
+            (identical(other.habitDefinition, habitDefinition) ||
+                other.habitDefinition == habitDefinition) &&
             (identical(other.dirty, dirty) || other.dirty == dirty) &&
             (identical(other.formKey, formKey) || other.formKey == formKey) &&
             const DeepCollectionEquality()
                 .equals(other._storyTags, _storyTags) &&
             (identical(other.autoCompleteRule, autoCompleteRule) ||
                 other.autoCompleteRule == autoCompleteRule) &&
-            const DeepCollectionEquality()
-                .equals(other.defaultStory, defaultStory));
+            (identical(other.defaultStory, defaultStory) ||
+                other.defaultStory == defaultStory));
   }
 
   @override
   int get hashCode => Object.hash(
       runtimeType,
-      const DeepCollectionEquality().hash(habitDefinition),
+      habitDefinition,
       dirty,
       formKey,
       const DeepCollectionEquality().hash(_storyTags),
       autoCompleteRule,
-      const DeepCollectionEquality().hash(defaultStory));
+      defaultStory);
 
   @JsonKey(ignore: true)
   @override
