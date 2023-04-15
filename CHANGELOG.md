@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - App icon on Android
+- App icon on macOS
+- App icon on Windows
 
 ## [0.8.320] - 2023-04-15
 ### Changed:

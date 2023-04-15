@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.9.321+1995
+version: 0.9.321+1996
 
 msix_config:
   display_name: LottiApp
@@ -177,6 +177,10 @@ flutter_icons:
   macos:
     generate: true
     image_path: "assets/icon/app_icon_1024_mac.png"
+  windows:
+    generate: true
+    image_path: "assets/icon/app_icon_1024.png"
+    icon_size: 256
 
 analyzer:
   plugins:
