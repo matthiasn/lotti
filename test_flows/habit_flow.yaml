@@ -8,6 +8,11 @@ description: Simple habit flow
 - writeText: 'Health'
 - pressOn: 'Select color'
 - writeText: '#20923C'
+- takeScreenshot: '/tmp/lotti/category_health.png'
+- pressOn: 'Pick color'
+- takeScreenshot: '/tmp/lotti/category_health_picker.png'
+- pressOn:
+    offset: [5.0, 5.0]
 - pressOn: 'Save Category'
 
 - pressOn: 'Add Category'
@@ -21,12 +26,19 @@ description: Simple habit flow
 - pressOn: 'Category name field'
 - writeText: 'Fitness'
 - pressOn: 'Select color'
-- writeText: '##1ED2E9'
+- writeText: '#1ED2E9'
 - pressOn: 'Save Category'
 
 - pressOn: 'Add Category'
 - pressOn: 'Category name field'
 - writeText: 'Mindfulness'
+- pressOn: 'Select color'
+- writeText: '#2DB25F'
+- pressOn: 'Save Category'
+
+- pressOn: 'Add Category'
+- pressOn: 'Category name field'
+- writeText: 'Sleep'
 - pressOn: 'Select color'
 - writeText: '#2D5FB2'
 - pressOn: 'Save Category'
@@ -62,6 +74,23 @@ description: Simple habit flow
 - takeScreenshot: '/tmp/lotti/habit3.png'
 - pressOn: 'Save Habit'
 
+- pressOn: 'Add Habit'
+- pressOn: 'Habit name field'
+- writeText: 'Sleep 7h30m or more'
+- pressOn: 'Select category'
+- pressOn: 'Sleep'
+- pressOn: 'Habit priority'
+- takeScreenshot: '/tmp/lotti/habit4.png'
+- pressOn: 'Save Habit'
+
+- pressOn: 'Add Habit'
+- pressOn: 'Habit name field'
+- writeText: 'Running 👟'
+- pressOn: 'Select category'
+- pressOn: 'Fitness'
+- takeScreenshot: '/tmp/lotti/habit5.png'
+- pressOn: 'Save Habit'
+
 - pressOn: 'Habits Tab'
 - takeScreenshot: '/tmp/lotti/habits.png'
 
@@ -69,6 +98,9 @@ description: Simple habit flow
 - pressOn: 'Fail'
 
 - pressOn: 'Complete Floss PM'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Running 👟'
 - pressOn: 'Success'
 
 - pressOn: 'Complete 10K+ Steps'
