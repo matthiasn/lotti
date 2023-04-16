@@ -87,9 +87,9 @@ fluttium_production: activate_fluttium
 
 .PHONY: fluttium_docs
 fluttium_docs:
-	mkdir -p ../lotti-docs/images/${LOTTI_VERSION}
-	cp /tmp/lotti/* ../lotti-docs/images/${LOTTI_VERSION}/
-	cd ../lotti-docs/ && git pull && git add . && git commit -m ${LOTTI_VERSION} && git push
+	mkdir -p ~/github/lotti-docs/images/${LOTTI_VERSION}
+	cp /tmp/lotti/* ~/github/lotti-docs/images/${LOTTI_VERSION}/
+	cd ~/github/lotti-docs/ && git pull && git add . && git commit -m ${LOTTI_VERSION} && git push
 
 .PHONY: migrate_db
 migrate_db:
