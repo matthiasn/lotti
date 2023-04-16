@@ -131,6 +131,10 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                               )
                             : const SizedBox.shrink(),
                         results.map((res) {
+                          final daysAgo = DateTime.now()
+                              .difference(DateTime.parse(res.dayString))
+                              .inDays;
+
                           return Flexible(
                             child: Tooltip(
                               excludeFromSemantics: true,
@@ -144,14 +148,18 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                                             : ymd(DateTime.now()),
                                   );
                                 },
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(
-                                    widget.showGaps ? 2 : 0,
-                                  ),
-                                  child: Container(
-                                    height: 14,
-                                    color: habitCompletionColor(
-                                      res.completionType,
+                                child: Semantics(
+                                  label:
+                                      'Complete ${widget.habitDefinition.name} -$daysAgo',
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(
+                                      widget.showGaps ? 2 : 0,
+                                    ),
+                                    child: Container(
+                                      height: 14,
+                                      color: habitCompletionColor(
+                                        res.completionType,
+                                      ),
                                     ),
                                   ),
                                 ),

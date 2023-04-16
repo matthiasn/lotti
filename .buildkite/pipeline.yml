@@ -79,6 +79,7 @@ steps:
       - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
       - touch ~/Library/Containers/com.matthiasn.lotti.dev
       - trash ~/Library/Containers/com.matthiasn.lotti.dev
+      - "make activate_fluttium"
       - "make fluttium"
       - "make fluttium_docs"
       - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
