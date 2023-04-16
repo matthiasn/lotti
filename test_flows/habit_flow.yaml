@@ -92,18 +92,118 @@ description: Simple habit flow
 - pressOn: 'Save Habit'
 
 - pressOn: 'Habits Tab'
-- takeScreenshot: '/tmp/lotti/habits.png'
+- takeScreenshot: '/tmp/lotti/habit_completions1.png'
+
+- pressOn: 'Complete Floss AM -6'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss AM -5'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss AM -4'
+- pressOn: 'Fail'
+
+- pressOn: 'Complete Floss AM -3'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss AM -2'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss AM -1'
+- pressOn: 'Success'
 
 - pressOn: 'Complete Floss AM'
 - pressOn: 'Fail'
 
-- pressOn: 'Complete Floss PM'
+- pressOn: 'Complete Floss PM -6'
 - pressOn: 'Success'
 
-- pressOn: 'Complete Running 👟'
+- pressOn: 'Complete Floss PM -5'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss PM -4'
+- pressOn: 'Fail'
+
+- pressOn: 'Complete Floss PM -3'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss PM -2'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss PM -1'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -10'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -9'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -8'
+- pressOn: 'Fail'
+
+- pressOn: 'Complete 10K+ Steps -7'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -6'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -5'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -4'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -3'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete 10K+ Steps -2'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -1'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Running 👟 -10'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Running 👟 -9'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -8'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -7'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Running 👟 -6'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -5'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -4'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Running 👟 -3'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -2'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -1'
+- pressOn: 'Skip'
+
+- takeScreenshot: '/tmp/lotti/habit_completions2.png'
+
+- pressOn: 'Complete Floss PM'
 - pressOn: 'Success'
 
 - pressOn: 'Complete 10K+ Steps'
 - pressOn: 'Success'
 
+- pressOn: 'Complete Running 👟'
+- pressOn: 'Success'
+
 - pressOn: 'Habits - done'
+
+- takeScreenshot: '/tmp/lotti/habit_completions3.png'

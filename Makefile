@@ -78,11 +78,11 @@ activate_fluttium:
 	flutter pub global activate fluttium_cli
 
 .PHONY: fluttium
-fluttium: activate_fluttium
+fluttium:
 	fluttium test -d macOS test_flows/habit_flow.yaml
 
 .PHONY: fluttium_production
-fluttium_production: activate_fluttium
+fluttium_production:
 	fluttium test test_flows/habit_flow.yaml --flavor production --target lib/main.dart
 
 .PHONY: fluttium_docs
