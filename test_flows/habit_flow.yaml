@@ -133,6 +133,36 @@ description: Simple habit flow
 - pressOn: 'Complete Floss PM -1'
 - pressOn: 'Success'
 
+- pressOn: 'Complete Sleep 7h30m or more -10'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -9'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -8'
+- pressOn: 'Fail'
+
+- pressOn: 'Complete Sleep 7h30m or more -7'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -6'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -5'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -4'
+- pressOn: 'Fail'
+
+- pressOn: 'Complete Sleep 7h30m or more -3'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -2'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -1'
+- pressOn: 'Success'
+
 - pressOn: 'Complete 10K+ Steps -10'
 - pressOn: 'Success'
 
