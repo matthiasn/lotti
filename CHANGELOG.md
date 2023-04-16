@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Fluttium screenshots are pushed to lotti-docs repository
+
+## [0.8.321] - 2023-04-15
+### Changed:
 - App icon on Android
 - App icon on macOS
 - App icon on Windows

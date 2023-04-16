@@ -8,6 +8,11 @@ description: Simple habit flow
 - writeText: 'Health'
 - pressOn: 'Select color'
 - writeText: '#20923C'
+- takeScreenshot: '/tmp/lotti/category_health.png'
+- pressOn: 'Pick color'
+- takeScreenshot: '/tmp/lotti/category_health_picker.png'
+- pressOn:
+    offset: [5.0, 5.0]
 - pressOn: 'Save Category'
 
 - pressOn: 'Add Category'
@@ -21,12 +26,19 @@ description: Simple habit flow
 - pressOn: 'Category name field'
 - writeText: 'Fitness'
 - pressOn: 'Select color'
-- writeText: '##1ED2E9'
+- writeText: '#1ED2E9'
 - pressOn: 'Save Category'
 
 - pressOn: 'Add Category'
 - pressOn: 'Category name field'
 - writeText: 'Mindfulness'
+- pressOn: 'Select color'
+- writeText: '#2DB25F'
+- pressOn: 'Save Category'
+
+- pressOn: 'Add Category'
+- pressOn: 'Category name field'
+- writeText: 'Sleep'
 - pressOn: 'Select color'
 - writeText: '#2D5FB2'
 - pressOn: 'Save Category'
@@ -62,11 +74,156 @@ description: Simple habit flow
 - takeScreenshot: '/tmp/lotti/habit3.png'
 - pressOn: 'Save Habit'
 
+- pressOn: 'Add Habit'
+- pressOn: 'Habit name field'
+- writeText: 'Sleep 7h30m or more'
+- pressOn: 'Select category'
+- pressOn: 'Sleep'
+- pressOn: 'Habit priority'
+- takeScreenshot: '/tmp/lotti/habit4.png'
+- pressOn: 'Save Habit'
+
+- pressOn: 'Add Habit'
+- pressOn: 'Habit name field'
+- writeText: 'Running 👟'
+- pressOn: 'Select category'
+- pressOn: 'Fitness'
+- takeScreenshot: '/tmp/lotti/habit5.png'
+- pressOn: 'Save Habit'
+
 - pressOn: 'Habits Tab'
-- takeScreenshot: '/tmp/lotti/habits.png'
+- takeScreenshot: '/tmp/lotti/habit_completions1.png'
+
+- pressOn: 'Complete Floss AM -6'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss AM -5'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss AM -4'
+- pressOn: 'Fail'
+
+- pressOn: 'Complete Floss AM -3'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss AM -2'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss AM -1'
+- pressOn: 'Success'
 
 - pressOn: 'Complete Floss AM'
 - pressOn: 'Fail'
+
+- pressOn: 'Complete Floss PM -6'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss PM -5'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss PM -4'
+- pressOn: 'Fail'
+
+- pressOn: 'Complete Floss PM -3'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss PM -2'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Floss PM -1'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -10'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -9'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -8'
+- pressOn: 'Fail'
+
+- pressOn: 'Complete Sleep 7h30m or more -7'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -6'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -5'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -4'
+- pressOn: 'Fail'
+
+- pressOn: 'Complete Sleep 7h30m or more -3'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -2'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Sleep 7h30m or more -1'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -10'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -9'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -8'
+- pressOn: 'Fail'
+
+- pressOn: 'Complete 10K+ Steps -7'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -6'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -5'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -4'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -3'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete 10K+ Steps -2'
+- pressOn: 'Success'
+
+- pressOn: 'Complete 10K+ Steps -1'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Running 👟 -10'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Running 👟 -9'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -8'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -7'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Running 👟 -6'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -5'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -4'
+- pressOn: 'Success'
+
+- pressOn: 'Complete Running 👟 -3'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -2'
+- pressOn: 'Skip'
+
+- pressOn: 'Complete Running 👟 -1'
+- pressOn: 'Skip'
+
+- takeScreenshot: '/tmp/lotti/habit_completions2.png'
 
 - pressOn: 'Complete Floss PM'
 - pressOn: 'Success'
@@ -74,4 +231,9 @@ description: Simple habit flow
 - pressOn: 'Complete 10K+ Steps'
 - pressOn: 'Success'
 
+- pressOn: 'Complete Running 👟'
+- pressOn: 'Success'
+
 - pressOn: 'Habits - done'
+
+- takeScreenshot: '/tmp/lotti/habit_completions3.png'

@@ -105,6 +105,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
           icon: Icon(
             Icons.color_lens_outlined,
             color: styleConfig().secondaryTextColor,
+            semanticLabel: 'Pick color',
           ),
         ),
         errorText: valid ? null : localizations.colorPickerError,
