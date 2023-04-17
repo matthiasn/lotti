@@ -1,7 +1,7 @@
 name: lotti
-description: A Smart Journal.
+description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.323+2004
+version: 0.9.323+2005
 
 msix_config:
   display_name: LottiApp

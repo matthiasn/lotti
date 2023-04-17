@@ -37,22 +37,24 @@ you will see an empty page:
 Tap the plus icon at the bottom right to create a new category, and enter the name and hex color as
 desired, for example:
 
-![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.322+2003/category_health.png)
+![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2004/category_health.png)
 
 You can also use a color picker to get exactly the color that means something to you. For that, tap
 the color palette on the right side of the hex color field and pick what you like:
 
-![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.322+2003/category_health_picker.png)
+![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2004/category_health_picker.png)
 
 Finally, tap the save button. Repeat until you have a good idea what areas you want to look at next
 (you can always add more categories later). For example:
 
-![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.322+2003/categories.png)
+![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2004/categories.png)
 
 ## Habits
+Now that categories are defined, let's add some habits. Technically, you could add habits without
+categories, but then those habits would be displayed with a boring gray color, and that would look
+pretty boring. Got to `Settings > Habits`:
 
-
-First of all, you define a habit. This is done under `Settings > Habits`:
+![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2005/habits_empty.png)
 
 
 

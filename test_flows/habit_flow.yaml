@@ -48,6 +48,7 @@ description: Simple habit flow
 
 - pressOn: 'Navigate back'
 - pressOn: 'Habit Management'
+- takeScreenshot: '/tmp/lotti/habits_empty.png'
 
 - pressOn: 'Add Habit'
 - pressOn: 'Habit name field'
