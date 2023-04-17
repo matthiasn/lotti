@@ -79,7 +79,7 @@ activate_fluttium:
 
 .PHONY: fluttium
 fluttium:
-	fluttium test -d macOS test_flows/habit_flow.yaml
+	fluttium test --no-verbose -d macOS test_flows/habit_flow.yaml
 
 .PHONY: fluttium_production
 fluttium_production:
