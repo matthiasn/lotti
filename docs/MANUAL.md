@@ -32,29 +32,72 @@ able to focus on one (or a few) at a time.
 In `Settings > Categories`, you can add and manage categories used elsewhere in the app. Initially,
 you will see an empty page:
 
-![Empty Categories](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2004/categories_empty.png)
+![Category Settings - empty](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/categories_empty.png)
 
 Tap the plus icon at the bottom right to create a new category, and enter the name and hex color as
 desired, for example:
 
-![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2004/category_health.png)
+![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/category_health.png)
 
 You can also use a color picker to get exactly the color that means something to you. For that, tap
 the color palette on the right side of the hex color field and pick what you like:
 
-![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2004/category_health_picker.png)
+![Health Category - Color Picker](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/category_health_picker.png)
 
 Finally, tap the save button. Repeat until you have a good idea what areas you want to look at next
 (you can always add more categories later). For example:
 
-![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2004/categories.png)
+![Category Settings](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/categories.png)
 
 ## Habits
+
+### Create Habits
 Now that categories are defined, let's add some habits. Technically, you could add habits without
 categories, but then those habits would be displayed with a boring gray color, and that would look
 pretty boring. Got to `Settings > Habits`:
 
-![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2005/habits_empty.png)
+![Habit Settings - empty](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habits_empty.png)
+
+Tap the plus icon and add a title:
+
+![New Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit3_initial.png)
+
+Here, you can also assign the category you created earlier, in this case `Fitness`:
+
+![New Habit - Select Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit3_category.png)
+
+Finally, save the habit:
+
+![New Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit3_final.png)
+
+Repeat creating habits until all the ones you want to start with are defined, for example:
+
+![New Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habits.png)
+
+### Complete Habits on a regular base
+Go to the Habits page, all the way to the left (this page is also shown after application startup).
+This could initially look like this:
+
+![Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit_completions1.png)
+
+Above, you'll notice that the habit completion chart is all red. You can remedy this in one of two ways:
+
+- Backfilling by adding habit completions for previous days.
+- Defining the start date in the settings of a habit.
+
+#### Habit completion backfill
+You can backfill habit completions for previous days by tapping on the previous days in the row
+below the habit titles, which will create a habit completion entry at `23:59` of that particular
+day. For example, when you know walked at least 10K steps two days ago but were lazy yesterday, tap
+the red rounded rectangle two from the right and complete the habit as a 'success', and the same for
+one further to the right, but completed as a 'fail', and so on:
+
+![Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit_completion_10k_steps.png)
+
+Eventually, you will end up with a habit completion card that might look a lot more satisfying than
+the all red indicator row in the beginning:
+
+![Habit - 10k+ Steps backfilled](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit_completion_10k_all.png)
 
 
 

@@ -70,10 +70,12 @@ description: Simple habit flow
 - pressOn: 'Add Habit'
 - pressOn: 'Habit name field'
 - writeText: '10K+ Steps'
+- takeScreenshot: '/tmp/lotti/habit3_initial.png'
 - pressOn: 'Select category'
+- takeScreenshot: '/tmp/lotti/habit3_category.png'
 - pressOn: 'Fitness'
 - pressOn: 'Habit priority'
-- takeScreenshot: '/tmp/lotti/habit3.png'
+- takeScreenshot: '/tmp/lotti/habit3_final.png'
 - pressOn: 'Save Habit'
 
 - pressOn: 'Add Habit'
@@ -92,6 +94,8 @@ description: Simple habit flow
 - pressOn: 'Fitness'
 - takeScreenshot: '/tmp/lotti/habit5.png'
 - pressOn: 'Save Habit'
+
+- takeScreenshot: '/tmp/lotti/habits.png'
 
 - pressOn: 'Habits Tab'
 - takeScreenshot: '/tmp/lotti/habit_completions1.png'
@@ -193,7 +197,10 @@ description: Simple habit flow
 - pressOn: 'Success'
 
 - pressOn: 'Complete 10K+ Steps -1'
-- pressOn: 'Success'
+- takeScreenshot: '/tmp/lotti/habit_completion_10k_steps.png'
+- pressOn: 'Fail'
+
+- takeScreenshot: '/tmp/lotti/habit_completion_10k_all.png'
 
 - pressOn: 'Complete Running 👟 -10'
 - pressOn: 'Success'
