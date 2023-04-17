@@ -2,6 +2,7 @@ description: Simple habit flow
 ---
 - pressOn: 'Settings Tab'
 - pressOn: 'Category Management'
+- takeScreenshot: '/tmp/lotti/categories_empty.png'
 
 - pressOn: 'Add Category'
 - pressOn: 'Category name field'
