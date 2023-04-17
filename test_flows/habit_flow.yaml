@@ -238,6 +238,7 @@ description: Simple habit flow
 - pressOn: 'Success'
 
 - pressOn: 'Complete 10K+ Steps'
+- takeScreenshot: '/tmp/lotti/habit_completion_10k_steps_now.png'
 - pressOn: 'Success'
 
 - pressOn: 'Complete Running 👟'
@@ -245,4 +246,4 @@ description: Simple habit flow
 
 - pressOn: 'Habits - done'
 
-- takeScreenshot: '/tmp/lotti/habit_completions3.png'
+- takeScreenshot: '/tmp/lotti/habit_completions_done.png'

@@ -32,22 +32,22 @@ able to focus on one (or a few) at a time.
 In `Settings > Categories`, you can add and manage categories used elsewhere in the app. Initially,
 you will see an empty page:
 
-![Category Settings - empty](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/categories_empty.png)
+![Category Settings - empty](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/categories_empty.png)
 
 Tap the plus icon at the bottom right to create a new category, and enter the name and hex color as
 desired, for example:
 
-![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/category_health.png)
+![Health Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/category_health.png)
 
 You can also use a color picker to get exactly the color that means something to you. For that, tap
 the color palette on the right side of the hex color field and pick what you like:
 
-![Health Category - Color Picker](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/category_health_picker.png)
+![Health Category - Color Picker](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/category_health_picker.png)
 
 Finally, tap the save button. Repeat until you have a good idea what areas you want to look at next
 (you can always add more categories later). For example:
 
-![Category Settings](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/categories.png)
+![Category Settings](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/categories.png)
 
 ## Habits
 
@@ -56,50 +56,76 @@ Now that categories are defined, let's add some habits. Technically, you could a
 categories, but then those habits would be displayed with a boring gray color, and that would look
 pretty boring. Got to `Settings > Habits`:
 
-![Habit Settings - empty](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habits_empty.png)
+![Habit Settings - empty](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/habits_empty.png)
 
 Tap the plus icon and add a title:
 
-![New Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit3_initial.png)
+![New Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/habit3_initial.png)
 
 Here, you can also assign the category you created earlier, in this case `Fitness`:
 
-![New Habit - Select Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit3_category.png)
+![New Habit - Select Category](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/habit3_category.png)
 
 Finally, save the habit:
 
-![New Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit3_final.png)
+![New Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/habit3_final.png)
 
 Repeat creating habits until all the ones you want to start with are defined, for example:
 
-![New Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habits.png)
+![New Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/habits.png)
 
 ### Complete Habits on a regular base
 Go to the Habits page, all the way to the left (this page is also shown after application startup).
 This could initially look like this:
 
-![Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit_completions1.png)
+![Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/habit_completions1.png)
 
 Above, you'll notice that the habit completion chart is all red. You can remedy this in one of two ways:
 
 - Backfilling by adding habit completions for previous days.
 - Defining the start date in the settings of a habit.
 
-#### Habit completion backfill
+#### Habit completion backfill (optional)
 You can backfill habit completions for previous days by tapping on the previous days in the row
 below the habit titles, which will create a habit completion entry at `23:59` of that particular
 day. For example, when you know walked at least 10K steps two days ago but were lazy yesterday, tap
 the red rounded rectangle two from the right and complete the habit as a 'success', and the same for
 one further to the right, but completed as a 'fail', and so on:
 
-![Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit_completion_10k_steps.png)
+![Habit - 10k+ Steps](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/habit_completion_10k_steps.png)
 
 Eventually, you will end up with a habit completion card that might look a lot more satisfying than
 the all red indicator row in the beginning:
 
-![Habit - 10k+ Steps backfilled](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2006/habit_completion_10k_all.png)
+![Habit - 10k+ Steps backfilled](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/habit_completion_10k_all.png)
 
+#### Habit completion
+Whenever you want to complete a habit, e.g. because you just flossed, took a certain medication, or
+whatever else the desired recurring behavior might be, you just tap the checkmark icon on the far
+right of a habit completion card. A dialog will open for completing the habit, with date and time
+prefilled, where you can complete a habit with one of three habit completion types:
 
+- **Fail**: I record this state when I could have done something but failed to do so. Example: I
+  could’ve flossed but did not.
+- **Skip**: this state is meant for habits where I was motivated to complete a habit but could not,
+  for reasons outside of my responsibility. Example: let’s say I want to play ping pong every day
+  but if I don’t find anyone to play with, I use skip. I also use skip for habits that I only want
+  to complete once or a few times for week. Could be a weekly fluoride treatment for stronger teeth,
+  or running, where I only record fail if the last time is too long ago. But if I went running
+  yesterday, it’s a skip as I don’t even want to go running every day.
+- **Success**: this is obviously the desired state. I’m aiming for checking off 80% or more of my
+  habits every day, hence also the 80% line in the chart.
+
+![Habit - 10k+ Steps now](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/habit_completion_10k_steps_now.png)
+
+The Habits page has different section for habits that are open now, habits due later, and habits
+that were already completed for the day. Example for the latter:
+
+![Habits - done](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.323+2007/habit_completions_done.png)
+
+The habit completion dialog can also show data relevant to the respective habit, for example the
+different exercise types related for example to a `morning exercises` habit. But first, we need to
+look at defining measurable data types and dashboards.
 
 ## Creating Measurables [OUTDATED]
 
