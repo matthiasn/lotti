@@ -79,7 +79,7 @@ activate_fluttium:
 
 .PHONY: fluttium
 fluttium:
-	fluttium test --no-verbose -d macOS test_flows/habit_flow.yaml
+	fluttium test test_flows/habit_flow.yaml -d macOS --reporter expanded
 
 .PHONY: fluttium_production
 fluttium_production:
@@ -258,12 +258,6 @@ splash:
 .PHONY: icons
 icons:
 	flutter pub run flutter_launcher_icons:main
-
-.PHONY: viz
-viz:
-	dart pub global run dcdg -o classes.viz.puml -s lib/classes/
-	PLANTUML_LIMIT_SIZE=12000 plantuml classes.viz.puml
-	open classes.viz.png
 
 .PHONY: clean_test
 clean_test: clean deps l10n build_runner test
