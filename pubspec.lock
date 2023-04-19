@@ -1001,14 +1001,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.0"
-  getwidget:
-    dependency: "direct main"
-    description:
-      name: getwidget
-      sha256: "6bdf191f91de5f80f9abd49e3cffaef66256167aaa091626ac78d5c81c645335"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.1"
   glados:
     dependency: "direct dev"
     description:

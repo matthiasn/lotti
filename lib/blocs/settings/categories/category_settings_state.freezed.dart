@@ -54,13 +54,13 @@ class _$CategorySettingsStateCopyWithImpl<$Res,
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? categoryDefinition = null,
+    Object? categoryDefinition = freezed,
     Object? dirty = null,
     Object? valid = null,
     Object? formKey = null,
   }) {
     return _then(_value.copyWith(
-      categoryDefinition: null == categoryDefinition
+      categoryDefinition: freezed == categoryDefinition
           ? _value.categoryDefinition
           : categoryDefinition // ignore: cast_nullable_to_non_nullable
               as CategoryDefinition,
@@ -106,13 +106,13 @@ class __$$_CategorySettingsStateCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? categoryDefinition = null,
+    Object? categoryDefinition = freezed,
     Object? dirty = null,
     Object? valid = null,
     Object? formKey = null,
   }) {
     return _then(_$_CategorySettingsState(
-      categoryDefinition: null == categoryDefinition
+      categoryDefinition: freezed == categoryDefinition
           ? _value.categoryDefinition
           : categoryDefinition // ignore: cast_nullable_to_non_nullable
               as CategoryDefinition,
@@ -160,16 +160,20 @@ class _$_CategorySettingsState implements _CategorySettingsState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$_CategorySettingsState &&
-            (identical(other.categoryDefinition, categoryDefinition) ||
-                other.categoryDefinition == categoryDefinition) &&
+            const DeepCollectionEquality()
+                .equals(other.categoryDefinition, categoryDefinition) &&
             (identical(other.dirty, dirty) || other.dirty == dirty) &&
             (identical(other.valid, valid) || other.valid == valid) &&
             (identical(other.formKey, formKey) || other.formKey == formKey));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, categoryDefinition, dirty, valid, formKey);
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(categoryDefinition),
+      dirty,
+      valid,
+      formKey);
 
   @JsonKey(ignore: true)
   @override
