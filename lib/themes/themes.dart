@@ -30,7 +30,6 @@ final Color ripIce = colorFromCssHex('#EFFFFB');
 final Color alarm = colorFromCssHex('#FF7373');
 final Color ice = colorFromCssHex('#F5F5F5');
 final Color nickel = colorFromCssHex('#B4B2B2');
-final Color mineShaft = colorFromCssHex('#313131');
 
 final darkTheme = StyleConfig(
   tagColor: const Color.fromRGBO(155, 200, 246, 1),
@@ -55,7 +54,7 @@ final darkTheme = StyleConfig(
   primaryColorLight: primaryColorLight,
   hover: iron,
   alarm: alarm,
-  cardColor: primaryColor.desaturate().withOpacity(0.15),
+  cardColor: primaryColor.desaturate(50).darken(60),
   chartTextColor: nickel,
   keyboardAppearance: Brightness.dark,
   textEditorBackground: Colors.white.withOpacity(0.1),

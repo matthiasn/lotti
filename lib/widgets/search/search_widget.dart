@@ -40,8 +40,8 @@ class _SearchWidgetState extends State<SearchWidget> {
       margin: widget.margin,
       height: 53,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+        color: styleConfig().cardColor,
         border: Border.all(color: Colors.black26),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8),
