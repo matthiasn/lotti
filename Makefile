@@ -80,7 +80,6 @@ activate_fluttium:
 .PHONY: fluttium
 fluttium:
 	fluttium test test_flows/habit_flow.yaml -d macOS
-	fluttium test test_flows/measurables_dashboards_flow.yaml -d macOS
 
 .PHONY: fluttium_production
 fluttium_production:

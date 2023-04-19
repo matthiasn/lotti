@@ -247,3 +247,93 @@ description: Simple habit flow
 - pressOn: 'Habits - done'
 
 - takeScreenshot: '/tmp/lotti/habit_completions_done.png'
+
+- pressOn: 'Settings Tab'
+- pressOn: 'Measurable Data Types'
+- takeScreenshot: '/tmp/lotti/measurables_empty.png'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Water'
+- pressOn: 'Measurable - description field'
+- writeText: "I'm a person who always stays hydrated."
+- pressOn: 'Measurable - unit name field'
+- writeText: 'ml'
+- takeScreenshot: '/tmp/lotti/measurable_water.png'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Coffee'
+- pressOn: 'Measurable - description field'
+- writeText: "I'm a person who drinks reasonable amounts of coffee."
+- pressOn: 'Measurable - unit name field'
+- writeText: 'ml'
+- takeScreenshot: '/tmp/lotti/measurable_coffee.png'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Pull-Ups'
+- pressOn: 'Measurable - unit name field'
+- writeText: 'reps'
+- takeScreenshot: '/tmp/lotti/measurable_pull_ups.png'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Push-Ups'
+- pressOn: 'Measurable - unit name field'
+- writeText: 'reps'
+- takeScreenshot: '/tmp/lotti/measurable_push_ups.png'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Sit-Ups'
+- pressOn: 'Measurable - unit name field'
+- writeText: 'reps'
+- takeScreenshot: '/tmp/lotti/measurable_sit_ups.png'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- takeScreenshot: '/tmp/lotti/measurables.png'
+
+- pressOn: 'Settings Tab'
+- pressOn: 'Dashboard Management'
+- takeScreenshot: '/tmp/lotti/dashboards_empty.png'
+
+- pressOn: 'Add Dashboard'
+- pressOn: 'Dashboard - name field'
+- writeText: 'Exercise'
+- pressOn: 'Dashboard - description field'
+- writeText: "I'm a person who exercises, as shown in this dashboard."
+- takeScreenshot: '/tmp/lotti/dashboard_exercise.png'
+- pressOn: 'Select category'
+- takeScreenshot: '/tmp/lotti/dashboard_exercise_category.png'
+- pressOn: 'Fitness'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Add Measurable Data Chart'
+- pressOn: 'Push-Ups'
+- pressOn: 'Pull-Ups'
+- pressOn: 'Sit-Ups'
+- takeScreenshot: '/tmp/lotti/dashboard_exercise2.png'
+- pressOn: 'OK'
+- takeScreenshot: '/tmp/lotti/dashboard_exercise3.png'
+- pressOn: 'Save Dashboard'
+
+- takeScreenshot: '/tmp/lotti/dashboards.png'
+
+- pressOn: 'Dashboards Tab'
+
+- takeScreenshot: '/tmp/lotti/dashboards_tab.png'
