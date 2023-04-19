@@ -60,7 +60,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               SettingsNavCard(
                 title: localizations.settingsMeasurablesTitle,
-                semanticsLabel: 'Measurables Management',
+                semanticsLabel: 'Measurable Data Types',
                 path: '/settings/measurables',
               ),
               SettingsNavCard(

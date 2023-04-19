@@ -77,6 +77,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                 child: Text(
                   localizations.settingsMeasurableSaveLabel,
                   style: saveButtonStyle(),
+                  semanticsLabel: 'Save Measurable',
                 ),
               ),
             )
@@ -106,6 +107,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           initialValue: item.displayName,
                           labelText: localizations.settingsMeasurableNameLabel,
                           name: 'displayName',
+                          semanticsLabel: 'Measurable - name field',
                         ),
                         inputSpacer,
                         FormTextField(
@@ -115,6 +117,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                               localizations.settingsMeasurableDescriptionLabel,
                           fieldRequired: false,
                           name: 'description',
+                          semanticsLabel: 'Measurable - description field',
                         ),
                         inputSpacer,
                         FormTextField(
@@ -122,6 +125,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           labelText: localizations.settingsMeasurableUnitLabel,
                           fieldRequired: false,
                           name: 'unitName',
+                          semanticsLabel: 'Measurable - unit name field',
                         ),
                         inputSpacer,
                         FormSwitch(

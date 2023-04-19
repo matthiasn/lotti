@@ -1,0 +1,61 @@
+description: Simple habit flow
+---
+- pressOn: 'Settings Tab'
+- pressOn: 'Measurable Data Types'
+- takeScreenshot: '/tmp/lotti/measurables_empty.png'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Water'
+- pressOn: 'Measurable - description field'
+- writeText: "I'm a person who always stays hydrated."
+- pressOn: 'Measurable - unit name field'
+- writeText: 'ml'
+- takeScreenshot: '/tmp/lotti/measurable_water.png'
+- pressOn:
+    offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Coffee'
+- pressOn: 'Measurable - description field'
+- writeText: "I'm a person who drinks reasonable amounts of coffee."
+- pressOn: 'Measurable - unit name field'
+- writeText: 'ml'
+- takeScreenshot: '/tmp/lotti/measurable_coffee.png'
+- pressOn:
+    offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Pull-Ups'
+- pressOn: 'Measurable - unit name field'
+- writeText: 'reps'
+- takeScreenshot: '/tmp/lotti/measurable_pull_ups.png'
+- pressOn:
+    offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Push-Ups'
+- pressOn: 'Measurable - unit name field'
+- writeText: 'reps'
+- takeScreenshot: '/tmp/lotti/measurable_push_ups.png'
+- pressOn:
+    offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Sit-Ups'
+- pressOn: 'Measurable - unit name field'
+- writeText: 'reps'
+- takeScreenshot: '/tmp/lotti/measurable_sit_ups.png'
+- pressOn:
+    offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- takeScreenshot: '/tmp/lotti/measurables.png'
