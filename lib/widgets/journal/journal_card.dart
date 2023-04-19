@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:getwidget/components/list_tile/gf_list_tile.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -267,27 +266,34 @@ class JournalImageCard extends StatelessWidget {
         }
 
         return Card(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: GFListTile(
-              margin: EdgeInsets.zero,
-              padding: const EdgeInsets.only(right: 8),
-              avatar: LimitedBox(
-                maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
-                child: CardImageWidget(
-                  journalImage: updatedItem as JournalImage,
-                  height: 160,
-                  fit: BoxFit.cover,
+          child: ListTile(
+            contentPadding: const EdgeInsets.only(right: 16),
+            onTap: onTap,
+            minLeadingWidth: 0,
+            minVerticalPadding: 0,
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LimitedBox(
+                  maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
+                  maxHeight: 160,
+                  child: CardImageWidget(
+                    journalImage: updatedItem as JournalImage,
+                    height: 160,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-              title: SizedBox(
-                height: 160,
-                child: JournalCardTitle(
-                  item: updatedItem,
-                  maxHeight: 200,
+                const SizedBox(width: 10),
+                Flexible(
+                  child: SizedBox(
+                    height: 160,
+                    child: JournalCardTitle(
+                      item: updatedItem,
+                      maxHeight: 200,
+                    ),
+                  ),
                 ),
-              ),
-              onTap: onTap,
+              ],
             ),
           ),
         );
