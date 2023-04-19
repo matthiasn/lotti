@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.323+2008
+version: 0.9.323+2009
 
 msix_config:
   display_name: LottiApp
@@ -172,8 +172,10 @@ dev_dependencies:
 
 flutter_icons:
   android: true
-  ios: false
+  ios: true
+  remove_alpha_ios: true
   image_path: "assets/icon/app_icon_1024.png"
+  image_path_ios: "assets/icon/app_icon_1024_square.png"
   macos:
     generate: true
     image_path: "assets/icon/app_icon_1024_mac.png"
