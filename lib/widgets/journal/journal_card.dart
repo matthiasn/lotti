@@ -190,7 +190,7 @@ class JournalCard extends StatelessWidget {
             }
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 5),
               child: Card(
                 child: ListTile(
                   leading: updatedItem.maybeMap(

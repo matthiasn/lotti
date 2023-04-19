@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semantic labels in measurable data type setting
 - Screenshot of creating measurable data types for manual
 
+### Changed:
+- Colors and whitespace
+
 ## [0.8.324] - 2023-04-19
 ### Fixed:
 - Image card background

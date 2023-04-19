@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 final Color white = colorFromCssHex('#FFFFFF');
 final Color coal = colorFromCssHex('#000000');
@@ -49,12 +50,12 @@ final darkTheme = StyleConfig(
   unselectedChoiceChipTextColor: const Color.fromRGBO(255, 245, 240, 1),
   negspace: coal,
   primaryTextColor: white,
-  secondaryTextColor: iron,
+  secondaryTextColor: primaryColor.desaturate(70).darken(20),
   primaryColor: primaryColor,
   primaryColorLight: primaryColorLight,
   hover: iron,
   alarm: alarm,
-  cardColor: mineShaft,
+  cardColor: primaryColor.desaturate().withOpacity(0.15),
   chartTextColor: nickel,
   keyboardAppearance: Brightness.dark,
   textEditorBackground: Colors.white.withOpacity(0.1),

@@ -54,15 +54,18 @@ class _DashboardsListPageState extends State<DashboardsListPage> {
                 SliverTitleBar(localizations.navTabTitleInsights),
                 const DashboardsSliverAppBar(),
                 SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      ...dashboards.mapIndexed(
-                        (index, dashboard) => DashboardCard(
-                          dashboard: dashboard,
-                          index: index,
-                        ),
-                      )
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    child: Column(
+                      children: [
+                        ...dashboards.mapIndexed(
+                          (index, dashboard) => DashboardCard(
+                            dashboard: dashboard,
+                            index: index,
+                          ),
+                        )
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -89,6 +92,7 @@ class DashboardCard extends StatelessWidget {
     return SettingsNavCard(
       path: '/dashboards/${dashboard.id}',
       title: dashboard.name,
+      contentPadding: contentPaddingWithLeading,
       leading: CategoryColorIcon(dashboard.categoryId),
     );
   }

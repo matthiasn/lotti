@@ -54,8 +54,8 @@ class EntryDetailPage extends StatelessWidget {
             padding: const EdgeInsets.only(
               top: 8,
               bottom: 96,
-              left: 2,
-              right: 2,
+              left: 5,
+              right: 5,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
