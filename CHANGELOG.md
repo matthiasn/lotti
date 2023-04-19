@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Updated manual
 - Less verbose logging
+- App icon with gradient
 
 ## [0.8.322] - 2023-04-16
 ### Changed:
