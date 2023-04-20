@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
-- GitHub Action for running Fluttium tests on Linux
+- GitHub Action for running Fluttium tests on Windows
 
 ## [0.8.325] - 2023-04-20
 ### Added:

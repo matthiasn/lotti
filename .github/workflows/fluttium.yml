@@ -7,18 +7,21 @@ on:
 
 jobs:
   test:
-    name: Fluttium Test on macOS
-    runs-on: macOS-latest
+    name: Fluttium Test on Windows
+    runs-on: windows-latest
     steps:
+      - name: core.symlinks
+        run: |
+          git config --global core.symlinks true
+      - name: Support long paths
+        run: git config --system core.longpaths true
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
         with:
+            flutter-version: '3.7.12'
             channel: 'stable'
-            architecture: x64
-      - run: flutter config --enable-macos-desktop
-      - name: Run l10n codegen
-        run: make l10n
+      - run: flutter config --enable-windows-desktop
       - name: Activate Fluttium
-        run: make activate_fluttium
+        run: flutter pub global activate fluttium_cli
       - name: Run Fluttium tests
-        run: make fluttium_linux
+        run: fluttium test test_flows/habit_flow.yaml --reporter expanded
