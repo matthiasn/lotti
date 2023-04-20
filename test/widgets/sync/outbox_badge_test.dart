@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/themes/themes_service.dart';
 
+import '../../mocks/mocks.dart';
 import '../../mocks/sync_config_test_mocks.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
-  var mock = MockSyncDatabase();
-
   group('OutboxBadge Widget Tests - ', () {
     setUp(() {
       getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
@@ -19,8 +19,11 @@ void main() {
 
     testWidgets('Badge shows count 999', (tester) async {
       const testCount = 999;
-      mock = mockSyncDatabaseWithCount(testCount);
-      getIt.registerSingleton<SyncDatabase>(mock);
+      final syncDbMock = mockSyncDatabaseWithCount(testCount);
+      final dbMock = mockJournalDbWithSyncFlag(enabled: true);
+      getIt
+        ..registerSingleton<SyncDatabase>(syncDbMock)
+        ..registerSingleton<JournalDb>(dbMock);
 
       const testIcon = Icons.settings_outlined;
 

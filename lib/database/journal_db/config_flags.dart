@@ -3,7 +3,10 @@ import 'dart:io';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/utils/consts.dart';
 
-Future<void> initConfigFlags(JournalDb db) async {
+Future<void> initConfigFlags(
+  JournalDb db, {
+  required bool inMemoryDatabase,
+}) async {
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: privateFlag,
@@ -26,10 +29,10 @@ Future<void> initConfigFlags(JournalDb db) async {
     ),
   );
   await db.insertFlagIfNotExists(
-    const ConfigFlag(
+    ConfigFlag(
       name: enableSyncFlag,
       description: 'Enable sync? (requires restart)',
-      status: true,
+      status: inMemoryDatabase,
     ),
   );
   await db.insertFlagIfNotExists(

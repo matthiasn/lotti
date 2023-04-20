@@ -79,7 +79,7 @@ activate_fluttium:
 
 .PHONY: fluttium
 fluttium:
-	fluttium test test_flows/habit_flow.yaml -d macOS --reporter expanded
+	fluttium test test_flows/habit_flow.yaml -d macOS
 
 .PHONY: fluttium_production
 fluttium_production:
@@ -88,7 +88,7 @@ fluttium_production:
 .PHONY: fluttium_docs
 fluttium_docs:
 	mkdir -p ~/github/lotti-docs/images/${LOTTI_VERSION}
-	cp /tmp/lotti/* ~/github/lotti-docs/images/${LOTTI_VERSION}/
+	cp ./screenshots/* ~/github/lotti-docs/images/${LOTTI_VERSION}/
 	cd ~/github/lotti-docs/ && git pull && git add . && git commit -m ${LOTTI_VERSION} && git push
 
 .PHONY: migrate_db

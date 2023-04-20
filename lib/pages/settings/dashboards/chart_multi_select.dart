@@ -8,6 +8,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
     required this.onConfirm,
     required this.title,
     required this.buttonText,
+    required this.semanticsLabel,
     required this.iconData,
     super.key,
   });
@@ -16,6 +17,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
   final void Function(List<T?>) onConfirm;
   final String title;
   final String buttonText;
+  final String semanticsLabel;
   final IconData iconData;
 
   @override
@@ -27,20 +29,15 @@ class ChartMultiSelect<T> extends StatelessWidget {
         backgroundColor: styleConfig().cardColor,
         items: multiSelectItems,
         initialValue: const [],
-        title: Text(
-          title,
-          style: titleStyle(),
-        ),
+        initialChildSize: 0.4,
+        maxChildSize: 0.9,
+        title: Text(title, style: titleStyle()),
         checkColor: styleConfig().primaryTextColor,
         selectedColor: styleConfig().primaryColor,
         decoration: BoxDecoration(
           color: styleConfig().secondaryTextColor.withOpacity(0.1),
-          borderRadius: const BorderRadius.all(
-            Radius.circular(10),
-          ),
-          border: Border.all(
-            color: styleConfig().secondaryTextColor,
-          ),
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          border: Border.all(color: styleConfig().secondaryTextColor),
         ),
         itemsTextStyle: multiSelectStyle(),
         selectedItemsTextStyle: multiSelectStyle().copyWith(
@@ -60,6 +57,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
         ),
         buttonText: Text(
           buttonText,
+          semanticsLabel: semanticsLabel,
           style: TextStyle(
             color: styleConfig().primaryTextColor,
             fontSize: fontSizeMedium,

@@ -9,6 +9,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
+import '../../mocks/sync_config_test_mocks.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
@@ -16,7 +17,7 @@ void main() {
   const n = 111;
 
   final mockSyncDatabase = MockSyncDatabase();
-  final mockJournalDb = MockJournalDb();
+  final mockJournalDb = mockJournalDbWithSyncFlag(enabled: true);
 
   group('SettingsPage Widget Tests - ', () {
     setUp(() {

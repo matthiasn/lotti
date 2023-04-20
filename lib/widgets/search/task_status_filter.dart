@@ -84,6 +84,8 @@ class TaskStatusAllChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
@@ -103,7 +105,7 @@ class TaskStatusAllChip extends StatelessWidget {
         }
 
         return FilterChoiceChip(
-          label: 'ALL',
+          label: localizations.taskStatusAll,
           isSelected: isSelected,
           onTap: onTap,
         );

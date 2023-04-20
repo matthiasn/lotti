@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 final Color white = colorFromCssHex('#FFFFFF');
 final Color coal = colorFromCssHex('#000000');
@@ -29,7 +30,6 @@ final Color ripIce = colorFromCssHex('#EFFFFB');
 final Color alarm = colorFromCssHex('#FF7373');
 final Color ice = colorFromCssHex('#F5F5F5');
 final Color nickel = colorFromCssHex('#B4B2B2');
-final Color mineShaft = colorFromCssHex('#313131');
 
 final darkTheme = StyleConfig(
   tagColor: const Color.fromRGBO(155, 200, 246, 1),
@@ -49,12 +49,12 @@ final darkTheme = StyleConfig(
   unselectedChoiceChipTextColor: const Color.fromRGBO(255, 245, 240, 1),
   negspace: coal,
   primaryTextColor: white,
-  secondaryTextColor: iron,
+  secondaryTextColor: primaryColor.desaturate(70).darken(20),
   primaryColor: primaryColor,
   primaryColorLight: primaryColorLight,
   hover: iron,
   alarm: alarm,
-  cardColor: mineShaft,
+  cardColor: primaryColor.desaturate(60).darken(60),
   chartTextColor: nickel,
   keyboardAppearance: Brightness.dark,
   textEditorBackground: Colors.white.withOpacity(0.1),

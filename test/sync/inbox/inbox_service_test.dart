@@ -89,7 +89,7 @@ void main() {
         ..registerSingleton<LoggingDb>(getLoggingDb())
         ..registerSingleton<InboxService>(InboxService());
 
-      await initConfigFlags(getIt<JournalDb>());
+      await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: true);
     });
 
     setUp(() {

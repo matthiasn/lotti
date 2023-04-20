@@ -61,25 +61,21 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
           ),
           backgroundColor: styleConfig().negspace,
           floatingActionButton: widget.floatingActionButton,
-          body: Stack(
-            children: [
-              ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 5,
-                ),
-                children: List.generate(
-                  filtered.length,
-                  (int index) {
-                    return widget.definitionCard(
-                      index,
-                      filtered.elementAt(index),
-                    );
-                  },
-                ),
-              ),
-            ],
+          body: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(
+              vertical: 10,
+              horizontal: 5,
+            ),
+            children: List.generate(
+              filtered.length,
+              (int index) {
+                return widget.definitionCard(
+                  index,
+                  filtered.elementAt(index),
+                );
+              },
+            ),
           ),
         );
       },

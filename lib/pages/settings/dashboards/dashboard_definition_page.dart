@@ -319,6 +319,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         child: Text(
                           localizations.dashboardSaveLabel,
                           style: saveButtonStyle(),
+                          semanticsLabel: 'Save Dashboard',
                         ),
                       ),
                     ),
@@ -348,6 +349,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   initialValue: widget.dashboard.name,
                                   labelText: localizations.dashboardNameLabel,
                                   name: 'name',
+                                  semanticsLabel: 'Dashboard - name field',
                                   key: const Key('dashboard_name_field'),
                                 ),
                                 inputSpacer,
@@ -356,6 +358,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   labelText:
                                       localizations.dashboardDescriptionLabel,
                                   name: 'description',
+                                  semanticsLabel:
+                                      'Dashboard - description field',
                                   fieldRequired: false,
                                   key: const Key(
                                     'dashboard_description_field',
@@ -440,6 +444,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               onConfirm: onConfirmAddHabit,
                               title: localizations.dashboardAddHabitTitle,
                               buttonText: localizations.dashboardAddHabitButton,
+                              semanticsLabel: 'Add Habit Chart',
                               iconData: Icons.insights,
                             ),
                           ChartMultiSelect<MeasurableDataType>(
@@ -448,6 +453,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             title: localizations.dashboardAddMeasurementTitle,
                             buttonText:
                                 localizations.dashboardAddMeasurementButton,
+                            semanticsLabel: 'Add Measurable Data Chart',
                             iconData: Icons.insights,
                           ),
                           ChartMultiSelect<HealthTypeConfig>(
@@ -455,6 +461,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             onConfirm: onConfirmAddHealthType,
                             title: localizations.dashboardAddHealthTitle,
                             buttonText: localizations.dashboardAddHealthButton,
+                            semanticsLabel: 'Add Health Chart',
                             iconData: MdiIcons.stethoscope,
                           ),
                           ChartMultiSelect<DashboardSurveyItem>(
@@ -462,6 +469,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             onConfirm: onConfirmAddSurveyType,
                             title: localizations.dashboardAddSurveyTitle,
                             buttonText: localizations.dashboardAddSurveyButton,
+                            semanticsLabel: 'Add Survey Chart',
                             iconData: MdiIcons.clipboardOutline,
                           ),
                           ChartMultiSelect<DashboardWorkoutItem>(
@@ -469,6 +477,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             onConfirm: onConfirmAddWorkoutType,
                             title: localizations.dashboardAddWorkoutTitle,
                             buttonText: localizations.dashboardAddWorkoutButton,
+                            semanticsLabel: 'Add Workout Chart',
                             iconData: Icons.sports_gymnastics,
                           ),
                           // TODO: better time reporting, this is cumbersome

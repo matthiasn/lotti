@@ -20,7 +20,7 @@ class AppTheme {
   );
 }
 
-const double chipBorderRadius = 8;
+const double chipBorderRadius = 10;
 const mainFont = 'PlusJakartaSans';
 
 const habitCardTextColor = Colors.black87;
@@ -158,7 +158,7 @@ Brightness keyboardAppearance() {
 }
 
 TextStyle formLabelStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
+      color: styleConfig().secondaryTextColor,
       fontSize: fontSizeMedium,
     );
 
@@ -293,6 +293,7 @@ ThemeData getTheme() {
       color: styleConfig().cardColor,
       elevation: 1,
       clipBehavior: Clip.hardEdge,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
     useMaterial3: true,
     iconTheme: IconThemeData(
@@ -305,6 +306,7 @@ ThemeData getTheme() {
     chipTheme: ChipThemeData(
       side: BorderSide.none,
       backgroundColor: styleConfig().primaryColor.withOpacity(0.6),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
     appBarTheme: AppBarTheme(
       iconTheme: IconThemeData(color: styleConfig().primaryTextColor),

@@ -18,6 +18,7 @@ class DashboardSettingsPage extends StatelessWidget {
       stream: getIt<JournalDb>().watchDashboards(),
       floatingActionButton: FloatingAddIcon(
         createFn: () => beamToNamed('/settings/dashboards/create'),
+        semanticLabel: 'Add Dashboard',
       ),
       title: localizations.settingsDashboardsTitle,
       getName: (habitDefinition) => habitDefinition.name,

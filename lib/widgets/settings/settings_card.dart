@@ -83,3 +83,10 @@ class SettingsNavCard extends StatelessWidget {
     );
   }
 }
+
+const contentPaddingWithLeading = EdgeInsets.only(
+  left: 10,
+  top: 5,
+  bottom: 5,
+  right: 20,
+);

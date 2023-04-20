@@ -52,7 +52,7 @@ void main() {
   group('Database Tests - ', () {
     setUp(() async {
       db = JournalDb(inMemoryDatabase: true);
-      await initConfigFlags(db!);
+      await initConfigFlags(db!, inMemoryDatabase: true);
     });
     tearDown(() async {
       await db?.close();

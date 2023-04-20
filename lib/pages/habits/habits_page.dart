@@ -96,10 +96,8 @@ class HabitsTabPage extends StatelessWidget {
                                     const EdgeInsets.symmetric(horizontal: 40),
                                 height: 50,
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: styleConfig()
-                                      .secondaryTextColor
-                                      .withOpacity(0.4),
+                                  borderRadius: BorderRadius.circular(20),
+                                  color: styleConfig().cardColor,
                                 ),
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 8),

@@ -1,17 +1,17 @@
-description: Simple habit flow
+description: Habit flow
 ---
 - pressOn: 'Settings Tab'
 - pressOn: 'Category Management'
-- takeScreenshot: '/tmp/lotti/categories_empty.png'
+- takeScreenshot: './screenshots/categories_empty.png'
 
 - pressOn: 'Add Category'
 - pressOn: 'Category name field'
 - writeText: 'Health'
 - pressOn: 'Select color'
 - writeText: '#20923C'
-- takeScreenshot: '/tmp/lotti/category_health.png'
+- takeScreenshot: './screenshots/category_health.png'
 - pressOn: 'Pick color'
-- takeScreenshot: '/tmp/lotti/category_health_picker.png'
+- takeScreenshot: './screenshots/category_health_picker.png'
 - pressOn:
     offset: [5.0, 5.0]
 - pressOn: 'Save Category'
@@ -44,18 +44,17 @@ description: Simple habit flow
 - writeText: '#2D5FB2'
 - pressOn: 'Save Category'
 
-- takeScreenshot: '/tmp/lotti/categories.png'
+- takeScreenshot: './screenshots/categories.png'
 
 - pressOn: 'Navigate back'
 - pressOn: 'Habit Management'
-- takeScreenshot: '/tmp/lotti/habits_empty.png'
+- takeScreenshot: './screenshots/habits_empty.png'
 
 - pressOn: 'Add Habit'
 - pressOn: 'Habit name field'
 - writeText: 'Floss AM'
 - pressOn: 'Select category'
 - pressOn: 'Dental Health'
-- takeScreenshot: '/tmp/lotti/habit1.png'
 - pressOn: 'Save Habit'
 
 - pressOn: 'Add Habit'
@@ -64,18 +63,17 @@ description: Simple habit flow
 - pressOn: 'Select category'
 - pressOn: 'Dental Health'
 - pressOn: 'Habit priority'
-- takeScreenshot: '/tmp/lotti/habit2.png'
 - pressOn: 'Save Habit'
 
 - pressOn: 'Add Habit'
 - pressOn: 'Habit name field'
 - writeText: '10K+ Steps'
-- takeScreenshot: '/tmp/lotti/habit3_initial.png'
+- takeScreenshot: './screenshots/habit3_initial.png'
 - pressOn: 'Select category'
-- takeScreenshot: '/tmp/lotti/habit3_category.png'
+- takeScreenshot: './screenshots/habit3_category.png'
 - pressOn: 'Fitness'
 - pressOn: 'Habit priority'
-- takeScreenshot: '/tmp/lotti/habit3_final.png'
+- takeScreenshot: './screenshots/habit3_final.png'
 - pressOn: 'Save Habit'
 
 - pressOn: 'Add Habit'
@@ -84,7 +82,6 @@ description: Simple habit flow
 - pressOn: 'Select category'
 - pressOn: 'Sleep'
 - pressOn: 'Habit priority'
-- takeScreenshot: '/tmp/lotti/habit4.png'
 - pressOn: 'Save Habit'
 
 - pressOn: 'Add Habit'
@@ -92,13 +89,12 @@ description: Simple habit flow
 - writeText: 'Running 👟'
 - pressOn: 'Select category'
 - pressOn: 'Fitness'
-- takeScreenshot: '/tmp/lotti/habit5.png'
 - pressOn: 'Save Habit'
 
-- takeScreenshot: '/tmp/lotti/habits.png'
+- takeScreenshot: './screenshots/habits.png'
 
 - pressOn: 'Habits Tab'
-- takeScreenshot: '/tmp/lotti/habit_completions1.png'
+- takeScreenshot: './screenshots/habit_completions1.png'
 
 - pressOn: 'Complete Floss AM -6'
 - pressOn: 'Success'
@@ -197,10 +193,10 @@ description: Simple habit flow
 - pressOn: 'Success'
 
 - pressOn: 'Complete 10K+ Steps -1'
-- takeScreenshot: '/tmp/lotti/habit_completion_10k_steps.png'
+- takeScreenshot: './screenshots/habit_completion_10k_steps.png'
 - pressOn: 'Fail'
 
-- takeScreenshot: '/tmp/lotti/habit_completion_10k_all.png'
+- takeScreenshot: './screenshots/habit_completion_10k_all.png'
 
 - pressOn: 'Complete Running 👟 -10'
 - pressOn: 'Success'
@@ -232,13 +228,11 @@ description: Simple habit flow
 - pressOn: 'Complete Running 👟 -1'
 - pressOn: 'Skip'
 
-- takeScreenshot: '/tmp/lotti/habit_completions2.png'
-
 - pressOn: 'Complete Floss PM'
 - pressOn: 'Success'
 
 - pressOn: 'Complete 10K+ Steps'
-- takeScreenshot: '/tmp/lotti/habit_completion_10k_steps_now.png'
+- takeScreenshot: './screenshots/habit_completion_10k_steps_now.png'
 - pressOn: 'Success'
 
 - pressOn: 'Complete Running 👟'
@@ -246,4 +240,91 @@ description: Simple habit flow
 
 - pressOn: 'Habits - done'
 
-- takeScreenshot: '/tmp/lotti/habit_completions_done.png'
+- takeScreenshot: './screenshots/habit_completions_done.png'
+
+- pressOn: 'Settings Tab'
+- pressOn: 'Settings Tab'
+
+- pressOn: 'Measurable Data Types'
+- takeScreenshot: './screenshots/measurables_empty.png'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Water'
+- pressOn: 'Measurable - description field'
+- writeText: "I'm a person who always stays hydrated."
+- pressOn: 'Measurable - unit name field'
+- writeText: 'ml'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Coffee'
+- pressOn: 'Measurable - description field'
+- writeText: "I'm a person who drinks reasonable amounts of coffee."
+- pressOn: 'Measurable - unit name field'
+- writeText: 'ml'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Pull-Ups'
+- pressOn: 'Measurable - unit name field'
+- writeText: 'reps'
+- takeScreenshot: './screenshots/measurable_pull_ups.png'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Push-Ups'
+- pressOn: 'Measurable - unit name field'
+- writeText: 'reps'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- pressOn: 'Add Measurable'
+- pressOn: 'Measurable - name field'
+- writeText: 'Sit-Ups'
+- pressOn: 'Measurable - unit name field'
+- writeText: 'reps'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Save Measurable'
+
+- takeScreenshot: './screenshots/measurables.png'
+
+- pressOn: 'Settings Tab'
+- pressOn: 'Dashboard Management'
+- takeScreenshot: './screenshots/dashboards_empty.png'
+
+- pressOn: 'Add Dashboard'
+- pressOn: 'Dashboard - name field'
+- writeText: 'Exercise'
+- pressOn: 'Dashboard - description field'
+- writeText: "I'm a person who exercises, as shown in this dashboard."
+- takeScreenshot: './screenshots/dashboard_exercise.png'
+- pressOn: 'Select category'
+- pressOn: 'Fitness'
+- pressOn:
+      offset: [5.0, 5.0]
+- pressOn: 'Add Measurable Data Chart'
+- pressOn: 'Push-Ups'
+- pressOn: 'Pull-Ups'
+- pressOn: 'Sit-Ups'
+- takeScreenshot: './screenshots/dashboard_exercise2.png'
+- pressOn: 'OK'
+- takeScreenshot: './screenshots/dashboard_exercise3.png'
+- pressOn: 'Save Dashboard'
+
+- takeScreenshot: './screenshots/dashboards.png'
+
+- pressOn: 'Dashboards Tab'
+
+- takeScreenshot: './screenshots/dashboards_tab.png'
