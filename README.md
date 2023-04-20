@@ -6,14 +6,11 @@ Lotti helps you track habits, behavior, any data about yourself, in complete pri
 
 ![Habits Tab](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.312+1968/habits_screen.png)
 
-Read more on **Substack**:
+Read more on [**Substack**](https://matthiasnehlsen.substack.com).
 
-- [#1: Why I'm building Lotti - an open-source self-improvement app](https://matthiasnehlsen.substack.com/p/why-im-building-lotti-an-open-source)
-- [#2: Tracking Habits in Lotti](https://matthiasnehlsen.substack.com/p/tracking-habits-in-lotti)
-- [#3: How to Track Habits in Lotti - A brief manual, Part I](https://matthiasnehlsen.substack.com/p/how-to-track-habits-in-lotti)
-- [#4: How to Track Habits in Lotti - A brief manual - Part II](https://matthiasnehlsen.substack.com/p/how-to-track-habits-in-lotti-6f3)
-- [#5: How to monitor habits - A brief manual, Part III](https://matthiasnehlsen.substack.com/p/5-how-to-monitor-habits)
-- [#6: Development Update](https://matthiasnehlsen.substack.com/p/6-development-update)
+## How to use Lotti
+Check out the [MANUAL](https://github.com/matthiasn/lotti/blob/main/docs/MANUAL.md). The images in
+there are updated automatically in CI using [`Fluttium`](https://fluttium.dev).
 
 ## Core beliefs / the WHY
 
