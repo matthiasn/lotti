@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 - Colors and whitespace
+- Upgraded dependencies
+
+### Fixed:
+- Test flows
 
 ## [0.8.324] - 2023-04-19
 ### Fixed:

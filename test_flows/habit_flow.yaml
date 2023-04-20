@@ -55,7 +55,6 @@ description: Habit flow
 - writeText: 'Floss AM'
 - pressOn: 'Select category'
 - pressOn: 'Dental Health'
-- takeScreenshot: './screenshots/habit1.png'
 - pressOn: 'Save Habit'
 
 - pressOn: 'Add Habit'
@@ -64,7 +63,6 @@ description: Habit flow
 - pressOn: 'Select category'
 - pressOn: 'Dental Health'
 - pressOn: 'Habit priority'
-- takeScreenshot: './screenshots/habit2.png'
 - pressOn: 'Save Habit'
 
 - pressOn: 'Add Habit'
@@ -84,7 +82,6 @@ description: Habit flow
 - pressOn: 'Select category'
 - pressOn: 'Sleep'
 - pressOn: 'Habit priority'
-- takeScreenshot: './screenshots/habit4.png'
 - pressOn: 'Save Habit'
 
 - pressOn: 'Add Habit'
@@ -92,7 +89,6 @@ description: Habit flow
 - writeText: 'Running 👟'
 - pressOn: 'Select category'
 - pressOn: 'Fitness'
-- takeScreenshot: './screenshots/habit5.png'
 - pressOn: 'Save Habit'
 
 - takeScreenshot: './screenshots/habits.png'
@@ -232,8 +228,6 @@ description: Habit flow
 - pressOn: 'Complete Running 👟 -1'
 - pressOn: 'Skip'
 
-- takeScreenshot: './screenshots/habit_completions2.png'
-
 - pressOn: 'Complete Floss PM'
 - pressOn: 'Success'
 
@@ -261,7 +255,6 @@ description: Habit flow
 - writeText: "I'm a person who always stays hydrated."
 - pressOn: 'Measurable - unit name field'
 - writeText: 'ml'
-- takeScreenshot: './screenshots/measurable_water.png'
 - pressOn:
       offset: [5.0, 5.0]
 - pressOn: 'Save Measurable'
@@ -273,7 +266,6 @@ description: Habit flow
 - writeText: "I'm a person who drinks reasonable amounts of coffee."
 - pressOn: 'Measurable - unit name field'
 - writeText: 'ml'
-- takeScreenshot: './screenshots/measurable_coffee.png'
 - pressOn:
       offset: [5.0, 5.0]
 - pressOn: 'Save Measurable'
@@ -293,7 +285,6 @@ description: Habit flow
 - writeText: 'Push-Ups'
 - pressOn: 'Measurable - unit name field'
 - writeText: 'reps'
-- takeScreenshot: './screenshots/measurable_push_ups.png'
 - pressOn:
       offset: [5.0, 5.0]
 - pressOn: 'Save Measurable'
@@ -303,7 +294,6 @@ description: Habit flow
 - writeText: 'Sit-Ups'
 - pressOn: 'Measurable - unit name field'
 - writeText: 'reps'
-- takeScreenshot: './screenshots/measurable_sit_ups.png'
 - pressOn:
       offset: [5.0, 5.0]
 - pressOn: 'Save Measurable'
@@ -321,7 +311,6 @@ description: Habit flow
 - writeText: "I'm a person who exercises, as shown in this dashboard."
 - takeScreenshot: './screenshots/dashboard_exercise.png'
 - pressOn: 'Select category'
-- takeScreenshot: './screenshots/dashboard_exercise_category.png'
 - pressOn: 'Fitness'
 - pressOn:
       offset: [5.0, 5.0]
