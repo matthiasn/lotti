@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Colors and whitespace
 - Upgraded dependencies
 - Initial height of chart selector bottom sheet
+- Slightly less saturated card color
 
 ### Fixed:
 - Test flows

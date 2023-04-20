@@ -54,7 +54,7 @@ final darkTheme = StyleConfig(
   primaryColorLight: primaryColorLight,
   hover: iron,
   alarm: alarm,
-  cardColor: primaryColor.desaturate(50).darken(60),
+  cardColor: primaryColor.desaturate(60).darken(60),
   chartTextColor: nickel,
   keyboardAppearance: Brightness.dark,
   textEditorBackground: Colors.white.withOpacity(0.1),
