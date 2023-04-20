@@ -29,6 +29,8 @@ class ChartMultiSelect<T> extends StatelessWidget {
         backgroundColor: styleConfig().cardColor,
         items: multiSelectItems,
         initialValue: const [],
+        initialChildSize: 0.4,
+        maxChildSize: 0.9,
         title: Text(title, style: titleStyle()),
         checkColor: styleConfig().primaryTextColor,
         selectedColor: styleConfig().primaryColor,

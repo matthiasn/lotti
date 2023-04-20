@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Colors and whitespace
 - Upgraded dependencies
+- Initial height of chart selector bottom sheet
 
 ### Fixed:
 - Test flows
