@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- GitHub Action for running Fluttium tests on Linux
+
+## [0.8.325] - 2023-04-20
+### Added:
 - Semantic labels in measurable data type setting
 - Screenshot of creating measurable data types for manual
 

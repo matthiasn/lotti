@@ -81,6 +81,10 @@ activate_fluttium:
 fluttium:
 	fluttium test test_flows/habit_flow.yaml -d macOS
 
+.PHONY: fluttium_linux
+fluttium_linux:
+	fluttium test test_flows/habit_flow.yaml --reporter expanded
+
 .PHONY: fluttium_production
 fluttium_production:
 	fluttium test test_flows/habit_flow.yaml --flavor production --target lib/main.dart

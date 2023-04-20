@@ -1,0 +1,23 @@
+name: Fluttium Test
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    name: Flutter Test on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install network-manager
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.7.12'
+          channel: 'stable'
+      - name: Run Flutter tests
+        run: make l10n fluttium_linux
