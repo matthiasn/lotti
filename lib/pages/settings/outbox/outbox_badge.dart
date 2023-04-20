@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 
 class OutboxBadgeIcon extends StatelessWidget {
   OutboxBadgeIcon({
@@ -9,30 +11,47 @@ class OutboxBadgeIcon extends StatelessWidget {
     super.key,
   });
 
-  final SyncDatabase db = getIt<SyncDatabase>();
-
-  late final Stream<int> stream = db.watchOutboxCount();
   final Widget icon;
+
+  late final Stream<bool> flagStream =
+      getIt<JournalDb>().watchConfigFlag(enableSyncFlag);
+
+  late final Stream<int> outboxCountStream =
+      getIt<SyncDatabase>().watchOutboxCount();
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<int>(
-      stream: stream,
+    return StreamBuilder<bool>(
+      stream: flagStream,
       builder: (
         BuildContext context,
-        AsyncSnapshot<int> snapshot,
+        AsyncSnapshot<bool> flagSnapshot,
       ) {
-        final count = snapshot.data ?? 0;
-        final label = '$count';
-        return Badge(
-          label: Text(
-            label,
-            style: badgeStyle,
-          ),
-          backgroundColor: styleConfig().alarm,
-          isLabelVisible: count > 0,
-          child: icon,
-        );
+        final syncEnabled = flagSnapshot.data ?? false;
+
+        if (syncEnabled) {
+          return StreamBuilder<int>(
+            stream: outboxCountStream,
+            builder: (
+              BuildContext context,
+              AsyncSnapshot<int> countSnapshot,
+            ) {
+              final count = countSnapshot.data ?? 0;
+              final label = '$count';
+              return Badge(
+                label: Text(
+                  label,
+                  style: badgeStyle,
+                ),
+                backgroundColor: styleConfig().alarm,
+                isLabelVisible: count > 0,
+                child: icon,
+              );
+            },
+          );
+        } else {
+          return icon;
+        }
       },
     );
   }

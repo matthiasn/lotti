@@ -61,7 +61,7 @@ void main() {
 
       final settingsDb = SettingsDb(inMemoryDatabase: true);
       final journalDb = JournalDb(inMemoryDatabase: true);
-      await initConfigFlags(journalDb);
+      await initConfigFlags(journalDb, inMemoryDatabase: true);
 
       final syncConfigMock = MockSyncConfigService();
       when(syncConfigMock.getSyncConfig)

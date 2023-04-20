@@ -12,7 +12,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -27,6 +26,7 @@ import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockTagsService extends Mock implements TagsService {}
@@ -83,9 +83,20 @@ MockJournalDb mockJournalDbWithHabits(
   return mock;
 }
 
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+MockJournalDb mockJournalDbWithSyncFlag({
+  required bool enabled,
+}) {
+  final mock = MockJournalDb();
+  when(mock.close).thenAnswer((_) async {});
 
-class MockSyncDatabase extends Mock implements SyncDatabase {}
+  when(() => mock.watchConfigFlag(enableSyncFlag)).thenAnswer(
+    (_) => Stream<bool>.fromIterable([enabled]),
+  );
+
+  return mock;
+}
+
+class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockFts5Db extends Mock implements Fts5Db {}
 

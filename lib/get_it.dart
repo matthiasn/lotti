@@ -66,5 +66,5 @@ Future<void> registerSingletons() async {
     ..registerSingleton<Maintenance>(Maintenance())
     ..registerSingleton<NavService>(NavService());
 
-  await initConfigFlags(getIt<JournalDb>());
+  await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
 }

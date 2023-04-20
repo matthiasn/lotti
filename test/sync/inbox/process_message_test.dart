@@ -40,7 +40,7 @@ void main() {
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true));
 
-      await initConfigFlags(getIt<JournalDb>());
+      await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: true);
     });
 
     tearDown(() async {
