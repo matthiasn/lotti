@@ -1,0 +1,33 @@
+name: Fluttium Test
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    name: Fluttium Test on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install network-manager
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.7.12'
+          channel: 'stable'
+      - name: Update apt-get
+        run: sudo apt-get update
+      - name: Install libraries
+        run: sudo apt-get install libgtk-3-dev cmake cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager
+      - name: Enable Linux Desktop
+        run: flutter config --enable-linux-desktop
+      - name: Run l10n codegen
+        run: make l10n
+      - name: Activate Fluttium
+        run: make activate_fluttium
+      - name: Run Fluttium tests
+        run: make fluttium_linux
