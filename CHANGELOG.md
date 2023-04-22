@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 - Navigation after delete (not when displayed as a linked entry)
 
+### Changed:
+- Updated provisioning profile (was expired)
+
 ## [0.8.326] - 2023-04-21
 ### Added:
 - GitHub Action for running Fluttium tests on Windows
