@@ -30,13 +30,14 @@ void main() {
         ),
       );
 
-      when(entryCubit.delete).thenAnswer((_) async => true);
+      when(() => entryCubit.delete(beamBack: any(named: 'beamBack')))
+          .thenAnswer((_) async => true);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: const DeleteIconWidget(),
+            child: const DeleteIconWidget(beamBack: true),
           ),
         ),
       );
@@ -54,7 +55,8 @@ void main() {
       await tester.tap(warningIconFinder);
       await tester.pumpAndSettle();
 
-      verify(entryCubit.delete).called(1);
+      verify(() => entryCubit.delete(beamBack: any(named: 'beamBack')))
+          .called(1);
     });
   });
 }
