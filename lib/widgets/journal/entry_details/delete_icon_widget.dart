@@ -8,8 +8,11 @@ import 'package:lotti/themes/theme.dart';
 
 class DeleteIconWidget extends StatelessWidget {
   const DeleteIconWidget({
+    required this.beamBack,
     super.key,
   });
+
+  final bool beamBack;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +42,7 @@ class DeleteIconWidget extends StatelessWidget {
           );
 
           if (result == deleteKey) {
-            await cubit.delete();
+            await cubit.delete(beamBack: beamBack);
           }
         }
 

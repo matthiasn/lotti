@@ -13,8 +13,11 @@ import 'package:lotti/widgets/journal/tags/tag_add.dart';
 
 class EntryDetailHeader extends StatelessWidget {
   const EntryDetailHeader({
+    this.inLinkedEntries = false,
     super.key,
   });
+
+  final bool inLinkedEntries;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +72,7 @@ class EntryDetailHeader extends StatelessWidget {
                     activeIcon: Icons.map,
                     activeColor: styleConfig().primaryColor,
                   ),
-                const DeleteIconWidget(),
+                DeleteIconWidget(beamBack: !inLinkedEntries),
                 const ShareButtonWidget(),
                 TagAddIconWidget(),
               ],

@@ -213,9 +213,13 @@ class EntryCubit extends Cubit<EntryState> {
     }
   }
 
-  Future<bool> delete() async {
+  Future<bool> delete({
+    required bool beamBack,
+  }) async {
     final res = await _persistenceLogic.deleteJournalEntity(entryId);
-    journalBeamerDelegate.beamBack();
+    if (beamBack) {
+      journalBeamerDelegate.beamBack();
+    }
     return res;
   }
 

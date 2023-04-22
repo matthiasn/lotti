@@ -70,7 +70,7 @@ class EntryDetailWidget extends StatelessWidget {
                     journalImage: EntryImageWidget.new,
                     orElse: () => const SizedBox.shrink(),
                   ),
-                  const EntryDetailHeader(),
+                  EntryDetailHeader(inLinkedEntries: unlinkFn != null),
                   TagsListWidget(parentTags: parentTags),
                   item.maybeMap(
                     task: (_) => const SizedBox.shrink(),
