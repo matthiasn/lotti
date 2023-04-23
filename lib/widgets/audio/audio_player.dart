@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 
 class AudioPlayerWidget extends StatelessWidget {
-  const AudioPlayerWidget({super.key});
+  const AudioPlayerWidget(this.journalAudio, {super.key});
+
+  final JournalAudio journalAudio;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +35,8 @@ class AudioPlayerWidget extends StatelessWidget {
 
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       builder: (BuildContext context, AudioPlayerState state) {
+        final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
+
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -43,55 +48,69 @@ class AudioPlayerWidget extends StatelessWidget {
                   icon: const Icon(Icons.play_arrow),
                   iconSize: 32,
                   tooltip: 'Play',
-                  color: (state.status == AudioPlayerStatus.playing)
+                  color: (state.status == AudioPlayerStatus.playing && isActive)
                       ? styleConfig().activeAudioControl
                       : styleConfig().secondaryTextColor,
-                  onPressed: () => context.read<AudioPlayerCubit>().play(),
+                  onPressed: () {
+                    context.read<AudioPlayerCubit>().setAudioNote(journalAudio);
+                    context.read<AudioPlayerCubit>().play();
+                  },
                 ),
-                IconButton(
-                  icon: const Icon(Icons.fast_rewind),
-                  iconSize: 32,
-                  tooltip: 'Rewind 15s',
-                  color: styleConfig().secondaryTextColor,
-                  onPressed: () => context.read<AudioPlayerCubit>().rew(),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.pause),
-                  iconSize: 32,
-                  tooltip: 'Pause',
-                  color: styleConfig().secondaryTextColor,
-                  onPressed: () => context.read<AudioPlayerCubit>().pause(),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.fast_forward),
-                  iconSize: 32,
-                  tooltip: 'Fast forward 15s',
-                  color: styleConfig().secondaryTextColor,
-                  onPressed: () => context.read<AudioPlayerCubit>().fwd(),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.stop),
-                  iconSize: 32,
-                  tooltip: 'Stop',
-                  color: styleConfig().secondaryTextColor,
-                  onPressed: () => context.read<AudioPlayerCubit>().stopPlay(),
-                ),
-                IconButton(
-                  icon: Text(
-                    speedLabelMap[state.speed] ?? '1x',
-                    style: TextStyle(
-                      fontFamily: 'Oswald',
-                      fontWeight: FontWeight.bold,
-                      color: (state.speed != 1)
-                          ? styleConfig().activeAudioControl
-                          : styleConfig().secondaryTextColor,
-                    ),
+                IgnorePointer(
+                  ignoring: !isActive,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      IconButton(
+                        icon: const Icon(Icons.fast_rewind),
+                        iconSize: 32,
+                        tooltip: 'Rewind 15s',
+                        color: styleConfig().secondaryTextColor,
+                        onPressed: () => context.read<AudioPlayerCubit>().rew(),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.pause),
+                        iconSize: 32,
+                        tooltip: 'Pause',
+                        color: styleConfig().secondaryTextColor,
+                        onPressed: () =>
+                            context.read<AudioPlayerCubit>().pause(),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.fast_forward),
+                        iconSize: 32,
+                        tooltip: 'Fast forward 15s',
+                        color: styleConfig().secondaryTextColor,
+                        onPressed: () => context.read<AudioPlayerCubit>().fwd(),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.stop),
+                        iconSize: 32,
+                        tooltip: 'Stop',
+                        color: styleConfig().secondaryTextColor,
+                        onPressed: () =>
+                            context.read<AudioPlayerCubit>().stopPlay(),
+                      ),
+                      IconButton(
+                        icon: Text(
+                          speedLabelMap[state.speed] ?? '1x',
+                          style: TextStyle(
+                            fontFamily: 'Oswald',
+                            fontWeight: FontWeight.bold,
+                            color: (state.speed != 1)
+                                ? styleConfig().activeAudioControl
+                                : styleConfig().secondaryTextColor,
+                          ),
+                        ),
+                        iconSize: 32,
+                        tooltip: 'Toggle speed',
+                        onPressed: () => context
+                            .read<AudioPlayerCubit>()
+                            .setSpeed(speedToggleMap[state.speed] ?? 1),
+                      ),
+                    ],
                   ),
-                  iconSize: 32,
-                  tooltip: 'Toggle speed',
-                  onPressed: () => context
-                      .read<AudioPlayerCubit>()
-                      .setSpeed(speedToggleMap[state.speed] ?? 1),
                 ),
               ],
             ),
@@ -101,8 +120,8 @@ class AudioPlayerWidget extends StatelessWidget {
                 SizedBox(
                   width: 250,
                   child: ProgressBar(
-                    progress: state.progress,
-                    total: state.totalDuration,
+                    progress: isActive ? state.progress : Duration.zero,
+                    total: journalAudio.data.duration,
                     progressBarColor: Colors.red,
                     baseBarColor: Colors.white.withOpacity(0.24),
                     bufferedBarColor: Colors.white.withOpacity(0.24),

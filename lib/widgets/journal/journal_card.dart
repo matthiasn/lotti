@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/audio/player_cubit.dart';
-import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -176,48 +173,37 @@ class JournalCard extends StatelessWidget {
         if (updatedItem.meta.deletedAt != null) {
           return const SizedBox.shrink();
         }
+        void onTap() {
+          beamToNamed('/journal/${updatedItem.meta.id}');
+        }
 
-        return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
-          builder: (BuildContext context, AudioPlayerState state) {
-            void onTap() {
-              updatedItem.mapOrNull(
-                journalAudio: (JournalAudio audioNote) {
-                  context.read<AudioPlayerCubit>().setAudioNote(audioNote);
-                },
-              );
-
-              beamToNamed('/journal/${updatedItem.meta.id}');
-            }
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              child: Card(
-                child: ListTile(
-                  leading: updatedItem.maybeMap(
-                    journalAudio: (_) => const LeadingIcon(Icons.mic),
-                    journalEntry: (_) => const LeadingIcon(Icons.article),
-                    quantitative: (_) => const LeadingIcon(MdiIcons.heart),
-                    measurement: (_) => const LeadingIcon(MdiIcons.numeric),
-                    task: (task) => LeadingIcon(
-                      task.data.status.maybeMap(
-                        done: (_) => MdiIcons.checkboxMarkedOutline,
-                        orElse: () => MdiIcons.checkboxBlankOutline,
-                      ),
-                    ),
-                    habitCompletion: (habitCompletion) =>
-                        HabitCompletionColorIcon(habitCompletion.data.habitId),
-                    orElse: () => null,
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          child: Card(
+            child: ListTile(
+              leading: updatedItem.maybeMap(
+                journalAudio: (_) => const LeadingIcon(Icons.mic),
+                journalEntry: (_) => const LeadingIcon(Icons.article),
+                quantitative: (_) => const LeadingIcon(MdiIcons.heart),
+                measurement: (_) => const LeadingIcon(MdiIcons.numeric),
+                task: (task) => LeadingIcon(
+                  task.data.status.maybeMap(
+                    done: (_) => MdiIcons.checkboxMarkedOutline,
+                    orElse: () => MdiIcons.checkboxBlankOutline,
                   ),
-                  title: JournalCardTitle(
-                    item: updatedItem,
-                    maxHeight: maxHeight,
-                    showLinkedDuration: showLinkedDuration,
-                  ),
-                  onTap: onTap,
                 ),
+                habitCompletion: (habitCompletion) =>
+                    HabitCompletionColorIcon(habitCompletion.data.habitId),
+                orElse: () => null,
               ),
-            );
-          },
+              title: JournalCardTitle(
+                item: updatedItem,
+                maxHeight: maxHeight,
+                showLinkedDuration: showLinkedDuration,
+              ),
+              onTap: onTap,
+            ),
+          ),
         );
       },
     );
