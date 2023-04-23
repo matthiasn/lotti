@@ -9,10 +9,12 @@ import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
+import '../../test_data/test_data.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  registerFallbackValue(FakeJournalAudio());
 
   group('AudioPlayerWidget Widget Tests - ', () {
     setUp(() {
@@ -28,6 +30,7 @@ void main() {
       totalDuration: const Duration(minutes: 1),
       pausedAt: Duration.zero,
       speed: 1,
+      audioNote: testAudioEntry,
     );
 
     testWidgets('controls are are displayed, paused state', (tester) async {
@@ -38,6 +41,9 @@ void main() {
       when(() => mockAudioPlayerCubit.state).thenAnswer(
         (_) => pausedState,
       );
+
+      when(() => mockAudioPlayerCubit.setAudioNote(any()))
+          .thenAnswer((_) async {});
 
       when(mockAudioPlayerCubit.play).thenAnswer((_) async {});
 
@@ -52,7 +58,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (_) => mockAudioPlayerCubit,
             lazy: false,
-            child: const AudioPlayerWidget(),
+            child: AudioPlayerWidget(pausedState.audioNote!),
           ),
         ),
       );
@@ -91,6 +97,7 @@ void main() {
         totalDuration: const Duration(minutes: 1),
         pausedAt: Duration.zero,
         speed: 1,
+        audioNote: testAudioEntry,
       );
 
       when(() => mockAudioPlayerCubit.stream).thenAnswer(
@@ -100,6 +107,9 @@ void main() {
       when(() => mockAudioPlayerCubit.state).thenAnswer(
         (_) => playingState,
       );
+
+      when(() => mockAudioPlayerCubit.setAudioNote(any()))
+          .thenAnswer((_) async {});
 
       when(mockAudioPlayerCubit.close).thenAnswer((_) async {});
       when(mockAudioPlayerCubit.stopPlay).thenAnswer((_) async {});
@@ -112,7 +122,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (_) => mockAudioPlayerCubit,
             lazy: false,
-            child: const AudioPlayerWidget(),
+            child: AudioPlayerWidget(playingState.audioNote!),
           ),
         ),
       );

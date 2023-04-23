@@ -48,9 +48,8 @@ class EntryDetailWidget extends StatelessWidget {
         }
 
         final isTask = item is Task;
-        final isAudio = item is JournalAudio;
 
-        if ((isTask || isAudio) && !showTaskDetails) {
+        if (isTask && !showTaskDetails) {
           return JournalCard(item: item);
         }
 
@@ -82,7 +81,7 @@ class EntryDetailWidget extends StatelessWidget {
                   ),
                   item.map(
                     journalAudio: (JournalAudio audio) {
-                      return const AudioPlayerWidget();
+                      return AudioPlayerWidget(audio);
                     },
                     workout: WorkoutSummary.new,
                     survey: SurveySummary.new,
