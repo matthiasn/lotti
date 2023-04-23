@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgrade flutter_quill lib
+
+## [0.8.328] - 2023-04-23
+### Changed:
 - Show audio player inline in linked entries
 
 ## [0.8.327] - 2023-04-22

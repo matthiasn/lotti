@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:tuple/tuple.dart';
 
 DefaultStyles customEditorStyles({
   required Color textColor,
@@ -14,8 +13,8 @@ DefaultStyles customEditorStyles({
         fontSize: fontSizeLarge,
         color: textColor,
       ),
-      const Tuple2(0, 0),
-      const Tuple2(0, 0),
+      const VerticalSpacing(0, 0),
+      const VerticalSpacing(0, 0),
       null,
     ),
     h2: DefaultTextBlockStyle(
@@ -23,8 +22,8 @@ DefaultStyles customEditorStyles({
         fontSize: 20,
         color: textColor,
       ),
-      const Tuple2(8, 0),
-      const Tuple2(0, 0),
+      const VerticalSpacing(8, 0),
+      const VerticalSpacing(0, 0),
       null,
     ),
     h3: DefaultTextBlockStyle(
@@ -32,8 +31,8 @@ DefaultStyles customEditorStyles({
         fontSize: 18,
         color: textColor,
       ),
-      const Tuple2(8, 0),
-      const Tuple2(0, 0),
+      const VerticalSpacing(8, 0),
+      const VerticalSpacing(0, 0),
       null,
     ),
     paragraph: DefaultTextBlockStyle(
@@ -41,8 +40,8 @@ DefaultStyles customEditorStyles({
         fontSize: fontSizeMedium,
         color: textColor,
       ),
-      const Tuple2(2, 0),
-      const Tuple2(0, 0),
+      const VerticalSpacing(2, 0),
+      const VerticalSpacing(0, 0),
       null,
     ),
     bold: GoogleFonts.plusJakartaSans(
@@ -63,8 +62,8 @@ DefaultStyles customEditorStyles({
         fontSize: fontSizeMedium,
         color: textColor,
       ),
-      const Tuple2(4, 0),
-      const Tuple2(0, 0),
+      const VerticalSpacing(4, 0),
+      const VerticalSpacing(0, 0),
       null,
       null,
     ),
@@ -73,8 +72,8 @@ DefaultStyles customEditorStyles({
         fontSize: fontSizeMedium,
         color: Colors.black,
       ),
-      const Tuple2(0, 0),
-      const Tuple2(0, 0),
+      const VerticalSpacing(0, 0),
+      const VerticalSpacing(0, 0),
       BoxDecoration(
         color: codeBlockBackground,
         borderRadius: BorderRadius.circular(8),

@@ -17,7 +17,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
-import 'package:tuple/tuple.dart';
 
 class EntryCubit extends Cubit<EntryState> {
   EntryCubit({
@@ -57,7 +56,7 @@ class EntryCubit extends Cubit<EntryState> {
         selection: _editorStateService.getSelection(entryId),
       );
 
-      controller.changes.listen((Tuple3<Delta, Delta, ChangeSource> event) {
+      controller.changes.listen((DocChange event) {
         final delta = deltaFromController(controller);
         _editorStateService.saveTempState(
           id: entryId,
