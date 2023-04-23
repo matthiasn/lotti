@@ -461,8 +461,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: be47a76
-      resolved-ref: be47a76ab161a583d6453e10aed80712be922cdb
+      ref: "1beb378"
+      resolved-ref: "1beb378908b00a47c6bd236bc9e78699eac31b15"
       url: "https://github.com/matthiasn/delta_markdown.git"
     source: git
     version: "0.7.0"
@@ -862,10 +862,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "7c7652fa32c8c1791d671acf58e72e571b9f4c43fc192ca11c245f9ab9a1a473"
+      sha256: f8e9456f10f23fecd5a8630c99eedf102b884b5ca09fb23490a3c88cf996e57c
       url: "https://pub.dev"
     source: hosted
-    version: "6.4.4"
+    version: "7.1.10"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -993,14 +993,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.2.0"
-  gettext_parser:
-    dependency: transitive
-    description:
-      name: gettext_parser
-      sha256: "9565c9dd1033ec125e1fbc7ccba6c0d2d753dd356122ba1a17e6aa7dc868f34a"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.0"
   glados:
     dependency: "direct dev"
     description:
@@ -1102,10 +1094,10 @@ packages:
     dependency: transitive
     description:
       name: i18n_extension
-      sha256: f3b60575f30ba835d405fcb41ac28ce8efe7caa5812fd93074eaffae7877cb70
+      sha256: cd25e5f648ad01364755faedc6d7bb1217201e8da954ec308d9abac4fd150efe
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.0"
+    version: "8.0.0"
   image:
     dependency: transitive
     description:
@@ -2007,7 +1999,7 @@ packages:
     source: hosted
     version: "1.9.1"
   sprintf:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: sprintf
       sha256: "1fc9ffe69d4df602376b52949af107d8f5703b77cda567c4d7d86a0693120f23"
@@ -2370,10 +2362,10 @@ packages:
     dependency: "direct main"
     description:
       name: visibility_detector
-      sha256: "15c54a459ec2c17b4705450483f3d5a2858e733aee893dcee9d75fd04814940d"
+      sha256: dd5cc11e13494f432d15939c3aa8ae76844c42b723398643ce9addb88a5ed420
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.3"
+    version: "0.4.0+2"
   vm_service:
     dependency: transitive
     description:
