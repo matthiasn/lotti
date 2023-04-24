@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Restore window size on all desktop platforms
+- Desktop menu on all desktop platforms
 
 ## [0.8.330] - 2023-04-24
 ### Changed:
