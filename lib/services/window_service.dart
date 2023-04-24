@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:window_manager/window_manager.dart';
 
 class WindowService implements WindowListener {
@@ -21,7 +21,7 @@ class WindowService implements WindowListener {
   }
 
   Future<void> restoreSize() async {
-    if (!Platform.isMacOS) {
+    if (!isDesktop) {
       return;
     }
 

@@ -11,6 +11,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
@@ -18,7 +19,7 @@ import 'package:window_manager/window_manager.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (Platform.isMacOS) {
+  if (isDesktop) {
     await windowManager.ensureInitialized();
     await hotKeyManager.unregisterAll();
   }
