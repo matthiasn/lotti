@@ -87,16 +87,16 @@ class StatusIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 24,
-      width: 24,
+      height: 30,
+      width: 30,
       decoration: BoxDecoration(
         color: statusColor,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
             color: statusColor,
-            blurRadius: 8,
-            spreadRadius: 2,
+            blurRadius: 5,
+            spreadRadius: 1,
           )
         ],
       ),

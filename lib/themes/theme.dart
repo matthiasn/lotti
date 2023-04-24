@@ -57,9 +57,7 @@ InputDecoration inputDecoration({
       suffixIcon: suffixIcon,
       label: Text(
         labelText ?? '',
-        style: newLabelStyle().copyWith(
-          color: styleConfig().secondaryTextColor,
-        ),
+        style: newLabelStyle(),
         semanticsLabel: semanticsLabel,
       ),
     );

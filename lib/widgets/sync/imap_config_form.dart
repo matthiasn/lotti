@@ -33,7 +33,7 @@ class _ImapConfigFormState extends State<ImapConfigForm> {
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
       builder: (context, SyncConfigState state) {
         return SizedBox(
-          height: 300,
+          height: 330,
           child: state.when(
             configured: (cfg, _) => ConfigForm(
               formKey: formKey,
@@ -98,11 +98,11 @@ class ConfigForm extends StatelessWidget {
             validator: FormBuilderValidators.required(),
             style: inputStyle(),
             keyboardAppearance: keyboardAppearance(),
-            decoration: InputDecoration(
+            decoration: inputDecoration(
               labelText: localizations.settingsSyncHostLabel,
-              labelStyle: settingsLabelStyle(),
             ),
           ),
+          const SizedBox(height: 20),
           FormBuilderTextField(
             name: 'imap_userName',
             key: const Key('imap_user_name_form_field'),
@@ -110,11 +110,11 @@ class ConfigForm extends StatelessWidget {
             validator: FormBuilderValidators.required(),
             style: inputStyle(),
             keyboardAppearance: keyboardAppearance(),
-            decoration: InputDecoration(
+            decoration: inputDecoration(
               labelText: localizations.settingsSyncUserLabel,
-              labelStyle: settingsLabelStyle(),
             ),
           ),
+          const SizedBox(height: 20),
           FormBuilderTextField(
             name: 'imap_password',
             key: const Key('imap_password_form_field'),
@@ -123,11 +123,11 @@ class ConfigForm extends StatelessWidget {
             validator: FormBuilderValidators.required(),
             style: inputStyle(),
             keyboardAppearance: keyboardAppearance(),
-            decoration: InputDecoration(
+            decoration: inputDecoration(
               labelText: localizations.settingsSyncPasswordLabel,
-              labelStyle: settingsLabelStyle(),
             ),
           ),
+          const SizedBox(height: 20),
           FormBuilderTextField(
             name: 'imap_port',
             key: const Key('imap_port_form_field'),
@@ -135,9 +135,8 @@ class ConfigForm extends StatelessWidget {
             validator: FormBuilderValidators.integer(),
             style: inputStyle(),
             keyboardAppearance: keyboardAppearance(),
-            decoration: InputDecoration(
+            decoration: inputDecoration(
               labelText: localizations.settingsSyncPortLabel,
-              labelStyle: settingsLabelStyle(),
             ),
           ),
         ],
