@@ -170,11 +170,6 @@ TextStyle buttonLabelStyleLarger() => TextStyle(
       fontSize: 20,
     );
 
-TextStyle settingsLabelStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-    );
-
 TextStyle choiceLabelStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
       fontSize: fontSizeMedium,
