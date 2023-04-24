@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync assistant styling
 - Upgraded dependencies
 
+### Fixed:
+- Sync getting stuck after generating new sync key and on reading sync message encrypted with old key
+
 ## [0.8.329] - 2023-04-23
 ### Changed:
 - Upgrade flutter_quill lib
