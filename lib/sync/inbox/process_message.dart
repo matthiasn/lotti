@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cryptography/cryptography.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
@@ -114,6 +115,14 @@ Future<void> fetchByUid({
       e,
       domain: 'INBOX_SERVICE',
       subDomain: '_fetchByUid',
+    );
+    rethrow;
+  } on SecretBoxAuthenticationError catch (e) {
+    await setLastReadUid(uid);
+    loggingDb.captureException(
+      e,
+      domain: 'INBOX_SERVICE',
+      subDomain: '_fetchByUid skipping',
     );
     rethrow;
   } catch (e, stackTrace) {

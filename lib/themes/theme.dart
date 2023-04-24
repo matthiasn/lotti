@@ -57,9 +57,7 @@ InputDecoration inputDecoration({
       suffixIcon: suffixIcon,
       label: Text(
         labelText ?? '',
-        style: newLabelStyle().copyWith(
-          color: styleConfig().secondaryTextColor,
-        ),
+        style: newLabelStyle(),
         semanticsLabel: semanticsLabel,
       ),
     );
@@ -170,11 +168,6 @@ TextStyle buttonLabelStyle() => TextStyle(
 TextStyle buttonLabelStyleLarger() => TextStyle(
       color: styleConfig().primaryTextColor,
       fontSize: 20,
-    );
-
-TextStyle settingsLabelStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
     );
 
 TextStyle choiceLabelStyle() => TextStyle(

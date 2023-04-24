@@ -136,9 +136,8 @@ class _SlidingTutorial extends State<SlidingTutorial> {
       pageController: _pageController,
       pageCount: widget.pageCount,
       colors: [
-        styleConfig().secondaryTextColor,
+        styleConfig().cardColor.withOpacity(0.7),
         styleConfig().cardColor,
-        styleConfig().secondaryTextColor,
       ],
       child: Stack(
         children: [
