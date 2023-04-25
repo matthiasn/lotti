@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Audio playback on Linux
 
+### Changed:
+- Upgraded dependencies
+
 ## [0.8.330] - 2023-04-24
 ### Changed:
 - Sync assistant styling

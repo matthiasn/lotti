@@ -721,10 +721,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_keyboard_visibility
-      sha256: "86b71bbaffa38e885f5c21b1182408b9be6951fd125432cf6652c636254cef2d"
+      sha256: "4983655c26ab5b959252ee204c2fffa4afeb4413cd030455194ec0caa3b8e7cb"
       url: "https://pub.dev"
     source: hosted
-    version: "5.4.0"
+    version: "5.4.1"
   flutter_keyboard_visibility_linux:
     dependency: transitive
     description:
@@ -854,10 +854,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: f8e9456f10f23fecd5a8630c99eedf102b884b5ca09fb23490a3c88cf996e57c
+      sha256: "15a35d3dd87e10c043ac525777cbd4818a91e4277bd0abbba46a94435f20bc83"
       url: "https://pub.dev"
     source: hosted
-    version: "7.1.10"
+    version: "7.1.11"
   flutter_secure_storage:
     dependency: "direct main"
     description:
