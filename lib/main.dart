@@ -11,12 +11,14 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
 
   if (Platform.isMacOS) {
     await windowManager.ensureInitialized();
