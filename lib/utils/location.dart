@@ -42,6 +42,10 @@ class DeviceLocation {
   }
 
   Future<Geolocation?> getCurrentGeoLocation() async {
+    if (Platform.isLinux) {
+      return getCurrentGeoLocationLinux();
+    }
+
     final now = DateTime.now();
 
     final recordLocation =
@@ -117,6 +121,49 @@ class DeviceLocation {
         ),
       );
     }
+    return null;
+  }
+
+  Future<Geolocation?> getCurrentGeoLocationLinux() async {
+    final now = DateTime.now();
+
+    if (Platform.isLinux) {
+      final manager = GeoClueManager();
+      await manager.connect();
+      final client = await manager.getClient();
+      await client.setDesktopId('<desktop-id>');
+      await client.setRequestedAccuracyLevel(GeoClueAccuracyLevel.exact);
+      await client.start();
+
+      final locationData = await client.locationUpdated
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: (_) => manager.close(),
+          )
+          .first;
+
+      await client.stop();
+
+      final longitude = locationData.longitude;
+      final latitude = locationData.latitude;
+
+      return Geolocation(
+        createdAt: now,
+        timezone: now.timeZoneName,
+        utcOffset: now.timeZoneOffset.inMinutes,
+        latitude: latitude,
+        longitude: longitude,
+        altitude: locationData.altitude,
+        speed: locationData.speed,
+        accuracy: locationData.accuracy,
+        heading: locationData.heading,
+        geohashString: getGeoHash(
+          latitude: latitude,
+          longitude: longitude,
+        ),
+      );
+    }
+
     return null;
   }
 }
