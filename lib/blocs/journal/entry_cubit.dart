@@ -138,6 +138,10 @@ class EntryCubit extends Cubit<EntryState> {
     await HapticFeedback.heavyImpact();
   }
 
+  void focus() {
+    focusNode.requestFocus();
+  }
+
   void emitState() {
     if (_dirty) {
       emit(
