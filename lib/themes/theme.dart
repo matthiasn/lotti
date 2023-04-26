@@ -305,7 +305,7 @@ ThemeData getTheme() {
       iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
     ),
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: styleConfig().cardColor.darken(),
+      backgroundColor: styleConfig().cardColor.darken(5),
       clipBehavior: Clip.hardEdge,
     ),
     tooltipTheme: TooltipThemeData(

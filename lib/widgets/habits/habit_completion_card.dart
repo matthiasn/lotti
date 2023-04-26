@@ -35,12 +35,13 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
   final JournalDb _db = getIt<JournalDb>();
 
   void onTapAdd({String? dateString}) {
+    final maxHeight = MediaQuery.of(context).size.height * 0.9;
+
     showModalBottomSheet<void>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
-      constraints:
-          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+      constraints: BoxConstraints(maxHeight: maxHeight),
       builder: (BuildContext context) {
         return HabitDialog(
           habitId: widget.habitDefinition.id,
