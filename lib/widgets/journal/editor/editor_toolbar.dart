@@ -35,7 +35,8 @@ class ToolbarWidget extends StatelessWidget {
         context,
         EntryState snapshot,
       ) {
-        final controller = context.read<EntryCubit>().controller;
+        final cubit = context.read<EntryCubit>();
+        final controller = cubit.controller;
         final id = context.read<EntryCubit>().entryId;
 
         return QuillToolbar(
@@ -50,6 +51,7 @@ class ToolbarWidget extends StatelessWidget {
               icon: Icons.format_bold,
               iconSize: toolbarIconSize,
               controller: controller,
+              afterButtonPressed: cubit.focus,
               iconTheme: iconTheme,
             ),
             ToggleStyleButton(
@@ -57,6 +59,7 @@ class ToolbarWidget extends StatelessWidget {
               icon: Icons.format_italic,
               iconSize: toolbarIconSize,
               controller: controller,
+              afterButtonPressed: cubit.focus,
               iconTheme: iconTheme,
             ),
             ToggleStyleButton(
@@ -64,6 +67,7 @@ class ToolbarWidget extends StatelessWidget {
               icon: Icons.format_underline,
               iconSize: toolbarIconSize,
               controller: controller,
+              afterButtonPressed: cubit.focus,
               iconTheme: iconTheme,
             ),
             ToggleStyleButton(
@@ -71,6 +75,7 @@ class ToolbarWidget extends StatelessWidget {
               icon: Icons.format_strikethrough,
               iconSize: toolbarIconSize,
               controller: controller,
+              afterButtonPressed: cubit.focus,
               iconTheme: iconTheme,
             ),
             ToggleStyleButton(
@@ -78,10 +83,12 @@ class ToolbarWidget extends StatelessWidget {
               icon: Icons.code,
               iconSize: toolbarIconSize,
               controller: controller,
+              afterButtonPressed: cubit.focus,
               iconTheme: iconTheme,
             ),
             SelectHeaderStyleButton(
               controller: controller,
+              afterButtonPressed: cubit.focus,
               iconSize: toolbarIconSize,
               iconTheme: iconTheme,
               attributes: const [
@@ -92,6 +99,7 @@ class ToolbarWidget extends StatelessWidget {
             ToggleStyleButton(
               attribute: Attribute.ul,
               controller: controller,
+              afterButtonPressed: cubit.focus,
               icon: Icons.format_list_bulleted,
               iconSize: toolbarIconSize,
               iconTheme: iconTheme,
@@ -99,6 +107,7 @@ class ToolbarWidget extends StatelessWidget {
             ToggleStyleButton(
               attribute: Attribute.ol,
               controller: controller,
+              afterButtonPressed: cubit.focus,
               icon: Icons.format_list_numbered,
               iconSize: toolbarIconSize,
               iconTheme: iconTheme,
@@ -106,6 +115,7 @@ class ToolbarWidget extends StatelessWidget {
             ToggleStyleButton(
               attribute: Attribute.codeBlock,
               controller: controller,
+              afterButtonPressed: cubit.focus,
               icon: Icons.code,
               iconSize: toolbarIconSize,
               iconTheme: iconTheme,
@@ -114,6 +124,7 @@ class ToolbarWidget extends StatelessWidget {
               icon: Icons.format_clear,
               iconSize: toolbarIconSize,
               controller: controller,
+              afterButtonPressed: cubit.focus,
               iconTheme: iconTheme,
             ),
             IconButton(
