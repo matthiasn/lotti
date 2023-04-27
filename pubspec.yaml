@@ -102,11 +102,11 @@ dependencies:
   location: ^4.3.0
   lottie: ^2.2.0
   material_design_icons_flutter: ^6.0.7096
-  media_kit: ^0.0.6
-  media_kit_libs_android_audio: ^1.0.0
+  media_kit: ^0.0.7
+  media_kit_libs_android_audio: ^1.0.2
   media_kit_libs_ios_audio: ^1.0.4
   media_kit_libs_linux: ^1.0.2
-  media_kit_libs_macos_audio: ^1.0.4
+  media_kit_libs_macos_audio: ^1.0.5
   media_kit_libs_windows_audio: ^1.0.3
   media_kit_native_event_loop: ^1.0.3
   multi_select_flutter: ^4.0.0
