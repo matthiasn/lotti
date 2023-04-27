@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Smaller APK sizes (thanks @alexmercerind)
 - Upgraded dependencies
+- Faster CI runs on Buildkite
 
 ## [0.8.334] - 2023-04-27
 ### Changed:
