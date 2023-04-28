@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Improved habit completion bottom sheet
+- Upgraded dependencies
 
 ### Fixed:
 - Keyboard hiding habit completion bottom sheet
