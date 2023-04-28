@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Missing `libmpv.so` on Android preventing startup
+
+## [0.8.338] - 2023-04-28
+### Fixed:
 - Screenshots of habit completion dialog in Fluttium flow
 
 ## [0.8.337] - 2023-04-28
