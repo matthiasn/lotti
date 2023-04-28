@@ -127,135 +127,145 @@ class _HabitDialogState extends State<HabitDialog> {
         return Stack(
           children: [
             if (habitDefinition.dashboardId != null)
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 350),
-                        child: DashboardWidget(
-                          rangeStart: rangeStart,
-                          rangeEnd: rangeEnd,
-                          dashboardId: habitDefinition.dashboardId!,
-                        ),
-                      ),
+              SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 280),
+                  child: DashboardWidget(
+                    rangeStart: rangeStart,
+                    rangeEnd: rangeEnd,
+                    dashboardId: habitDefinition.dashboardId!,
+                  ),
+                ),
+              ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              heightFactor: habitDefinition.dashboardId != null ? 10 : 1,
+              child: Card(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                elevation: 10,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                ),
+                color: styleConfig().primaryColorLight.darken(5),
+                child: Container(
+                  constraints: const BoxConstraints(
+                    maxWidth: 500,
+                    minWidth: 250,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: 30,
+                      top: 10,
+                      right: 10,
+                      bottom: 10,
                     ),
-                  ),
-                ],
-              ),
-            AlertDialog(
-              elevation: 10,
-              insetPadding: const EdgeInsets.symmetric(horizontal: 32),
-              contentPadding: const EdgeInsets.only(
-                left: 30,
-                top: 10,
-                right: 10,
-                bottom: 10,
-              ),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(20)),
-              ),
-              backgroundColor: styleConfig().primaryColorLight,
-              actionsAlignment: MainAxisAlignment.spaceBetween,
-              actionsPadding: const EdgeInsets.only(
-                left: 20,
-                right: 20,
-                bottom: 20,
-              ),
-              actions: [
-                TextButton(
-                  key: const Key('habit_fail'),
-                  onPressed: () => saveHabit(HabitCompletionType.fail),
-                  child: Text(
-                    localizations.completeHabitFailButton,
-                    style: failButtonStyle(),
-                  ),
-                ),
-                TextButton(
-                  key: const Key('habit_skip'),
-                  onPressed: () => saveHabit(HabitCompletionType.skip),
-                  child: Text(
-                    localizations.completeHabitSkipButton,
-                    style: saveButtonStyle()
-                        .copyWith(color: styleConfig().secondaryTextColor),
-                  ),
-                ),
-                TextButton(
-                  key: const Key('habit_save'),
-                  onPressed: () => saveHabit(HabitCompletionType.success),
-                  child: Text(
-                    localizations.completeHabitSuccessButton,
-                    style: saveButtonStyle().copyWith(
-                      color: styleConfig().primaryColor.darken(25),
-                    ),
-                  ),
-                ),
-              ],
-              content: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 600,
-                  minWidth: 280,
-                ),
-                child: FormBuilder(
-                  key: _formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: FormBuilder(
+                      key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              habitDefinition.name,
-                              style: habitCompletionHeaderStyle,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  habitDefinition.name,
+                                  style: habitCompletionHeaderStyle,
+                                ),
+                              ),
+                              IconButton(
+                                padding: const EdgeInsets.all(10),
+                                icon: const Icon(Icons.close),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
+                          ),
+                          if (habitDefinition.description.isNotEmpty)
+                            HabitDescription(habitDefinition),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                inputSpacerSmall,
+                                DateTimeField(
+                                  dateTime: _started,
+                                  labelText: localizations.addHabitDateLabel,
+                                  style: dialogInputStyle(),
+                                  setDateTime: (picked) {
+                                    setState(() {
+                                      _startReset = true;
+                                      _started = picked;
+                                    });
+                                  },
+                                ),
+                                inputSpacerSmall,
+                                FormBuilderTextField(
+                                  initialValue: '',
+                                  key: const Key('habit_comment_field'),
+                                  decoration: createDialogInputDecoration(
+                                    labelText:
+                                        localizations.addHabitCommentLabel,
+                                    style: dialogInputStyle(),
+                                  ),
+                                  minLines: 1,
+                                  maxLines: 10,
+                                  keyboardAppearance: keyboardAppearance(),
+                                  style: dialogInputStyle(),
+                                  name: 'comment',
+                                ),
+                              ],
                             ),
                           ),
-                          IconButton(
-                            padding: const EdgeInsets.all(10),
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.pop(context),
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: 20,
+                              right: 20,
+                              top: 5,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                TextButton(
+                                  key: const Key('habit_fail'),
+                                  onPressed: () =>
+                                      saveHabit(HabitCompletionType.fail),
+                                  child: Text(
+                                    localizations.completeHabitFailButton,
+                                    style: failButtonStyle(),
+                                  ),
+                                ),
+                                TextButton(
+                                  key: const Key('habit_skip'),
+                                  onPressed: () =>
+                                      saveHabit(HabitCompletionType.skip),
+                                  child: Text(
+                                    localizations.completeHabitSkipButton,
+                                    style: saveButtonStyle().copyWith(
+                                      color: styleConfig().secondaryTextColor,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  key: const Key('habit_save'),
+                                  onPressed: () =>
+                                      saveHabit(HabitCompletionType.success),
+                                  child: Text(
+                                    localizations.completeHabitSuccessButton,
+                                    style: saveButtonStyle().copyWith(
+                                      color:
+                                          styleConfig().primaryColor.darken(25),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                      HabitDescription(habitDefinition),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            inputSpacer,
-                            DateTimeField(
-                              dateTime: _started,
-                              labelText: localizations.addHabitDateLabel,
-                              style: dialogInputStyle(),
-                              setDateTime: (picked) {
-                                setState(() {
-                                  _startReset = true;
-                                  _started = picked;
-                                });
-                              },
-                            ),
-                            inputSpacer,
-                            FormBuilderTextField(
-                              initialValue: '',
-                              key: const Key('habit_comment_field'),
-                              decoration: createDialogInputDecoration(
-                                labelText: localizations.addHabitCommentLabel,
-                                style: dialogInputStyle(),
-                              ),
-                              minLines: 1,
-                              maxLines: 10,
-                              keyboardAppearance: keyboardAppearance(),
-                              style: dialogInputStyle(),
-                              name: 'comment',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
