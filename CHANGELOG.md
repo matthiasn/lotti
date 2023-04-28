@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Improved habit completion bottom sheet
 
+### Fixed:
+- Keyboard hiding habit completion bottom sheet
+
 ## [0.8.336] - 2023-04-28
 ### Changed:
 - Smaller APK sizes (thanks @alexmercerind)
