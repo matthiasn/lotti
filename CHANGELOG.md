@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Improved habit completion bottom sheet
+
+## [0.8.336] - 2023-04-28
+### Changed:
 - Smaller APK sizes (thanks @alexmercerind)
 - Upgraded dependencies
 - Faster CI runs on Buildkite
