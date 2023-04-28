@@ -2,23 +2,17 @@ steps:
   - group: "Codegen & Test"
     key: "codegen_test"
     steps:
-      - label: "🧽 Clean "
-        key: "apple_clean"
-        commands:
-          - "flutter clean"
-        agents:
-          os: "macOS"
-
-      - label: "🛠 Dependencies "
+      - label: "🛠 Dependencies & Codegen"
         key: "apple_deps"
-        depends_on:
-          - "apple_clean"
         commands:
           - "flutter pub get"
+          - "flutter gen-l10n"
           - "mkdir -p /tmp/buildkite/${BUILDKITE_COMMIT}/"
           - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
         agents:
           os: "macOS"
+        artifact_paths:
+          - "missing_translations.txt"
         # Workaround for rsync warning about vanished files,
         # which is inconsequential here but returns exit code
         # 24 and is therefore interpreted as a failure
@@ -26,42 +20,13 @@ steps:
           automatic:
             - exit_status: 24
 
-      - label: "🛠 Codegen "
-        key: "apple_codegen"
+      - label: "🔬 Test Coverage "
+        key: "apple_test"
         depends_on:
           - "apple_deps"
         commands:
           - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "flutter gen-l10n"
-          - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-        agents:
-          os: "macOS"
-        artifact_paths:
-          - "missing_translations.txt"
-        retry:
-          automatic:
-            - exit_status: 24
-
-      - label: "🔬 Test Coverage "
-        key: "apple_test"
-        depends_on:
-          - "apple_codegen"
-        commands:
-          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
           - "make junit_test"
-          - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-        agents:
-          os: "macOS"
-        retry:
-          automatic:
-            - exit_status: 24
-
-      - label: "🔬 Test Report "
-        key: "apple_test_report"
-        depends_on:
-          - "apple_test"
-        commands:
-          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
           - "make junit_upload"
         agents:
           os: "macOS"
@@ -74,7 +39,7 @@ steps:
   - label: ":mac: Fluttium 🔬 "
     key: "fluttium"
     depends_on:
-      - "apple_codegen"
+      - "apple_deps"
     commands:
       - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
       - touch ~/Library/Containers/com.matthiasn.lotti.dev
@@ -82,7 +47,6 @@ steps:
       - "make activate_fluttium"
       - "make fluttium"
       - "make fluttium_docs"
-      - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
     agents:
       os: "macOS"
     retry:
@@ -91,14 +55,15 @@ steps:
 
   #################
 
-  - label: "📱 iOS Build 📦"
+  - label: "📱 iOS TestFlight"
     key: "ios_build"
     depends_on:
       - "codegen_test"
     commands:
       - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
       - "make ios_build_ipa"
-      - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+      - "make ios_fastlane_build"
+      - "make ios_fastlane_upload"
     agents:
       os: "macOS"
     retry:
@@ -107,87 +72,20 @@ steps:
 
   #################
 
-  - group: "📱 iOS TestFlight"
-    key: "ios_testflight"
-    depends_on:
-      - "ios_build"
-    steps:
-      - label: "📱👟 iOS fastlane build "
-        key: "ios_fastlane_build"
-        depends_on:
-          - "ios_build"
-        commands:
-          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "make ios_fastlane_build"
-          - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-        agents:
-          os: "macOS"
-        retry:
-          automatic:
-            - exit_status: 24
-
-      - label: "📱🚀 iOS fastlane TestFlight "
-        key: "ios_fastlane_testflight"
-        depends_on:
-          - "ios_fastlane_build"
-        commands:
-          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "make ios_fastlane_upload"
-        agents:
-          os: "macOS"
-        retry:
-          automatic:
-            - exit_status: 24
-
-  #################
-
-  - label: ":mac: Build 📦 "
+  - label: ":mac: fastlane TestFlight 🚀"
     key: "macos_build"
     depends_on:
       - "codegen_test"
     commands:
       - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
       - "make macos_build_flutter"
-      - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
+      - "make macos_fastlane_build"
+      - "make macos_fastlane_upload"
     agents:
       os: "macOS"
     retry:
       automatic:
         - exit_status: 24
-
-  #################
-
-  - group: ":mac: TestFlight"
-    key: "macos_testflight"
-    depends_on:
-      - "macos_build"
-    steps:
-      - label: ":mac: 👟 fastlane build "
-        key: "macos_fastlane_build"
-        depends_on:
-          - "macos_build"
-        commands:
-          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "make macos_fastlane_build"
-          - "rsync -ar ./ /tmp/buildkite/${BUILDKITE_COMMIT}/"
-        agents:
-          os: "macOS"
-        retry:
-          automatic:
-            - exit_status: 24
-
-      - label: ":mac: 🚀 fastlane TestFlight "
-        key: "macos_fastlane_testflight"
-        depends_on:
-          - "macos_fastlane_build"
-        commands:
-          - "rsync -ar /tmp/buildkite/${BUILDKITE_COMMIT}/ ./"
-          - "make macos_fastlane_upload"
-        agents:
-          os: "macOS"
-        retry:
-          automatic:
-            - exit_status: 24
 
   #################
 

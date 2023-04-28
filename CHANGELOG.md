@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Smaller APK sizes (thanks @alexmercerind)
+- Upgraded dependencies
+- Faster CI runs on Buildkite
+
+## [0.8.334] - 2023-04-27
+### Changed:
 - Dashboard in habit completion now above the dialog, leaving the dialog always in the same position
 
 ## [0.8.333] - 2023-04-26
