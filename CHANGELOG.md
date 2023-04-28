@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Habit completion bottom sheet height
+
+## [0.8.339] - 2023-04-28
+### Fixed:
 - Missing `libmpv.so` on Android preventing startup
 
 ## [0.8.338] - 2023-04-28
