@@ -80,6 +80,7 @@ InputDecoration createDialogInputDecoration({
 const switchDecoration = InputDecoration(border: InputBorder.none);
 
 const inputSpacer = SizedBox(height: 25);
+const inputSpacerSmall = SizedBox(height: 15);
 
 TextStyle inputStyle() => TextStyle(
       color: styleConfig().primaryTextColor,

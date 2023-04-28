@@ -193,6 +193,8 @@ description: Habit flow
 - pressOn: 'Success'
 
 - pressOn: 'Complete 10K+ Steps -1'
+- wait:
+    seconds: 1
 - takeScreenshot: './screenshots/habit_completion_10k_steps.png'
 - pressOn: 'Fail'
 
@@ -232,6 +234,8 @@ description: Habit flow
 - pressOn: 'Success'
 
 - pressOn: 'Complete 10K+ Steps'
+- wait:
+    seconds: 1
 - takeScreenshot: './screenshots/habit_completion_10k_steps_now.png'
 - pressOn: 'Success'
 
