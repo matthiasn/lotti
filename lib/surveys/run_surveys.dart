@@ -12,7 +12,6 @@ Future<void> runSurvey({
 }) async {
   await showModalBottomSheet<void>(
     context: context,
-    useRootNavigator: true,
     builder: (BuildContext context) {
       return SurveyWidget(task, resultCallback);
     },
