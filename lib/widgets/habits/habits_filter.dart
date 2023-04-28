@@ -67,7 +67,6 @@ class HabitsFilter extends StatelessWidget {
               onPressed: () {
                 showModalBottomSheet<void>(
                   context: context,
-                  useRootNavigator: true,
                   builder: (BuildContext context) {
                     return BlocProvider.value(
                       value: cubit,

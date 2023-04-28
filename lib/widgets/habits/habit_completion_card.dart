@@ -40,7 +40,6 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
 
     showModalBottomSheet<void>(
       context: context,
-      useRootNavigator: true,
       isScrollControlled: true,
       constraints: BoxConstraints(maxHeight: maxHeight),
       builder: (BuildContext context) {
