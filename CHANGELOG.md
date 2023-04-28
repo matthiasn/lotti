@@ -5,6 +5,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Screenshots of habit completion dialog in Fluttium flow
+
+## [0.8.337] - 2023-04-28
+### Changed:
+- Improved habit completion bottom sheet
+- Upgraded dependencies
+
+### Fixed:
+- Keyboard hiding habit completion bottom sheet
+
+## [0.8.336] - 2023-04-28
+### Changed:
+- Smaller APK sizes (thanks @alexmercerind)
+- Upgraded dependencies
+- Faster CI runs on Buildkite
+
+## [0.8.334] - 2023-04-27
 ### Changed:
 - Dashboard in habit completion now above the dialog, leaving the dialog always in the same position
 
