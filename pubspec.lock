@@ -854,10 +854,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "15a35d3dd87e10c043ac525777cbd4818a91e4277bd0abbba46a94435f20bc83"
+      sha256: b6e48dd5e0e40ee740ac926338f8ab36a038a4c3037429c2a8491b603c250bc1
       url: "https://pub.dev"
     source: hosted
-    version: "7.1.11"
+    version: "7.1.13"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1054,10 +1054,10 @@ packages:
     dependency: transitive
     description:
       name: http
-      sha256: "6aa2946395183537c8b880962d935877325d6a09a2867c3970c05c0fed6ac482"
+      sha256: "5895291c13fa8a3bd82e76d5627f69e0d85ca6a30dcac95c4ea19a5d555879c2"
       url: "https://pub.dev"
     source: hosted
-    version: "0.13.5"
+    version: "0.13.6"
   http_client_helper:
     dependency: transitive
     description:
@@ -1299,10 +1299,10 @@ packages:
     dependency: "direct main"
     description:
       name: media_kit
-      sha256: "47c0a035b0d6d3ddbd783217283d289615a27f55cc41c7a5bf5919f0acd60d2e"
+      sha256: d9a32b3f6eafdfbba6aff2e37045a3a80009b6dfbdeec638d51d85e8b254a6a2
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.7"
+    version: "0.0.7+1"
   media_kit_libs_android_audio:
     dependency: "direct main"
     description:
@@ -2378,10 +2378,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_avfoundation
-      sha256: "75c6d68cd479a25f34d635149ba6887bc8f1b2b2921841121fd44ea0c5bc1927"
+      sha256: "824dad3e2986a13766fcccfd1c48c83eef9f896c220a53292e3019b9e98615bb"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.4"
+    version: "2.4.5"
   video_player_platform_interface:
     dependency: transitive
     description:
