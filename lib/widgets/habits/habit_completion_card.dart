@@ -36,7 +36,7 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
 
   void onTapAdd({String? dateString}) {
     final height = MediaQuery.of(context).size.height;
-    final maxHeight = height * 0.9;
+    final maxHeight = height * 0.8;
 
     showModalBottomSheet<void>(
       context: context,
