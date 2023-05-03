@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Updated dependencies
 - Show config flag for invalid cert
+- App documents folder on Windows
 
 ### Added:
 - Save and restore window position on Windows and Linux

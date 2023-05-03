@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 Uuid uuid = const Uuid();
@@ -76,4 +78,16 @@ Future<String> createAssetDirectory(String relativePath) async {
 
 Directory getDocumentsDirectory() {
   return getIt<Directory>();
+}
+
+Future<Directory> findDocumentsDirectory() async {
+  final docDir = await getApplicationDocumentsDirectory();
+  final appSupportDir = await getApplicationSupportDirectory();
+  debugPrint('appSupportDir $appSupportDir');
+
+  if (Platform.isWindows) {
+    return appSupportDir;
+  } else {
+    return docDir;
+  }
 }
