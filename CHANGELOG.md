@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Show config flag for invalid cert
 - App documents folder on Windows
 
+### Fixed:
+- App ID on Windows and Linux
+
 ### Added:
 - Save and restore window position on Windows and Linux
 - HotKey support on Windows and Linux
