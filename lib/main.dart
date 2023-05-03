@@ -11,9 +11,9 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
@@ -26,7 +26,7 @@ Future<void> main() async {
     await hotKeyManager.unregisterAll();
   }
 
-  final docDir = await getApplicationDocumentsDirectory();
+  final docDir = await findDocumentsDirectory();
 
   getIt
     ..registerSingleton<SecureStorage>(SecureStorage())
