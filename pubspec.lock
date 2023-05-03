@@ -854,10 +854,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: b6e48dd5e0e40ee740ac926338f8ab36a038a4c3037429c2a8491b603c250bc1
+      sha256: "803d39a210f5aaa7b9d1a999ef1dac5fef4931916483f23a196fcc6e5cd75ee1"
       url: "https://pub.dev"
     source: hosted
-    version: "7.1.13"
+    version: "7.1.14"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1259,10 +1259,10 @@ packages:
     dependency: transitive
     description:
       name: markdown
-      sha256: d95a9d12954aafc97f984ca29baaa7690ed4d9ec4140a23ad40580bcdb6c87f5
+      sha256: "8e332924094383133cee218b676871f42db2514f1f6ac617b6cf6152a7faab8e"
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.2"
+    version: "7.1.0"
   matcher:
     dependency: transitive
     description:
