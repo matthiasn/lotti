@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:window_manager/window_manager.dart';
 
 class WindowService implements WindowListener {
@@ -16,15 +16,13 @@ class WindowService implements WindowListener {
   final offsetKey = 'WINDOW_OFFSET';
 
   Future<void> restore() async {
-    await restoreSize();
-    await restoreOffset();
+    if (isDesktop) {
+      await restoreSize();
+      await restoreOffset();
+    }
   }
 
   Future<void> restoreSize() async {
-    if (!Platform.isMacOS) {
-      return;
-    }
-
     final sizeString = await getIt<SettingsDb>().itemByKey(sizeKey);
     final values = sizeString?.split(',').map(double.parse).toList();
     final width = values?.first ?? 400;

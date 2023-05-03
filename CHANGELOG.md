@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Updated dependencies
+- Show config flag for invalid cert
+
+### Added:
+- Save and restore window position on Windows and Linux
+- HotKey support on Windows and Linux
+
+## [0.8.340] - 2023-04-29
 ### Fixed:
 - Habit completion bottom sheet height
 

@@ -45,8 +45,7 @@ class _FlagsPageState extends State<FlagsPage> {
             showBrightSchemeFlag,
             recordLocationFlag,
             enableSyncFlag,
-            // TODO: is this required? Remove
-            // allowInvalidCertFlag,
+            allowInvalidCertFlag,
           };
 
           final filteredItems =
