@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 - Margin below habit completion dialog
 
+### Changed:
+- Upgraded dependencies
+
 ## [0.8.341] - 2023-05-02
 ### Changed:
 - Upgraded dependencies
