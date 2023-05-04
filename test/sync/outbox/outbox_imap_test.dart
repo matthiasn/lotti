@@ -22,13 +22,16 @@ void main() {
 
   group('Outbox IMAP Tests', () {
     setUpAll(() async {
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<Future<DriftIsolate>>(
-          createDriftIsolate(loggingDbFileName, inMemory: true),
-          instanceName: loggingDbFileName,
-        )
-        ..registerSingleton<LoggingDb>(getLoggingDb());
+      getIt.registerSingleton<Directory>(
+        await getApplicationDocumentsDirectory(),
+      );
+
+      await getIt.registerSingleton<Future<DriftIsolate>>(
+        createDriftIsolate(loggingDbFileName, inMemory: true),
+        instanceName: loggingDbFileName,
+      );
+
+      getIt.registerSingleton<LoggingDb>(getLoggingDb());
     });
 
     test('', () async {

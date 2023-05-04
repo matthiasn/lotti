@@ -29,11 +29,11 @@ import 'package:lotti/themes/themes_service.dart';
 final getIt = GetIt.instance;
 
 Future<void> registerSingletons() async {
+  await getIt.registerSingleton<Future<DriftIsolate>>(
+    createDriftIsolate(journalDbFileName),
+    instanceName: journalDbFileName,
+  );
   getIt
-    ..registerSingleton<Future<DriftIsolate>>(
-      createDriftIsolate(journalDbFileName),
-      instanceName: journalDbFileName,
-    )
     ..registerSingleton<Fts5Db>(Fts5Db())
     ..registerSingleton<JournalDb>(getJournalDb())
     ..registerSingleton<ConnectivityService>(ConnectivityService())
@@ -41,16 +41,17 @@ Future<void> registerSingletons() async {
     ..registerSingleton<ThemesService>(ThemesService())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
-    ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())
-    ..registerSingleton<Future<DriftIsolate>>(
-      createDriftIsolate(syncDbFileName),
-      instanceName: syncDbFileName,
-    )
-    ..registerSingleton<SyncDatabase>(getSyncDatabase())
-    ..registerSingleton<Future<DriftIsolate>>(
-      createDriftIsolate(loggingDbFileName),
-      instanceName: loggingDbFileName,
-    )
+    ..registerSingleton<EntitiesCacheService>(EntitiesCacheService());
+  await getIt.registerSingleton<Future<DriftIsolate>>(
+    createDriftIsolate(syncDbFileName),
+    instanceName: syncDbFileName,
+  );
+  getIt.registerSingleton<SyncDatabase>(getSyncDatabase());
+  await getIt.registerSingleton<Future<DriftIsolate>>(
+    createDriftIsolate(loggingDbFileName),
+    instanceName: loggingDbFileName,
+  );
+  getIt
     ..registerSingleton<ImapClientManager>(ImapClientManager())
     ..registerSingleton<LoggingDb>(getLoggingDb())
     ..registerSingleton<VectorClockService>(VectorClockService())

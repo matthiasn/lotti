@@ -30,11 +30,13 @@ Future<void> main() async {
 
   getIt
     ..registerSingleton<SecureStorage>(SecureStorage())
-    ..registerSingleton<Directory>(docDir)
-    ..registerSingleton<Future<DriftIsolate>>(
-      createDriftIsolate(settingsDbFileName),
-      instanceName: settingsDbFileName,
-    )
+    ..registerSingleton<Directory>(docDir);
+
+  await getIt.registerSingleton<Future<DriftIsolate>>(
+    createDriftIsolate(settingsDbFileName),
+    instanceName: settingsDbFileName,
+  );
+  getIt
     ..registerSingleton<SettingsDb>(getSettingsDb())
     ..registerSingleton<WindowService>(WindowService());
 
