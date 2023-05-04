@@ -33,27 +33,29 @@ Future<void> registerSingletons() async {
     createDriftIsolate(journalDbFileName),
     instanceName: journalDbFileName,
   );
+
+  await getIt.registerSingleton<Future<DriftIsolate>>(
+    createDriftIsolate(loggingDbFileName),
+    instanceName: loggingDbFileName,
+  );
+
+  await getIt.registerSingleton<Future<DriftIsolate>>(
+    createDriftIsolate(syncDbFileName),
+    instanceName: syncDbFileName,
+  );
+
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
+    ..registerSingleton<LoggingDb>(getLoggingDb())
     ..registerSingleton<JournalDb>(getJournalDb())
     ..registerSingleton<ConnectivityService>(ConnectivityService())
     ..registerSingleton<FgBgService>(FgBgService())
     ..registerSingleton<ThemesService>(ThemesService())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
-    ..registerSingleton<EntitiesCacheService>(EntitiesCacheService());
-  await getIt.registerSingleton<Future<DriftIsolate>>(
-    createDriftIsolate(syncDbFileName),
-    instanceName: syncDbFileName,
-  );
-  getIt.registerSingleton<SyncDatabase>(getSyncDatabase());
-  await getIt.registerSingleton<Future<DriftIsolate>>(
-    createDriftIsolate(loggingDbFileName),
-    instanceName: loggingDbFileName,
-  );
-  getIt
+    ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())
+    ..registerSingleton<SyncDatabase>(getSyncDatabase())
     ..registerSingleton<ImapClientManager>(ImapClientManager())
-    ..registerSingleton<LoggingDb>(getLoggingDb())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<SyncConfigService>(SyncConfigService())
     ..registerSingleton<TimeService>(TimeService())

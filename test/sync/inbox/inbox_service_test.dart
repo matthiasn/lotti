@@ -68,35 +68,31 @@ void main() {
       );
 
       await getIt.registerSingleton<Future<DriftIsolate>>(
+        createDriftIsolate(loggingDbFileName, inMemory: true),
+        instanceName: loggingDbFileName,
+      );
+
+      await getIt.registerSingleton<Future<DriftIsolate>>(
         createDriftIsolate(settingsDbFileName, inMemory: true),
         instanceName: settingsDbFileName,
       );
 
+      await getIt.registerSingleton<Future<DriftIsolate>>(
+        createDriftIsolate(journalDbFileName, inMemory: true),
+        instanceName: journalDbFileName,
+      );
+
       getIt
+        ..registerSingleton<LoggingDb>(getLoggingDb())
         ..registerSingleton<SettingsDb>(getSettingsDb())
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<SyncConfigService>(syncConfigMock)
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<FgBgService>(mockFgBgService)
         ..registerSingleton<ImapClientManager>(mockImapClientManager)
-        ..registerSingleton<VectorClockService>(mockVectorClockService);
-
-      await getIt.registerSingleton<Future<DriftIsolate>>(
-        createDriftIsolate(journalDbFileName),
-        instanceName: journalDbFileName,
-      );
-
-      getIt
+        ..registerSingleton<VectorClockService>(mockVectorClockService)
         ..registerSingleton<JournalDb>(getJournalDb())
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-      await getIt.registerSingleton<Future<DriftIsolate>>(
-        createDriftIsolate(loggingDbFileName, inMemory: true),
-        instanceName: loggingDbFileName,
-      );
-
-      getIt
-        ..registerSingleton<LoggingDb>(getLoggingDb())
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<InboxService>(InboxService());
 
       await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: true);

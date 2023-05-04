@@ -430,14 +430,17 @@ void main() {
       expect(formKey.currentState!.isValid, isFalse);
 
       await tester.enterText(hostFieldFinder, 'hostname');
+      await tester.pumpAndSettle();
       await tester.enterText(userFieldFinder, 'userName');
+      await tester.pumpAndSettle();
       await tester.enterText(passwordFieldFinder, 'password');
+      await tester.pumpAndSettle();
       await tester.enterText(portFieldFinder, '111');
-
       await tester.pumpAndSettle();
 
       expect(formKey.currentState!.isValid, isTrue);
       final formData = formKey.currentState!.value;
+      debugPrint('formData $formData');
       expect(getTrimmed(formData, 'imap_host'), 'hostname');
       expect(getTrimmed(formData, 'imap_userName'), 'userName');
       expect(getPort(formData), 111);

@@ -64,7 +64,10 @@ void main() {
         instanceName: settingsDbFileName,
       );
 
-      getIt.registerSingleton<SettingsDb>(getSettingsDb());
+      await getIt.registerSingleton<Future<DriftIsolate>>(
+        createDriftIsolate(loggingDbFileName, inMemory: true),
+        instanceName: loggingDbFileName,
+      );
 
       await getIt.registerSingleton<Future<DriftIsolate>>(
         createDriftIsolate(syncDbFileName, inMemory: true),
@@ -72,19 +75,13 @@ void main() {
       );
 
       getIt
+        ..registerSingleton<LoggingDb>(getLoggingDb())
+        ..registerSingleton<SettingsDb>(getSettingsDb())
         ..registerSingleton<SyncDatabase>(getSyncDatabase())
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<FgBgService>(mockFgBgService)
         ..registerSingleton<VectorClockService>(mockVectorClockService)
-        ..registerSingleton<JournalDb>(mockJournalDb);
-
-      await getIt.registerSingleton<Future<DriftIsolate>>(
-        createDriftIsolate(loggingDbFileName, inMemory: true),
-        instanceName: loggingDbFileName,
-      );
-
-      getIt
-        ..registerSingleton<LoggingDb>(getLoggingDb())
+        ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<SyncConfigService>(syncConfigMock)
         ..registerSingleton<OutboxService>(OutboxService());
     });
