@@ -145,6 +145,7 @@ class _HabitDialogState extends State<HabitDialog> {
                 alignment: Alignment.bottomCenter,
                 heightFactor: habitDefinition.dashboardId != null ? 10 : 1,
                 child: Card(
+                  margin: EdgeInsets.zero,
                   elevation: 10,
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.only(

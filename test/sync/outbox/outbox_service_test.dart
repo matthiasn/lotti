@@ -55,26 +55,35 @@ void main() {
       when(() => mockJournalDb.getConfigFlag(enableSyncFlag))
           .thenAnswer((_) async => true);
 
+      getIt.registerSingleton<Directory>(
+        await getApplicationDocumentsDirectory(),
+      );
+
+      await getIt.registerSingleton<Future<DriftIsolate>>(
+        createDriftIsolate(settingsDbFileName, inMemory: true),
+        instanceName: settingsDbFileName,
+      );
+
+      getIt.registerSingleton<SettingsDb>(getSettingsDb());
+
+      await getIt.registerSingleton<Future<DriftIsolate>>(
+        createDriftIsolate(syncDbFileName, inMemory: true),
+        instanceName: syncDbFileName,
+      );
+
       getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<Future<DriftIsolate>>(
-          createDriftIsolate(settingsDbFileName, inMemory: true),
-          instanceName: settingsDbFileName,
-        )
-        ..registerSingleton<SettingsDb>(getSettingsDb())
-        ..registerSingleton<Future<DriftIsolate>>(
-          createDriftIsolate(syncDbFileName, inMemory: true),
-          instanceName: syncDbFileName,
-        )
         ..registerSingleton<SyncDatabase>(getSyncDatabase())
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<FgBgService>(mockFgBgService)
         ..registerSingleton<VectorClockService>(mockVectorClockService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<Future<DriftIsolate>>(
-          createDriftIsolate(loggingDbFileName, inMemory: true),
-          instanceName: loggingDbFileName,
-        )
+        ..registerSingleton<JournalDb>(mockJournalDb);
+
+      await getIt.registerSingleton<Future<DriftIsolate>>(
+        createDriftIsolate(loggingDbFileName, inMemory: true),
+        instanceName: loggingDbFileName,
+      );
+
+      getIt
         ..registerSingleton<LoggingDb>(getLoggingDb())
         ..registerSingleton<SyncConfigService>(syncConfigMock)
         ..registerSingleton<OutboxService>(OutboxService());

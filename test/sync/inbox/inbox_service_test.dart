@@ -63,29 +63,39 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
+      getIt.registerSingleton<Directory>(
+        await getApplicationDocumentsDirectory(),
+      );
+
+      await getIt.registerSingleton<Future<DriftIsolate>>(
+        createDriftIsolate(settingsDbFileName, inMemory: true),
+        instanceName: settingsDbFileName,
+      );
+
       getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<Future<DriftIsolate>>(
-          createDriftIsolate(settingsDbFileName, inMemory: true),
-          instanceName: settingsDbFileName,
-        )
         ..registerSingleton<SettingsDb>(getSettingsDb())
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<SyncConfigService>(syncConfigMock)
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<FgBgService>(mockFgBgService)
         ..registerSingleton<ImapClientManager>(mockImapClientManager)
-        ..registerSingleton<VectorClockService>(mockVectorClockService)
-        ..registerSingleton<Future<DriftIsolate>>(
-          createDriftIsolate(journalDbFileName),
-          instanceName: journalDbFileName,
-        )
+        ..registerSingleton<VectorClockService>(mockVectorClockService);
+
+      await getIt.registerSingleton<Future<DriftIsolate>>(
+        createDriftIsolate(journalDbFileName),
+        instanceName: journalDbFileName,
+      );
+
+      getIt
         ..registerSingleton<JournalDb>(getJournalDb())
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<Future<DriftIsolate>>(
-          createDriftIsolate(loggingDbFileName, inMemory: true),
-          instanceName: loggingDbFileName,
-        )
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+      await getIt.registerSingleton<Future<DriftIsolate>>(
+        createDriftIsolate(loggingDbFileName, inMemory: true),
+        instanceName: loggingDbFileName,
+      );
+
+      getIt
         ..registerSingleton<LoggingDb>(getLoggingDb())
         ..registerSingleton<InboxService>(InboxService());
 
