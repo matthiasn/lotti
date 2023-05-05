@@ -35,7 +35,7 @@ class DashboardsPageCubit extends Cubit<DashboardsPageState> {
   List<DashboardDefinition> _dashboardDefinitions = [];
   final _selectedCategoryIds = <String>{};
   var _showSearch = false;
-  var _searchString = 'false';
+  var _searchString = '';
 
   void setSearchString(String searchString) {
     _searchString = searchString.toLowerCase();

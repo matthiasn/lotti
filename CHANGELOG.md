@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added:
 - Filter dashboards by categories
+- Tests for dashboards page
 
 ## [0.8.343] - 2023-05-04
 ### Fixed:
