@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded dependencies
 - Refactoring: BloC for state management on dashboards page
 
+### Added:
+- Filter dashboards by categories
+
 ## [0.8.343] - 2023-05-04
 ### Fixed:
 - Margin below habit completion dialog

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lotti/blocs/dashboards/dashboards_page_cubit.dart';
+import 'package:lotti/blocs/dashboards/dashboards_page_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/dashboards/dashboards_filter.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';
 
 class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
@@ -51,18 +55,23 @@ class DashboardsSliverAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SliverAppBar(
-      backgroundColor: styleConfig().negspace,
-      expandedHeight: 50,
-      primary: false,
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: const [
-          SettingsButton('/settings/dashboards'),
-        ],
-      ),
-      pinned: true,
-      automaticallyImplyLeading: false,
+    return BlocBuilder<DashboardsPageCubit, DashboardsPageState>(
+      builder: (context, DashboardsPageState state) {
+        return SliverAppBar(
+          backgroundColor: styleConfig().negspace,
+          expandedHeight: 50,
+          primary: false,
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: const [
+              DashboardsFilter(),
+              SettingsButton('/settings/dashboards'),
+            ],
+          ),
+          pinned: true,
+          automaticallyImplyLeading: false,
+        );
+      },
     );
   }
 }
