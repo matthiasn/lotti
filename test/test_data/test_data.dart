@@ -141,6 +141,7 @@ final testDashboardConfig = DashboardDefinition(
   lastReviewed: testEpochDateTime,
   active: true,
   id: '',
+  categoryId: categoryMindfulness.id,
 );
 
 final emptyTestDashboardConfig = DashboardDefinition(
