@@ -981,10 +981,10 @@ packages:
     dependency: "direct main"
     description:
       name: get_it
-      sha256: d7d31d8bc11a94fe1514fa2c44e820990181277783cbb3ce873a40149ff9d52f
+      sha256: ca77bd0c23e609e09a70989726295a92978589745e129c27d354e61e4070f804
       url: "https://pub.dev"
     source: hosted
-    version: "7.4.0"
+    version: "7.4.1"
   glados:
     dependency: "direct dev"
     description:
@@ -1062,10 +1062,10 @@ packages:
     dependency: transitive
     description:
       name: http_client_helper
-      sha256: "1f32359bd07a064ad256d1f84ae5f973f69bc972e7287223fa198abe1d969c28"
+      sha256: "14c6e756644339f561321dab021215475ba4779aa962466f59ccb3ecf66b36c3"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.3"
+    version: "2.0.4"
   http_multi_server:
     dependency: transitive
     description:
@@ -1994,10 +1994,10 @@ packages:
     dependency: transitive
     description:
       name: source_gen
-      sha256: c2bea18c95cfa0276a366270afaa2850b09b4a76db95d546f3d003dcc7011298
+      sha256: b20e191de6964e98032573cecb1d2b169d96ba63fdb586d24dcd1003ba7e94f6
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.7"
+    version: "1.3.0"
   source_helper:
     dependency: transitive
     description:
