@@ -57,13 +57,21 @@ class DashboardsPageCubit extends Cubit<DashboardsPageState> {
   }
 
   void emitState() {
+    final filteredByCategory = _selectedCategoryIds.isNotEmpty
+        ? _dashboardDefinitions
+            .where(
+              (dashboard) =>
+                  _selectedCategoryIds.contains(dashboard.categoryId),
+            )
+            .toList()
+        : _dashboardDefinitions;
     emit(
       DashboardsPageState(
         showSearch: _showSearch,
         searchString: _searchString,
         selectedCategoryIds: <String>{..._selectedCategoryIds},
         allDashboards: _dashboardDefinitions,
-        filteredSortedDashboards: _dashboardDefinitions,
+        filteredSortedDashboards: filteredByCategory,
       ),
     );
   }
