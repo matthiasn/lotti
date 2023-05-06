@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Transcription icon in audio player on macOS
 - Audio conversion from aac to wav with ffmpeg_kit_flutter
 - whisper.cpp library for speech recognition
+- English speech recognition, with the result logged
 
 ## [0.8.344] - 2023-05-05
 ### Changed:
