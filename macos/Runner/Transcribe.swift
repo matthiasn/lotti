@@ -6,19 +6,28 @@
 //
 
 import Foundation
+import FlutterMacOS
 
-func transcribe( audioFilePath: String, modelPath: String) -> String? {
+func transcribe(audioFilePath: String, modelPath: String, result: @escaping FlutterResult) async -> Void {
     var floats: [Float]?
     do {
         let url = URL(fileURLWithPath: audioFilePath)
         floats = try decodeWaveFile(url)
-        let whisperContext: WhisperContext? = try WhisperContext.createContext(path: modelPath)
+        
+        guard let whisperContext: WhisperContext? = try WhisperContext.createContext(path: modelPath) else {
+            result("context not created")
+        }
+        
+        if (floats != nil) {
+            await whisperContext?.fullTranscribe(samples: floats!)
+            let text = await whisperContext?.getTranscription()
+            result(text)
+        }
     } catch {
         floats = nil
     }
     
-    
-    return "Transcribe " + audioFilePath + " " + modelPath + " " + "\(floats?[...5])"
+    result("Transcribe " + audioFilePath + " " + modelPath + " " + "\(floats?[...5])")
 }
 
 func decodeWaveFile(_ url: URL) throws -> [Float] {
