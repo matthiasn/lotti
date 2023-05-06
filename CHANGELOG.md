@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Transcription icon in audio player on macOS
+- Audio conversion from aac to wav with ffmpeg_kit_flutter
 
 ## [0.8.344] - 2023-05-05
 ### Changed:

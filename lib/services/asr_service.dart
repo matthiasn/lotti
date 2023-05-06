@@ -1,3 +1,5 @@
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
@@ -12,17 +14,30 @@ class AsrService {
   }) async {
     debugPrint('transcribe $audioFilePath');
 
-    try {
-      final result = await platform.invokeMethod<String>(
-        'transcribe',
-        {
-          'audioFilePath': audioFilePath,
-          'modelPath': modelPath,
-        },
-      );
-      debugPrint('transcribe: $result');
-    } on PlatformException catch (e) {
-      debugPrint('transcribe exception: $e');
+    final wavPath = audioFilePath.replaceAll('.aac', '.wav');
+    final session = await FFmpegKit.execute(
+      '-i $audioFilePath  -ar 16000 -ac 1 -c:a pcm_s16le $wavPath',
+    );
+    final returnCode = await session.getReturnCode();
+
+    if (ReturnCode.isSuccess(returnCode)) {
+      try {
+        final result = await platform.invokeMethod<String>(
+          'transcribe',
+          {
+            'audioFilePath': wavPath,
+            'modelPath': modelPath,
+          },
+        );
+        debugPrint('transcribe: $result');
+        return '$result';
+      } on PlatformException catch (e) {
+        debugPrint('transcribe exception: $e');
+      }
+    } else if (ReturnCode.isCancel(returnCode)) {
+      debugPrint('FFmpegKit cancelled');
+    } else {
+      debugPrint('FFmpegKit errored');
     }
 
     return 'Not implemented yet';
