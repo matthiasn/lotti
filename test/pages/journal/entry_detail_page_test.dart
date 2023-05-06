@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/journal/entry_details_page.dart';
+import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -54,6 +55,7 @@ void main() {
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<LinkService>(MockLinkService())
         ..registerSingleton<TagsService>(mockTagsService)
