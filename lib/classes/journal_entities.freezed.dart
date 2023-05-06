@@ -702,7 +702,7 @@ mixin _$AudioData {
   String get audioFile => throw _privateConstructorUsedError;
   String get audioDirectory => throw _privateConstructorUsedError;
   Duration get duration => throw _privateConstructorUsedError;
-  String? get transcript => throw _privateConstructorUsedError;
+  List<AudioTranscript>? get transcripts => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -721,7 +721,7 @@ abstract class $AudioDataCopyWith<$Res> {
       String audioFile,
       String audioDirectory,
       Duration duration,
-      String? transcript});
+      List<AudioTranscript>? transcripts});
 }
 
 /// @nodoc
@@ -742,7 +742,7 @@ class _$AudioDataCopyWithImpl<$Res, $Val extends AudioData>
     Object? audioFile = null,
     Object? audioDirectory = null,
     Object? duration = null,
-    Object? transcript = freezed,
+    Object? transcripts = freezed,
   }) {
     return _then(_value.copyWith(
       dateFrom: null == dateFrom
@@ -765,10 +765,10 @@ class _$AudioDataCopyWithImpl<$Res, $Val extends AudioData>
           ? _value.duration
           : duration // ignore: cast_nullable_to_non_nullable
               as Duration,
-      transcript: freezed == transcript
-          ? _value.transcript
-          : transcript // ignore: cast_nullable_to_non_nullable
-              as String?,
+      transcripts: freezed == transcripts
+          ? _value.transcripts
+          : transcripts // ignore: cast_nullable_to_non_nullable
+              as List<AudioTranscript>?,
     ) as $Val);
   }
 }
@@ -786,7 +786,7 @@ abstract class _$$_AudioDataCopyWith<$Res> implements $AudioDataCopyWith<$Res> {
       String audioFile,
       String audioDirectory,
       Duration duration,
-      String? transcript});
+      List<AudioTranscript>? transcripts});
 }
 
 /// @nodoc
@@ -805,7 +805,7 @@ class __$$_AudioDataCopyWithImpl<$Res>
     Object? audioFile = null,
     Object? audioDirectory = null,
     Object? duration = null,
-    Object? transcript = freezed,
+    Object? transcripts = freezed,
   }) {
     return _then(_$_AudioData(
       dateFrom: null == dateFrom
@@ -828,10 +828,10 @@ class __$$_AudioDataCopyWithImpl<$Res>
           ? _value.duration
           : duration // ignore: cast_nullable_to_non_nullable
               as Duration,
-      transcript: freezed == transcript
-          ? _value.transcript
-          : transcript // ignore: cast_nullable_to_non_nullable
-              as String?,
+      transcripts: freezed == transcripts
+          ? _value._transcripts
+          : transcripts // ignore: cast_nullable_to_non_nullable
+              as List<AudioTranscript>?,
     ));
   }
 }
@@ -845,7 +845,8 @@ class _$_AudioData implements _AudioData {
       required this.audioFile,
       required this.audioDirectory,
       required this.duration,
-      this.transcript});
+      final List<AudioTranscript>? transcripts})
+      : _transcripts = transcripts;
 
   factory _$_AudioData.fromJson(Map<String, dynamic> json) =>
       _$$_AudioDataFromJson(json);
@@ -860,12 +861,19 @@ class _$_AudioData implements _AudioData {
   final String audioDirectory;
   @override
   final Duration duration;
+  final List<AudioTranscript>? _transcripts;
   @override
-  final String? transcript;
+  List<AudioTranscript>? get transcripts {
+    final value = _transcripts;
+    if (value == null) return null;
+    if (_transcripts is EqualUnmodifiableListView) return _transcripts;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @override
   String toString() {
-    return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, transcript: $transcript)';
+    return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, transcripts: $transcripts)';
   }
 
   @override
@@ -882,14 +890,20 @@ class _$_AudioData implements _AudioData {
                 other.audioDirectory == audioDirectory) &&
             (identical(other.duration, duration) ||
                 other.duration == duration) &&
-            (identical(other.transcript, transcript) ||
-                other.transcript == transcript));
+            const DeepCollectionEquality()
+                .equals(other._transcripts, _transcripts));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, dateFrom, dateTo, audioFile,
-      audioDirectory, duration, transcript);
+  int get hashCode => Object.hash(
+      runtimeType,
+      dateFrom,
+      dateTo,
+      audioFile,
+      audioDirectory,
+      duration,
+      const DeepCollectionEquality().hash(_transcripts));
 
   @JsonKey(ignore: true)
   @override
@@ -912,7 +926,7 @@ abstract class _AudioData implements AudioData {
       required final String audioFile,
       required final String audioDirectory,
       required final Duration duration,
-      final String? transcript}) = _$_AudioData;
+      final List<AudioTranscript>? transcripts}) = _$_AudioData;
 
   factory _AudioData.fromJson(Map<String, dynamic> json) =
       _$_AudioData.fromJson;
@@ -928,10 +942,233 @@ abstract class _AudioData implements AudioData {
   @override
   Duration get duration;
   @override
-  String? get transcript;
+  List<AudioTranscript>? get transcripts;
   @override
   @JsonKey(ignore: true)
   _$$_AudioDataCopyWith<_$_AudioData> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+AudioTranscript _$AudioTranscriptFromJson(Map<String, dynamic> json) {
+  return _AudioTranscript.fromJson(json);
+}
+
+/// @nodoc
+mixin _$AudioTranscript {
+  DateTime get created => throw _privateConstructorUsedError;
+  String get library => throw _privateConstructorUsedError;
+  String get model => throw _privateConstructorUsedError;
+  String get detectedLanguage => throw _privateConstructorUsedError;
+  String get transcript => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $AudioTranscriptCopyWith<AudioTranscript> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $AudioTranscriptCopyWith<$Res> {
+  factory $AudioTranscriptCopyWith(
+          AudioTranscript value, $Res Function(AudioTranscript) then) =
+      _$AudioTranscriptCopyWithImpl<$Res, AudioTranscript>;
+  @useResult
+  $Res call(
+      {DateTime created,
+      String library,
+      String model,
+      String detectedLanguage,
+      String transcript});
+}
+
+/// @nodoc
+class _$AudioTranscriptCopyWithImpl<$Res, $Val extends AudioTranscript>
+    implements $AudioTranscriptCopyWith<$Res> {
+  _$AudioTranscriptCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? created = null,
+    Object? library = null,
+    Object? model = null,
+    Object? detectedLanguage = null,
+    Object? transcript = null,
+  }) {
+    return _then(_value.copyWith(
+      created: null == created
+          ? _value.created
+          : created // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      library: null == library
+          ? _value.library
+          : library // ignore: cast_nullable_to_non_nullable
+              as String,
+      model: null == model
+          ? _value.model
+          : model // ignore: cast_nullable_to_non_nullable
+              as String,
+      detectedLanguage: null == detectedLanguage
+          ? _value.detectedLanguage
+          : detectedLanguage // ignore: cast_nullable_to_non_nullable
+              as String,
+      transcript: null == transcript
+          ? _value.transcript
+          : transcript // ignore: cast_nullable_to_non_nullable
+              as String,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$_AudioTranscriptCopyWith<$Res>
+    implements $AudioTranscriptCopyWith<$Res> {
+  factory _$$_AudioTranscriptCopyWith(
+          _$_AudioTranscript value, $Res Function(_$_AudioTranscript) then) =
+      __$$_AudioTranscriptCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {DateTime created,
+      String library,
+      String model,
+      String detectedLanguage,
+      String transcript});
+}
+
+/// @nodoc
+class __$$_AudioTranscriptCopyWithImpl<$Res>
+    extends _$AudioTranscriptCopyWithImpl<$Res, _$_AudioTranscript>
+    implements _$$_AudioTranscriptCopyWith<$Res> {
+  __$$_AudioTranscriptCopyWithImpl(
+      _$_AudioTranscript _value, $Res Function(_$_AudioTranscript) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? created = null,
+    Object? library = null,
+    Object? model = null,
+    Object? detectedLanguage = null,
+    Object? transcript = null,
+  }) {
+    return _then(_$_AudioTranscript(
+      created: null == created
+          ? _value.created
+          : created // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      library: null == library
+          ? _value.library
+          : library // ignore: cast_nullable_to_non_nullable
+              as String,
+      model: null == model
+          ? _value.model
+          : model // ignore: cast_nullable_to_non_nullable
+              as String,
+      detectedLanguage: null == detectedLanguage
+          ? _value.detectedLanguage
+          : detectedLanguage // ignore: cast_nullable_to_non_nullable
+              as String,
+      transcript: null == transcript
+          ? _value.transcript
+          : transcript // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$_AudioTranscript implements _AudioTranscript {
+  _$_AudioTranscript(
+      {required this.created,
+      required this.library,
+      required this.model,
+      required this.detectedLanguage,
+      required this.transcript});
+
+  factory _$_AudioTranscript.fromJson(Map<String, dynamic> json) =>
+      _$$_AudioTranscriptFromJson(json);
+
+  @override
+  final DateTime created;
+  @override
+  final String library;
+  @override
+  final String model;
+  @override
+  final String detectedLanguage;
+  @override
+  final String transcript;
+
+  @override
+  String toString() {
+    return 'AudioTranscript(created: $created, library: $library, model: $model, detectedLanguage: $detectedLanguage, transcript: $transcript)';
+  }
+
+  @override
+  bool operator ==(dynamic other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$_AudioTranscript &&
+            (identical(other.created, created) || other.created == created) &&
+            (identical(other.library, library) || other.library == library) &&
+            (identical(other.model, model) || other.model == model) &&
+            (identical(other.detectedLanguage, detectedLanguage) ||
+                other.detectedLanguage == detectedLanguage) &&
+            (identical(other.transcript, transcript) ||
+                other.transcript == transcript));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, created, library, model, detectedLanguage, transcript);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$_AudioTranscriptCopyWith<_$_AudioTranscript> get copyWith =>
+      __$$_AudioTranscriptCopyWithImpl<_$_AudioTranscript>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$_AudioTranscriptToJson(
+      this,
+    );
+  }
+}
+
+abstract class _AudioTranscript implements AudioTranscript {
+  factory _AudioTranscript(
+      {required final DateTime created,
+      required final String library,
+      required final String model,
+      required final String detectedLanguage,
+      required final String transcript}) = _$_AudioTranscript;
+
+  factory _AudioTranscript.fromJson(Map<String, dynamic> json) =
+      _$_AudioTranscript.fromJson;
+
+  @override
+  DateTime get created;
+  @override
+  String get library;
+  @override
+  String get model;
+  @override
+  String get detectedLanguage;
+  @override
+  String get transcript;
+  @override
+  @JsonKey(ignore: true)
+  _$$_AudioTranscriptCopyWith<_$_AudioTranscript> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

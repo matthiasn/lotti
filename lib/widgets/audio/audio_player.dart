@@ -8,6 +8,8 @@ import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 
+import '../charts/utils.dart';
+
 class AudioPlayerWidget extends StatelessWidget {
   const AudioPlayerWidget(this.journalAudio, {super.key});
 
@@ -39,6 +41,7 @@ class AudioPlayerWidget extends StatelessWidget {
       builder: (BuildContext context, AudioPlayerState state) {
         final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
         final cubit = context.read<AudioPlayerCubit>();
+        final transcripts = journalAudio.data.transcripts;
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -148,6 +151,42 @@ class AudioPlayerWidget extends StatelessWidget {
                 ),
               ],
             ),
+            if (transcripts?.isNotEmpty ?? false)
+              Column(
+                children: [
+                  ...transcripts!.map(
+                    (transcript) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                        horizontal: 30,
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${ymd(transcript.created)}  '
+                                'Language: ${transcript.detectedLanguage}    ',
+                                style: transcriptHeaderStyle(),
+                              ),
+                              Text(
+                                '${transcript.library}, '
+                                ' ${transcript.model}',
+                                style: transcriptHeaderStyle(),
+                              ),
+                            ],
+                          ),
+                          SelectableText(
+                            transcript.transcript,
+                            style: transcriptStyle(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
           ],
         );
       },

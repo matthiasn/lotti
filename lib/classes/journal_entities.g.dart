@@ -77,7 +77,9 @@ _$_AudioData _$$_AudioDataFromJson(Map<String, dynamic> json) => _$_AudioData(
       audioFile: json['audioFile'] as String,
       audioDirectory: json['audioDirectory'] as String,
       duration: Duration(microseconds: json['duration'] as int),
-      transcript: json['transcript'] as String?,
+      transcripts: (json['transcripts'] as List<dynamic>?)
+          ?.map((e) => AudioTranscript.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$$_AudioDataToJson(_$_AudioData instance) =>
@@ -87,6 +89,24 @@ Map<String, dynamic> _$$_AudioDataToJson(_$_AudioData instance) =>
       'audioFile': instance.audioFile,
       'audioDirectory': instance.audioDirectory,
       'duration': instance.duration.inMicroseconds,
+      'transcripts': instance.transcripts,
+    };
+
+_$_AudioTranscript _$$_AudioTranscriptFromJson(Map<String, dynamic> json) =>
+    _$_AudioTranscript(
+      created: DateTime.parse(json['created'] as String),
+      library: json['library'] as String,
+      model: json['model'] as String,
+      detectedLanguage: json['detectedLanguage'] as String,
+      transcript: json['transcript'] as String,
+    );
+
+Map<String, dynamic> _$$_AudioTranscriptToJson(_$_AudioTranscript instance) =>
+    <String, dynamic>{
+      'created': instance.created.toIso8601String(),
+      'library': instance.library,
+      'model': instance.model,
+      'detectedLanguage': instance.detectedLanguage,
       'transcript': instance.transcript,
     };
 

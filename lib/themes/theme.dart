@@ -121,6 +121,18 @@ TextStyle textStyleLarger() => textStyle().copyWith(
       fontWeight: FontWeight.normal,
     );
 
+TextStyle transcriptStyle() => textStyle().copyWith(
+      fontSize: fontSizeMedium,
+      fontWeight: FontWeight.normal,
+      color: styleConfig().secondaryTextColor,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+TextStyle transcriptHeaderStyle() => transcriptStyle().copyWith(
+      fontSize: fontSizeSmall,
+      fontWeight: FontWeight.w300,
+    );
+
 TextStyle labelStyleLarger() => textStyleLarger().copyWith(
       fontSize: 20,
       fontWeight: FontWeight.w300,
