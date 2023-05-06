@@ -1,6 +1,7 @@
 IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
 IOS_EXPORT_PATH = ./build/ios/export
 MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
+WHISPER_CPP_VERSION = 1.4.0
 MACOS_EXPORT_PATH = ./build/macos/export
 LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 
@@ -180,6 +181,17 @@ macos_upload:
 .PHONY: macos_open
 macos_open: macos_build macos_archive
 	open $(MACOS_ARCHIVE_PATH)
+
+.ONESHELL:
+.PHONY: get_whisper_cpp
+get_whisper_cpp:
+	cd macos/whisper.cpp/ && \
+	wget -nc https://github.com/ggerganov/whisper.cpp/archive/refs/tags/v$(WHISPER_CPP_VERSION).zip && \
+	unzip v$(WHISPER_CPP_VERSION).zip && \
+	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/ggml.c . && \
+	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/ggml.h . && \
+	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/whisper.cpp . && \
+	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/whisper.h .
 
 .PHONY: macos_fastlane_build
 macos_fastlane_build:

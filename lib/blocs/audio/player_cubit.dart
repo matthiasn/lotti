@@ -7,8 +7,6 @@ import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   AudioPlayerCubit()
@@ -80,13 +78,9 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       return;
     }
 
-    final docDir = await getApplicationDocumentsDirectory();
-    final modelPath = p.join(docDir.path, 'whisper', 'ggml-small.bin');
-
     final audioFilePath = await AudioUtils.getFullAudioPath(state.audioNote!);
     await _asrService.transcribe(
       audioFilePath: audioFilePath,
-      modelPath: modelPath,
     );
   }
 

@@ -8,10 +8,11 @@
 import Foundation
 
 func transcribe( audioFilePath: String, modelPath: String) -> String? {
-    let floats: [Float]?
+    var floats: [Float]?
     do {
         let url = URL(fileURLWithPath: audioFilePath)
         floats = try decodeWaveFile(url)
+        let whisperContext: WhisperContext? = try WhisperContext.createContext(path: modelPath)
     } catch {
         floats = nil
     }
