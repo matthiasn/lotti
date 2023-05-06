@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 class AsrService {
   AsrService();
@@ -12,13 +14,14 @@ class AsrService {
 
   Future<String> transcribe({
     required String audioFilePath,
-    required String modelPath,
+    String? modelPath,
   }) async {
-    debugPrint('transcribe $audioFilePath');
+    final docDir = await getApplicationDocumentsDirectory();
+    final defaultModelPath = p.join(docDir.path, 'whisper', 'ggml-small.bin');
 
     final wavPath = audioFilePath.replaceAll('.aac', '.wav');
     final session = await FFmpegKit.execute(
-      '-i $audioFilePath  -ar 16000 -ac 1 -c:a pcm_s16le $wavPath',
+      '-i $audioFilePath -y -ar 16000 -ac 1 -c:a pcm_s16le $wavPath',
     );
     final returnCode = await session.getReturnCode();
 
@@ -28,7 +31,7 @@ class AsrService {
           'transcribe',
           {
             'audioFilePath': wavPath,
-            'modelPath': modelPath,
+            'modelPath': modelPath ?? defaultModelPath,
           },
         );
         debugPrint('transcribe: $result');
