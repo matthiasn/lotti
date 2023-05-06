@@ -80,6 +80,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
     final audioFilePath = await AudioUtils.getFullAudioPath(state.audioNote!);
     await _asrService.transcribe(
+      entryId: state.audioNote!.meta.id,
       audioFilePath: audioFilePath,
     );
   }
