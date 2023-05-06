@@ -61,11 +61,25 @@ class AudioData with _$AudioData {
     required String audioFile,
     required String audioDirectory,
     required Duration duration,
-    String? transcript,
+    List<AudioTranscript>? transcripts,
   }) = _AudioData;
 
   factory AudioData.fromJson(Map<String, dynamic> json) =>
       _$AudioDataFromJson(json);
+}
+
+@freezed
+class AudioTranscript with _$AudioTranscript {
+  factory AudioTranscript({
+    required DateTime created,
+    required String library,
+    required String model,
+    required String detectedLanguage,
+    required String transcript,
+  }) = _AudioTranscript;
+
+  factory AudioTranscript.fromJson(Map<String, dynamic> json) =>
+      _$AudioTranscriptFromJson(json);
 }
 
 @freezed
