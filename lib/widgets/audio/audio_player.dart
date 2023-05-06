@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,6 +38,7 @@ class AudioPlayerWidget extends StatelessWidget {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       builder: (BuildContext context, AudioPlayerState state) {
         final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
+        final cubit = context.read<AudioPlayerCubit>();
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -52,8 +55,9 @@ class AudioPlayerWidget extends StatelessWidget {
                       ? styleConfig().activeAudioControl
                       : styleConfig().secondaryTextColor,
                   onPressed: () {
-                    context.read<AudioPlayerCubit>().setAudioNote(journalAudio);
-                    context.read<AudioPlayerCubit>().play();
+                    cubit
+                      ..setAudioNote(journalAudio)
+                      ..play();
                   },
                 ),
                 IgnorePointer(
@@ -67,30 +71,28 @@ class AudioPlayerWidget extends StatelessWidget {
                         iconSize: 32,
                         tooltip: 'Rewind 15s',
                         color: styleConfig().secondaryTextColor,
-                        onPressed: () => context.read<AudioPlayerCubit>().rew(),
+                        onPressed: cubit.rew,
                       ),
                       IconButton(
                         icon: const Icon(Icons.pause),
                         iconSize: 32,
                         tooltip: 'Pause',
                         color: styleConfig().secondaryTextColor,
-                        onPressed: () =>
-                            context.read<AudioPlayerCubit>().pause(),
+                        onPressed: cubit.pause,
                       ),
                       IconButton(
                         icon: const Icon(Icons.fast_forward),
                         iconSize: 32,
                         tooltip: 'Fast forward 15s',
                         color: styleConfig().secondaryTextColor,
-                        onPressed: () => context.read<AudioPlayerCubit>().fwd(),
+                        onPressed: cubit.fwd,
                       ),
                       IconButton(
                         icon: const Icon(Icons.stop),
                         iconSize: 32,
                         tooltip: 'Stop',
                         color: styleConfig().secondaryTextColor,
-                        onPressed: () =>
-                            context.read<AudioPlayerCubit>().stopPlay(),
+                        onPressed: cubit.stopPlay,
                       ),
                       IconButton(
                         icon: Text(
@@ -105,13 +107,23 @@ class AudioPlayerWidget extends StatelessWidget {
                         ),
                         iconSize: 32,
                         tooltip: 'Toggle speed',
-                        onPressed: () => context
-                            .read<AudioPlayerCubit>()
-                            .setSpeed(speedToggleMap[state.speed] ?? 1),
+                        onPressed: () =>
+                            cubit.setSpeed(speedToggleMap[state.speed] ?? 1),
                       ),
                     ],
                   ),
                 ),
+                if (Platform.isMacOS)
+                  IconButton(
+                    icon: const Icon(Icons.transcribe_outlined),
+                    iconSize: 20,
+                    tooltip: 'Transcribe',
+                    color: styleConfig().secondaryTextColor,
+                    onPressed: () async {
+                      await cubit.setAudioNote(journalAudio);
+                      await cubit.transcribe();
+                    },
+                  ),
               ],
             ),
             Row(
@@ -128,9 +140,7 @@ class AudioPlayerWidget extends StatelessWidget {
                     thumbColor: Colors.white,
                     barHeight: 3,
                     thumbRadius: 5,
-                    onSeek: (newPosition) {
-                      context.read<AudioPlayerCubit>().seek(newPosition);
-                    },
+                    onSeek: cubit.seek,
                     timeLabelTextStyle: monospaceTextStyle().copyWith(
                       color: styleConfig().secondaryTextColor,
                     ),
