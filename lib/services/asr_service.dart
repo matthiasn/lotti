@@ -2,6 +2,8 @@ import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/get_it.dart';
 
 class AsrService {
   AsrService();
@@ -30,6 +32,11 @@ class AsrService {
           },
         );
         debugPrint('transcribe: $result');
+
+        getIt<LoggingDb>().captureEvent(
+          'transcribe $result',
+          domain: 'ASR',
+        );
         return '$result';
       } on PlatformException catch (e) {
         debugPrint('transcribe exception: $e');
