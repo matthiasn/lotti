@@ -76,6 +76,7 @@ class AudioTranscript with _$AudioTranscript {
     required String model,
     required String detectedLanguage,
     required String transcript,
+    Duration? processingTime,
   }) = _AudioTranscript;
 
   factory AudioTranscript.fromJson(Map<String, dynamic> json) =>

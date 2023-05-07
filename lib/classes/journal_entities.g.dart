@@ -99,6 +99,9 @@ _$_AudioTranscript _$$_AudioTranscriptFromJson(Map<String, dynamic> json) =>
       model: json['model'] as String,
       detectedLanguage: json['detectedLanguage'] as String,
       transcript: json['transcript'] as String,
+      processingTime: json['processingTime'] == null
+          ? null
+          : Duration(microseconds: json['processingTime'] as int),
     );
 
 Map<String, dynamic> _$$_AudioTranscriptToJson(_$_AudioTranscript instance) =>
@@ -108,6 +111,7 @@ Map<String, dynamic> _$$_AudioTranscriptToJson(_$_AudioTranscript instance) =>
       'model': instance.model,
       'detectedLanguage': instance.detectedLanguage,
       'transcript': instance.transcript,
+      'processingTime': instance.processingTime?.inMicroseconds,
     };
 
 _$_SurveyData _$$_SurveyDataFromJson(Map<String, dynamic> json) =>

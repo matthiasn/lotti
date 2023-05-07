@@ -18,6 +18,7 @@ class AsrService {
     required String audioFilePath,
     String? model,
   }) async {
+    final start = DateTime.now();
     final docDir = await getApplicationDocumentsDirectory();
     const defaultModel = 'ggml-small.bin';
     final modelPath = p.join(docDir.path, 'whisper', model ?? defaultModel);
@@ -37,6 +38,7 @@ class AsrService {
             'modelPath': modelPath,
           },
         );
+        final finish = DateTime.now();
 
         if (result != null) {
           final transcript = AudioTranscript(
@@ -45,8 +47,9 @@ class AsrService {
             model: model ?? defaultModel,
             detectedLanguage: 'en',
             transcript: result,
+            processingTime: finish.difference(start),
           );
-          debugPrint('transcribe: $transcript');
+
           await getIt<PersistenceLogic>().addAudioTranscript(
             journalEntityId: entryId,
             transcript: transcript,
