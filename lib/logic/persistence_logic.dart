@@ -674,7 +674,6 @@ class PersistenceLogic {
   Future<bool> addAudioTranscript({
     required String journalEntityId,
     required AudioTranscript transcript,
-    EntryText? entryText,
   }) async {
     try {
       final now = DateTime.now();
@@ -704,9 +703,20 @@ class PersistenceLogic {
             ],
           );
 
+          final entryText = journalAudio.entryText;
+
+          final newEntryText = EntryText(
+            plainText: transcript.transcript,
+            markdown: transcript.transcript,
+          );
+
+          final replaceEntryText = entryText == null ||
+              entryText.plainText.isEmpty ||
+              '${entryText.markdown}'.trim().isEmpty;
+
           final updated = journalAudio.copyWith(
             meta: newMeta,
-            entryText: entryText,
+            entryText: replaceEntryText ? newEntryText : entryText,
             data: updatedData,
           );
 

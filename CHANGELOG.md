@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display audio duration in journal card
 - Language detection (logging only)
 - Indicator for existing transcriptions
+- Set entry text from transcript
+
+### Changed:
+- Toggle for showing individual transcripts
 
 ## [0.8.344] - 2023-05-05
 ### Changed:
