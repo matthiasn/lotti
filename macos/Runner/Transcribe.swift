@@ -30,6 +30,28 @@ func transcribe(audioFilePath: String, modelPath: String, result: @escaping Flut
     result("Transcribe " + audioFilePath + " " + modelPath + " " + "\(floats?[...5])")
 }
 
+
+func detectLanguage(audioFilePath: String, modelPath: String, result: @escaping FlutterResult) async -> Void {
+    var floats: [Float]?
+    do {
+        let url = URL(fileURLWithPath: audioFilePath)
+        floats = try decodeWaveFile(url)
+
+        guard let whisperContext: WhisperContext? = try WhisperContext.createContext(path: modelPath) else {
+            result("context not created")
+        }
+
+        if (floats != nil) {
+            let language = await whisperContext?.detectLanguage(samples: floats!)
+            result(language)
+        }
+    } catch {
+        floats = nil
+    }
+
+    result("Transcribe " + audioFilePath + " " + modelPath + " " + "\(floats?[...5])")
+}
+
 func decodeWaveFile(_ url: URL) throws -> [Float] {
     let data = try Data(contentsOf: url)
     let floats = stride(from: 44, to: data.count - 2, by: 2).map {
