@@ -12,13 +12,25 @@ Duration entryDuration(JournalEntity journalEntity) {
 }
 
 String formatDuration(Duration? duration) {
-  var durationString = duration?.toString().split('.').first ?? '';
+  if (duration == null) {
+    return '';
+  }
+
+  var durationString = duration.toString().split('.').first;
 
   if (durationString.substring(1, 2) == ':') {
     durationString = '0$durationString';
   }
 
   return durationString;
+}
+
+String formatSeconds(Duration? duration) {
+  if (duration == null) {
+    return '';
+  }
+
+  return '${duration.inSeconds}s';
 }
 
 // ignore: avoid_positional_boolean_parameters

@@ -198,12 +198,13 @@ class _$_AudioPlayerState implements _AudioPlayerState {
             (identical(other.pausedAt, pausedAt) ||
                 other.pausedAt == pausedAt) &&
             (identical(other.speed, speed) || other.speed == speed) &&
-            const DeepCollectionEquality().equals(other.audioNote, audioNote));
+            (identical(other.audioNote, audioNote) ||
+                other.audioNote == audioNote));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, status, totalDuration, progress,
-      pausedAt, speed, const DeepCollectionEquality().hash(audioNote));
+  int get hashCode => Object.hash(
+      runtimeType, status, totalDuration, progress, pausedAt, speed, audioNote);
 
   @JsonKey(ignore: true)
   @override

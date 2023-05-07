@@ -960,6 +960,7 @@ mixin _$AudioTranscript {
   String get model => throw _privateConstructorUsedError;
   String get detectedLanguage => throw _privateConstructorUsedError;
   String get transcript => throw _privateConstructorUsedError;
+  Duration? get processingTime => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -978,7 +979,8 @@ abstract class $AudioTranscriptCopyWith<$Res> {
       String library,
       String model,
       String detectedLanguage,
-      String transcript});
+      String transcript,
+      Duration? processingTime});
 }
 
 /// @nodoc
@@ -999,6 +1001,7 @@ class _$AudioTranscriptCopyWithImpl<$Res, $Val extends AudioTranscript>
     Object? model = null,
     Object? detectedLanguage = null,
     Object? transcript = null,
+    Object? processingTime = freezed,
   }) {
     return _then(_value.copyWith(
       created: null == created
@@ -1021,6 +1024,10 @@ class _$AudioTranscriptCopyWithImpl<$Res, $Val extends AudioTranscript>
           ? _value.transcript
           : transcript // ignore: cast_nullable_to_non_nullable
               as String,
+      processingTime: freezed == processingTime
+          ? _value.processingTime
+          : processingTime // ignore: cast_nullable_to_non_nullable
+              as Duration?,
     ) as $Val);
   }
 }
@@ -1038,7 +1045,8 @@ abstract class _$$_AudioTranscriptCopyWith<$Res>
       String library,
       String model,
       String detectedLanguage,
-      String transcript});
+      String transcript,
+      Duration? processingTime});
 }
 
 /// @nodoc
@@ -1057,6 +1065,7 @@ class __$$_AudioTranscriptCopyWithImpl<$Res>
     Object? model = null,
     Object? detectedLanguage = null,
     Object? transcript = null,
+    Object? processingTime = freezed,
   }) {
     return _then(_$_AudioTranscript(
       created: null == created
@@ -1079,6 +1088,10 @@ class __$$_AudioTranscriptCopyWithImpl<$Res>
           ? _value.transcript
           : transcript // ignore: cast_nullable_to_non_nullable
               as String,
+      processingTime: freezed == processingTime
+          ? _value.processingTime
+          : processingTime // ignore: cast_nullable_to_non_nullable
+              as Duration?,
     ));
   }
 }
@@ -1091,7 +1104,8 @@ class _$_AudioTranscript implements _AudioTranscript {
       required this.library,
       required this.model,
       required this.detectedLanguage,
-      required this.transcript});
+      required this.transcript,
+      this.processingTime});
 
   factory _$_AudioTranscript.fromJson(Map<String, dynamic> json) =>
       _$$_AudioTranscriptFromJson(json);
@@ -1106,10 +1120,12 @@ class _$_AudioTranscript implements _AudioTranscript {
   final String detectedLanguage;
   @override
   final String transcript;
+  @override
+  final Duration? processingTime;
 
   @override
   String toString() {
-    return 'AudioTranscript(created: $created, library: $library, model: $model, detectedLanguage: $detectedLanguage, transcript: $transcript)';
+    return 'AudioTranscript(created: $created, library: $library, model: $model, detectedLanguage: $detectedLanguage, transcript: $transcript, processingTime: $processingTime)';
   }
 
   @override
@@ -1123,13 +1139,15 @@ class _$_AudioTranscript implements _AudioTranscript {
             (identical(other.detectedLanguage, detectedLanguage) ||
                 other.detectedLanguage == detectedLanguage) &&
             (identical(other.transcript, transcript) ||
-                other.transcript == transcript));
+                other.transcript == transcript) &&
+            (identical(other.processingTime, processingTime) ||
+                other.processingTime == processingTime));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, created, library, model, detectedLanguage, transcript);
+  int get hashCode => Object.hash(runtimeType, created, library, model,
+      detectedLanguage, transcript, processingTime);
 
   @JsonKey(ignore: true)
   @override
@@ -1151,7 +1169,8 @@ abstract class _AudioTranscript implements AudioTranscript {
       required final String library,
       required final String model,
       required final String detectedLanguage,
-      required final String transcript}) = _$_AudioTranscript;
+      required final String transcript,
+      final Duration? processingTime}) = _$_AudioTranscript;
 
   factory _AudioTranscript.fromJson(Map<String, dynamic> json) =
       _$_AudioTranscript.fromJson;
@@ -1166,6 +1185,8 @@ abstract class _AudioTranscript implements AudioTranscript {
   String get detectedLanguage;
   @override
   String get transcript;
+  @override
+  Duration? get processingTime;
   @override
   @JsonKey(ignore: true)
   _$$_AudioTranscriptCopyWith<_$_AudioTranscript> get copyWith =>
