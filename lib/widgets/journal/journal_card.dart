@@ -99,6 +99,7 @@ class JournalCardTitle extends StatelessWidget {
                       entryText: journalAudio.entryText,
                       maxHeight: maxHeight,
                     ),
+                  const SizedBox(height: 10),
                   FormattedTime(
                     displayed: journalAudio,
                     labelColor: styleConfig().secondaryTextColor,
