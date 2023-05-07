@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display audio duration in journal card
 - Language detection (logging only)
 - Indicator for existing transcriptions
+- Speed up converted wav file for faster transcription 
 
 ## [0.8.344] - 2023-05-05
 ### Changed:

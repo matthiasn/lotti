@@ -26,7 +26,7 @@ class AsrService {
 
     final wavPath = audioFilePath.replaceAll('.aac', '.wav');
     final session = await FFmpegKit.execute(
-      '-i $audioFilePath -y -ar 16000 -ac 1 -c:a pcm_s16le $wavPath',
+      '-i $audioFilePath -y -ar 16000 -ac 1 -c:a pcm_s16le -filter:a "atempo=1.5" $wavPath',
     );
     final returnCode = await session.getReturnCode();
 
