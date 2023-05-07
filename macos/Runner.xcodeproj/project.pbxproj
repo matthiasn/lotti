@@ -29,7 +29,7 @@
 		7E2335674AA28E31A7EEBE87 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BAE814E2540AB2A5F49FEB9F /* Pods_Runner.framework */; };
 		ADAC39802A06C5CD00E07F8F /* Transcribe.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADAC397F2A06C5CD00E07F8F /* Transcribe.swift */; };
 		ADAC39872A06D93D00E07F8F /* whisper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAC39852A06D93D00E07F8F /* whisper.cpp */; };
-		ADAC39882A06D93D00E07F8F /* ggml.c in Sources */ = {isa = PBXBuildFile; fileRef = ADAC39862A06D93D00E07F8F /* ggml.c */; };
+		ADAC39882A06D93D00E07F8F /* ggml.c in Sources */ = {isa = PBXBuildFile; fileRef = ADAC39862A06D93D00E07F8F /* ggml.c */; settings = {COMPILER_FLAGS = "-DGGML_USE_ACCELERATE"; }; };
 		ADAC398A2A06D97C00E07F8F /* LibWhisper.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADAC39892A06D97C00E07F8F /* LibWhisper.swift */; };
 /* End PBXBuildFile section */
 
