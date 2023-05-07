@@ -3,6 +3,7 @@ import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:path/path.dart' as p;
@@ -31,6 +32,20 @@ class AsrService {
 
     if (ReturnCode.isSuccess(returnCode)) {
       try {
+        final language = await platform.invokeMethod<String>(
+          'detectLanguage',
+          {
+            'audioFilePath': wavPath,
+            'modelPath': modelPath,
+          },
+        );
+
+        getIt<LoggingDb>().captureEvent(
+          language,
+          domain: 'ASR',
+          subDomain: 'detectLanguage',
+        );
+
         final result = await platform.invokeMethod<String>(
           'transcribe',
           {
