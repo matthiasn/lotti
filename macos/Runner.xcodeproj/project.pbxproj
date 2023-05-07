@@ -459,7 +459,10 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				OTHER_CFLAGS = "";
+				OTHER_CFLAGS = (
+					"-O3",
+					"-DNDEBUG",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasnehlsen.lotti.profile;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "whisper.cpp/Runner-Bridging-Header.h";
@@ -592,7 +595,10 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				OTHER_CFLAGS = "";
+				OTHER_CFLAGS = (
+					"-O3",
+					"-DNDEBUG",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasn.lotti.dev;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "whisper.cpp/Runner-Bridging-Header.h";
@@ -619,7 +625,10 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				OTHER_CFLAGS = "";
+				OTHER_CFLAGS = (
+					"-O3",
+					"-DNDEBUG",
+				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-O3",
 					"-DNDEBUG",
