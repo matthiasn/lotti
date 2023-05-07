@@ -189,7 +189,15 @@ class JournalCard extends StatelessWidget {
           child: Card(
             child: ListTile(
               leading: updatedItem.maybeMap(
-                journalAudio: (_) => const LeadingIcon(Icons.mic),
+                journalAudio: (item) {
+                  final transcripts = item.data.transcripts;
+                  return LeadingIcon(
+                    Icons.mic,
+                    color: transcripts != null && transcripts.isNotEmpty
+                        ? styleConfig().secondaryTextColor
+                        : styleConfig().alarm.withOpacity(0.4),
+                  );
+                },
                 journalEntry: (_) => const LeadingIcon(Icons.article),
                 quantitative: (_) => const LeadingIcon(MdiIcons.heart),
                 measurement: (_) => const LeadingIcon(MdiIcons.numeric),
@@ -220,17 +228,19 @@ class JournalCard extends StatelessWidget {
 class LeadingIcon extends StatelessWidget {
   const LeadingIcon(
     this.iconData, {
+    this.color,
     super.key,
   });
 
   final IconData iconData;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Icon(
       iconData,
       size: 32,
-      color: styleConfig().secondaryTextColor,
+      color: color ?? styleConfig().secondaryTextColor,
     );
   }
 }
