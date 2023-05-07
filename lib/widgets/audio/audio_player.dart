@@ -7,7 +7,6 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class AudioPlayerWidget extends StatelessWidget {
@@ -166,7 +165,7 @@ class AudioPlayerWidget extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                '${ymd(transcript.created)}  '
+                                '${dfShorter.format(transcript.created)}  '
                                 '${formatSeconds(transcript.processingTime)}  '
                                 'Language: ${transcript.detectedLanguage}    ',
                                 style: transcriptHeaderStyle(),

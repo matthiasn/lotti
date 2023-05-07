@@ -46,6 +46,24 @@ actor WhisperContext {
         }
     }
     
+    func detectLanguage(samples: [Float]) -> String {
+        // Leave 2 processors free (i.e. the high-efficiency cores).
+        let maxThreads = max(1, min(8, cpuCount() - 2))
+        print("Selecting \(maxThreads) threads")
+        var language = "not detected"
+
+        samples.withUnsafeBufferPointer { samples in
+            if (whisper_pcm_to_mel(context, samples.baseAddress, Int32(samples.count), Int32(maxThreads)) != 0) {
+                print("Failed to detect language")
+            } else {
+                let languageId = whisper_lang_auto_detect(context, 0, Int32(maxThreads), nil)
+                language = String(cString: whisper_lang_str(Int32(languageId)))
+                print("Detected language: " + language)
+            }
+        }
+        return language
+    }
+
     func getTranscription() -> String {
         var transcription = ""
         for i in 0..<whisper_full_n_segments(context) {

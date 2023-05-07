@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update whisper.cpp to v1.4.0
 - Compiler flags -O3 -DNDEBUG in debug/dev mode (transcription time for 1m test audio down from 27s to 4s)
 - Display audio duration in journal card
+- Language detection (logging only)
 
 ## [0.8.344] - 2023-05-05
 ### Changed:
