@@ -7,8 +7,8 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
-
-import '../charts/utils.dart';
+import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class AudioPlayerWidget extends StatelessWidget {
   const AudioPlayerWidget(this.journalAudio, {super.key});
@@ -167,6 +167,7 @@ class AudioPlayerWidget extends StatelessWidget {
                             children: [
                               Text(
                                 '${ymd(transcript.created)}  '
+                                '${formatSeconds(transcript.processingTime)}  '
                                 'Language: ${transcript.detectedLanguage}    ',
                                 style: transcriptHeaderStyle(),
                               ),
