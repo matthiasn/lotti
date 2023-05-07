@@ -153,43 +153,91 @@ class AudioPlayerWidget extends StatelessWidget {
             if (transcripts?.isNotEmpty ?? false)
               Column(
                 children: [
+                  const SizedBox(height: 10),
                   ...transcripts!.map(
-                    (transcript) => Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 30,
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '${dfShorter.format(transcript.created)}  '
-                                '${formatSeconds(transcript.processingTime)}  '
-                                'Language: ${transcript.detectedLanguage}    ',
-                                style: transcriptHeaderStyle(),
-                              ),
-                              Text(
-                                '${transcript.library}, '
-                                ' ${transcript.model}',
-                                style: transcriptHeaderStyle(),
-                              ),
-                            ],
-                          ),
-                          SelectableText(
-                            transcript.transcript,
-                            style: transcriptStyle(),
-                          ),
-                        ],
-                      ),
-                    ),
+                    TranscriptListItem.new,
                   ),
                 ],
               ),
           ],
         );
       },
+    );
+  }
+}
+
+class TranscriptListItem extends StatefulWidget {
+  const TranscriptListItem(
+    this.transcript, {
+    super.key,
+  });
+
+  final AudioTranscript transcript;
+
+  @override
+  State<TranscriptListItem> createState() => _TranscriptListItemState();
+}
+
+class _TranscriptListItemState extends State<TranscriptListItem> {
+  bool show = false;
+
+  void toggleShow() {
+    setState(() {
+      show = !show;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: 2,
+        horizontal: 30,
+      ),
+      child: Column(
+        children: [
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: toggleShow,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${dfShorter.format(widget.transcript.created)}  '
+                    '${formatSeconds(widget.transcript.processingTime)}  '
+                    'Language: ${widget.transcript.detectedLanguage}    ',
+                    style: transcriptHeaderStyle(),
+                  ),
+                  Text(
+                    '${widget.transcript.library}, '
+                    ' ${widget.transcript.model}',
+                    style: transcriptHeaderStyle(),
+                  ),
+                  if (show)
+                    const Icon(
+                      Icons.keyboard_double_arrow_up_outlined,
+                      size: 15,
+                    )
+                  else
+                    const Icon(
+                      Icons.keyboard_double_arrow_down_outlined,
+                      size: 15,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (show)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: SelectableText(
+                widget.transcript.transcript,
+                style: transcriptStyle(),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
