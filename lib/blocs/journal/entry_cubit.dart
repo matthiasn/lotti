@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -44,15 +45,19 @@ class EntryCubit extends Cubit<EntryState> {
     }
 
     focusNode.addListener(() {
-      debugPrint('$entryId focus: ${focusNode.hasFocus}');
       _isFocused = true;
       emitState();
     });
 
     try {
+      final serializedQuill =
+          _editorStateService.getDelta(entryId) ?? entry.entryText?.quill;
+      final markdown =
+          entry.entryText?.markdown ?? entry.entryText?.plainText ?? '';
+      final quill = serializedQuill ?? markdownToDelta(markdown);
+
       controller = makeController(
-        serializedQuill:
-            _editorStateService.getDelta(entryId) ?? entry.entryText?.quill,
+        serializedQuill: quill,
         selection: _editorStateService.getSelection(entryId),
       );
 

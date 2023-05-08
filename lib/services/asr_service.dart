@@ -61,7 +61,7 @@ class AsrService {
             library: 'whisper-1.4.0',
             model: model ?? defaultModel,
             detectedLanguage: 'en',
-            transcript: result,
+            transcript: result.trim(),
             processingTime: finish.difference(start),
           );
 
