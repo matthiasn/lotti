@@ -33,8 +33,6 @@ class EditorStateService {
   }
 
   Stream<bool> getUnsavedStream(String? id, DateTime lastSaved) {
-    debugPrint('getUnsavedStream $id $lastSaved');
-
     final unsavedStreamController = StreamController<bool>();
 
     if (id != null) {

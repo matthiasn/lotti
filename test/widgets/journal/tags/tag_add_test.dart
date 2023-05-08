@@ -49,6 +49,7 @@ void main() {
           entry: testTextEntry,
           showMap: false,
           isFocused: false,
+          epoch: 0,
         ),
       );
 

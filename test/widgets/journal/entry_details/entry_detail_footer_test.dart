@@ -41,6 +41,7 @@ void main() {
           entry: testTextEntry,
           showMap: false,
           isFocused: false,
+          epoch: 0,
         ),
       );
     });
@@ -135,6 +136,7 @@ void main() {
           entry: testEntry,
           showMap: false,
           isFocused: false,
+          epoch: 0,
         ),
       );
       Future<void> mockStartTimer() => mockTimeService.start(testEntry);
@@ -184,6 +186,7 @@ void main() {
           entry: testEntry,
           showMap: false,
           isFocused: false,
+          epoch: 0,
         ),
       );
 
