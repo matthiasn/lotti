@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed:
 - Set entry text from transcript
+- Update entry text after adding transcript
 
 ## [0.8.344] - 2023-05-05
 ### Changed:
