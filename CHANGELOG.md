@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Toggle for showing individual transcripts
 - Chore: upgraded dependencies
 
+### Fixed:
+- Set entry text from transcript
+
 ## [0.8.344] - 2023-05-05
 ### Changed:
 - Upgraded dependencies
