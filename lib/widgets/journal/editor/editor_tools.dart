@@ -31,7 +31,7 @@ QuillController makeController({
 }) {
   var controller = QuillController.basic();
 
-  if (serializedQuill != null) {
+  if (serializedQuill != null && serializedQuill != '[]') {
     final editorJson = json.decode(serializedQuill) as List<dynamic>;
     controller = QuillController(
       document: Document.fromJson(editorJson),
