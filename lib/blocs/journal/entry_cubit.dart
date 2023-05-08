@@ -29,6 +29,7 @@ class EntryCubit extends Cubit<EntryState> {
             entry: entry,
             showMap: false,
             isFocused: false,
+            epoch: 0,
           ),
         ) {
     final lastSaved = entry.meta.updatedAt;
@@ -50,16 +51,7 @@ class EntryCubit extends Cubit<EntryState> {
     });
 
     try {
-      final serializedQuill =
-          _editorStateService.getDelta(entryId) ?? entry.entryText?.quill;
-      final markdown =
-          entry.entryText?.markdown ?? entry.entryText?.plainText ?? '';
-      final quill = serializedQuill ?? markdownToDelta(markdown);
-
-      controller = makeController(
-        serializedQuill: quill,
-        selection: _editorStateService.getSelection(entryId),
-      );
+      setController();
 
       controller.changes.listen((DocChange event) {
         final delta = deltaFromController(controller);
@@ -89,6 +81,19 @@ class EntryCubit extends Cubit<EntryState> {
     }
   }
 
+  void setController() {
+    final serializedQuill =
+        _editorStateService.getDelta(entryId) ?? entry.entryText?.quill;
+    final markdown =
+        entry.entryText?.markdown ?? entry.entryText?.plainText ?? '';
+    final quill = serializedQuill ?? markdownToDelta(markdown);
+
+    controller = makeController(
+      serializedQuill: quill,
+      selection: _editorStateService.getSelection(entryId),
+    );
+  }
+
   String entryId;
   JournalEntity entry;
   bool showMap = false;
@@ -96,7 +101,7 @@ class EntryCubit extends Cubit<EntryState> {
   bool _dirty = false;
   bool _isFocused = false;
 
-  late final QuillController controller;
+  late QuillController controller;
   late final GlobalKey<FormBuilderState>? formKey;
   late final Stream<JournalEntity?> _entryStream;
   late final StreamSubscription<JournalEntity?> _entryStreamSubscription;
@@ -104,6 +109,7 @@ class EntryCubit extends Cubit<EntryState> {
   final EditorStateService _editorStateService = getIt<EditorStateService>();
   final JournalDb _journalDb = getIt<JournalDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+  int _epoch = 0;
 
   Future<void> save({Duration? estimate}) async {
     if (entry is Task) {
@@ -148,6 +154,8 @@ class EntryCubit extends Cubit<EntryState> {
   }
 
   void emitState() {
+    _epoch++;
+
     if (_dirty) {
       emit(
         EntryState.dirty(
@@ -155,6 +163,7 @@ class EntryCubit extends Cubit<EntryState> {
           entry: entry,
           showMap: showMap,
           isFocused: _isFocused,
+          epoch: _epoch,
         ),
       );
     } else {
@@ -164,6 +173,7 @@ class EntryCubit extends Cubit<EntryState> {
           entry: entry,
           showMap: showMap,
           isFocused: _isFocused,
+          epoch: _epoch,
         ),
       );
     }

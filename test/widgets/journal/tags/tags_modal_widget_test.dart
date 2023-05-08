@@ -65,6 +65,7 @@ void main() {
         entry: testTextEntryWithTags,
         showMap: false,
         isFocused: false,
+        epoch: 0,
       ),
     );
 

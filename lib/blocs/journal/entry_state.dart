@@ -10,6 +10,7 @@ class EntryState with _$EntryState {
     required JournalEntity? entry,
     required bool showMap,
     required bool isFocused,
+    required int epoch,
   }) = _EntryStateSaved;
 
   factory EntryState.dirty({
@@ -17,5 +18,6 @@ class EntryState with _$EntryState {
     required JournalEntity? entry,
     required bool showMap,
     required bool isFocused,
+    required int epoch,
   }) = EntryStateDirty;
 }

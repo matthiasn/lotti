@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
+import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -40,6 +41,7 @@ class AudioPlayerWidget extends StatelessWidget {
       builder: (BuildContext context, AudioPlayerState state) {
         final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
         final cubit = context.read<AudioPlayerCubit>();
+        final entryCubit = context.read<EntryCubit>();
         final transcripts = journalAudio.data.transcripts;
 
         return Column(
@@ -124,6 +126,12 @@ class AudioPlayerWidget extends StatelessWidget {
                     onPressed: () async {
                       await cubit.setAudioNote(journalAudio);
                       await cubit.transcribe();
+                      await Future<void>.delayed(
+                        const Duration(milliseconds: 100),
+                      );
+                      entryCubit
+                        ..setController()
+                        ..emitState();
                     },
                   ),
               ],
