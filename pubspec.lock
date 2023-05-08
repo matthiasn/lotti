@@ -5,10 +5,10 @@ packages:
     dependency: transitive
     description:
       name: _fe_analyzer_shared
-      sha256: a36ec4843dc30ea6bf652bf25e3448db6c5e8bcf4aa55f063a5d1dad216d8214
+      sha256: "8880b4cfe7b5b17d57c052a5a3a8cc1d4f546261c7cc8fbd717bd53f48db0568"
       url: "https://pub.dev"
     source: hosted
-    version: "58.0.0"
+    version: "59.0.0"
   adaptive_dialog:
     dependency: "direct main"
     description:
@@ -21,10 +21,10 @@ packages:
     dependency: "direct dev"
     description:
       name: analyzer
-      sha256: cc4242565347e98424ce9945c819c192ec0838cb9d1f6aa4a97cc96becbc5b27
+      sha256: a89627f49b0e70e068130a36571409726b04dab12da7e5625941d2c8ec278b96
       url: "https://pub.dev"
     source: hosted
-    version: "5.10.0"
+    version: "5.11.1"
   analyzer_plugin:
     dependency: transitive
     description:
@@ -413,18 +413,18 @@ packages:
     dependency: "direct dev"
     description:
       name: dart_code_metrics
-      sha256: "873890861a3d7e06fd5a6cd17d802e215ee1301dfb7cbcc7aeab9576e69330d0"
+      sha256: "162c81dbd0a2ba182f38ca615335f3e8878f212ec7beea83d6bfad4e99eb541a"
       url: "https://pub.dev"
     source: hosted
-    version: "5.7.2"
+    version: "5.7.3"
   dart_code_metrics_presets:
     dependency: transitive
     description:
       name: dart_code_metrics_presets
-      sha256: "9c9b0ecc5e23937a4b62c1fe3b3edb72d3c1b08563a1eac69fb75f1306bb57c4"
+      sha256: "22e27f98e8c7d8b11cca43d2656a822935280747050ae65e8cd03c52d09c0d1c"
       url: "https://pub.dev"
     source: hosted
-    version: "1.6.0"
+    version: "1.7.0"
   dart_geohash:
     dependency: "direct main"
     description:
@@ -870,10 +870,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "803d39a210f5aaa7b9d1a999ef1dac5fef4931916483f23a196fcc6e5cd75ee1"
+      sha256: "7a0414baa40bc722c5b2d9cfa5718ccee2a403bd9b3d8146209d07a93cb31785"
       url: "https://pub.dev"
     source: hosted
-    version: "7.1.14"
+    version: "7.1.16"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -997,10 +997,10 @@ packages:
     dependency: "direct main"
     description:
       name: get_it
-      sha256: ca77bd0c23e609e09a70989726295a92978589745e129c27d354e61e4070f804
+      sha256: "43133b45f32f1d96bbaeb43ea35a50ce854981baa80f47c3e26ee2ad23bef113"
       url: "https://pub.dev"
     source: hosted
-    version: "7.4.1"
+    version: "7.5.0"
   glados:
     dependency: "direct dev"
     description:
@@ -1715,10 +1715,10 @@ packages:
     dependency: transitive
     description:
       name: pub_updater
-      sha256: "42890302ab2672adf567dc2b20e55b4ecc29d7e19c63b6b98143ab68dd717d3a"
+      sha256: "05ae70703e06f7fdeb05f7f02dd680b8aad810e87c756a618f33e1794635115c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.4"
+    version: "0.3.0"
   pubspec_parse:
     dependency: transitive
     description:
