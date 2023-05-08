@@ -54,6 +54,7 @@ class EntryDetailWidget extends StatelessWidget {
         }
 
         return BlocProvider<EntryCubit>(
+          //key: Key('$itemId-${item.meta.vectorClock}'),
           create: (BuildContext context) => EntryCubit(
             entryId: itemId,
             entry: item,

@@ -39,6 +39,7 @@ void main() {
           entry: testImageEntry,
           showMap: false,
           isFocused: false,
+          epoch: 0,
         ),
       );
 
@@ -65,6 +66,7 @@ void main() {
           entry: testAudioEntry,
           showMap: false,
           isFocused: false,
+          epoch: 0,
         ),
       );
 
