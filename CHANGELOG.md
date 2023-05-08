@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 - Toggle for showing individual transcripts
+- Chore: upgraded dependencies
 
 ## [0.8.344] - 2023-05-05
 ### Changed:
