@@ -53,17 +53,6 @@ class EntryCubit extends Cubit<EntryState> {
     try {
       setController();
 
-      controller.changes.listen((DocChange event) {
-        final delta = deltaFromController(controller);
-        _editorStateService.saveTempState(
-          id: entryId,
-          json: quillJsonFromDelta(delta),
-          lastSaved: entry.meta.updatedAt,
-        );
-        _dirty = true;
-        emitState();
-      });
-
       _entryStream = _journalDb.watchEntityById(entryId);
       _entryStreamSubscription = _entryStream.listen((updated) {
         if (updated != null) {
@@ -87,11 +76,23 @@ class EntryCubit extends Cubit<EntryState> {
     final markdown =
         entry.entryText?.markdown ?? entry.entryText?.plainText ?? '';
     final quill = serializedQuill ?? markdownToDelta(markdown);
+    controller.dispose();
 
     controller = makeController(
       serializedQuill: quill,
       selection: _editorStateService.getSelection(entryId),
     );
+
+    controller.changes.listen((DocChange event) {
+      final delta = deltaFromController(controller);
+      _editorStateService.saveTempState(
+        id: entryId,
+        json: quillJsonFromDelta(delta),
+        lastSaved: entry.meta.updatedAt,
+      );
+      _dirty = true;
+      emitState();
+    });
   }
 
   String entryId;
@@ -101,7 +102,7 @@ class EntryCubit extends Cubit<EntryState> {
   bool _dirty = false;
   bool _isFocused = false;
 
-  late QuillController controller;
+  QuillController controller = QuillController.basic();
   late final GlobalKey<FormBuilderState>? formKey;
   late final Stream<JournalEntity?> _entryStream;
   late final StreamSubscription<JournalEntity?> _entryStreamSubscription;
