@@ -75,3 +75,10 @@ test_resources/test.png.aes
 
 .fvm
 screenshots
+
+macos/whisper.cpp/*.zip
+macos/whisper.cpp/whisper.cpp*/
+macos/whisper.cpp/ggml.c
+macos/whisper.cpp/ggml.h
+macos/whisper.cpp/whisper.cpp
+macos/whisper.cpp/whisper.h
