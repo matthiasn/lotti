@@ -671,6 +671,74 @@ class PersistenceLogic {
     return true;
   }
 
+  Future<bool> addAudioTranscript({
+    required String journalEntityId,
+    required AudioTranscript transcript,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
+      await journalEntity.maybeMap(
+        journalAudio: (JournalAudio journalAudio) async {
+          final vc = await _vectorClockService.getNextVectorClock(
+            previous: journalEntity.meta.vectorClock,
+          );
+
+          final oldMeta = journalEntity.meta;
+          final newMeta = oldMeta.copyWith(
+            updatedAt: now,
+            vectorClock: vc,
+          );
+
+          final data = journalAudio.data;
+          final updatedData = journalAudio.data.copyWith(
+            transcripts: [
+              ...?data.transcripts,
+              transcript,
+            ],
+          );
+
+          final entryText = journalAudio.entryText;
+
+          final newEntryText = EntryText(
+            plainText: transcript.transcript,
+            markdown: transcript.transcript,
+          );
+
+          final replaceEntryText = entryText == null ||
+              entryText.plainText.isEmpty ||
+              '${entryText.markdown}'.trim().isEmpty;
+
+          final updated = journalAudio.copyWith(
+            meta: newMeta,
+            entryText: replaceEntryText ? newEntryText : entryText,
+            data: updatedData,
+          );
+
+          await updateDbEntity(updated, enqueueSync: true);
+        },
+        orElse: () async => _loggingDb.captureException(
+          'not an audio entry',
+          domain: 'persistence_logic',
+          subDomain: 'addAudioTranscript',
+        ),
+      );
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'addAudioTranscript',
+        stackTrace: stackTrace,
+      );
+    }
+    return true;
+  }
+
   Future<void> addGeolocationAsync(String journalEntityId) async {
     try {
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);

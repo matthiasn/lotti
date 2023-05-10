@@ -5,6 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
+import 'package:lotti/widgets/journal/entry_details/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/habit_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
@@ -91,13 +92,20 @@ class JournalCardTitle extends StatelessWidget {
                 qe,
                 showChart: false,
               ),
-              journalAudio: (JournalAudio journalAudio) =>
-                  journalAudio.entryText?.plainText != null
-                      ? TextViewerWidget(
-                          entryText: journalAudio.entryText,
-                          maxHeight: maxHeight,
-                        )
-                      : null,
+              journalAudio: (JournalAudio journalAudio) => Column(
+                children: [
+                  if (journalAudio.entryText?.plainText != null)
+                    TextViewerWidget(
+                      entryText: journalAudio.entryText,
+                      maxHeight: maxHeight,
+                    ),
+                  const SizedBox(height: 10),
+                  FormattedTime(
+                    displayed: journalAudio,
+                    labelColor: styleConfig().secondaryTextColor,
+                  ),
+                ],
+              ),
               journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
                 entryText: journalEntry.entryText,
                 maxHeight: maxHeight,
@@ -182,7 +190,15 @@ class JournalCard extends StatelessWidget {
           child: Card(
             child: ListTile(
               leading: updatedItem.maybeMap(
-                journalAudio: (_) => const LeadingIcon(Icons.mic),
+                journalAudio: (item) {
+                  final transcripts = item.data.transcripts;
+                  return LeadingIcon(
+                    Icons.mic,
+                    color: transcripts != null && transcripts.isNotEmpty
+                        ? styleConfig().secondaryTextColor
+                        : styleConfig().alarm.withOpacity(0.4),
+                  );
+                },
                 journalEntry: (_) => const LeadingIcon(Icons.article),
                 quantitative: (_) => const LeadingIcon(MdiIcons.heart),
                 measurement: (_) => const LeadingIcon(MdiIcons.numeric),
@@ -213,17 +229,19 @@ class JournalCard extends StatelessWidget {
 class LeadingIcon extends StatelessWidget {
   const LeadingIcon(
     this.iconData, {
+    this.color,
     super.key,
   });
 
   final IconData iconData;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Icon(
       iconData,
       size: 32,
-      color: styleConfig().secondaryTextColor,
+      color: color ?? styleConfig().secondaryTextColor,
     );
   }
 }

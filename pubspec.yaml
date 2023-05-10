@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.344+2067
+version: 0.9.345+2092
 
 msix_config:
   display_name: LottiApp
@@ -42,7 +42,7 @@ dependencies:
       ref: 1beb378
 
   device_info_plus: ^8.0.0
-  drift: ^2.2.0
+  drift: ^2.8.0
   easy_debounce: ^2.0.2+1
   encrypt: ^5.0.1
   enough_mail: ^2.0.0
@@ -50,6 +50,7 @@ dependencies:
   equatable: ^2.0.3
   exif: ^3.0.1
 
+  ffmpeg_kit_flutter: ^5.1.0
   fl_chart: ^0.62.0
   flutter:
     sdk: flutter
@@ -151,16 +152,17 @@ dependencies:
   window_manager: ^0.3.0
 
 dependency_overrides:
+  analyzer: ^5.12.0
   intl: ^0.18.0
   rxdart: ^0.27.1
   xml: ^6.1.0
 
 dev_dependencies:
-  analyzer: ^5.5.0
+  analyzer: ^5.12.0
   archive: ^3.3.0
   build_runner: ^2.3.0
   dart_code_metrics: ^5.5.0
-  drift_dev: ^2.2.0
+  drift_dev: ^2.8.0
   flutter_launcher_icons: ^0.11.0
   flutter_lints: ^2.0.1
   flutter_native_splash: ^2.2.16

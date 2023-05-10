@@ -13,6 +13,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/journal/infinite_journal_page.dart';
+import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -71,6 +72,7 @@ void main() {
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
         ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)

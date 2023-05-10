@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -28,6 +29,7 @@ class EntryCubit extends Cubit<EntryState> {
             entry: entry,
             showMap: false,
             isFocused: false,
+            epoch: 0,
           ),
         ) {
     final lastSaved = entry.meta.updatedAt;
@@ -44,28 +46,12 @@ class EntryCubit extends Cubit<EntryState> {
     }
 
     focusNode.addListener(() {
-      debugPrint('$entryId focus: ${focusNode.hasFocus}');
       _isFocused = true;
       emitState();
     });
 
     try {
-      controller = makeController(
-        serializedQuill:
-            _editorStateService.getDelta(entryId) ?? entry.entryText?.quill,
-        selection: _editorStateService.getSelection(entryId),
-      );
-
-      controller.changes.listen((DocChange event) {
-        final delta = deltaFromController(controller);
-        _editorStateService.saveTempState(
-          id: entryId,
-          json: quillJsonFromDelta(delta),
-          lastSaved: entry.meta.updatedAt,
-        );
-        _dirty = true;
-        emitState();
-      });
+      setController();
 
       _entryStream = _journalDb.watchEntityById(entryId);
       _entryStreamSubscription = _entryStream.listen((updated) {
@@ -84,6 +70,31 @@ class EntryCubit extends Cubit<EntryState> {
     }
   }
 
+  void setController() {
+    final serializedQuill =
+        _editorStateService.getDelta(entryId) ?? entry.entryText?.quill;
+    final markdown =
+        entry.entryText?.markdown ?? entry.entryText?.plainText ?? '';
+    final quill = serializedQuill ?? markdownToDelta(markdown);
+    controller.dispose();
+
+    controller = makeController(
+      serializedQuill: quill,
+      selection: _editorStateService.getSelection(entryId),
+    );
+
+    controller.changes.listen((DocChange event) {
+      final delta = deltaFromController(controller);
+      _editorStateService.saveTempState(
+        id: entryId,
+        json: quillJsonFromDelta(delta),
+        lastSaved: entry.meta.updatedAt,
+      );
+      _dirty = true;
+      emitState();
+    });
+  }
+
   String entryId;
   JournalEntity entry;
   bool showMap = false;
@@ -91,7 +102,7 @@ class EntryCubit extends Cubit<EntryState> {
   bool _dirty = false;
   bool _isFocused = false;
 
-  late final QuillController controller;
+  QuillController controller = QuillController.basic();
   late final GlobalKey<FormBuilderState>? formKey;
   late final Stream<JournalEntity?> _entryStream;
   late final StreamSubscription<JournalEntity?> _entryStreamSubscription;
@@ -99,6 +110,7 @@ class EntryCubit extends Cubit<EntryState> {
   final EditorStateService _editorStateService = getIt<EditorStateService>();
   final JournalDb _journalDb = getIt<JournalDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+  int _epoch = 0;
 
   Future<void> save({Duration? estimate}) async {
     if (entry is Task) {
@@ -143,6 +155,8 @@ class EntryCubit extends Cubit<EntryState> {
   }
 
   void emitState() {
+    _epoch++;
+
     if (_dirty) {
       emit(
         EntryState.dirty(
@@ -150,6 +164,7 @@ class EntryCubit extends Cubit<EntryState> {
           entry: entry,
           showMap: showMap,
           isFocused: _isFocused,
+          epoch: _epoch,
         ),
       );
     } else {
@@ -159,6 +174,7 @@ class EntryCubit extends Cubit<EntryState> {
           entry: entry,
           showMap: showMap,
           isFocused: _isFocused,
+          epoch: _epoch,
         ),
       );
     }

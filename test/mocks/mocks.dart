@@ -14,6 +14,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
@@ -101,6 +102,8 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 class MockFts5Db extends Mock implements Fts5Db {}
 
 class MockTimeService extends Mock implements TimeService {}
+
+class MockAsrService extends Mock implements AsrService {}
 
 class MockLoggingDb extends Mock implements LoggingDb {}
 

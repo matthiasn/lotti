@@ -20,33 +20,34 @@ mixin _$EntryState {
   JournalEntity? get entry => throw _privateConstructorUsedError;
   bool get showMap => throw _privateConstructorUsedError;
   bool get isFocused => throw _privateConstructorUsedError;
+  int get epoch => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, int epoch)
         saved,
-    required TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, int epoch)
         dirty,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         saved,
-    TResult? Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         dirty,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         saved,
-    TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         dirty,
     required TResult orElse(),
   }) =>
@@ -83,7 +84,11 @@ abstract class $EntryStateCopyWith<$Res> {
       _$EntryStateCopyWithImpl<$Res, EntryState>;
   @useResult
   $Res call(
-      {String entryId, JournalEntity? entry, bool showMap, bool isFocused});
+      {String entryId,
+      JournalEntity? entry,
+      bool showMap,
+      bool isFocused,
+      int epoch});
 
   $JournalEntityCopyWith<$Res>? get entry;
 }
@@ -105,6 +110,7 @@ class _$EntryStateCopyWithImpl<$Res, $Val extends EntryState>
     Object? entry = freezed,
     Object? showMap = null,
     Object? isFocused = null,
+    Object? epoch = null,
   }) {
     return _then(_value.copyWith(
       entryId: null == entryId
@@ -123,6 +129,10 @@ class _$EntryStateCopyWithImpl<$Res, $Val extends EntryState>
           ? _value.isFocused
           : isFocused // ignore: cast_nullable_to_non_nullable
               as bool,
+      epoch: null == epoch
+          ? _value.epoch
+          : epoch // ignore: cast_nullable_to_non_nullable
+              as int,
     ) as $Val);
   }
 
@@ -148,7 +158,11 @@ abstract class _$$_EntryStateSavedCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String entryId, JournalEntity? entry, bool showMap, bool isFocused});
+      {String entryId,
+      JournalEntity? entry,
+      bool showMap,
+      bool isFocused,
+      int epoch});
 
   @override
   $JournalEntityCopyWith<$Res>? get entry;
@@ -169,6 +183,7 @@ class __$$_EntryStateSavedCopyWithImpl<$Res>
     Object? entry = freezed,
     Object? showMap = null,
     Object? isFocused = null,
+    Object? epoch = null,
   }) {
     return _then(_$_EntryStateSaved(
       entryId: null == entryId
@@ -187,6 +202,10 @@ class __$$_EntryStateSavedCopyWithImpl<$Res>
           ? _value.isFocused
           : isFocused // ignore: cast_nullable_to_non_nullable
               as bool,
+      epoch: null == epoch
+          ? _value.epoch
+          : epoch // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }
@@ -198,7 +217,8 @@ class _$_EntryStateSaved implements _EntryStateSaved {
       {required this.entryId,
       required this.entry,
       required this.showMap,
-      required this.isFocused});
+      required this.isFocused,
+      required this.epoch});
 
   @override
   final String entryId;
@@ -208,10 +228,12 @@ class _$_EntryStateSaved implements _EntryStateSaved {
   final bool showMap;
   @override
   final bool isFocused;
+  @override
+  final int epoch;
 
   @override
   String toString() {
-    return 'EntryState.saved(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused)';
+    return 'EntryState.saved(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused, epoch: $epoch)';
   }
 
   @override
@@ -223,12 +245,13 @@ class _$_EntryStateSaved implements _EntryStateSaved {
             (identical(other.entry, entry) || other.entry == entry) &&
             (identical(other.showMap, showMap) || other.showMap == showMap) &&
             (identical(other.isFocused, isFocused) ||
-                other.isFocused == isFocused));
+                other.isFocused == isFocused) &&
+            (identical(other.epoch, epoch) || other.epoch == epoch));
   }
 
   @override
   int get hashCode =>
-      Object.hash(runtimeType, entryId, entry, showMap, isFocused);
+      Object.hash(runtimeType, entryId, entry, showMap, isFocused, epoch);
 
   @JsonKey(ignore: true)
   @override
@@ -239,42 +262,42 @@ class _$_EntryStateSaved implements _EntryStateSaved {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, int epoch)
         saved,
-    required TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, int epoch)
         dirty,
   }) {
-    return saved(entryId, entry, showMap, isFocused);
+    return saved(entryId, entry, showMap, isFocused, epoch);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         saved,
-    TResult? Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         dirty,
   }) {
-    return saved?.call(entryId, entry, showMap, isFocused);
+    return saved?.call(entryId, entry, showMap, isFocused, epoch);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         saved,
-    TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         dirty,
     required TResult orElse(),
   }) {
     if (saved != null) {
-      return saved(entryId, entry, showMap, isFocused);
+      return saved(entryId, entry, showMap, isFocused, epoch);
     }
     return orElse();
   }
@@ -316,7 +339,8 @@ abstract class _EntryStateSaved implements EntryState {
       {required final String entryId,
       required final JournalEntity? entry,
       required final bool showMap,
-      required final bool isFocused}) = _$_EntryStateSaved;
+      required final bool isFocused,
+      required final int epoch}) = _$_EntryStateSaved;
 
   @override
   String get entryId;
@@ -326,6 +350,8 @@ abstract class _EntryStateSaved implements EntryState {
   bool get showMap;
   @override
   bool get isFocused;
+  @override
+  int get epoch;
   @override
   @JsonKey(ignore: true)
   _$$_EntryStateSavedCopyWith<_$_EntryStateSaved> get copyWith =>
@@ -341,7 +367,11 @@ abstract class _$$EntryStateDirtyCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String entryId, JournalEntity? entry, bool showMap, bool isFocused});
+      {String entryId,
+      JournalEntity? entry,
+      bool showMap,
+      bool isFocused,
+      int epoch});
 
   @override
   $JournalEntityCopyWith<$Res>? get entry;
@@ -362,6 +392,7 @@ class __$$EntryStateDirtyCopyWithImpl<$Res>
     Object? entry = freezed,
     Object? showMap = null,
     Object? isFocused = null,
+    Object? epoch = null,
   }) {
     return _then(_$EntryStateDirty(
       entryId: null == entryId
@@ -380,6 +411,10 @@ class __$$EntryStateDirtyCopyWithImpl<$Res>
           ? _value.isFocused
           : isFocused // ignore: cast_nullable_to_non_nullable
               as bool,
+      epoch: null == epoch
+          ? _value.epoch
+          : epoch // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }
@@ -391,7 +426,8 @@ class _$EntryStateDirty implements EntryStateDirty {
       {required this.entryId,
       required this.entry,
       required this.showMap,
-      required this.isFocused});
+      required this.isFocused,
+      required this.epoch});
 
   @override
   final String entryId;
@@ -401,10 +437,12 @@ class _$EntryStateDirty implements EntryStateDirty {
   final bool showMap;
   @override
   final bool isFocused;
+  @override
+  final int epoch;
 
   @override
   String toString() {
-    return 'EntryState.dirty(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused)';
+    return 'EntryState.dirty(entryId: $entryId, entry: $entry, showMap: $showMap, isFocused: $isFocused, epoch: $epoch)';
   }
 
   @override
@@ -416,12 +454,13 @@ class _$EntryStateDirty implements EntryStateDirty {
             (identical(other.entry, entry) || other.entry == entry) &&
             (identical(other.showMap, showMap) || other.showMap == showMap) &&
             (identical(other.isFocused, isFocused) ||
-                other.isFocused == isFocused));
+                other.isFocused == isFocused) &&
+            (identical(other.epoch, epoch) || other.epoch == epoch));
   }
 
   @override
   int get hashCode =>
-      Object.hash(runtimeType, entryId, entry, showMap, isFocused);
+      Object.hash(runtimeType, entryId, entry, showMap, isFocused, epoch);
 
   @JsonKey(ignore: true)
   @override
@@ -432,42 +471,42 @@ class _$EntryStateDirty implements EntryStateDirty {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, int epoch)
         saved,
-    required TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)
+    required TResult Function(String entryId, JournalEntity? entry,
+            bool showMap, bool isFocused, int epoch)
         dirty,
   }) {
-    return dirty(entryId, entry, showMap, isFocused);
+    return dirty(entryId, entry, showMap, isFocused, epoch);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         saved,
-    TResult? Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult? Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         dirty,
   }) {
-    return dirty?.call(entryId, entry, showMap, isFocused);
+    return dirty?.call(entryId, entry, showMap, isFocused, epoch);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         saved,
-    TResult Function(
-            String entryId, JournalEntity? entry, bool showMap, bool isFocused)?
+    TResult Function(String entryId, JournalEntity? entry, bool showMap,
+            bool isFocused, int epoch)?
         dirty,
     required TResult orElse(),
   }) {
     if (dirty != null) {
-      return dirty(entryId, entry, showMap, isFocused);
+      return dirty(entryId, entry, showMap, isFocused, epoch);
     }
     return orElse();
   }
@@ -509,7 +548,8 @@ abstract class EntryStateDirty implements EntryState {
       {required final String entryId,
       required final JournalEntity? entry,
       required final bool showMap,
-      required final bool isFocused}) = _$EntryStateDirty;
+      required final bool isFocused,
+      required final int epoch}) = _$EntryStateDirty;
 
   @override
   String get entryId;
@@ -519,6 +559,8 @@ abstract class EntryStateDirty implements EntryState {
   bool get showMap;
   @override
   bool get isFocused;
+  @override
+  int get epoch;
   @override
   @JsonKey(ignore: true)
   _$$EntryStateDirtyCopyWith<_$EntryStateDirty> get copyWith =>

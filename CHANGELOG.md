@@ -5,6 +5,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Transcription icon in audio player on macOS
+- Audio conversion from aac to wav with ffmpeg_kit_flutter
+- whisper.cpp library for speech recognition
+- English speech recognition, with the result logged
+- Transcript data structure
+- Add transcriptions to audio entries
+- Capture duration of generating transcript
+- Faster transcripts via compiler flag
+- Compiler flags -O3 -DNDEBUG
+- Update whisper.cpp to v1.4.0
+- Compiler flags -O3 -DNDEBUG in debug/dev mode (transcription time for 1m test audio down from 27s to 4s)
+- Display audio duration in journal card
+- Language detection (logging only)
+- Indicator for existing transcriptions
+- Set entry text from transcript & update
+
+### Changed:
+- Toggle for showing individual transcripts
+- Chore: upgraded dependencies
+
+### Fixed:
+- Set entry text from transcript
+- Update entry text after adding transcript
+
+## [0.8.344] - 2023-05-05
 ### Changed:
 - Upgraded dependencies
 - Refactoring: BloC for state management on dashboards page

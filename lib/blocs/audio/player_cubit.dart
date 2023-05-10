@@ -3,6 +3,7 @@ import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:media_kit/media_kit.dart';
@@ -23,6 +24,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   final Player _audioPlayer = Player();
   final LoggingDb _loggingDb = getIt<LoggingDb>();
+  final AsrService _asrService = getIt<AsrService>();
 
   void updateProgress(Duration duration) {
     emit(state.copyWith(progress: duration));
@@ -44,7 +46,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         audioNote: audioNote,
       );
       emit(newState);
-      await _audioPlayer.open(Media(localPath));
+      await _audioPlayer.open(Media(localPath), play: false);
       final totalDuration = _audioPlayer.state.duration;
       emit(newState.copyWith(totalDuration: totalDuration));
     } catch (exception, stackTrace) {
@@ -69,6 +71,18 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  Future<void> transcribe() async {
+    if (state.audioNote == null) {
+      return;
+    }
+
+    final audioFilePath = await AudioUtils.getFullAudioPath(state.audioNote!);
+    await _asrService.transcribe(
+      entryId: state.audioNote!.meta.id,
+      audioFilePath: audioFilePath,
+    );
   }
 
   Future<void> stopPlay() async {
