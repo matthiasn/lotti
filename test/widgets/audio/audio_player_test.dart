@@ -171,5 +171,72 @@ void main() {
       await tester.tap(stopIconFinder);
       verify(mockAudioPlayerCubit.stopPlay).called(1);
     });
+
+    testWidgets('controls are are displayed, playing state', (tester) async {
+      final playingState = AudioPlayerState(
+        status: AudioPlayerStatus.playing,
+        progress: const Duration(seconds: 15),
+        totalDuration: const Duration(minutes: 1),
+        pausedAt: Duration.zero,
+        speed: 1,
+        audioNote: testAudioEntryWithTranscripts,
+      );
+
+      when(() => mockAudioPlayerCubit.stream).thenAnswer(
+        (_) => Stream<AudioPlayerState>.fromIterable([playingState]),
+      );
+
+      when(() => mockAudioPlayerCubit.state).thenAnswer(
+        (_) => playingState,
+      );
+
+      when(() => mockAudioPlayerCubit.setAudioNote(any()))
+          .thenAnswer((_) async {});
+
+      when(mockAudioPlayerCubit.close).thenAnswer((_) async {});
+      when(mockAudioPlayerCubit.stopPlay).thenAnswer((_) async {});
+      when(mockAudioPlayerCubit.pause).thenAnswer((_) async {});
+
+      when(() => mockAudioPlayerCubit.setSpeed(1.25)).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BlocProvider<EntryCubit>.value(
+            value: entryCubit,
+            child: BlocProvider<AudioPlayerCubit>(
+              create: (_) => mockAudioPlayerCubit,
+              lazy: false,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: AudioPlayerWidget(playingState.audioNote!),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final showIcon = find.byIcon(Icons.keyboard_double_arrow_down_outlined);
+      final hideIcon = find.byIcon(Icons.keyboard_double_arrow_up_outlined);
+
+      expect(find.text('whisper-v1.4.0,  ggml-small.bin'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('transcript'), findsNothing);
+
+      expect(showIcon, findsOneWidget);
+
+      await tester.tap(showIcon);
+      await tester.pumpAndSettle();
+
+      expect(find.text('transcript'), findsOneWidget);
+
+      await tester.tap(hideIcon);
+      await tester.pumpAndSettle();
+
+      expect(find.text('transcript'), findsNothing);
+    });
   });
 }
