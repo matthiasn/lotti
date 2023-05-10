@@ -79,7 +79,7 @@ activate_fluttium:
 	flutter pub global activate fluttium_cli
 
 .PHONY: fluttium
-fluttium:
+fluttium: get_whisper_cpp
 	fluttium test test_flows/habit_flow.yaml -d macOS
 
 .PHONY: fluttium_linux
@@ -154,7 +154,7 @@ ios_upload:
 ios: ios_build ios_fastlane_build ios_fastlane_upload
 
 .PHONY: macos_build_flutter
-macos_build_flutter:
+macos_build_flutter: get_whisper_cpp
 	flutter build macos
 
 .PHONY: macos_build
