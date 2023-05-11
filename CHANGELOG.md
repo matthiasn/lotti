@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Only show speech settings on macOS and iOS for now
 
+### Fixed:
+- Model download on iOS
+
 ## [0.8.346] - 2023-05-11
 ### Added:
 - Automatically transcribe audio on macOS

@@ -32,8 +32,9 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
 
   Future<void> detectDownloadedModels() async {
     final docDir = await findDocumentsDirectory();
-    final modelsDir = Directory('${docDir.path}/whisper/');
-    final files = modelsDir.listSync(recursive: true, followLinks: false);
+    final modelsDir =
+        await Directory('${docDir.path}/whisper/').create(recursive: true);
+    final files = modelsDir.listSync(followLinks: false);
 
     for (final file in files) {
       final path = file.path;
@@ -56,8 +57,11 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
   Future<void> downloadModel(String model) async {
     final fileName = 'ggml-$model.bin';
     final url = '$downloadPath/$fileName';
-    final filePath = './Documents/whisper/$fileName';
-    await downloadManager.addDownload(url, filePath);
+    final docDir = await findDocumentsDirectory();
+    final modelsDir =
+        await Directory('${docDir.path}/whisper/').create(recursive: true);
+
+    await downloadManager.addDownload(url, modelsDir.path);
     final task = downloadManager.getDownload(url);
 
     if (task == null) {
