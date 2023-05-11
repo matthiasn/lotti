@@ -164,6 +164,7 @@
   "settingsDashboardsSearchHint": "Search...",
   "settingsDashboardsTitle": "Dashboard Management",
   "settingsFlagsTitle": "Config Flags",
+  "settingsSpeechTitle": "Speech Settings",
   "settingsCategoriesTitle": "Categories",
   "settingsCategoriesNameLabel": "Category name:",
   "settingsCategoriesDuplicateError": "Category exists already",

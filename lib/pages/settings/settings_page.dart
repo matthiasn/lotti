@@ -72,6 +72,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 path: '/settings/flags',
               ),
               SettingsNavCard(
+                title: localizations.settingsSpeechTitle,
+                path: '/settings/speech_settings',
+              ),
+              SettingsNavCard(
                 title: localizations.settingsAdvancedTitle,
                 path: '/settings/advanced',
               ),
