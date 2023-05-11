@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter_download_manager/flutter_download_manager.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/asr_service.dart';
+import 'package:lotti/utils/file_utils.dart';
 
 const downloadPath =
     'https://huggingface.co/ggerganov/whisper.cpp/resolve/main';
@@ -14,23 +16,34 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
       : super(
           SpeechSettingsState(
             availableModels: availableModels,
-            downloadedModels: <String>{},
             downloadProgress: <String, double>{},
           ),
         ) {
     for (final model in availableModels) {
       _downloadProgress[model] = 0;
     }
+    detectDownloadedModels();
   }
 
   final AsrService _asrService = getIt<AsrService>();
-  Set<String> _downloadedModels = <String>{};
   Map<String, double> _downloadProgress = <String, double>{};
   String _selectedModel = '';
   final downloadManager = DownloadManager();
 
-  void getDownloadedModels() {
-    _downloadedModels = <String>{};
+  Future<void> detectDownloadedModels() async {
+    final docDir = await findDocumentsDirectory();
+    final modelsDir = Directory('${docDir.path}/whisper/');
+    final files = modelsDir.listSync(recursive: true, followLinks: false);
+
+    for (final file in files) {
+      final path = file.path;
+      if (path.endsWith('.bin')) {
+        final model =
+            path.split('/').last.replaceAll('.bin', '').replaceAll('ggml-', '');
+        _downloadProgress[model] = 1.0;
+      }
+    }
+
     emitState();
   }
 
@@ -53,23 +66,18 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
 
     task.progress.addListener(() {
       _downloadProgress[model] = task.progress.value;
-      _downloadProgress = {..._downloadProgress};
       emitState();
     });
 
     await task.whenDownloadComplete();
-
-    _downloadedModels = <String>{
-      ..._downloadedModels,
-      model,
-    };
     emitState();
   }
 
   void emitState() {
+    _downloadProgress = {..._downloadProgress};
+
     emit(
       state.copyWith(
-        downloadedModels: _downloadedModels,
         downloadProgress: _downloadProgress,
         selectedModel: _selectedModel,
       ),

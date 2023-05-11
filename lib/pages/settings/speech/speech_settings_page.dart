@@ -43,7 +43,7 @@ class _SpeechSettingsPageState extends State<SpeechSettingsPage> {
                       margin: const EdgeInsets.all(5),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
+                          horizontal: 20,
                           vertical: 10,
                         ),
                         child: Row(

@@ -19,7 +19,6 @@ Set<String> availableModels = {
 class SpeechSettingsState with _$SpeechSettingsState {
   factory SpeechSettingsState({
     required Set<String> availableModels,
-    required Set<String> downloadedModels,
     required Map<String, double> downloadProgress,
     String? selectedModel,
   }) = _SpeechSettingsState;
