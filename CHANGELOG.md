@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Download whisper.cpp models from Hugging Face
 - Detect downloaded models
 
+### Changed:
+- Only show speech settings on macOS and iOS for now
+
 ## [0.8.346] - 2023-05-11
 ### Added:
 - Automatically transcribe audio on macOS

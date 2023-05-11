@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/themes/theme.dart';
@@ -71,10 +73,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: localizations.settingsFlagsTitle,
                 path: '/settings/flags',
               ),
-              SettingsNavCard(
-                title: localizations.settingsSpeechTitle,
-                path: '/settings/speech_settings',
-              ),
+              if (Platform.isIOS || Platform.isMacOS)
+                SettingsNavCard(
+                  title: localizations.settingsSpeechTitle,
+                  path: '/settings/speech_settings',
+                ),
               SettingsNavCard(
                 title: localizations.settingsAdvancedTitle,
                 path: '/settings/advanced',
