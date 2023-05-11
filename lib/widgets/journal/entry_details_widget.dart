@@ -48,13 +48,14 @@ class EntryDetailWidget extends StatelessWidget {
         }
 
         final isTask = item is Task;
+        final isAudio = item is JournalAudio;
 
         if (isTask && !showTaskDetails) {
           return JournalCard(item: item);
         }
 
         return BlocProvider<EntryCubit>(
-          //key: Key('$itemId-${item.meta.vectorClock}'),
+          key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
           create: (BuildContext context) => EntryCubit(
             entryId: itemId,
             entry: item,

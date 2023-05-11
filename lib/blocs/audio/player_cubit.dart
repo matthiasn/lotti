@@ -78,11 +78,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       return;
     }
 
-    final audioFilePath = await AudioUtils.getFullAudioPath(state.audioNote!);
-    await _asrService.transcribe(
-      entryId: state.audioNote!.meta.id,
-      audioFilePath: audioFilePath,
-    );
+    await _asrService.transcribe(entry: state.audioNote!);
   }
 
   Future<void> stopPlay() async {
