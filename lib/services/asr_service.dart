@@ -14,17 +14,15 @@ class AsrService {
   AsrService();
 
   static const platform = MethodChannel('lotti/transcribe');
+  String model = 'small';
 
-  Future<void> transcribe({
-    required JournalAudio entry,
-    String? model,
-  }) async {
+  Future<void> transcribe({required JournalAudio entry}) async {
     final audioFilePath = await AudioUtils.getFullAudioPath(entry);
 
     final start = DateTime.now();
     final docDir = await getApplicationDocumentsDirectory();
-    const defaultModel = 'ggml-small.bin';
-    final modelPath = p.join(docDir.path, 'whisper', model ?? defaultModel);
+    final modelFile = 'ggml-$model.bin';
+    final modelPath = p.join(docDir.path, 'whisper', modelFile);
 
     final wavPath = audioFilePath.replaceAll('.aac', '.wav');
     final session = await FFmpegKit.execute(
@@ -61,7 +59,7 @@ class AsrService {
           final transcript = AudioTranscript(
             created: DateTime.now(),
             library: 'whisper-1.4.0',
-            model: model ?? defaultModel,
+            model: model,
             detectedLanguage: language ?? 'en',
             transcript: result.trim(),
             processingTime: finish.difference(start),

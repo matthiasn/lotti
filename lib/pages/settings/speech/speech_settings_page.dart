@@ -32,8 +32,8 @@ class _SpeechSettingsPageState extends State<SpeechSettingsPage> {
               children: [
                 ...snapshot.availableModels.map(
                   (model) {
-                    final downloaded =
-                        snapshot.downloadedModels.contains(model);
+                    final progress = snapshot.downloadProgress[model] ?? 0.0;
+                    final downloaded = progress == 1.0;
 
                     final textColor = downloaded
                         ? styleConfig().primaryTextColor
@@ -74,13 +74,28 @@ class _SpeechSettingsPageState extends State<SpeechSettingsPage> {
                               ),
                             ),
                             const Spacer(),
-                            if (!downloaded)
+                            if (progress == 0.0)
                               TextButton(
                                 child: Text(
                                   'download',
                                   style: buttonLabelStyle(),
                                 ),
                                 onPressed: () => cubit.downloadModel(model),
+                              ),
+                            if (progress > 0.0 && progress < 1.0)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: SizedBox(
+                                  width: 80,
+                                  child: LinearProgressIndicator(
+                                    value: progress,
+                                    color: styleConfig().primaryColor,
+                                    backgroundColor: styleConfig()
+                                        .secondaryTextColor
+                                        .withOpacity(0.5),
+                                    minHeight: 15,
+                                  ),
+                                ),
                               ),
                           ],
                         ),

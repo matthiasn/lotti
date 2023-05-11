@@ -18,6 +18,8 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$SpeechSettingsState {
   Set<String> get availableModels => throw _privateConstructorUsedError;
   Set<String> get downloadedModels => throw _privateConstructorUsedError;
+  Map<String, double> get downloadProgress =>
+      throw _privateConstructorUsedError;
   String? get selectedModel => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -34,6 +36,7 @@ abstract class $SpeechSettingsStateCopyWith<$Res> {
   $Res call(
       {Set<String> availableModels,
       Set<String> downloadedModels,
+      Map<String, double> downloadProgress,
       String? selectedModel});
 }
 
@@ -52,6 +55,7 @@ class _$SpeechSettingsStateCopyWithImpl<$Res, $Val extends SpeechSettingsState>
   $Res call({
     Object? availableModels = null,
     Object? downloadedModels = null,
+    Object? downloadProgress = null,
     Object? selectedModel = freezed,
   }) {
     return _then(_value.copyWith(
@@ -63,6 +67,10 @@ class _$SpeechSettingsStateCopyWithImpl<$Res, $Val extends SpeechSettingsState>
           ? _value.downloadedModels
           : downloadedModels // ignore: cast_nullable_to_non_nullable
               as Set<String>,
+      downloadProgress: null == downloadProgress
+          ? _value.downloadProgress
+          : downloadProgress // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>,
       selectedModel: freezed == selectedModel
           ? _value.selectedModel
           : selectedModel // ignore: cast_nullable_to_non_nullable
@@ -82,6 +90,7 @@ abstract class _$$_SpeechSettingsStateCopyWith<$Res>
   $Res call(
       {Set<String> availableModels,
       Set<String> downloadedModels,
+      Map<String, double> downloadProgress,
       String? selectedModel});
 }
 
@@ -98,6 +107,7 @@ class __$$_SpeechSettingsStateCopyWithImpl<$Res>
   $Res call({
     Object? availableModels = null,
     Object? downloadedModels = null,
+    Object? downloadProgress = null,
     Object? selectedModel = freezed,
   }) {
     return _then(_$_SpeechSettingsState(
@@ -109,6 +119,10 @@ class __$$_SpeechSettingsStateCopyWithImpl<$Res>
           ? _value._downloadedModels
           : downloadedModels // ignore: cast_nullable_to_non_nullable
               as Set<String>,
+      downloadProgress: null == downloadProgress
+          ? _value._downloadProgress
+          : downloadProgress // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>,
       selectedModel: freezed == selectedModel
           ? _value.selectedModel
           : selectedModel // ignore: cast_nullable_to_non_nullable
@@ -123,9 +137,11 @@ class _$_SpeechSettingsState implements _SpeechSettingsState {
   _$_SpeechSettingsState(
       {required final Set<String> availableModels,
       required final Set<String> downloadedModels,
+      required final Map<String, double> downloadProgress,
       this.selectedModel})
       : _availableModels = availableModels,
-        _downloadedModels = downloadedModels;
+        _downloadedModels = downloadedModels,
+        _downloadProgress = downloadProgress;
 
   final Set<String> _availableModels;
   @override
@@ -143,12 +159,20 @@ class _$_SpeechSettingsState implements _SpeechSettingsState {
     return EqualUnmodifiableSetView(_downloadedModels);
   }
 
+  final Map<String, double> _downloadProgress;
+  @override
+  Map<String, double> get downloadProgress {
+    if (_downloadProgress is EqualUnmodifiableMapView) return _downloadProgress;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_downloadProgress);
+  }
+
   @override
   final String? selectedModel;
 
   @override
   String toString() {
-    return 'SpeechSettingsState(availableModels: $availableModels, downloadedModels: $downloadedModels, selectedModel: $selectedModel)';
+    return 'SpeechSettingsState(availableModels: $availableModels, downloadedModels: $downloadedModels, downloadProgress: $downloadProgress, selectedModel: $selectedModel)';
   }
 
   @override
@@ -160,6 +184,8 @@ class _$_SpeechSettingsState implements _SpeechSettingsState {
                 .equals(other._availableModels, _availableModels) &&
             const DeepCollectionEquality()
                 .equals(other._downloadedModels, _downloadedModels) &&
+            const DeepCollectionEquality()
+                .equals(other._downloadProgress, _downloadProgress) &&
             (identical(other.selectedModel, selectedModel) ||
                 other.selectedModel == selectedModel));
   }
@@ -169,6 +195,7 @@ class _$_SpeechSettingsState implements _SpeechSettingsState {
       runtimeType,
       const DeepCollectionEquality().hash(_availableModels),
       const DeepCollectionEquality().hash(_downloadedModels),
+      const DeepCollectionEquality().hash(_downloadProgress),
       selectedModel);
 
   @JsonKey(ignore: true)
@@ -183,12 +210,15 @@ abstract class _SpeechSettingsState implements SpeechSettingsState {
   factory _SpeechSettingsState(
       {required final Set<String> availableModels,
       required final Set<String> downloadedModels,
+      required final Map<String, double> downloadProgress,
       final String? selectedModel}) = _$_SpeechSettingsState;
 
   @override
   Set<String> get availableModels;
   @override
   Set<String> get downloadedModels;
+  @override
+  Map<String, double> get downloadProgress;
   @override
   String? get selectedModel;
   @override

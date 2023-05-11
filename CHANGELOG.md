@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Settings page for downloading and activating whisper models
+- Download whisper.cpp models from Hugging Face
 
 ## [0.8.346] - 2023-05-11
 ### Added:
