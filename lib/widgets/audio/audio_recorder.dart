@@ -63,7 +63,7 @@ class AudioRecorderWidget extends StatelessWidget {
                     ),
                     iconSize: iconSize,
                     tooltip: 'Pause',
-                    onPressed: context.read<AudioRecorderCubit>().pause,
+                    onPressed: cubit.pause,
                   ),
                   IconButton(
                     key: const Key('stopIcon'),
@@ -76,10 +76,7 @@ class AudioRecorderWidget extends StatelessWidget {
                     ),
                     iconSize: iconSize,
                     tooltip: 'Stop',
-                    onPressed: () {
-                      context.read<AudioRecorderCubit>().stop();
-                      Navigator.of(context).maybePop();
-                    },
+                    onPressed: cubit.stop,
                   ),
                 ],
               ),

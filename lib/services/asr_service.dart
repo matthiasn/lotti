@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/utils/audio_utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -15,10 +16,11 @@ class AsrService {
   static const platform = MethodChannel('lotti/transcribe');
 
   Future<void> transcribe({
-    required String entryId,
-    required String audioFilePath,
+    required JournalAudio entry,
     String? model,
   }) async {
+    final audioFilePath = await AudioUtils.getFullAudioPath(entry);
+
     final start = DateTime.now();
     final docDir = await getApplicationDocumentsDirectory();
     const defaultModel = 'ggml-small.bin';
@@ -60,13 +62,13 @@ class AsrService {
             created: DateTime.now(),
             library: 'whisper-1.4.0',
             model: model ?? defaultModel,
-            detectedLanguage: 'en',
+            detectedLanguage: language ?? 'en',
             transcript: result.trim(),
             processingTime: finish.difference(start),
           );
 
           await getIt<PersistenceLogic>().addAudioTranscript(
-            journalEntityId: entryId,
+            journalEntityId: entry.meta.id,
             transcript: transcript,
           );
         }

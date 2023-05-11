@@ -355,7 +355,7 @@ class PersistenceLogic {
     return null;
   }
 
-  Future<bool> createAudioEntry(
+  Future<JournalAudio?> createAudioEntry(
     AudioNote audioNote, {
     String? linkedId,
   }) async {
@@ -376,7 +376,7 @@ class PersistenceLogic {
 
       final dateFrom = audioData.dateFrom;
       final dateTo = audioData.dateTo;
-      final journalEntity = JournalEntity.journalAudio(
+      final journalEntity = JournalAudio(
         data: audioData,
         meta: Metadata(
           createdAt: now,
@@ -396,6 +396,7 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
       addGeolocation(journalEntity.meta.id);
+      return journalEntity;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -405,7 +406,7 @@ class PersistenceLogic {
       );
     }
 
-    return true;
+    return null;
   }
 
   Future<JournalEntity?> createTextEntry(
