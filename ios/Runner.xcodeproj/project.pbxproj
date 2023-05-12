@@ -13,6 +13,10 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		ADA413752A0DAE8800C39C5B /* LibWhisper.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA413742A0DAE8700C39C5B /* LibWhisper.swift */; };
+		ADA413792A0DB08400C39C5B /* Transcribe.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA413782A0DB08400C39C5B /* Transcribe.swift */; };
+		ADA413812A0DB79F00C39C5B /* whisper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADA4137C2A0DB79F00C39C5B /* whisper.cpp */; };
+		ADA413822A0DB79F00C39C5B /* ggml.c in Sources */ = {isa = PBXBuildFile; fileRef = ADA4137F2A0DB79F00C39C5B /* ggml.c */; settings = {COMPILER_FLAGS = "-DGGML_USE_ACCELERATE"; }; };
 		ADB650B7270B3C4300B98C66 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADB650B6270B3C4300B98C66 /* HealthKit.framework */; };
 		FD4BDDFBB85CAB6754042A0B /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E08CACAFD56E1EF268BBD8C5 /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
@@ -47,6 +51,13 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AD0869BB271438AF00225DF9 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = Flutter/Base.xcconfig; sourceTree = "<group>"; };
+		ADA413742A0DAE8700C39C5B /* LibWhisper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibWhisper.swift; sourceTree = "<group>"; };
+		ADA413782A0DB08400C39C5B /* Transcribe.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Transcribe.swift; sourceTree = "<group>"; };
+		ADA4137C2A0DB79F00C39C5B /* whisper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = whisper.cpp; sourceTree = "<group>"; };
+		ADA4137D2A0DB79F00C39C5B /* ggml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ggml.h; sourceTree = "<group>"; };
+		ADA4137E2A0DB79F00C39C5B /* whisper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = whisper.h; sourceTree = "<group>"; };
+		ADA4137F2A0DB79F00C39C5B /* ggml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ggml.c; sourceTree = "<group>"; };
+		ADA413802A0DB79F00C39C5B /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		ADAEC2742738A8F200996377 /* RunnerRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerRelease.entitlements; sourceTree = "<group>"; };
 		ADB650B5270B3C4300B98C66 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		ADB650B6270B3C4300B98C66 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
@@ -92,6 +103,7 @@
 		97C146E51CF9000F007C117D = {
 			isa = PBXGroup;
 			children = (
+				ADA4137B2A0DB72A00C39C5B /* whisper.cpp */,
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
 				97C146EF1CF9000F007C117D /* Products */,
@@ -121,9 +133,23 @@
 				1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */,
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
+				ADA413742A0DAE8700C39C5B /* LibWhisper.swift */,
+				ADA413782A0DB08400C39C5B /* Transcribe.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		ADA4137B2A0DB72A00C39C5B /* whisper.cpp */ = {
+			isa = PBXGroup;
+			children = (
+				ADA4137F2A0DB79F00C39C5B /* ggml.c */,
+				ADA4137D2A0DB79F00C39C5B /* ggml.h */,
+				ADA413802A0DB79F00C39C5B /* Runner-Bridging-Header.h */,
+				ADA4137C2A0DB79F00C39C5B /* whisper.cpp */,
+				ADA4137E2A0DB79F00C39C5B /* whisper.h */,
+			);
+			path = whisper.cpp;
 			sourceTree = "<group>";
 		};
 		DF94D6CF0EC47B3F5E5BE83B /* Pods */ = {
@@ -285,7 +311,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ADA413792A0DB08400C39C5B /* Transcribe.swift in Sources */,
+				ADA413812A0DB79F00C39C5B /* whisper.cpp in Sources */,
+				ADA413822A0DB79F00C39C5B /* ggml.c in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
+				ADA413752A0DAE8800C39C5B /* LibWhisper.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -375,12 +405,16 @@
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.9;
+				OTHER_CFLAGS = (
+					"-O3",
+					"-DNDEBUG",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = $PRODUCT_BUNDLE_IDENTIFIER;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -513,12 +547,16 @@
 				DEVELOPMENT_TEAM = SS586VG7L7;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.9;
+				OTHER_CFLAGS = (
+					"-O3",
+					"-DNDEBUG",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasn.lotti.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -542,12 +580,16 @@
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.9;
+				OTHER_CFLAGS = (
+					"-O3",
+					"-DNDEBUG",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasnehlsen.lotti;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

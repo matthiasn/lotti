@@ -82,3 +82,10 @@ macos/whisper.cpp/ggml.c
 macos/whisper.cpp/ggml.h
 macos/whisper.cpp/whisper.cpp
 macos/whisper.cpp/whisper.h
+
+ios/whisper.cpp/*.zip
+ios/whisper.cpp/whisper.cpp*/
+ios/whisper.cpp/ggml.c
+ios/whisper.cpp/ggml.h
+ios/whisper.cpp/whisper.cpp
+ios/whisper.cpp/whisper.h

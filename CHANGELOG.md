@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings page for downloading and activating whisper models
 - Download whisper.cpp models from Hugging Face
 - Detect downloaded models
+- Speech recognition on iOS
 
 ### Changed:
 - Only show speech settings on macOS and iOS for now
