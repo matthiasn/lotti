@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 - Only show speech settings on macOS and iOS for now
+- Hide large whisper models
 
 ### Fixed:
 - Model download on iOS

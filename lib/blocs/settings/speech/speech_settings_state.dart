@@ -11,8 +11,8 @@ Set<String> availableModels = {
   'small',
   'medium.en',
   'medium',
-  'large-v1',
-  'large',
+  //'large-v1',
+  //'large',
 };
 
 @freezed
