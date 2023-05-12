@@ -178,7 +178,7 @@ class OutboxItemCard extends StatelessWidget {
 
 const toolbarHeight = 88.0;
 
-class OutboxAppBar extends StatelessWidget with PreferredSizeWidget {
+class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
   const OutboxAppBar({
     required this.onlineStatus,
     required this.selectedValue,

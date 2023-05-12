@@ -3,7 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/themes/theme.dart';
 
-class TitleAppBar extends StatelessWidget with PreferredSizeWidget {
+class TitleAppBar extends StatelessWidget implements PreferredSizeWidget {
   const TitleAppBar({
     required this.title,
     super.key,

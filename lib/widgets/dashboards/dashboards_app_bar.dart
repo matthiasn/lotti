@@ -10,7 +10,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/dashboards/dashboards_filter.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';
 
-class DashboardsAppBar extends StatelessWidget with PreferredSizeWidget {
+class DashboardsAppBar extends StatelessWidget implements PreferredSizeWidget {
   const DashboardsAppBar({super.key});
 
   @override
