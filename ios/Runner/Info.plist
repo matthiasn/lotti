@@ -43,20 +43,28 @@
 	<string>Read Health data</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Update Health data</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Obtain location for journal entries</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Obtain location for journal entries</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Obtain location for journal entries</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record audio notes</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Import photos and videos</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
+		<string>fetch</string>
 		<string>location</string>
+		<string>processing</string>
 		<string>remote-notification</string>
 	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    </array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -81,8 +89,6 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	<key>io.flutter.embedded_views_preview</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>
 </plist>
