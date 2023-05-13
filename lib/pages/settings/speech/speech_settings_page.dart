@@ -5,6 +5,7 @@ import 'package:lotti/blocs/settings/speech/speech_settings_cubit.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class SpeechSettingsPage extends StatefulWidget {
   const SpeechSettingsPage({super.key});
@@ -82,6 +83,15 @@ class _SpeechSettingsPageState extends State<SpeechSettingsPage> {
                                   style: buttonLabelStyle(),
                                 ),
                                 onPressed: () => cubit.downloadModel(model),
+                              ),
+                            if (progress == 1.0)
+                              IconButton(
+                                padding: const EdgeInsets.all(10),
+                                icon: Semantics(
+                                  label: 'delete whisper model',
+                                  child: const Icon(MdiIcons.trashCanOutline),
+                                ),
+                                onPressed: () => cubit.deleteModel(model),
                               ),
                             if (progress > 0.0 && progress < 1.0)
                               ClipRRect(

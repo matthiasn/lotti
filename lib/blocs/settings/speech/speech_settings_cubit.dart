@@ -7,6 +7,7 @@ import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:path/path.dart' as p;
 
 const downloadPath =
     'https://huggingface.co/ggerganov/whisper.cpp/resolve/main';
@@ -77,6 +78,16 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
 
     await task.whenDownloadComplete();
     emitState();
+  }
+
+  Future<void> deleteModel(String model) async {
+    _downloadProgress[model] = 0;
+    emitState();
+    final fileName = 'ggml-$model.bin';
+    final docDir = await findDocumentsDirectory();
+    final modelsDir = Directory(p.join(docDir.path, 'whisper'));
+    final file = File(p.join(modelsDir.path, fileName));
+    await file.delete();
   }
 
   void emitState() {
