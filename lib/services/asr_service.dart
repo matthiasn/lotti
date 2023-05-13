@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -11,7 +12,17 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 class AsrService {
-  AsrService();
+  AsrService() {
+    loadSelectedModel();
+  }
+
+  Future<void> loadSelectedModel() async {
+    final selectedModel = await getIt<SettingsDb>().itemByKey(whisperModelKey);
+
+    if (selectedModel != null) {
+      model = selectedModel;
+    }
+  }
 
   static const platform = MethodChannel('lotti/transcribe');
   String model = 'base';
