@@ -12,13 +12,15 @@ const downloadPath =
     'https://huggingface.co/ggerganov/whisper.cpp/resolve/main';
 
 class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
-  SpeechSettingsCubit()
+  SpeechSettingsCubit({DownloadManager? downloadManager})
       : super(
           SpeechSettingsState(
             availableModels: availableModels,
             downloadProgress: <String, double>{},
           ),
         ) {
+    _downloadManager = downloadManager ?? DownloadManager();
+
     for (final model in availableModels) {
       _downloadProgress[model] = 0;
     }
@@ -28,7 +30,7 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
   final AsrService _asrService = getIt<AsrService>();
   Map<String, double> _downloadProgress = <String, double>{};
   String _selectedModel = '';
-  final downloadManager = DownloadManager();
+  late final DownloadManager _downloadManager;
 
   Future<void> detectDownloadedModels() async {
     final docDir = await findDocumentsDirectory();
@@ -61,8 +63,8 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
     final modelsDir =
         await Directory('${docDir.path}/whisper/').create(recursive: true);
 
-    await downloadManager.addDownload(url, modelsDir.path);
-    final task = downloadManager.getDownload(url);
+    await _downloadManager.addDownload(url, modelsDir.path);
+    final task = _downloadManager.getDownload(url);
 
     if (task == null) {
       return;

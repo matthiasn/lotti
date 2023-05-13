@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hide large whisper models
 - Upgraded dependencies
 - Preparation for Flutter 3.10
+- Only detect audio language when non-english model is selected
 
 ### Fixed:
 - Model download on iOS
