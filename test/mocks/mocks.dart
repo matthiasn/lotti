@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_download_manager/flutter_download_manager.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -106,6 +107,8 @@ class MockTimeService extends Mock implements TimeService {}
 class MockAsrService extends Mock implements AsrService {}
 
 class MockLoggingDb extends Mock implements LoggingDb {}
+
+class MockDownloadManager extends Mock implements DownloadManager {}
 
 class MockEditorStateService extends Mock implements EditorStateService {}
 

@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Settings page for downloading and activating whisper models
+- Download whisper.cpp models from Hugging Face
+- Detect downloaded models
+- Speech recognition on iOS
+- Background modes on iOS for fetch and processing
+
+### Changed:
+- Only show speech settings on macOS and iOS for now
+- Hide large whisper models
+- Upgraded dependencies
+- Preparation for Flutter 3.10
+- Only detect audio language when non-english model is selected
+
+### Fixed:
+- Model download on iOS
+
+## [0.8.346] - 2023-05-11
+### Added:
 - Automatically transcribe audio on macOS
 
 ## [0.8.345] - 2023-05-10

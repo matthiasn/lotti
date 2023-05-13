@@ -26,7 +26,7 @@ const gridOpacity = 0.3;
 const labelOpacity = 0.5;
 
 class HabitCompletionRateChart extends StatelessWidget
-    with PreferredSizeWidget {
+    implements PreferredSizeWidget {
   const HabitCompletionRateChart({
     this.showSuccessful = true,
     this.showSkipped = true,

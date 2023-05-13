@@ -117,7 +117,7 @@ class AudioPlayerWidget extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (Platform.isMacOS)
+                if (Platform.isMacOS || Platform.isIOS)
                   IconButton(
                     icon: const Icon(Icons.transcribe_outlined),
                     iconSize: 20,
@@ -197,54 +197,59 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 2,
-        horizontal: 30,
-      ),
-      child: Column(
-        children: [
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: toggleShow,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '${dfShorter.format(widget.transcript.created)}  '
-                    '${formatSeconds(widget.transcript.processingTime)}  '
-                    'Language: ${widget.transcript.detectedLanguage}    ',
-                    style: transcriptHeaderStyle(),
+    return Card(
+      color: styleConfig().secondaryTextColor.withOpacity(0.15),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 15,
+        ),
+        child: Column(
+          children: [
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: toggleShow,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${dfShorter.format(widget.transcript.created)}  '
+                        '${formatSeconds(widget.transcript.processingTime)}  '
+                        'Lang: ${widget.transcript.detectedLanguage}  ',
+                        style: transcriptHeaderStyle(),
+                      ),
+                      Text(
+                        '${widget.transcript.library}, '
+                        ' ${widget.transcript.model}',
+                        style: transcriptHeaderStyle(),
+                      ),
+                      if (show)
+                        const Icon(
+                          Icons.keyboard_double_arrow_up_outlined,
+                          size: 15,
+                        )
+                      else
+                        const Icon(
+                          Icons.keyboard_double_arrow_down_outlined,
+                          size: 15,
+                        ),
+                    ],
                   ),
-                  Text(
-                    '${widget.transcript.library}, '
-                    ' ${widget.transcript.model}',
-                    style: transcriptHeaderStyle(),
-                  ),
-                  if (show)
-                    const Icon(
-                      Icons.keyboard_double_arrow_up_outlined,
-                      size: 15,
-                    )
-                  else
-                    const Icon(
-                      Icons.keyboard_double_arrow_down_outlined,
-                      size: 15,
-                    ),
-                ],
+                ),
               ),
             ),
-          ),
-          if (show)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: SelectableText(
-                widget.transcript.transcript,
-                style: transcriptStyle(),
+            if (show)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: SelectableText(
+                  widget.transcript.transcript,
+                  style: transcriptStyle(),
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

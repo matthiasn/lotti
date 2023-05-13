@@ -3,7 +3,8 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 
-class DefinitionsListAppBar extends StatelessWidget with PreferredSizeWidget {
+class DefinitionsListAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   const DefinitionsListAppBar({
     required this.title,
     required this.match,

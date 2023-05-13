@@ -6,7 +6,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/tasks/linked_duration.dart';
 
-class TaskAppBar extends StatelessWidget with PreferredSizeWidget {
+class TaskAppBar extends StatelessWidget implements PreferredSizeWidget {
   TaskAppBar({
     required this.itemId,
     super.key,

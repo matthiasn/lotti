@@ -14,39 +14,42 @@ class AsrService {
   AsrService();
 
   static const platform = MethodChannel('lotti/transcribe');
+  String model = 'base';
 
-  Future<void> transcribe({
-    required JournalAudio entry,
-    String? model,
-  }) async {
+  Future<void> transcribe({required JournalAudio entry}) async {
     final audioFilePath = await AudioUtils.getFullAudioPath(entry);
 
     final start = DateTime.now();
     final docDir = await getApplicationDocumentsDirectory();
-    const defaultModel = 'ggml-small.bin';
-    final modelPath = p.join(docDir.path, 'whisper', model ?? defaultModel);
+    final modelFile = 'ggml-$model.bin';
+    final englishOnlyModel = model.endsWith('.en');
+    final modelPath = p.join(docDir.path, 'whisper', modelFile);
 
     final wavPath = audioFilePath.replaceAll('.aac', '.wav');
     final session = await FFmpegKit.execute(
       '-i $audioFilePath -y -ar 16000 -ac 1 -c:a pcm_s16le $wavPath',
     );
+
     final returnCode = await session.getReturnCode();
+    String? detectedLanguage;
 
     if (ReturnCode.isSuccess(returnCode)) {
       try {
-        final language = await platform.invokeMethod<String>(
-          'detectLanguage',
-          {
-            'audioFilePath': wavPath,
-            'modelPath': modelPath,
-          },
-        );
+        if (!englishOnlyModel) {
+          detectedLanguage = await platform.invokeMethod<String>(
+            'detectLanguage',
+            {
+              'audioFilePath': wavPath,
+              'modelPath': modelPath,
+            },
+          );
 
-        getIt<LoggingDb>().captureEvent(
-          language,
-          domain: 'ASR',
-          subDomain: 'detectLanguage',
-        );
+          getIt<LoggingDb>().captureEvent(
+            detectedLanguage,
+            domain: 'ASR',
+            subDomain: 'detectLanguage',
+          );
+        }
 
         final result = await platform.invokeMethod<String>(
           'transcribe',
@@ -61,8 +64,8 @@ class AsrService {
           final transcript = AudioTranscript(
             created: DateTime.now(),
             library: 'whisper-1.4.0',
-            model: model ?? defaultModel,
-            detectedLanguage: language ?? 'en',
+            model: model,
+            detectedLanguage: detectedLanguage ?? 'en',
             transcript: result.trim(),
             processingTime: finish.difference(start),
           );

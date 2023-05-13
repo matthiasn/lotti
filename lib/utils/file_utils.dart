@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
@@ -83,7 +82,6 @@ Directory getDocumentsDirectory() {
 Future<Directory> findDocumentsDirectory() async {
   final docDir = await getApplicationDocumentsDirectory();
   final appSupportDir = await getApplicationSupportDirectory();
-  debugPrint('appSupportDir $appSupportDir');
 
   if (Platform.isWindows) {
     return appSupportDir;

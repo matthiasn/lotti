@@ -3,7 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/themes/theme.dart';
 
 // adapted from https://github.com/JohannesMilke/filter_listview_example
-class SearchWidget extends StatefulWidget with PreferredSizeWidget {
+class SearchWidget extends StatefulWidget implements PreferredSizeWidget {
   const SearchWidget({
     required this.text,
     required this.onChanged,
