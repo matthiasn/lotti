@@ -22,6 +22,7 @@ class AsrService {
     final start = DateTime.now();
     final docDir = await getApplicationDocumentsDirectory();
     final modelFile = 'ggml-$model.bin';
+    final englishOnlyModel = model.contains('.en.');
     final modelPath = p.join(docDir.path, 'whisper', modelFile);
 
     final wavPath = audioFilePath.replaceAll('.aac', '.wav');
@@ -29,22 +30,25 @@ class AsrService {
       '-i $audioFilePath -y -ar 16000 -ac 1 -c:a pcm_s16le $wavPath',
     );
     final returnCode = await session.getReturnCode();
+    String? detectedLanguage;
 
     if (ReturnCode.isSuccess(returnCode)) {
       try {
-        final language = await platform.invokeMethod<String>(
-          'detectLanguage',
-          {
-            'audioFilePath': wavPath,
-            'modelPath': modelPath,
-          },
-        );
+        if (!englishOnlyModel) {
+          detectedLanguage = await platform.invokeMethod<String>(
+            'detectLanguage',
+            {
+              'audioFilePath': wavPath,
+              'modelPath': modelPath,
+            },
+          );
 
-        getIt<LoggingDb>().captureEvent(
-          language,
-          domain: 'ASR',
-          subDomain: 'detectLanguage',
-        );
+          getIt<LoggingDb>().captureEvent(
+            detectedLanguage,
+            domain: 'ASR',
+            subDomain: 'detectLanguage',
+          );
+        }
 
         final result = await platform.invokeMethod<String>(
           'transcribe',
@@ -60,7 +64,7 @@ class AsrService {
             created: DateTime.now(),
             library: 'whisper-1.4.0',
             model: model,
-            detectedLanguage: language ?? 'en',
+            detectedLanguage: detectedLanguage ?? 'en',
             transcript: result.trim(),
             processingTime: finish.difference(start),
           );
