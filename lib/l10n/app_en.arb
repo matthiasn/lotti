@@ -192,6 +192,7 @@
   "settingsMeasurableUnitLabel": "Unit abbreviation (optional):",
   "settingsPlaygroundTitle": "Developer Playground",
   "settingsPlaygroundTutorialTitle": "Run Sliding Tutorial",
+  "settingsSpeechDownloadButton": "download",
   "settingsSyncCancelButton": "Cancel",
   "settingsSyncCloseButton": "Close",
   "settingsSyncCfgTitle": "Sync Assistant",

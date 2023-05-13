@@ -77,7 +77,8 @@ class _SpeechSettingsPageState extends State<SpeechSettingsPage> {
                             if (progress == 0.0)
                               TextButton(
                                 child: Text(
-                                  'download',
+                                  localizations.settingsSpeechDownloadButton,
+                                  semanticsLabel: 'download $model',
                                   style: buttonLabelStyle(),
                                 ),
                                 onPressed: () => cubit.downloadModel(model),

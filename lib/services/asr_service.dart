@@ -14,7 +14,7 @@ class AsrService {
   AsrService();
 
   static const platform = MethodChannel('lotti/transcribe');
-  String model = 'tiny';
+  String model = 'base';
 
   Future<void> transcribe({required JournalAudio entry}) async {
     final audioFilePath = await AudioUtils.getFullAudioPath(entry);
