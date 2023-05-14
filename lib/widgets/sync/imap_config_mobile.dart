@@ -65,9 +65,9 @@ class ImapConfigInfo extends StatelessWidget {
             style: labelStyleLarger(),
           ),
           const SizedBox(height: 32),
-          Row(
+          const Row(
             mainAxisSize: MainAxisSize.min,
-            children: const [
+            children: [
               DeleteSyncConfigButton(),
               SizedBox(width: 16),
               ImapConfigStatus(

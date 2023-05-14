@@ -88,12 +88,12 @@ DEPENDENCIES:
   - media_kit_native_event_loop (from `Flutter/ephemeral/.symlinks/plugins/media_kit_native_event_loop/macos`)
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
   - pasteboard (from `Flutter/ephemeral/.symlinks/plugins/pasteboard/macos`)
-  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/macos`)
+  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
   - photo_manager (from `Flutter/ephemeral/.symlinks/plugins/photo_manager/macos`)
   - record_macos (from `Flutter/ephemeral/.symlinks/plugins/record_macos/macos`)
   - screen_retriever (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever/macos`)
   - share_plus (from `Flutter/ephemeral/.symlinks/plugins/share_plus/macos`)
-  - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/macos`)
+  - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite (from `Flutter/ephemeral/.symlinks/plugins/sqflite/macos`)
   - sqlite3_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/macos`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
@@ -135,7 +135,7 @@ EXTERNAL SOURCES:
   pasteboard:
     :path: Flutter/ephemeral/.symlinks/plugins/pasteboard/macos
   path_provider_foundation:
-    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/macos
+    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
   photo_manager:
     :path: Flutter/ephemeral/.symlinks/plugins/photo_manager/macos
   record_macos:
@@ -145,7 +145,7 @@ EXTERNAL SOURCES:
   share_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/share_plus/macos
   shared_preferences_foundation:
-    :path: Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/macos
+    :path: Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin
   sqflite:
     :path: Flutter/ephemeral/.symlinks/plugins/sqflite/macos
   sqlite3_flutter_libs:
