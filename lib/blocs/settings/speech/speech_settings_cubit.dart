@@ -104,6 +104,7 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
   }
 
   Future<void> deleteModel(String model) async {
+    _downloadProgress = {..._downloadProgress};
     _downloadProgress[model] = 0;
     if (_selectedModel == model) {
       _selectedModel = '';

@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed:
 - Model download on iOS
+- Update model status after deleting model
 
 ## [0.8.346] - 2023-05-11
 ### Added:
