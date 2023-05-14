@@ -9,6 +9,7 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AudioPlayerWidget extends StatelessWidget {
   const AudioPlayerWidget(this.journalAudio, {super.key});
@@ -243,9 +244,22 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
             if (show)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: SelectableText(
-                  widget.transcript.transcript,
-                  style: transcriptStyle(),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: SelectableText(
+                        widget.transcript.transcript,
+                        style: transcriptStyle(),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {},
+                      icon: const Icon(
+                        MdiIcons.trashCanOutline,
+                        size: 20,
+                      ),
+                    )
+                  ],
                 ),
               ),
           ],
