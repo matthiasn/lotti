@@ -19,31 +19,26 @@ RPInstructionStep panasInstructionStep = RPInstructionStep(
 List<RPImageChoice> panasImages = [
   RPImageChoice(
     imageUrl: 'assets/icons/survey_1.png',
-    activeImageUrl: 'assets/icons/survey_1_active.png',
     value: 1,
     description: 'Very slightly or not at all',
   ),
   RPImageChoice(
     imageUrl: 'assets/icons/survey_2.png',
-    activeImageUrl: 'assets/icons/survey_2_active.png',
     value: 2,
     description: 'A little',
   ),
   RPImageChoice(
     imageUrl: 'assets/icons/survey_3.png',
-    activeImageUrl: 'assets/icons/survey_3_active.png',
     value: 3,
     description: 'Moderately',
   ),
   RPImageChoice(
     imageUrl: 'assets/icons/survey_4.png',
-    activeImageUrl: 'assets/icons/survey_4_active.png',
     value: 4,
     description: 'Quite a bit',
   ),
   RPImageChoice(
     imageUrl: 'assets/icons/survey_5.png',
-    activeImageUrl: 'assets/icons/survey_5_active.png',
     value: 5,
     description: 'Extremely',
   ),

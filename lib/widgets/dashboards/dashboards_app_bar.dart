@@ -61,9 +61,9 @@ class DashboardsSliverAppBar extends StatelessWidget {
           backgroundColor: styleConfig().negspace,
           expandedHeight: 50,
           primary: false,
-          title: Row(
+          title: const Row(
             mainAxisAlignment: MainAxisAlignment.end,
-            children: const [
+            children: [
               DashboardsFilter(),
               SettingsButton('/settings/dashboards'),
             ],
