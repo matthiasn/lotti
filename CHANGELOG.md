@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Detect downloaded models
 - Speech recognition on iOS
 - Background modes on iOS for fetch and processing
+- Select whisper model
+- Delete downloaded model
 
 ### Changed:
 - Only show speech settings on macOS and iOS for now

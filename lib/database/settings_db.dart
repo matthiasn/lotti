@@ -5,6 +5,8 @@ part 'settings_db.g.dart';
 
 const settingsDbFileName = 'settings.sqlite';
 
+const String whisperModelKey = 'WHISPER_MODEL';
+
 @DriftDatabase(include: {'settings_db.drift'})
 class SettingsDb extends _$SettingsDb {
   SettingsDb({this.inMemoryDatabase = false})

@@ -4,9 +4,11 @@ import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:flutter_download_manager/flutter_download_manager.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:path/path.dart' as p;
 
 const downloadPath =
     'https://huggingface.co/ggerganov/whisper.cpp/resolve/main';
@@ -25,12 +27,22 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
       _downloadProgress[model] = 0;
     }
     detectDownloadedModels();
+    loadSelectedModel();
   }
 
   final AsrService _asrService = getIt<AsrService>();
   Map<String, double> _downloadProgress = <String, double>{};
   String _selectedModel = '';
   late final DownloadManager _downloadManager;
+
+  Future<void> loadSelectedModel() async {
+    final selectedModel = await getIt<SettingsDb>().itemByKey(whisperModelKey);
+
+    if (selectedModel != null) {
+      _selectedModel = selectedModel;
+      emitState();
+    }
+  }
 
   Future<void> detectDownloadedModels() async {
     final docDir = await findDocumentsDirectory();
@@ -50,9 +62,15 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
     emitState();
   }
 
-  void selectModel(String selectedModel) {
+  Future<void> selectModel(String selectedModel) async {
     _selectedModel = selectedModel;
     _asrService.model = selectedModel;
+
+    await getIt<SettingsDb>().saveSettingsItem(
+      whisperModelKey,
+      selectedModel,
+    );
+
     emitState();
   }
 
@@ -71,12 +89,32 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
     }
 
     task.progress.addListener(() {
-      _downloadProgress[model] = task.progress.value;
+      final value = task.progress.value;
+      _downloadProgress[model] = value;
+
+      if (value == 1.0 && _selectedModel.isEmpty) {
+        _selectedModel = model;
+      }
+
       emitState();
     });
 
     await task.whenDownloadComplete();
     emitState();
+  }
+
+  Future<void> deleteModel(String model) async {
+    _downloadProgress[model] = 0;
+    if (_selectedModel == model) {
+      _selectedModel = '';
+    }
+
+    emitState();
+    final fileName = 'ggml-$model.bin';
+    final docDir = await findDocumentsDirectory();
+    final modelsDir = Directory(p.join(docDir.path, 'whisper'));
+    final file = File(p.join(modelsDir.path, fileName));
+    await file.delete();
   }
 
   void emitState() {

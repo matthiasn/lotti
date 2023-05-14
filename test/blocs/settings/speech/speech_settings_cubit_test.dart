@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_cubit.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/asr_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -23,9 +24,11 @@ void main() {
     setUpAll(() async {
       setFakeDocumentsPath();
       final docDir = await getApplicationDocumentsDirectory();
+      final settingsDb = SettingsDb(inMemoryDatabase: true);
 
       getIt
         ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<Directory>(docDir)
         ..registerSingleton<AsrService>(MockAsrService());
 
@@ -50,7 +53,7 @@ void main() {
       setUp: () {},
       act: (c) async {
         await c.downloadModel('tiny.en');
-        c.selectModel('tiny.en');
+        await c.selectModel('tiny.en');
       },
       wait: defaultWait,
       expect: () => <SpeechSettingsState>[

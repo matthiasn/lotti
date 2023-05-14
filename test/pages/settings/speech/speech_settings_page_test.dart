@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/speech/speech_settings_page.dart';
 import 'package:lotti/services/asr_service.dart';
@@ -23,9 +24,11 @@ void main() {
     setUpAll(() async {
       setFakeDocumentsPath();
       final docDir = await getApplicationDocumentsDirectory();
+      final settingsDb = SettingsDb(inMemoryDatabase: true);
 
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<Directory>(docDir)
         ..registerSingleton<AsrService>(MockAsrService());
