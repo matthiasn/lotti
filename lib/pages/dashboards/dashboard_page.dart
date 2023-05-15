@@ -7,7 +7,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
-import 'package:lotti/widgets/charts/empty_dashboards_widget.dart';
+import 'package:lotti/widgets/charts/loading_widget.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/dashboards/dashboard_widget.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
@@ -89,7 +89,7 @@ class _DashboardPageState extends State<DashboardPage> {
           if (!snapshot.hasData) {
             return EmptyScaffoldWithTitle(
               localizations.dashboardsLoadingHint,
-              body: const LoadingDashboards(),
+              body: const LoadingWidget(),
             );
           }
 

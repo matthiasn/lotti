@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'dart:math';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
@@ -147,7 +148,7 @@ class WorkoutChartInfoWidget extends StatelessWidget {
           top: 0,
           left: 10,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width - 20,
+            width: max(MediaQuery.of(context).size.width, 320) - 20,
             child: IgnorePointer(
               child: Row(
                 children: [

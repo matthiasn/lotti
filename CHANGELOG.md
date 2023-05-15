@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded dependencies & removing unused
 
 ### Fixed:
-- Flutter 3.10 warnings
+- Flutter 3.10 warnings & errors
 
 ## [0.8.347] - 2023-05-13
 ### Added:
