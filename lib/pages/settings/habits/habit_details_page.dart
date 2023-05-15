@@ -1,4 +1,3 @@
-import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,6 +15,8 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/habits/habit_category.dart';
 import 'package:lotti/widgets/habits/habit_dashboard.dart';
+import 'package:lotti/widgets/modal/modal_action_sheet.dart';
+import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -147,7 +148,7 @@ class HabitDetailsPage extends StatelessWidget {
                                   context: context,
                                   title: localizations.habitDeleteQuestion,
                                   actions: [
-                                    SheetAction(
+                                    ModalSheetAction(
                                       icon: Icons.warning,
                                       label: localizations.habitDeleteConfirm,
                                       key: deleteKey,

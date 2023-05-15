@@ -9,14 +9,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "60.0.0"
-  adaptive_dialog:
-    dependency: "direct main"
-    description:
-      name: adaptive_dialog
-      sha256: "665e90c9eecdbf0aa953a9e1fce5da6c8db3d3357c450262b9c534a54e939119"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.8.3"
   analyzer:
     dependency: "direct dev"
     description:
@@ -33,14 +25,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.11.2"
-  animations:
-    dependency: transitive
-    description:
-      name: animations
-      sha256: fe8a6bdca435f718bb1dc8a11661b2c22504c6da40ef934cee8327ed77934164
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.7"
   ansicolor:
     dependency: transitive
     description:
@@ -81,14 +65,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
-  assorted_layout_widgets:
-    dependency: "direct main"
-    description:
-      name: assorted_layout_widgets
-      sha256: "5ffa446e84acb0352f2dd16847c2d0ff364e1aa1df628023ac43b8cbd6fc7c01"
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.0.1"
   async:
     dependency: transitive
     description:
@@ -506,14 +482,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.8.0"
-  dynamic_color:
-    dependency: transitive
-    description:
-      name: dynamic_color
-      sha256: bbebb1b7ebed819e0ec83d4abdc2a8482d934f6a85289ffc1c6acf7589fa2aad
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.6.3"
   easy_debounce:
     dependency: "direct main"
     description:
@@ -1279,14 +1247,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
-  macos_ui:
-    dependency: transitive
-    description:
-      name: macos_ui
-      sha256: "57208eec8180656acd379e1c754e9b6d8830f32a020b94571ae2188f8112075b"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.12.2"
   markdown:
     dependency: transitive
     description:
@@ -1319,14 +1279,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.7096"
-  matrix4_transform:
-    dependency: transitive
-    description:
-      name: matrix4_transform
-      sha256: "6ddeaa2c0e1f5c3f3a197f552377570b3e54fa0b8bf48507728a216fc0fd78a6"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.1"
   media_kit:
     dependency: "direct main"
     description:
@@ -1384,7 +1336,7 @@ packages:
     source: hosted
     version: "1.0.3"
   meta:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: meta
       sha256: "6c268b42ed578a53088d834796959e4a1814b5e9e164f147f580a386e5decf42"
@@ -1747,10 +1699,10 @@ packages:
     dependency: transitive
     description:
       name: qr
-      sha256: "5c4208b4dc0d55c3184d10d83ee0ded6212dc2b5e2ba17c5a0c0aab279128d21"
+      sha256: "64957a3930367bf97cc211a5af99551d630f2f4625e38af10edd6b19131b64b3"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.0"
+    version: "3.0.1"
   qr_code_scanner:
     dependency: "direct main"
     description:
@@ -1763,10 +1715,10 @@ packages:
     dependency: "direct main"
     description:
       name: qr_flutter
-      sha256: c5c121c54cb6dd837b9b9d57eb7bc7ec6df4aee741032060c8833a678c80b87e
+      sha256: "5095f0fc6e3f71d08adef8feccc8cea4f12eec18a2e31c2e8d82cb6019f4b097"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.0"
+    version: "4.1.0"
   quiver:
     dependency: "direct main"
     description:
@@ -2543,5 +2495,5 @@ packages:
     source: hosted
     version: "3.1.2"
 sdks:
-  dart: ">2.19.0 <3.0.0"
+  dart: ">=2.19.6 <3.0.0"
   flutter: ">=3.7.0"

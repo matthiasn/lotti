@@ -15,8 +15,8 @@ Map<String, int> calculateScores({
     var score = 0;
 
     for (final questionId in scoreDefinition.value) {
-      final stepResult = results[questionId] as RPStepResult;
-      final choice = stepResult.results['answer'] as RPImageChoice;
+      final stepResult = results[questionId] as RPStepResult?;
+      final choice = stepResult?.results['answer'] as RPImageChoice;
       final value = choice.value as int;
       score = score + value;
     }

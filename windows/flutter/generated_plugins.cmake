@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
-  dynamic_color
   flutter_secure_storage_windows
   hotkey_manager
   media_kit_libs_windows_audio

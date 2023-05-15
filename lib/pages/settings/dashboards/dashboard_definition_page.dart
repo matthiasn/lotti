@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -19,6 +18,8 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
+import 'package:lotti/widgets/modal/modal_action_sheet.dart';
+import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:lotti/widgets/settings/dashboards/dashboard_category.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -565,7 +566,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                           title: localizations
                                               .dashboardDeleteQuestion,
                                           actions: [
-                                            SheetAction(
+                                            ModalSheetAction(
                                               icon: Icons.warning,
                                               label: localizations
                                                   .dashboardDeleteConfirm,

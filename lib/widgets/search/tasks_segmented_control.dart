@@ -10,6 +10,8 @@ class TasksSegmentedControl extends StatelessWidget {
   });
 
   final bool showTasks;
+
+  // ignore: avoid_positional_boolean_parameters
   final void Function(bool) onValueChanged;
 
   @override
