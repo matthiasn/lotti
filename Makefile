@@ -80,7 +80,7 @@ activate_fluttium:
 
 .PHONY: fluttium
 fluttium: get_whisper_cpp
-	fluttium test test_flows/habit_flow.yaml -d macOS
+	fluttium test test_flows/habit_flow.yaml -d macOS --reporter expanded
 
 .PHONY: fluttium_linux
 fluttium_linux:
