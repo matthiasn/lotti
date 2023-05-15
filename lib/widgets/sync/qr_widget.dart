@@ -142,7 +142,7 @@ class EncryptionQrWidget extends StatelessWidget {
                               ),
                             );
                           },
-                          child: QrImage(
+                          child: QrImageView(
                             data: syncCfgJson,
                             size: 280,
                             key: const Key('QrImage'),
