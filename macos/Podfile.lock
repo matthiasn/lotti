@@ -4,8 +4,6 @@ PODS:
     - ReachabilitySwift
   - device_info_plus (0.0.1):
     - FlutterMacOS
-  - dynamic_color (0.0.2):
-    - FlutterMacOS
   - ffmpeg-kit-macos-https (5.1)
   - ffmpeg_kit_flutter (5.1.0):
     - ffmpeg_kit_flutter/https (= 5.1.0)
@@ -28,8 +26,6 @@ PODS:
     - FlutterMacOS
     - HotKey
   - location (0.0.1):
-    - FlutterMacOS
-  - macos_ui (0.1.0):
     - FlutterMacOS
   - media_kit_libs_macos_audio (1.0.4):
     - FlutterMacOS
@@ -81,7 +77,6 @@ PODS:
 DEPENDENCIES:
   - connectivity_plus (from `Flutter/ephemeral/.symlinks/plugins/connectivity_plus/macos`)
   - device_info_plus (from `Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos`)
-  - dynamic_color (from `Flutter/ephemeral/.symlinks/plugins/dynamic_color/macos`)
   - ffmpeg_kit_flutter (from `Flutter/ephemeral/.symlinks/plugins/ffmpeg_kit_flutter/macos`)
   - flutter_local_notifications (from `Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos`)
   - flutter_native_timezone (from `Flutter/ephemeral/.symlinks/plugins/flutter_native_timezone/macos`)
@@ -89,7 +84,6 @@ DEPENDENCIES:
   - FlutterMacOS (from `Flutter/ephemeral`)
   - hotkey_manager (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager/macos`)
   - location (from `Flutter/ephemeral/.symlinks/plugins/location/macos`)
-  - macos_ui (from `Flutter/ephemeral/.symlinks/plugins/macos_ui/macos`)
   - media_kit_libs_macos_audio (from `Flutter/ephemeral/.symlinks/plugins/media_kit_libs_macos_audio/macos`)
   - media_kit_native_event_loop (from `Flutter/ephemeral/.symlinks/plugins/media_kit_native_event_loop/macos`)
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
@@ -118,8 +112,6 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/connectivity_plus/macos
   device_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos
-  dynamic_color:
-    :path: Flutter/ephemeral/.symlinks/plugins/dynamic_color/macos
   ffmpeg_kit_flutter:
     :path: Flutter/ephemeral/.symlinks/plugins/ffmpeg_kit_flutter/macos
   flutter_local_notifications:
@@ -134,8 +126,6 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/hotkey_manager/macos
   location:
     :path: Flutter/ephemeral/.symlinks/plugins/location/macos
-  macos_ui:
-    :path: Flutter/ephemeral/.symlinks/plugins/macos_ui/macos
   media_kit_libs_macos_audio:
     :path: Flutter/ephemeral/.symlinks/plugins/media_kit_libs_macos_audio/macos
   media_kit_native_event_loop:
@@ -168,7 +158,6 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   connectivity_plus: 18d3c32514c886e046de60e9c13895109866c747
   device_info_plus: 5401765fde0b8d062a2f8eb65510fb17e77cf07f
-  dynamic_color: 2eaa27267de1ca20d879fbd6e01259773fb1670f
   ffmpeg-kit-macos-https: ff9c8479ed36b20a4e07b265e1bddd36d62a7d7b
   ffmpeg_kit_flutter: de6ad9df446c3b70c34033f49a163d05313eea61
   flutter_local_notifications: 3805ca215b2fb7f397d78b66db91f6a747af52e4
@@ -179,7 +168,6 @@ SPEC CHECKSUMS:
   HotKey: ad59450195936c10992438c4210f673de5aee43e
   hotkey_manager: ad673457691f4d39e481be04a61da2ae07d81c62
   location: 7cdb0665bd6577d382b0a343acdadbcb7f964775
-  macos_ui: 6229a8922cd97bafb7d9636c8eb8dfb0744183ca
   media_kit_libs_macos_audio: 1c2b0099843763fefd0939bae1f6a2ada534f58f
   media_kit_native_event_loop: 81f3d1888a9bd283e5416276fd5716aa331d1751
   package_info_plus: 02d7a575e80f194102bef286361c6c326e4c29ce

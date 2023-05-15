@@ -1,10 +1,11 @@
-import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/modal_action_sheet.dart';
+import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
 class DeleteIconWidget extends StatelessWidget {
   const DeleteIconWidget({
@@ -31,7 +32,7 @@ class DeleteIconWidget extends StatelessWidget {
             context: context,
             title: localizations.journalDeleteQuestion,
             actions: [
-              SheetAction(
+              ModalSheetAction(
                 icon: Icons.warning,
                 label: localizations.journalDeleteConfirm,
                 key: deleteKey,

@@ -1,4 +1,3 @@
-import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -6,6 +5,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_details_widget.dart';
+import 'package:lotti/widgets/modal/modal_action_sheet.dart';
+import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
 class LinkedEntriesWidget extends StatelessWidget {
   const LinkedEntriesWidget({
@@ -47,7 +48,7 @@ class LinkedEntriesWidget extends StatelessWidget {
                       context: context,
                       title: localizations.journalUnlinkQuestion,
                       actions: [
-                        SheetAction(
+                        ModalSheetAction(
                           icon: Icons.warning,
                           label: localizations.journalUnlinkConfirm,
                           key: unlinkKey,
