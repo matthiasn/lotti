@@ -8,10 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Remove `adaptive_dialog` library
 - Upgraded dependencies & removing unused
+- Upgraded Flutter to 3.10
 - Upgraded Fluttium
 
 ### Fixed:
 - Flutter 3.10 warnings & errors
+- Android build issues after Flutter upgrade
 
 ## [0.8.347] - 2023-05-13
 ### Added:
