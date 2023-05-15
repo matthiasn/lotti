@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -56,7 +58,7 @@ class TagsListWidget extends StatelessWidget {
               ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width - 24,
+                  maxWidth: max(MediaQuery.of(context).size.width - 24, 200),
                 ),
                 child: Wrap(
                   spacing: 4,

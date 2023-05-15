@@ -91,7 +91,6 @@ class EditorWidget extends StatelessWidget {
                       expands: false,
                       minHeight: minHeight,
                       placeholder: localizations.editorPlaceholder,
-                      maxHeight: MediaQuery.of(context).size.height / 2,
                       padding: EdgeInsets.only(
                         top: 8,
                         bottom: 16,

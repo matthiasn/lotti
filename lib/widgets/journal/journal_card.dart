@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -279,7 +281,8 @@ class JournalImageCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 LimitedBox(
-                  maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
+                  maxWidth:
+                      max(MediaQuery.of(context).size.width / 2, 300) - 40,
                   maxHeight: 160,
                   child: CardImageWidget(
                     journalImage: updatedItem as JournalImage,

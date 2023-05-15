@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -54,7 +55,8 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
           });
         }
 
-        final camDimension = MediaQuery.of(context).size.width - 100;
+        final camDimension =
+            max(MediaQuery.of(context).size.width - 100, 300).toDouble();
 
         return Center(
           child: state.maybeWhen(
