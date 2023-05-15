@@ -255,7 +255,7 @@ class ConflictDetailRoute extends StatelessWidget {
                           onPressed: () {
                             Clipboard.setData(
                               ClipboardData(
-                                text: fromSync.entryText?.plainText,
+                                text: fromSync.entryText?.plainText ?? '',
                               ),
                             );
                           },

@@ -91,7 +91,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   Future<int> deleteOutboxItems() {
-    return (delete(outbox)).go();
+    return delete(outbox).go();
   }
 
   @override

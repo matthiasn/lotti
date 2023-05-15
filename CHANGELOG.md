@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Remove `adaptive_dialog` library
 
+### Fixed:
+- Flutter 3.10 warnings
+
 ## [0.8.347] - 2023-05-13
 ### Added:
 - Settings page for downloading and activating whisper models
