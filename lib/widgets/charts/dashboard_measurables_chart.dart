@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'dart:math';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:enum_to_string/enum_to_string.dart';
@@ -233,7 +234,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
           top: 0,
           left: 10,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width - 20,
+            width: max(MediaQuery.of(context).size.width, 300) - 20,
             child: Row(
               children: [
                 ConstrainedBox(

@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -80,7 +81,9 @@ class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
                       borderRadius: BorderRadius.circular(2),
                       child: Container(
                         height: 15,
-                        width: (MediaQuery.of(context).size.width - 200) / days,
+                        width:
+                            max(MediaQuery.of(context).size.width - 200, 10) /
+                                days,
                         color: habitCompletionColor(res.completionType),
                       ),
                     );
@@ -134,7 +137,7 @@ class HabitChartInfoWidget extends StatelessWidget {
           top: 0,
           left: 10,
           child: SizedBox(
-            width: MediaQuery.of(context).size.width - 20,
+            width: max(MediaQuery.of(context).size.width, 300) - 20,
             child: Row(
               children: [
                 ConstrainedBox(

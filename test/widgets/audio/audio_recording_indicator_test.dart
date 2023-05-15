@@ -47,8 +47,8 @@ void main() {
           BlocProvider<AudioRecorderCubit>(
             create: (_) => mockAudioRecorderCubit,
             lazy: false,
-            child: Row(
-              children: const [
+            child: const Row(
+              children: [
                 Expanded(child: AudioRecordingIndicator()),
               ],
             ),
