@@ -97,7 +97,7 @@ dependencies:
   intersperse: ^2.0.0
   intl: ^0.18.0
   jiffy: ^6.1.0
-  json_annotation: ^4.6.0
+  json_annotation: ^4.8.1
   latlong2: ^0.8.1
   location: ^4.3.0
   lottie: ^2.2.0
