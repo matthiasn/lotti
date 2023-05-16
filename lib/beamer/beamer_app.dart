@@ -14,6 +14,7 @@ import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
+import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 
@@ -44,6 +45,7 @@ class _AppScreenState extends State<AppScreen> {
                   Beamer(routerDelegate: navService.habitsDelegate),
                   Beamer(routerDelegate: navService.dashboardsDelegate),
                   Beamer(routerDelegate: navService.journalDelegate),
+                  Beamer(routerDelegate: navService.tasksDelegate),
                   Beamer(routerDelegate: navService.settingsDelegate),
                 ],
               ),
@@ -105,11 +107,23 @@ class _AppScreenState extends State<AppScreen> {
                   BottomNavigationBarItem(
                     icon: Semantics(
                       container: true,
-                      label: 'Journal Tab',
+                      label: 'Logbook Tab',
                       image: true,
                       child: const Icon(Icons.auto_stories_outlined),
                     ),
                     label: localizations.navTabTitleJournal,
+                    tooltip: '',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Tasks Tab',
+                      image: true,
+                      child: TasksBadge(
+                        child: const Icon(Icons.task_alt_outlined),
+                      ),
+                    ),
+                    label: localizations.navTabTitleTasks,
                     tooltip: '',
                   ),
                   BottomNavigationBarItem(

@@ -155,7 +155,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
       );
@@ -207,7 +207,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
       );
@@ -231,47 +231,6 @@ void main() {
         (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
         darkTheme.starredGold,
       );
-    });
-
-    testWidgets('page shows task filter', (tester) async {
-      when(
-        () => mockJournalDb.watchTaskCount(any()),
-      ).thenAnswer(
-        (_) => Stream<int>.fromIterable([10]),
-      );
-
-      when(
-        () => mockJournalDb.watchJournalEntities(
-          types: entryTypeStrings,
-          starredStatuses: [true, false],
-          privateStatuses: [true, false],
-          flaggedStatuses: [1, 0],
-          ids: null,
-          limit: 50,
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testTask]
-        ]),
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
-            child: const InfiniteJournalPage(),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final tasksSegment = find.text('Tasks');
-      expect(tasksSegment, findsOneWidget);
-
-      await tester.tap(tasksSegment);
-      await tester.pumpAndSettle();
     });
 
     testWidgets('page is rendered with weight entry', (tester) async {
@@ -310,7 +269,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
       );
@@ -414,7 +373,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
       );
@@ -518,7 +477,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
       );

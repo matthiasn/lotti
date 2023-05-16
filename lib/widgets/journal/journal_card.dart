@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -184,7 +186,12 @@ class JournalCard extends StatelessWidget {
           return const SizedBox.shrink();
         }
         void onTap() {
-          beamToNamed('/journal/${updatedItem.meta.id}');
+          final cubit = context.read<JournalPageCubit>();
+          if (cubit.state.showTasks) {
+            beamToNamed('/tasks/${updatedItem.meta.id}');
+          } else {
+            beamToNamed('/journal/${updatedItem.meta.id}');
+          }
         }
 
         return Padding(
