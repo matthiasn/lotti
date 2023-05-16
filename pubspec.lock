@@ -486,10 +486,10 @@ packages:
     dependency: "direct dev"
     description:
       name: drift_dev
-      sha256: ac1454f20b4b721bfbde7bd3b05123150bae2196ef992c405c07a63f5976a397
+      sha256: "19ba372ceb11a06d7b6a08f50036aa5316ec1d04e75ec71472a72101c5ab3703"
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.0"
+    version: "2.8.1"
   easy_debounce:
     dependency: "direct main"
     description:
@@ -846,10 +846,10 @@ packages:
     dependency: "direct dev"
     description:
       name: flutter_native_splash
-      sha256: af665ef80a213a9ed502845a3d7a61b9acca4100ee7e9f067a7440bc3acd6730
+      sha256: "02df24aec455c26428dadc637f20d4c548bda23ee2179479a8e8c39f1ecb75b3"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.19"
+    version: "2.3.0"
   flutter_native_timezone:
     dependency: "direct main"
     description:
@@ -1539,10 +1539,10 @@ packages:
     dependency: transitive
     description:
       name: permission_handler_android
-      sha256: "8028362b40c4a45298f1cbfccd227c8dd6caf0e27088a69f2ba2ab15464159e2"
+      sha256: d8cc6a62ded6d0f49c6eac337e080b066ee3bce4d405bd9439a61e1f1927bfe8
       url: "https://pub.dev"
     source: hosted
-    version: "10.2.0"
+    version: "10.2.1"
   permission_handler_apple:
     dependency: transitive
     description:
@@ -2065,10 +2065,10 @@ packages:
     dependency: transitive
     description:
       name: sqlparser
-      sha256: b5b24c2804d39cbd619b424d8c9b1321cc5e813fd0e7b95a2707f596f82d5cd3
+      sha256: "0d2c9a3b554baa10b2560d69a1c7cabd4687cc08041a7dd3d2dc6992f607b400"
       url: "https://pub.dev"
     source: hosted
-    version: "0.29.0"
+    version: "0.30.0"
   stack_trace:
     dependency: transitive
     description:

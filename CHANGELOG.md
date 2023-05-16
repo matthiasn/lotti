@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Journal tab renamed to Logbook
+
+## [0.8.348] - 2023-05-14
+### Changed:
 - Remove `adaptive_dialog` library
 - Upgraded dependencies & removing unused
 - Upgraded Flutter to 3.10

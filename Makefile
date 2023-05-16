@@ -68,11 +68,11 @@ check-null-safety:
 
 .PHONY: build_runner
 build_runner: deps l10n
-	flutter pub run build_runner build --delete-conflicting-outputs
+	dart run build_runner build --delete-conflicting-outputs
 
 .PHONY: watch
 watch: l10n
-	flutter pub run build_runner watch --delete-conflicting-outputs
+	dart run build_runner watch --delete-conflicting-outputs
 
 .PHONY: activate_fluttium
 activate_fluttium:
