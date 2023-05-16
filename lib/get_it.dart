@@ -25,6 +25,7 @@ import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
+import 'package:lotti/sync/webdav.dart';
 import 'package:lotti/themes/themes_service.dart';
 
 final getIt = GetIt.instance;
@@ -54,6 +55,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<ThemesService>(ThemesService())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
+    ..registerSingleton<WebDav>(WebDav())
     ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())
     ..registerSingleton<SyncDatabase>(getSyncDatabase())
     ..registerSingleton<ImapClientManager>(ImapClientManager())

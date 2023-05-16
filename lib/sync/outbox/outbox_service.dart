@@ -21,6 +21,7 @@ import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/outbox/messages.dart';
 import 'package:lotti/sync/outbox/outbox_service_isolate.dart';
+import 'package:lotti/sync/webdav.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -139,6 +140,15 @@ class OutboxService {
           journalAudio: (JournalAudio journalAudio) {
             if (syncMessage.status == SyncEntryStatus.initial) {
               attachment = File(AudioUtils.getAudioPath(journalAudio, docDir));
+
+              if (attachment != null) {
+                final data = journalAudio.data;
+                getIt<WebDav>().uploadFile(
+                  localPath: attachment!.path,
+//                  remotePath: '/${data.audioDirectory}/${data.audioFile}',
+                  remotePath: '/Lotti/${data.audioFile}',
+                );
+              }
             }
           },
           journalImage: (JournalImage journalImage) {
