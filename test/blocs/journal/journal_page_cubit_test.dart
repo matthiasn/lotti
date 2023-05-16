@@ -88,7 +88,7 @@ void main() {
 
     blocTest<JournalPageCubit, JournalPageState>(
       'toggle starred entries changes state',
-      build: JournalPageCubit.new,
+      build: () => JournalPageCubit(showTasks: false),
       setUp: () {},
       act: (c) async {
         c.toggleStarredEntriesOnly();
@@ -100,7 +100,7 @@ void main() {
 
     blocTest<JournalPageCubit, JournalPageState>(
       'toggle starred entries twice disables flag again',
-      build: JournalPageCubit.new,
+      build: () => JournalPageCubit(showTasks: false),
       setUp: () {},
       act: (c) async {
         c
@@ -117,7 +117,7 @@ void main() {
 
     blocTest<JournalPageCubit, JournalPageState>(
       'toggle private entries changes state',
-      build: JournalPageCubit.new,
+      build: () => JournalPageCubit(showTasks: false),
       setUp: () {},
       act: (c) async {
         c.togglePrivateEntriesOnly();
@@ -129,7 +129,7 @@ void main() {
 
     blocTest<JournalPageCubit, JournalPageState>(
       'toggle private entries twice disables flag again',
-      build: JournalPageCubit.new,
+      build: () => JournalPageCubit(showTasks: false),
       setUp: () {},
       act: (c) async {
         c
@@ -146,7 +146,7 @@ void main() {
 
     blocTest<JournalPageCubit, JournalPageState>(
       'toggle flagged entries changes state',
-      build: JournalPageCubit.new,
+      build: () => JournalPageCubit(showTasks: false),
       setUp: () {},
       act: (c) async {
         c.toggleFlaggedEntriesOnly();
@@ -158,7 +158,7 @@ void main() {
 
     blocTest<JournalPageCubit, JournalPageState>(
       'toggle flagged entries twice disables flag again',
-      build: JournalPageCubit.new,
+      build: () => JournalPageCubit(showTasks: false),
       setUp: () {},
       act: (c) async {
         c
@@ -175,7 +175,7 @@ void main() {
 
     blocTest<JournalPageCubit, JournalPageState>(
       'toggle flagged entries changes state',
-      build: JournalPageCubit.new,
+      build: () => JournalPageCubit(showTasks: false),
       setUp: () {},
       act: (c) async {
         await c.setSearchString('query');

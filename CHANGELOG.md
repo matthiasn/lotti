@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Tasks moved to separate tasks tab
+
+## [0.8.349] - 2023-05-16
+### Changed:
 - Journal tab renamed to Logbook
 
 ## [0.8.348] - 2023-05-14

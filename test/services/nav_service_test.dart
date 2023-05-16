@@ -43,21 +43,24 @@ void main() {
       navService.tapIndex(3);
       expect(navService.index, 3);
 
+      navService.tapIndex(4);
+      expect(navService.index, 4);
+
       navService.tapIndex(0);
       expect(navService.index, 0);
 
       beamToNamed('/settings');
-      expect(navService.index, 3);
+      expect(navService.index, 4);
       expect(navService.currentPath, '/settings');
 
       beamToNamed('/settings/advanced');
-      expect(navService.index, 3);
+      expect(navService.index, 4);
       expect(navService.currentPath, '/settings/advanced');
-      navService.tapIndex(3);
+      navService.tapIndex(4);
       expect(navService.currentPath, '/settings');
 
       beamToNamed('/settings/advanced/maintenance');
-      expect(navService.index, 3);
+      expect(navService.index, 4);
       expect(navService.currentPath, '/settings/advanced/maintenance');
 
       beamToNamed('/journal');
@@ -67,6 +70,14 @@ void main() {
       expect(navService.currentPath, '/journal/some-id');
       navService.tapIndex(2);
       expect(navService.currentPath, '/journal');
+
+      beamToNamed('/tasks');
+      expect(navService.index, 3);
+      expect(navService.currentPath, '/tasks');
+      beamToNamed('/tasks/some-id');
+      expect(navService.currentPath, '/tasks/some-id');
+      navService.tapIndex(3);
+      expect(navService.currentPath, '/tasks');
 
       beamToNamed('/dashboards');
       expect(navService.index, 1);

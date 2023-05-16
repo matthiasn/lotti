@@ -13,14 +13,19 @@ import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 
 class InfiniteJournalPage extends StatelessWidget {
-  const InfiniteJournalPage({super.key, this.navigatorKey});
+  const InfiniteJournalPage({
+    required this.showTasks,
+    super.key,
+    this.navigatorKey,
+  });
 
   final GlobalKey? navigatorKey;
+  final bool showTasks;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<JournalPageCubit>(
-      create: (BuildContext context) => JournalPageCubit(),
+      create: (BuildContext context) => JournalPageCubit(showTasks: showTasks),
       child: Scaffold(
         backgroundColor: styleConfig().negspace,
         floatingActionButton: RadialAddActionButtons(
@@ -29,14 +34,21 @@ class InfiniteJournalPage extends StatelessWidget {
           isIOS: isIOS,
           isAndroid: isAndroid,
         ),
-        body: const InfiniteJournalPageBody(),
+        body: InfiniteJournalPageBody(
+          showTasks: showTasks,
+        ),
       ),
     );
   }
 }
 
 class InfiniteJournalPageBody extends StatelessWidget {
-  const InfiniteJournalPageBody({super.key});
+  const InfiniteJournalPageBody({
+    required this.showTasks,
+    super.key,
+  });
+
+  final bool showTasks;
 
   @override
   Widget build(BuildContext context) {
