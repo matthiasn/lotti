@@ -109,10 +109,10 @@ packages:
     dependency: "direct main"
     description:
       name: beamer
-      sha256: d659cae2a3621b343eb05a8658d46959850cc61e0ca2bb45f7f41293471f6334
+      sha256: a8fce21135b090f1959530b66344ea85ad8c5608d081a7c7de707492126e70ca
       url: "https://pub.dev"
     source: hosted
-    version: "1.5.3"
+    version: "1.5.4"
   bloc:
     dependency: "direct main"
     description:
@@ -486,10 +486,10 @@ packages:
     dependency: "direct dev"
     description:
       name: drift_dev
-      sha256: "19ba372ceb11a06d7b6a08f50036aa5316ec1d04e75ec71472a72101c5ab3703"
+      sha256: "387a3a70047ae90cbef4c9262a7f833c7c274b7cc22133faf067c2e9cef84c60"
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.1"
+    version: "2.8.2"
   easy_debounce:
     dependency: "direct main"
     description:
@@ -1179,10 +1179,10 @@ packages:
     dependency: "direct dev"
     description:
       name: json_serializable
-      sha256: "43793352f90efa5d8b251893a63d767b2f7c833120e3cc02adad55eefec04dc7"
+      sha256: "61a60716544392a82726dd0fa1dd6f5f1fd32aec66422b6e229e7b90d52325c4"
       url: "https://pub.dev"
     source: hosted
-    version: "6.6.2"
+    version: "6.7.0"
   latlong2:
     dependency: "direct main"
     description:
@@ -1820,10 +1820,10 @@ packages:
     dependency: "direct main"
     description:
       name: retry
-      sha256: a8a1e475a100a0bdc73f529ca8ea1e9c9c76bec8ad86a1f47780139a34ce7aea
+      sha256: "822e118d5b3aafed083109c72d5f484c6dc66707885e07c0fbcb8b986bba7efc"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.1"
+    version: "3.1.2"
   rxdart:
     dependency: "direct main"
     description:
@@ -2033,10 +2033,10 @@ packages:
     dependency: "direct main"
     description:
       name: sqflite
-      sha256: "3a82c9a216b46b88617e3714dd74227eaca20c501c4abcc213e56db26b9caa00"
+      sha256: b4d6710e1200e96845747e37338ea8a819a12b51689a3bcf31eff0003b37a0b9
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.8+2"
+    version: "2.2.8+4"
   sqflite_common:
     dependency: transitive
     description:
@@ -2113,26 +2113,26 @@ packages:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_calendar
-      sha256: ca071f95571c0eac37b52eb4f974e1b29707159d07fc97f69f18b4455563c7d1
+      sha256: "21178d315cd6c9cfa97e51fcfffa44e4b017c88be18c4d88f9dd47e38845584f"
       url: "https://pub.dev"
     source: hosted
-    version: "21.2.4"
+    version: "21.2.5"
   syncfusion_flutter_core:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
-      sha256: dfd138a0cea87d6b1c624513b4b620f06515d884d65f1fa5fb93345266c7592c
+      sha256: b2ad1c93239b094d6de1b4679c1835b1bc4332e6c6548bd2da44bd2594e6cdc5
       url: "https://pub.dev"
     source: hosted
-    version: "21.2.4"
+    version: "21.2.5"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
-      sha256: "2008bdbfa1ffb87a065dc720a55799bb800de2d5a6671c59afacc947fc255b70"
+      sha256: "77f8c1ceefddfdd90c2e7cbd192d55f9a514c91018caa4cf3f17eb114b11ce24"
       url: "https://pub.dev"
     source: hosted
-    version: "21.2.4"
+    version: "21.2.5"
   synchronized:
     dependency: transitive
     description:
