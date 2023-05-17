@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use new SearchBar widget
 - Use new SearchBar widget on Habits page
 
+### Fixed:
+- Navigation after recording audio
+
 ## [0.8.349] - 2023-05-16
 ### Changed:
 - Journal tab renamed to Logbook

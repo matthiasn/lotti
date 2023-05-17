@@ -87,6 +87,10 @@ class NavService {
     }
   }
 
+  bool tasksTabActive() {
+    return index == 3;
+  }
+
   void setIndex(int newIndex) {
     index = newIndex;
     delegateByIndex(index).update(rebuild: false);
@@ -109,6 +113,10 @@ class NavService {
     setPath(path);
     persistNamedRoute(path);
     delegateByIndex(index).beamToNamed(path, data: data);
+  }
+
+  void beamBack({Object? data}) {
+    delegateByIndex(index).beamBack(data: data);
   }
 }
 

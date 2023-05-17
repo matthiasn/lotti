@@ -376,6 +376,10 @@ void main() {
           (_) async {},
         );
 
+        when(mockNavService.tasksTabActive).thenAnswer(
+          (_) => false,
+        );
+
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             BlocProvider<AudioRecorderCubit>(

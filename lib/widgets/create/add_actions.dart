@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -134,7 +135,11 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           onPressed: () {
             rebuild();
             final linkedId = widget.linked?.meta.id;
-            beamToNamed('/journal/$linkedId/record_audio/$linkedId');
+            if (getIt<NavService>().tasksTabActive()) {
+              beamToNamed('/tasks/$linkedId/record_audio/$linkedId');
+            } else {
+              beamToNamed('/journal/$linkedId/record_audio/$linkedId');
+            }
           },
           child: const Icon(
             MdiIcons.microphone,
