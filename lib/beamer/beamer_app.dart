@@ -13,6 +13,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
@@ -27,122 +28,133 @@ class AppScreen extends StatefulWidget {
 
 class _AppScreenState extends State<AppScreen> {
   final navService = getIt<NavService>();
+  final journalDb = getIt<JournalDb>();
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return StreamBuilder<int>(
-      stream: navService.getIndexStream(),
-      builder: (context, snapshot) {
-        final index = snapshot.data ?? 0;
-        return Scaffold(
-          body: Stack(
-            children: [
-              IndexedStack(
-                index: index,
+    return StreamBuilder<bool>(
+      stream: journalDb.watchConfigFlag(enableTaskManagement),
+      builder: (context, configSnapshot) {
+        final showTasksTab = configSnapshot.data ?? false;
+
+        return StreamBuilder<int>(
+          stream: navService.getIndexStream(),
+          builder: (context, snapshot) {
+            final index = snapshot.data ?? 0;
+
+            return Scaffold(
+              body: Stack(
                 children: [
-                  Beamer(routerDelegate: navService.habitsDelegate),
-                  Beamer(routerDelegate: navService.dashboardsDelegate),
-                  Beamer(routerDelegate: navService.journalDelegate),
-                  Beamer(routerDelegate: navService.tasksDelegate),
-                  Beamer(routerDelegate: navService.settingsDelegate),
+                  IndexedStack(
+                    index: index,
+                    children: [
+                      Beamer(routerDelegate: navService.habitsDelegate),
+                      Beamer(routerDelegate: navService.dashboardsDelegate),
+                      Beamer(routerDelegate: navService.journalDelegate),
+                      if (showTasksTab)
+                        Beamer(routerDelegate: navService.tasksDelegate),
+                      Beamer(routerDelegate: navService.settingsDelegate),
+                    ],
+                  ),
+                  const TimeRecordingIndicator(),
+                  const Positioned(
+                    right: 120,
+                    bottom: 0,
+                    child: AudioRecordingIndicator(),
+                  ),
                 ],
               ),
-              const TimeRecordingIndicator(),
-              const Positioned(
-                right: 120,
-                bottom: 0,
-                child: AudioRecordingIndicator(),
-              ),
-            ],
-          ),
-          bottomNavigationBar: Theme(
-            data: Theme.of(context).copyWith(
-              focusColor: Colors.transparent,
-              hoverColor: Colors.transparent,
-              splashColor: Colors.transparent,
-            ),
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                canvasColor: styleConfig().negspace,
-                hoverColor: Colors.transparent,
-                splashColor: Colors.transparent,
-              ),
-              child: BottomNavigationBar(
-                unselectedItemColor: styleConfig().primaryTextColor,
-                selectedItemColor: styleConfig().primaryColor,
-                selectedFontSize: fontSizeSmall,
-                enableFeedback: true,
-                elevation: 8,
-                iconSize: 30,
-                selectedLabelStyle: const TextStyle(
-                  height: 2,
-                  fontWeight: FontWeight.bold,
+              bottomNavigationBar: Theme(
+                data: Theme.of(context).copyWith(
+                  focusColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  splashColor: Colors.transparent,
                 ),
-                unselectedLabelStyle: const TextStyle(height: 2),
-                type: BottomNavigationBarType.shifting,
-                currentIndex: index,
-                items: [
-                  BottomNavigationBarItem(
-                    icon: Semantics(
-                      container: true,
-                      label: 'Habits Tab',
-                      image: true,
-                      child: const Icon(Icons.checklist_outlined),
-                    ),
-                    label: localizations.navTabTitleHabits,
-                    tooltip: '',
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    canvasColor: styleConfig().negspace,
+                    hoverColor: Colors.transparent,
+                    splashColor: Colors.transparent,
                   ),
-                  BottomNavigationBarItem(
-                    icon: Semantics(
-                      container: true,
-                      label: 'Dashboards Tab',
-                      image: true,
-                      child: const Icon(Icons.insights_outlined),
+                  child: BottomNavigationBar(
+                    unselectedItemColor: styleConfig().primaryTextColor,
+                    selectedItemColor: styleConfig().primaryColor,
+                    selectedFontSize: fontSizeSmall,
+                    enableFeedback: true,
+                    elevation: 8,
+                    iconSize: 30,
+                    selectedLabelStyle: const TextStyle(
+                      height: 2,
+                      fontWeight: FontWeight.bold,
                     ),
-                    label: localizations.navTabTitleInsights,
-                    tooltip: '',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Semantics(
-                      container: true,
-                      label: 'Logbook Tab',
-                      image: true,
-                      child: const Icon(Icons.auto_stories_outlined),
-                    ),
-                    label: localizations.navTabTitleJournal,
-                    tooltip: '',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Semantics(
-                      container: true,
-                      label: 'Tasks Tab',
-                      image: true,
-                      child: TasksBadge(
-                        child: const Icon(Icons.task_alt_outlined),
+                    unselectedLabelStyle: const TextStyle(height: 2),
+                    type: BottomNavigationBarType.shifting,
+                    currentIndex: index,
+                    items: [
+                      BottomNavigationBarItem(
+                        icon: Semantics(
+                          container: true,
+                          label: 'Habits Tab',
+                          image: true,
+                          child: const Icon(Icons.checklist_outlined),
+                        ),
+                        label: localizations.navTabTitleHabits,
+                        tooltip: '',
                       ),
-                    ),
-                    label: localizations.navTabTitleTasks,
-                    tooltip: '',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Semantics(
-                      container: true,
-                      label: 'Settings Tab',
-                      image: true,
-                      child: OutboxBadgeIcon(
-                        icon: const Icon(Icons.settings_outlined),
+                      BottomNavigationBarItem(
+                        icon: Semantics(
+                          container: true,
+                          label: 'Dashboards Tab',
+                          image: true,
+                          child: const Icon(Icons.insights_outlined),
+                        ),
+                        label: localizations.navTabTitleInsights,
+                        tooltip: '',
                       ),
-                    ),
-                    label: localizations.navTabTitleSettings,
-                    tooltip: '',
+                      BottomNavigationBarItem(
+                        icon: Semantics(
+                          container: true,
+                          label: 'Logbook Tab',
+                          image: true,
+                          child: const Icon(Icons.auto_stories_outlined),
+                        ),
+                        label: localizations.navTabTitleJournal,
+                        tooltip: '',
+                      ),
+                      if (showTasksTab)
+                        BottomNavigationBarItem(
+                          icon: Semantics(
+                            container: true,
+                            label: 'Tasks Tab',
+                            image: true,
+                            child: TasksBadge(
+                              child: const Icon(Icons.task_alt_outlined),
+                            ),
+                          ),
+                          label: localizations.navTabTitleTasks,
+                          tooltip: '',
+                        ),
+                      BottomNavigationBarItem(
+                        icon: Semantics(
+                          container: true,
+                          label: 'Settings Tab',
+                          image: true,
+                          child: OutboxBadgeIcon(
+                            icon: const Icon(Icons.settings_outlined),
+                          ),
+                        ),
+                        label: localizations.navTabTitleSettings,
+                        tooltip: '',
+                      ),
+                    ],
+                    onTap: navService.tapIndex,
                   ),
-                ],
-                onTap: navService.tapIndex,
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

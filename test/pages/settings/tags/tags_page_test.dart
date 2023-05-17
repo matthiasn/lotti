@@ -10,6 +10,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/themes/themes_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -31,12 +32,17 @@ void main() {
       final settingsDb = SettingsDb(inMemoryDatabase: true);
       final secureStorageMock = MockSecureStorage();
 
+      when(() => mockJournalDb.watchConfigFlag(enableTaskManagement))
+          .thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
+
       getIt
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<SettingsDb>(settingsDb)
+        ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<NavService>(NavService())
         ..registerSingleton<TagsService>(mockTagsService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
 

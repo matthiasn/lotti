@@ -45,6 +45,7 @@ class _FlagsPageState extends State<FlagsPage> {
             showBrightSchemeFlag,
             recordLocationFlag,
             enableSyncFlag,
+            enableTaskManagement,
             allowInvalidCertFlag,
           };
 
