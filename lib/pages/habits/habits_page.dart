@@ -9,6 +9,7 @@ import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/habits/habit_completion_card.dart';
 import 'package:lotti/widgets/habits/habit_page_app_bar.dart';
 import 'package:lotti/widgets/habits/habit_streaks.dart';
+import 'package:lotti/widgets/habits/habits_search.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class HabitsTabPage extends StatelessWidget {
@@ -61,10 +62,6 @@ class HabitsTabPage extends StatelessWidget {
         final showPendingLater = pendingLater.isNotEmpty &&
             (displayFilter == HabitDisplayFilter.pendingLater || showAll);
 
-        final styleActive = searchFieldStyle();
-        final styleHint = searchFieldHintStyle();
-        final style = state.searchString.isEmpty ? styleHint : styleActive;
-
         return Scaffold(
           backgroundColor: styleConfig().negspace,
           body: SafeArea(
@@ -87,45 +84,7 @@ class HabitsTabPage extends StatelessWidget {
                               ),
                             ),
                           ),
-                        if (state.showSearch)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 5),
-                              child: Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 40),
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  color: styleConfig().cardColor,
-                                ),
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8),
-                                child: TextField(
-                                  decoration: InputDecoration(
-                                    icon:
-                                        Icon(Icons.search, color: style.color),
-                                    suffixIcon: GestureDetector(
-                                      child: Icon(
-                                        Icons.close_rounded,
-                                        color: style.color,
-                                      ),
-                                      onTap: () {
-                                        cubit.setSearchString('');
-                                        FocusScope.of(context)
-                                            .requestFocus(FocusNode());
-                                      },
-                                    ),
-                                    hintText: localizations.habitsSearchHint,
-                                    hintStyle: style,
-                                    border: InputBorder.none,
-                                  ),
-                                  style: style,
-                                  onChanged: cubit.setSearchString,
-                                ),
-                              ),
-                            ),
-                          ),
+                        if (state.showSearch) const HabitsSearchWidget(),
                         const SizedBox(height: 20),
                         if (showAll)
                           Padding(
