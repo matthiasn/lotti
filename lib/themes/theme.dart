@@ -331,6 +331,17 @@ ThemeData getTheme() {
         borderRadius: BorderRadius.circular(5),
       ),
     ),
+    searchBarTheme: SearchBarThemeData(
+      backgroundColor: MaterialStateProperty.resolveWith(
+        (_) => styleConfig().cardColor.withOpacity(0.3),
+      ),
+      hintStyle: MaterialStateProperty.resolveWith(
+        (_) => searchFieldHintStyle(),
+      ),
+      textStyle: MaterialStateProperty.resolveWith(
+        (_) => searchFieldStyle(),
+      ),
+    ),
     colorScheme: ColorScheme.fromSwatch(
       primarySwatch: primaryColorMaterial,
     ).copyWith(
