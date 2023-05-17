@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added:
 - Config flag for task management
+- Conditionally show add task action icon
 
 ### Changed:
 - Tasks moved to separate tasks tab
