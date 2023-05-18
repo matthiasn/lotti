@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Refactoring in ASR code on macOS
 - Refactoring in ASR code on iOS
+- Consolidate ASR code, maintained in macOS
 
 ## [0.8.353] - 2023-05-18
 ### Added:
