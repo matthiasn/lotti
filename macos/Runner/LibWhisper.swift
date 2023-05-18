@@ -26,7 +26,7 @@ actor WhisperContext {
             params.print_realtime = true
             params.print_progress = false
             params.print_timestamps = true
-            params.print_special = false
+            params.print_special = true
             params.translate = false
             params.language = lang
             params.n_threads = Int32(maxThreads)

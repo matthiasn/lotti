@@ -137,25 +137,23 @@ class OutboxItemCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(2),
       child: Card(
-        color: cardColor(statusEnum),
+        color: cardColor(statusEnum).withOpacity(0.4),
         child: ListTile(
           contentPadding: const EdgeInsets.only(left: 24, right: 24),
           title: Text(
             '${df.format(item.createdAt)} - $status',
             style: TextStyle(
               color: styleConfig().primaryTextColor,
-              fontFamily: 'Oswald',
               fontSize: fontSizeMedium,
             ),
           ),
           subtitle: Text(
-            '${item.retries} $retriesText - '
+            '${item.retries} $retriesText \n'
             '${item.filePath ?? localizations.outboxMonitorNoAttachment}',
             style: TextStyle(
               color: styleConfig().primaryTextColor,
-              fontFamily: 'Oswald',
               fontWeight: FontWeight.w200,
-              fontSize: fontSizeMedium,
+              fontSize: fontSizeSmall,
             ),
           ),
           onTap: () {
