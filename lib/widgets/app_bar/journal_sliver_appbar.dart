@@ -7,11 +7,9 @@ import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/badges/flagged_badge.dart';
-import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:lotti/widgets/search/task_status_filter.dart';
-import 'package:lotti/widgets/search/tasks_segmented_control.dart';
 
 class JournalSliverAppBar extends StatelessWidget {
   const JournalSliverAppBar({
@@ -28,7 +26,7 @@ class JournalSliverAppBar extends StatelessWidget {
 
         return SliverAppBar(
           backgroundColor: styleConfig().negspace,
-          expandedHeight: 200,
+          expandedHeight: snapshot.showTasks ? 160 : 200,
           flexibleSpace: FlexibleSpaceBar(
             background: Padding(
               padding: EdgeInsets.only(top: isIOS ? 30 : 0),
@@ -49,73 +47,65 @@ class JournalSliverAppBar extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          TasksBadge(
-                            child: TasksSegmentedControl(
-                              showTasks: snapshot.showTasks,
-                              onValueChanged: (showTasks) {
-                                cubit.setShowTasks(showTasks: showTasks);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Visibility(
-                                visible: snapshot.showPrivateEntries,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      localizations.journalPrivateTooltip,
-                                      style: searchLabelStyle(),
-                                    ),
-                                    CupertinoSwitch(
-                                      value: snapshot.privateEntriesOnly,
-                                      activeColor: styleConfig().private,
-                                      onChanged: (_) =>
-                                          cubit.togglePrivateEntriesOnly(),
-                                    ),
-                                  ],
+                          if (!snapshot.showTasks)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Visibility(
+                                  visible: snapshot.showPrivateEntries,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        localizations.journalPrivateTooltip,
+                                        style: searchLabelStyle(),
+                                      ),
+                                      CupertinoSwitch(
+                                        value: snapshot.privateEntriesOnly,
+                                        activeColor: styleConfig().private,
+                                        onChanged: (_) =>
+                                            cubit.togglePrivateEntriesOnly(),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 5),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    localizations.journalFavoriteTooltip,
-                                    style: searchLabelStyle(),
-                                  ),
-                                  CupertinoSwitch(
-                                    value: snapshot.starredEntriesOnly,
-                                    activeColor: styleConfig().starredGold,
-                                    onChanged: (_) =>
-                                        cubit.toggleStarredEntriesOnly(),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(width: 5),
-                              FlaggedBadge(
-                                child: Row(
+                                const SizedBox(width: 5),
+                                Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      localizations.journalFlaggedTooltip,
+                                      localizations.journalFavoriteTooltip,
                                       style: searchLabelStyle(),
                                     ),
                                     CupertinoSwitch(
-                                      value: snapshot.flaggedEntriesOnly,
+                                      value: snapshot.starredEntriesOnly,
                                       activeColor: styleConfig().starredGold,
                                       onChanged: (_) =>
-                                          cubit.toggleFlaggedEntriesOnly(),
+                                          cubit.toggleStarredEntriesOnly(),
                                     ),
                                   ],
                                 ),
-                              ),
-                              const SizedBox(width: 5),
-                            ],
-                          ),
+                                const SizedBox(width: 5),
+                                FlaggedBadge(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        localizations.journalFlaggedTooltip,
+                                        style: searchLabelStyle(),
+                                      ),
+                                      CupertinoSwitch(
+                                        value: snapshot.flaggedEntriesOnly,
+                                        activeColor: styleConfig().starredGold,
+                                        onChanged: (_) =>
+                                            cubit.toggleFlaggedEntriesOnly(),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                              ],
+                            ),
                         ],
                       ),
                     ),

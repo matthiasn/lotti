@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Config flag for task management
+- Conditionally show add task action icon
+
+### Changed:
+- Tasks moved to separate tasks tab
+- Upgraded dependencies (major versions)
+- Use new SearchBar widget
+- Use new SearchBar widget on Habits page
+
+### Fixed:
+- Navigation after recording audio
+
+## [0.8.349] - 2023-05-16
 ### Changed:
 - Journal tab renamed to Logbook
 

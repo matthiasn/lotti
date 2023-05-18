@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:beamer/beamer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/consts.dart';
 
 const String lastRouteKey = 'NAV_LAST_ROUTE';
 
@@ -12,15 +14,25 @@ class NavService {
   NavService() {
     // TODO: fix and bring back
     // restoreRoute();
+
+    getIt<JournalDb>().watchConfigFlag(enableTaskManagement).forEach((enabled) {
+      tasksEnabled = enabled;
+      if (index == 4 && !enabled) {
+        setIndex(3);
+      }
+    });
   }
 
   String currentPath = '/dashboards';
   final indexStreamController = StreamController<int>.broadcast();
 
   int index = 0;
+  bool tasksEnabled = false;
+
   final BeamerDelegate habitsDelegate = habitsBeamerDelegate;
   final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
   final BeamerDelegate journalDelegate = journalBeamerDelegate;
+  final BeamerDelegate tasksDelegate = tasksBeamerDelegate;
   final BeamerDelegate settingsDelegate = settingsBeamerDelegate;
 
   Future<void> restoreRoute() async {
@@ -46,8 +58,14 @@ class NavService {
     if (path.startsWith('/journal')) {
       setIndex(2);
     }
-    if (path.startsWith('/settings')) {
+    if (path.startsWith('/tasks')) {
       setIndex(3);
+    }
+    if (path.startsWith('/settings') && !tasksEnabled) {
+      setIndex(3);
+    }
+    if (path.startsWith('/settings') && tasksEnabled) {
+      setIndex(4);
     }
 
     emitState();
@@ -55,10 +73,11 @@ class NavService {
 
   BeamerDelegate delegateByIndex(int index) {
     final beamerDelegates = <BeamerDelegate>[
-      habitsBeamerDelegate,
+      habitsDelegate,
       dashboardsDelegate,
       journalDelegate,
-      settingsBeamerDelegate,
+      if (tasksEnabled) tasksDelegate,
+      settingsDelegate,
     ];
 
     return beamerDelegates[index];
@@ -74,9 +93,19 @@ class NavService {
     if (index == 2) {
       beamToNamed('/journal');
     }
-    if (index == 3) {
+    if (index == 3 && tasksEnabled) {
+      beamToNamed('/tasks');
+    }
+    if (index == 3 && !tasksEnabled) {
       beamToNamed('/settings');
     }
+    if (index == 4) {
+      beamToNamed('/settings');
+    }
+  }
+
+  bool tasksTabActive() {
+    return index == 3;
   }
 
   void setIndex(int newIndex) {
@@ -101,6 +130,10 @@ class NavService {
     setPath(path);
     persistNamedRoute(path);
     delegateByIndex(index).beamToNamed(path, data: data);
+  }
+
+  void beamBack({Object? data}) {
+    delegateByIndex(index).beamBack(data: data);
   }
 }
 

@@ -53,6 +53,12 @@ void main() {
         measurableWater,
         measurableChocolate,
       ]);
+
+      when(() => mockJournalDb.watchConfigFlag(enableTaskManagement))
+          .thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
+
       mockPersistenceLogic = MockPersistenceLogic();
 
       final mockTagsService = mockTagsServiceWithTags([]);
@@ -155,7 +161,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
       );
@@ -207,7 +213,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
       );
@@ -233,21 +239,19 @@ void main() {
       );
     });
 
-    testWidgets('page shows task filter', (tester) async {
-      when(
-        () => mockJournalDb.watchTaskCount(any()),
-      ).thenAnswer(
-        (_) => Stream<int>.fromIterable([10]),
-      );
+    testWidgets('page is rendered with task entry', (tester) async {
+      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
+        return mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+          private: false,
+        );
+      }
 
       when(
-        () => mockJournalDb.watchJournalEntities(
-          types: entryTypeStrings,
+        () => mockJournalDb.watchTasks(
           starredStatuses: [true, false],
-          privateStatuses: [true, false],
-          flaggedStatuses: [1, 0],
-          ids: null,
           limit: 50,
+          taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
@@ -255,23 +259,37 @@ void main() {
         ]),
       );
 
+      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const InfiniteJournalPage(showTasks: true),
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      final tasksSegment = find.text('Tasks');
-      expect(tasksSegment, findsOneWidget);
+      // task entry displays expected date
+      expect(
+        find.text(dfShorter.format(testTask.meta.dateFrom)),
+        findsOneWidget,
+      );
 
-      await tester.tap(tasksSegment);
-      await tester.pumpAndSettle();
+      // test task title is displayed
+      expect(
+        find.text(testTask.data.title),
+        findsOneWidget,
+      );
+
+      // test task is starred
+      expect(
+        (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
+        darkTheme.starredGold,
+      );
     });
 
     testWidgets('page is rendered with weight entry', (tester) async {
@@ -310,7 +328,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
       );
@@ -414,7 +432,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
       );
@@ -518,7 +536,7 @@ void main() {
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),
             lazy: false,
-            child: const InfiniteJournalPage(),
+            child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
       );

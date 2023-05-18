@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.349+2122
+version: 0.9.350+2131
 
 msix_config:
   display_name: LottiApp
@@ -28,7 +28,7 @@ dependencies:
   carousel_slider: ^4.1.1
   charts_flutter: ^0.12.0
   collection: ^1.17.0
-  connectivity_plus: ^3.0.2
+  connectivity_plus: ^4.0.0
   crypto: ^3.0.1
   cryptography: ^2.0.2
   cupertino_icons: ^1.0.5
@@ -39,7 +39,7 @@ dependencies:
       url: https://github.com/matthiasn/delta_markdown.git
       ref: 1beb378
 
-  device_info_plus: ^8.0.0
+  device_info_plus: ^9.0.0
   drift: ^2.8.0
   easy_debounce: ^2.0.2+1
   encrypt: ^5.0.1
@@ -66,7 +66,7 @@ dependencies:
       ref: 37afbc9
 
   flutter_image_compress: ^1.1.0
-  flutter_linkify: ^5.0.2
+  flutter_linkify: ^6.0.0
   flutter_local_notifications: ^13.0.0
 
   flutter_localizations:
@@ -111,7 +111,7 @@ dependencies:
   media_kit_native_event_loop: ^1.0.3
   meta: ^1.8.0
   multi_select_flutter: ^4.0.0
-  package_info_plus: ^3.1.0
+  package_info_plus: ^4.0.0
   path: ^1.8.1
   path_provider: ^2.0.12
   permission_handler: ^10.0.0
@@ -154,12 +154,10 @@ dependencies:
   window_manager: ^0.3.0
 
 dependency_overrides:
-  analyzer: ^5.12.0
   device_info_plus: ^9.0.0
   image: ^4.0.13
   intl: ^0.18.0
   rxdart: ^0.27.1
-  xml: ^6.1.0
 
 dev_dependencies:
   analyzer: ^5.12.0
@@ -167,7 +165,7 @@ dev_dependencies:
   build_runner: ^2.3.0
   dart_code_metrics: ^5.5.0
   drift_dev: ^2.8.0
-  flutter_launcher_icons: ^0.11.0
+  flutter_launcher_icons: ^0.13.1
   flutter_lints: ^2.0.1
   flutter_native_splash: ^2.2.16
   flutter_test:
@@ -179,7 +177,7 @@ dev_dependencies:
   json_serializable: ^6.0.0
   mocktail: ^0.3.0
   msix: ^3.7.0
-  very_good_analysis: ^4.0.0+1
+  very_good_analysis: ^5.0.0
 
 flutter_icons:
   android: true

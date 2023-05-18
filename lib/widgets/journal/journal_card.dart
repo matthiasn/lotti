@@ -184,7 +184,11 @@ class JournalCard extends StatelessWidget {
           return const SizedBox.shrink();
         }
         void onTap() {
-          beamToNamed('/journal/${updatedItem.meta.id}');
+          if (getIt<NavService>().tasksTabActive()) {
+            beamToNamed('/tasks/${updatedItem.meta.id}');
+          } else {
+            beamToNamed('/journal/${updatedItem.meta.id}');
+          }
         }
 
         return Padding(

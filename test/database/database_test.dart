@@ -36,6 +36,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable sync? (requires restart)',
     status: true,
   ),
+  const ConfigFlag(
+    name: enableTaskManagement,
+    description: 'Enable task management? (requires restart)',
+    status: false,
+  ),
 };
 
 final expectedMacFlags = <ConfigFlag>{

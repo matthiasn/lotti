@@ -11,6 +11,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/themes_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -35,6 +36,11 @@ void main() {
 
     setUp(() async {
       setFakeDocumentsPath();
+
+      when(() => mockJournalDb.watchConfigFlag(enableTaskManagement))
+          .thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
@@ -245,6 +251,11 @@ void main() {
     testWidgets(
       'add task icon visible and tappable, with nav',
       (tester) async {
+        when(() => mockJournalDb.watchConfigFlag(enableTaskManagement))
+            .thenAnswer(
+          (_) => Stream<bool>.fromIterable([true]),
+        );
+
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             const RadialAddActionButtons(radius: 150),
@@ -374,6 +385,10 @@ void main() {
 
         when(mockAudioRecorderCubit.close).thenAnswer(
           (_) async {},
+        );
+
+        when(mockNavService.tasksTabActive).thenAnswer(
+          (_) => false,
         );
 
         await tester.pumpWidget(

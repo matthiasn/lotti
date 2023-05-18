@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/editor/editor_tools.dart';
@@ -237,7 +237,7 @@ class EntryCubit extends Cubit<EntryState> {
   }) async {
     final res = await _persistenceLogic.deleteJournalEntity(entryId);
     if (beamBack) {
-      journalBeamerDelegate.beamBack();
+      getIt<NavService>().beamBack();
     }
     return res;
   }

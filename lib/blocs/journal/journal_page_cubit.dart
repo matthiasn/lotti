@@ -9,7 +9,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/get_it.dart';
 
 class JournalPageCubit extends Cubit<JournalPageState> {
-  JournalPageCubit()
+  JournalPageCubit({required this.showTasks})
       : super(
           JournalPageState(
             match: '',
@@ -20,7 +20,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             showPrivateEntries: false,
             selectedEntryTypes: entryTypes,
             fullTextMatches: {},
-            showTasks: false,
+            showTasks: showTasks,
             pagingController: PagingController(firstPageKey: 0),
             taskStatuses: [
               'OPEN',
@@ -64,7 +64,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool _flaggedEntriesOnly = false;
   bool _privateEntriesOnly = false;
   bool _showPrivateEntries = false;
-  bool _showTasks = false;
+  bool showTasks = false;
 
   Set<String> _fullTextMatches = {};
 
@@ -83,7 +83,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         flaggedEntriesOnly: _flaggedEntriesOnly,
         privateEntriesOnly: _privateEntriesOnly,
         showPrivateEntries: _showPrivateEntries,
-        showTasks: _showTasks,
+        showTasks: showTasks,
         selectedEntryTypes: _selectedEntryTypes.toList(),
         fullTextMatches: _fullTextMatches,
         pagingController: state.pagingController,
@@ -93,8 +93,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     );
   }
 
-  void setShowTasks({required bool showTasks}) {
-    _showTasks = showTasks;
+  void setShowTasks({required bool show}) {
+    showTasks = show;
     refreshQuery();
   }
 
@@ -192,7 +192,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       final fullTextMatches = _fullTextMatches.toList();
       final ids = _query.isNotEmpty ? fullTextMatches : null;
 
-      final newItems = _showTasks
+      final newItems = showTasks
           ? await _db
               .watchTasks(
                 ids: ids,

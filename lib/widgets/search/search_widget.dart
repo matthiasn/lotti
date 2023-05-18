@@ -33,28 +33,30 @@ class _SearchWidgetState extends State<SearchWidget> {
 
     final styleActive = searchFieldStyle();
     final styleHint = searchFieldHintStyle();
-
     final style = widget.text.isEmpty ? styleHint : styleActive;
 
     return Container(
       margin: widget.margin,
       height: 53,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: styleConfig().cardColor,
-        border: Border.all(color: Colors.black26),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: TextField(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: SearchBar(
         controller: controller,
-        decoration: InputDecoration(
-          icon: Icon(Icons.search, color: style.color),
-          suffixIcon: Visibility(
+        hintText: widget.hintText ?? localizations.searchHint,
+        onChanged: widget.onChanged,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Icon(Icons.search, color: style.color),
+        ),
+        trailing: [
+          Visibility(
             visible: controller.text.isNotEmpty,
             child: GestureDetector(
-              child: Icon(
-                Icons.close_rounded,
-                color: style.color,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: style.color,
+                ),
               ),
               onTap: () {
                 controller.clear();
@@ -63,12 +65,7 @@ class _SearchWidgetState extends State<SearchWidget> {
               },
             ),
           ),
-          hintText: widget.hintText ?? localizations.searchHint,
-          hintStyle: style,
-          border: InputBorder.none,
-        ),
-        style: style,
-        onChanged: widget.onChanged,
+        ],
       ),
     );
   }

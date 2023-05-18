@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -15,14 +17,22 @@ void main() {
       final secureStorageMock = MockSecureStorage();
       final settingsDb = SettingsDb(inMemoryDatabase: true);
 
+      final mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+
       when(() => secureStorageMock.readValue(lastRouteKey))
           .thenAnswer((_) async => '/settings');
 
       when(() => secureStorageMock.writeValue(lastRouteKey, any()))
           .thenAnswer((_) async {});
 
+      when(() => mockJournalDb.watchConfigFlag(enableTaskManagement))
+          .thenAnswer(
+        (_) => Stream<bool>.fromIterable([true]),
+      );
+
       getIt
         ..registerSingleton<SecureStorage>(secureStorageMock)
+        ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<NavService>(NavService());
     });
@@ -43,21 +53,24 @@ void main() {
       navService.tapIndex(3);
       expect(navService.index, 3);
 
+      navService.tapIndex(4);
+      expect(navService.index, 4);
+
       navService.tapIndex(0);
       expect(navService.index, 0);
 
       beamToNamed('/settings');
-      expect(navService.index, 3);
+      expect(navService.index, 4);
       expect(navService.currentPath, '/settings');
 
       beamToNamed('/settings/advanced');
-      expect(navService.index, 3);
+      expect(navService.index, 4);
       expect(navService.currentPath, '/settings/advanced');
-      navService.tapIndex(3);
+      navService.tapIndex(4);
       expect(navService.currentPath, '/settings');
 
       beamToNamed('/settings/advanced/maintenance');
-      expect(navService.index, 3);
+      expect(navService.index, 4);
       expect(navService.currentPath, '/settings/advanced/maintenance');
 
       beamToNamed('/journal');
@@ -67,6 +80,14 @@ void main() {
       expect(navService.currentPath, '/journal/some-id');
       navService.tapIndex(2);
       expect(navService.currentPath, '/journal');
+
+      beamToNamed('/tasks');
+      expect(navService.index, 3);
+      expect(navService.currentPath, '/tasks');
+      beamToNamed('/tasks/some-id');
+      expect(navService.currentPath, '/tasks/some-id');
+      navService.tapIndex(3);
+      expect(navService.currentPath, '/tasks');
 
       beamToNamed('/dashboards');
       expect(navService.index, 1);
