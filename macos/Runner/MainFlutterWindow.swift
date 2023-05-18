@@ -18,18 +18,15 @@ class MainFlutterWindow: NSWindow {
             switch call.method {
             case "transcribe":
                 guard let args = call.arguments as? [String: Any] else { return }
-                let audioFilePath = args["audioFilePath"] as! String
-                let modelPath = args["modelPath"] as! String
-                let language = args["language"] as! String
                 Task {
-                   await transcribe(audioFilePath: audioFilePath, modelPath: modelPath, language: language, result: result)
+                    let text = await transcribe(args: args)
+                    result(text)
                 }
             case "detectLanguage":
                 guard let args = call.arguments as? [String: Any] else { return }
-                let audioFilePath = args["audioFilePath"] as! String
-                let modelPath = args["modelPath"] as! String
                 Task {
-                   await detectLanguage(audioFilePath: audioFilePath, modelPath: modelPath, result: result)
+                    let lang =  await detectLanguage( args: args)
+                    result(lang)
                 }
             default:
                 result(FlutterMethodNotImplemented)
