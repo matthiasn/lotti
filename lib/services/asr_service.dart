@@ -62,11 +62,14 @@ class AsrService {
           );
         }
 
+        final language = detectedLanguage ?? 'en';
+
         final result = await platform.invokeMethod<String>(
           'transcribe',
           {
             'audioFilePath': wavPath,
             'modelPath': modelPath,
+            'language': language,
           },
         );
         final finish = DateTime.now();
@@ -76,7 +79,7 @@ class AsrService {
             created: DateTime.now(),
             library: 'whisper-1.4.0',
             model: model,
-            detectedLanguage: detectedLanguage ?? 'en',
+            detectedLanguage: language,
             transcript: result.trim(),
             processingTime: finish.difference(start),
           );
