@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Outbox item style
 - Upgrade dependencies
 
+### Fixed:
+- Remove print_special output in transcription on macOS
+
 ## [0.8.351] - 2023-05-18
 ### Added:
 - Speech recognition in any language supported by Whisper
