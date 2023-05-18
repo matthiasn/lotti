@@ -10,6 +10,7 @@ class DefinitionsListPage<T> extends StatefulWidget {
     required this.getName,
     required this.definitionCard,
     required this.floatingActionButton,
+    this.initialSearchTerm,
     super.key,
   });
 
@@ -18,6 +19,7 @@ class DefinitionsListPage<T> extends StatefulWidget {
   final String Function(T) getName;
   final Widget Function(int index, T item) definitionCard;
   final Widget? floatingActionButton;
+  final String? initialSearchTerm;
 
   @override
   State<DefinitionsListPage<T>> createState() => _DefinitionsListPageState();
@@ -29,6 +31,12 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
   @override
   void initState() {
     super.initState();
+
+    setState(() {
+      if (widget.initialSearchTerm != null) {
+        match = '${widget.initialSearchTerm}';
+      }
+    });
   }
 
   Future<void> onQueryChanged(String query) async {

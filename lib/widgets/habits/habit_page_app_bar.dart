@@ -75,7 +75,7 @@ class HabitsSliverAppBar extends StatelessWidget {
                         : styleConfig().secondaryTextColor,
                   ),
                 ),
-                const SettingsButton('/settings/habits'),
+                SettingsButton('/settings/habits/search/${state.searchString}'),
                 if (state.minY > 20)
                   IconButton(
                     onPressed: cubit.toggleZeroBased,

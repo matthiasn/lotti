@@ -47,8 +47,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/measurables/:measurableId',
         '/settings/measurables/create',
         '/settings/habits',
-        '/settings/habits/:habitId',
+        '/settings/habits/by_id/:habitId',
         '/settings/habits/create',
+        '/settings/habits/search/:searchTerm',
         '/settings/flags',
         '/settings/advanced',
         '/settings/outbox_monitor',
@@ -176,15 +177,23 @@ class SettingsLocation extends BeamLocation<BeamState> {
         ),
 
       // Habits
-      if (pathContains('habits'))
+      if (pathContains('habits') && !pathContains('/search'))
         const BeamPage(
           key: ValueKey('settings-habits'),
           child: HabitsPage(),
         ),
 
-      if (pathContains('habits') &&
-          !pathContains('create') &&
-          pathContainsKey('habitId'))
+      if (pathContains('habits/search') && pathContainsKey('searchTerm'))
+        BeamPage(
+          key: ValueKey(
+            'settings-habits-search-${state.pathParameters['searchTerm']}',
+          ),
+          child: HabitsPage(
+            initialSearchTerm: state.pathParameters['searchTerm'],
+          ),
+        ),
+
+      if (pathContains('habits/by_id') && pathContainsKey('habitId'))
         BeamPage(
           key: ValueKey(
             'settings-habits-${state.pathParameters['habitId']}',
