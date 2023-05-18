@@ -38,7 +38,7 @@ Future<void> initConfigFlags(
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: enableTaskManagement,
-      description: 'Enable task management? (requires restart)',
+      description: 'Enable task management?',
       status: false,
     ),
   );
