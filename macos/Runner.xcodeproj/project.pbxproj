@@ -27,7 +27,6 @@
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
 		7E2335674AA28E31A7EEBE87 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BAE814E2540AB2A5F49FEB9F /* Pods_Runner.framework */; };
-		ADAC39802A06C5CD00E07F8F /* Transcribe.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADAC397F2A06C5CD00E07F8F /* Transcribe.swift */; };
 		ADAC39872A06D93D00E07F8F /* whisper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAC39852A06D93D00E07F8F /* whisper.cpp */; };
 		ADAC39882A06D93D00E07F8F /* ggml.c in Sources */ = {isa = PBXBuildFile; fileRef = ADAC39862A06D93D00E07F8F /* ggml.c */; settings = {COMPILER_FLAGS = "-DGGML_USE_ACCELERATE"; }; };
 		ADAC398A2A06D97C00E07F8F /* LibWhisper.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADAC39892A06D97C00E07F8F /* LibWhisper.swift */; };
@@ -76,7 +75,6 @@
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		A87512A16BAFE7C799AAEE04 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		AD4D50B4272DC22C00B0D18C /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
-		ADAC397F2A06C5CD00E07F8F /* Transcribe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transcribe.swift; sourceTree = "<group>"; };
 		ADAC39822A06D93C00E07F8F /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		ADAC39832A06D93C00E07F8F /* ggml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ggml.h; sourceTree = "<group>"; };
 		ADAC39842A06D93C00E07F8F /* whisper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = whisper.h; sourceTree = "<group>"; };
@@ -155,7 +153,6 @@
 		33FAB671232836740065AC1E /* Runner */ = {
 			isa = PBXGroup;
 			children = (
-				ADAC39892A06D97C00E07F8F /* LibWhisper.swift */,
 				AD4D50B4272DC22C00B0D18C /* RunnerDebug.entitlements */,
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
@@ -163,7 +160,6 @@
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
 				33BA886A226E78AF003329D5 /* Configs */,
-				ADAC397F2A06C5CD00E07F8F /* Transcribe.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -171,6 +167,7 @@
 		ADAC39812A06D91900E07F8F /* whisper.cpp */ = {
 			isa = PBXGroup;
 			children = (
+				ADAC39892A06D97C00E07F8F /* LibWhisper.swift */,
 				ADAC39862A06D93D00E07F8F /* ggml.c */,
 				ADAC39832A06D93C00E07F8F /* ggml.h */,
 				ADAC39852A06D93D00E07F8F /* whisper.cpp */,
@@ -363,7 +360,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				ADAC398A2A06D97C00E07F8F /* LibWhisper.swift in Sources */,
-				ADAC39802A06C5CD00E07F8F /* Transcribe.swift in Sources */,
 				ADAC39872A06D93D00E07F8F /* whisper.cpp in Sources */,
 				ADAC39882A06D93D00E07F8F /* ggml.c in Sources */,
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
