@@ -1,6 +1,5 @@
 import Foundation
 
-
 enum WhisperError: Error {
     case couldNotInitializeContext
 }
@@ -16,7 +15,7 @@ actor WhisperContext {
     deinit {
         whisper_free(context)
     }
-   
+    
     func fullTranscribe(language: String,samples: [Float]) {
         // Leave 2 processors free (i.e. the high-efficiency cores).
         let maxThreads = max(1, min(8, cpuCount() - 2))
@@ -52,7 +51,7 @@ actor WhisperContext {
         let maxThreads = max(1, min(8, cpuCount() - 2))
         print("Selecting \(maxThreads) threads")
         var language = "not detected"
-
+        
         samples.withUnsafeBufferPointer { samples in
             if (whisper_pcm_to_mel(context, samples.baseAddress, Int32(samples.count), Int32(maxThreads)) != 0) {
                 print("Failed to detect language")
@@ -64,7 +63,7 @@ actor WhisperContext {
         }
         return language
     }
-
+    
     func getTranscription() -> String {
         var transcription = ""
         for i in 0..<whisper_full_n_segments(context) {
@@ -86,4 +85,66 @@ actor WhisperContext {
 
 fileprivate func cpuCount() -> Int {
     ProcessInfo.processInfo.processorCount
+}
+
+
+func transcribe(args: [String: Any]) async -> String {
+    let audioFilePath = args["audioFilePath"] as! String
+    let modelPath = args["modelPath"] as! String
+    let language = args["language"] as! String
+    
+    var floats: [Float]?
+    do {
+        let url = URL(fileURLWithPath: audioFilePath)
+        floats = try decodeWaveFile(url)
+        
+        guard let whisperContext: WhisperContext? = try WhisperContext.createContext(path: modelPath) else {
+            return "context not created"
+        }
+        
+        if (floats != nil) {
+            await whisperContext?.fullTranscribe(language: language, samples: floats!)
+            let text = await whisperContext?.getTranscription()
+            return text ?? ""
+        }
+    } catch {
+        floats = nil
+    }
+    
+    return "Transcribe " + audioFilePath + " " + modelPath
+}
+
+func detectLanguage(args: [String: Any]) async -> String {
+    let audioFilePath = args["audioFilePath"] as! String
+    let modelPath = args["modelPath"] as! String
+    
+    var floats: [Float]?
+    do {
+        let url = URL(fileURLWithPath: audioFilePath)
+        floats = try decodeWaveFile(url)
+        
+        guard let whisperContext: WhisperContext? = try WhisperContext.createContext(path: modelPath) else {
+            return "context not created"
+        }
+        
+        if (floats != nil) {
+            let language = await whisperContext?.detectLanguage(samples: floats!)
+            return language ?? ""
+        }
+    } catch {
+        floats = nil
+    }
+    
+    return "Transcribe " + audioFilePath + " " + modelPath
+}
+
+func decodeWaveFile(_ url: URL) throws -> [Float] {
+    let data = try Data(contentsOf: url)
+    let floats = stride(from: 44, to: data.count - 2, by: 2).map {
+        return data[$0..<$0 + 2].withUnsafeBytes {
+            let short = Int16(littleEndian: $0.load(as: Int16.self))
+            return max(-1.0, min(Float(short) / 32767.0, 1.0))
+        }
+    }
+    return floats
 }
