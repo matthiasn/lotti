@@ -38,7 +38,7 @@ final expectedFlags = <ConfigFlag>{
   ),
   const ConfigFlag(
     name: enableTaskManagement,
-    description: 'Enable task management? (requires restart)',
+    description: 'Enable task management?',
     status: false,
   ),
 };

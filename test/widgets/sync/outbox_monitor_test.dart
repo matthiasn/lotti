@@ -95,9 +95,9 @@ void main() {
       await tester.tap(allControlFinder);
       await tester.tap(errorControlFinder);
 
-      expect(find.text('0 retries - no attachment'), findsOneWidget);
-      expect(find.text('1 retry - no attachment'), findsOneWidget);
-      expect(find.text('2 retries - no attachment'), findsOneWidget);
+      expect(find.text('0 retries \nno attachment'), findsOneWidget);
+      expect(find.text('1 retry \nno attachment'), findsOneWidget);
+      expect(find.text('2 retries \nno attachment'), findsOneWidget);
     });
   });
 }
