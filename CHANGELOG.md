@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added:
+- Speech recognition in any language supported by Whisper
+
+## [0.8.350] - 2023-05-17
+### Added:
 - Config flag for task management
 - Conditionally show add task action icon
 

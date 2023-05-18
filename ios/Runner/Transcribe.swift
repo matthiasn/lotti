@@ -8,7 +8,7 @@
 import Foundation
 import Flutter
 
-func transcribe(audioFilePath: String, modelPath: String, result: @escaping FlutterResult) async -> Void {
+func transcribe(audioFilePath: String, modelPath: String, language: String, result: @escaping FlutterResult) async -> Void {
     var floats: [Float]?
     do {
         let url = URL(fileURLWithPath: audioFilePath)
@@ -19,7 +19,7 @@ func transcribe(audioFilePath: String, modelPath: String, result: @escaping Flut
         }
         
         if (floats != nil) {
-            await whisperContext?.fullTranscribe(samples: floats!)
+            await whisperContext?.fullTranscribe(language: language, samples: floats!)
             let text = await whisperContext?.getTranscription()
             result(text)
         }
