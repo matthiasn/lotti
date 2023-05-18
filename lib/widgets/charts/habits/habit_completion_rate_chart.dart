@@ -298,19 +298,14 @@ Widget leftTitleWidgets(double value, TitleMeta meta) {
   switch (value.toInt()) {
     case 20:
       text = '20%';
-      break;
     case 40:
       text = '40%';
-      break;
     case 60:
       text = '60%';
-      break;
     case 80:
       text = '80%';
-      break;
     case 100:
       text = '100%';
-      break;
     default:
       return Container();
   }
