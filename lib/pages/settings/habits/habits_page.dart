@@ -10,7 +10,9 @@ import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/habits/habits_type_card.dart';
 
 class HabitsPage extends StatelessWidget {
-  const HabitsPage({super.key});
+  const HabitsPage({this.initialSearchTerm, super.key});
+
+  final String? initialSearchTerm;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +36,7 @@ class HabitsPage extends StatelessWidget {
           ),
           title: localizations.settingsHabitsTitle,
           getName: (habitDefinition) => habitDefinition.name,
+          initialSearchTerm: initialSearchTerm,
           definitionCard: (int index, HabitDefinition item) {
             final category = categoriesById[item.categoryId];
 

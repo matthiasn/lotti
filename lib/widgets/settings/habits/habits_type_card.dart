@@ -23,7 +23,7 @@ class HabitsTypeCard extends StatelessWidget {
     return Opacity(
       opacity: item.active ? 1 : 0.4,
       child: SettingsNavCard(
-        path: '/settings/habits/${item.id}',
+        path: '/settings/habits/by_id/${item.id}',
         title: item.name,
         contentPadding: contentPaddingWithLeading,
         leading: CategoryColorIcon(item.categoryId),
