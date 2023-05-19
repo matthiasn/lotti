@@ -740,6 +740,61 @@ class PersistenceLogic {
     return true;
   }
 
+  Future<bool> removeAudioTranscript({
+    required String journalEntityId,
+    required AudioTranscript transcript,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
+      await journalEntity.maybeMap(
+        journalAudio: (JournalAudio journalAudio) async {
+          final vc = await _vectorClockService.getNextVectorClock(
+            previous: journalEntity.meta.vectorClock,
+          );
+
+          final oldMeta = journalEntity.meta;
+          final newMeta = oldMeta.copyWith(
+            updatedAt: now,
+            vectorClock: vc,
+          );
+
+          final data = journalAudio.data;
+          final updatedData = journalAudio.data.copyWith(
+            transcripts: data.transcripts
+                ?.where((element) => element.created != transcript.created)
+                .toList(),
+          );
+
+          final updated = journalAudio.copyWith(
+            meta: newMeta,
+            data: updatedData,
+          );
+
+          await updateDbEntity(updated, enqueueSync: true);
+        },
+        orElse: () async => _loggingDb.captureException(
+          'not an audio entry',
+          domain: 'persistence_logic',
+          subDomain: 'removeAudioTranscript',
+        ),
+      );
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'removeAudioTranscript',
+        stackTrace: stackTrace,
+      );
+    }
+    return true;
+  }
+
   Future<void> addGeolocationAsync(String journalEntityId) async {
     try {
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);

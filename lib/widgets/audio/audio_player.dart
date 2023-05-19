@@ -7,8 +7,11 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AudioPlayerWidget extends StatelessWidget {
   const AudioPlayerWidget(this.journalAudio, {super.key});
@@ -163,7 +166,10 @@ class AudioPlayerWidget extends StatelessWidget {
                 children: [
                   const SizedBox(height: 10),
                   ...transcripts!.map(
-                    TranscriptListItem.new,
+                    (transcript) => TranscriptListItem(
+                      transcript,
+                      entryId: journalAudio.meta.id,
+                    ),
                   ),
                 ],
               ),
@@ -177,9 +183,11 @@ class AudioPlayerWidget extends StatelessWidget {
 class TranscriptListItem extends StatefulWidget {
   const TranscriptListItem(
     this.transcript, {
+    required this.entryId,
     super.key,
   });
 
+  final String entryId;
   final AudioTranscript transcript;
 
   @override
@@ -215,25 +223,50 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${dfShorter.format(widget.transcript.created)}  '
-                        '${formatSeconds(widget.transcript.processingTime)}  '
-                        'Lang: ${widget.transcript.detectedLanguage}  ',
+                        '${dfShorter.format(widget.transcript.created)} ',
                         style: transcriptHeaderStyle(),
                       ),
+                      const Spacer(),
+                      Text(
+                        '${formatSeconds(widget.transcript.processingTime)} ',
+                        style: transcriptHeaderStyle(),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Lang: ${widget.transcript.detectedLanguage} ',
+                        style: transcriptHeaderStyle(),
+                      ),
+                      const Spacer(),
                       Text(
                         '${widget.transcript.library}, '
                         ' ${widget.transcript.model}',
                         style: transcriptHeaderStyle(),
                       ),
+                      const Spacer(),
+                      Opacity(
+                        opacity: show ? 1 : 0,
+                        child: IconButton(
+                          onPressed: () {
+                            getIt<PersistenceLogic>().removeAudioTranscript(
+                              journalEntityId: widget.entryId,
+                              transcript: widget.transcript,
+                            );
+                          },
+                          icon: const Icon(
+                            MdiIcons.trashCanOutline,
+                            size: fontSizeMedium,
+                          ),
+                        ),
+                      ),
                       if (show)
                         const Icon(
                           Icons.keyboard_double_arrow_up_outlined,
-                          size: 15,
+                          size: fontSizeMedium,
                         )
                       else
                         const Icon(
                           Icons.keyboard_double_arrow_down_outlined,
-                          size: 15,
+                          size: fontSizeMedium,
                         ),
                     ],
                   ),
