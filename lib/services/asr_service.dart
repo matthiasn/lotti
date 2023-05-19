@@ -77,7 +77,7 @@ class AsrService {
         if (result != null) {
           final transcript = AudioTranscript(
             created: DateTime.now(),
-            library: 'whisper-1.4.0',
+            library: 'whisper-1.4.2',
             model: model,
             detectedLanguage: language,
             transcript: result.trim(),
