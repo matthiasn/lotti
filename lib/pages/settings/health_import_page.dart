@@ -8,6 +8,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 const spaceBetweenButtons = 10.0;
 
@@ -52,7 +53,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             SfDateRangePicker(
-              backgroundColor: styleConfig().cardColor,
+              backgroundColor: styleConfig().cardColor.lighten(40),
               onSelectionChanged: _onSelectionChanged,
               enableMultiView: true,
               selectionMode: DateRangePickerSelectionMode.range,

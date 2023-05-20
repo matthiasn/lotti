@@ -46,10 +46,11 @@ class SettingsPage extends StatelessWidget {
               semanticsLabel: 'Measurable Data Types',
               path: '/settings/measurables',
             ),
-            SettingsNavCard(
-              title: localizations.settingsHealthImportTitle,
-              path: '/settings/health_import',
-            ),
+            if (Platform.isIOS)
+              SettingsNavCard(
+                title: localizations.settingsHealthImportTitle,
+                path: '/settings/health_import',
+              ),
             SettingsNavCard(
               title: localizations.settingsFlagsTitle,
               path: '/settings/flags',

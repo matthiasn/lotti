@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -46,7 +48,11 @@ void main() {
       expect(find.text('Tags'), findsOneWidget);
       expect(find.text('Dashboard Management'), findsOneWidget);
       expect(find.text('Measurable Data Types'), findsOneWidget);
-      expect(find.text('Health Import'), findsOneWidget);
+
+      if (Platform.isIOS) {
+        expect(find.text('Health Import'), findsOneWidget);
+      }
+
       expect(find.text('Config Flags'), findsOneWidget);
       expect(find.text('Advanced Settings'), findsOneWidget);
     });
