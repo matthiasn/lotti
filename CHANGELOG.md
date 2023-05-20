@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improve header style on advanced settings page using Slivers
 - Health import styling
 - Hide health import page on all platforms but iOS
+- Upgraded dependencies
 
 ## [0.8.355] - 2023-05-19
 ### Added:
