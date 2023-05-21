@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Health import styling
 - Hide health import page on all platforms but iOS
 - Upgraded dependencies
+- Add back button on advanced settings page
 
 ## [0.8.355] - 2023-05-19
 ### Added:

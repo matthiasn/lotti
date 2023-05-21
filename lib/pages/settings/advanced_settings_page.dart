@@ -17,6 +17,7 @@ class AdvancedSettingsPage extends StatelessWidget {
 
     return SliverBoxAdapterPage(
       title: localizations.settingsAdvancedTitle,
+      showBackButton: true,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 5),
         child: Column(

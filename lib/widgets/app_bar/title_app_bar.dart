@@ -67,12 +67,11 @@ class BackWidget extends StatelessWidget {
                 const Icon(
                   Icons.chevron_left,
                   size: 30,
+                  weight: 500,
                 ),
                 Text(
                   localizations.appBarBack,
-                  style: appBarTextStyleNew().copyWith(
-                    fontWeight: FontWeight.w300,
-                  ),
+                  style: appBarTextStyleNew(),
                   semanticsLabel: 'Navigate back',
                 )
               ],
