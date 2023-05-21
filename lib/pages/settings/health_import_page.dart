@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
+import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -43,91 +43,86 @@ class _HealthImportPageState extends State<HealthImportPage> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      backgroundColor: styleConfig().negspace,
-      appBar: TitleAppBar(
-        title: localizations.settingsHealthImportTitle,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            SfDateRangePicker(
-              backgroundColor: styleConfig().cardColor.lighten(40),
-              onSelectionChanged: _onSelectionChanged,
-              enableMultiView: true,
-              selectionMode: DateRangePickerSelectionMode.range,
-              initialSelectedRange: PickerDateRange(
-                _dateFrom,
-                _dateTo,
-              ),
+    return SliverBoxAdapterPage(
+      title: localizations.settingsHealthImportTitle,
+      showBackButton: true,
+      child: Column(
+        children: <Widget>[
+          SfDateRangePicker(
+            backgroundColor: styleConfig().cardColor.lighten(40),
+            onSelectionChanged: _onSelectionChanged,
+            enableMultiView: true,
+            selectionMode: DateRangePickerSelectionMode.range,
+            initialSelectedRange: PickerDateRange(
+              _dateFrom,
+              _dateTo,
             ),
-            const SizedBox(height: 20),
-            RoundedButton(
-              'Import Activity Data',
-              onPressed: () {
-                _healthImport.getActivityHealthData(
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                );
-              },
-            ),
-            const SizedBox(height: spaceBetweenButtons),
-            RoundedButton(
-              'Import Sleep Data',
-              onPressed: () {
-                _healthImport.fetchHealthData(
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                  types: sleepTypes,
-                );
-              },
-            ),
-            const SizedBox(height: spaceBetweenButtons),
-            RoundedButton(
-              'Import Heart Rate Data',
-              onPressed: () {
-                _healthImport.fetchHealthData(
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                  types: heartRateTypes,
-                );
-              },
-            ),
-            const SizedBox(height: spaceBetweenButtons),
-            RoundedButton(
-              'Import Blood Pressure Data',
-              onPressed: () {
-                _healthImport.fetchHealthData(
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                  types: bpTypes,
-                );
-              },
-            ),
-            const SizedBox(height: spaceBetweenButtons),
-            RoundedButton(
-              'Import Body Measurement Data',
-              onPressed: () {
-                _healthImport.fetchHealthData(
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                  types: bodyMeasurementTypes,
-                );
-              },
-            ),
-            const SizedBox(height: spaceBetweenButtons),
-            RoundedButton(
-              'Import Workout Data',
-              onPressed: () {
-                _healthImport.getWorkoutsHealthData(
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                );
-              },
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          RoundedButton(
+            'Import Activity Data',
+            onPressed: () {
+              _healthImport.getActivityHealthData(
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
+              );
+            },
+          ),
+          const SizedBox(height: spaceBetweenButtons),
+          RoundedButton(
+            'Import Sleep Data',
+            onPressed: () {
+              _healthImport.fetchHealthData(
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
+                types: sleepTypes,
+              );
+            },
+          ),
+          const SizedBox(height: spaceBetweenButtons),
+          RoundedButton(
+            'Import Heart Rate Data',
+            onPressed: () {
+              _healthImport.fetchHealthData(
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
+                types: heartRateTypes,
+              );
+            },
+          ),
+          const SizedBox(height: spaceBetweenButtons),
+          RoundedButton(
+            'Import Blood Pressure Data',
+            onPressed: () {
+              _healthImport.fetchHealthData(
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
+                types: bpTypes,
+              );
+            },
+          ),
+          const SizedBox(height: spaceBetweenButtons),
+          RoundedButton(
+            'Import Body Measurement Data',
+            onPressed: () {
+              _healthImport.fetchHealthData(
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
+                types: bodyMeasurementTypes,
+              );
+            },
+          ),
+          const SizedBox(height: spaceBetweenButtons),
+          RoundedButton(
+            'Import Workout Data',
+            onPressed: () {
+              _healthImport.getWorkoutsHealthData(
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
+              );
+            },
+          ),
+        ],
       ),
     );
   }

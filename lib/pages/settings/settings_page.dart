@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -46,7 +47,7 @@ class SettingsPage extends StatelessWidget {
               semanticsLabel: 'Measurable Data Types',
               path: '/settings/measurables',
             ),
-            if (Platform.isIOS)
+            if (isMobile)
               SettingsNavCard(
                 title: localizations.settingsHealthImportTitle,
                 path: '/settings/health_import',
