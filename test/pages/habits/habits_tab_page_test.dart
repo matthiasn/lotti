@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
@@ -98,6 +99,25 @@ void main() {
         find.text(habitFlossing.name),
         findsOneWidget,
       );
+
+      final searchButtonFinder = find.byIcon(Icons.search);
+      expect(searchButtonFinder, findsOneWidget);
+
+      await tester.tap(searchButtonFinder);
+      await tester.pumpAndSettle();
+
+      final timeSpanButtonFinder = find.byIcon(Icons.calendar_month);
+      expect(timeSpanButtonFinder, findsOneWidget);
+
+      await tester.tap(timeSpanButtonFinder);
+      await tester.pumpAndSettle();
+
+      final habitCategoryFilterFinder =
+          find.byKey(const Key('habit_category_filter'));
+      expect(habitCategoryFilterFinder, findsOneWidget);
+
+      await tester.tap(habitCategoryFilterFinder);
+      await tester.pumpAndSettle();
     });
   });
 }
