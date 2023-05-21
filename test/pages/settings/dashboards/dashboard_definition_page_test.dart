@@ -503,6 +503,15 @@ void main() {
 
       // finds text in dashboard card
       expect(find.text(testDashboardDescription), findsOneWidget);
+
+      final dashboardCategoryFinder = find.byKey(
+        const Key('select_dashboard_category'),
+      );
+
+      expect(dashboardCategoryFinder, findsOneWidget);
+
+      await tester.tap(dashboardCategoryFinder);
+      await tester.pumpAndSettle();
     });
   });
 }
