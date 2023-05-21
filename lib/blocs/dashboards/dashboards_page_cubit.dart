@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:collection/collection.dart';
 import 'package:lotti/blocs/dashboards/dashboards_page_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -59,10 +60,7 @@ class DashboardsPageCubit extends Cubit<DashboardsPageState> {
   void emitState() {
     final filteredByCategory = _selectedCategoryIds.isNotEmpty
         ? _dashboardDefinitions
-            .where(
-              (dashboard) =>
-                  _selectedCategoryIds.contains(dashboard.categoryId),
-            )
+            .where((item) => _selectedCategoryIds.contains(item.categoryId))
             .toList()
         : _dashboardDefinitions;
     emit(
@@ -71,7 +69,8 @@ class DashboardsPageCubit extends Cubit<DashboardsPageState> {
         searchString: _searchString,
         selectedCategoryIds: <String>{..._selectedCategoryIds},
         allDashboards: _dashboardDefinitions,
-        filteredSortedDashboards: filteredByCategory,
+        filteredSortedDashboards:
+            filteredByCategory.sortedBy((item) => item.name),
       ),
     );
   }

@@ -15,9 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sliver app bar in entity definitions
 - Sliver app bar in speech settings
 - Sliver app bar in config flags page
-- Sliver app bar in maintenance page
-- Sliver app bar in about page
-- Sliver app bar in health import page
+- Sliver app bar on maintenance page
+- Sliver app bar on about page
+- Sliver app bar on health import page
+- Sliver app bar on dashboard page
 
 ## [0.8.355] - 2023-05-19
 ### Added:
