@@ -6,54 +6,49 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class LoggingPage extends StatefulWidget {
+class LoggingPage extends StatelessWidget {
   const LoggingPage({super.key});
-
-  @override
-  State<LoggingPage> createState() => _LoggingPageState();
-}
-
-class _LoggingPageState extends State<LoggingPage> {
-  final LoggingDb _db = getIt<LoggingDb>();
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      backgroundColor: styleConfig().negspace,
-      appBar: TitleAppBar(title: localizations.settingsLogsTitle),
-      body: StreamBuilder<List<LogEntry>>(
-        stream: _db.watchLogEntries(),
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<List<LogEntry>> snapshot,
-        ) {
-          final logEntries = snapshot.data ?? [];
+    return StreamBuilder<List<LogEntry>>(
+      stream: getIt<LoggingDb>().watchLogEntries(),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<LogEntry>> snapshot,
+      ) {
+        final logEntries = snapshot.data ?? [];
 
-          return ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.all(8),
-            children: List.generate(
-              logEntries.length,
-              (int index) {
-                return LogLineCard(
-                  logEntry: logEntries.elementAt(index),
-                  index: index,
-                );
-              },
+        return CustomScrollView(
+          slivers: <Widget>[
+            SliverTitleBar(
+              localizations.settingsLogsTitle,
+              pinned: true,
+              showBackButton: true,
             ),
-          );
-        },
-      ),
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (
+                  BuildContext context,
+                  int index,
+                ) {
+                  return LogLineCard(
+                    logEntry: logEntries.elementAt(index),
+                    index: index,
+                  );
+                },
+                childCount: logEntries.length,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -81,7 +76,7 @@ class LogLineCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => beamToNamed('/settings/advanced/logging/${logEntry.id}'),
       child: Padding(
-        padding: const EdgeInsets.all(2),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         child: Text(
           '$timestamp: $domain $subDomain $message',
           style: monospaceTextStyleSmall().copyWith(color: color),
