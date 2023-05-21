@@ -7,12 +7,14 @@ class SliverTitleBar extends StatelessWidget {
     this.title, {
     this.pinned = false,
     this.showBackButton = false,
+    this.bottom,
     super.key,
   });
 
   final String title;
   final bool pinned;
   final bool showBackButton;
+  final PreferredSizeWidget? bottom;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +30,7 @@ class SliverTitleBar extends StatelessWidget {
           style: appBarTextStyleNewLarge(),
         ),
       ),
+      bottom: bottom,
     );
   }
 }
