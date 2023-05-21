@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sliver app bar on dashboard page
 - Sliver app bar on logging page
 
+### Added:
+- Tests for category settings page
+
 ## [0.8.355] - 2023-05-19
 ### Added:
 - Delete individual transcripts
