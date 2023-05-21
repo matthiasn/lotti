@@ -5,7 +5,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/dashboards/dashboards_list_page.dart';
 import 'package:lotti/pages/settings/dashboards/create_dashboard_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
@@ -504,37 +503,6 @@ void main() {
 
       // finds text in dashboard card
       expect(find.text(testDashboardDescription), findsOneWidget);
-    });
-
-    testWidgets('dashboard list page is displayed with two test dashboards',
-        (tester) async {
-      when(mockJournalDb.watchDashboards).thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [
-            testDashboardConfig,
-            emptyTestDashboardConfig,
-          ],
-        ]),
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: const DashboardsListPage(),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      verify(mockJournalDb.watchDashboards).called(1);
-
-      // finds text in dashboard card
-      expect(find.text(testDashboardName), findsOneWidget);
     });
   });
 }

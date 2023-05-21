@@ -44,6 +44,7 @@ class DashboardsFilter extends StatelessWidget {
             }).toList();
 
             return IconButton(
+              key: const Key('dashboard_category_filter'),
               padding: const EdgeInsets.all(5),
               icon: dataMap.isEmpty
                   ? Icon(

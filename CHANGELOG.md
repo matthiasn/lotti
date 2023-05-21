@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 - Tests for category settings page
 - Tests for habit filters
+- Tests for dashboards page
 
 ## [0.8.355] - 2023-05-19
 ### Added:
