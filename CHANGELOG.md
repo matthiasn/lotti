@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add back button on advanced settings page
 - Sliver app bar in entity definitions
 - Sliver app bar in speech settings
+- Sliver app bar in config flags page
 
 ## [0.8.355] - 2023-05-19
 ### Added:
