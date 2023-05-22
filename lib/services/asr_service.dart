@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:collection';
+
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/cupertino.dart';
@@ -13,10 +16,16 @@ import 'package:path_provider/path_provider.dart';
 
 class AsrService {
   AsrService() {
-    loadSelectedModel();
+    _loadSelectedModel();
   }
 
-  Future<void> loadSelectedModel() async {
+  Future<void> _start() async {
+    while (queue.isNotEmpty) {
+      await _transcribe(entry: queue.removeFirst());
+    }
+  }
+
+  Future<void> _loadSelectedModel() async {
     final selectedModel = await getIt<SettingsDb>().itemByKey(whisperModelKey);
 
     if (selectedModel != null) {
@@ -26,8 +35,11 @@ class AsrService {
 
   static const platform = MethodChannel('lotti/transcribe');
   String model = 'base';
+  final queue = Queue<JournalAudio>();
+  bool running = false;
 
-  Future<void> transcribe({required JournalAudio entry}) async {
+  Future<void> _transcribe({required JournalAudio entry}) async {
+    running = true;
     final audioFilePath = await AudioUtils.getFullAudioPath(entry);
 
     final start = DateTime.now();
@@ -96,6 +108,14 @@ class AsrService {
       debugPrint('FFmpegKit cancelled');
     } else {
       debugPrint('FFmpegKit errored');
+    }
+    running = false;
+  }
+
+  Future<void> enqueue({required JournalAudio entry}) async {
+    queue.add(entry);
+    if (!running) {
+      unawaited(_start());
     }
   }
 }

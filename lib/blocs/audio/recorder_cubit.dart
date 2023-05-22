@@ -106,7 +106,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         _linkedId = null;
 
         getIt<NavService>().beamBack();
-        await getIt<AsrService>().transcribe(entry: entry!);
+        await getIt<AsrService>().enqueue(entry: entry!);
       }
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
