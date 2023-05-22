@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/settings/about_page.dart';
+import 'package:lotti/pages/settings/advanced/about_page.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 

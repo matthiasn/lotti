@@ -259,30 +259,26 @@ all: ios macos
 
 .PHONY: check_unused_files
 check_unused_files:
-	flutter pub run dart_code_metrics:metrics check-unused-files lib test
+	dart run dart_code_metrics:metrics check-unused-files lib test
 
 .PHONY: check_unused_code
 check_unused_code:
-	flutter pub run dart_code_metrics:metrics check-unused-code lib test
+	dart run dart_code_metrics:metrics check-unused-code lib test
 
 .PHONY: check_unused_l10n
 check_unused_l10n:
-	flutter pub run dart_code_metrics:metrics check-unused-l10n lib
+	dart run dart_code_metrics:metrics check-unused-l10n lib
 
 .PHONY: check_unused
 check_unused: check_unused_code check_unused_files check_unused_l10n
 
-.PHONY: sentry_symbols
-sentry_symbols:
-	flutter packages pub run sentry_dart_plugin
-
 .PHONY: splash
 splash:
-	flutter pub run flutter_native_splash:create
+	dart run flutter_native_splash:create
 
 .PHONY: icons
 icons:
-	flutter pub run flutter_launcher_icons:main
+	dart run flutter_launcher_icons:main
 
 .PHONY: clean_test
 clean_test: clean deps l10n build_runner test

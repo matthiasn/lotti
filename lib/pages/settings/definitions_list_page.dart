@@ -1,7 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/definitions_list_app_bar.dart';
+import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
+import 'package:lotti/widgets/search/search_widget.dart';
 
 class DefinitionsListPage<T> extends StatefulWidget {
   const DefinitionsListPage({
@@ -62,28 +63,35 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
             .toList();
 
         return Scaffold(
-          appBar: DefinitionsListAppBar(
-            title: widget.title,
-            onQueryChanged: onQueryChanged,
-            match: match,
-          ),
           backgroundColor: styleConfig().negspace,
           floatingActionButton: widget.floatingActionButton,
-          body: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.symmetric(
-              vertical: 10,
-              horizontal: 5,
-            ),
-            children: List.generate(
-              filtered.length,
-              (int index) {
-                return widget.definitionCard(
-                  index,
-                  filtered.elementAt(index),
-                );
-              },
-            ),
+          body: CustomScrollView(
+            slivers: <Widget>[
+              SliverTitleBar(
+                widget.title,
+                pinned: true,
+                showBackButton: true,
+              ),
+              SliverToBoxAdapter(
+                child: SearchWidget(
+                  text: match,
+                  onChanged: onQueryChanged,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Column(
+                  children: List.generate(
+                    filtered.length,
+                    (int index) {
+                      return widget.definitionCard(
+                        index,
+                        filtered.elementAt(index),
+                      );
+                    },
+                  ),
+                ),
+              )
+            ],
           ),
         );
       },

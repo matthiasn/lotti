@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/settings/logging_page.dart';
+import 'package:lotti/pages/settings/advanced/logging_page.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';

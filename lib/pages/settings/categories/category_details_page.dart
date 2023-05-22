@@ -46,7 +46,7 @@ class CategoryDetailsPage extends StatelessWidget {
                 actions: [
                   if (state.dirty && state.valid)
                     TextButton(
-                      key: const Key('habit_save'),
+                      key: const Key('category_save'),
                       onPressed: cubit.onSavePressed,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -129,6 +129,7 @@ class CategoryDetailsPage extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               IconButton(
+                                key: const Key('category_delete'),
                                 icon: const Icon(MdiIcons.trashCanOutline),
                                 iconSize: settingsIconSize,
                                 tooltip: AppLocalizations.of(context)!

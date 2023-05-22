@@ -47,6 +47,10 @@ class HealthImport {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
+    if (isDesktop) {
+      return;
+    }
+
     final now = DateTime.now();
     final accessGranted = await authorizeHealth(activityTypes);
 
@@ -139,6 +143,10 @@ class HealthImport {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
+    if (isDesktop) {
+      return;
+    }
+
     final accessWasGranted = await authorizeHealth(types);
 
     if (accessWasGranted) {
@@ -194,6 +202,10 @@ class HealthImport {
   }
 
   Future<void> fetchHealthDataDelta(String type) async {
+    if (isDesktop) {
+      return;
+    }
+
     var actualTypes = [type];
 
     if (type == 'BLOOD_PRESSURE') {
@@ -244,6 +256,10 @@ class HealthImport {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
+    if (isDesktop) {
+      return;
+    }
+
     final now = DateTime.now();
     final dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
     debugPrint('getWorkoutsHealthData $dateFrom - $dateTo');
@@ -270,6 +286,10 @@ class HealthImport {
   }
 
   Future<void> getWorkoutsHealthDataDelta() async {
+    if (isDesktop) {
+      return;
+    }
+
     final latest = await _db.latestWorkout();
     final now = DateTime.now();
 

@@ -5,6 +5,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Improve header style on settings page using Slivers
+- Improve header style on advanced settings page using Slivers
+- Health import styling
+- Hide health import page on all platforms but iOS
+- Upgraded dependencies
+- Add back button on advanced settings page
+- Sliver app bar in entity definitions
+- Sliver app bar in speech settings
+- Sliver app bar in config flags page
+- Sliver app bar on maintenance page
+- Sliver app bar on about page
+- Sliver app bar on health import page
+- Sliver app bar on dashboard page
+- Sliver app bar on logging page
+
+### Added:
+- Tests for category settings page
+- Tests for habit filters
+- Tests for dashboards page
+
+## [0.8.355] - 2023-05-19
 ### Added:
 - Delete individual transcripts
 

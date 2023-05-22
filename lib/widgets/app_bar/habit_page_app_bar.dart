@@ -9,29 +9,6 @@ import 'package:lotti/widgets/habits/status_segmented_control.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class SliverTitleBar extends StatelessWidget {
-  const SliverTitleBar(
-    this.title, {
-    super.key,
-  });
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverAppBar(
-      backgroundColor: styleConfig().negspace,
-      expandedHeight: 100,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          title,
-          style: appBarTextStyleNewLarge(),
-        ),
-      ),
-    );
-  }
-}
-
 class HabitsSliverAppBar extends StatelessWidget {
   const HabitsSliverAppBar({
     super.key,

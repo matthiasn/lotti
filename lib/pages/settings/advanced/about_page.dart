@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/tasks_counts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -43,17 +43,17 @@ class _AboutPageState extends State<AboutPage> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      backgroundColor: styleConfig().negspace,
-      appBar: TitleAppBar(title: localizations.settingsAboutTitle),
-      body: StreamBuilder<int>(
-        stream: countStream,
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<int> snapshot,
-        ) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
+    return StreamBuilder<int>(
+      stream: countStream,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<int> snapshot,
+      ) {
+        return SliverBoxAdapterPage(
+          title: localizations.settingsAboutTitle,
+          showBackButton: true,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
                 Text(
@@ -69,9 +69,9 @@ class _AboutPageState extends State<AboutPage> {
                 const TaskCounts(),
               ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

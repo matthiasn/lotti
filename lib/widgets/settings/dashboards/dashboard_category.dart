@@ -79,6 +79,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
             categoryUndefined ? searchFieldHintStyle() : searchFieldStyle();
 
         return TextField(
+          key: const Key('select_dashboard_category'),
           onTap: onTap,
           readOnly: true,
           focusNode: FocusNode(),

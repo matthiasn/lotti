@@ -4,9 +4,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/loading_widget.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/dashboards/dashboard_widget.dart';
@@ -106,31 +106,27 @@ class _DashboardPageState extends State<DashboardPage> {
             );
           }
 
-          return Scaffold(
-            appBar: TitleAppBar(
-              title: dashboard.name,
-              showBackButton: widget.showBackButton,
-            ),
-            body: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 15),
-                  TimeSpanSegmentedControl(
-                    timeSpanDays: timeSpanDays,
-                    onValueChanged: (int value) {
-                      setState(() {
-                        timeSpanDays = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 15),
-                  DashboardWidget(
-                    rangeStart: rangeStart,
-                    rangeEnd: rangeEnd,
-                    dashboardId: widget.dashboardId,
-                  ),
-                ],
-              ),
+          return SliverBoxAdapterPage(
+            title: dashboard.name,
+            showBackButton: true,
+            child: Column(
+              children: [
+                const SizedBox(height: 15),
+                TimeSpanSegmentedControl(
+                  timeSpanDays: timeSpanDays,
+                  onValueChanged: (int value) {
+                    setState(() {
+                      timeSpanDays = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 15),
+                DashboardWidget(
+                  rangeStart: rangeStart,
+                  rangeEnd: rangeEnd,
+                  dashboardId: widget.dashboardId,
+                ),
+              ],
             ),
           );
         },
