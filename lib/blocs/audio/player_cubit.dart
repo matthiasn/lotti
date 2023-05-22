@@ -78,7 +78,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       return;
     }
 
-    await _asrService.transcribe(entry: state.audioNote!);
+    await _asrService.enqueue(entry: state.audioNote!);
   }
 
   Future<void> stopPlay() async {
