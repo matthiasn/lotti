@@ -71,6 +71,12 @@ class WhisperModelCard extends StatelessWidget {
                     onPressed: () => cubit.downloadModel(model),
                   ),
                 if (progress == 1.0)
+                  Text(
+                    '${(snapshot.downloadedModelSizes[model] ?? 0).round()} MB',
+                    style: buttonLabelStyle()
+                        .copyWith(color: styleConfig().secondaryTextColor),
+                  ),
+                if (progress == 1.0)
                   IconButton(
                     padding: const EdgeInsets.all(10),
                     icon: Semantics(

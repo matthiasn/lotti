@@ -17,6 +17,7 @@ class MapWidget extends StatefulWidget {
 
 class _MapWidgetState extends State<MapWidget> {
   late final MapController mapController;
+  bool ignoring = true;
 
   @override
   void initState() {
@@ -36,56 +37,54 @@ class _MapWidgetState extends State<MapWidget> {
     );
 
     return Center(
-      child: IgnorePointer(
-        child: SizedBox(
-          height: 200,
-          child: Listener(
-            onPointerSignal: (pointerSignal) {
-              if (pointerSignal is PointerScrollEvent) {
-                if (pointerSignal.scrollDelta.dy < 0) {
-                  mapController.move(
-                    mapController.center,
-                    mapController.zoom + 1,
-                  );
-                } else {
-                  mapController.move(
-                    mapController.center,
-                    mapController.zoom - 1,
-                  );
-                }
+      child: SizedBox(
+        height: 300,
+        child: Listener(
+          onPointerSignal: (pointerSignal) {
+            if (pointerSignal is PointerScrollEvent) {
+              if (pointerSignal.scrollDelta.dy < 0) {
+                mapController.move(
+                  mapController.center,
+                  mapController.zoom + 1,
+                );
+              } else {
+                mapController.move(
+                  mapController.center,
+                  mapController.zoom - 1,
+                );
               }
-            },
-            child: FlutterMap(
-              mapController: mapController,
-              options: MapOptions(
-                center: loc,
+            }
+          },
+          child: FlutterMap(
+            mapController: mapController,
+            options: MapOptions(
+              center: loc,
+            ),
+            children: [
+              TileLayer(
+                tileProvider: CachedTileProvider(),
+                urlTemplate:
+                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c'],
               ),
-              children: [
-                TileLayer(
-                  tileProvider: CachedTileProvider(),
-                  urlTemplate:
-                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  subdomains: const ['a', 'b', 'c'],
-                ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      width: 64,
-                      height: 64,
-                      point: loc,
-                      builder: (ctx) => const Opacity(
-                        opacity: 0.8,
-                        child: Image(
-                          image: AssetImage(
-                            'assets/images/map/728975_location_map_marker_pin_place_icon.png',
-                          ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    width: 64,
+                    height: 64,
+                    point: loc,
+                    builder: (ctx) => const Opacity(
+                      opacity: 0.8,
+                      child: Image(
+                        image: AssetImage(
+                          'assets/images/map/728975_location_map_marker_pin_place_icon.png',
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

@@ -69,6 +69,9 @@ void main() {
             'medium.en': 0.0,
             'medium': 0.0,
           },
+          downloadedModelSizes: <String, double>{
+            'tiny': 0.00000286102294921875,
+          },
           selectedModel: '',
         ),
         SpeechSettingsState(
@@ -82,6 +85,9 @@ void main() {
             'small': 0.0,
             'medium.en': 0.0,
             'medium': 0.0,
+          },
+          downloadedModelSizes: <String, double>{
+            'tiny': 0.00000286102294921875,
           },
           selectedModel: 'tiny.en',
         ),
