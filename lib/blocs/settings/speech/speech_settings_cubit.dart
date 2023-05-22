@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_download_manager/flutter_download_manager.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -19,6 +20,7 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
           SpeechSettingsState(
             availableModels: availableModels,
             downloadProgress: <String, double>{},
+            downloadedModelSizes: <String, double>{},
           ),
         ) {
     _downloadManager = downloadManager ?? DownloadManager();
@@ -32,6 +34,7 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
 
   final AsrService _asrService = getIt<AsrService>();
   Map<String, double> _downloadProgress = <String, double>{};
+  Map<String, double> _downloadedModelSizes = <String, double>{};
   String _selectedModel = '';
   late final DownloadManager _downloadManager;
 
@@ -56,8 +59,11 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
         final model =
             path.split('/').last.replaceAll('.bin', '').replaceAll('ggml-', '');
         _downloadProgress[model] = 1.0;
+        _downloadedModelSizes[model] = file.statSync().size / 1024 / 1024;
       }
     }
+
+    debugPrint('$_downloadedModelSizes');
 
     emitState();
   }
@@ -120,11 +126,13 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
 
   void emitState() {
     _downloadProgress = {..._downloadProgress};
+    _downloadedModelSizes = {..._downloadedModelSizes};
 
     emit(
       state.copyWith(
         downloadProgress: _downloadProgress,
         selectedModel: _selectedModel,
+        downloadedModelSizes: _downloadedModelSizes,
       ),
     );
   }
