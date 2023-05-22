@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgraded dependencies
+- Larger map with interaction
+
+## [0.8.356] - 2023-05-21
+### Changed:
 - Improve header style on settings page using Slivers
 - Improve header style on advanced settings page using Slivers
 - Health import styling
