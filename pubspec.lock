@@ -181,10 +181,10 @@ packages:
     dependency: transitive
     description:
       name: build_runner_core
-      sha256: "30859c90e9ddaccc484f56303931f477b1f1ba2bab74aa32ed5d6ce15870f8cf"
+      sha256: "88a57f2ac99849362e73878334caa9f06ee25f31d2adced882b8337838c84e1e"
       url: "https://pub.dev"
     source: hosted
-    version: "7.2.8"
+    version: "7.2.9"
   built_collection:
     dependency: transitive
     description:
@@ -862,10 +862,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: f3c8e09dff02cab1e74714e16d96cd562c3476ae6269617851c9e2d75b86c128
+      sha256: "028b9722cb6e6310f473126cc8226363e93cf528eabbe339dd37235b2ae53d9d"
       url: "https://pub.dev"
     source: hosted
-    version: "7.1.19"
+    version: "7.2.0"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1021,10 +1021,10 @@ packages:
     dependency: transitive
     description:
       name: graphs
-      sha256: "772db3d53d23361d4ffcf5a9bb091cf3ee9b22f2be52cd107cd7a2683a89ba0e"
+      sha256: aedc5a15e78fc65a6e23bcd927f24c64dd995062bcd1ca6eda65a3cff92a4d19
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.0"
+    version: "2.3.1"
   health:
     dependency: "direct main"
     description:
@@ -1243,10 +1243,10 @@ packages:
     dependency: transitive
     description:
       name: logging
-      sha256: "04094f2eb032cbb06c6f6e8d3607edcfcb0455e2bb6cbc010cb01171dcb64e6d"
+      sha256: "623a88c9594aa774443aa3eb2d41807a48486b5613e67599fb4c41c0ad47c340"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1"
+    version: "1.2.0"
   lottie:
     dependency: "direct main"
     description:
@@ -1379,10 +1379,10 @@ packages:
     dependency: "direct dev"
     description:
       name: msix
-      sha256: "3cc1b01dc1e8b48d3121e6f8796e99f18a17911f4deb34c97c2936f517b89d1c"
+      sha256: "5dbf26361fbff0e74abd06c80f0b446476c739eea017d833d15e093c3c778fdd"
       url: "https://pub.dev"
     source: hosted
-    version: "3.13.1"
+    version: "3.13.2"
   multi_select_flutter:
     dependency: "direct main"
     description:
@@ -2105,26 +2105,26 @@ packages:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_calendar
-      sha256: "21178d315cd6c9cfa97e51fcfffa44e4b017c88be18c4d88f9dd47e38845584f"
+      sha256: "05af3bbaf83b6a923496b9a3c14398db0d910b08c442c7b3815c03ac66cc3699"
       url: "https://pub.dev"
     source: hosted
-    version: "21.2.5"
+    version: "21.2.6"
   syncfusion_flutter_core:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
-      sha256: b2ad1c93239b094d6de1b4679c1835b1bc4332e6c6548bd2da44bd2594e6cdc5
+      sha256: "998d242c1f022eccf53f414a4343af34ab980700fee36cef8f78d94538ca749f"
       url: "https://pub.dev"
     source: hosted
-    version: "21.2.5"
+    version: "21.2.6"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
-      sha256: "77f8c1ceefddfdd90c2e7cbd192d55f9a514c91018caa4cf3f17eb114b11ce24"
+      sha256: "93e2cad846282391bfa6cd769e0ac59f3fdf2d4ea75f09db75cd1545308696c9"
       url: "https://pub.dev"
     source: hosted
-    version: "21.2.5"
+    version: "21.2.6"
   synchronized:
     dependency: transitive
     description:
