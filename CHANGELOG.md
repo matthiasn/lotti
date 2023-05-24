@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 - Default language English instead of German (first in alphabetical order)
 
+### Changed:
+- Flutter upgraded to 3.10.2 & upgraded dependencies
+
 ## [0.8.358] - 2023-05-23
 ### Fixed:
 - Crashes when attempting simultaneous transcriptions
