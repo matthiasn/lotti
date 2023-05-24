@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed:
+- Default language English instead of German (first in alphabetical order)
+
+## [0.8.358] - 2023-05-23
+### Fixed:
 - Crashes when attempting simultaneous transcriptions
 
 ## [0.8.357] - 2023-05-22
