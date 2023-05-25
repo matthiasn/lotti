@@ -21,13 +21,10 @@ class AudioRecordingIndicator extends StatelessWidget {
           cursor: SystemMouseCursors.click,
           child: GestureDetector(
             key: const Key('audio_recording_indicator'),
-            onTap: () {
-              context.read<AudioRecorderCubit>().stop();
-            },
+            onTap: context.read<AudioRecorderCubit>().stop,
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
               ),
               child: Container(
                 width: 100,

@@ -44,112 +44,119 @@ class _AppScreenState extends State<AppScreen> {
           builder: (context, snapshot) {
             final index = snapshot.data ?? 0;
 
-            return Scaffold(
-              body: Stack(
-                children: [
-                  IndexedStack(
-                    index: index,
-                    children: [
-                      Beamer(routerDelegate: navService.habitsDelegate),
-                      Beamer(routerDelegate: navService.dashboardsDelegate),
-                      Beamer(routerDelegate: navService.journalDelegate),
-                      if (showTasksTab)
-                        Beamer(routerDelegate: navService.tasksDelegate),
-                      Beamer(routerDelegate: navService.settingsDelegate),
-                    ],
+            return Theme(
+              data: Theme.of(context).copyWith(
+                bottomSheetTheme: BottomSheetThemeData(
+                  backgroundColor: Colors.transparent,
+                  constraints: BoxConstraints(
+                    minWidth: MediaQuery.of(context).size.width,
                   ),
-                  const TimeRecordingIndicator(),
-                  const Positioned(
-                    right: 120,
-                    bottom: 0,
-                    child: AudioRecordingIndicator(),
-                  ),
-                ],
-              ),
-              bottomNavigationBar: Theme(
-                data: Theme.of(context).copyWith(
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  splashColor: Colors.transparent,
                 ),
-                child: Theme(
+              ),
+              child: Scaffold(
+                bottomSheet: const Row(
+                  children: [
+                    TimeRecordingIndicator(),
+                    Spacer(),
+                    AudioRecordingIndicator(),
+                  ],
+                ),
+                body: IndexedStack(
+                  index: index,
+                  children: [
+                    Beamer(routerDelegate: navService.habitsDelegate),
+                    Beamer(routerDelegate: navService.dashboardsDelegate),
+                    Beamer(routerDelegate: navService.journalDelegate),
+                    if (showTasksTab)
+                      Beamer(routerDelegate: navService.tasksDelegate),
+                    Beamer(routerDelegate: navService.settingsDelegate),
+                  ],
+                ),
+                bottomNavigationBar: Theme(
                   data: Theme.of(context).copyWith(
-                    canvasColor: styleConfig().negspace,
+                    focusColor: Colors.transparent,
                     hoverColor: Colors.transparent,
                     splashColor: Colors.transparent,
                   ),
-                  child: BottomNavigationBar(
-                    unselectedItemColor: styleConfig().primaryTextColor,
-                    selectedItemColor: styleConfig().primaryColor,
-                    selectedFontSize: fontSizeSmall,
-                    enableFeedback: true,
-                    elevation: 8,
-                    iconSize: 30,
-                    selectedLabelStyle: const TextStyle(
-                      height: 2,
-                      fontWeight: FontWeight.bold,
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      canvasColor: styleConfig().negspace,
+                      hoverColor: Colors.transparent,
+                      splashColor: Colors.transparent,
                     ),
-                    unselectedLabelStyle: const TextStyle(height: 2),
-                    type: BottomNavigationBarType.shifting,
-                    currentIndex: index,
-                    items: [
-                      BottomNavigationBarItem(
-                        icon: Semantics(
-                          container: true,
-                          label: 'Habits Tab',
-                          image: true,
-                          child: const Icon(Icons.checklist_outlined),
-                        ),
-                        label: localizations.navTabTitleHabits,
-                        tooltip: '',
+                    child: BottomNavigationBar(
+                      unselectedItemColor: styleConfig().primaryTextColor,
+                      selectedItemColor: styleConfig().primaryColor,
+                      selectedFontSize: fontSizeSmall,
+                      enableFeedback: true,
+                      elevation: 8,
+                      iconSize: 30,
+                      selectedLabelStyle: const TextStyle(
+                        height: 2,
+                        fontWeight: FontWeight.bold,
                       ),
-                      BottomNavigationBarItem(
-                        icon: Semantics(
-                          container: true,
-                          label: 'Dashboards Tab',
-                          image: true,
-                          child: const Icon(Icons.insights_outlined),
-                        ),
-                        label: localizations.navTabTitleInsights,
-                        tooltip: '',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Semantics(
-                          container: true,
-                          label: 'Logbook Tab',
-                          image: true,
-                          child: const Icon(Icons.auto_stories_outlined),
-                        ),
-                        label: localizations.navTabTitleJournal,
-                        tooltip: '',
-                      ),
-                      if (showTasksTab)
+                      unselectedLabelStyle: const TextStyle(height: 2),
+                      type: BottomNavigationBarType.shifting,
+                      currentIndex: index,
+                      items: [
                         BottomNavigationBarItem(
                           icon: Semantics(
                             container: true,
-                            label: 'Tasks Tab',
+                            label: 'Habits Tab',
                             image: true,
-                            child: TasksBadge(
-                              child: const Icon(Icons.task_alt_outlined),
-                            ),
+                            child: const Icon(Icons.checklist_outlined),
                           ),
-                          label: localizations.navTabTitleTasks,
+                          label: localizations.navTabTitleHabits,
                           tooltip: '',
                         ),
-                      BottomNavigationBarItem(
-                        icon: Semantics(
-                          container: true,
-                          label: 'Settings Tab',
-                          image: true,
-                          child: OutboxBadgeIcon(
-                            icon: const Icon(Icons.settings_outlined),
+                        BottomNavigationBarItem(
+                          icon: Semantics(
+                            container: true,
+                            label: 'Dashboards Tab',
+                            image: true,
+                            child: const Icon(Icons.insights_outlined),
                           ),
+                          label: localizations.navTabTitleInsights,
+                          tooltip: '',
                         ),
-                        label: localizations.navTabTitleSettings,
-                        tooltip: '',
-                      ),
-                    ],
-                    onTap: navService.tapIndex,
+                        BottomNavigationBarItem(
+                          icon: Semantics(
+                            container: true,
+                            label: 'Logbook Tab',
+                            image: true,
+                            child: const Icon(Icons.auto_stories_outlined),
+                          ),
+                          label: localizations.navTabTitleJournal,
+                          tooltip: '',
+                        ),
+                        if (showTasksTab)
+                          BottomNavigationBarItem(
+                            icon: Semantics(
+                              container: true,
+                              label: 'Tasks Tab',
+                              image: true,
+                              child: TasksBadge(
+                                child: const Icon(Icons.task_alt_outlined),
+                              ),
+                            ),
+                            label: localizations.navTabTitleTasks,
+                            tooltip: '',
+                          ),
+                        BottomNavigationBarItem(
+                          icon: Semantics(
+                            container: true,
+                            label: 'Settings Tab',
+                            image: true,
+                            child: OutboxBadgeIcon(
+                              icon: const Icon(Icons.settings_outlined),
+                            ),
+                          ),
+                          label: localizations.navTabTitleSettings,
+                          tooltip: '',
+                        ),
+                      ],
+                      onTap: navService.tapIndex,
+                    ),
                   ),
                 ),
               ),
