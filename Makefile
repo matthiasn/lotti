@@ -190,7 +190,8 @@ get_whisper_cpp:
 	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/ggml.c . && \
 	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/ggml.h . && \
 	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/whisper.cpp . && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/whisper.h .
+	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/whisper.h . && \
+	cp -r ./whisper.cpp-$(WHISPER_CPP_VERSION)/coreml .
 
 .PHONY: get_whisper_cpp_ios
 get_whisper_cpp_ios:

@@ -83,6 +83,50 @@ class PersistenceLogic {
     return null;
   }
 
+  Future<QuantitativeEntry?> createQuantitativeEntries(
+    List<QuantitativeData> items,
+  ) async {
+    try {
+      final journalEntities = await Future.wait(
+        items.map((data) async {
+          final now = DateTime.now();
+          final vc = await _vectorClockService.getNextVectorClock();
+
+          // avoid inserting the same external entity multiple times
+          final id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
+
+          final dateFrom = data.dateFrom;
+          final dateTo = data.dateTo;
+
+          return QuantitativeEntry(
+            data: data,
+            meta: Metadata(
+              createdAt: now,
+              updatedAt: now,
+              dateFrom: dateFrom,
+              dateTo: dateTo,
+              id: id,
+              vectorClock: vc,
+              timezone: await getLocalTimezone(),
+              utcOffset: now.timeZoneOffset.inMinutes,
+            ),
+          );
+        }),
+      );
+
+      await createDbEntities(journalEntities);
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'createQuantitativeEntries',
+        stackTrace: stackTrace,
+      );
+    }
+
+    return null;
+  }
+
   Future<WorkoutEntry?> createWorkoutEntry(WorkoutData data) async {
     try {
       final now = DateTime.now();
@@ -528,6 +572,35 @@ class PersistenceLogic {
         exception,
         domain: 'persistence_logic',
         subDomain: 'createDbEntity',
+        stackTrace: stackTrace,
+      );
+      debugPrint('Exception $exception');
+    }
+    return null;
+  }
+
+  Future<bool?> createDbEntities(
+    List<JournalEntity> journalEntities, {
+    bool enqueueSync = false,
+  }) async {
+    try {
+      await _journalDb.addJournalEntities(journalEntities);
+
+      if (enqueueSync) {
+        for (final journalEntity in journalEntities) {
+          await _outboxService.enqueueMessage(
+            SyncMessage.journalEntity(
+              journalEntity: journalEntity,
+              status: SyncEntryStatus.initial,
+            ),
+          );
+        }
+      }
+    } catch (exception, stackTrace) {
+      _loggingDb.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'createDbEntities',
         stackTrace: stackTrace,
       );
       debugPrint('Exception $exception');

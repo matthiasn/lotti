@@ -73,6 +73,14 @@ class JournalDb extends _$JournalDb {
     return into(journal).insertOnConflictUpdate(entry);
   }
 
+  Future<void> upsertJournalDbEntities(List<JournalDbEntity> entries) async {
+    await transaction(() async {
+      for (final entry in entries) {
+        return into(journal).insertOnConflictUpdate(entry);
+      }
+    });
+  }
+
   Future<int> addConflict(Conflict conflict) async {
     return into(conflicts).insertOnConflictUpdate(conflict);
   }
@@ -87,6 +95,20 @@ class JournalDb extends _$JournalDb {
     } else {
       return 0;
     }
+  }
+
+  Future<void> addJournalEntities(List<JournalEntity> entries) async {
+    await transaction(() async {
+      for (final entry in entries) {
+        final dbEntity = toDbEntity(entry);
+        await saveJournalEntityJson(entry);
+
+        final exists = (await entityById(dbEntity.id)) != null;
+        if (!exists) {
+          return upsertJournalDbEntity(dbEntity);
+        }
+      }
+    });
   }
 
   Future<VclockStatus> detectConflict(

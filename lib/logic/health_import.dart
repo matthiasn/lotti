@@ -66,23 +66,24 @@ class HealthImport {
       final entries = List<MapEntry<DateTime, num>>.from(data.entries)
         ..sort((a, b) => a.key.compareTo(b.key));
 
-      for (final dailyStepsEntry in entries) {
-        final dayStart = dailyStepsEntry.key;
+      final dataItems = entries.map((entry) {
+        final dayStart = entry.key;
         final dayEnd = dayStart
             .add(const Duration(days: 1))
             .subtract(const Duration(milliseconds: 1));
         final dateToOrNow = dayEnd.isAfter(now) ? now : dayEnd;
-        final activityForDay = CumulativeQuantityData(
+
+        return CumulativeQuantityData(
           dateFrom: dayStart,
           dateTo: dateToOrNow,
-          value: dailyStepsEntry.value,
+          value: entry.value,
           dataType: type,
           unit: unit,
           deviceType: deviceType,
           platformType: platform,
         );
-        await persistenceLogic.createQuantitativeEntry(activityForDay);
-      }
+      }).toList();
+      await persistenceLogic.createQuantitativeEntries(dataItems);
     }
 
     final stepsByDay = <DateTime, num>{};
@@ -158,7 +159,6 @@ class HealthImport {
           dateToOrNow,
           types,
         );
-
         for (final dataPoint in dataPoints.reversed) {
           final dataType = dataPoint.type.toString();
 

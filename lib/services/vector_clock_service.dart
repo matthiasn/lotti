@@ -20,7 +20,7 @@ class VectorClockService {
   }
 
   Future<void> increment() async {
-    final next = await getNextAvailableCounter() + 1;
+    final next = getNextAvailableCounter() + 1;
     await setNextAvailableCounter(next);
   }
 
@@ -63,7 +63,7 @@ class VectorClockService {
     }
   }
 
-  Future<int> getNextAvailableCounter() async {
+  int getNextAvailableCounter() {
     return _nextAvailableCounter;
   }
 
