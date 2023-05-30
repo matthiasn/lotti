@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Upgraded dependencies
+- Health import in transaction
 
 ## [0.8.359] - 2023-05-26
 ### Fixed:
