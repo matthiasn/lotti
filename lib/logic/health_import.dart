@@ -43,7 +43,7 @@ class HealthImport {
     }
   }
 
-  Future<void> getActivityHealthData({
+  Future<void> _getActivityHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
@@ -130,6 +130,18 @@ class HealthImport {
     await addEntries(distanceByDay, 'cumulative_distance', 'meters');
   }
 
+  Future<void> getActivityHealthData({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
+    await _db.transaction<void>(() async {
+      await _getActivityHealthData(
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      );
+    });
+  }
+
   Future<bool> authorizeHealth(List<HealthDataType> types) async {
     if (isDesktop) {
       return false;
@@ -139,6 +151,20 @@ class HealthImport {
   }
 
   Future<void> fetchHealthData({
+    required List<HealthDataType> types,
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
+    await _db.transaction<void>(() async {
+      await _fetchHealthData(
+        types: types,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      );
+    });
+  }
+
+  Future<void> _fetchHealthData({
     required List<HealthDataType> types,
     required DateTime dateFrom,
     required DateTime dateTo,
@@ -252,7 +278,7 @@ class HealthImport {
     }
   }
 
-  Future<void> getWorkoutsHealthData({
+  Future<void> _getWorkoutsHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
@@ -282,6 +308,18 @@ class HealthImport {
         id: workoutSample.id,
       );
       await persistenceLogic.createWorkoutEntry(workoutData);
+    });
+  }
+
+  Future<void> getWorkoutsHealthData({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
+    await _db.transaction<void>(() async {
+      await _getWorkoutsHealthData(
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      );
     });
   }
 
