@@ -53,7 +53,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
 
     final color = widget.hexColor != null
         ? colorFromCssHex(widget.hexColor)
-        : styleConfig().secondaryTextColor.withOpacity(0.2);
+        : styleConfig().secondaryTextColor;
 
     Future<void> onTap() async {
       await showModalBottomSheet<void>(

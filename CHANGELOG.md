@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed:
+- Category opacity
+
+## [0.8.361] - 2023-05-31
 ### Changed:
 - Habit status segmented control style
 - Upgraded dependencies
