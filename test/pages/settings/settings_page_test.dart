@@ -46,8 +46,8 @@ void main() {
       expect(find.text('Settings'), findsOneWidget);
 
       expect(find.text('Tags'), findsOneWidget);
-      expect(find.text('Dashboard Management'), findsOneWidget);
-      expect(find.text('Measurable Data Types'), findsOneWidget);
+      expect(find.text('Dashboards'), findsOneWidget);
+      expect(find.text('Measurable Types'), findsOneWidget);
 
       if (Platform.isIOS) {
         expect(find.text('Health Import'), findsOneWidget);

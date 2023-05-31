@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded dependencies
 - Health import in transaction
 
+### Fixed:
+- Locked db when importing from health
+
 ## [0.8.359] - 2023-05-26
 ### Fixed:
 - Default language English instead of German (first in alphabetical order)
