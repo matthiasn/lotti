@@ -68,8 +68,7 @@ Lotti currently supports recording the following data types:
 
 Please check out [HISTORY.md](https://github.com/matthiasn/lotti/blob/main/docs/HISTORY.md) for all
 the information on the project's history and back-story. You can find the previous version (written
-in Clojure and ClojureScript) in the [meins](https://github.com/matthiasn/lotti/tree/main/meins)
-subdirectory.
+in Clojure and ClojureScript) in this repo: [meins](https://github.com/matthiasn/meins).
 
 
 ## Principles

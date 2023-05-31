@@ -1,10 +1,10 @@
 # Meins/Lotti
 
-This repository contains two related projects,
-**[Meins](https://github.com/matthiasn/lotti/tree/main/meins/README.md)** and
-**[Lotti](https://github.com/matthiasn/lotti/tree/main/README.md)**.
+**Edit 05/2023: meins now lives in its [own repo](https://github.com/matthiasn/meins)**
 
-**[Meins](https://github.com/matthiasn/lotti/tree/main/meins/README.md)**
+This repository used to contain two related projects, **Meins** and **Lotti**.
+
+**[Meins](https://github.com/matthiasn/meins)**
 started out as a journaling application, with a focus on recording
 arbitrary measurable data (such as exercise repetitions, intake of water,
 alcohol, medications) in combination with mood and imported health data. The
