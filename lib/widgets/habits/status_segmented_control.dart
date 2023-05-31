@@ -1,8 +1,7 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/misc/segmented_control.dart';
 
 class HabitStatusSegmentedControl extends StatelessWidget {
   const HabitStatusSegmentedControl({
@@ -12,33 +11,55 @@ class HabitStatusSegmentedControl extends StatelessWidget {
   });
 
   final HabitDisplayFilter filter;
-  final void Function(HabitDisplayFilter) onValueChanged;
+  final void Function(HabitDisplayFilter?) onValueChanged;
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return CupertinoSegmentedControl<HabitDisplayFilter>(
-      selectedColor: styleConfig().primaryColor,
-      unselectedColor: styleConfig().negspace,
-      borderColor: styleConfig().primaryColor,
-      groupValue: filter,
-      onValueChanged: onValueChanged,
-      children: {
-        HabitDisplayFilter.openNow: TextSegment(
-          localizations.habitsFilterOpenNow,
-          semanticsLabel: 'Habits - due',
+    return SegmentedButton<HabitDisplayFilter>(
+      selected: {filter},
+      showSelectedIcon: false,
+      onSelectionChanged: (selected) => onValueChanged(selected.first),
+      segments: [
+        buttonSegment(
+          value: HabitDisplayFilter.openNow,
+          selected: filter,
+          label: localizations.habitsFilterOpenNow,
         ),
-        HabitDisplayFilter.pendingLater: TextSegment(
-          localizations.habitsFilterPendingLater,
-          semanticsLabel: 'Habits - later',
+        buttonSegment(
+          value: HabitDisplayFilter.pendingLater,
+          selected: filter,
+          label: localizations.habitsFilterPendingLater,
         ),
-        HabitDisplayFilter.completed: TextSegment(
-          localizations.habitsFilterCompleted,
-          semanticsLabel: 'Habits - done',
+        buttonSegment(
+          value: HabitDisplayFilter.completed,
+          selected: filter,
+          label: localizations.habitsFilterCompleted,
         ),
-        HabitDisplayFilter.all: TextSegment(localizations.habitsFilterAll),
-      },
+        buttonSegment(
+          value: HabitDisplayFilter.all,
+          selected: filter,
+          label: localizations.habitsFilterAll,
+        ),
+      ],
     );
   }
+}
+
+ButtonSegment<HabitDisplayFilter> buttonSegment({
+  required HabitDisplayFilter value,
+  required HabitDisplayFilter selected,
+  required String label,
+}) {
+  return ButtonSegment(
+    value: value,
+    label: Text(
+      label,
+      style: value == selected
+          ? buttonLabelStyle().copyWith(color: Colors.black)
+          : buttonLabelStyle()
+              .copyWith(color: styleConfig().secondaryTextColor),
+    ),
+  );
 }

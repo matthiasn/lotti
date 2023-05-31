@@ -33,6 +33,7 @@ class HabitsSliverAppBar extends StatelessWidget {
                   filter: state.displayFilter,
                   onValueChanged: cubit.setDisplayFilter,
                 ),
+                const SizedBox(width: 10),
                 const HabitsFilter(),
                 IconButton(
                   onPressed: cubit.toggleShowSearch,
