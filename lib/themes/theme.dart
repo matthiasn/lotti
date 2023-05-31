@@ -266,9 +266,7 @@ TextStyle failButtonStyle() => TextStyle(
     );
 
 const segmentItemStyle = TextStyle(
-  fontFamily: 'Oswald',
   fontSize: fontSizeMedium,
-  fontWeight: FontWeight.w100,
 );
 
 const badgeStyle = TextStyle(
@@ -317,6 +315,21 @@ ThemeData getTheme() {
     ),
     appBarTheme: AppBarTheme(
       iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        alignment: Alignment.center,
+        visualDensity: VisualDensity.compact,
+        side: MaterialStateProperty.resolveWith((states) {
+          return BorderSide(
+            color: styleConfig().primaryColor,
+          );
+        }),
+        padding: MaterialStateProperty.resolveWith((states) {
+          return const EdgeInsets.symmetric(horizontal: 6);
+        }),
+        enableFeedback: true,
+      ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: styleConfig().cardColor.darken(5),

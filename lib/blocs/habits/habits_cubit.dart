@@ -238,7 +238,10 @@ class HabitsCubit extends Cubit<HabitsState> {
     emitState();
   }
 
-  void setDisplayFilter(HabitDisplayFilter displayFilter) {
+  void setDisplayFilter(HabitDisplayFilter? displayFilter) {
+    if (displayFilter == null) {
+      return;
+    }
     _displayFilter = displayFilter;
     emitState();
   }
