@@ -318,10 +318,15 @@ ThemeData getTheme() {
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
+        alignment: Alignment.center,
+        visualDensity: VisualDensity.compact,
         side: MaterialStateProperty.resolveWith((states) {
           return BorderSide(
             color: styleConfig().primaryColor,
           );
+        }),
+        padding: MaterialStateProperty.resolveWith((states) {
+          return const EdgeInsets.symmetric(horizontal: 6);
         }),
         enableFeedback: true,
       ),
