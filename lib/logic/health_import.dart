@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -22,6 +23,10 @@ class HealthImport {
   final JournalDb _db = getIt<JournalDb>();
   final HealthFactory _healthFactory = HealthFactory();
   Duration defaultFetchDuration = const Duration(days: 90);
+
+  final queue = Queue<String>();
+  bool running = false;
+  bool workoutImportRunning = false;
 
   late final String platform;
   String? deviceType;
@@ -155,20 +160,6 @@ class HealthImport {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
-    await _db.transaction<void>(() async {
-      await _fetchHealthData(
-        types: types,
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
-    });
-  }
-
-  Future<void> _fetchHealthData({
-    required List<HealthDataType> types,
-    required DateTime dateFrom,
-    required DateTime dateTo,
-  }) async {
     if (isDesktop) {
       return;
     }
@@ -227,10 +218,13 @@ class HealthImport {
     }
   }
 
-  Future<void> fetchHealthDataDelta(String type) async {
+  Future<void> _fetchHealthDataDelta(String type) async {
     if (isDesktop) {
       return;
     }
+
+    running = true;
+    debugPrint('_fetchHealthDataDelta $type');
 
     var actualTypes = [type];
 
@@ -278,7 +272,29 @@ class HealthImport {
     }
   }
 
-  Future<void> _getWorkoutsHealthData({
+  Future<void> _fetchHealthDataDeltaTx(String type) async {
+    await _db.transaction<void>(() async {
+      await _fetchHealthDataDelta(type);
+    });
+  }
+
+  Future<void> _start() async {
+    while (queue.isNotEmpty) {
+      await _fetchHealthDataDeltaTx(queue.removeFirst());
+    }
+
+    running = false;
+  }
+
+  Future<void> fetchHealthDataDelta(String type) async {
+    debugPrint('fetchHealthDataDelta $type');
+    queue.add(type);
+    if (!running) {
+      unawaited(_start());
+    }
+  }
+
+  Future<void> getWorkoutsHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
@@ -311,22 +327,12 @@ class HealthImport {
     });
   }
 
-  Future<void> getWorkoutsHealthData({
-    required DateTime dateFrom,
-    required DateTime dateTo,
-  }) async {
-    await _db.transaction<void>(() async {
-      await _getWorkoutsHealthData(
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
-    });
-  }
-
   Future<void> getWorkoutsHealthDataDelta() async {
-    if (isDesktop) {
+    if (isDesktop || workoutImportRunning) {
       return;
     }
+
+    workoutImportRunning = true;
 
     final latest = await _db.latestWorkout();
     final now = DateTime.now();
@@ -335,6 +341,8 @@ class HealthImport {
       dateFrom: latest?.data.dateFrom ?? now.subtract(defaultFetchDuration),
       dateTo: now,
     );
+
+    workoutImportRunning = false;
   }
 }
 

@@ -12,7 +12,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/wait.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bp_chart.dart';
@@ -45,13 +44,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
   @override
   void initState() {
     super.initState();
-    runSoon(
-      minWait: 1000,
-      maxWait: 3000,
-      callback: () {
-        _healthImport.fetchHealthDataDelta(widget.chartConfig.healthType);
-      },
-    );
+    _healthImport.fetchHealthDataDelta(widget.chartConfig.healthType);
   }
 
   @override

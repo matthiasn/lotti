@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
-import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
@@ -66,9 +65,6 @@ Future<GenericImapResult> saveImapMessage({
       message,
       targetMailbox: inbox,
       flags: [r'\Seen'],
-    );
-    debugPrint(
-      'saveImapMessage responseCode ${res.responseCode} details ${res.details}',
     );
     return res;
   } catch (exception, stackTrace) {

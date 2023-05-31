@@ -18,32 +18,32 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
-
-  if (isDesktop) {
-    await windowManager.ensureInitialized();
-    await hotKeyManager.unregisterAll();
-  }
-
-  final docDir = await findDocumentsDirectory();
-
-  getIt
-    ..registerSingleton<SecureStorage>(SecureStorage())
-    ..registerSingleton<Directory>(docDir);
-
-  await getIt.registerSingleton<Future<DriftIsolate>>(
-    createDriftIsolate(settingsDbFileName),
-    instanceName: settingsDbFileName,
-  );
-  getIt
-    ..registerSingleton<SettingsDb>(getSettingsDb())
-    ..registerSingleton<WindowService>(WindowService());
-
-  await getIt<WindowService>().restore();
-  tz.initializeTimeZones();
-
   await runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    MediaKit.ensureInitialized();
+
+    if (isDesktop) {
+      await windowManager.ensureInitialized();
+      await hotKeyManager.unregisterAll();
+    }
+
+    final docDir = await findDocumentsDirectory();
+
+    getIt
+      ..registerSingleton<SecureStorage>(SecureStorage())
+      ..registerSingleton<Directory>(docDir);
+
+    await getIt.registerSingleton<Future<DriftIsolate>>(
+      createDriftIsolate(settingsDbFileName),
+      instanceName: settingsDbFileName,
+    );
+    getIt
+      ..registerSingleton<SettingsDb>(getSettingsDb())
+      ..registerSingleton<WindowService>(WindowService());
+
+    await getIt<WindowService>().restore();
+    tz.initializeTimeZones();
+
     await registerSingletons();
 
     FlutterError.onError = (FlutterErrorDetails details) {
