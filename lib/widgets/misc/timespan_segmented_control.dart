@@ -1,7 +1,6 @@
-import 'package:flutter/cupertino.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:flutter/material.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/misc/segmented_control.dart';
+import 'package:lotti/utils/segmented_button.dart';
 
 class TimeSpanSegmentedControl extends StatelessWidget {
   const TimeSpanSegmentedControl({
@@ -17,19 +16,25 @@ class TimeSpanSegmentedControl extends StatelessWidget {
   Widget build(BuildContext context) {
     final shortLabels = MediaQuery.of(context).size.width < 450;
 
-    return CupertinoSegmentedControl<int>(
-      selectedColor: styleConfig().primaryColor,
-      unselectedColor: styleConfig().negspace,
-      borderColor: styleConfig().primaryColor,
-      groupValue: timeSpanDays,
-      onValueChanged: onValueChanged,
-      children: {
-        7: TextSegment(shortLabels ? '7d' : '7 days'),
-        14: TextSegment(shortLabels ? '14d' : '14 days'),
-        30: TextSegment(shortLabels ? '30d' : '30 days'),
-        90: TextSegment(shortLabels ? '90d' : '90 days'),
-        if (isDesktop) 180: TextSegment(shortLabels ? '180d' : '180 days'),
-      },
+    ButtonSegment<int> segment(int days) {
+      return buttonSegment(
+        value: days,
+        selected: timeSpanDays,
+        label: shortLabels ? '{$days}d' : '$days days',
+      );
+    }
+
+    return SegmentedButton<int>(
+      selected: {timeSpanDays},
+      showSelectedIcon: false,
+      onSelectionChanged: (selected) => onValueChanged(selected.first),
+      segments: [
+        segment(7),
+        segment(14),
+        segment(30),
+        segment(90),
+        if (isDesktop) segment(180),
+      ],
     );
   }
 }

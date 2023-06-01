@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Upgraded dependencies
+- Time span segmented controls style to match habit statuses
 
 ## [0.8.362] - 2023-05-31
 ### Fixed:
