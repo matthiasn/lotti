@@ -3,12 +3,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/charts/dashboard_chart.dart';
-import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
+import 'package:lotti/widgets/habits/habit_completion_card.dart';
 
 class DashboardHabitsChart extends StatefulWidget {
   const DashboardHabitsChart({
@@ -47,58 +45,13 @@ class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
           return const SizedBox.shrink();
         }
 
-        return StreamBuilder<List<JournalEntity>>(
-          stream: _db.watchHabitCompletionsByHabitId(
-            habitId: habitDefinition.id,
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: HabitCompletionCard(
+            habitDefinition: habitDefinition,
             rangeStart: widget.rangeStart,
             rangeEnd: widget.rangeEnd,
           ),
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<List<JournalEntity>> snapshot,
-          ) {
-            final entities = snapshot.data ?? [];
-
-            final results = habitResultsByDay(
-              entities,
-              habitDefinition: habitDefinition,
-              rangeStart: widget.rangeStart,
-              rangeEnd: widget.rangeEnd,
-            );
-
-            final days =
-                widget.rangeEnd.difference(widget.rangeStart).inDays + 1;
-
-            return DashboardChart(
-              topMargin: 10,
-              transparent: true,
-              chart: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(width: 40),
-                  ...results.map((res) {
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: Container(
-                        height: 15,
-                        width:
-                            max(MediaQuery.of(context).size.width - 200, 10) /
-                                days,
-                        color: habitCompletionColor(res.completionType),
-                      ),
-                    );
-                  }),
-                  const SizedBox(width: 30),
-                ],
-              ),
-              chartHeader: HabitChartInfoWidget(
-                habitDefinition,
-                dashboardId: widget.dashboardId,
-                tab: widget.tab,
-              ),
-              height: 50,
-            );
-          },
         );
       },
     );

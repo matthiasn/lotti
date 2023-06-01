@@ -18,7 +18,7 @@ class HabitCompletionCard extends StatefulWidget {
     required this.habitDefinition,
     required this.rangeStart,
     required this.rangeEnd,
-    required this.showGaps,
+    this.showGaps = true,
     super.key,
   });
 
