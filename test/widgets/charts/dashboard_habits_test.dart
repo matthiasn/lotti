@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,9 +19,11 @@ void main() {
   group('DashboardHabitsChart Widget Tests - ', () {
     setUp(() {
       mockJournalDb = mockJournalDbWithHabits([habitFlossing]);
+      final mockEntitiesCacheService = MockEntitiesCacheService();
 
       getIt
         ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<JournalDb>(mockJournalDb);
 
       when(

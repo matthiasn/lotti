@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Use habit completion card as habit chart in dashboard
+
+## [0.8.363] - 2023-06-01
+### Changed:
 - Upgraded dependencies
 - Time span segmented controls style to match habit statuses
 
