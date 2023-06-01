@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/segmented_button.dart';
 
 class HabitStatusSegmentedControl extends StatelessWidget {
   const HabitStatusSegmentedControl({
@@ -49,23 +49,4 @@ class HabitStatusSegmentedControl extends StatelessWidget {
       ],
     );
   }
-}
-
-ButtonSegment<HabitDisplayFilter> buttonSegment({
-  required HabitDisplayFilter value,
-  required HabitDisplayFilter selected,
-  required String label,
-  required String semanticsLabel,
-}) {
-  return ButtonSegment(
-    value: value,
-    label: Text(
-      label,
-      semanticsLabel: semanticsLabel,
-      style: value == selected
-          ? buttonLabelStyle().copyWith(color: Colors.black)
-          : buttonLabelStyle()
-              .copyWith(color: styleConfig().secondaryTextColor),
-    ),
-  );
 }
