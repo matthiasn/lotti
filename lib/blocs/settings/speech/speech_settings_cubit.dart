@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_download_manager/flutter_download_manager.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -48,6 +47,7 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
   }
 
   Future<void> detectDownloadedModels() async {
+    _downloadedModelSizes = <String, double>{};
     final docDir = await findDocumentsDirectory();
     final modelsDir =
         await Directory('${docDir.path}/whisper/').create(recursive: true);
@@ -62,8 +62,6 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
         _downloadedModelSizes[model] = file.statSync().size / 1024 / 1024;
       }
     }
-
-    debugPrint('$_downloadedModelSizes');
 
     emitState();
   }
@@ -126,7 +124,6 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
 
   void emitState() {
     _downloadProgress = {..._downloadProgress};
-    _downloadedModelSizes = {..._downloadedModelSizes};
 
     emit(
       state.copyWith(
