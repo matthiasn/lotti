@@ -20,23 +20,23 @@ class AppTheme {
   );
 }
 
-const double chipBorderRadius = 10;
+const double inputBorderRadius = 10;
 const mainFont = 'PlusJakartaSans';
 
 const habitCardTextColor = Colors.black87;
 
 final inputBorder = OutlineInputBorder(
-  borderRadius: BorderRadius.circular(chipBorderRadius),
+  borderRadius: BorderRadius.circular(inputBorderRadius),
   borderSide: BorderSide(color: styleConfig().secondaryTextColor),
 );
 
 final errorBorder = OutlineInputBorder(
-  borderRadius: BorderRadius.circular(chipBorderRadius),
+  borderRadius: BorderRadius.circular(inputBorderRadius),
   borderSide: BorderSide(color: styleConfig().alarm),
 );
 
 final inputBorderFocused = OutlineInputBorder(
-  borderRadius: BorderRadius.circular(chipBorderRadius),
+  borderRadius: BorderRadius.circular(inputBorderRadius),
   borderSide: BorderSide(
     color: styleConfig().primaryColor,
     width: 2,
@@ -310,8 +310,8 @@ ThemeData getTheme() {
     hoverColor: styleConfig().primaryColor.withOpacity(0.5),
     chipTheme: ChipThemeData(
       side: BorderSide.none,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
       backgroundColor: styleConfig().primaryColor.withOpacity(0.6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
     appBarTheme: AppBarTheme(
       iconTheme: IconThemeData(color: styleConfig().primaryTextColor),

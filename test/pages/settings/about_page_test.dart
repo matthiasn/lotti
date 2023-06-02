@@ -20,6 +20,9 @@ void main() {
       when(mockJournalDb.watchJournalCount)
           .thenAnswer((_) => Stream<int>.fromIterable([n]));
 
+      when(mockJournalDb.watchCountImportFlagEntries)
+          .thenAnswer((_) => Stream<int>.fromIterable([0]));
+
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<ThemesService>(ThemesService(watch: false));
@@ -48,7 +51,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('About Lotti'), findsOneWidget);
-      expect(find.text('Entries: 111'), findsOneWidget);
+      expect(find.text('Entries: 111, '), findsOneWidget);
     });
   });
 }

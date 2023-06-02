@@ -6,7 +6,6 @@ import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/badges/flagged_badge.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:lotti/widgets/search/task_status_filter.dart';
@@ -86,22 +85,20 @@ class JournalSliverAppBar extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(width: 5),
-                                FlaggedBadge(
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        localizations.journalFlaggedTooltip,
-                                        style: searchLabelStyle(),
-                                      ),
-                                      CupertinoSwitch(
-                                        value: snapshot.flaggedEntriesOnly,
-                                        activeColor: styleConfig().starredGold,
-                                        onChanged: (_) =>
-                                            cubit.toggleFlaggedEntriesOnly(),
-                                      ),
-                                    ],
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      localizations.journalFlaggedTooltip,
+                                      style: searchLabelStyle(),
+                                    ),
+                                    CupertinoSwitch(
+                                      value: snapshot.flaggedEntriesOnly,
+                                      activeColor: styleConfig().starredGold,
+                                      onChanged: (_) =>
+                                          cubit.toggleFlaggedEntriesOnly(),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(width: 5),
                               ],
