@@ -439,7 +439,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             localizations.dashboardAddChartsTitle,
                             style: formLabelStyle(),
                           ),
-                          if (measurableSelectItems.isNotEmpty)
+                          if (habitSelectItems.isNotEmpty)
                             ChartMultiSelect<HabitDefinition>(
                               multiSelectItems: habitSelectItems,
                               onConfirm: onConfirmAddHabit,
@@ -448,15 +448,16 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               semanticsLabel: 'Add Habit Chart',
                               iconData: Icons.insights,
                             ),
-                          ChartMultiSelect<MeasurableDataType>(
-                            multiSelectItems: measurableSelectItems,
-                            onConfirm: onConfirmAddMeasurement,
-                            title: localizations.dashboardAddMeasurementTitle,
-                            buttonText:
-                                localizations.dashboardAddMeasurementButton,
-                            semanticsLabel: 'Add Measurable Data Chart',
-                            iconData: Icons.insights,
-                          ),
+                          if (measurableSelectItems.isNotEmpty)
+                            ChartMultiSelect<MeasurableDataType>(
+                              multiSelectItems: measurableSelectItems,
+                              onConfirm: onConfirmAddMeasurement,
+                              title: localizations.dashboardAddMeasurementTitle,
+                              buttonText:
+                                  localizations.dashboardAddMeasurementButton,
+                              semanticsLabel: 'Add Measurable Data Chart',
+                              iconData: Icons.insights,
+                            ),
                           ChartMultiSelect<HealthTypeConfig>(
                             multiSelectItems: healthSelectItems,
                             onConfirm: onConfirmAddHealthType,

@@ -20,7 +20,7 @@ class TimeSpanSegmentedControl extends StatelessWidget {
       return buttonSegment(
         value: days,
         selected: timeSpanDays,
-        label: shortLabels ? '{$days}d' : '$days days',
+        label: shortLabels ? '${days}d' : '$days days',
       );
     }
 
