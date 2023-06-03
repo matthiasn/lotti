@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Adapt filter chips to match Material 3 design
+- Upgraded dependencies & Flutter upgrade
 
 ## [0.8.365] - 2023-06-02
 ### Fixed:
