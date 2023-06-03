@@ -81,3 +81,24 @@ class TasksCountWidget extends StatelessWidget {
     );
   }
 }
+
+class FlaggedCount extends StatelessWidget {
+  const FlaggedCount({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: getIt<JournalDb>().watchCountImportFlagEntries(),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<int> snapshot,
+      ) {
+        final count = snapshot.data;
+        return Text(
+          'Flagged: $count',
+          style: searchLabelStyle(),
+        );
+      },
+    );
+  }
+}

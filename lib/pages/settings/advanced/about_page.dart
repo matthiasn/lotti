@@ -61,9 +61,15 @@ class _AboutPageState extends State<AboutPage> {
                   style: searchLabelStyle(),
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  'Entries: ${snapshot.data}',
-                  style: searchLabelStyle(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Entries: ${snapshot.data}, ',
+                      style: searchLabelStyle(),
+                    ),
+                    const FlaggedCount(),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 const TaskCounts(),
