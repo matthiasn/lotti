@@ -166,7 +166,7 @@ SPEC CHECKSUMS:
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   HotKey: ad59450195936c10992438c4210f673de5aee43e
-  hotkey_manager: ad673457691f4d39e481be04a61da2ae07d81c62
+  hotkey_manager: c32bf0bfe8f934b7bc17ab4ad5c4c142960b023c
   location: 7cdb0665bd6577d382b0a343acdadbcb7f964775
   media_kit_libs_macos_audio: 1c2b0099843763fefd0939bae1f6a2ada534f58f
   media_kit_native_event_loop: b4f3e0836c225bcfb63ea416fb0d45b91247b502
