@@ -91,86 +91,11 @@ void main() {
       build: () => JournalPageCubit(showTasks: false),
       setUp: () {},
       act: (c) async {
-        c.toggleStarredEntriesOnly();
+        c.setFilters({DisplayFilter.starredEntriesOnly});
       },
       wait: defaultWait,
       expect: () => [isJournalPageState()],
-      verify: (c) => c.state.starredEntriesOnly,
-    );
-
-    blocTest<JournalPageCubit, JournalPageState>(
-      'toggle starred entries twice disables flag again',
-      build: () => JournalPageCubit(showTasks: false),
-      setUp: () {},
-      act: (c) async {
-        c
-          ..toggleStarredEntriesOnly()
-          ..toggleStarredEntriesOnly();
-      },
-      wait: defaultWait,
-      expect: () => [
-        isJournalPageState(),
-        isJournalPageState(),
-      ],
-      verify: (c) => !c.state.starredEntriesOnly,
-    );
-
-    blocTest<JournalPageCubit, JournalPageState>(
-      'toggle private entries changes state',
-      build: () => JournalPageCubit(showTasks: false),
-      setUp: () {},
-      act: (c) async {
-        c.togglePrivateEntriesOnly();
-      },
-      wait: defaultWait,
-      expect: () => [isJournalPageState()],
-      verify: (c) => c.state.privateEntriesOnly,
-    );
-
-    blocTest<JournalPageCubit, JournalPageState>(
-      'toggle private entries twice disables flag again',
-      build: () => JournalPageCubit(showTasks: false),
-      setUp: () {},
-      act: (c) async {
-        c
-          ..togglePrivateEntriesOnly()
-          ..togglePrivateEntriesOnly();
-      },
-      wait: defaultWait,
-      expect: () => [
-        isJournalPageState(),
-        isJournalPageState(),
-      ],
-      verify: (c) => !c.state.privateEntriesOnly,
-    );
-
-    blocTest<JournalPageCubit, JournalPageState>(
-      'toggle flagged entries changes state',
-      build: () => JournalPageCubit(showTasks: false),
-      setUp: () {},
-      act: (c) async {
-        c.toggleFlaggedEntriesOnly();
-      },
-      wait: defaultWait,
-      expect: () => [isJournalPageState()],
-      verify: (c) => c.state.flaggedEntriesOnly,
-    );
-
-    blocTest<JournalPageCubit, JournalPageState>(
-      'toggle flagged entries twice disables flag again',
-      build: () => JournalPageCubit(showTasks: false),
-      setUp: () {},
-      act: (c) async {
-        c
-          ..toggleFlaggedEntriesOnly()
-          ..toggleFlaggedEntriesOnly();
-      },
-      wait: defaultWait,
-      expect: () => [
-        isJournalPageState(),
-        isJournalPageState(),
-      ],
-      verify: (c) => !c.state.flaggedEntriesOnly,
+      verify: (c) => c.state.filters == {DisplayFilter.starredEntriesOnly},
     );
 
     blocTest<JournalPageCubit, JournalPageState>(

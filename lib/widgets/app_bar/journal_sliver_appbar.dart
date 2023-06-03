@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -17,15 +16,13 @@ class JournalSliverAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
 
         return SliverAppBar(
           backgroundColor: styleConfig().negspace,
-          expandedHeight: snapshot.showTasks ? 160 : 200,
+          expandedHeight: 200,
           flexibleSpace: FlexibleSpaceBar(
             background: Padding(
               padding: EdgeInsets.only(top: isIOS ? 30 : 0),
@@ -39,74 +36,7 @@ class JournalSliverAppBar extends StatelessWidget {
                     text: snapshot.match,
                     onChanged: cubit.setSearchString,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (!snapshot.showTasks)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Visibility(
-                                  visible: snapshot.showPrivateEntries,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        localizations.journalPrivateTooltip,
-                                        style: searchLabelStyle(),
-                                      ),
-                                      CupertinoSwitch(
-                                        value: snapshot.privateEntriesOnly,
-                                        activeColor: styleConfig().private,
-                                        onChanged: (_) =>
-                                            cubit.togglePrivateEntriesOnly(),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      localizations.journalFavoriteTooltip,
-                                      style: searchLabelStyle(),
-                                    ),
-                                    CupertinoSwitch(
-                                      value: snapshot.starredEntriesOnly,
-                                      activeColor: styleConfig().starredGold,
-                                      onChanged: (_) =>
-                                          cubit.toggleStarredEntriesOnly(),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(width: 5),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      localizations.journalFlaggedTooltip,
-                                      style: searchLabelStyle(),
-                                    ),
-                                    CupertinoSwitch(
-                                      value: snapshot.flaggedEntriesOnly,
-                                      activeColor: styleConfig().starredGold,
-                                      onChanged: (_) =>
-                                          cubit.toggleFlaggedEntriesOnly(),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(width: 5),
-                              ],
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  const JournalFilter(),
                   const SizedBox(height: 10),
                   if (!snapshot.showTasks) const EntryTypeFilter(),
                   if (snapshot.showTasks) const TaskStatusFilter(),
@@ -114,6 +44,71 @@ class JournalSliverAppBar extends StatelessWidget {
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+class JournalFilter extends StatelessWidget {
+  const JournalFilter({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return BlocBuilder<JournalPageCubit, JournalPageState>(
+      builder: (context, snapshot) {
+        final cubit = context.read<JournalPageCubit>();
+
+        ButtonSegment<DisplayFilter> segment({
+          required DisplayFilter filter,
+          required IconData icon,
+          required IconData activeIcon,
+          required String semanticLabel,
+        }) {
+          final active = snapshot.filters.contains(filter);
+          return ButtonSegment<DisplayFilter>(
+            value: filter,
+            label: Tooltip(
+              message: semanticLabel,
+              child: Icon(
+                active ? activeIcon : icon,
+                semanticLabel: semanticLabel,
+                color: active ? Colors.black : styleConfig().secondaryTextColor,
+              ),
+            ),
+          );
+        }
+
+        return SegmentedButton<DisplayFilter>(
+          selected: snapshot.filters,
+          showSelectedIcon: false,
+          multiSelectionEnabled: true,
+          onSelectionChanged: cubit.setFilters,
+          emptySelectionAllowed: true,
+          segments: [
+            segment(
+              filter: DisplayFilter.starredEntriesOnly,
+              icon: Icons.star_outline,
+              activeIcon: Icons.star,
+              semanticLabel: localizations.journalFavoriteTooltip,
+            ),
+            segment(
+              filter: DisplayFilter.flaggedEntriesOnly,
+              icon: Icons.flag_outlined,
+              activeIcon: Icons.flag,
+              semanticLabel: localizations.journalFlaggedTooltip,
+            ),
+            segment(
+              filter: DisplayFilter.privateEntriesOnly,
+              icon: Icons.shield_outlined,
+              activeIcon: Icons.shield,
+              semanticLabel: localizations.journalPrivateTooltip,
+            ),
+          ],
         );
       },
     );

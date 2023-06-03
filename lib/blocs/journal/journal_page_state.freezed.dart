@@ -18,9 +18,7 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$JournalPageState {
   String get match => throw _privateConstructorUsedError;
   Set<String> get tagIds => throw _privateConstructorUsedError;
-  bool get starredEntriesOnly => throw _privateConstructorUsedError;
-  bool get flaggedEntriesOnly => throw _privateConstructorUsedError;
-  bool get privateEntriesOnly => throw _privateConstructorUsedError;
+  Set<DisplayFilter> get filters => throw _privateConstructorUsedError;
   bool get showPrivateEntries => throw _privateConstructorUsedError;
   bool get showTasks => throw _privateConstructorUsedError;
   List<String> get selectedEntryTypes => throw _privateConstructorUsedError;
@@ -44,9 +42,7 @@ abstract class $JournalPageStateCopyWith<$Res> {
   $Res call(
       {String match,
       Set<String> tagIds,
-      bool starredEntriesOnly,
-      bool flaggedEntriesOnly,
-      bool privateEntriesOnly,
+      Set<DisplayFilter> filters,
       bool showPrivateEntries,
       bool showTasks,
       List<String> selectedEntryTypes,
@@ -71,9 +67,7 @@ class _$JournalPageStateCopyWithImpl<$Res, $Val extends JournalPageState>
   $Res call({
     Object? match = null,
     Object? tagIds = null,
-    Object? starredEntriesOnly = null,
-    Object? flaggedEntriesOnly = null,
-    Object? privateEntriesOnly = null,
+    Object? filters = null,
     Object? showPrivateEntries = null,
     Object? showTasks = null,
     Object? selectedEntryTypes = null,
@@ -91,18 +85,10 @@ class _$JournalPageStateCopyWithImpl<$Res, $Val extends JournalPageState>
           ? _value.tagIds
           : tagIds // ignore: cast_nullable_to_non_nullable
               as Set<String>,
-      starredEntriesOnly: null == starredEntriesOnly
-          ? _value.starredEntriesOnly
-          : starredEntriesOnly // ignore: cast_nullable_to_non_nullable
-              as bool,
-      flaggedEntriesOnly: null == flaggedEntriesOnly
-          ? _value.flaggedEntriesOnly
-          : flaggedEntriesOnly // ignore: cast_nullable_to_non_nullable
-              as bool,
-      privateEntriesOnly: null == privateEntriesOnly
-          ? _value.privateEntriesOnly
-          : privateEntriesOnly // ignore: cast_nullable_to_non_nullable
-              as bool,
+      filters: null == filters
+          ? _value.filters
+          : filters // ignore: cast_nullable_to_non_nullable
+              as Set<DisplayFilter>,
       showPrivateEntries: null == showPrivateEntries
           ? _value.showPrivateEntries
           : showPrivateEntries // ignore: cast_nullable_to_non_nullable
@@ -146,9 +132,7 @@ abstract class _$$_JournalPageStateCopyWith<$Res>
   $Res call(
       {String match,
       Set<String> tagIds,
-      bool starredEntriesOnly,
-      bool flaggedEntriesOnly,
-      bool privateEntriesOnly,
+      Set<DisplayFilter> filters,
       bool showPrivateEntries,
       bool showTasks,
       List<String> selectedEntryTypes,
@@ -171,9 +155,7 @@ class __$$_JournalPageStateCopyWithImpl<$Res>
   $Res call({
     Object? match = null,
     Object? tagIds = null,
-    Object? starredEntriesOnly = null,
-    Object? flaggedEntriesOnly = null,
-    Object? privateEntriesOnly = null,
+    Object? filters = null,
     Object? showPrivateEntries = null,
     Object? showTasks = null,
     Object? selectedEntryTypes = null,
@@ -191,18 +173,10 @@ class __$$_JournalPageStateCopyWithImpl<$Res>
           ? _value._tagIds
           : tagIds // ignore: cast_nullable_to_non_nullable
               as Set<String>,
-      starredEntriesOnly: null == starredEntriesOnly
-          ? _value.starredEntriesOnly
-          : starredEntriesOnly // ignore: cast_nullable_to_non_nullable
-              as bool,
-      flaggedEntriesOnly: null == flaggedEntriesOnly
-          ? _value.flaggedEntriesOnly
-          : flaggedEntriesOnly // ignore: cast_nullable_to_non_nullable
-              as bool,
-      privateEntriesOnly: null == privateEntriesOnly
-          ? _value.privateEntriesOnly
-          : privateEntriesOnly // ignore: cast_nullable_to_non_nullable
-              as bool,
+      filters: null == filters
+          ? _value._filters
+          : filters // ignore: cast_nullable_to_non_nullable
+              as Set<DisplayFilter>,
       showPrivateEntries: null == showPrivateEntries
           ? _value.showPrivateEntries
           : showPrivateEntries // ignore: cast_nullable_to_non_nullable
@@ -241,9 +215,7 @@ class _$_JournalPageState implements _JournalPageState {
   _$_JournalPageState(
       {required this.match,
       required final Set<String> tagIds,
-      required this.starredEntriesOnly,
-      required this.flaggedEntriesOnly,
-      required this.privateEntriesOnly,
+      required final Set<DisplayFilter> filters,
       required this.showPrivateEntries,
       required this.showTasks,
       required final List<String> selectedEntryTypes,
@@ -252,6 +224,7 @@ class _$_JournalPageState implements _JournalPageState {
       required final List<String> taskStatuses,
       required final Set<String> selectedTaskStatuses})
       : _tagIds = tagIds,
+        _filters = filters,
         _selectedEntryTypes = selectedEntryTypes,
         _fullTextMatches = fullTextMatches,
         _taskStatuses = taskStatuses,
@@ -267,12 +240,14 @@ class _$_JournalPageState implements _JournalPageState {
     return EqualUnmodifiableSetView(_tagIds);
   }
 
+  final Set<DisplayFilter> _filters;
   @override
-  final bool starredEntriesOnly;
-  @override
-  final bool flaggedEntriesOnly;
-  @override
-  final bool privateEntriesOnly;
+  Set<DisplayFilter> get filters {
+    if (_filters is EqualUnmodifiableSetView) return _filters;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(_filters);
+  }
+
   @override
   final bool showPrivateEntries;
   @override
@@ -315,7 +290,7 @@ class _$_JournalPageState implements _JournalPageState {
 
   @override
   String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, starredEntriesOnly: $starredEntriesOnly, flaggedEntriesOnly: $flaggedEntriesOnly, privateEntriesOnly: $privateEntriesOnly, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses)';
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses)';
   }
 
   @override
@@ -325,12 +300,7 @@ class _$_JournalPageState implements _JournalPageState {
             other is _$_JournalPageState &&
             (identical(other.match, match) || other.match == match) &&
             const DeepCollectionEquality().equals(other._tagIds, _tagIds) &&
-            (identical(other.starredEntriesOnly, starredEntriesOnly) ||
-                other.starredEntriesOnly == starredEntriesOnly) &&
-            (identical(other.flaggedEntriesOnly, flaggedEntriesOnly) ||
-                other.flaggedEntriesOnly == flaggedEntriesOnly) &&
-            (identical(other.privateEntriesOnly, privateEntriesOnly) ||
-                other.privateEntriesOnly == privateEntriesOnly) &&
+            const DeepCollectionEquality().equals(other._filters, _filters) &&
             (identical(other.showPrivateEntries, showPrivateEntries) ||
                 other.showPrivateEntries == showPrivateEntries) &&
             (identical(other.showTasks, showTasks) ||
@@ -352,9 +322,7 @@ class _$_JournalPageState implements _JournalPageState {
       runtimeType,
       match,
       const DeepCollectionEquality().hash(_tagIds),
-      starredEntriesOnly,
-      flaggedEntriesOnly,
-      privateEntriesOnly,
+      const DeepCollectionEquality().hash(_filters),
       showPrivateEntries,
       showTasks,
       const DeepCollectionEquality().hash(_selectedEntryTypes),
@@ -374,9 +342,7 @@ abstract class _JournalPageState implements JournalPageState {
   factory _JournalPageState(
       {required final String match,
       required final Set<String> tagIds,
-      required final bool starredEntriesOnly,
-      required final bool flaggedEntriesOnly,
-      required final bool privateEntriesOnly,
+      required final Set<DisplayFilter> filters,
       required final bool showPrivateEntries,
       required final bool showTasks,
       required final List<String> selectedEntryTypes,
@@ -390,11 +356,7 @@ abstract class _JournalPageState implements JournalPageState {
   @override
   Set<String> get tagIds;
   @override
-  bool get starredEntriesOnly;
-  @override
-  bool get flaggedEntriesOnly;
-  @override
-  bool get privateEntriesOnly;
+  Set<DisplayFilter> get filters;
   @override
   bool get showPrivateEntries;
   @override
