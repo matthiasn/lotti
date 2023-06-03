@@ -4,14 +4,18 @@ import 'package:lotti/classes/journal_entities.dart';
 
 part 'journal_page_state.freezed.dart';
 
+enum DisplayFilter {
+  starredEntriesOnly,
+  flaggedEntriesOnly,
+  privateEntriesOnly,
+}
+
 @freezed
 class JournalPageState with _$JournalPageState {
   factory JournalPageState({
     required String match,
     required Set<String> tagIds,
-    required bool starredEntriesOnly,
-    required bool flaggedEntriesOnly,
-    required bool privateEntriesOnly,
+    required Set<DisplayFilter> filters,
     required bool showPrivateEntries,
     required bool showTasks,
     required List<String> selectedEntryTypes,
