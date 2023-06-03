@@ -14,9 +14,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
           JournalPageState(
             match: '',
             tagIds: <String>{},
-            starredEntriesOnly: false,
-            flaggedEntriesOnly: false,
-            privateEntriesOnly: false,
+            filters: {},
             showPrivateEntries: false,
             selectedEntryTypes: entryTypes,
             fullTextMatches: {},
@@ -58,11 +56,9 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   final JournalDb _db = getIt<JournalDb>();
   static const _pageSize = 50;
   Set<String> _selectedEntryTypes = entryTypes.toSet();
+  Set<DisplayFilter> _filters = {};
 
   String _query = '';
-  bool _starredEntriesOnly = false;
-  bool _flaggedEntriesOnly = false;
-  bool _privateEntriesOnly = false;
   bool _showPrivateEntries = false;
   bool showTasks = false;
 
@@ -79,9 +75,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       JournalPageState(
         match: _query,
         tagIds: <String>{},
-        starredEntriesOnly: _starredEntriesOnly,
-        flaggedEntriesOnly: _flaggedEntriesOnly,
-        privateEntriesOnly: _privateEntriesOnly,
+        filters: _filters,
         showPrivateEntries: _showPrivateEntries,
         showTasks: showTasks,
         selectedEntryTypes: _selectedEntryTypes.toList(),
@@ -98,8 +92,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     refreshQuery();
   }
 
-  void toggleStarredEntriesOnly() {
-    _starredEntriesOnly = !_starredEntriesOnly;
+  void setFilters(Set<DisplayFilter> filters) {
+    _filters = filters;
     refreshQuery();
   }
 
@@ -154,16 +148,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     refreshQuery();
   }
 
-  void toggleFlaggedEntriesOnly() {
-    _flaggedEntriesOnly = !_flaggedEntriesOnly;
-    refreshQuery();
-  }
-
-  void togglePrivateEntriesOnly() {
-    _privateEntriesOnly = !_privateEntriesOnly;
-    refreshQuery();
-  }
-
   Future<void> _fts5Search() async {
     if (_query.isEmpty) {
       _fullTextMatches = {};
@@ -192,11 +176,18 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       final fullTextMatches = _fullTextMatches.toList();
       final ids = _query.isNotEmpty ? fullTextMatches : null;
 
+      final starredEntriesOnly =
+          _filters.contains(DisplayFilter.starredEntriesOnly);
+      final privateEntriesOnly =
+          _filters.contains(DisplayFilter.privateEntriesOnly);
+      final flaggedEntriesOnly =
+          _filters.contains(DisplayFilter.flaggedEntriesOnly);
+
       final newItems = showTasks
           ? await _db
               .watchTasks(
                 ids: ids,
-                starredStatuses: _starredEntriesOnly ? [true] : [true, false],
+                starredStatuses: starredEntriesOnly ? [true] : [true, false],
                 taskStatuses: _selectedTaskStatuses.toList(),
                 limit: _pageSize,
                 offset: pageKey,
@@ -206,9 +197,9 @@ class JournalPageCubit extends Cubit<JournalPageState> {
               .watchJournalEntities(
                 types: types,
                 ids: ids,
-                starredStatuses: _starredEntriesOnly ? [true] : [true, false],
-                privateStatuses: _privateEntriesOnly ? [true] : [true, false],
-                flaggedStatuses: _flaggedEntriesOnly ? [1] : [1, 0],
+                starredStatuses: starredEntriesOnly ? [true] : [true, false],
+                privateStatuses: privateEntriesOnly ? [true] : [true, false],
+                flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
                 limit: _pageSize,
                 offset: pageKey,
               )
