@@ -40,7 +40,6 @@ class CategoryDetailsPage extends StatelessWidget {
             final cubit = context.read<CategorySettingsCubit>();
 
             return Scaffold(
-              backgroundColor: styleConfig().negspace,
               appBar: TitleAppBar(
                 title: state.categoryDefinition.name,
                 actions: [
@@ -80,7 +79,6 @@ class CategoryDetailsPage extends StatelessWidget {
                                   initialValue: item.name,
                                   textCapitalization:
                                       TextCapitalization.sentences,
-                                  keyboardAppearance: keyboardAppearance(),
                                   validator: FormBuilderValidators.compose([
                                     FormBuilderValidators.required(),
                                     (categoryName) {

@@ -27,7 +27,7 @@ void main() {
       final settingsDb = SettingsDb(inMemoryDatabase: true);
 
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<Directory>(docDir)

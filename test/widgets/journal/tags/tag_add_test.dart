@@ -37,7 +37,7 @@ void main() {
 
     setUpAll(() {
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<TagsService>(mockTagsService);
     });

@@ -118,7 +118,7 @@ class DashboardWidget extends StatelessWidget {
               if (showTitle)
                 Text(
                   dashboard.name,
-                  style: taskTitleStyle(),
+                  style: taskTitleStyle,
                 ),
               ...intersperse(const SizedBox(height: 16), items),
               Row(
@@ -129,7 +129,7 @@ class DashboardWidget extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 10),
                       child: Text(
                         dashboard.description,
-                        style: chartTitleStyle(),
+                        style: chartTitleStyle,
                       ),
                     ),
                   ),

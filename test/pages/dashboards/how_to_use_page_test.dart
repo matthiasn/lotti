@@ -10,7 +10,7 @@ void main() {
 
   group('HowToUsePage Widget Tests - ', () {
     setUp(() {
-      getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
+      getIt.registerSingleton<ThemesService>(ThemesService());
     });
 
     testWidgets('page is rendered with expected text ', (tester) async {

@@ -79,7 +79,7 @@ class LogLineCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         child: Text(
           '$timestamp: $domain $subDomain $message',
-          style: monospaceTextStyleSmall().copyWith(color: color),
+          style: monospaceTextStyleSmall.copyWith(color: color),
         ),
       ),
     );
@@ -101,7 +101,6 @@ class LogDetailPage extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: styleConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsLogsTitle),
       body: StreamBuilder(
         stream: _db.watchLogEntryById(logEntryId),
@@ -131,7 +130,7 @@ class LogDetailPage extends StatelessWidget {
 
           final headerStyle = level == 'ERROR'
               ? logDetailStyle().copyWith(
-                  color: styleConfig().alarm,
+                  color: Theme.of(context).colorScheme.error,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 )

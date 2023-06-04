@@ -17,10 +17,7 @@ void main() {
       getIt
         ..registerSingleton<JournalDb>(db)
         ..registerSingleton(
-          ThemesService(
-            debounceSeconds: 0,
-            saveThemeAsJson: false,
-          ),
+          ThemesService(),
         );
 
       db.insertFlagIfNotExists(

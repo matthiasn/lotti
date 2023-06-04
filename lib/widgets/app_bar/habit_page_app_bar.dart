@@ -21,7 +21,6 @@ class HabitsSliverAppBar extends StatelessWidget {
         final cubit = context.read<HabitsCubit>();
 
         return SliverAppBar(
-          backgroundColor: styleConfig().negspace,
           expandedHeight: 250,
           primary: false,
           title: SingleChildScrollView(

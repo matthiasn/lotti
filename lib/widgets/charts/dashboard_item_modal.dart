@@ -31,7 +31,7 @@ class DashboardItemModal extends StatelessWidget {
           children: <Widget>[
             Text(
               title,
-              style: titleStyle(),
+              style: titleStyle,
             ),
             const SizedBox(height: 16),
             Text(

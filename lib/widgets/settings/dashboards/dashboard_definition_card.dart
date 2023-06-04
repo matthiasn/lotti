@@ -26,7 +26,7 @@ class DashboardDefinitionCard extends StatelessWidget {
         visible: dashboard.private,
         child: Icon(
           MdiIcons.security,
-          color: styleConfig().alarm,
+          color: Theme.of(context).colorScheme.error,
           size: settingsIconSize,
         ),
       ),

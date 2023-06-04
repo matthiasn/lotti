@@ -160,7 +160,7 @@ class InfoWidget extends StatelessWidget {
                     ),
                     child: Text(
                       title,
-                      style: chartTitleStyle(),
+                      style: chartTitleStyle,
                       overflow: TextOverflow.ellipsis,
                       softWrap: false,
                     ),
@@ -171,14 +171,14 @@ class InfoWidget extends StatelessWidget {
                       padding: AppTheme.chartDateHorizontalPadding,
                       child: Text(
                         ' ${ymd(selected.dateTime)}',
-                        style: chartTitleStyle(),
+                        style: chartTitleStyle,
                       ),
                     ),
                     const Spacer(),
                     Text(
                       ' $duration',
-                      style: chartTitleStyle()
-                          .copyWith(fontWeight: FontWeight.bold),
+                      style:
+                          chartTitleStyle.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
                   const Spacer(),

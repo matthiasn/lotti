@@ -48,8 +48,9 @@ class AudioRecordingIndicator extends StatelessWidget {
                           padding: const EdgeInsets.only(left: 4, bottom: 4),
                           child: Text(
                             formatDuration(state.progress),
-                            style: monospaceTextStyle()
-                                .copyWith(color: Colors.black),
+                            style: monospaceTextStyle.copyWith(
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                       ],

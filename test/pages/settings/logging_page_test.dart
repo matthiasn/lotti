@@ -20,7 +20,7 @@ void main() {
       getIt
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<ThemesService>(ThemesService(watch: false));
+        ..registerSingleton<ThemesService>(ThemesService());
     });
     tearDown(getIt.reset);
 

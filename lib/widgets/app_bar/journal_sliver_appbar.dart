@@ -21,7 +21,6 @@ class JournalSliverAppBar extends StatelessWidget {
         final cubit = context.read<JournalPageCubit>();
 
         return SliverAppBar(
-          backgroundColor: styleConfig().negspace,
           expandedHeight: 200,
           flexibleSpace: FlexibleSpaceBar(
             background: Padding(

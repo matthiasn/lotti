@@ -25,7 +25,7 @@ void main() {
 
     setUp(() {
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);

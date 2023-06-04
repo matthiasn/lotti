@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/themes/theme.dart';
 
 // adapted from https://github.com/JohannesMilke/filter_listview_example
 class SearchWidget extends StatefulWidget implements PreferredSizeWidget {
@@ -31,9 +30,9 @@ class _SearchWidgetState extends State<SearchWidget> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    final styleActive = searchFieldStyle();
-    final styleHint = searchFieldHintStyle();
-    final style = widget.text.isEmpty ? styleHint : styleActive;
+    //final styleActive = searchFieldStyle();
+    //final styleHint = searchFieldHintStyle();
+    //final style = widget.text.isEmpty ? styleHint : styleActive;
 
     return Container(
       margin: widget.margin,
@@ -43,19 +42,18 @@ class _SearchWidgetState extends State<SearchWidget> {
         controller: controller,
         hintText: widget.hintText ?? localizations.searchHint,
         onChanged: widget.onChanged,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 8),
-          child: Icon(Icons.search, color: style.color),
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 8),
+          child: Icon(Icons.search),
         ),
         trailing: [
           Visibility(
             visible: controller.text.isNotEmpty,
             child: GestureDetector(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
+              child: const Padding(
+                padding: EdgeInsets.only(right: 8),
                 child: Icon(
                   Icons.close_rounded,
-                  color: style.color,
                 ),
               ),
               onTap: () {

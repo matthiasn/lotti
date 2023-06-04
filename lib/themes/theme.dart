@@ -1,12 +1,11 @@
 // ignore_for_file: equal_keys_in_map
 import 'dart:ui';
 
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/themes.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 const fontSizeSmall = 11.0;
 const fontSizeMedium = 15.0;
@@ -22,8 +21,6 @@ class AppTheme {
 
 const double inputBorderRadius = 10;
 const mainFont = 'PlusJakartaSans';
-
-const habitCardTextColor = Colors.black87;
 
 final inputBorder = OutlineInputBorder(
   borderRadius: BorderRadius.circular(inputBorderRadius),
@@ -88,7 +85,6 @@ TextStyle inputStyle() => TextStyle(
     );
 
 TextStyle dialogInputStyle() => const TextStyle(
-      color: habitCardTextColor,
       fontSize: fontSizeMedium,
     );
 
@@ -149,24 +145,19 @@ TextStyle newLabelStyle() => TextStyle(
       fontSize: fontSizeMedium,
     );
 
-TextStyle monospaceTextStyle() => TextStyle(
-      fontWeight: FontWeight.w300,
-      fontSize: fontSizeMedium,
-      color: styleConfig().primaryTextColor,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
+const monospaceTextStyle = TextStyle(
+  fontWeight: FontWeight.w300,
+  fontSize: fontSizeMedium,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
 
-TextStyle monospaceTextStyleSmall() => monospaceTextStyle().copyWith(
-      fontSize: fontSizeSmall,
-    );
+final monospaceTextStyleSmall = monospaceTextStyle.copyWith(
+  fontSize: fontSizeSmall,
+);
 
-TextStyle monospaceTextStyleLarge() => monospaceTextStyle().copyWith(
+TextStyle monospaceTextStyleLarge() => monospaceTextStyle.copyWith(
       fontSize: fontSizeLarge,
     );
-
-Brightness keyboardAppearance() {
-  return styleConfig().keyboardAppearance;
-}
 
 TextStyle formLabelStyle() => TextStyle(
       color: styleConfig().secondaryTextColor,
@@ -188,70 +179,60 @@ TextStyle choiceLabelStyle() => TextStyle(
       fontSize: fontSizeMedium,
     );
 
-TextStyle logDetailStyle() => monospaceTextStyle();
+TextStyle logDetailStyle() => monospaceTextStyle;
 
-TextStyle appBarTextStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-      fontWeight: FontWeight.bold,
-    );
+const appBarTextStyle = TextStyle(
+  fontSize: fontSizeMedium,
+  fontWeight: FontWeight.bold,
+);
 
-TextStyle appBarTextStyleNew() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-      fontWeight: FontWeight.w300,
-    );
+const appBarTextStyleNew = TextStyle(
+  fontSize: fontSizeMedium,
+  fontWeight: FontWeight.w300,
+);
 
-TextStyle appBarTextStyleNewLarge() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeLarge,
-      fontWeight: FontWeight.w100,
-    );
+const appBarTextStyleNewLarge = TextStyle(
+  fontSize: fontSizeLarge,
+  fontWeight: FontWeight.w100,
+);
 
-TextStyle searchFieldStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-      fontWeight: FontWeight.w200,
-    );
+const searchFieldStyle = TextStyle(
+  fontSize: fontSizeMedium,
+  fontWeight: FontWeight.w200,
+);
 
-TextStyle searchFieldHintStyle() => searchFieldStyle().copyWith(
+TextStyle searchFieldHintStyle() => searchFieldStyle.copyWith(
       color: styleConfig().secondaryTextColor,
     );
 
-TextStyle settingsCardTextStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeLarge,
-      fontWeight: FontWeight.w300,
-    );
+const settingsCardTextStyle = TextStyle(
+  fontSize: fontSizeLarge,
+  fontWeight: FontWeight.w300,
+);
 
-TextStyle titleStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeLarge,
-      fontWeight: FontWeight.w300,
-    );
+const titleStyle = TextStyle(
+  fontSize: fontSizeLarge,
+  fontWeight: FontWeight.w300,
+);
 
-TextStyle taskTitleStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeLarge,
-    );
+const taskTitleStyle = TextStyle(
+  fontSize: fontSizeLarge,
+);
 
-TextStyle multiSelectStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.w100,
-      fontSize: fontSizeLarge,
-    );
+const multiSelectStyle = TextStyle(
+  fontWeight: FontWeight.w100,
+  fontSize: fontSizeLarge,
+);
 
-TextStyle chartTitleStyle() => TextStyle(
-      fontSize: fontSizeMedium,
-      color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.w300,
-    );
+const chartTitleStyle = TextStyle(
+  fontSize: fontSizeMedium,
+  fontWeight: FontWeight.w300,
+);
 
-TextStyle chartTitleStyleSmall() => TextStyle(
-      fontSize: fontSizeSmall,
-      color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.w300,
-    );
+const chartTitleStyleSmall = TextStyle(
+  fontSize: fontSizeSmall,
+  fontWeight: FontWeight.w300,
+);
 
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
@@ -270,7 +251,6 @@ const segmentItemStyle = TextStyle(
 );
 
 const badgeStyle = TextStyle(
-  fontFamily: 'Oswald',
   fontWeight: FontWeight.w300,
   fontSize: fontSizeSmall,
 );
@@ -286,85 +266,53 @@ const habitCompletionHeaderStyle = TextStyle(
 
 TextStyle searchLabelStyle() => TextStyle(
       color: styleConfig().secondaryTextColor,
-      fontFamily: 'Oswald',
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w100,
     );
 
-ThemeData getTheme() {
-  return ThemeData(
-    fontFamily: mainFont,
-    cardTheme: CardTheme(
-      color: styleConfig().cardColor,
-      elevation: 1,
-      clipBehavior: Clip.hardEdge,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-    ),
-    useMaterial3: true,
-    iconTheme: IconThemeData(
-      color: styleConfig().secondaryTextColor,
-    ),
-    brightness: styleConfig().keyboardAppearance,
-    scaffoldBackgroundColor: styleConfig().negspace,
-    highlightColor: Colors.transparent,
-    hoverColor: styleConfig().primaryColor.withOpacity(0.5),
-    chipTheme: ChipThemeData(
-      side: BorderSide.none,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-      backgroundColor: styleConfig().primaryColor.withOpacity(0.6),
-    ),
-    appBarTheme: AppBarTheme(
-      iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
-    ),
-    segmentedButtonTheme: SegmentedButtonThemeData(
-      style: ButtonStyle(
-        alignment: Alignment.center,
-        visualDensity: VisualDensity.compact,
-        side: MaterialStateProperty.resolveWith((states) {
-          return BorderSide(
-            color: styleConfig().primaryColor,
-          );
-        }),
-        padding: MaterialStateProperty.resolveWith((states) {
-          return const EdgeInsets.symmetric(horizontal: 6);
-        }),
-        enableFeedback: true,
-      ),
-    ),
-    bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: styleConfig().cardColor.darken(5),
-      clipBehavior: Clip.hardEdge,
-    ),
-    tooltipTheme: TooltipThemeData(
-      textStyle: chartTitleStyleSmall().copyWith(
-        color: Colors.white,
-        fontWeight: FontWeight.w400,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(5),
-      ),
-    ),
-    searchBarTheme: SearchBarThemeData(
-      backgroundColor: MaterialStateProperty.resolveWith(
-        (_) => styleConfig().cardColor.withOpacity(0.3),
-      ),
-      hintStyle: MaterialStateProperty.resolveWith(
-        (_) => searchFieldHintStyle(),
-      ),
-      textStyle: MaterialStateProperty.resolveWith(
-        (_) => searchFieldStyle(),
-      ),
-    ),
-    colorScheme: ColorScheme.fromSwatch(
-      primarySwatch: primaryColorMaterial,
-    ).copyWith(
-      background: styleConfig().cardColor,
-      brightness: keyboardAppearance(),
-    ),
-    textTheme: TextTheme(
-      bodyLarge: TextStyle(color: styleConfig().primaryTextColor),
-      bodyMedium: TextStyle(color: styleConfig().primaryTextColor),
-    ),
-  );
+final lightTheme = FlexThemeData.light(
+  scheme: FlexScheme.flutterDash,
+  useMaterial3: true,
+  fontFamily: mainFont,
+);
+
+final lightThemeMod = lightTheme.copyWith(
+  cardTheme: lightTheme.cardTheme.copyWith(
+    clipBehavior: Clip.hardEdge,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  ),
+);
+
+Brightness keyboardAppearance() {
+  return getIt<ThemesService>().darkKeyboard
+      ? Brightness.dark
+      : Brightness.light;
 }
+
+final darkTheme = FlexThemeData.dark(
+  scheme: FlexScheme.flutterDash,
+  useMaterial3: true,
+  fontFamily: mainFont,
+);
+
+final darkThemeMod = darkTheme.copyWith(
+  cardTheme: darkTheme.cardTheme.copyWith(
+    clipBehavior: Clip.hardEdge,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  ),
+  segmentedButtonTheme: SegmentedButtonThemeData(
+    style: ButtonStyle(
+      alignment: Alignment.center,
+      visualDensity: VisualDensity.compact,
+      side: MaterialStateProperty.resolveWith((states) {
+        return BorderSide(
+          color: darkTheme.colorScheme.tertiary,
+        );
+      }),
+      padding: MaterialStateProperty.resolveWith((states) {
+        return const EdgeInsets.symmetric(horizontal: 6);
+      }),
+      enableFeedback: true,
+    ),
+  ),
+);

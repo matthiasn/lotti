@@ -56,7 +56,7 @@ class WhisperModelCard extends StatelessWidget {
                 const SizedBox(width: 20),
                 Text(
                   model,
-                  style: settingsCardTextStyle().copyWith(
+                  style: settingsCardTextStyle.copyWith(
                     color: textColor,
                   ),
                 ),
