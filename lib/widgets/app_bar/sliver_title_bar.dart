@@ -27,7 +27,7 @@ class SliverTitleBar extends StatelessWidget {
         title: Text(
           title,
           style: appBarTextStyleNewLarge.copyWith(
-            color: Theme.of(context).secondaryHeaderColor,
+            color: Theme.of(context).primaryColor,
           ),
         ),
       ),

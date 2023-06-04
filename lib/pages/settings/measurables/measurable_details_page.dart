@@ -132,7 +132,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           name: 'private',
                           initialValue: item.private,
                           title: localizations.settingsMeasurablePrivateLabel,
-                          activeColor: styleConfig().private,
+                          activeColor: Theme.of(context).colorScheme.error,
                         ),
                         inputSpacer,
                         FormBuilderDropdown(

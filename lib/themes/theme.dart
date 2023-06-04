@@ -5,6 +5,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/themes/themes.dart';
 import 'package:lotti/themes/themes_service.dart';
 
 const fontSizeSmall = 11.0;
@@ -29,12 +30,7 @@ final inputBorder = OutlineInputBorder(
 
 final errorBorder = OutlineInputBorder(
   borderRadius: BorderRadius.circular(inputBorderRadius),
-  borderSide: BorderSide(color: styleConfig().alarm),
-);
-
-final inputBorderFocused = OutlineInputBorder(
-  borderRadius: BorderRadius.circular(inputBorderRadius),
-  borderSide: const BorderSide(width: 2),
+  borderSide: BorderSide(color: alarm),
 );
 
 InputDecoration inputDecoration({
@@ -179,13 +175,13 @@ const chartTitleStyleSmall = TextStyle(
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
-      color: styleConfig().alarm.darken(),
+      color: alarm.darken(),
     );
 
 TextStyle failButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
-      color: styleConfig().alarm.darken(),
+      color: alarm.darken(),
     );
 
 const segmentItemStyle = TextStyle(
@@ -218,21 +214,9 @@ Brightness keyboardAppearance() {
       : Brightness.light;
 }
 
-final lightTheme = FlexThemeData.light(
-  scheme: FlexScheme.flutterDash,
-  useMaterial3: true,
-  fontFamily: mainFont,
-);
-
-final darkTheme = FlexThemeData.dark(
-  scheme: FlexScheme.deepBlue,
-  useMaterial3: true,
-  fontFamily: mainFont,
-);
-
 ThemeData withOverrides(ThemeData themeData) {
   return themeData.copyWith(
-    cardTheme: darkTheme.cardTheme.copyWith(
+    cardTheme: themeData.cardTheme.copyWith(
       clipBehavior: Clip.hardEdge,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
@@ -243,7 +227,7 @@ ThemeData withOverrides(ThemeData themeData) {
         visualDensity: VisualDensity.compact,
         side: MaterialStateProperty.resolveWith((states) {
           return BorderSide(
-            color: darkTheme.colorScheme.tertiary,
+            color: themeData.colorScheme.tertiary,
           );
         }),
         padding: MaterialStateProperty.resolveWith((states) {
@@ -257,5 +241,18 @@ ThemeData withOverrides(ThemeData themeData) {
   );
 }
 
-final lightThemeMod = withOverrides(lightTheme);
-final darkThemeMod = withOverrides(darkTheme);
+final lightThemeMod = withOverrides(
+  FlexThemeData.light(
+    scheme: FlexScheme.shark,
+    useMaterial3: true,
+    fontFamily: mainFont,
+  ),
+);
+
+final darkThemeMod = withOverrides(
+  FlexThemeData.dark(
+    scheme: FlexScheme.shark,
+    useMaterial3: true,
+    fontFamily: mainFont,
+  ),
+);

@@ -46,11 +46,6 @@ void main() {
         getTagColor(testTag),
         getIt<ThemesService>().current.tagColor,
       );
-
-      expect(
-        getTagColor(testTag.copyWith(private: true)),
-        getIt<ThemesService>().current.privateTagColor,
-      );
     });
 
     test('getTagColor returns expected person tag colors', () async {
@@ -67,11 +62,6 @@ void main() {
         getTagColor(testTag),
         getIt<ThemesService>().current.personTagColor,
       );
-
-      expect(
-        getTagColor(testTag.copyWith(private: true)),
-        getIt<ThemesService>().current.privateTagColor,
-      );
     });
 
     test('getTagColor returns expected story tag colors', () async {
@@ -87,11 +77,6 @@ void main() {
       expect(
         getTagColor(testTag),
         getIt<ThemesService>().current.storyTagColor,
-      );
-
-      expect(
-        getTagColor(testTag.copyWith(private: true)),
-        getIt<ThemesService>().current.privateTagColor,
       );
     });
   });

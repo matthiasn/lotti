@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
-- Color schemes from flex_color_scheme (WIP)
+- Color schemes from flex_color_scheme
 - Styling
 - Style fixes & refactoring
 - Styles refactoring
@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 - Task duration estimate bottom sheet
 - Font colors on survey bottom sheet
+- Color issues
 
 ## [0.8.366] - 2023-06-03
 ### Changed:
