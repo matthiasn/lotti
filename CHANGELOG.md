@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Styles refactoring
 - Text editor border
 - Editor toolbar elevation
+- Habit completion bottom sheet background styling
 
 ### Fixed:
 - Task duration estimate bottom sheet

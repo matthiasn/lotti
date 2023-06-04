@@ -42,6 +42,9 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
       context: context,
       isScrollControlled: true,
       constraints: BoxConstraints(maxHeight: maxHeight),
+      backgroundColor: widget.habitDefinition.dashboardId != null
+          ? Theme.of(context).bottomSheetTheme.backgroundColor
+          : Colors.transparent,
       builder: (BuildContext context) {
         return HabitDialog(
           habitId: widget.habitDefinition.id,
