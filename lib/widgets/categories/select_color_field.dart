@@ -49,7 +49,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
     });
 
     final style =
-        widget.hexColor != null ? searchFieldHintStyle() : searchFieldStyle;
+        widget.hexColor != null ? searchFieldHintStyle : searchFieldStyle;
 
     final color = widget.hexColor != null
         ? colorFromCssHex(widget.hexColor)

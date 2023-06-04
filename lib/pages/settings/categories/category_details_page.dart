@@ -92,7 +92,6 @@ class CategoryDetailsPage extends StatelessWidget {
                                       return null;
                                     }
                                   ]),
-                                  style: labelStyle(),
                                   decoration: inputDecoration(
                                     labelText: AppLocalizations.of(context)!
                                         .settingsCategoriesNameLabel,

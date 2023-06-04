@@ -44,7 +44,7 @@ class AudioRecorderWidget extends StatelessWidget {
                 padding: const EdgeInsets.all(30),
                 child: Text(
                   formatDuration(state.progress.toString()),
-                  style: monospaceTextStyleLarge().copyWith(
+                  style: monospaceTextStyleLarge.copyWith(
                     color: styleConfig().secondaryTextColor,
                   ),
                 ),

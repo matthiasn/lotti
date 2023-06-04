@@ -49,8 +49,6 @@ class ChartMultiSelect<T> extends StatelessWidget {
           size: fontSizeLarge,
           color: styleConfig().primaryTextColor,
         ),
-        searchTextStyle: formLabelStyle(),
-        searchHintStyle: formLabelStyle(),
         buttonIcon: Icon(
           iconData,
           color: styleConfig().primaryTextColor,
