@@ -209,10 +209,7 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    localizations.outboxMonitorSwitchLabel,
-                    style: labelStyleLarger(),
-                  ),
+                  Text(localizations.outboxMonitorSwitchLabel),
                   CupertinoSwitch(
                     value: onlineStatus,
                     onChanged: (_) {
