@@ -63,7 +63,6 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             }
 
             return Scaffold(
-              backgroundColor: styleConfig().negspace,
               appBar: OutboxAppBar(
                 onlineStatus: onlineStatus,
                 selectedValue: _selectedValue,
@@ -122,9 +121,9 @@ class OutboxItemCard extends StatelessWidget {
     Color cardColor(OutboxStatus status) {
       switch (statusEnum) {
         case OutboxStatus.pending:
-          return styleConfig().primaryColorLight;
+          return Theme.of(context).primaryColorLight;
         case OutboxStatus.error:
-          return styleConfig().alarm;
+          return Theme.of(context).colorScheme.error;
         case OutboxStatus.sent:
           return styleConfig().primaryColor;
       }
@@ -204,7 +203,7 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
             children: [
               Text(
                 localizations.settingsSyncOutboxTitle,
-                style: appBarTextStyle(),
+                style: appBarTextStyle,
               ),
               const SizedBox(width: 32),
               Row(

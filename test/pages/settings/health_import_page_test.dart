@@ -18,7 +18,7 @@ void main() {
     setUp(() {
       getIt
         ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<ThemesService>(ThemesService(watch: false));
+        ..registerSingleton<ThemesService>(ThemesService());
 
       when(
         () => mockHealthImport.getActivityHealthData(

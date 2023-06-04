@@ -17,7 +17,7 @@ void main() {
 
   group('AudioRecorderWidget Widget Tests - ', () {
     setUp(() {
-      getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
+      getIt.registerSingleton<ThemesService>(ThemesService());
       VisibilityDetectorController.instance.updateInterval = Duration.zero;
     });
     tearDown(getIt.reset);

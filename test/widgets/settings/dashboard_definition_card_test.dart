@@ -15,7 +15,7 @@ void main() {
 
     setUp(() {
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
     });
     tearDown(getIt.reset);

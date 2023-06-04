@@ -219,12 +219,12 @@ class BpChartInfoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
+    return const Positioned(
       top: 0,
       left: 10,
       child: Text(
         'Blood Pressure',
-        style: chartTitleStyle(),
+        style: chartTitleStyle,
       ),
     );
   }

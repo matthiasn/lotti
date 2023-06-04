@@ -35,18 +35,16 @@ class SurveySummary extends StatelessWidget {
                 children: [
                   Text(
                     '${mapEntry.key}:',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.w900,
-                      color: styleConfig().primaryTextColor,
                       fontSize: fontSizeMedium,
                     ),
                   ),
                   Text(
                     ' ${mapEntry.value}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.w400,
                       fontSize: fontSizeMedium,
-                      color: styleConfig().primaryTextColor,
                     ),
                   ),
                 ],

@@ -81,7 +81,6 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
             textTheme: CupertinoTextThemeData(
               dateTimePickerTextStyle: formLabelStyle().copyWith(
                 fontSize: fontSizeLarge,
-                color: styleConfig().primaryTextColor,
                 fontWeight: FontWeight.w300,
               ),
             ),

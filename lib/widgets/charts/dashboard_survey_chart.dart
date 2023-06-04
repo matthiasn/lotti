@@ -83,7 +83,7 @@ class DashboardSurveyChart extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     chartConfig.surveyName,
-                    style: chartTitleStyle(),
+                    style: chartTitleStyle,
                   ),
                   const Spacer(),
                   IconButton(

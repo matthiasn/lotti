@@ -297,7 +297,7 @@ class StatusTextWidget extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: Text(
         label,
-        style: monospaceTextStyle(),
+        style: monospaceTextStyle,
       ),
     );
   }

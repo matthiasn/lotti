@@ -15,7 +15,7 @@ class HabitsSearchWidget extends StatelessWidget {
       builder: (context, HabitsState state) {
         final cubit = context.read<HabitsCubit>();
 
-        final styleActive = searchFieldStyle();
+        const styleActive = searchFieldStyle;
         final styleHint = searchFieldHintStyle();
         final style = state.searchString.isEmpty ? styleHint : styleActive;
 

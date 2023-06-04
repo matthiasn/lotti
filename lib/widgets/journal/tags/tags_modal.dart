@@ -110,8 +110,7 @@ class _TagsModalState extends State<TagsModal> {
                     onSubmitted: onSubmitted,
                     onChanged: onChanged,
                     autofocus: true,
-                    keyboardAppearance: keyboardAppearance(),
-                    style: chartTitleStyle(),
+                    style: chartTitleStyle,
                     cursorColor: styleConfig().primaryColor,
                   ),
                 ),
@@ -122,10 +121,7 @@ class _TagsModalState extends State<TagsModal> {
                     top: 16,
                     bottom: 16,
                   ),
-                  icon: Icon(
-                    MdiIcons.contentCopy,
-                    color: styleConfig().primaryTextColor,
-                  ),
+                  icon: const Icon(MdiIcons.contentCopy),
                   tooltip: localizations.journalTagsCopyHint,
                 ),
                 IconButton(
@@ -135,10 +131,7 @@ class _TagsModalState extends State<TagsModal> {
                     top: 16,
                     bottom: 16,
                   ),
-                  icon: Icon(
-                    MdiIcons.contentPaste,
-                    color: styleConfig().primaryTextColor,
-                  ),
+                  icon: const Icon(MdiIcons.contentPaste),
                   tooltip: localizations.journalTagsPasteHint,
                 ),
               ],

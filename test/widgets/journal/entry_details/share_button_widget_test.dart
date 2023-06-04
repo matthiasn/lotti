@@ -27,7 +27,7 @@ void main() {
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<TagsService>(TagsService());
     });

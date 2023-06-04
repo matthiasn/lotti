@@ -154,7 +154,7 @@ class AudioPlayerWidget extends StatelessWidget {
                     barHeight: 3,
                     thumbRadius: 5,
                     onSeek: cubit.seek,
-                    timeLabelTextStyle: monospaceTextStyle().copyWith(
+                    timeLabelTextStyle: monospaceTextStyle.copyWith(
                       color: styleConfig().secondaryTextColor,
                     ),
                   ),

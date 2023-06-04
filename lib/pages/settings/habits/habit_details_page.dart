@@ -35,7 +35,6 @@ class HabitDetailsPage extends StatelessWidget {
         final showFrom = item.habitSchedule.mapOrNull(daily: (d) => d.showFrom);
 
         return Scaffold(
-          backgroundColor: styleConfig().negspace,
           appBar: TitleAppBar(
             title: state.habitDefinition.name,
             actions: [

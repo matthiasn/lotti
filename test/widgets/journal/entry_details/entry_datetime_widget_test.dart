@@ -20,7 +20,7 @@ void main() {
 
     setUpAll(() {
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<TagsService>(TagsService());
 

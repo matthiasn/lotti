@@ -225,7 +225,7 @@ class BmiRangeLegend extends StatelessWidget {
                           ),
                           Text(
                             range.name,
-                            style: chartTitleStyle().copyWith(
+                            style: chartTitleStyle.copyWith(
                               fontSize: 11,
                               color: Colors.black,
                             ),
@@ -285,25 +285,25 @@ class BmiChartInfoWidget extends StatelessWidget {
                     Text(
                       healthTypes[chartConfig.healthType]?.displayName ??
                           chartConfig.healthType,
-                      style: chartTitleStyle(),
+                      style: chartTitleStyle,
                     ),
                   if (selected != null) ...[
                     Padding(
                       padding: AppTheme.chartDateHorizontalPadding,
                       child: Text(
                         ' ${ymd(selected.dateTime)}',
-                        style: chartTitleStyle(),
+                        style: chartTitleStyle,
                       ),
                     ),
                     Text(
                       ' ${NumberFormat('#,###.##').format(selected.value)} kg ',
-                      style: chartTitleStyle().copyWith(
+                      style: chartTitleStyle.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       ' BMI: ${NumberFormat('#.#').format(calculateBMI(height!, weight!))}',
-                      style: chartTitleStyle().copyWith(
+                      style: chartTitleStyle.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -312,7 +312,7 @@ class BmiChartInfoWidget extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       '$minWeight - $maxWeight',
-                      style: chartTitleStyle().copyWith(
+                      style: chartTitleStyle.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),

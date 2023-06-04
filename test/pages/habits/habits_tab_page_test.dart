@@ -42,7 +42,7 @@ void main() {
       ).thenAnswer((_) => habitFlossing);
 
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<JournalDb>(mockJournalDb);
 

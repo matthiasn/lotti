@@ -34,7 +34,7 @@ class SettingsCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 2),
           child: Text(
             title,
-            style: settingsCardTextStyle(),
+            style: settingsCardTextStyle,
             semanticsLabel: semanticsLabel,
           ),
         ),

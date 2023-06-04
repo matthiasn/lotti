@@ -21,7 +21,7 @@ void main() {
 
   group('AudioPlayerWidget Widget Tests - ', () {
     setUp(() {
-      getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
+      getIt.registerSingleton<ThemesService>(ThemesService());
     });
     tearDown(getIt.reset);
 

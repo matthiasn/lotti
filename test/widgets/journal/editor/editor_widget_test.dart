@@ -28,7 +28,7 @@ void main() {
 
     setUpAll(() {
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<VectorClockService>(MockVectorClockService())
         ..registerSingleton<LinkService>(MockLinkService())

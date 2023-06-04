@@ -1,6 +1,7 @@
 // modified from https://github.com/cph-cachet/research.package/blob/master/example/lib/linear_survey_page.dart
 import 'dart:convert';
 
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -9,7 +10,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:research_package/research_package.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 class SurveyWidget extends StatelessWidget {
   const SurveyWidget(this.task, this.resultCallback, {super.key});
@@ -110,7 +110,6 @@ class FillSurveyPage extends StatelessWidget {
 
     return Scaffold(
       appBar: TitleAppBar(title: localizations.addSurveyTitle),
-      backgroundColor: styleConfig().negspace,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

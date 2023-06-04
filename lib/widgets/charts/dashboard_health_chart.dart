@@ -192,7 +192,7 @@ class HealthChartInfoWidget extends StatelessWidget {
                 children: [
                   Text(
                     healthType?.displayName ?? chartConfig.healthType,
-                    style: chartTitleStyle().copyWith(),
+                    style: chartTitleStyle.copyWith(),
                   ),
                   if (selected != null) ...[
                     const Spacer(),
@@ -200,13 +200,13 @@ class HealthChartInfoWidget extends StatelessWidget {
                       padding: AppTheme.chartDateHorizontalPadding,
                       child: Text(
                         ' ${ymd(selected.dateTime)}',
-                        style: chartTitleStyle(),
+                        style: chartTitleStyle,
                       ),
                     ),
                     const Spacer(),
                     Text(
                       ' $valueLabel',
-                      style: chartTitleStyle().copyWith(
+                      style: chartTitleStyle.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),

@@ -76,7 +76,7 @@ void main() {
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<TagsService>(mockTagsService)
@@ -462,10 +462,6 @@ void main() {
 
       // test measurement is private (icon visible & red)
       expect(find.byIcon(MdiIcons.security).hitTestable(), findsOneWidget);
-      expect(
-        (tester.firstWidget(find.byIcon(MdiIcons.security)) as Icon).color,
-        darkTheme.alarm,
-      );
     });
 
     testWidgets('page is rendered with measurement entry, aggregation none',

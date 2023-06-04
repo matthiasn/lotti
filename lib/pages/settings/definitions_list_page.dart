@@ -63,7 +63,6 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
             .toList();
 
         return Scaffold(
-          backgroundColor: styleConfig().negspace,
           floatingActionButton: widget.floatingActionButton,
           body: CustomScrollView(
             slivers: <Widget>[

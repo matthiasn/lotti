@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -48,9 +47,8 @@ class _CardImageWidgetState extends State<CardImageWidget> {
       return Container();
     }
 
-    return Container(
+    return SizedBox(
       key: Key('${file.path}-$retries'),
-      color: styleConfig().primaryTextColor,
       height: widget.height.toDouble(),
       child: Image.file(
         file,

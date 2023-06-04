@@ -16,7 +16,7 @@ void main() {
 
   group('AudioRecordingIndicator Widget Tests - ', () {
     setUp(() {
-      getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
+      getIt.registerSingleton<ThemesService>(ThemesService());
     });
     tearDown(getIt.reset);
 

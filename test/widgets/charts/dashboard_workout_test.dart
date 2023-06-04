@@ -23,7 +23,7 @@ void main() {
       mockJournalDb = MockJournalDb();
 
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<HealthImport>(mockHealthImport);
     });

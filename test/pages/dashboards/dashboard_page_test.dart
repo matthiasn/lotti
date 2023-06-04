@@ -52,7 +52,7 @@ void main() {
       final mockHealthImport = MockHealthImport();
 
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<TagsService>(mockTagsService)
