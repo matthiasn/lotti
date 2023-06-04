@@ -59,7 +59,7 @@ class AudioPlayerWidget extends StatelessWidget {
                   iconSize: 32,
                   tooltip: 'Play',
                   color: (state.status == AudioPlayerStatus.playing && isActive)
-                      ? styleConfig().activeAudioControl
+                      ? Theme.of(context).colorScheme.error
                       : styleConfig().secondaryTextColor,
                   onPressed: () {
                     cubit
@@ -108,7 +108,7 @@ class AudioPlayerWidget extends StatelessWidget {
                             fontFamily: 'Oswald',
                             fontWeight: FontWeight.bold,
                             color: (state.speed != 1)
-                                ? styleConfig().activeAudioControl
+                                ? Theme.of(context).colorScheme.error
                                 : styleConfig().secondaryTextColor,
                           ),
                         ),

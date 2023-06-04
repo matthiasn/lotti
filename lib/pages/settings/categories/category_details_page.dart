@@ -105,7 +105,8 @@ class CategoryDetailsPage extends StatelessWidget {
                                   initialValue: item.private,
                                   title:
                                       localizations.settingsHabitsPrivateLabel,
-                                  activeColor: styleConfig().private,
+                                  activeColor:
+                                      Theme.of(context).colorScheme.error,
                                 ),
                                 FormSwitch(
                                   name: 'active',

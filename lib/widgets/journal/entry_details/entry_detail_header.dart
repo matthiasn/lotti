@@ -59,7 +59,7 @@ class EntryDetailHeader extends StatelessWidget {
                   value: item.meta.flag == EntryFlag.import,
                   icon: Icons.flag_outlined,
                   activeIcon: Icons.flag,
-                  activeColor: styleConfig().primaryColor,
+                  activeColor: Theme.of(context).colorScheme.error,
                 ),
                 if (state.entry?.geolocation != null)
                   SwitchIconWidget(

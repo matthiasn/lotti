@@ -55,7 +55,7 @@ class VuMeterButtonWidget extends StatelessWidget {
                   child: Icon(
                     Icons.mic,
                     size: iconSize,
-                    color: styleConfig().alarm.withOpacity(0.6),
+                    color: Theme.of(context).colorScheme.error.withOpacity(0.6),
                     semanticLabel: 'Microphone',
                   ),
                 ),
@@ -66,7 +66,7 @@ class VuMeterButtonWidget extends StatelessWidget {
                   child: Icon(
                     Icons.mic,
                     size: iconSize,
-                    color: styleConfig().alarm,
+                    color: Theme.of(context).colorScheme.error,
                     semanticLabel: 'Microphone',
                   ),
                 ),

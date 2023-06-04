@@ -102,7 +102,7 @@ class HabitDetailsPage extends StatelessWidget {
                               name: 'private',
                               initialValue: item.private,
                               title: localizations.settingsHabitsPrivateLabel,
-                              activeColor: styleConfig().private,
+                              activeColor: Theme.of(context).colorScheme.error,
                             ),
                             FormSwitch(
                               name: 'archived',

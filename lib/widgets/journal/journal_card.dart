@@ -189,6 +189,8 @@ class JournalCard extends StatelessWidget {
           }
         }
 
+        final errorColor = Theme.of(context).colorScheme.error;
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5),
           child: Card(
@@ -200,7 +202,7 @@ class JournalCard extends StatelessWidget {
                     Icons.mic,
                     color: transcripts != null && transcripts.isNotEmpty
                         ? styleConfig().secondaryTextColor
-                        : styleConfig().alarm.withOpacity(0.4),
+                        : errorColor.withOpacity(0.4),
                   );
                 },
                 journalEntry: (_) => const LeadingIcon(Icons.article),

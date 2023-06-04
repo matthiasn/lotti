@@ -5,7 +5,6 @@ import 'package:lotti/utils/color.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
 final Color white = colorFromCssHex('#FFFFFF');
-final Color coal = colorFromCssHex('#000000');
 final Color iron = colorFromCssHex('#909090');
 final Color primaryColor = colorFromCssHex('#82E6CE');
 
@@ -18,24 +17,16 @@ final darkTheme = StyleConfig(
   tagTextColor: const Color.fromRGBO(51, 51, 51, 1),
   personTagColor: const Color.fromRGBO(55, 201, 154, 1),
   storyTagColor: const Color.fromRGBO(200, 120, 0, 1),
-  privateTagColor: alarm,
   starredGold: const Color.fromRGBO(255, 215, 0, 1),
-  activeAudioControl: alarm,
-  audioMeterBar: Colors.blue,
-  audioMeterTooHotBar: Colors.orange,
-  audioMeterPeakedBar: alarm,
-  private: alarm,
   selectedChoiceChipColor: primaryColor,
   selectedChoiceChipTextColor: const Color.fromRGBO(33, 33, 33, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
   unselectedChoiceChipTextColor: const Color.fromRGBO(255, 245, 240, 1),
-  negspace: coal,
   primaryTextColor: white,
   secondaryTextColor: primaryColor.desaturate(70).darken(20),
   primaryColor: primaryColor,
   primaryColorLight: primaryColorLight,
   hover: iron,
-  alarm: alarm,
   cardColor: primaryColor.desaturate(60).darken(60),
   chartTextColor: nickel,
   keyboardAppearance: Brightness.dark,
