@@ -5,6 +5,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/themes/themes.dart';
 import 'package:lotti/themes/themes_service.dart';
 
 const fontSizeSmall = 11.0;
@@ -29,7 +30,7 @@ final inputBorder = OutlineInputBorder(
 
 final errorBorder = OutlineInputBorder(
   borderRadius: BorderRadius.circular(inputBorderRadius),
-  borderSide: BorderSide(color: styleConfig().alarm),
+  borderSide: BorderSide(color: alarm),
 );
 
 final inputBorderFocused = OutlineInputBorder(
@@ -179,13 +180,13 @@ const chartTitleStyleSmall = TextStyle(
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
-      color: styleConfig().alarm.darken(),
+      color: alarm.darken(),
     );
 
 TextStyle failButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
-      color: styleConfig().alarm.darken(),
+      color: alarm.darken(),
     );
 
 const segmentItemStyle = TextStyle(

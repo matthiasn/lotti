@@ -39,9 +39,7 @@ class _HowToUsePageState extends State<HowToUsePage> {
               }),
               onPressed: onPressed,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isHovering
-                    ? styleConfig().primaryColor
-                    : styleConfig().negspace,
+                backgroundColor: styleConfig().primaryColor,
                 side: const BorderSide(),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(100),

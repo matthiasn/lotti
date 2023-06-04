@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/themes.dart';
 
 Color getTagColor(TagEntity tagEntity) {
   if (tagEntity.private) {
-    return styleConfig().privateTagColor;
+    return alarm;
   }
 
   return tagEntity.maybeMap(

@@ -25,19 +25,21 @@ class ImapConfigActions extends StatelessWidget {
           maybePop();
         }
 
+        final errorColor = Theme.of(context).colorScheme.error;
+
         return Center(
           child: state.maybeWhen(
             configured: (_, __) => FadeInButton(
               key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
-              primaryColor: styleConfig().alarm,
+              primaryColor: errorColor,
             ),
             imapSaved: (_) => FadeInButton(
               key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
-              primaryColor: styleConfig().alarm,
+              primaryColor: errorColor,
             ),
             imapValid: (_) => FadeInButton(
               key: const Key('settingsSyncSaveButton'),
@@ -49,13 +51,13 @@ class ImapConfigActions extends StatelessWidget {
               key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
-              primaryColor: styleConfig().alarm,
+              primaryColor: errorColor,
             ),
             imapInvalid: (_, String errorMessage) => FadeInButton(
               key: const Key('settingsSyncDeleteImapButton'),
               localizations.settingsSyncDeleteImapButton,
               onPressed: deleteConfig,
-              primaryColor: styleConfig().alarm,
+              primaryColor: errorColor,
             ),
             orElse: () => const SizedBox.shrink(),
           ),

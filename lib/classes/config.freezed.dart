@@ -413,8 +413,6 @@ mixin _$StyleConfig {
   @ColorConverter()
   Color get storyTagColor => throw _privateConstructorUsedError;
   @ColorConverter()
-  Color get privateTagColor => throw _privateConstructorUsedError;
-  @ColorConverter()
   Color get starredGold => throw _privateConstructorUsedError;
   @ColorConverter()
   Color get selectedChoiceChipColor => throw _privateConstructorUsedError;
@@ -425,18 +423,6 @@ mixin _$StyleConfig {
   @ColorConverter()
   Color get unselectedChoiceChipTextColor => throw _privateConstructorUsedError;
   @ColorConverter()
-  Color get activeAudioControl => throw _privateConstructorUsedError;
-  @ColorConverter()
-  Color get audioMeterBar => throw _privateConstructorUsedError;
-  @ColorConverter()
-  Color get audioMeterTooHotBar => throw _privateConstructorUsedError;
-  @ColorConverter()
-  Color get audioMeterPeakedBar => throw _privateConstructorUsedError;
-  @ColorConverter()
-  Color get private => throw _privateConstructorUsedError; // new colors
-  @ColorConverter()
-  Color get negspace => throw _privateConstructorUsedError;
-  @ColorConverter()
   Color get primaryTextColor => throw _privateConstructorUsedError;
   @ColorConverter()
   Color get secondaryTextColor => throw _privateConstructorUsedError;
@@ -446,8 +432,6 @@ mixin _$StyleConfig {
   Color get primaryColorLight => throw _privateConstructorUsedError;
   @ColorConverter()
   Color get hover => throw _privateConstructorUsedError;
-  @ColorConverter()
-  Color get alarm => throw _privateConstructorUsedError;
   @ColorConverter()
   Color get cardColor => throw _privateConstructorUsedError;
   @ColorConverter()
@@ -473,24 +457,16 @@ abstract class $StyleConfigCopyWith<$Res> {
       @ColorConverter() Color tagTextColor,
       @ColorConverter() Color personTagColor,
       @ColorConverter() Color storyTagColor,
-      @ColorConverter() Color privateTagColor,
       @ColorConverter() Color starredGold,
       @ColorConverter() Color selectedChoiceChipColor,
       @ColorConverter() Color selectedChoiceChipTextColor,
       @ColorConverter() Color unselectedChoiceChipColor,
       @ColorConverter() Color unselectedChoiceChipTextColor,
-      @ColorConverter() Color activeAudioControl,
-      @ColorConverter() Color audioMeterBar,
-      @ColorConverter() Color audioMeterTooHotBar,
-      @ColorConverter() Color audioMeterPeakedBar,
-      @ColorConverter() Color private,
-      @ColorConverter() Color negspace,
       @ColorConverter() Color primaryTextColor,
       @ColorConverter() Color secondaryTextColor,
       @ColorConverter() Color primaryColor,
       @ColorConverter() Color primaryColorLight,
       @ColorConverter() Color hover,
-      @ColorConverter() Color alarm,
       @ColorConverter() Color cardColor,
       @ColorConverter() Color chartTextColor,
       @ColorConverter() Color textEditorBackground,
@@ -514,24 +490,16 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
     Object? tagTextColor = null,
     Object? personTagColor = null,
     Object? storyTagColor = null,
-    Object? privateTagColor = null,
     Object? starredGold = null,
     Object? selectedChoiceChipColor = null,
     Object? selectedChoiceChipTextColor = null,
     Object? unselectedChoiceChipColor = null,
     Object? unselectedChoiceChipTextColor = null,
-    Object? activeAudioControl = null,
-    Object? audioMeterBar = null,
-    Object? audioMeterTooHotBar = null,
-    Object? audioMeterPeakedBar = null,
-    Object? private = null,
-    Object? negspace = null,
     Object? primaryTextColor = null,
     Object? secondaryTextColor = null,
     Object? primaryColor = null,
     Object? primaryColorLight = null,
     Object? hover = null,
-    Object? alarm = null,
     Object? cardColor = null,
     Object? chartTextColor = null,
     Object? textEditorBackground = null,
@@ -554,10 +522,6 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
           ? _value.storyTagColor
           : storyTagColor // ignore: cast_nullable_to_non_nullable
               as Color,
-      privateTagColor: null == privateTagColor
-          ? _value.privateTagColor
-          : privateTagColor // ignore: cast_nullable_to_non_nullable
-              as Color,
       starredGold: null == starredGold
           ? _value.starredGold
           : starredGold // ignore: cast_nullable_to_non_nullable
@@ -578,30 +542,6 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
           ? _value.unselectedChoiceChipTextColor
           : unselectedChoiceChipTextColor // ignore: cast_nullable_to_non_nullable
               as Color,
-      activeAudioControl: null == activeAudioControl
-          ? _value.activeAudioControl
-          : activeAudioControl // ignore: cast_nullable_to_non_nullable
-              as Color,
-      audioMeterBar: null == audioMeterBar
-          ? _value.audioMeterBar
-          : audioMeterBar // ignore: cast_nullable_to_non_nullable
-              as Color,
-      audioMeterTooHotBar: null == audioMeterTooHotBar
-          ? _value.audioMeterTooHotBar
-          : audioMeterTooHotBar // ignore: cast_nullable_to_non_nullable
-              as Color,
-      audioMeterPeakedBar: null == audioMeterPeakedBar
-          ? _value.audioMeterPeakedBar
-          : audioMeterPeakedBar // ignore: cast_nullable_to_non_nullable
-              as Color,
-      private: null == private
-          ? _value.private
-          : private // ignore: cast_nullable_to_non_nullable
-              as Color,
-      negspace: null == negspace
-          ? _value.negspace
-          : negspace // ignore: cast_nullable_to_non_nullable
-              as Color,
       primaryTextColor: null == primaryTextColor
           ? _value.primaryTextColor
           : primaryTextColor // ignore: cast_nullable_to_non_nullable
@@ -621,10 +561,6 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
       hover: null == hover
           ? _value.hover
           : hover // ignore: cast_nullable_to_non_nullable
-              as Color,
-      alarm: null == alarm
-          ? _value.alarm
-          : alarm // ignore: cast_nullable_to_non_nullable
               as Color,
       cardColor: null == cardColor
           ? _value.cardColor
@@ -659,24 +595,16 @@ abstract class _$$_StyleConfigCopyWith<$Res>
       @ColorConverter() Color tagTextColor,
       @ColorConverter() Color personTagColor,
       @ColorConverter() Color storyTagColor,
-      @ColorConverter() Color privateTagColor,
       @ColorConverter() Color starredGold,
       @ColorConverter() Color selectedChoiceChipColor,
       @ColorConverter() Color selectedChoiceChipTextColor,
       @ColorConverter() Color unselectedChoiceChipColor,
       @ColorConverter() Color unselectedChoiceChipTextColor,
-      @ColorConverter() Color activeAudioControl,
-      @ColorConverter() Color audioMeterBar,
-      @ColorConverter() Color audioMeterTooHotBar,
-      @ColorConverter() Color audioMeterPeakedBar,
-      @ColorConverter() Color private,
-      @ColorConverter() Color negspace,
       @ColorConverter() Color primaryTextColor,
       @ColorConverter() Color secondaryTextColor,
       @ColorConverter() Color primaryColor,
       @ColorConverter() Color primaryColorLight,
       @ColorConverter() Color hover,
-      @ColorConverter() Color alarm,
       @ColorConverter() Color cardColor,
       @ColorConverter() Color chartTextColor,
       @ColorConverter() Color textEditorBackground,
@@ -698,24 +626,16 @@ class __$$_StyleConfigCopyWithImpl<$Res>
     Object? tagTextColor = null,
     Object? personTagColor = null,
     Object? storyTagColor = null,
-    Object? privateTagColor = null,
     Object? starredGold = null,
     Object? selectedChoiceChipColor = null,
     Object? selectedChoiceChipTextColor = null,
     Object? unselectedChoiceChipColor = null,
     Object? unselectedChoiceChipTextColor = null,
-    Object? activeAudioControl = null,
-    Object? audioMeterBar = null,
-    Object? audioMeterTooHotBar = null,
-    Object? audioMeterPeakedBar = null,
-    Object? private = null,
-    Object? negspace = null,
     Object? primaryTextColor = null,
     Object? secondaryTextColor = null,
     Object? primaryColor = null,
     Object? primaryColorLight = null,
     Object? hover = null,
-    Object? alarm = null,
     Object? cardColor = null,
     Object? chartTextColor = null,
     Object? textEditorBackground = null,
@@ -738,10 +658,6 @@ class __$$_StyleConfigCopyWithImpl<$Res>
           ? _value.storyTagColor
           : storyTagColor // ignore: cast_nullable_to_non_nullable
               as Color,
-      privateTagColor: null == privateTagColor
-          ? _value.privateTagColor
-          : privateTagColor // ignore: cast_nullable_to_non_nullable
-              as Color,
       starredGold: null == starredGold
           ? _value.starredGold
           : starredGold // ignore: cast_nullable_to_non_nullable
@@ -762,30 +678,6 @@ class __$$_StyleConfigCopyWithImpl<$Res>
           ? _value.unselectedChoiceChipTextColor
           : unselectedChoiceChipTextColor // ignore: cast_nullable_to_non_nullable
               as Color,
-      activeAudioControl: null == activeAudioControl
-          ? _value.activeAudioControl
-          : activeAudioControl // ignore: cast_nullable_to_non_nullable
-              as Color,
-      audioMeterBar: null == audioMeterBar
-          ? _value.audioMeterBar
-          : audioMeterBar // ignore: cast_nullable_to_non_nullable
-              as Color,
-      audioMeterTooHotBar: null == audioMeterTooHotBar
-          ? _value.audioMeterTooHotBar
-          : audioMeterTooHotBar // ignore: cast_nullable_to_non_nullable
-              as Color,
-      audioMeterPeakedBar: null == audioMeterPeakedBar
-          ? _value.audioMeterPeakedBar
-          : audioMeterPeakedBar // ignore: cast_nullable_to_non_nullable
-              as Color,
-      private: null == private
-          ? _value.private
-          : private // ignore: cast_nullable_to_non_nullable
-              as Color,
-      negspace: null == negspace
-          ? _value.negspace
-          : negspace // ignore: cast_nullable_to_non_nullable
-              as Color,
       primaryTextColor: null == primaryTextColor
           ? _value.primaryTextColor
           : primaryTextColor // ignore: cast_nullable_to_non_nullable
@@ -805,10 +697,6 @@ class __$$_StyleConfigCopyWithImpl<$Res>
       hover: null == hover
           ? _value.hover
           : hover // ignore: cast_nullable_to_non_nullable
-              as Color,
-      alarm: null == alarm
-          ? _value.alarm
-          : alarm // ignore: cast_nullable_to_non_nullable
               as Color,
       cardColor: null == cardColor
           ? _value.cardColor
@@ -838,24 +726,16 @@ class _$_StyleConfig implements _StyleConfig {
       @ColorConverter() required this.tagTextColor,
       @ColorConverter() required this.personTagColor,
       @ColorConverter() required this.storyTagColor,
-      @ColorConverter() required this.privateTagColor,
       @ColorConverter() required this.starredGold,
       @ColorConverter() required this.selectedChoiceChipColor,
       @ColorConverter() required this.selectedChoiceChipTextColor,
       @ColorConverter() required this.unselectedChoiceChipColor,
       @ColorConverter() required this.unselectedChoiceChipTextColor,
-      @ColorConverter() required this.activeAudioControl,
-      @ColorConverter() required this.audioMeterBar,
-      @ColorConverter() required this.audioMeterTooHotBar,
-      @ColorConverter() required this.audioMeterPeakedBar,
-      @ColorConverter() required this.private,
-      @ColorConverter() required this.negspace,
       @ColorConverter() required this.primaryTextColor,
       @ColorConverter() required this.secondaryTextColor,
       @ColorConverter() required this.primaryColor,
       @ColorConverter() required this.primaryColorLight,
       @ColorConverter() required this.hover,
-      @ColorConverter() required this.alarm,
       @ColorConverter() required this.cardColor,
       @ColorConverter() required this.chartTextColor,
       @ColorConverter() required this.textEditorBackground,
@@ -878,9 +758,6 @@ class _$_StyleConfig implements _StyleConfig {
   final Color storyTagColor;
   @override
   @ColorConverter()
-  final Color privateTagColor;
-  @override
-  @ColorConverter()
   final Color starredGold;
   @override
   @ColorConverter()
@@ -894,25 +771,6 @@ class _$_StyleConfig implements _StyleConfig {
   @override
   @ColorConverter()
   final Color unselectedChoiceChipTextColor;
-  @override
-  @ColorConverter()
-  final Color activeAudioControl;
-  @override
-  @ColorConverter()
-  final Color audioMeterBar;
-  @override
-  @ColorConverter()
-  final Color audioMeterTooHotBar;
-  @override
-  @ColorConverter()
-  final Color audioMeterPeakedBar;
-  @override
-  @ColorConverter()
-  final Color private;
-// new colors
-  @override
-  @ColorConverter()
-  final Color negspace;
   @override
   @ColorConverter()
   final Color primaryTextColor;
@@ -930,9 +788,6 @@ class _$_StyleConfig implements _StyleConfig {
   final Color hover;
   @override
   @ColorConverter()
-  final Color alarm;
-  @override
-  @ColorConverter()
   final Color cardColor;
   @override
   @ColorConverter()
@@ -945,7 +800,7 @@ class _$_StyleConfig implements _StyleConfig {
 
   @override
   String toString() {
-    return 'StyleConfig(tagColor: $tagColor, tagTextColor: $tagTextColor, personTagColor: $personTagColor, storyTagColor: $storyTagColor, privateTagColor: $privateTagColor, starredGold: $starredGold, selectedChoiceChipColor: $selectedChoiceChipColor, selectedChoiceChipTextColor: $selectedChoiceChipTextColor, unselectedChoiceChipColor: $unselectedChoiceChipColor, unselectedChoiceChipTextColor: $unselectedChoiceChipTextColor, activeAudioControl: $activeAudioControl, audioMeterBar: $audioMeterBar, audioMeterTooHotBar: $audioMeterTooHotBar, audioMeterPeakedBar: $audioMeterPeakedBar, private: $private, negspace: $negspace, primaryTextColor: $primaryTextColor, secondaryTextColor: $secondaryTextColor, primaryColor: $primaryColor, primaryColorLight: $primaryColorLight, hover: $hover, alarm: $alarm, cardColor: $cardColor, chartTextColor: $chartTextColor, textEditorBackground: $textEditorBackground, keyboardAppearance: $keyboardAppearance)';
+    return 'StyleConfig(tagColor: $tagColor, tagTextColor: $tagTextColor, personTagColor: $personTagColor, storyTagColor: $storyTagColor, starredGold: $starredGold, selectedChoiceChipColor: $selectedChoiceChipColor, selectedChoiceChipTextColor: $selectedChoiceChipTextColor, unselectedChoiceChipColor: $unselectedChoiceChipColor, unselectedChoiceChipTextColor: $unselectedChoiceChipTextColor, primaryTextColor: $primaryTextColor, secondaryTextColor: $secondaryTextColor, primaryColor: $primaryColor, primaryColorLight: $primaryColorLight, hover: $hover, cardColor: $cardColor, chartTextColor: $chartTextColor, textEditorBackground: $textEditorBackground, keyboardAppearance: $keyboardAppearance)';
   }
 
   @override
@@ -961,31 +816,20 @@ class _$_StyleConfig implements _StyleConfig {
                 other.personTagColor == personTagColor) &&
             (identical(other.storyTagColor, storyTagColor) ||
                 other.storyTagColor == storyTagColor) &&
-            (identical(other.privateTagColor, privateTagColor) ||
-                other.privateTagColor == privateTagColor) &&
             (identical(other.starredGold, starredGold) ||
                 other.starredGold == starredGold) &&
             (identical(other.selectedChoiceChipColor, selectedChoiceChipColor) ||
                 other.selectedChoiceChipColor == selectedChoiceChipColor) &&
-            (identical(other.selectedChoiceChipTextColor, selectedChoiceChipTextColor) ||
+            (identical(other.selectedChoiceChipTextColor,
+                    selectedChoiceChipTextColor) ||
                 other.selectedChoiceChipTextColor ==
                     selectedChoiceChipTextColor) &&
             (identical(other.unselectedChoiceChipColor, unselectedChoiceChipColor) ||
                 other.unselectedChoiceChipColor == unselectedChoiceChipColor) &&
-            (identical(other.unselectedChoiceChipTextColor, unselectedChoiceChipTextColor) ||
+            (identical(other.unselectedChoiceChipTextColor,
+                    unselectedChoiceChipTextColor) ||
                 other.unselectedChoiceChipTextColor ==
                     unselectedChoiceChipTextColor) &&
-            (identical(other.activeAudioControl, activeAudioControl) ||
-                other.activeAudioControl == activeAudioControl) &&
-            (identical(other.audioMeterBar, audioMeterBar) ||
-                other.audioMeterBar == audioMeterBar) &&
-            (identical(other.audioMeterTooHotBar, audioMeterTooHotBar) ||
-                other.audioMeterTooHotBar == audioMeterTooHotBar) &&
-            (identical(other.audioMeterPeakedBar, audioMeterPeakedBar) ||
-                other.audioMeterPeakedBar == audioMeterPeakedBar) &&
-            (identical(other.private, private) || other.private == private) &&
-            (identical(other.negspace, negspace) ||
-                other.negspace == negspace) &&
             (identical(other.primaryTextColor, primaryTextColor) ||
                 other.primaryTextColor == primaryTextColor) &&
             (identical(other.secondaryTextColor, secondaryTextColor) ||
@@ -995,7 +839,6 @@ class _$_StyleConfig implements _StyleConfig {
             (identical(other.primaryColorLight, primaryColorLight) ||
                 other.primaryColorLight == primaryColorLight) &&
             (identical(other.hover, hover) || other.hover == hover) &&
-            (identical(other.alarm, alarm) || other.alarm == alarm) &&
             (identical(other.cardColor, cardColor) ||
                 other.cardColor == cardColor) &&
             (identical(other.chartTextColor, chartTextColor) ||
@@ -1008,35 +851,26 @@ class _$_StyleConfig implements _StyleConfig {
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hashAll([
-        runtimeType,
-        tagColor,
-        tagTextColor,
-        personTagColor,
-        storyTagColor,
-        privateTagColor,
-        starredGold,
-        selectedChoiceChipColor,
-        selectedChoiceChipTextColor,
-        unselectedChoiceChipColor,
-        unselectedChoiceChipTextColor,
-        activeAudioControl,
-        audioMeterBar,
-        audioMeterTooHotBar,
-        audioMeterPeakedBar,
-        private,
-        negspace,
-        primaryTextColor,
-        secondaryTextColor,
-        primaryColor,
-        primaryColorLight,
-        hover,
-        alarm,
-        cardColor,
-        chartTextColor,
-        textEditorBackground,
-        keyboardAppearance
-      ]);
+  int get hashCode => Object.hash(
+      runtimeType,
+      tagColor,
+      tagTextColor,
+      personTagColor,
+      storyTagColor,
+      starredGold,
+      selectedChoiceChipColor,
+      selectedChoiceChipTextColor,
+      unselectedChoiceChipColor,
+      unselectedChoiceChipTextColor,
+      primaryTextColor,
+      secondaryTextColor,
+      primaryColor,
+      primaryColorLight,
+      hover,
+      cardColor,
+      chartTextColor,
+      textEditorBackground,
+      keyboardAppearance);
 
   @JsonKey(ignore: true)
   @override
@@ -1058,24 +892,16 @@ abstract class _StyleConfig implements StyleConfig {
       @ColorConverter() required final Color tagTextColor,
       @ColorConverter() required final Color personTagColor,
       @ColorConverter() required final Color storyTagColor,
-      @ColorConverter() required final Color privateTagColor,
       @ColorConverter() required final Color starredGold,
       @ColorConverter() required final Color selectedChoiceChipColor,
       @ColorConverter() required final Color selectedChoiceChipTextColor,
       @ColorConverter() required final Color unselectedChoiceChipColor,
       @ColorConverter() required final Color unselectedChoiceChipTextColor,
-      @ColorConverter() required final Color activeAudioControl,
-      @ColorConverter() required final Color audioMeterBar,
-      @ColorConverter() required final Color audioMeterTooHotBar,
-      @ColorConverter() required final Color audioMeterPeakedBar,
-      @ColorConverter() required final Color private,
-      @ColorConverter() required final Color negspace,
       @ColorConverter() required final Color primaryTextColor,
       @ColorConverter() required final Color secondaryTextColor,
       @ColorConverter() required final Color primaryColor,
       @ColorConverter() required final Color primaryColorLight,
       @ColorConverter() required final Color hover,
-      @ColorConverter() required final Color alarm,
       @ColorConverter() required final Color cardColor,
       @ColorConverter() required final Color chartTextColor,
       @ColorConverter() required final Color textEditorBackground,
@@ -1098,9 +924,6 @@ abstract class _StyleConfig implements StyleConfig {
   Color get storyTagColor;
   @override
   @ColorConverter()
-  Color get privateTagColor;
-  @override
-  @ColorConverter()
   Color get starredGold;
   @override
   @ColorConverter()
@@ -1116,24 +939,6 @@ abstract class _StyleConfig implements StyleConfig {
   Color get unselectedChoiceChipTextColor;
   @override
   @ColorConverter()
-  Color get activeAudioControl;
-  @override
-  @ColorConverter()
-  Color get audioMeterBar;
-  @override
-  @ColorConverter()
-  Color get audioMeterTooHotBar;
-  @override
-  @ColorConverter()
-  Color get audioMeterPeakedBar;
-  @override
-  @ColorConverter()
-  Color get private;
-  @override // new colors
-  @ColorConverter()
-  Color get negspace;
-  @override
-  @ColorConverter()
   Color get primaryTextColor;
   @override
   @ColorConverter()
@@ -1147,9 +952,6 @@ abstract class _StyleConfig implements StyleConfig {
   @override
   @ColorConverter()
   Color get hover;
-  @override
-  @ColorConverter()
-  Color get alarm;
   @override
   @ColorConverter()
   Color get cardColor;

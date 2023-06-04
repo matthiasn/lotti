@@ -32,7 +32,7 @@ class AudioRecordingIndicator extends StatelessWidget {
               child: Container(
                 width: 100,
                 height: 25,
-                color: styleConfig().alarm,
+                color: Theme.of(context).colorScheme.error,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [

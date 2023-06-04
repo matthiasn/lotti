@@ -46,8 +46,6 @@ _$_StyleConfig _$$_StyleConfigFromJson(Map<String, dynamic> json) =>
           const ColorConverter().fromJson(json['personTagColor'] as String),
       storyTagColor:
           const ColorConverter().fromJson(json['storyTagColor'] as String),
-      privateTagColor:
-          const ColorConverter().fromJson(json['privateTagColor'] as String),
       starredGold:
           const ColorConverter().fromJson(json['starredGold'] as String),
       selectedChoiceChipColor: const ColorConverter()
@@ -58,16 +56,6 @@ _$_StyleConfig _$$_StyleConfigFromJson(Map<String, dynamic> json) =>
           .fromJson(json['unselectedChoiceChipColor'] as String),
       unselectedChoiceChipTextColor: const ColorConverter()
           .fromJson(json['unselectedChoiceChipTextColor'] as String),
-      activeAudioControl:
-          const ColorConverter().fromJson(json['activeAudioControl'] as String),
-      audioMeterBar:
-          const ColorConverter().fromJson(json['audioMeterBar'] as String),
-      audioMeterTooHotBar: const ColorConverter()
-          .fromJson(json['audioMeterTooHotBar'] as String),
-      audioMeterPeakedBar: const ColorConverter()
-          .fromJson(json['audioMeterPeakedBar'] as String),
-      private: const ColorConverter().fromJson(json['private'] as String),
-      negspace: const ColorConverter().fromJson(json['negspace'] as String),
       primaryTextColor:
           const ColorConverter().fromJson(json['primaryTextColor'] as String),
       secondaryTextColor:
@@ -77,7 +65,6 @@ _$_StyleConfig _$$_StyleConfigFromJson(Map<String, dynamic> json) =>
       primaryColorLight:
           const ColorConverter().fromJson(json['primaryColorLight'] as String),
       hover: const ColorConverter().fromJson(json['hover'] as String),
-      alarm: const ColorConverter().fromJson(json['alarm'] as String),
       cardColor: const ColorConverter().fromJson(json['cardColor'] as String),
       chartTextColor:
           const ColorConverter().fromJson(json['chartTextColor'] as String),
@@ -93,8 +80,6 @@ Map<String, dynamic> _$$_StyleConfigToJson(_$_StyleConfig instance) =>
       'tagTextColor': const ColorConverter().toJson(instance.tagTextColor),
       'personTagColor': const ColorConverter().toJson(instance.personTagColor),
       'storyTagColor': const ColorConverter().toJson(instance.storyTagColor),
-      'privateTagColor':
-          const ColorConverter().toJson(instance.privateTagColor),
       'starredGold': const ColorConverter().toJson(instance.starredGold),
       'selectedChoiceChipColor':
           const ColorConverter().toJson(instance.selectedChoiceChipColor),
@@ -104,15 +89,6 @@ Map<String, dynamic> _$$_StyleConfigToJson(_$_StyleConfig instance) =>
           const ColorConverter().toJson(instance.unselectedChoiceChipColor),
       'unselectedChoiceChipTextColor':
           const ColorConverter().toJson(instance.unselectedChoiceChipTextColor),
-      'activeAudioControl':
-          const ColorConverter().toJson(instance.activeAudioControl),
-      'audioMeterBar': const ColorConverter().toJson(instance.audioMeterBar),
-      'audioMeterTooHotBar':
-          const ColorConverter().toJson(instance.audioMeterTooHotBar),
-      'audioMeterPeakedBar':
-          const ColorConverter().toJson(instance.audioMeterPeakedBar),
-      'private': const ColorConverter().toJson(instance.private),
-      'negspace': const ColorConverter().toJson(instance.negspace),
       'primaryTextColor':
           const ColorConverter().toJson(instance.primaryTextColor),
       'secondaryTextColor':
@@ -121,7 +97,6 @@ Map<String, dynamic> _$$_StyleConfigToJson(_$_StyleConfig instance) =>
       'primaryColorLight':
           const ColorConverter().toJson(instance.primaryColorLight),
       'hover': const ColorConverter().toJson(instance.hover),
-      'alarm': const ColorConverter().toJson(instance.alarm),
       'cardColor': const ColorConverter().toJson(instance.cardColor),
       'chartTextColor': const ColorConverter().toJson(instance.chartTextColor),
       'textEditorBackground':
