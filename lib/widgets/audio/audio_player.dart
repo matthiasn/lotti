@@ -225,23 +225,23 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                     children: [
                       Text(
                         dfShorter.format(widget.transcript.created),
-                        style: transcriptHeaderStyle(),
+                        style: transcriptHeaderStyle,
                       ),
                       const SizedBox(width: 10),
                       Text(
                         formatSeconds(widget.transcript.processingTime),
-                        style: transcriptHeaderStyle(),
+                        style: transcriptHeaderStyle,
                       ),
                       const SizedBox(width: 10),
                       Text(
                         'Lang: ${widget.transcript.detectedLanguage}',
-                        style: transcriptHeaderStyle(),
+                        style: transcriptHeaderStyle,
                       ),
                       const SizedBox(width: 10),
                       Text(
                         '${widget.transcript.library}, '
                         ' ${widget.transcript.model}',
-                        style: transcriptHeaderStyle(),
+                        style: transcriptHeaderStyle,
                       ),
                       const SizedBox(width: 10),
                       Opacity(
@@ -279,7 +279,6 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: SelectableText(
                   widget.transcript.transcript,
-                  style: transcriptStyle(),
                 ),
               ),
           ],

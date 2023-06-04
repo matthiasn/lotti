@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_details/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
@@ -39,10 +38,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const EntryDatetimeWidget(),
-                DurationWidget(
-                  item: item,
-                  style: textStyle(),
-                ),
+                DurationWidget(item: item),
               ],
             ),
             Visibility(

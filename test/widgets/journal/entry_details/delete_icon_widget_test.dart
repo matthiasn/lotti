@@ -44,7 +44,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final trashIconFinder = find.byIcon(Icons.delete);
+      final trashIconFinder = find.byIcon(Icons.delete_outline);
       expect(trashIconFinder, findsOneWidget);
 
       await tester.tap(trashIconFinder);

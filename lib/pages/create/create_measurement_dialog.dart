@@ -184,7 +184,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       DateTimeField(
                         dateTime: measurementTime,
                         labelText: localizations.addMeasurementDateLabel,
-                        style: dialogInputStyle(),
                         setDateTime: (picked) {
                           setState(() {
                             measurementTime = picked;
@@ -198,9 +197,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         decoration: createDialogInputDecoration(
                           labelText: '${dataType.displayName} '
                               '${dataType.unitName.isNotEmpty ? '[${dataType.unitName}] ' : ''}',
-                          style: dialogInputStyle(),
                         ),
-                        style: dialogInputStyle(),
                         validator: numericValidator(),
                         name: 'value',
                         keyboardType: const TextInputType.numberWithOptions(
@@ -213,10 +210,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         key: const Key('measurement_comment_field'),
                         decoration: createDialogInputDecoration(
                           labelText: localizations.addMeasurementCommentLabel,
-                          style: dialogInputStyle(),
                         ),
                         keyboardAppearance: keyboardAppearance(),
-                        style: dialogInputStyle(),
                         name: 'comment',
                       ),
                       inputSpacer,
