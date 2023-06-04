@@ -148,6 +148,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                 color: styleConfig().primaryTextColor,
                               ),
                             ),
+                            themeData: Theme.of(context),
                           ),
                           iconEnabledColor: styleConfig().primaryTextColor,
                           style: const TextStyle(fontSize: 40),

@@ -167,6 +167,7 @@ class _TagEditPageState extends State<TagEditPage> {
                         ),
                         decoration: inputDecoration(
                           labelText: localizations.settingsTagsTypeLabel,
+                          themeData: Theme.of(context),
                         ),
                         selectedColor: widget.tagEntity.map(
                           genericTag: getTagColor,

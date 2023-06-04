@@ -94,6 +94,7 @@ class SelectDashboardWidget extends StatelessWidget {
               controller: controller,
               decoration: inputDecoration(
                 labelText: undefined ? '' : localizations.habitDashboardLabel,
+                themeData: Theme.of(context),
               ).copyWith(
                 suffixIcon: undefined
                     ? null

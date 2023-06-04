@@ -88,6 +88,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
             labelText:
                 categoryUndefined ? '' : localizations.habitCategoryLabel,
             semanticsLabel: 'Select category',
+            themeData: Theme.of(context),
           ).copyWith(
             icon: ColorIcon(
               category != null

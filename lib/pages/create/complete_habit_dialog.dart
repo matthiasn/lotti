@@ -218,6 +218,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                     decoration: createDialogInputDecoration(
                                       labelText:
                                           localizations.addHabitCommentLabel,
+                                      themeData: Theme.of(context),
                                     ),
                                     minLines: 1,
                                     maxLines: 10,
