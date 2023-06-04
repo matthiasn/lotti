@@ -37,6 +37,7 @@ class _DateTimeFieldState extends State<DateTimeField> {
       decoration: createDialogInputDecoration(
         labelText: widget.labelText,
         style: widget.style,
+        themeData: Theme.of(context),
       ),
       style: widget.style,
       readOnly: true,

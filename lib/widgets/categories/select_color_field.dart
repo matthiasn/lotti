@@ -49,7 +49,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
     });
 
     final style =
-        widget.hexColor != null ? searchFieldHintStyle() : searchFieldStyle();
+        widget.hexColor != null ? searchFieldHintStyle : searchFieldStyle;
 
     final color = widget.hexColor != null
         ? colorFromCssHex(widget.hexColor)
@@ -94,6 +94,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
         labelText:
             widget.hexColor == null || !valid ? '' : localizations.colorLabel,
         semanticsLabel: 'Select color',
+        themeData: Theme.of(context),
       ).copyWith(
         icon: ColorIcon(color),
         hintText: localizations.colorPickerHint,

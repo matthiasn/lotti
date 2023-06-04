@@ -84,7 +84,7 @@ class SelectCategoryWidget extends StatelessWidget {
 
             final categoryUndefined = state.habitDefinition.categoryId == null;
             final style =
-                categoryUndefined ? searchFieldHintStyle() : searchFieldStyle();
+                categoryUndefined ? searchFieldHintStyle : searchFieldStyle;
 
             return TextField(
               onTap: onTap,
@@ -95,6 +95,7 @@ class SelectCategoryWidget extends StatelessWidget {
                 labelText:
                     categoryUndefined ? '' : localizations.habitCategoryLabel,
                 semanticsLabel: 'Select category',
+                themeData: Theme.of(context),
               ).copyWith(
                 icon: ColorIcon(
                   category != null

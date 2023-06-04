@@ -78,7 +78,7 @@ class EncryptionQrWidget extends StatelessWidget {
                                 builder: (BuildContext context) => AlertDialog(
                                   title: Text(
                                     randomPassword,
-                                    style: monospaceTextStyleLarge(),
+                                    style: monospaceTextStyleLarge,
                                   ),
                                   actions: <Widget>[
                                     Button(
@@ -179,68 +179,71 @@ class EmptyConfigWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        StatusText(localizations.settingsSyncNotInitialized),
-        const SizedBox(height: 8),
-        Button(
-          key: const Key('settingsSyncPasteCfg'),
-          localizations.settingsSyncPasteCfg,
-          onPressed: () {
-            var passphrase = '';
-            showDialog<String>(
-              context: context,
-              builder: (BuildContext context) => AlertDialog(
-                title: Text(
-                  localizations.settingsSyncPasteCfg,
-                  style: const TextStyle(fontFamily: 'Oswald'),
-                ),
-                content: Column(
-                  children: [
-                    Text(localizations.settingsSyncPasteCfgWarning),
-                    TextField(onChanged: (s) => passphrase = s),
+    return SizedBox(
+      height: 400,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          StatusText(localizations.settingsSyncNotInitialized),
+          const SizedBox(height: 8),
+          Button(
+            key: const Key('settingsSyncPasteCfg'),
+            localizations.settingsSyncPasteCfg,
+            onPressed: () {
+              var passphrase = '';
+              showDialog<String>(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  title: Text(
+                    localizations.settingsSyncPasteCfg,
+                    style: const TextStyle(fontFamily: 'Oswald'),
+                  ),
+                  content: Column(
+                    children: [
+                      Text(localizations.settingsSyncPasteCfgWarning),
+                      TextField(onChanged: (s) => passphrase = s),
+                    ],
+                  ),
+                  actions: <Widget>[
+                    Button(
+                      localizations.settingsSyncCancelButton,
+                      key: const Key('syncCancelButton'),
+                      onPressed: () {
+                        Navigator.pop(context, 'Cancel');
+                      },
+                      primaryColor: Colors.grey,
+                    ),
+                    Button(
+                      localizations.settingsSyncImportButton,
+                      key: const Key('syncImportButton'),
+                      onPressed: () async {
+                        final navigator = Navigator.of(context);
+                        final syncConfigCubit = context.read<SyncConfigCubit>();
+
+                        final data = await Clipboard.getData('text/plain');
+                        final b64Secret = generateKeyFromPassphrase(passphrase);
+                        final encryptedSyncCfg = data?.text;
+
+                        if (encryptedSyncCfg != null) {
+                          final decryptedConfig = await decryptString(
+                            encrypted: encryptedSyncCfg,
+                            b64Secret: b64Secret,
+                          );
+
+                          await syncConfigCubit.setSyncConfig(decryptedConfig);
+                        }
+                        navigator.pop('Import SyncConfig');
+                      },
+                      primaryColor: Colors.red,
+                    ),
                   ],
                 ),
-                actions: <Widget>[
-                  Button(
-                    localizations.settingsSyncCancelButton,
-                    key: const Key('syncCancelButton'),
-                    onPressed: () {
-                      Navigator.pop(context, 'Cancel');
-                    },
-                    primaryColor: Colors.grey,
-                  ),
-                  Button(
-                    localizations.settingsSyncImportButton,
-                    key: const Key('syncImportButton'),
-                    onPressed: () async {
-                      final navigator = Navigator.of(context);
-                      final syncConfigCubit = context.read<SyncConfigCubit>();
-
-                      final data = await Clipboard.getData('text/plain');
-                      final b64Secret = generateKeyFromPassphrase(passphrase);
-                      final encryptedSyncCfg = data?.text;
-
-                      if (encryptedSyncCfg != null) {
-                        final decryptedConfig = await decryptString(
-                          encrypted: encryptedSyncCfg,
-                          b64Secret: b64Secret,
-                        );
-
-                        await syncConfigCubit.setSyncConfig(decryptedConfig);
-                      }
-                      navigator.pop('Import SyncConfig');
-                    },
-                    primaryColor: Colors.red,
-                  ),
-                ],
-              ),
-            );
-          },
-          primaryColor: Colors.red,
-        ),
-      ],
+              );
+            },
+            primaryColor: Colors.red,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -297,7 +300,7 @@ class StatusTextWidget extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: Text(
         label,
-        style: monospaceTextStyle(),
+        style: monospaceTextStyle,
       ),
     );
   }

@@ -32,7 +32,7 @@ class AudioRecordingIndicator extends StatelessWidget {
               child: Container(
                 width: 100,
                 height: 25,
-                color: styleConfig().alarm,
+                color: Theme.of(context).colorScheme.error,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -48,8 +48,9 @@ class AudioRecordingIndicator extends StatelessWidget {
                           padding: const EdgeInsets.only(left: 4, bottom: 4),
                           child: Text(
                             formatDuration(state.progress),
-                            style: monospaceTextStyle()
-                                .copyWith(color: Colors.black),
+                            style: monospaceTextStyle.copyWith(
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                       ],

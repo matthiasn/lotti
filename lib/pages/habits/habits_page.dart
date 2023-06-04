@@ -64,7 +64,6 @@ class HabitsTabPage extends StatelessWidget {
             (displayFilter == HabitDisplayFilter.pendingLater || showAll);
 
         return Scaffold(
-          backgroundColor: styleConfig().negspace,
           body: SafeArea(
             child: CustomScrollView(
               slivers: <Widget>[
@@ -92,7 +91,7 @@ class HabitsTabPage extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 15),
                             child: Text(
                               localizations.habitsOpenHeader,
-                              style: chartTitleStyle(),
+                              style: chartTitleStyle,
                             ),
                           ),
                         if (showOpenNow)
@@ -109,7 +108,7 @@ class HabitsTabPage extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 20, bottom: 15),
                             child: Text(
                               localizations.habitsPendingLaterHeader,
-                              style: chartTitleStyle(),
+                              style: chartTitleStyle,
                             ),
                           ),
                         if (showPendingLater)
@@ -126,7 +125,7 @@ class HabitsTabPage extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 20, bottom: 15),
                             child: Text(
                               localizations.habitsCompletedHeader,
-                              style: chartTitleStyle(),
+                              style: chartTitleStyle,
                             ),
                           ),
                         if (showCompleted)

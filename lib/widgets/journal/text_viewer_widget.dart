@@ -22,10 +22,9 @@ class TextViewerWidget extends StatelessWidget {
         shrinkWrap: true,
         padding: const EdgeInsets.only(top: 10),
         styleSheet: MarkdownStyleSheet.fromCupertinoTheme(
-          CupertinoThemeData(
+          const CupertinoThemeData(
             textTheme: CupertinoTextThemeData(
               textStyle: TextStyle(
-                color: styleConfig().primaryTextColor,
                 fontSize: fontSizeMedium,
               ),
             ),

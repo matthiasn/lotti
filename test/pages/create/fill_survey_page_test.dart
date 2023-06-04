@@ -16,7 +16,7 @@ void main() {
 
     setUp(() {
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
     });
     tearDown(getIt.reset);

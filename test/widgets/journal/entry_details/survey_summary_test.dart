@@ -19,7 +19,7 @@ void main() {
   group('SurveySummary Widget Tests -', () {
     setUp(() {
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<JournalDb>(mockJournalDb);
     });
     tearDown(getIt.reset);

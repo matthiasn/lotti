@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_status.dart';
 
@@ -15,7 +14,7 @@ import '../../widget_test_utils.dart';
 void main() {
   group('SyncConfig Imap Config Status Widgets Tests - ', () {
     setUp(() {
-      getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
+      getIt.registerSingleton<ThemesService>(ThemesService());
     });
 
     tearDown(getIt.reset);
@@ -37,7 +36,7 @@ void main() {
       final labelFinder = find.text('Please enter valid account details.');
       expect(labelFinder, findsOneWidget);
 
-      final successIndicatorFinder = find.byContainerColor(color: Colors.grey);
+      final successIndicatorFinder = find.bySemanticsLabel('IMAP config empty');
       expect(successIndicatorFinder, findsOneWidget);
     });
 
@@ -59,7 +58,7 @@ void main() {
       final labelFinder = find.text('Loading...');
       expect(labelFinder, findsOneWidget);
 
-      final successIndicatorFinder = find.byContainerColor(color: Colors.grey);
+      final successIndicatorFinder = find.bySemanticsLabel('Loading');
       expect(successIndicatorFinder, findsOneWidget);
     });
 
@@ -80,9 +79,6 @@ void main() {
 
       final labelFinder = find.text('Generating secret...');
       expect(labelFinder, findsOneWidget);
-
-      final successIndicatorFinder = find.byContainerColor(color: Colors.grey);
-      expect(successIndicatorFinder, findsOneWidget);
     });
 
     testWidgets(
@@ -108,8 +104,7 @@ void main() {
       final labelFinder = find.text('Account is successfully configured.');
       expect(labelFinder, findsOneWidget);
 
-      final successIndicatorFinder =
-          find.byContainerColor(color: styleConfig().primaryColor);
+      final successIndicatorFinder = find.bySemanticsLabel('IMAP configured');
 
       expect(successIndicatorFinder, findsOneWidget);
     });
@@ -136,8 +131,7 @@ void main() {
       final labelFinder = find.text('Account is valid.');
       expect(labelFinder, findsOneWidget);
 
-      final successIndicatorFinder =
-          find.byContainerColor(color: styleConfig().primaryColor);
+      final successIndicatorFinder = find.bySemanticsLabel('IMAP config valid');
 
       expect(successIndicatorFinder, findsOneWidget);
     });
@@ -164,14 +158,13 @@ void main() {
       final labelFinder = find.text('IMAP configuration saved.');
       expect(labelFinder, findsOneWidget);
 
-      final successIndicatorFinder =
-          find.byContainerColor(color: styleConfig().primaryColor);
+      final successIndicatorFinder = find.bySemanticsLabel('IMAP config saved');
 
       expect(successIndicatorFinder, findsOneWidget);
     });
 
     testWidgets(
-        'Widget shows green status indicator & correct label when status invalid',
+        'Widget shows correct status indicator & label when status invalid',
         (tester) async {
       const testErrorMessage = 'testErrorMessage';
       final mock = mockSyncConfigCubitWithState(
@@ -194,8 +187,7 @@ void main() {
       final labelFinder = find.text(testErrorMessage);
       expect(labelFinder, findsOneWidget);
 
-      final successIndicatorFinder =
-          find.byContainerColor(color: styleConfig().alarm);
+      final successIndicatorFinder = find.bySemanticsLabel('IMAP error');
 
       expect(successIndicatorFinder, findsOneWidget);
     });
@@ -223,7 +215,7 @@ void main() {
       expect(labelFinder, findsOneWidget);
 
       final successIndicatorFinder =
-          find.byContainerColor(color: styleConfig().primaryColorLight);
+          find.bySemanticsLabel('Testing connection');
 
       expect(successIndicatorFinder, findsOneWidget);
     });

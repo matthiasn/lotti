@@ -245,7 +245,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                     '${measurableDataType.displayName}'
                     '${aggregationType != AggregationType.none ? ' ' : ''}'
                     '${aggregationLabel(aggregationType)}',
-                    style: chartTitleStyle(),
+                    style: chartTitleStyle,
                     overflow: TextOverflow.ellipsis,
                     softWrap: false,
                   ),
@@ -256,7 +256,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                     padding: AppTheme.chartDateHorizontalPadding,
                     child: Text(
                       ' ${ymd(selected.dateTime)}',
-                      style: chartTitleStyle(),
+                      style: chartTitleStyle,
                     ),
                   ),
                   const Spacer(),
@@ -264,7 +264,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                     ' ${NumberFormat('#,###.##').format(selected.value)}'
                     ' ${measurableDataType.unitName}',
                     style:
-                        chartTitleStyle().copyWith(fontWeight: FontWeight.bold),
+                        chartTitleStyle.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ],
                 const Spacer(),

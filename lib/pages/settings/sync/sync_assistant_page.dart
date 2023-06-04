@@ -40,7 +40,6 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: styleConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsSyncCfgTitle),
       body: Center(
         child: Stack(

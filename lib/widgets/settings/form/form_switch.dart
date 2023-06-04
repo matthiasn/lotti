@@ -25,7 +25,6 @@ class FormSwitch extends StatelessWidget {
       initialValue: initialValue,
       title: Text(
         title,
-        style: formLabelStyle(),
         semanticsLabel: semanticsLabel,
       ),
       activeColor: activeColor,

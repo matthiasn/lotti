@@ -33,10 +33,7 @@ class Button extends StatelessWidget {
           ),
         ),
         onPressed: onPressed,
-        child: Text(
-          label,
-          style: buttonLabelStyle(),
-        ),
+        child: Text(label),
       ),
     );
   }
@@ -73,10 +70,7 @@ class RoundedButton extends StatelessWidget {
           horizontal: isMobile ? 30 : 45,
         ),
       ),
-      child: Text(
-        label,
-        style: buttonLabelStyle(),
-      ),
+      child: Text(label),
     );
   }
 }

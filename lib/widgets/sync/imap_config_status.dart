@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_state.dart';
-import 'package:lotti/themes/theme.dart';
 
 class ImapConfigStatus extends StatelessWidget {
   const ImapConfigStatus({
@@ -22,7 +21,7 @@ class ImapConfigStatus extends StatelessWidget {
         return SizedBox(
           height: 40,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (showText)
                 state.when(
@@ -39,17 +38,40 @@ class ImapConfigStatus extends StatelessWidget {
                       StatusText(loc.syncAssistantStatusGenerating),
                   empty: () => StatusText(loc.syncAssistantStatusEmpty),
                 ),
+              const SizedBox(width: 10),
               state.when(
-                configured: (_, __) =>
-                    StatusIndicator(styleConfig().primaryColor),
-                imapValid: (_) => StatusIndicator(styleConfig().primaryColor),
-                imapSaved: (_) => StatusIndicator(styleConfig().primaryColor),
-                imapTesting: (_) =>
-                    StatusIndicator(styleConfig().primaryColorLight),
-                imapInvalid: (_, __) => StatusIndicator(styleConfig().alarm),
-                loading: () => const StatusIndicator(Colors.grey),
-                generating: () => const StatusIndicator(Colors.grey),
-                empty: () => const StatusIndicator(Colors.grey),
+                configured: (_, __) => StatusIndicator(
+                  Theme.of(context).colorScheme.primary,
+                  semanticsLabel: 'IMAP configured',
+                ),
+                imapValid: (_) => StatusIndicator(
+                  Theme.of(context).colorScheme.primary,
+                  semanticsLabel: 'IMAP config valid',
+                ),
+                imapSaved: (_) => StatusIndicator(
+                  Theme.of(context).colorScheme.primary,
+                  semanticsLabel: 'IMAP config saved',
+                ),
+                imapTesting: (_) => StatusIndicator(
+                  Theme.of(context).primaryColorLight,
+                  semanticsLabel: 'Testing connection',
+                ),
+                imapInvalid: (_, __) => StatusIndicator(
+                  Theme.of(context).colorScheme.error,
+                  semanticsLabel: 'IMAP error',
+                ),
+                loading: () => const StatusIndicator(
+                  Colors.grey,
+                  semanticsLabel: 'Loading',
+                ),
+                generating: () => const StatusIndicator(
+                  Colors.grey,
+                  semanticsLabel: 'Generating key',
+                ),
+                empty: () => const StatusIndicator(
+                  Colors.grey,
+                  semanticsLabel: 'IMAP config empty',
+                ),
               ),
             ],
           ),
@@ -69,9 +91,12 @@ class StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: formLabelStyle(),
+    return Flexible(
+      child: Text(
+        text,
+        softWrap: true,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 }
@@ -79,26 +104,31 @@ class StatusText extends StatelessWidget {
 class StatusIndicator extends StatelessWidget {
   const StatusIndicator(
     this.statusColor, {
+    required this.semanticsLabel,
     super.key,
   });
 
   final Color statusColor;
+  final String semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 30,
-      width: 30,
-      decoration: BoxDecoration(
-        color: statusColor,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: statusColor,
-            blurRadius: 5,
-            spreadRadius: 1,
-          )
-        ],
+    return Semantics(
+      label: semanticsLabel,
+      child: Container(
+        height: 30,
+        width: 30,
+        decoration: BoxDecoration(
+          color: statusColor,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: statusColor,
+              blurRadius: 5,
+              spreadRadius: 1,
+            )
+          ],
+        ),
       ),
     );
   }

@@ -68,14 +68,12 @@ class _TaskFormState extends State<TaskForm> {
                           labelText: '${widget.data?.title}'.isEmpty
                               ? localizations.taskNameLabel
                               : '',
+                          themeData: Theme.of(context),
                         ),
                         textCapitalization: TextCapitalization.sentences,
                         keyboardAppearance: keyboardAppearance(),
                         maxLines: null,
-                        style: inputStyle().copyWith(
-                          fontSize: 25,
-                          fontWeight: FontWeight.normal,
-                        ),
+                        style: const TextStyle(fontSize: fontSizeLarge),
                         name: 'title',
                         onChanged: context.read<EntryCubit>().setDirty,
                       ),
@@ -90,8 +88,8 @@ class _TaskFormState extends State<TaskForm> {
                           child: TextField(
                             decoration: inputDecoration(
                               labelText: localizations.taskEstimateLabel,
+                              themeData: Theme.of(context),
                             ),
-                            style: inputStyle(),
                             readOnly: true,
                             controller: TextEditingController(
                               text: formatDuration(widget.data?.estimate)
@@ -120,7 +118,10 @@ class _TaskFormState extends State<TaskForm> {
                             borderRadius: BorderRadius.circular(10),
                             elevation: 2,
                             onChanged: (dynamic _) => save(),
-                            decoration: inputDecoration(labelText: 'Status:'),
+                            decoration: inputDecoration(
+                              labelText: 'Status:',
+                              themeData: Theme.of(context),
+                            ),
                             initialValue: widget.data?.status.map(
                                   open: (_) => 'OPEN',
                                   groomed: (_) => 'GROOMED',
@@ -202,11 +203,7 @@ class TaskStatusLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5),
-      child: Text(
-        title,
-        softWrap: false,
-        style: inputStyle(),
-      ),
+      child: Text(title, softWrap: false),
     );
   }
 }

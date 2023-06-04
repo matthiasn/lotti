@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -122,11 +121,7 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
                       sigmaX: 12,
                       sigmaY: 12,
                     ),
-                    child: Icon(
-                      MdiIcons.close,
-                      size: 32,
-                      color: styleConfig().primaryTextColor,
-                    ),
+                    child: const Icon(MdiIcons.close, size: 32),
                   ),
                   const Icon(
                     MdiIcons.close,

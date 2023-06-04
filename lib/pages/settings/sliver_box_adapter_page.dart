@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 
 class SliverBoxAdapterPage extends StatelessWidget {
@@ -17,7 +16,6 @@ class SliverBoxAdapterPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: styleConfig().negspace,
       body: CustomScrollView(
         slivers: <Widget>[
           SliverTitleBar(

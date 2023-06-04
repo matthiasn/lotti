@@ -35,7 +35,6 @@ class HabitDetailsPage extends StatelessWidget {
         final showFrom = item.habitSchedule.mapOrNull(daily: (d) => d.showFrom);
 
         return Scaffold(
-          backgroundColor: styleConfig().negspace,
           appBar: TitleAppBar(
             title: state.habitDefinition.name,
             actions: [
@@ -103,7 +102,7 @@ class HabitDetailsPage extends StatelessWidget {
                               name: 'private',
                               initialValue: item.private,
                               title: localizations.settingsHabitsPrivateLabel,
-                              activeColor: styleConfig().private,
+                              activeColor: Theme.of(context).colorScheme.error,
                             ),
                             FormSwitch(
                               name: 'archived',

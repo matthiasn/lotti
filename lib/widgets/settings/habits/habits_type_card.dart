@@ -44,7 +44,7 @@ class HabitsTypeCard extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 10),
                 child: Icon(
                   MdiIcons.security,
-                  color: styleConfig().alarm,
+                  color: Theme.of(context).colorScheme.error,
                   size: settingsIconSize,
                 ),
               ),

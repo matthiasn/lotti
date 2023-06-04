@@ -76,7 +76,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
 
         final categoryUndefined = categoryId == null;
         final style =
-            categoryUndefined ? searchFieldHintStyle() : searchFieldStyle();
+            categoryUndefined ? searchFieldHintStyle : searchFieldStyle;
 
         return TextField(
           key: const Key('select_dashboard_category'),
@@ -88,6 +88,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
             labelText:
                 categoryUndefined ? '' : localizations.habitCategoryLabel,
             semanticsLabel: 'Select category',
+            themeData: Theme.of(context),
           ).copyWith(
             icon: ColorIcon(
               category != null

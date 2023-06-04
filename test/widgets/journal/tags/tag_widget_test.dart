@@ -22,7 +22,7 @@ void main() {
 
   group('TagWidget Widget Tests -', () {
     setUpAll(() {
-      getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
+      getIt.registerSingleton<ThemesService>(ThemesService());
       when(testMock.onTapRemove).thenAnswer((_) {});
     });
 

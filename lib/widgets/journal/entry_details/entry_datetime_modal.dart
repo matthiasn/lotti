@@ -103,7 +103,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                     padding: const EdgeInsets.only(left: 8),
                     child: Text(
                       formatDuration(dateFrom.difference(dateTo).abs()),
-                      style: monospaceTextStyle().copyWith(
+                      style: monospaceTextStyle.copyWith(
                         fontWeight: FontWeight.w100,
                       ),
                     ),
@@ -127,7 +127,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                         },
                         child: Text(
                           localizations.journalDateSaveButton,
-                          style: textStyleLarger().copyWith(
+                          style: const TextStyle(
                             decoration: TextDecoration.underline,
                           ),
                         ),
@@ -137,8 +137,8 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       visible: !valid,
                       child: Text(
                         localizations.journalDateInvalid,
-                        style: textStyleLarger().copyWith(
-                          color: styleConfig().alarm,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
                         ),
                       ),
                     ),

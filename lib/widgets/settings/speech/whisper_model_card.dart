@@ -56,7 +56,7 @@ class WhisperModelCard extends StatelessWidget {
                 const SizedBox(width: 20),
                 Text(
                   model,
-                  style: settingsCardTextStyle().copyWith(
+                  style: settingsCardTextStyle.copyWith(
                     color: textColor,
                   ),
                 ),
@@ -66,15 +66,12 @@ class WhisperModelCard extends StatelessWidget {
                     child: Text(
                       localizations.settingsSpeechDownloadButton,
                       semanticsLabel: 'download $model',
-                      style: buttonLabelStyle(),
                     ),
                     onPressed: () => cubit.downloadModel(model),
                   ),
                 if (progress == 1.0)
                   Text(
                     '${(snapshot.downloadedModelSizes[model] ?? 0).round()} MB',
-                    style: buttonLabelStyle()
-                        .copyWith(color: styleConfig().secondaryTextColor),
                   ),
                 if (progress == 1.0)
                   IconButton(

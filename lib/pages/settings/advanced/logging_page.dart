@@ -6,6 +6,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/themes.dart';
 import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -69,9 +70,8 @@ class LogLineCard extends StatelessWidget {
     final domain = logEntry.domain;
     final subDomain = logEntry.subDomain;
     final message = logEntry.message;
-    final color = logEntry.level == 'ERROR'
-        ? styleConfig().alarm
-        : styleConfig().primaryTextColor;
+    final color =
+        logEntry.level == 'ERROR' ? alarm : styleConfig().primaryTextColor;
 
     return GestureDetector(
       onTap: () => beamToNamed('/settings/advanced/logging/${logEntry.id}'),
@@ -79,7 +79,7 @@ class LogLineCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         child: Text(
           '$timestamp: $domain $subDomain $message',
-          style: monospaceTextStyleSmall().copyWith(color: color),
+          style: monospaceTextStyleSmall.copyWith(color: color),
         ),
       ),
     );
@@ -101,7 +101,6 @@ class LogDetailPage extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: styleConfig().negspace,
       appBar: TitleAppBar(title: localizations.settingsLogsTitle),
       body: StreamBuilder(
         stream: _db.watchLogEntryById(logEntryId),
@@ -130,12 +129,11 @@ class LogDetailPage extends StatelessWidget {
               '$timestamp $level $domain $subDomain\n\n$message\n\n$stacktrace';
 
           final headerStyle = level == 'ERROR'
-              ? logDetailStyle().copyWith(
-                  color: styleConfig().alarm,
+              ? monospaceTextStyle.copyWith(
+                  color: Theme.of(context).colorScheme.error,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
                 )
-              : logDetailStyle().copyWith(fontSize: 16);
+              : monospaceTextStyle;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(8),
@@ -154,23 +152,17 @@ class LogDetailPage extends StatelessWidget {
                     ],
                   ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: Text(
-                    'Message:',
-                    style: formLabelStyle(),
-                  ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 16),
+                  child: Text('Message:'),
                 ),
-                SelectableText(message, style: logDetailStyle()),
+                SelectableText(message, style: monospaceTextStyle),
                 if (stacktrace != null) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Text(
-                      'Stack Trace:',
-                      style: formLabelStyle(),
-                    ),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: Text('Stack Trace:'),
                   ),
-                  SelectableText(stacktrace, style: logDetailStyle()),
+                  SelectableText(stacktrace, style: monospaceTextStyle),
                 ],
                 IconButton(
                   icon: const Icon(MdiIcons.clipboardOutline),

@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_dynamic_calls
 
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -70,8 +71,14 @@ class EditorWidget extends StatelessWidget {
             saveViaKeyboard(event);
           },
           child: Card(
-            color: styleConfig().textEditorBackground,
+            color: Theme.of(context).colorScheme.surface.brighten(),
             elevation: 0,
+            clipBehavior: Clip.hardEdge,
+            shape: const RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.all(Radius.circular(inputBorderRadius)),
+              side: BorderSide(),
+            ),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: maxHeight,
@@ -99,7 +106,9 @@ class EditorWidget extends StatelessWidget {
                       ),
                       keyboardAppearance: keyboardAppearance(),
                       customStyles: customEditorStyles(
-                        textColor: styleConfig().primaryTextColor,
+                        textColor:
+                            Theme.of(context).textTheme.bodyLarge?.color ??
+                                Colors.grey,
                         codeBlockBackground: styleConfig().primaryColorLight,
                       ),
                     ),

@@ -35,7 +35,7 @@ class SettingsButton extends StatelessWidget {
     return IconButton(
       padding: const EdgeInsets.all(4),
       icon: Icon(iconData),
-      color: styleConfig().secondaryTextColor,
+      color: Theme.of(context).secondaryHeaderColor,
       onPressed: () => beamToNamed(settingsRoute),
     );
   }

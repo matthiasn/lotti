@@ -39,7 +39,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                 topRight: Radius.circular(8),
               ),
               child: Container(
-                color: styleConfig().alarm,
+                color: Theme.of(context).colorScheme.error,
                 width: 90,
                 height: 25,
                 child: Row(
@@ -54,7 +54,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Text(
                         durationString,
-                        style: monospaceTextStyle().copyWith(
+                        style: monospaceTextStyle.copyWith(
                           color: Colors.black,
                         ),
                       ),

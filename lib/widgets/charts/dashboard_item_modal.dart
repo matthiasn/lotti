@@ -31,13 +31,12 @@ class DashboardItemModal extends StatelessWidget {
           children: <Widget>[
             Text(
               title,
-              style: titleStyle(),
+              style: titleStyle,
             ),
             const SizedBox(height: 16),
             Text(
               localizations.dashboardAggregationLabel,
               textAlign: TextAlign.end,
-              style: labelStyleLarger().copyWith(fontSize: 14),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -56,10 +55,7 @@ class DashboardItemModal extends StatelessWidget {
                     );
                     Navigator.pop(context);
                   },
-                  label: Text(
-                    EnumToString.convertToString(aggregationType),
-                    style: choiceLabelStyle(),
-                  ),
+                  label: Text(EnumToString.convertToString(aggregationType)),
                   selectedColor: styleConfig().primaryColor,
                   selected: aggregationType == item.aggregationType,
                 );
