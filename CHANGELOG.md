@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed:
 - Task duration estimate bottom sheet
+- Font colors on survey bottom sheet
 
 ## [0.8.366] - 2023-06-03
 ### Changed:
