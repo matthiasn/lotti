@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:lotti/themes/theme.dart';
 
 class DurationBottomSheet extends StatefulWidget {
   const DurationBottomSheet(this.initial, {super.key});
@@ -33,7 +32,7 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
             horizontal: 20,
             vertical: 10,
           ),
-          color: styleConfig().primaryColor.withOpacity(0.3),
+          color: Theme.of(context).primaryColor.withOpacity(0.3),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -52,21 +51,14 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
             ],
           ),
         ),
-        CupertinoTheme(
-          data: const CupertinoThemeData(
-            textTheme: CupertinoTextThemeData(
-              pickerTextStyle: TextStyle(fontWeight: FontWeight.w300),
-            ),
-          ),
-          child: SizedBox(
-            width: 500,
-            child: CupertinoTimerPicker(
-              onTimerDurationChanged: (Duration value) {
-                duration = value;
-              },
-              initialTimerDuration: widget.initial ?? Duration.zero,
-              mode: CupertinoTimerPickerMode.hm,
-            ),
+        SizedBox(
+          width: 500,
+          child: CupertinoTimerPicker(
+            onTimerDurationChanged: (Duration value) {
+              duration = value;
+            },
+            initialTimerDuration: widget.initial ?? Duration.zero,
+            mode: CupertinoTimerPickerMode.hm,
           ),
         ),
       ],

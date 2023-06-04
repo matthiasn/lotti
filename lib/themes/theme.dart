@@ -34,13 +34,11 @@ final errorBorder = OutlineInputBorder(
 
 final inputBorderFocused = OutlineInputBorder(
   borderRadius: BorderRadius.circular(inputBorderRadius),
-  borderSide: BorderSide(
-    color: styleConfig().primaryColor,
-    width: 2,
-  ),
+  borderSide: const BorderSide(width: 2),
 );
 
 InputDecoration inputDecoration({
+  required ThemeData themeData,
   String? labelText,
   String? semanticsLabel,
   Widget? suffixIcon,
@@ -49,7 +47,13 @@ InputDecoration inputDecoration({
       border: inputBorder,
       errorBorder: errorBorder,
       enabledBorder: inputBorder,
-      focusedBorder: inputBorderFocused,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(inputBorderRadius),
+        borderSide: BorderSide(
+          color: themeData.primaryColor,
+          width: 2,
+        ),
+      ),
       floatingLabelBehavior: FloatingLabelBehavior.always,
       suffixIcon: suffixIcon,
       label: Text(
@@ -59,10 +63,14 @@ InputDecoration inputDecoration({
     );
 
 InputDecoration createDialogInputDecoration({
+  required ThemeData themeData,
   String? labelText,
   TextStyle? style,
 }) {
-  final decoration = inputDecoration(labelText: labelText);
+  final decoration = inputDecoration(
+    labelText: labelText,
+    themeData: themeData,
+  );
 
   if (style == null) {
     return decoration;
@@ -244,6 +252,8 @@ ThemeData withOverrides(ThemeData themeData) {
         enableFeedback: true,
       ),
     ),
+    inputDecorationTheme:
+        InputDecorationTheme(fillColor: themeData.primaryColor),
   );
 }
 

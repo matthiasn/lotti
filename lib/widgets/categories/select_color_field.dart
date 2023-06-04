@@ -94,6 +94,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
         labelText:
             widget.hexColor == null || !valid ? '' : localizations.colorLabel,
         semanticsLabel: 'Select color',
+        themeData: Theme.of(context),
       ).copyWith(
         icon: ColorIcon(color),
         hintText: localizations.colorPickerHint,

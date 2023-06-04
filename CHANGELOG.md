@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Text editor border
 - Editor toolbar elevation
 
+### Fixed:
+- Task duration estimate bottom sheet
+
 ## [0.8.366] - 2023-06-03
 ### Changed:
 - Adapt filter chips to match Material 3 design
