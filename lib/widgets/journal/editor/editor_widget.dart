@@ -72,6 +72,12 @@ class EditorWidget extends StatelessWidget {
           child: Card(
             color: styleConfig().textEditorBackground,
             elevation: 0,
+            clipBehavior: Clip.hardEdge,
+            shape: const RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.all(Radius.circular(inputBorderRadius)),
+              side: BorderSide(),
+            ),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: maxHeight,
