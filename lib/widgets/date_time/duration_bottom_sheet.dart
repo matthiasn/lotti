@@ -41,33 +41,21 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: Text(
-                  localizations.cancelButton,
-                  style: buttonLabelStyleLarger().copyWith(
-                    color: styleConfig().secondaryTextColor,
-                  ),
-                ),
+                child: Text(localizations.cancelButton),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context, duration);
                 },
-                child: Text(
-                  localizations.doneButton,
-                  style: buttonLabelStyleLarger().copyWith(
-                    color: styleConfig().primaryColor,
-                  ),
-                ),
+                child: Text(localizations.doneButton),
               ),
             ],
           ),
         ),
         CupertinoTheme(
-          data: CupertinoThemeData(
+          data: const CupertinoThemeData(
             textTheme: CupertinoTextThemeData(
-              pickerTextStyle: formLabelStyle().copyWith(
-                fontWeight: FontWeight.w300,
-              ),
+              pickerTextStyle: TextStyle(fontWeight: FontWeight.w300),
             ),
           ),
           child: SizedBox(

@@ -54,7 +54,6 @@ InputDecoration inputDecoration({
       suffixIcon: suffixIcon,
       label: Text(
         labelText ?? '',
-        style: newLabelStyle(),
         semanticsLabel: semanticsLabel,
       ),
     );
@@ -69,7 +68,7 @@ InputDecoration createDialogInputDecoration({
     return decoration;
   } else {
     return decoration.copyWith(
-      labelStyle: newLabelStyle().copyWith(color: style.color),
+      labelStyle: TextStyle(color: style.color),
     );
   }
 }
@@ -79,11 +78,6 @@ const switchDecoration = InputDecoration(border: InputBorder.none);
 const inputSpacer = SizedBox(height: 25);
 const inputSpacerSmall = SizedBox(height: 15);
 
-const textStyle = TextStyle(
-  fontWeight: FontWeight.w400,
-  fontSize: fontSizeMedium,
-);
-
 TextStyle choiceChipTextStyle({required bool isSelected}) => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w300,
@@ -92,31 +86,20 @@ TextStyle choiceChipTextStyle({required bool isSelected}) => TextStyle(
           : styleConfig().unselectedChoiceChipTextColor,
     );
 
-TextStyle chartTooltipStyle() => const TextStyle(
-      fontSize: fontSizeSmall,
-      fontWeight: FontWeight.w300,
-    );
+const chartTooltipStyle = TextStyle(
+  fontSize: fontSizeSmall,
+  fontWeight: FontWeight.w300,
+);
 
-TextStyle chartTooltipStyleBold() => const TextStyle(
-      fontSize: fontSizeSmall,
-      fontWeight: FontWeight.bold,
-    );
+const chartTooltipStyleBold = TextStyle(
+  fontSize: fontSizeSmall,
+  fontWeight: FontWeight.bold,
+);
 
 const transcriptHeaderStyle = TextStyle(
   fontSize: fontSizeSmall,
   fontWeight: FontWeight.w300,
 );
-
-TextStyle labelStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.w500,
-      fontSize: 18,
-    );
-
-TextStyle newLabelStyle() => TextStyle(
-      color: styleConfig().secondaryTextColor,
-      fontSize: fontSizeMedium,
-    );
 
 const monospaceTextStyle = TextStyle(
   fontWeight: FontWeight.w300,
@@ -128,26 +111,9 @@ final monospaceTextStyleSmall = monospaceTextStyle.copyWith(
   fontSize: fontSizeSmall,
 );
 
-TextStyle monospaceTextStyleLarge() => monospaceTextStyle.copyWith(
-      fontSize: fontSizeLarge,
-    );
-
-TextStyle formLabelStyle() => TextStyle(
-      color: styleConfig().secondaryTextColor,
-      fontSize: fontSizeMedium,
-    );
-
-TextStyle buttonLabelStyleLarger() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: 20,
-    );
-
-TextStyle choiceLabelStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-    );
-
-TextStyle logDetailStyle() => monospaceTextStyle;
+final monospaceTextStyleLarge = monospaceTextStyle.copyWith(
+  fontSize: fontSizeLarge,
+);
 
 const appBarTextStyle = TextStyle(
   fontSize: fontSizeMedium,
@@ -169,9 +135,9 @@ const searchFieldStyle = TextStyle(
   fontWeight: FontWeight.w200,
 );
 
-TextStyle searchFieldHintStyle() => searchFieldStyle.copyWith(
-      color: styleConfig().secondaryTextColor,
-    );
+final searchFieldHintStyle = searchFieldStyle.copyWith(
+  color: styleConfig().secondaryTextColor,
+);
 
 const settingsCardTextStyle = TextStyle(
   fontSize: fontSizeLarge,
@@ -238,40 +204,17 @@ TextStyle searchLabelStyle() => TextStyle(
       fontWeight: FontWeight.w100,
     );
 
-final lightTheme = FlexThemeData.light(
-  scheme: FlexScheme.flutterDash,
-  useMaterial3: true,
-  fontFamily: mainFont,
-);
-
-final lightThemeMod = lightTheme.copyWith(
-  cardTheme: darkTheme.cardTheme.copyWith(
-    clipBehavior: Clip.hardEdge,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-  ),
-  segmentedButtonTheme: SegmentedButtonThemeData(
-    style: ButtonStyle(
-      alignment: Alignment.center,
-      visualDensity: VisualDensity.compact,
-      side: MaterialStateProperty.resolveWith((states) {
-        return BorderSide(
-          color: darkTheme.colorScheme.tertiary,
-        );
-      }),
-      padding: MaterialStateProperty.resolveWith((states) {
-        return const EdgeInsets.symmetric(horizontal: 6);
-      }),
-      enableFeedback: true,
-    ),
-  ),
-  bottomSheetTheme: const BottomSheetThemeData(clipBehavior: Clip.hardEdge),
-);
-
 Brightness keyboardAppearance() {
   return getIt<ThemesService>().darkKeyboard
       ? Brightness.dark
       : Brightness.light;
 }
+
+final lightTheme = FlexThemeData.light(
+  scheme: FlexScheme.flutterDash,
+  useMaterial3: true,
+  fontFamily: mainFont,
+);
 
 final darkTheme = FlexThemeData.dark(
   scheme: FlexScheme.deepBlue,
@@ -279,25 +222,30 @@ final darkTheme = FlexThemeData.dark(
   fontFamily: mainFont,
 );
 
-final darkThemeMod = darkTheme.copyWith(
-  cardTheme: darkTheme.cardTheme.copyWith(
-    clipBehavior: Clip.hardEdge,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-  ),
-  bottomSheetTheme: const BottomSheetThemeData(clipBehavior: Clip.hardEdge),
-  segmentedButtonTheme: SegmentedButtonThemeData(
-    style: ButtonStyle(
-      alignment: Alignment.center,
-      visualDensity: VisualDensity.compact,
-      side: MaterialStateProperty.resolveWith((states) {
-        return BorderSide(
-          color: darkTheme.colorScheme.tertiary,
-        );
-      }),
-      padding: MaterialStateProperty.resolveWith((states) {
-        return const EdgeInsets.symmetric(horizontal: 6);
-      }),
-      enableFeedback: true,
+ThemeData withOverrides(ThemeData themeData) {
+  return themeData.copyWith(
+    cardTheme: darkTheme.cardTheme.copyWith(
+      clipBehavior: Clip.hardEdge,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
-  ),
-);
+    bottomSheetTheme: const BottomSheetThemeData(clipBehavior: Clip.hardEdge),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        alignment: Alignment.center,
+        visualDensity: VisualDensity.compact,
+        side: MaterialStateProperty.resolveWith((states) {
+          return BorderSide(
+            color: darkTheme.colorScheme.tertiary,
+          );
+        }),
+        padding: MaterialStateProperty.resolveWith((states) {
+          return const EdgeInsets.symmetric(horizontal: 6);
+        }),
+        enableFeedback: true,
+      ),
+    ),
+  );
+}
+
+final lightThemeMod = withOverrides(lightTheme);
+final darkThemeMod = withOverrides(darkTheme);

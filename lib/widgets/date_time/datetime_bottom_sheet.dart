@@ -46,40 +46,27 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: Text(
-                  localizations.cancelButton,
-                  style: buttonLabelStyleLarger().copyWith(
-                    color: styleConfig().secondaryTextColor,
-                  ),
-                ),
+                child: Text(localizations.cancelButton),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context, DateTime.now());
                 },
-                child: Text(
-                  localizations.journalDateNowButton,
-                  style: buttonLabelStyleLarger(),
-                ),
+                child: Text(localizations.journalDateNowButton),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context, dateTime);
                 },
-                child: Text(
-                  localizations.doneButton,
-                  style: buttonLabelStyleLarger().copyWith(
-                    color: styleConfig().primaryColor,
-                  ),
-                ),
+                child: Text(localizations.doneButton),
               ),
             ],
           ),
         ),
         CupertinoTheme(
-          data: CupertinoThemeData(
+          data: const CupertinoThemeData(
             textTheme: CupertinoTextThemeData(
-              dateTimePickerTextStyle: formLabelStyle().copyWith(
+              dateTimePickerTextStyle: TextStyle(
                 fontSize: fontSizeLarge,
                 fontWeight: FontWeight.w300,
               ),

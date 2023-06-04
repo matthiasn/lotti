@@ -10,9 +10,7 @@ final Color iron = colorFromCssHex('#909090');
 final Color primaryColor = colorFromCssHex('#82E6CE');
 
 final Color primaryColorLight = colorFromCssHex('#CFF3EA');
-final Color ripIce = colorFromCssHex('#EFFFFB');
 final Color alarm = colorFromCssHex('#FF7373');
-final Color ice = colorFromCssHex('#F5F5F5');
 final Color nickel = colorFromCssHex('#B4B2B2');
 
 final darkTheme = StyleConfig(

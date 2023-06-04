@@ -99,10 +99,7 @@ class _TagsModalState extends State<TagsModal> {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: Text(
-                    localizations.journalTagsLabel,
-                    style: formLabelStyle(),
-                  ),
+                  child: Text(localizations.journalTagsLabel),
                 ),
                 Expanded(
                   child: CupertinoTextField(
