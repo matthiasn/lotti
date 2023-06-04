@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Style fixes & refactoring
 - Styles refactoring
 - Text editor border
+- Editor toolbar elevation
 
 ## [0.8.366] - 2023-06-03
 ### Changed:
