@@ -31,7 +31,7 @@ void main() {
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<ThemesService>(ThemesService(watch: false));
+        ..registerSingleton<ThemesService>(ThemesService());
     });
     tearDown(getIt.reset);
 

@@ -32,7 +32,7 @@ class CategoriesTypeCard extends StatelessWidget {
             visible: fromNullableBool(categoryDefinition.private),
             child: Icon(
               MdiIcons.security,
-              color: styleConfig().alarm,
+              color: Theme.of(context).colorScheme.error,
               size: settingsIconSize,
             ),
           ),

@@ -35,7 +35,7 @@ void main() {
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<InboxService>(mockInboxService)
         ..registerSingleton<LoggingDb>(mockLoggingDb)
-        ..registerSingleton<ThemesService>(ThemesService(watch: false));
+        ..registerSingleton<ThemesService>(ThemesService());
     });
     tearDown(getIt.reset);
 

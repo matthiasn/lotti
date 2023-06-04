@@ -286,7 +286,7 @@ class ChartLabel extends StatelessWidget {
       opacity: labelOpacity,
       child: Text(
         text,
-        style: chartTitleStyleSmall(),
+        style: chartTitleStyleSmall,
         textAlign: TextAlign.center,
       ),
     );
@@ -326,7 +326,7 @@ class InfoLabel extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: Text(
           text,
-          style: chartTitleStyleSmall(),
+          style: chartTitleStyleSmall,
         ),
       ),
     );

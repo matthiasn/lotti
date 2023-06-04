@@ -119,7 +119,6 @@ class _TagEditPageState extends State<TagEditPage> {
             ),
         ],
       ),
-      backgroundColor: styleConfig().negspace,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Card(

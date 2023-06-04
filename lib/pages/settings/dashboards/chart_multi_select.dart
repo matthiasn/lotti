@@ -31,7 +31,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
         initialValue: const [],
         initialChildSize: 0.4,
         maxChildSize: 0.9,
-        title: Text(title, style: titleStyle()),
+        title: Text(title, style: titleStyle),
         checkColor: styleConfig().primaryTextColor,
         selectedColor: styleConfig().primaryColor,
         decoration: BoxDecoration(
@@ -39,8 +39,8 @@ class ChartMultiSelect<T> extends StatelessWidget {
           borderRadius: const BorderRadius.all(Radius.circular(10)),
           border: Border.all(color: styleConfig().secondaryTextColor),
         ),
-        itemsTextStyle: multiSelectStyle(),
-        selectedItemsTextStyle: multiSelectStyle().copyWith(
+        itemsTextStyle: multiSelectStyle,
+        selectedItemsTextStyle: multiSelectStyle.copyWith(
           fontWeight: FontWeight.normal,
         ),
         unselectedColor: styleConfig().primaryTextColor,

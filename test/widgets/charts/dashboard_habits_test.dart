@@ -22,7 +22,7 @@ void main() {
       final mockEntitiesCacheService = MockEntitiesCacheService();
 
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<JournalDb>(mockJournalDb);
 

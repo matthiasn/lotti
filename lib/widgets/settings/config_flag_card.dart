@@ -48,13 +48,13 @@ class ConfigFlagCard extends StatelessWidget {
               child: Text(
                 softWrap: true,
                 getLocalizedDescription(item),
-                style: settingsCardTextStyle(),
+                style: settingsCardTextStyle,
               ),
             ),
             const SizedBox(width: 8),
             CupertinoSwitch(
               value: item.status,
-              activeColor: styleConfig().private,
+              activeColor: Theme.of(context).colorScheme.error,
               onChanged: (bool status) {
                 _db.upsertConfigFlag(item.copyWith(status: status));
               },

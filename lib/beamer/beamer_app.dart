@@ -66,92 +66,77 @@ class _AppScreenState extends State<AppScreen> {
                   ),
                 ],
               ),
-              bottomNavigationBar: Theme(
-                data: Theme.of(context).copyWith(
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  splashColor: Colors.transparent,
+              bottomNavigationBar: BottomNavigationBar(
+                selectedItemColor: Theme.of(context).primaryColor,
+                unselectedItemColor: Theme.of(context).secondaryHeaderColor,
+                enableFeedback: true,
+                elevation: 8,
+                iconSize: 30,
+                selectedLabelStyle: const TextStyle(
+                  height: 2,
+                  fontWeight: FontWeight.bold,
                 ),
-                child: Theme(
-                  data: Theme.of(context).copyWith(
-                    canvasColor: styleConfig().negspace,
-                    hoverColor: Colors.transparent,
-                    splashColor: Colors.transparent,
-                  ),
-                  child: BottomNavigationBar(
-                    unselectedItemColor: styleConfig().primaryTextColor,
-                    selectedItemColor: styleConfig().primaryColor,
-                    selectedFontSize: fontSizeSmall,
-                    enableFeedback: true,
-                    elevation: 8,
-                    iconSize: 30,
-                    selectedLabelStyle: const TextStyle(
-                      height: 2,
-                      fontWeight: FontWeight.bold,
+                unselectedLabelStyle: const TextStyle(height: 2),
+                type: BottomNavigationBarType.shifting,
+                currentIndex: index,
+                items: [
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Habits Tab',
+                      image: true,
+                      child: const Icon(Icons.checklist_outlined),
                     ),
-                    unselectedLabelStyle: const TextStyle(height: 2),
-                    type: BottomNavigationBarType.shifting,
-                    currentIndex: index,
-                    items: [
-                      BottomNavigationBarItem(
-                        icon: Semantics(
-                          container: true,
-                          label: 'Habits Tab',
-                          image: true,
-                          child: const Icon(Icons.checklist_outlined),
-                        ),
-                        label: localizations.navTabTitleHabits,
-                        tooltip: '',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Semantics(
-                          container: true,
-                          label: 'Dashboards Tab',
-                          image: true,
-                          child: const Icon(Icons.insights_outlined),
-                        ),
-                        label: localizations.navTabTitleInsights,
-                        tooltip: '',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Semantics(
-                          container: true,
-                          label: 'Logbook Tab',
-                          image: true,
-                          child: const Icon(Icons.auto_stories_outlined),
-                        ),
-                        label: localizations.navTabTitleJournal,
-                        tooltip: '',
-                      ),
-                      if (showTasksTab)
-                        BottomNavigationBarItem(
-                          icon: Semantics(
-                            container: true,
-                            label: 'Tasks Tab',
-                            image: true,
-                            child: TasksBadge(
-                              child: const Icon(Icons.task_alt_outlined),
-                            ),
-                          ),
-                          label: localizations.navTabTitleTasks,
-                          tooltip: '',
-                        ),
-                      BottomNavigationBarItem(
-                        icon: Semantics(
-                          container: true,
-                          label: 'Settings Tab',
-                          image: true,
-                          child: OutboxBadgeIcon(
-                            icon: const Icon(Icons.settings_outlined),
-                          ),
-                        ),
-                        label: localizations.navTabTitleSettings,
-                        tooltip: '',
-                      ),
-                    ],
-                    onTap: navService.tapIndex,
+                    label: localizations.navTabTitleHabits,
+                    tooltip: '',
                   ),
-                ),
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Dashboards Tab',
+                      image: true,
+                      child: const Icon(Icons.insights_outlined),
+                    ),
+                    label: localizations.navTabTitleInsights,
+                    tooltip: '',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Logbook Tab',
+                      image: true,
+                      child: const Icon(Icons.auto_stories_outlined),
+                    ),
+                    label: localizations.navTabTitleJournal,
+                    tooltip: '',
+                  ),
+                  if (showTasksTab)
+                    BottomNavigationBarItem(
+                      icon: Semantics(
+                        container: true,
+                        label: 'Tasks Tab',
+                        image: true,
+                        child: TasksBadge(
+                          child: const Icon(Icons.task_alt_outlined),
+                        ),
+                      ),
+                      label: localizations.navTabTitleTasks,
+                      tooltip: '',
+                    ),
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      container: true,
+                      label: 'Settings Tab',
+                      image: true,
+                      child: OutboxBadgeIcon(
+                        icon: const Icon(Icons.settings_outlined),
+                      ),
+                    ),
+                    label: localizations.navTabTitleSettings,
+                    tooltip: '',
+                  ),
+                ],
+                onTap: navService.tapIndex,
               ),
             );
           },
@@ -197,25 +182,32 @@ class MyBeamerApp extends StatelessWidget {
               create: (BuildContext context) => AudioPlayerCubit(),
             ),
           ],
-          child: DesktopMenuWrapper(
-            child: MaterialApp.router(
-              color: styleConfig().negspace,
-              supportedLocales: AppLocalizations.supportedLocales,
-              theme: getTheme(),
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                FormBuilderLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              debugShowCheckedModeBanner: false,
-              routerDelegate: routerDelegate,
-              routeInformationParser: BeamerParser(),
-              backButtonDispatcher: BeamerBackButtonDispatcher(
-                delegate: routerDelegate,
-              ),
-            ),
+          child: StreamBuilder<bool>(
+            stream: getIt<JournalDb>().watchConfigFlag(showBrightSchemeFlag),
+            builder: (context, snapshot) {
+              return DesktopMenuWrapper(
+                child: MaterialApp.router(
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  theme: lightThemeMod,
+                  darkTheme: darkThemeMod,
+                  themeMode:
+                      snapshot.data ?? false ? ThemeMode.light : ThemeMode.dark,
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    FormBuilderLocalizations.delegate,
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  debugShowCheckedModeBanner: false,
+                  routerDelegate: routerDelegate,
+                  routeInformationParser: BeamerParser(),
+                  backButtonDispatcher: BeamerBackButtonDispatcher(
+                    delegate: routerDelegate,
+                  ),
+                ),
+              );
+            },
           ),
         );
       },

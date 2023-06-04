@@ -65,7 +65,6 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
     }
 
     return Scaffold(
-      backgroundColor: styleConfig().negspace,
       appBar: TitleAppBar(
         title: widget.dataType.displayName,
         actions: [

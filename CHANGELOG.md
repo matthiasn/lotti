@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Color schemes from flex_color_scheme (WIP)
+
+## [0.8.366] - 2023-06-03
+### Changed:
 - Adapt filter chips to match Material 3 design
 - Upgraded dependencies & Flutter upgrade
 - Use segmented button with icons for filtering journal

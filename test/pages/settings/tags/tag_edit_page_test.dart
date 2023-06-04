@@ -33,7 +33,7 @@ void main() {
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<ThemesService>(ThemesService(watch: false));
+        ..registerSingleton<ThemesService>(ThemesService());
 
       when(() => mockPersistenceLogic.upsertTagEntity(any()))
           .thenAnswer((_) async => 1);

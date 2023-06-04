@@ -21,7 +21,7 @@ void main() {
 
       getIt
         ..registerSingleton<TagsService>(mockTagsService)
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<JournalDb>(mockJournalDb);
 
       when(
@@ -64,7 +64,7 @@ void main() {
 
       getIt
         ..registerSingleton<TagsService>(mockTagsService)
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<JournalDb>(mockJournalDb);
 
       when(

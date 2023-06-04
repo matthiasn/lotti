@@ -22,7 +22,7 @@ class ChartLabel extends StatelessWidget {
       opacity: labelOpacity,
       child: Text(
         text,
-        style: chartTitleStyleSmall(),
+        style: chartTitleStyleSmall,
         textAlign: TextAlign.center,
       ),
     );

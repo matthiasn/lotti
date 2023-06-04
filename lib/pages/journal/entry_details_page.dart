@@ -5,7 +5,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/task_app_bar.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -41,7 +40,6 @@ class EntryDetailPage extends StatelessWidget {
           appBar: item is Task
               ? TaskAppBar(itemId: item.meta.id)
               : const TitleAppBar(title: '') as PreferredSizeWidget,
-          backgroundColor: styleConfig().negspace,
           floatingActionButton: RadialAddActionButtons(
             linked: item,
             radius: isMobile ? 180 : 120,

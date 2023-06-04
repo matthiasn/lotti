@@ -44,7 +44,7 @@ void main() {
         ..registerSingleton<NavService>(NavService())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<ThemesService>(ThemesService(watch: false));
+        ..registerSingleton<ThemesService>(ThemesService());
 
       when(() => secureStorageMock.readValue(lastRouteKey))
           .thenAnswer((_) async => '/settings');

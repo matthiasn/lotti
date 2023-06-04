@@ -17,7 +17,7 @@ void main() {
     final entryCubit = MockEntryCubit();
 
     setUpAll(() {
-      getIt.registerSingleton<ThemesService>(ThemesService(watch: false));
+      getIt.registerSingleton<ThemesService>(ThemesService());
     });
 
     testWidgets('calls delete in cubit', (WidgetTester tester) async {

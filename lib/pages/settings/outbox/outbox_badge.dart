@@ -43,7 +43,7 @@ class OutboxBadgeIcon extends StatelessWidget {
                   label,
                   style: badgeStyle,
                 ),
-                backgroundColor: styleConfig().alarm,
+                backgroundColor: Theme.of(context).colorScheme.error,
                 isLabelVisible: count > 0,
                 child: icon,
               );

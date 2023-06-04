@@ -51,7 +51,7 @@ class EntryDetailHeader extends StatelessWidget {
                   value: item.meta.private ?? false,
                   icon: Icons.shield_outlined,
                   activeIcon: Icons.shield,
-                  activeColor: styleConfig().alarm,
+                  activeColor: Theme.of(context).colorScheme.error,
                 ),
                 SwitchIconWidget(
                   tooltip: localizations.journalFlaggedTooltip,

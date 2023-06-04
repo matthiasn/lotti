@@ -19,7 +19,6 @@ class SliverTitleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(
-      backgroundColor: styleConfig().negspace,
       expandedHeight: 120,
       leadingWidth: 100,
       leading: showBackButton ? const BackWidget() : Container(),
@@ -27,7 +26,9 @@ class SliverTitleBar extends StatelessWidget {
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           title,
-          style: appBarTextStyleNewLarge(),
+          style: appBarTextStyleNewLarge.copyWith(
+            color: Theme.of(context).secondaryHeaderColor,
+          ),
         ),
       ),
       bottom: bottom,

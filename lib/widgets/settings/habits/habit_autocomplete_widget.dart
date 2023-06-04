@@ -314,7 +314,7 @@ class RuleInfoWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       info,
-      style: monospaceTextStyle().copyWith(
+      style: monospaceTextStyle.copyWith(
         fontWeight: FontWeight.normal,
         fontSize: fontSizeMedium,
       ),
@@ -336,7 +336,7 @@ class RuleListInfoWidget extends StatelessWidget {
       quarterTurns: 3,
       child: Text(
         info,
-        style: monospaceTextStyle().copyWith(
+        style: monospaceTextStyle.copyWith(
           fontWeight: FontWeight.w300,
           fontSize: fontSizeLarge,
         ),

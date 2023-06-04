@@ -50,7 +50,6 @@ class _ConflictsPageState extends State<ConflictsPage> {
         final items = snapshot.data ?? [];
 
         return Scaffold(
-          backgroundColor: styleConfig().negspace,
           appBar: TitleAppBar(
             title: localizations.settingsConflictsTitle,
             actions: [
@@ -134,7 +133,7 @@ class ConflictCard extends StatelessWidget {
         ),
         subtitle: Text(
           '${fromSerialized(conflict.serialized).meta.vectorClock}',
-          style: monospaceTextStyleSmall(),
+          style: monospaceTextStyleSmall,
         ),
         onTap: () {
           beamToNamed('/settings/advanced/conflicts/${conflict.id}');
@@ -196,13 +195,12 @@ class ConflictDetailRoute extends StatelessWidget {
               appBar: TitleAppBar(
                 title: localizations.settingsConflictsResolutionTitle,
               ),
-              backgroundColor: styleConfig().negspace,
               body: SingleChildScrollView(
                 padding: const EdgeInsets.all(8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Local:', style: appBarTextStyleNew()),
+                    const Text('Local:', style: appBarTextStyleNew),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: IgnorePointer(
@@ -238,7 +236,7 @@ class ConflictDetailRoute extends StatelessWidget {
                       ],
                     ),
                     const Divider(),
-                    Text('From Sync:', style: appBarTextStyleNew()),
+                    const Text('From Sync:', style: appBarTextStyleNew),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: IgnorePointer(
@@ -266,17 +264,17 @@ class ConflictDetailRoute extends StatelessWidget {
                     const Divider(),
                     Text(
                       'Local: ${local.meta.vectorClock}',
-                      style: monospaceTextStyleSmall(),
+                      style: monospaceTextStyleSmall,
                     ),
                     const SizedBox(height: 5),
                     Text(
                       'Merged: ${withResolvedVectorClock.meta.vectorClock}',
-                      style: monospaceTextStyleSmall(),
+                      style: monospaceTextStyleSmall,
                     ),
                     const SizedBox(height: 5),
                     Text(
                       'From Sync: ${fromSync.meta.vectorClock}',
-                      style: monospaceTextStyleSmall(),
+                      style: monospaceTextStyleSmall,
                     ),
                   ],
                 ),

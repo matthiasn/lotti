@@ -51,9 +51,9 @@ class LinkedDuration extends StatelessWidget {
                   return const SizedBox.shrink();
                 }
 
-                final durationStyle = monospaceTextStyleSmall().copyWith(
+                final durationStyle = monospaceTextStyleSmall.copyWith(
                   color: (progress > estimate)
-                      ? styleConfig().alarm
+                      ? Theme.of(context).colorScheme.error
                       : styleConfig().secondaryTextColor,
                 );
 
@@ -68,8 +68,8 @@ class LinkedDuration extends StatelessWidget {
                           value:
                               min(progress.inSeconds / estimate.inSeconds, 1),
                           color: (progress > estimate)
-                              ? styleConfig().alarm
-                              : styleConfig().primaryColor,
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).colorScheme.primary,
                           backgroundColor:
                               styleConfig().secondaryTextColor.withOpacity(0.5),
                         ),

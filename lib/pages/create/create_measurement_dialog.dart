@@ -1,3 +1,4 @@
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -110,7 +111,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(20)),
           ),
-          backgroundColor: styleConfig().primaryColorLight,
+          backgroundColor: Theme.of(context).primaryColorLight.lighten(),
           actionsAlignment: MainAxisAlignment.spaceBetween,
           actionsPadding: const EdgeInsets.only(
             left: 30,
@@ -155,7 +156,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     Text(
                       dataType.displayName,
                       style: const TextStyle(
-                        color: habitCardTextColor,
                         fontSize: fontSizeMedium,
                       ),
                     ),
@@ -200,7 +200,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                               '${dataType.unitName.isNotEmpty ? '[${dataType.unitName}] ' : ''}',
                           style: dialogInputStyle(),
                         ),
-                        keyboardAppearance: keyboardAppearance(),
                         style: dialogInputStyle(),
                         validator: numericValidator(),
                         name: 'value',
