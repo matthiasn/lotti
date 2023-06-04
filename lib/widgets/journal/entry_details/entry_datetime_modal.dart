@@ -127,7 +127,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                         },
                         child: Text(
                           localizations.journalDateSaveButton,
-                          style: textStyleLarger().copyWith(
+                          style: const TextStyle(
                             decoration: TextDecoration.underline,
                           ),
                         ),
@@ -137,7 +137,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                       visible: !valid,
                       child: Text(
                         localizations.journalDateInvalid,
-                        style: textStyleLarger().copyWith(
+                        style: TextStyle(
                           color: Theme.of(context).colorScheme.error,
                         ),
                       ),

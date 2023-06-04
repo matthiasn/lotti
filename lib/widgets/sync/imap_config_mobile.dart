@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_state.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/sync/imap_config_status.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
 import 'package:lotti/widgets/sync/qr_widget.dart';
@@ -48,22 +47,10 @@ class ImapConfigInfo extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Host: ${imapConfig.host}',
-            style: labelStyleLarger(),
-          ),
-          Text(
-            'Port: ${imapConfig.port}',
-            style: labelStyleLarger(),
-          ),
-          Text(
-            'IMAP Folder: ${imapConfig.folder}',
-            style: labelStyleLarger(),
-          ),
-          Text(
-            'User: ${imapConfig.userName}',
-            style: labelStyleLarger(),
-          ),
+          Text('Host: ${imapConfig.host}'),
+          Text('Port: ${imapConfig.port}'),
+          Text('IMAP Folder: ${imapConfig.folder}'),
+          Text('User: ${imapConfig.userName}'),
           const SizedBox(height: 32),
           const Row(
             mainAxisSize: MainAxisSize.min,
