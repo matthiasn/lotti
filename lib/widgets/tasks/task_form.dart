@@ -72,10 +72,7 @@ class _TaskFormState extends State<TaskForm> {
                         textCapitalization: TextCapitalization.sentences,
                         keyboardAppearance: keyboardAppearance(),
                         maxLines: null,
-                        style: inputStyle().copyWith(
-                          fontSize: 25,
-                          fontWeight: FontWeight.normal,
-                        ),
+                        style: const TextStyle(fontSize: fontSizeLarge),
                         name: 'title',
                         onChanged: context.read<EntryCubit>().setDirty,
                       ),
@@ -91,7 +88,6 @@ class _TaskFormState extends State<TaskForm> {
                             decoration: inputDecoration(
                               labelText: localizations.taskEstimateLabel,
                             ),
-                            style: inputStyle(),
                             readOnly: true,
                             controller: TextEditingController(
                               text: formatDuration(widget.data?.estimate)
@@ -202,11 +198,7 @@ class TaskStatusLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5),
-      child: Text(
-        title,
-        softWrap: false,
-        style: inputStyle(),
-      ),
+      child: Text(title, softWrap: false),
     );
   }
 }

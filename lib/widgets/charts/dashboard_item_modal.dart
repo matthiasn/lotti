@@ -37,7 +37,6 @@ class DashboardItemModal extends StatelessWidget {
             Text(
               localizations.dashboardAggregationLabel,
               textAlign: TextAlign.end,
-              style: labelStyleLarger().copyWith(fontSize: 14),
             ),
             const SizedBox(height: 8),
             Wrap(

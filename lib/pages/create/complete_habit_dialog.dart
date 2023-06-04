@@ -204,7 +204,6 @@ class _HabitDialogState extends State<HabitDialog> {
                                   DateTimeField(
                                     dateTime: _started,
                                     labelText: localizations.addHabitDateLabel,
-                                    style: dialogInputStyle(),
                                     setDateTime: (picked) {
                                       setState(() {
                                         _startReset = true;
@@ -219,12 +218,10 @@ class _HabitDialogState extends State<HabitDialog> {
                                     decoration: createDialogInputDecoration(
                                       labelText:
                                           localizations.addHabitCommentLabel,
-                                      style: dialogInputStyle(),
                                     ),
                                     minLines: 1,
                                     maxLines: 10,
                                     keyboardAppearance: keyboardAppearance(),
-                                    style: dialogInputStyle(),
                                     name: 'comment',
                                   ),
                                 ],

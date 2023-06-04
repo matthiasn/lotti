@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Color schemes from flex_color_scheme (WIP)
 - Styling
+- Style fixes & refactoring
 
 ## [0.8.366] - 2023-06-03
 ### Changed:

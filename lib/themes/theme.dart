@@ -79,20 +79,10 @@ const switchDecoration = InputDecoration(border: InputBorder.none);
 const inputSpacer = SizedBox(height: 25);
 const inputSpacerSmall = SizedBox(height: 15);
 
-TextStyle inputStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-    );
-
-TextStyle dialogInputStyle() => const TextStyle(
-      fontSize: fontSizeMedium,
-    );
-
-TextStyle textStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.w400,
-      fontSize: fontSizeMedium,
-    );
+const textStyle = TextStyle(
+  fontWeight: FontWeight.w400,
+  fontSize: fontSizeMedium,
+);
 
 TextStyle choiceChipTextStyle({required bool isSelected}) => TextStyle(
       fontSize: fontSizeMedium,
@@ -112,27 +102,10 @@ TextStyle chartTooltipStyleBold() => const TextStyle(
       fontWeight: FontWeight.bold,
     );
 
-TextStyle textStyleLarger() => textStyle().copyWith(
-      fontSize: 18,
-      fontWeight: FontWeight.normal,
-    );
-
-TextStyle transcriptStyle() => textStyle().copyWith(
-      fontSize: fontSizeMedium,
-      fontWeight: FontWeight.normal,
-      color: styleConfig().secondaryTextColor,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
-
-TextStyle transcriptHeaderStyle() => transcriptStyle().copyWith(
-      fontSize: fontSizeSmall,
-      fontWeight: FontWeight.w300,
-    );
-
-TextStyle labelStyleLarger() => textStyleLarger().copyWith(
-      fontSize: 20,
-      fontWeight: FontWeight.w300,
-    );
+const transcriptHeaderStyle = TextStyle(
+  fontSize: fontSizeSmall,
+  fontWeight: FontWeight.w300,
+);
 
 TextStyle labelStyle() => TextStyle(
       color: styleConfig().primaryTextColor,
@@ -161,10 +134,6 @@ TextStyle monospaceTextStyleLarge() => monospaceTextStyle.copyWith(
 
 TextStyle formLabelStyle() => TextStyle(
       color: styleConfig().secondaryTextColor,
-      fontSize: fontSizeMedium,
-    );
-
-TextStyle buttonLabelStyle() => TextStyle(
       fontSize: fontSizeMedium,
     );
 
@@ -276,10 +245,26 @@ final lightTheme = FlexThemeData.light(
 );
 
 final lightThemeMod = lightTheme.copyWith(
-  cardTheme: lightTheme.cardTheme.copyWith(
+  cardTheme: darkTheme.cardTheme.copyWith(
     clipBehavior: Clip.hardEdge,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
   ),
+  segmentedButtonTheme: SegmentedButtonThemeData(
+    style: ButtonStyle(
+      alignment: Alignment.center,
+      visualDensity: VisualDensity.compact,
+      side: MaterialStateProperty.resolveWith((states) {
+        return BorderSide(
+          color: darkTheme.colorScheme.tertiary,
+        );
+      }),
+      padding: MaterialStateProperty.resolveWith((states) {
+        return const EdgeInsets.symmetric(horizontal: 6);
+      }),
+      enableFeedback: true,
+    ),
+  ),
+  bottomSheetTheme: const BottomSheetThemeData(clipBehavior: Clip.hardEdge),
 );
 
 Brightness keyboardAppearance() {
@@ -299,6 +284,7 @@ final darkThemeMod = darkTheme.copyWith(
     clipBehavior: Clip.hardEdge,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
   ),
+  bottomSheetTheme: const BottomSheetThemeData(clipBehavior: Clip.hardEdge),
   segmentedButtonTheme: SegmentedButtonThemeData(
     style: ButtonStyle(
       alignment: Alignment.center,
