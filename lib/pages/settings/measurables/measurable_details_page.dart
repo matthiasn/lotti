@@ -65,7 +65,6 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
     }
 
     return Scaffold(
-      backgroundColor: styleConfig().negspace,
       appBar: TitleAppBar(
         title: widget.dataType.displayName,
         actions: [
@@ -133,7 +132,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           name: 'private',
                           initialValue: item.private,
                           title: localizations.settingsMeasurablePrivateLabel,
-                          activeColor: styleConfig().private,
+                          activeColor: Theme.of(context).colorScheme.error,
                         ),
                         inputSpacer,
                         FormBuilderDropdown(
@@ -149,6 +148,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                 color: styleConfig().primaryTextColor,
                               ),
                             ),
+                            themeData: Theme.of(context),
                           ),
                           iconEnabledColor: styleConfig().primaryTextColor,
                           style: const TextStyle(fontSize: 40),

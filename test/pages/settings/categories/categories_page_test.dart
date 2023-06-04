@@ -26,7 +26,7 @@ void main() {
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<ThemesService>(ThemesService(watch: false));
+        ..registerSingleton<ThemesService>(ThemesService());
     });
     tearDown(getIt.reset);
 

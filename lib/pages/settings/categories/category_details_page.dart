@@ -40,7 +40,6 @@ class CategoryDetailsPage extends StatelessWidget {
             final cubit = context.read<CategorySettingsCubit>();
 
             return Scaffold(
-              backgroundColor: styleConfig().negspace,
               appBar: TitleAppBar(
                 title: state.categoryDefinition.name,
                 actions: [
@@ -80,7 +79,6 @@ class CategoryDetailsPage extends StatelessWidget {
                                   initialValue: item.name,
                                   textCapitalization:
                                       TextCapitalization.sentences,
-                                  keyboardAppearance: keyboardAppearance(),
                                   validator: FormBuilderValidators.compose([
                                     FormBuilderValidators.required(),
                                     (categoryName) {
@@ -94,11 +92,11 @@ class CategoryDetailsPage extends StatelessWidget {
                                       return null;
                                     }
                                   ]),
-                                  style: labelStyle(),
                                   decoration: inputDecoration(
                                     labelText: AppLocalizations.of(context)!
                                         .settingsCategoriesNameLabel,
                                     semanticsLabel: 'Category name field',
+                                    themeData: Theme.of(context),
                                   ),
                                 ),
                                 inputSpacer,
@@ -107,7 +105,8 @@ class CategoryDetailsPage extends StatelessWidget {
                                   initialValue: item.private,
                                   title:
                                       localizations.settingsHabitsPrivateLabel,
-                                  activeColor: styleConfig().private,
+                                  activeColor:
+                                      Theme.of(context).colorScheme.error,
                                 ),
                                 FormSwitch(
                                   name: 'active',

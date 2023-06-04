@@ -46,10 +46,16 @@ class DashboardSurveyChart extends StatelessWidget {
 
         void onTapAdd() {
           if (chartConfig.surveyType == 'cfq11SurveyTask') {
-            runCfq11(context: context);
+            runCfq11(
+              context: context,
+              themeData: Theme.of(context),
+            );
           }
           if (chartConfig.surveyType == 'panasSurveyTask') {
-            runPanas(context: context);
+            runPanas(
+              context: context,
+              themeData: Theme.of(context),
+            );
           }
         }
 
@@ -83,7 +89,7 @@ class DashboardSurveyChart extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     chartConfig.surveyName,
-                    style: chartTitleStyle(),
+                    style: chartTitleStyle,
                   ),
                   const Spacer(),
                   IconButton(

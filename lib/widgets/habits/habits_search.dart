@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
-import 'package:lotti/themes/theme.dart';
 
 class HabitsSearchWidget extends StatelessWidget {
   const HabitsSearchWidget({super.key});
@@ -15,10 +14,6 @@ class HabitsSearchWidget extends StatelessWidget {
       builder: (context, HabitsState state) {
         final cubit = context.read<HabitsCubit>();
 
-        final styleActive = searchFieldStyle();
-        final styleHint = searchFieldHintStyle();
-        final style = state.searchString.isEmpty ? styleHint : styleActive;
-
         return Center(
           child: Padding(
             padding: const EdgeInsets.only(top: 5),
@@ -28,23 +23,17 @@ class HabitsSearchWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: SearchBar(
                 controller: controller,
-                leading: Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Icon(
-                    Icons.search,
-                    color: style.color,
-                  ),
+                leading: const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Icon(Icons.search),
                 ),
                 trailing: [
                   Visibility(
                     visible: cubit.state.searchString.isNotEmpty,
                     child: GestureDetector(
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Icon(
-                          Icons.close_rounded,
-                          color: style.color,
-                        ),
+                      child: const Padding(
+                        padding: EdgeInsets.only(right: 8),
+                        child: Icon(Icons.close_rounded),
                       ),
                       onTap: () {
                         cubit.setSearchString('');

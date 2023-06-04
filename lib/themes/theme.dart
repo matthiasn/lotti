@@ -1,12 +1,12 @@
 // ignore_for_file: equal_keys_in_map
 import 'dart:ui';
 
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/themes.dart';
 import 'package:lotti/themes/themes_service.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 const fontSizeSmall = 11.0;
 const fontSizeMedium = 15.0;
@@ -23,8 +23,6 @@ class AppTheme {
 const double inputBorderRadius = 10;
 const mainFont = 'PlusJakartaSans';
 
-const habitCardTextColor = Colors.black87;
-
 final inputBorder = OutlineInputBorder(
   borderRadius: BorderRadius.circular(inputBorderRadius),
   borderSide: BorderSide(color: styleConfig().secondaryTextColor),
@@ -32,18 +30,11 @@ final inputBorder = OutlineInputBorder(
 
 final errorBorder = OutlineInputBorder(
   borderRadius: BorderRadius.circular(inputBorderRadius),
-  borderSide: BorderSide(color: styleConfig().alarm),
-);
-
-final inputBorderFocused = OutlineInputBorder(
-  borderRadius: BorderRadius.circular(inputBorderRadius),
-  borderSide: BorderSide(
-    color: styleConfig().primaryColor,
-    width: 2,
-  ),
+  borderSide: BorderSide(color: alarm),
 );
 
 InputDecoration inputDecoration({
+  required ThemeData themeData,
   String? labelText,
   String? semanticsLabel,
   Widget? suffixIcon,
@@ -52,27 +43,36 @@ InputDecoration inputDecoration({
       border: inputBorder,
       errorBorder: errorBorder,
       enabledBorder: inputBorder,
-      focusedBorder: inputBorderFocused,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(inputBorderRadius),
+        borderSide: BorderSide(
+          color: themeData.primaryColor,
+          width: 2,
+        ),
+      ),
       floatingLabelBehavior: FloatingLabelBehavior.always,
       suffixIcon: suffixIcon,
       label: Text(
         labelText ?? '',
-        style: newLabelStyle(),
         semanticsLabel: semanticsLabel,
       ),
     );
 
 InputDecoration createDialogInputDecoration({
+  required ThemeData themeData,
   String? labelText,
   TextStyle? style,
 }) {
-  final decoration = inputDecoration(labelText: labelText);
+  final decoration = inputDecoration(
+    labelText: labelText,
+    themeData: themeData,
+  );
 
   if (style == null) {
     return decoration;
   } else {
     return decoration.copyWith(
-      labelStyle: newLabelStyle().copyWith(color: style.color),
+      labelStyle: TextStyle(color: style.color),
     );
   }
 }
@@ -82,22 +82,6 @@ const switchDecoration = InputDecoration(border: InputBorder.none);
 const inputSpacer = SizedBox(height: 25);
 const inputSpacerSmall = SizedBox(height: 15);
 
-TextStyle inputStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-    );
-
-TextStyle dialogInputStyle() => const TextStyle(
-      color: habitCardTextColor,
-      fontSize: fontSizeMedium,
-    );
-
-TextStyle textStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.w400,
-      fontSize: fontSizeMedium,
-    );
-
 TextStyle choiceChipTextStyle({required bool isSelected}) => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w300,
@@ -106,163 +90,98 @@ TextStyle choiceChipTextStyle({required bool isSelected}) => TextStyle(
           : styleConfig().unselectedChoiceChipTextColor,
     );
 
-TextStyle chartTooltipStyle() => const TextStyle(
-      fontSize: fontSizeSmall,
-      fontWeight: FontWeight.w300,
-    );
+const chartTooltipStyle = TextStyle(
+  fontSize: fontSizeSmall,
+  fontWeight: FontWeight.w300,
+);
 
-TextStyle chartTooltipStyleBold() => const TextStyle(
-      fontSize: fontSizeSmall,
-      fontWeight: FontWeight.bold,
-    );
+const chartTooltipStyleBold = TextStyle(
+  fontSize: fontSizeSmall,
+  fontWeight: FontWeight.bold,
+);
 
-TextStyle textStyleLarger() => textStyle().copyWith(
-      fontSize: 18,
-      fontWeight: FontWeight.normal,
-    );
+const transcriptHeaderStyle = TextStyle(
+  fontSize: fontSizeSmall,
+  fontWeight: FontWeight.w300,
+);
 
-TextStyle transcriptStyle() => textStyle().copyWith(
-      fontSize: fontSizeMedium,
-      fontWeight: FontWeight.normal,
-      color: styleConfig().secondaryTextColor,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
+const monospaceTextStyle = TextStyle(
+  fontWeight: FontWeight.w300,
+  fontSize: fontSizeMedium,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
 
-TextStyle transcriptHeaderStyle() => transcriptStyle().copyWith(
-      fontSize: fontSizeSmall,
-      fontWeight: FontWeight.w300,
-    );
+final monospaceTextStyleSmall = monospaceTextStyle.copyWith(
+  fontSize: fontSizeSmall,
+);
 
-TextStyle labelStyleLarger() => textStyleLarger().copyWith(
-      fontSize: 20,
-      fontWeight: FontWeight.w300,
-    );
+final monospaceTextStyleLarge = monospaceTextStyle.copyWith(
+  fontSize: fontSizeLarge,
+);
 
-TextStyle labelStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.w500,
-      fontSize: 18,
-    );
+const appBarTextStyle = TextStyle(
+  fontSize: fontSizeMedium,
+  fontWeight: FontWeight.bold,
+);
 
-TextStyle newLabelStyle() => TextStyle(
-      color: styleConfig().secondaryTextColor,
-      fontSize: fontSizeMedium,
-    );
+const appBarTextStyleNew = TextStyle(
+  fontSize: fontSizeMedium,
+  fontWeight: FontWeight.w300,
+);
 
-TextStyle monospaceTextStyle() => TextStyle(
-      fontWeight: FontWeight.w300,
-      fontSize: fontSizeMedium,
-      color: styleConfig().primaryTextColor,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
+const appBarTextStyleNewLarge = TextStyle(
+  fontSize: fontSizeLarge,
+  fontWeight: FontWeight.w100,
+);
 
-TextStyle monospaceTextStyleSmall() => monospaceTextStyle().copyWith(
-      fontSize: fontSizeSmall,
-    );
+const searchFieldStyle = TextStyle(
+  fontSize: fontSizeMedium,
+  fontWeight: FontWeight.w200,
+);
 
-TextStyle monospaceTextStyleLarge() => monospaceTextStyle().copyWith(
-      fontSize: fontSizeLarge,
-    );
+final searchFieldHintStyle = searchFieldStyle.copyWith(
+  color: styleConfig().secondaryTextColor,
+);
 
-Brightness keyboardAppearance() {
-  return styleConfig().keyboardAppearance;
-}
+const settingsCardTextStyle = TextStyle(
+  fontSize: fontSizeLarge,
+  fontWeight: FontWeight.w300,
+);
 
-TextStyle formLabelStyle() => TextStyle(
-      color: styleConfig().secondaryTextColor,
-      fontSize: fontSizeMedium,
-    );
+const titleStyle = TextStyle(
+  fontSize: fontSizeLarge,
+  fontWeight: FontWeight.w300,
+);
 
-TextStyle buttonLabelStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-    );
+const taskTitleStyle = TextStyle(
+  fontSize: fontSizeLarge,
+);
 
-TextStyle buttonLabelStyleLarger() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: 20,
-    );
+const multiSelectStyle = TextStyle(
+  fontWeight: FontWeight.w100,
+  fontSize: fontSizeLarge,
+);
 
-TextStyle choiceLabelStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-    );
+const chartTitleStyle = TextStyle(
+  fontSize: fontSizeMedium,
+  fontWeight: FontWeight.w300,
+);
 
-TextStyle logDetailStyle() => monospaceTextStyle();
-
-TextStyle appBarTextStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-      fontWeight: FontWeight.bold,
-    );
-
-TextStyle appBarTextStyleNew() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-      fontWeight: FontWeight.w300,
-    );
-
-TextStyle appBarTextStyleNewLarge() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeLarge,
-      fontWeight: FontWeight.w100,
-    );
-
-TextStyle searchFieldStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeMedium,
-      fontWeight: FontWeight.w200,
-    );
-
-TextStyle searchFieldHintStyle() => searchFieldStyle().copyWith(
-      color: styleConfig().secondaryTextColor,
-    );
-
-TextStyle settingsCardTextStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeLarge,
-      fontWeight: FontWeight.w300,
-    );
-
-TextStyle titleStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeLarge,
-      fontWeight: FontWeight.w300,
-    );
-
-TextStyle taskTitleStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontSize: fontSizeLarge,
-    );
-
-TextStyle multiSelectStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.w100,
-      fontSize: fontSizeLarge,
-    );
-
-TextStyle chartTitleStyle() => TextStyle(
-      fontSize: fontSizeMedium,
-      color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.w300,
-    );
-
-TextStyle chartTitleStyleSmall() => TextStyle(
-      fontSize: fontSizeSmall,
-      color: styleConfig().primaryTextColor,
-      fontWeight: FontWeight.w300,
-    );
+const chartTitleStyleSmall = TextStyle(
+  fontSize: fontSizeSmall,
+  fontWeight: FontWeight.w300,
+);
 
 TextStyle saveButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
-      color: styleConfig().alarm.darken(),
+      color: alarm.darken(),
     );
 
 TextStyle failButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
-      color: styleConfig().alarm.darken(),
+      color: alarm.darken(),
     );
 
 const segmentItemStyle = TextStyle(
@@ -270,7 +189,6 @@ const segmentItemStyle = TextStyle(
 );
 
 const badgeStyle = TextStyle(
-  fontFamily: 'Oswald',
   fontWeight: FontWeight.w300,
   fontSize: fontSizeSmall,
 );
@@ -286,43 +204,30 @@ const habitCompletionHeaderStyle = TextStyle(
 
 TextStyle searchLabelStyle() => TextStyle(
       color: styleConfig().secondaryTextColor,
-      fontFamily: 'Oswald',
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w100,
     );
 
-ThemeData getTheme() {
-  return ThemeData(
-    fontFamily: mainFont,
-    cardTheme: CardTheme(
-      color: styleConfig().cardColor,
-      elevation: 1,
+Brightness keyboardAppearance() {
+  return getIt<ThemesService>().darkKeyboard
+      ? Brightness.dark
+      : Brightness.light;
+}
+
+ThemeData withOverrides(ThemeData themeData) {
+  return themeData.copyWith(
+    cardTheme: themeData.cardTheme.copyWith(
       clipBehavior: Clip.hardEdge,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
-    useMaterial3: true,
-    iconTheme: IconThemeData(
-      color: styleConfig().secondaryTextColor,
-    ),
-    brightness: styleConfig().keyboardAppearance,
-    scaffoldBackgroundColor: styleConfig().negspace,
-    highlightColor: Colors.transparent,
-    hoverColor: styleConfig().primaryColor.withOpacity(0.5),
-    chipTheme: ChipThemeData(
-      side: BorderSide.none,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-      backgroundColor: styleConfig().primaryColor.withOpacity(0.6),
-    ),
-    appBarTheme: AppBarTheme(
-      iconTheme: IconThemeData(color: styleConfig().primaryTextColor),
-    ),
+    bottomSheetTheme: const BottomSheetThemeData(clipBehavior: Clip.hardEdge),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
         alignment: Alignment.center,
         visualDensity: VisualDensity.compact,
         side: MaterialStateProperty.resolveWith((states) {
           return BorderSide(
-            color: styleConfig().primaryColor,
+            color: themeData.colorScheme.tertiary,
           );
         }),
         padding: MaterialStateProperty.resolveWith((states) {
@@ -331,40 +236,23 @@ ThemeData getTheme() {
         enableFeedback: true,
       ),
     ),
-    bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: styleConfig().cardColor.darken(5),
-      clipBehavior: Clip.hardEdge,
-    ),
-    tooltipTheme: TooltipThemeData(
-      textStyle: chartTitleStyleSmall().copyWith(
-        color: Colors.white,
-        fontWeight: FontWeight.w400,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(5),
-      ),
-    ),
-    searchBarTheme: SearchBarThemeData(
-      backgroundColor: MaterialStateProperty.resolveWith(
-        (_) => styleConfig().cardColor.withOpacity(0.3),
-      ),
-      hintStyle: MaterialStateProperty.resolveWith(
-        (_) => searchFieldHintStyle(),
-      ),
-      textStyle: MaterialStateProperty.resolveWith(
-        (_) => searchFieldStyle(),
-      ),
-    ),
-    colorScheme: ColorScheme.fromSwatch(
-      primarySwatch: primaryColorMaterial,
-    ).copyWith(
-      background: styleConfig().cardColor,
-      brightness: keyboardAppearance(),
-    ),
-    textTheme: TextTheme(
-      bodyLarge: TextStyle(color: styleConfig().primaryTextColor),
-      bodyMedium: TextStyle(color: styleConfig().primaryTextColor),
-    ),
+    inputDecorationTheme:
+        InputDecorationTheme(fillColor: themeData.primaryColor),
   );
 }
+
+final lightThemeMod = withOverrides(
+  FlexThemeData.light(
+    scheme: FlexScheme.shark,
+    useMaterial3: true,
+    fontFamily: mainFont,
+  ),
+);
+
+final darkThemeMod = withOverrides(
+  FlexThemeData.dark(
+    scheme: FlexScheme.shark,
+    useMaterial3: true,
+    fontFamily: mainFont,
+  ),
+);

@@ -22,7 +22,7 @@ class ChartLabel extends StatelessWidget {
       opacity: labelOpacity,
       child: Text(
         text,
-        style: chartTitleStyleSmall(),
+        style: chartTitleStyleSmall,
         textAlign: TextAlign.center,
       ),
     );
@@ -132,11 +132,11 @@ class TimeSeriesLineChart extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: '${spot.y.toInt()} $unit\n',
-                        style: chartTooltipStyleBold(),
+                        style: chartTooltipStyleBold,
                       ),
                       TextSpan(
                         text: chartDateFormatterFull(spot.x),
-                        style: chartTooltipStyle(),
+                        style: chartTooltipStyle,
                       ),
                     ],
                   );

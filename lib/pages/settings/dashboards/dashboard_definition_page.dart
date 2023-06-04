@@ -307,7 +307,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
             }
 
             return Scaffold(
-              backgroundColor: styleConfig().negspace,
               appBar: TitleAppBar(
                 title: widget.dashboard.name,
                 actions: [
@@ -371,7 +370,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   name: 'private',
                                   initialValue: widget.dashboard.private,
                                   title: localizations.dashboardPrivateLabel,
-                                  activeColor: styleConfig().private,
+                                  activeColor:
+                                      Theme.of(context).colorScheme.error,
                                 ),
                                 FormSwitch(
                                   name: 'active',
@@ -390,7 +390,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           Theme(
                             data: Theme.of(context).copyWith(
                               cardTheme: Theme.of(context).cardTheme.copyWith(
-                                    color: styleConfig().primaryColorLight,
+                                    color: Theme.of(context).primaryColorLight,
                                   ),
                             ),
                             child: ReorderableListView(
@@ -435,10 +435,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               ),
                             ),
                           ),
-                          Text(
-                            localizations.dashboardAddChartsTitle,
-                            style: formLabelStyle(),
-                          ),
+                          Text(localizations.dashboardAddChartsTitle),
                           if (habitSelectItems.isNotEmpty)
                             ChartMultiSelect<HabitDefinition>(
                               multiSelectItems: habitSelectItems,

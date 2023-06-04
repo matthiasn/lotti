@@ -18,7 +18,7 @@ void main() {
     setUp(() {
       final mockSyncConfigService = MockSyncConfigService();
       getIt
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<SyncConfigService>(mockSyncConfigService);
     });
 

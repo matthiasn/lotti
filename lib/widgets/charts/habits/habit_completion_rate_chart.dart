@@ -8,6 +8,7 @@ import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/themes.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
@@ -63,9 +64,8 @@ class HabitCompletionRateChart extends StatelessWidget
           );
         }
 
-        final skipColor = styleConfig()
-            .primaryColorLight
-            .mix(styleConfig().alarm.complement());
+        final skipColor =
+            styleConfig().primaryColorLight.mix(alarm.complement());
 
         return Column(
           children: [
@@ -174,8 +174,8 @@ class HabitCompletionRateChart extends StatelessWidget
                         showSuccessful: true,
                         showFailed: true,
                         habitDefinitions: state.habitDefinitions,
-                        color: styleConfig().alarm.lighten().desaturate(),
-                        aboveColor: styleConfig().alarm.withOpacity(0.5),
+                        color: alarm.lighten().desaturate(),
+                        aboveColor: alarm.withOpacity(0.5),
                       ),
                       barData(
                         days: state.days,
@@ -286,7 +286,7 @@ class ChartLabel extends StatelessWidget {
       opacity: labelOpacity,
       child: Text(
         text,
-        style: chartTitleStyleSmall(),
+        style: chartTitleStyleSmall,
         textAlign: TextAlign.center,
       ),
     );
@@ -326,7 +326,7 @@ class InfoLabel extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: Text(
           text,
-          style: chartTitleStyleSmall(),
+          style: chartTitleStyleSmall,
         ),
       ),
     );

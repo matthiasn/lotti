@@ -11,7 +11,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/pages/settings/definitions_list_page.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
@@ -34,7 +33,6 @@ class InfiniteJournalPage extends StatelessWidget {
     return BlocProvider<JournalPageCubit>(
       create: (BuildContext context) => JournalPageCubit(showTasks: showTasks),
       child: Scaffold(
-        backgroundColor: styleConfig().negspace,
         floatingActionButton: showTasks
             ? FloatingAddIcon(
                 createFn: () async {

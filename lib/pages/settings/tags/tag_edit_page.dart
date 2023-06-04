@@ -101,6 +101,8 @@ class _TagEditPageState extends State<TagEditPage> {
       }
     }
 
+    final errorColor = Theme.of(context).colorScheme.error;
+
     return Scaffold(
       appBar: TitleAppBar(
         title: widget.tagEntity.tag,
@@ -119,7 +121,6 @@ class _TagEditPageState extends State<TagEditPage> {
             ),
         ],
       ),
-      backgroundColor: styleConfig().negspace,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Card(
@@ -148,13 +149,13 @@ class _TagEditPageState extends State<TagEditPage> {
                         name: 'private',
                         initialValue: widget.tagEntity.private,
                         title: localizations.settingsTagsPrivateLabel,
-                        activeColor: styleConfig().private,
+                        activeColor: errorColor,
                       ),
                       FormSwitch(
                         name: 'inactive',
                         initialValue: widget.tagEntity.inactive,
                         title: localizations.settingsTagsHideLabel,
-                        activeColor: styleConfig().private,
+                        activeColor: errorColor,
                       ),
                       inputSpacer,
                       FormBuilderChoiceChip<String>(
@@ -168,6 +169,7 @@ class _TagEditPageState extends State<TagEditPage> {
                         ),
                         decoration: inputDecoration(
                           labelText: localizations.settingsTagsTypeLabel,
+                          themeData: Theme.of(context),
                         ),
                         selectedColor: widget.tagEntity.map(
                           genericTag: getTagColor,

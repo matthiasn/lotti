@@ -85,8 +85,7 @@ class SelectDashboardWidget extends StatelessWidget {
             }
 
             final undefined = state.habitDefinition.dashboardId == null;
-            final style =
-                undefined ? searchFieldHintStyle() : searchFieldStyle();
+            final style = undefined ? searchFieldHintStyle : searchFieldStyle;
 
             return TextField(
               onTap: onTap,
@@ -95,6 +94,7 @@ class SelectDashboardWidget extends StatelessWidget {
               controller: controller,
               decoration: inputDecoration(
                 labelText: undefined ? '' : localizations.habitDashboardLabel,
+                themeData: Theme.of(context),
               ).copyWith(
                 suffixIcon: undefined
                     ? null

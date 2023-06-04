@@ -28,14 +28,13 @@ Future<T?> showModalActionSheet<T>({
               padding: const EdgeInsets.all(20),
               child: Text(
                 title ?? '',
-                style:
-                    settingsCardTextStyle().copyWith(fontSize: fontSizeMedium),
+                style: settingsCardTextStyle.copyWith(fontSize: fontSizeMedium),
               ),
             ),
             ...actions.map((action) {
               final color = action.isDestructiveAction
-                  ? styleConfig().alarm
-                  : styleConfig().primaryColor;
+                  ? Theme.of(context).colorScheme.error
+                  : Theme.of(context).colorScheme.primary;
 
               void pop() {
                 Navigator.pop<T>(context, action.key);
@@ -55,7 +54,7 @@ Future<T?> showModalActionSheet<T>({
                       const SizedBox(width: 10),
                       Text(
                         action.label,
-                        style: settingsCardTextStyle().copyWith(color: color),
+                        style: settingsCardTextStyle.copyWith(color: color),
                       ),
                     ],
                   ),

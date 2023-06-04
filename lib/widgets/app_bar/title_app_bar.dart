@@ -23,13 +23,12 @@ class TitleAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       actions: actions,
       automaticallyImplyLeading: false,
-      backgroundColor: styleConfig().negspace,
       scrolledUnderElevation: 10,
       titleSpacing: 0,
       leadingWidth: 100,
       title: Text(
         title,
-        style: appBarTextStyleNew(),
+        style: appBarTextStyleNew,
       ),
       leading: showBackButton ? const BackWidget() : Container(),
       centerTitle: true,
@@ -71,7 +70,7 @@ class BackWidget extends StatelessWidget {
                 ),
                 Text(
                   localizations.appBarBack,
-                  style: appBarTextStyleNew(),
+                  style: appBarTextStyleNew,
                   semanticsLabel: 'Navigate back',
                 )
               ],

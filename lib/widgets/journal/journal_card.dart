@@ -48,7 +48,7 @@ class JournalCardTitle extends StatelessWidget {
             children: [
               Text(
                 dfShorter.format(item.meta.dateFrom),
-                style: monospaceTextStyle(),
+                style: monospaceTextStyle,
               ),
               if (item is Task) TaskStatusWidget(item as Task),
               Row(
@@ -57,7 +57,7 @@ class JournalCardTitle extends StatelessWidget {
                     visible: fromNullableBool(item.meta.private),
                     child: Icon(
                       MdiIcons.security,
-                      color: styleConfig().alarm,
+                      color: Theme.of(context).colorScheme.error,
                       size: iconSize,
                     ),
                   ),
@@ -78,7 +78,7 @@ class JournalCardTitle extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.flag,
-                        color: styleConfig().alarm,
+                        color: Theme.of(context).colorScheme.error,
                         size: iconSize,
                       ),
                     ),
@@ -131,10 +131,8 @@ class JournalCardTitle extends StatelessWidget {
                   children: [
                     Text(
                       data.title,
-                      style: TextStyle(
-                        color: styleConfig().primaryTextColor,
-                        fontWeight: FontWeight.normal,
-                        fontSize: 24,
+                      style: const TextStyle(
+                        fontSize: fontSizeLarge,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -191,6 +189,8 @@ class JournalCard extends StatelessWidget {
           }
         }
 
+        final errorColor = Theme.of(context).colorScheme.error;
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5),
           child: Card(
@@ -202,7 +202,7 @@ class JournalCard extends StatelessWidget {
                     Icons.mic,
                     color: transcripts != null && transcripts.isNotEmpty
                         ? styleConfig().secondaryTextColor
-                        : styleConfig().alarm.withOpacity(0.4),
+                        : errorColor.withOpacity(0.4),
                   );
                 },
                 journalEntry: (_) => const LeadingIcon(Icons.article),

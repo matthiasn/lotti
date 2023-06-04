@@ -20,11 +20,11 @@ class HabitStreaksCounter extends StatelessWidget {
             // TODO: bring back display of streaks
             // Text(
             //   '${state.shortStreakCount} short streaks of 3+ days',
-            //   style: chartTitleStyle(),
+            //   style: chartTitleStyle,
             // ),
             // Text(
             //   '${state.longStreakCount} long streaks of 7+ days',
-            //   style: chartTitleStyle(),
+            //   style: chartTitleStyle,
             // ),
           ],
         );

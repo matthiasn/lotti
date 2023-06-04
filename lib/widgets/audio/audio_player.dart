@@ -59,7 +59,7 @@ class AudioPlayerWidget extends StatelessWidget {
                   iconSize: 32,
                   tooltip: 'Play',
                   color: (state.status == AudioPlayerStatus.playing && isActive)
-                      ? styleConfig().activeAudioControl
+                      ? Theme.of(context).colorScheme.error
                       : styleConfig().secondaryTextColor,
                   onPressed: () {
                     cubit
@@ -108,7 +108,7 @@ class AudioPlayerWidget extends StatelessWidget {
                             fontFamily: 'Oswald',
                             fontWeight: FontWeight.bold,
                             color: (state.speed != 1)
-                                ? styleConfig().activeAudioControl
+                                ? Theme.of(context).colorScheme.error
                                 : styleConfig().secondaryTextColor,
                           ),
                         ),
@@ -154,7 +154,7 @@ class AudioPlayerWidget extends StatelessWidget {
                     barHeight: 3,
                     thumbRadius: 5,
                     onSeek: cubit.seek,
-                    timeLabelTextStyle: monospaceTextStyle().copyWith(
+                    timeLabelTextStyle: monospaceTextStyle.copyWith(
                       color: styleConfig().secondaryTextColor,
                     ),
                   ),
@@ -225,23 +225,23 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                     children: [
                       Text(
                         dfShorter.format(widget.transcript.created),
-                        style: transcriptHeaderStyle(),
+                        style: transcriptHeaderStyle,
                       ),
                       const SizedBox(width: 10),
                       Text(
                         formatSeconds(widget.transcript.processingTime),
-                        style: transcriptHeaderStyle(),
+                        style: transcriptHeaderStyle,
                       ),
                       const SizedBox(width: 10),
                       Text(
                         'Lang: ${widget.transcript.detectedLanguage}',
-                        style: transcriptHeaderStyle(),
+                        style: transcriptHeaderStyle,
                       ),
                       const SizedBox(width: 10),
                       Text(
                         '${widget.transcript.library}, '
                         ' ${widget.transcript.model}',
-                        style: transcriptHeaderStyle(),
+                        style: transcriptHeaderStyle,
                       ),
                       const SizedBox(width: 10),
                       Opacity(
@@ -279,7 +279,6 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: SelectableText(
                   widget.transcript.transcript,
-                  style: transcriptStyle(),
                 ),
               ),
           ],

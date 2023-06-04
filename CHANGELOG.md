@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Color schemes from flex_color_scheme
+- Styling
+- Style fixes & refactoring
+- Styles refactoring
+- Text editor border
+- Editor toolbar elevation
+- Habit completion bottom sheet background styling
+
+### Fixed:
+- Task duration estimate bottom sheet
+- Font colors on survey bottom sheet
+- Color issues
+
+## [0.8.366] - 2023-06-03
+### Changed:
 - Adapt filter chips to match Material 3 design
 - Upgraded dependencies & Flutter upgrade
 - Use segmented button with icons for filtering journal

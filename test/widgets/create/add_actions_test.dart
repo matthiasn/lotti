@@ -44,7 +44,7 @@ void main() {
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<ThemesService>(ThemesService(watch: false))
+        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<TimeService>(mockTimeService)

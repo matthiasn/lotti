@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 
@@ -63,7 +62,6 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
             .toList();
 
         return Scaffold(
-          backgroundColor: styleConfig().negspace,
           floatingActionButton: widget.floatingActionButton,
           body: CustomScrollView(
             slivers: <Widget>[
@@ -111,12 +109,14 @@ class FloatingAddIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton(
-      backgroundColor: styleConfig().primaryColor,
-      onPressed: createFn,
-      child: Icon(
-        Icons.add,
-        semanticLabel: semanticLabel,
+    return Padding(
+      padding: const EdgeInsets.all(5),
+      child: FloatingActionButton(
+        onPressed: createFn,
+        child: Icon(
+          Icons.add,
+          semanticLabel: semanticLabel,
+        ),
       ),
     );
   }

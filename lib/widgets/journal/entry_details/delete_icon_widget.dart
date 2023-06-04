@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
@@ -50,11 +49,10 @@ class DeleteIconWidget extends StatelessWidget {
         return SizedBox(
           width: 40,
           child: IconButton(
-            icon: const Icon(Icons.delete),
+            icon: const Icon(Icons.delete_outline),
             splashColor: Colors.transparent,
             tooltip: localizations.journalDeleteHint,
             padding: EdgeInsets.zero,
-            color: styleConfig().secondaryTextColor,
             onPressed: onPressed,
           ),
         );
