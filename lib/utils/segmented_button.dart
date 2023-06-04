@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/themes/theme.dart';
 
 ButtonSegment<T> buttonSegment<T>({
   required T value,
@@ -12,10 +11,6 @@ ButtonSegment<T> buttonSegment<T>({
     label: Text(
       label,
       semanticsLabel: semanticsLabel ?? label,
-      style: value == selected
-          ? buttonLabelStyle().copyWith(color: Colors.black)
-          : buttonLabelStyle()
-              .copyWith(color: styleConfig().secondaryTextColor),
     ),
   );
 }

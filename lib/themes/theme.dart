@@ -165,7 +165,6 @@ TextStyle formLabelStyle() => TextStyle(
     );
 
 TextStyle buttonLabelStyle() => TextStyle(
-      color: styleConfig().primaryTextColor,
       fontSize: fontSizeMedium,
     );
 
@@ -290,7 +289,7 @@ Brightness keyboardAppearance() {
 }
 
 final darkTheme = FlexThemeData.dark(
-  scheme: FlexScheme.flutterDash,
+  scheme: FlexScheme.deepBlue,
   useMaterial3: true,
   fontFamily: mainFont,
 );
