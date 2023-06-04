@@ -153,7 +153,7 @@ class _HabitDialogState extends State<HabitDialog> {
                       topRight: Radius.circular(20),
                     ),
                   ),
-                  color: styleConfig().primaryColorLight.darken(5),
+                  color: Theme.of(context).primaryColorLight.darken(5),
                   child: Container(
                     constraints: BoxConstraints(
                       maxWidth: 500,
