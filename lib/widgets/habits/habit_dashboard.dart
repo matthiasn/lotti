@@ -85,7 +85,7 @@ class SelectDashboardWidget extends StatelessWidget {
             }
 
             final undefined = state.habitDefinition.dashboardId == null;
-            final style = undefined ? searchFieldHintStyle() : searchFieldStyle;
+            final style = undefined ? searchFieldHintStyle : searchFieldStyle;
 
             return TextField(
               onTap: onTap,

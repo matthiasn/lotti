@@ -7,7 +7,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_mobile.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
@@ -73,8 +72,7 @@ void main() {
       expect(folderFinder, findsOneWidget);
       expect(userFinder, findsOneWidget);
 
-      final successIndicatorFinder =
-          find.byContainerColor(color: styleConfig().primaryColor);
+      final successIndicatorFinder = find.bySemanticsLabel('IMAP configured');
       expect(successIndicatorFinder, findsOneWidget);
     });
 
@@ -142,8 +140,7 @@ void main() {
       expect(folderFinder, findsOneWidget);
       expect(userFinder, findsOneWidget);
 
-      final successIndicatorFinder =
-          find.byContainerColor(color: styleConfig().alarm);
+      final successIndicatorFinder = find.bySemanticsLabel('IMAP error');
 
       final deleteButtonFinder = find.text('Delete Sync Configuration');
       final scannerLabelFinder = find.text('Scanning Shared Secret...');

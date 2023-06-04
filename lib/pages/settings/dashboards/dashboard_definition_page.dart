@@ -435,10 +435,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               ),
                             ),
                           ),
-                          Text(
-                            localizations.dashboardAddChartsTitle,
-                            style: formLabelStyle(),
-                          ),
+                          Text(localizations.dashboardAddChartsTitle),
                           if (habitSelectItems.isNotEmpty)
                             ChartMultiSelect<HabitDefinition>(
                               multiSelectItems: habitSelectItems,

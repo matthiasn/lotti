@@ -360,7 +360,7 @@ class RuleTitleWidget extends StatelessWidget {
     if (title != null) {
       return Padding(
         padding: EdgeInsets.only(bottom: bottomPadding),
-        child: Text(title!, style: formLabelStyle()),
+        child: Text(title!),
       );
     } else {
       return const SizedBox.shrink();
@@ -382,12 +382,7 @@ class HabitAutocompleteWrapper extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Column(
             children: [
-              Text(
-                'AutoCompleteRules editor playground, not saving yet',
-                style: formLabelStyle().copyWith(
-                  color: styleConfig().secondaryTextColor,
-                ),
-              ),
+              const Text('AutoCompleteRules editor playground, not saving yet'),
               const SizedBox(height: 10),
               HabitAutocompleteWidget(
                 state.autoCompleteRule,
