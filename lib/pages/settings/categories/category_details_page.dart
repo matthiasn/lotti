@@ -96,6 +96,7 @@ class CategoryDetailsPage extends StatelessWidget {
                                     labelText: AppLocalizations.of(context)!
                                         .settingsCategoriesNameLabel,
                                     semanticsLabel: 'Category name field',
+                                    themeData: Theme.of(context),
                                   ),
                                 ),
                                 inputSpacer,

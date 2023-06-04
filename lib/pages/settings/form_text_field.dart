@@ -32,6 +32,7 @@ class FormTextField extends StatelessWidget {
       decoration: inputDecoration(
         labelText: labelText,
         semanticsLabel: semanticsLabel,
+        themeData: Theme.of(context),
       ),
     );
   }

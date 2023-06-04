@@ -98,6 +98,7 @@ class ConfigForm extends StatelessWidget {
             validator: FormBuilderValidators.required(),
             decoration: inputDecoration(
               labelText: localizations.settingsSyncHostLabel,
+              themeData: Theme.of(context),
             ),
           ),
           const SizedBox(height: 20),
@@ -108,6 +109,7 @@ class ConfigForm extends StatelessWidget {
             validator: FormBuilderValidators.required(),
             decoration: inputDecoration(
               labelText: localizations.settingsSyncUserLabel,
+              themeData: Theme.of(context),
             ),
           ),
           const SizedBox(height: 20),
@@ -119,6 +121,7 @@ class ConfigForm extends StatelessWidget {
             validator: FormBuilderValidators.required(),
             decoration: inputDecoration(
               labelText: localizations.settingsSyncPasswordLabel,
+              themeData: Theme.of(context),
             ),
           ),
           const SizedBox(height: 20),
@@ -129,6 +132,7 @@ class ConfigForm extends StatelessWidget {
             validator: FormBuilderValidators.integer(),
             decoration: inputDecoration(
               labelText: localizations.settingsSyncPortLabel,
+              themeData: Theme.of(context),
             ),
           ),
         ],

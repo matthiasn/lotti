@@ -197,6 +197,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         decoration: createDialogInputDecoration(
                           labelText: '${dataType.displayName} '
                               '${dataType.unitName.isNotEmpty ? '[${dataType.unitName}] ' : ''}',
+                          themeData: Theme.of(context),
                         ),
                         validator: numericValidator(),
                         name: 'value',
@@ -210,6 +211,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         key: const Key('measurement_comment_field'),
                         decoration: createDialogInputDecoration(
                           labelText: localizations.addMeasurementCommentLabel,
+                          themeData: Theme.of(context),
                         ),
                         keyboardAppearance: keyboardAppearance(),
                         name: 'comment',

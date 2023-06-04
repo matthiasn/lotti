@@ -68,6 +68,7 @@ class _TaskFormState extends State<TaskForm> {
                           labelText: '${widget.data?.title}'.isEmpty
                               ? localizations.taskNameLabel
                               : '',
+                          themeData: Theme.of(context),
                         ),
                         textCapitalization: TextCapitalization.sentences,
                         keyboardAppearance: keyboardAppearance(),
@@ -87,6 +88,7 @@ class _TaskFormState extends State<TaskForm> {
                           child: TextField(
                             decoration: inputDecoration(
                               labelText: localizations.taskEstimateLabel,
+                              themeData: Theme.of(context),
                             ),
                             readOnly: true,
                             controller: TextEditingController(
@@ -116,7 +118,10 @@ class _TaskFormState extends State<TaskForm> {
                             borderRadius: BorderRadius.circular(10),
                             elevation: 2,
                             onChanged: (dynamic _) => save(),
-                            decoration: inputDecoration(labelText: 'Status:'),
+                            decoration: inputDecoration(
+                              labelText: 'Status:',
+                              themeData: Theme.of(context),
+                            ),
                             initialValue: widget.data?.status.map(
                                   open: (_) => 'OPEN',
                                   groomed: (_) => 'GROOMED',
