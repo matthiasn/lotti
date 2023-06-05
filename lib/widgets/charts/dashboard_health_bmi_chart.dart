@@ -270,7 +270,7 @@ class BmiChartInfoWidget extends StatelessWidget {
 
         return Positioned(
           top: 0,
-          left: 0,
+          left: 20,
           child: IgnorePointer(
             child: Container(
               width: MediaQuery.of(context).size.width,
