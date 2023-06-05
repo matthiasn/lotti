@@ -58,10 +58,6 @@ _$_StyleConfig _$$_StyleConfigFromJson(Map<String, dynamic> json) =>
           .fromJson(json['unselectedChoiceChipTextColor'] as String),
       secondaryTextColor:
           const ColorConverter().fromJson(json['secondaryTextColor'] as String),
-      primaryColor:
-          const ColorConverter().fromJson(json['primaryColor'] as String),
-      hover: const ColorConverter().fromJson(json['hover'] as String),
-      cardColor: const ColorConverter().fromJson(json['cardColor'] as String),
       chartTextColor:
           const ColorConverter().fromJson(json['chartTextColor'] as String),
       textEditorBackground: const ColorConverter()
@@ -87,9 +83,6 @@ Map<String, dynamic> _$$_StyleConfigToJson(_$_StyleConfig instance) =>
           const ColorConverter().toJson(instance.unselectedChoiceChipTextColor),
       'secondaryTextColor':
           const ColorConverter().toJson(instance.secondaryTextColor),
-      'primaryColor': const ColorConverter().toJson(instance.primaryColor),
-      'hover': const ColorConverter().toJson(instance.hover),
-      'cardColor': const ColorConverter().toJson(instance.cardColor),
       'chartTextColor': const ColorConverter().toJson(instance.chartTextColor),
       'textEditorBackground':
           const ColorConverter().toJson(instance.textEditorBackground),

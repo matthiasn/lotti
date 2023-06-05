@@ -120,7 +120,7 @@ class TimeSeriesLineChart extends StatelessWidget {
                 horizontal: 8,
                 vertical: 3,
               ),
-              tooltipBgColor: styleConfig().primaryColor.desaturate(),
+              tooltipBgColor: Theme.of(context).primaryColor.desaturate(),
               tooltipRoundedRadius: 8,
               getTooltipItems: (List<LineBarSpot> spots) {
                 return spots.map((spot) {

@@ -39,7 +39,7 @@ class HabitsSliverAppBar extends StatelessWidget {
                   icon: Icon(
                     Icons.search,
                     color: state.showSearch
-                        ? styleConfig().primaryColor
+                        ? Theme.of(context).primaryColor
                         : styleConfig().secondaryTextColor,
                   ),
                 ),
@@ -48,7 +48,7 @@ class HabitsSliverAppBar extends StatelessWidget {
                   icon: Icon(
                     Icons.calendar_month,
                     color: state.showTimeSpan
-                        ? styleConfig().primaryColor
+                        ? Theme.of(context).primaryColor
                         : styleConfig().secondaryTextColor,
                   ),
                 ),

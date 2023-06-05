@@ -70,7 +70,7 @@ class EntryDetailHeader extends StatelessWidget {
                     value: cubit.showMap,
                     icon: Icons.map_outlined,
                     activeIcon: Icons.map,
-                    activeColor: styleConfig().primaryColor,
+                    activeColor: Theme.of(context).primaryColor,
                   ),
                 DeleteIconWidget(beamBack: !inLinkedEntries),
                 const ShareButtonWidget(),

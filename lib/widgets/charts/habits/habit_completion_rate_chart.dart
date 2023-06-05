@@ -199,7 +199,7 @@ class HabitCompletionRateChart extends StatelessWidget
                         showSuccessful: true,
                         showFailed: false,
                         habitDefinitions: state.habitDefinitions,
-                        color: styleConfig().primaryColor,
+                        color: Theme.of(context).primaryColor,
                       ),
                     ],
                   ),

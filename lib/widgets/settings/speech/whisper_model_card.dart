@@ -37,7 +37,7 @@ class WhisperModelCard extends StatelessWidget {
                   ignoring: !downloaded,
                   child: IconButton(
                     color: model == snapshot.selectedModel
-                        ? styleConfig().primaryColor
+                        ? Theme.of(context).primaryColor
                         : textColor,
                     onPressed: () => cubit.selectModel(model),
                     icon: model == snapshot.selectedModel
@@ -87,7 +87,7 @@ class WhisperModelCard extends StatelessWidget {
                       width: 80,
                       child: LinearProgressIndicator(
                         value: progress,
-                        color: styleConfig().primaryColor,
+                        color: Theme.of(context).primaryColor,
                         backgroundColor:
                             styleConfig().secondaryTextColor.withOpacity(0.5),
                         minHeight: 15,

@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_state.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/themes.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 
 class ImapConfigActions extends StatelessWidget {
@@ -44,7 +44,7 @@ class ImapConfigActions extends StatelessWidget {
             imapValid: (_) => FadeInButton(
               key: const Key('settingsSyncSaveButton'),
               localizations.settingsSyncSaveButton,
-              textColor: styleConfig().cardColor,
+              textColor: cardColor,
               onPressed: syncConfigCubit.saveImapConfig,
             ),
             imapTesting: (_) => FadeInButton(

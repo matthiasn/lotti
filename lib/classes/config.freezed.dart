@@ -425,12 +425,6 @@ mixin _$StyleConfig {
   @ColorConverter()
   Color get secondaryTextColor => throw _privateConstructorUsedError;
   @ColorConverter()
-  Color get primaryColor => throw _privateConstructorUsedError;
-  @ColorConverter()
-  Color get hover => throw _privateConstructorUsedError;
-  @ColorConverter()
-  Color get cardColor => throw _privateConstructorUsedError;
-  @ColorConverter()
   Color get chartTextColor => throw _privateConstructorUsedError;
   @ColorConverter()
   Color get textEditorBackground => throw _privateConstructorUsedError;
@@ -459,9 +453,6 @@ abstract class $StyleConfigCopyWith<$Res> {
       @ColorConverter() Color unselectedChoiceChipColor,
       @ColorConverter() Color unselectedChoiceChipTextColor,
       @ColorConverter() Color secondaryTextColor,
-      @ColorConverter() Color primaryColor,
-      @ColorConverter() Color hover,
-      @ColorConverter() Color cardColor,
       @ColorConverter() Color chartTextColor,
       @ColorConverter() Color textEditorBackground,
       Brightness keyboardAppearance});
@@ -490,9 +481,6 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
     Object? unselectedChoiceChipColor = null,
     Object? unselectedChoiceChipTextColor = null,
     Object? secondaryTextColor = null,
-    Object? primaryColor = null,
-    Object? hover = null,
-    Object? cardColor = null,
     Object? chartTextColor = null,
     Object? textEditorBackground = null,
     Object? keyboardAppearance = null,
@@ -538,18 +526,6 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
           ? _value.secondaryTextColor
           : secondaryTextColor // ignore: cast_nullable_to_non_nullable
               as Color,
-      primaryColor: null == primaryColor
-          ? _value.primaryColor
-          : primaryColor // ignore: cast_nullable_to_non_nullable
-              as Color,
-      hover: null == hover
-          ? _value.hover
-          : hover // ignore: cast_nullable_to_non_nullable
-              as Color,
-      cardColor: null == cardColor
-          ? _value.cardColor
-          : cardColor // ignore: cast_nullable_to_non_nullable
-              as Color,
       chartTextColor: null == chartTextColor
           ? _value.chartTextColor
           : chartTextColor // ignore: cast_nullable_to_non_nullable
@@ -585,9 +561,6 @@ abstract class _$$_StyleConfigCopyWith<$Res>
       @ColorConverter() Color unselectedChoiceChipColor,
       @ColorConverter() Color unselectedChoiceChipTextColor,
       @ColorConverter() Color secondaryTextColor,
-      @ColorConverter() Color primaryColor,
-      @ColorConverter() Color hover,
-      @ColorConverter() Color cardColor,
       @ColorConverter() Color chartTextColor,
       @ColorConverter() Color textEditorBackground,
       Brightness keyboardAppearance});
@@ -614,9 +587,6 @@ class __$$_StyleConfigCopyWithImpl<$Res>
     Object? unselectedChoiceChipColor = null,
     Object? unselectedChoiceChipTextColor = null,
     Object? secondaryTextColor = null,
-    Object? primaryColor = null,
-    Object? hover = null,
-    Object? cardColor = null,
     Object? chartTextColor = null,
     Object? textEditorBackground = null,
     Object? keyboardAppearance = null,
@@ -662,18 +632,6 @@ class __$$_StyleConfigCopyWithImpl<$Res>
           ? _value.secondaryTextColor
           : secondaryTextColor // ignore: cast_nullable_to_non_nullable
               as Color,
-      primaryColor: null == primaryColor
-          ? _value.primaryColor
-          : primaryColor // ignore: cast_nullable_to_non_nullable
-              as Color,
-      hover: null == hover
-          ? _value.hover
-          : hover // ignore: cast_nullable_to_non_nullable
-              as Color,
-      cardColor: null == cardColor
-          ? _value.cardColor
-          : cardColor // ignore: cast_nullable_to_non_nullable
-              as Color,
       chartTextColor: null == chartTextColor
           ? _value.chartTextColor
           : chartTextColor // ignore: cast_nullable_to_non_nullable
@@ -704,9 +662,6 @@ class _$_StyleConfig implements _StyleConfig {
       @ColorConverter() required this.unselectedChoiceChipColor,
       @ColorConverter() required this.unselectedChoiceChipTextColor,
       @ColorConverter() required this.secondaryTextColor,
-      @ColorConverter() required this.primaryColor,
-      @ColorConverter() required this.hover,
-      @ColorConverter() required this.cardColor,
       @ColorConverter() required this.chartTextColor,
       @ColorConverter() required this.textEditorBackground,
       required this.keyboardAppearance});
@@ -746,15 +701,6 @@ class _$_StyleConfig implements _StyleConfig {
   final Color secondaryTextColor;
   @override
   @ColorConverter()
-  final Color primaryColor;
-  @override
-  @ColorConverter()
-  final Color hover;
-  @override
-  @ColorConverter()
-  final Color cardColor;
-  @override
-  @ColorConverter()
   final Color chartTextColor;
   @override
   @ColorConverter()
@@ -764,7 +710,7 @@ class _$_StyleConfig implements _StyleConfig {
 
   @override
   String toString() {
-    return 'StyleConfig(tagColor: $tagColor, tagTextColor: $tagTextColor, personTagColor: $personTagColor, storyTagColor: $storyTagColor, starredGold: $starredGold, selectedChoiceChipColor: $selectedChoiceChipColor, selectedChoiceChipTextColor: $selectedChoiceChipTextColor, unselectedChoiceChipColor: $unselectedChoiceChipColor, unselectedChoiceChipTextColor: $unselectedChoiceChipTextColor, secondaryTextColor: $secondaryTextColor, primaryColor: $primaryColor, hover: $hover, cardColor: $cardColor, chartTextColor: $chartTextColor, textEditorBackground: $textEditorBackground, keyboardAppearance: $keyboardAppearance)';
+    return 'StyleConfig(tagColor: $tagColor, tagTextColor: $tagTextColor, personTagColor: $personTagColor, storyTagColor: $storyTagColor, starredGold: $starredGold, selectedChoiceChipColor: $selectedChoiceChipColor, selectedChoiceChipTextColor: $selectedChoiceChipTextColor, unselectedChoiceChipColor: $unselectedChoiceChipColor, unselectedChoiceChipTextColor: $unselectedChoiceChipTextColor, secondaryTextColor: $secondaryTextColor, chartTextColor: $chartTextColor, textEditorBackground: $textEditorBackground, keyboardAppearance: $keyboardAppearance)';
   }
 
   @override
@@ -782,7 +728,8 @@ class _$_StyleConfig implements _StyleConfig {
                 other.storyTagColor == storyTagColor) &&
             (identical(other.starredGold, starredGold) ||
                 other.starredGold == starredGold) &&
-            (identical(other.selectedChoiceChipColor, selectedChoiceChipColor) ||
+            (identical(
+                    other.selectedChoiceChipColor, selectedChoiceChipColor) ||
                 other.selectedChoiceChipColor == selectedChoiceChipColor) &&
             (identical(other.selectedChoiceChipTextColor,
                     selectedChoiceChipTextColor) ||
@@ -797,11 +744,6 @@ class _$_StyleConfig implements _StyleConfig {
                     unselectedChoiceChipTextColor) &&
             (identical(other.secondaryTextColor, secondaryTextColor) ||
                 other.secondaryTextColor == secondaryTextColor) &&
-            (identical(other.primaryColor, primaryColor) ||
-                other.primaryColor == primaryColor) &&
-            (identical(other.hover, hover) || other.hover == hover) &&
-            (identical(other.cardColor, cardColor) ||
-                other.cardColor == cardColor) &&
             (identical(other.chartTextColor, chartTextColor) ||
                 other.chartTextColor == chartTextColor) &&
             (identical(other.textEditorBackground, textEditorBackground) ||
@@ -824,9 +766,6 @@ class _$_StyleConfig implements _StyleConfig {
       unselectedChoiceChipColor,
       unselectedChoiceChipTextColor,
       secondaryTextColor,
-      primaryColor,
-      hover,
-      cardColor,
       chartTextColor,
       textEditorBackground,
       keyboardAppearance);
@@ -857,9 +796,6 @@ abstract class _StyleConfig implements StyleConfig {
       @ColorConverter() required final Color unselectedChoiceChipColor,
       @ColorConverter() required final Color unselectedChoiceChipTextColor,
       @ColorConverter() required final Color secondaryTextColor,
-      @ColorConverter() required final Color primaryColor,
-      @ColorConverter() required final Color hover,
-      @ColorConverter() required final Color cardColor,
       @ColorConverter() required final Color chartTextColor,
       @ColorConverter() required final Color textEditorBackground,
       required final Brightness keyboardAppearance}) = _$_StyleConfig;
@@ -897,15 +833,6 @@ abstract class _StyleConfig implements StyleConfig {
   @override
   @ColorConverter()
   Color get secondaryTextColor;
-  @override
-  @ColorConverter()
-  Color get primaryColor;
-  @override
-  @ColorConverter()
-  Color get hover;
-  @override
-  @ColorConverter()
-  Color get cardColor;
   @override
   @ColorConverter()
   Color get chartTextColor;

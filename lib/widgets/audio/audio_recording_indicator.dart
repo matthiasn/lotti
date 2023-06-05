@@ -39,11 +39,7 @@ class AudioRecordingIndicator extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        Icon(
-                          Icons.mic,
-                          size: 20,
-                          color: styleConfig().cardColor,
-                        ),
+                        const Icon(Icons.mic, size: 20),
                         Padding(
                           padding: const EdgeInsets.only(left: 4, bottom: 4),
                           child: Text(

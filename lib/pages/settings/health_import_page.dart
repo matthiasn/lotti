@@ -5,7 +5,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/themes.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -49,7 +49,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
       child: Column(
         children: <Widget>[
           SfDateRangePicker(
-            backgroundColor: styleConfig().cardColor.lighten(40),
+            backgroundColor: cardColor.lighten(40),
             onSelectionChanged: _onSelectionChanged,
             enableMultiView: true,
             selectionMode: DateRangePickerSelectionMode.range,

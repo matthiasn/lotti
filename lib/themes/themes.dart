@@ -10,6 +10,7 @@ final Color primaryColor = colorFromCssHex('#82E6CE');
 final Color primaryColorLight = colorFromCssHex('#CFF3EA');
 final Color alarm = colorFromCssHex('#FF7373');
 final Color nickel = colorFromCssHex('#B4B2B2');
+final cardColor = primaryColor.desaturate(60).darken(60);
 
 final darkTheme = StyleConfig(
   tagColor: const Color.fromRGBO(155, 200, 246, 1),
@@ -22,9 +23,6 @@ final darkTheme = StyleConfig(
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
   unselectedChoiceChipTextColor: const Color.fromRGBO(255, 245, 240, 1),
   secondaryTextColor: primaryColor.desaturate(70).darken(20),
-  primaryColor: primaryColor,
-  hover: iron,
-  cardColor: primaryColor.desaturate(60).darken(60),
   chartTextColor: nickel,
   keyboardAppearance: Brightness.dark,
   textEditorBackground: Colors.white.withOpacity(0.1),

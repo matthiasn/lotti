@@ -545,7 +545,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       icon: const Icon(Icons.copy),
                                       iconSize: settingsIconSize,
                                       tooltip: localizations.dashboardCopyHint,
-                                      color: styleConfig().cardColor,
                                       onPressed: copyDashboard,
                                     ),
                                     IconButton(

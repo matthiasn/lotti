@@ -327,7 +327,7 @@ class HabitDescription extends StatelessWidget {
         style: habitCompletionHeaderStyle.copyWith(fontSize: fontSizeMedium),
         linkStyle: habitCompletionHeaderStyle.copyWith(
           fontSize: fontSizeMedium,
-          color: styleConfig().primaryColor.darken(25),
+          color: Theme.of(context).primaryColor.darken(25),
           decoration: TextDecoration.none,
         ),
       ),
