@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'dart:math';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
@@ -80,13 +81,12 @@ class DashboardSurveyChart extends StatelessWidget {
           ),
           chartHeader: Positioned(
             top: 0,
-            left: 0,
+            left: 20,
             child: SizedBox(
-              width: MediaQuery.of(context).size.width,
+              width: max(MediaQuery.of(context).size.width, 300) - 20,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(width: 10),
                   Text(
                     chartConfig.surveyName,
                     style: chartTitleStyle,

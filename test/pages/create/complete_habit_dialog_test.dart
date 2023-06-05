@@ -68,6 +68,7 @@ void main() {
                 ),
                 child: HabitDialog(
                   habitId: habitFlossing.id,
+                  themeData: ThemeData(),
                 ),
               ),
             ),
