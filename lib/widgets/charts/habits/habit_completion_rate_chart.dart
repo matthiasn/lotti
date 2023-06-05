@@ -64,10 +64,6 @@ class HabitCompletionRateChart extends StatelessWidget
           );
         }
 
-        final skipColor = Theme.of(context)
-            .primaryColorLight
-            .mix(Theme.of(context).colorScheme.error.complement());
-
         return Column(
           children: [
             SizedBox(
@@ -173,8 +169,11 @@ class HabitCompletionRateChart extends StatelessWidget
                         showSuccessful: true,
                         showFailed: true,
                         habitDefinitions: state.habitDefinitions,
-                        color: alarm.lighten().desaturate(),
-                        aboveColor: alarm.withOpacity(0.5),
+                        aboveColor: habitFailColor
+                            .lighten()
+                            .desaturate()
+                            .withOpacity(0.5),
+                        color: habitFailColor.withOpacity(0.8),
                       ),
                       barData(
                         days: state.days,
@@ -186,7 +185,7 @@ class HabitCompletionRateChart extends StatelessWidget
                         showSuccessful: true,
                         showFailed: false,
                         habitDefinitions: state.habitDefinitions,
-                        color: skipColor,
+                        color: habitSkipColor,
                       ),
                       barData(
                         days: state.days,
@@ -198,7 +197,8 @@ class HabitCompletionRateChart extends StatelessWidget
                         showSuccessful: true,
                         showFailed: false,
                         habitDefinitions: state.habitDefinitions,
-                        color: Theme.of(context).primaryColor,
+                        opacity: 0.9,
+                        color: habitSuccessColor,
                       ),
                     ],
                   ),
@@ -224,6 +224,7 @@ LineChartBarData barData({
   required bool showSkipped,
   required bool showFailed,
   required Color color,
+  double opacity = 0.5,
   Color? aboveColor,
 }) {
   final spots = days.mapIndexed((idx, day) {
@@ -263,7 +264,7 @@ LineChartBarData barData({
     dotData: FlDotData(show: false),
     belowBarData: BarAreaData(
       show: true,
-      color: color.withOpacity(0.5),
+      color: color.withOpacity(opacity),
     ),
     aboveBarData: aboveColor != null
         ? BarAreaData(
