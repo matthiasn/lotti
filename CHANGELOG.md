@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Font colors on survey bottom sheet
 - Color issues
 - Charts layout
+- Colors in dashboard chart selector
+- Colors in entry delete bottom sheet
 
 ## [0.8.366] - 2023-06-03
 ### Changed:
