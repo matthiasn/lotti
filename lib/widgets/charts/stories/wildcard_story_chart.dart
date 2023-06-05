@@ -327,7 +327,7 @@ class InfoWidget2 extends StatelessWidget {
 
         return Positioned(
           top: 0,
-          left: 0,
+          left: 20,
           child: SizedBox(
             width: MediaQuery.of(context).size.width,
             child: IgnorePointer(
