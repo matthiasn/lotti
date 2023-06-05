@@ -5,7 +5,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/save_button.dart';
 import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
@@ -43,7 +43,7 @@ class EntryDetailHeader extends StatelessWidget {
                   value: item.meta.starred ?? false,
                   icon: Icons.star_outline,
                   activeIcon: Icons.star,
-                  activeColor: styleConfig().starredGold,
+                  activeColor: starredGold,
                 ),
                 SwitchIconWidget(
                   tooltip: localizations.journalPrivateTooltip,
@@ -70,7 +70,7 @@ class EntryDetailHeader extends StatelessWidget {
                     value: cubit.showMap,
                     icon: Icons.map_outlined,
                     activeIcon: Icons.map,
-                    activeColor: styleConfig().primaryColor,
+                    activeColor: Theme.of(context).primaryColor,
                   ),
                 DeleteIconWidget(beamBack: !inLinkedEntries),
                 const ShareButtonWidget(),

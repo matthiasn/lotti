@@ -3,7 +3,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_sliding_tutorial/flutter_sliding_tutorial.dart';
 import 'package:lotti/pages/settings/sync/tutorial_utils.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lottie/lottie.dart';
 
@@ -53,7 +52,7 @@ class SyncAssistantSuccessSlide extends StatelessWidget {
                   persistNamedRoute('/settings/advanced');
                   Navigator.of(context).maybePop();
                 },
-                primaryColor: styleConfig().primaryColor,
+                primaryColor: Theme.of(context).primaryColor,
               ),
             ),
           ),

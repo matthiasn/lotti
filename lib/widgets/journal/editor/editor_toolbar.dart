@@ -6,7 +6,7 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class ToolbarWidget extends StatelessWidget {
@@ -25,9 +25,9 @@ class ToolbarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final iconTheme = QuillIconTheme(
-      iconSelectedColor: styleConfig().cardColor,
-      iconSelectedFillColor: styleConfig().primaryColor,
-      iconUnselectedColor: styleConfig().secondaryTextColor,
+      iconSelectedColor: cardColor,
+      iconSelectedFillColor: Theme.of(context).primaryColor,
+      iconUnselectedColor: secondaryTextColor,
     );
 
     return BlocBuilder<EntryCubit, EntryState>(
@@ -132,7 +132,7 @@ class ToolbarWidget extends StatelessWidget {
               IconButton(
                 icon: Icon(
                   Icons.add_link,
-                  color: styleConfig().secondaryTextColor,
+                  color: secondaryTextColor,
                 ),
                 iconSize: toolbarIconSize,
                 tooltip: localizations.journalLinkFromHint,
@@ -141,7 +141,7 @@ class ToolbarWidget extends StatelessWidget {
               IconButton(
                 icon: Icon(
                   MdiIcons.target,
-                  color: styleConfig().secondaryTextColor,
+                  color: secondaryTextColor,
                 ),
                 iconSize: toolbarIconSize,
                 tooltip: localizations.journalLinkToHint,
@@ -151,7 +151,7 @@ class ToolbarWidget extends StatelessWidget {
                 IconButton(
                   icon: Icon(
                     MdiIcons.closeCircleOutline,
-                    color: styleConfig().secondaryTextColor,
+                    color: secondaryTextColor,
                   ),
                   iconSize: toolbarIconSize,
                   tooltip: localizations.journalUnlinkHint,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 
 class FormSwitch extends StatelessWidget {
@@ -28,8 +29,8 @@ class FormSwitch extends StatelessWidget {
         semanticsLabel: semanticsLabel,
       ),
       activeColor: activeColor,
-      inactiveThumbColor: styleConfig().secondaryTextColor,
-      inactiveTrackColor: styleConfig().secondaryTextColor.withOpacity(0.2),
+      inactiveThumbColor: secondaryTextColor,
+      inactiveTrackColor: secondaryTextColor.withOpacity(0.2),
       decoration: switchDecoration,
     );
   }
