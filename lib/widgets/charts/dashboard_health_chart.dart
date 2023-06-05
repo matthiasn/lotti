@@ -189,6 +189,7 @@ class HealthChartInfoWidget extends StatelessWidget {
             width: max(MediaQuery.of(context).size.width, 300) - 20,
             child: IgnorePointer(
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     healthType?.displayName ?? chartConfig.healthType,

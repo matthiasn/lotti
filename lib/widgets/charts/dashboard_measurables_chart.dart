@@ -236,6 +236,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
           child: SizedBox(
             width: max(MediaQuery.of(context).size.width, 300) - 20,
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 ConstrainedBox(
                   constraints: BoxConstraints(

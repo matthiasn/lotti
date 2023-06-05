@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/themes/theme.dart';
 
 class DashboardChart extends StatelessWidget {
   const DashboardChart({
@@ -25,6 +24,7 @@ class DashboardChart extends StatelessWidget {
       key: key,
       height: height,
       child: Stack(
+        alignment: Alignment.topLeft,
         children: [
           chartHeader,
           Padding(
@@ -33,12 +33,14 @@ class DashboardChart extends StatelessWidget {
               left: 10,
               right: 10,
             ),
-            child: Container(
-              color: transparent
-                  ? Colors.transparent
-                  : styleConfig().cardColor.withOpacity(0.6),
-              padding: const EdgeInsets.only(left: 10),
-              child: chart,
+            child: Card(
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: chart,
+              ),
             ),
           ),
           if (overlay != null) overlay!,
