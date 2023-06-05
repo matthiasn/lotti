@@ -183,7 +183,7 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                 onPressed: onTapAdd,
                 icon: Icon(
                   Icons.check_circle_outline,
-                  color: primaryColor,
+                  color: oldPrimaryColor,
                   size: 30,
                   semanticLabel: 'Complete ${widget.habitDefinition.name}',
                 ),
