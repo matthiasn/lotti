@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -259,9 +260,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                       child: Text(
                                         localizations.completeHabitSkipButton,
                                         style: saveButtonStyle().copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .outline,
+                                          color: habitSkipColor.desaturate(),
                                         ),
                                       ),
                                     ),
@@ -274,9 +273,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                         localizations
                                             .completeHabitSuccessButton,
                                         style: saveButtonStyle().copyWith(
-                                          color: Theme.of(context)
-                                              .primaryColor
-                                              .darken(25),
+                                          color: habitSuccessColor.darken(25),
                                         ),
                                       ),
                                     ),
