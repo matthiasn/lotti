@@ -423,13 +423,9 @@ mixin _$StyleConfig {
   @ColorConverter()
   Color get unselectedChoiceChipTextColor => throw _privateConstructorUsedError;
   @ColorConverter()
-  Color get primaryTextColor => throw _privateConstructorUsedError;
-  @ColorConverter()
   Color get secondaryTextColor => throw _privateConstructorUsedError;
   @ColorConverter()
   Color get primaryColor => throw _privateConstructorUsedError;
-  @ColorConverter()
-  Color get primaryColorLight => throw _privateConstructorUsedError;
   @ColorConverter()
   Color get hover => throw _privateConstructorUsedError;
   @ColorConverter()
@@ -462,10 +458,8 @@ abstract class $StyleConfigCopyWith<$Res> {
       @ColorConverter() Color selectedChoiceChipTextColor,
       @ColorConverter() Color unselectedChoiceChipColor,
       @ColorConverter() Color unselectedChoiceChipTextColor,
-      @ColorConverter() Color primaryTextColor,
       @ColorConverter() Color secondaryTextColor,
       @ColorConverter() Color primaryColor,
-      @ColorConverter() Color primaryColorLight,
       @ColorConverter() Color hover,
       @ColorConverter() Color cardColor,
       @ColorConverter() Color chartTextColor,
@@ -495,10 +489,8 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
     Object? selectedChoiceChipTextColor = null,
     Object? unselectedChoiceChipColor = null,
     Object? unselectedChoiceChipTextColor = null,
-    Object? primaryTextColor = null,
     Object? secondaryTextColor = null,
     Object? primaryColor = null,
-    Object? primaryColorLight = null,
     Object? hover = null,
     Object? cardColor = null,
     Object? chartTextColor = null,
@@ -542,10 +534,6 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
           ? _value.unselectedChoiceChipTextColor
           : unselectedChoiceChipTextColor // ignore: cast_nullable_to_non_nullable
               as Color,
-      primaryTextColor: null == primaryTextColor
-          ? _value.primaryTextColor
-          : primaryTextColor // ignore: cast_nullable_to_non_nullable
-              as Color,
       secondaryTextColor: null == secondaryTextColor
           ? _value.secondaryTextColor
           : secondaryTextColor // ignore: cast_nullable_to_non_nullable
@@ -553,10 +541,6 @@ class _$StyleConfigCopyWithImpl<$Res, $Val extends StyleConfig>
       primaryColor: null == primaryColor
           ? _value.primaryColor
           : primaryColor // ignore: cast_nullable_to_non_nullable
-              as Color,
-      primaryColorLight: null == primaryColorLight
-          ? _value.primaryColorLight
-          : primaryColorLight // ignore: cast_nullable_to_non_nullable
               as Color,
       hover: null == hover
           ? _value.hover
@@ -600,10 +584,8 @@ abstract class _$$_StyleConfigCopyWith<$Res>
       @ColorConverter() Color selectedChoiceChipTextColor,
       @ColorConverter() Color unselectedChoiceChipColor,
       @ColorConverter() Color unselectedChoiceChipTextColor,
-      @ColorConverter() Color primaryTextColor,
       @ColorConverter() Color secondaryTextColor,
       @ColorConverter() Color primaryColor,
-      @ColorConverter() Color primaryColorLight,
       @ColorConverter() Color hover,
       @ColorConverter() Color cardColor,
       @ColorConverter() Color chartTextColor,
@@ -631,10 +613,8 @@ class __$$_StyleConfigCopyWithImpl<$Res>
     Object? selectedChoiceChipTextColor = null,
     Object? unselectedChoiceChipColor = null,
     Object? unselectedChoiceChipTextColor = null,
-    Object? primaryTextColor = null,
     Object? secondaryTextColor = null,
     Object? primaryColor = null,
-    Object? primaryColorLight = null,
     Object? hover = null,
     Object? cardColor = null,
     Object? chartTextColor = null,
@@ -678,10 +658,6 @@ class __$$_StyleConfigCopyWithImpl<$Res>
           ? _value.unselectedChoiceChipTextColor
           : unselectedChoiceChipTextColor // ignore: cast_nullable_to_non_nullable
               as Color,
-      primaryTextColor: null == primaryTextColor
-          ? _value.primaryTextColor
-          : primaryTextColor // ignore: cast_nullable_to_non_nullable
-              as Color,
       secondaryTextColor: null == secondaryTextColor
           ? _value.secondaryTextColor
           : secondaryTextColor // ignore: cast_nullable_to_non_nullable
@@ -689,10 +665,6 @@ class __$$_StyleConfigCopyWithImpl<$Res>
       primaryColor: null == primaryColor
           ? _value.primaryColor
           : primaryColor // ignore: cast_nullable_to_non_nullable
-              as Color,
-      primaryColorLight: null == primaryColorLight
-          ? _value.primaryColorLight
-          : primaryColorLight // ignore: cast_nullable_to_non_nullable
               as Color,
       hover: null == hover
           ? _value.hover
@@ -731,10 +703,8 @@ class _$_StyleConfig implements _StyleConfig {
       @ColorConverter() required this.selectedChoiceChipTextColor,
       @ColorConverter() required this.unselectedChoiceChipColor,
       @ColorConverter() required this.unselectedChoiceChipTextColor,
-      @ColorConverter() required this.primaryTextColor,
       @ColorConverter() required this.secondaryTextColor,
       @ColorConverter() required this.primaryColor,
-      @ColorConverter() required this.primaryColorLight,
       @ColorConverter() required this.hover,
       @ColorConverter() required this.cardColor,
       @ColorConverter() required this.chartTextColor,
@@ -773,16 +743,10 @@ class _$_StyleConfig implements _StyleConfig {
   final Color unselectedChoiceChipTextColor;
   @override
   @ColorConverter()
-  final Color primaryTextColor;
-  @override
-  @ColorConverter()
   final Color secondaryTextColor;
   @override
   @ColorConverter()
   final Color primaryColor;
-  @override
-  @ColorConverter()
-  final Color primaryColorLight;
   @override
   @ColorConverter()
   final Color hover;
@@ -800,7 +764,7 @@ class _$_StyleConfig implements _StyleConfig {
 
   @override
   String toString() {
-    return 'StyleConfig(tagColor: $tagColor, tagTextColor: $tagTextColor, personTagColor: $personTagColor, storyTagColor: $storyTagColor, starredGold: $starredGold, selectedChoiceChipColor: $selectedChoiceChipColor, selectedChoiceChipTextColor: $selectedChoiceChipTextColor, unselectedChoiceChipColor: $unselectedChoiceChipColor, unselectedChoiceChipTextColor: $unselectedChoiceChipTextColor, primaryTextColor: $primaryTextColor, secondaryTextColor: $secondaryTextColor, primaryColor: $primaryColor, primaryColorLight: $primaryColorLight, hover: $hover, cardColor: $cardColor, chartTextColor: $chartTextColor, textEditorBackground: $textEditorBackground, keyboardAppearance: $keyboardAppearance)';
+    return 'StyleConfig(tagColor: $tagColor, tagTextColor: $tagTextColor, personTagColor: $personTagColor, storyTagColor: $storyTagColor, starredGold: $starredGold, selectedChoiceChipColor: $selectedChoiceChipColor, selectedChoiceChipTextColor: $selectedChoiceChipTextColor, unselectedChoiceChipColor: $unselectedChoiceChipColor, unselectedChoiceChipTextColor: $unselectedChoiceChipTextColor, secondaryTextColor: $secondaryTextColor, primaryColor: $primaryColor, hover: $hover, cardColor: $cardColor, chartTextColor: $chartTextColor, textEditorBackground: $textEditorBackground, keyboardAppearance: $keyboardAppearance)';
   }
 
   @override
@@ -824,20 +788,17 @@ class _$_StyleConfig implements _StyleConfig {
                     selectedChoiceChipTextColor) ||
                 other.selectedChoiceChipTextColor ==
                     selectedChoiceChipTextColor) &&
-            (identical(other.unselectedChoiceChipColor, unselectedChoiceChipColor) ||
+            (identical(other.unselectedChoiceChipColor,
+                    unselectedChoiceChipColor) ||
                 other.unselectedChoiceChipColor == unselectedChoiceChipColor) &&
             (identical(other.unselectedChoiceChipTextColor,
                     unselectedChoiceChipTextColor) ||
                 other.unselectedChoiceChipTextColor ==
                     unselectedChoiceChipTextColor) &&
-            (identical(other.primaryTextColor, primaryTextColor) ||
-                other.primaryTextColor == primaryTextColor) &&
             (identical(other.secondaryTextColor, secondaryTextColor) ||
                 other.secondaryTextColor == secondaryTextColor) &&
             (identical(other.primaryColor, primaryColor) ||
                 other.primaryColor == primaryColor) &&
-            (identical(other.primaryColorLight, primaryColorLight) ||
-                other.primaryColorLight == primaryColorLight) &&
             (identical(other.hover, hover) || other.hover == hover) &&
             (identical(other.cardColor, cardColor) ||
                 other.cardColor == cardColor) &&
@@ -862,10 +823,8 @@ class _$_StyleConfig implements _StyleConfig {
       selectedChoiceChipTextColor,
       unselectedChoiceChipColor,
       unselectedChoiceChipTextColor,
-      primaryTextColor,
       secondaryTextColor,
       primaryColor,
-      primaryColorLight,
       hover,
       cardColor,
       chartTextColor,
@@ -897,10 +856,8 @@ abstract class _StyleConfig implements StyleConfig {
       @ColorConverter() required final Color selectedChoiceChipTextColor,
       @ColorConverter() required final Color unselectedChoiceChipColor,
       @ColorConverter() required final Color unselectedChoiceChipTextColor,
-      @ColorConverter() required final Color primaryTextColor,
       @ColorConverter() required final Color secondaryTextColor,
       @ColorConverter() required final Color primaryColor,
-      @ColorConverter() required final Color primaryColorLight,
       @ColorConverter() required final Color hover,
       @ColorConverter() required final Color cardColor,
       @ColorConverter() required final Color chartTextColor,
@@ -939,16 +896,10 @@ abstract class _StyleConfig implements StyleConfig {
   Color get unselectedChoiceChipTextColor;
   @override
   @ColorConverter()
-  Color get primaryTextColor;
-  @override
-  @ColorConverter()
   Color get secondaryTextColor;
   @override
   @ColorConverter()
   Color get primaryColor;
-  @override
-  @ColorConverter()
-  Color get primaryColorLight;
   @override
   @ColorConverter()
   Color get hover;

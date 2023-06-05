@@ -51,13 +51,9 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
             ),
 
             /// Separator.
-            Align(
-              alignment: const Alignment(0, 0.85),
-              child: Container(
-                width: double.infinity,
-                height: 0.5,
-                color: styleConfig().primaryTextColor,
-              ),
+            const Align(
+              alignment: Alignment(0, 0.85),
+              child: SizedBox(width: double.infinity, height: 0.5),
             ),
             SyncNavPrevious(
               pageCtrl: _pageCtrl,

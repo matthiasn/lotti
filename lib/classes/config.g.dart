@@ -56,14 +56,10 @@ _$_StyleConfig _$$_StyleConfigFromJson(Map<String, dynamic> json) =>
           .fromJson(json['unselectedChoiceChipColor'] as String),
       unselectedChoiceChipTextColor: const ColorConverter()
           .fromJson(json['unselectedChoiceChipTextColor'] as String),
-      primaryTextColor:
-          const ColorConverter().fromJson(json['primaryTextColor'] as String),
       secondaryTextColor:
           const ColorConverter().fromJson(json['secondaryTextColor'] as String),
       primaryColor:
           const ColorConverter().fromJson(json['primaryColor'] as String),
-      primaryColorLight:
-          const ColorConverter().fromJson(json['primaryColorLight'] as String),
       hover: const ColorConverter().fromJson(json['hover'] as String),
       cardColor: const ColorConverter().fromJson(json['cardColor'] as String),
       chartTextColor:
@@ -89,13 +85,9 @@ Map<String, dynamic> _$$_StyleConfigToJson(_$_StyleConfig instance) =>
           const ColorConverter().toJson(instance.unselectedChoiceChipColor),
       'unselectedChoiceChipTextColor':
           const ColorConverter().toJson(instance.unselectedChoiceChipTextColor),
-      'primaryTextColor':
-          const ColorConverter().toJson(instance.primaryTextColor),
       'secondaryTextColor':
           const ColorConverter().toJson(instance.secondaryTextColor),
       'primaryColor': const ColorConverter().toJson(instance.primaryColor),
-      'primaryColorLight':
-          const ColorConverter().toJson(instance.primaryColorLight),
       'hover': const ColorConverter().toJson(instance.hover),
       'cardColor': const ColorConverter().toJson(instance.cardColor),
       'chartTextColor': const ColorConverter().toJson(instance.chartTextColor),
