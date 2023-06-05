@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -39,7 +38,7 @@ class ChartMultiSelect<T> extends StatelessWidget {
         title: Text(title, style: titleStyle),
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.all(Radius.circular(10)),
-          border: Border.all(color: secondaryTextColor),
+          border: Border.all(color: Theme.of(context).colorScheme.outline),
         ),
         itemsTextStyle: itemTextStyle,
         selectedItemsTextStyle: itemTextStyle.copyWith(

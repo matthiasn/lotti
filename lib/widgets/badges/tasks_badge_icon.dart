@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 
 class TasksBadge extends StatelessWidget {
@@ -23,7 +22,7 @@ class TasksBadge extends StatelessWidget {
         return Badge(
           label: Text('$count', style: badgeStyle),
           isLabelVisible: count != 0,
-          backgroundColor: alarm,
+          backgroundColor: Theme.of(context).colorScheme.error,
           child: child,
         );
       },

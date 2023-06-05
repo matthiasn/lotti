@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_cubit.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -23,7 +22,8 @@ class WhisperModelCard extends StatelessWidget {
         final progress = snapshot.downloadProgress[model] ?? 0.0;
         final downloaded = progress == 1.0;
 
-        final textColor = downloaded ? null : secondaryTextColor;
+        final textColor =
+            downloaded ? null : Theme.of(context).colorScheme.outline;
 
         return Card(
           margin: const EdgeInsets.all(5),
@@ -89,7 +89,10 @@ class WhisperModelCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: progress,
                         color: Theme.of(context).primaryColor,
-                        backgroundColor: secondaryTextColor.withOpacity(0.5),
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.5),
                         minHeight: 15,
                       ),
                     ),

@@ -105,7 +105,7 @@ class JournalCardTitle extends StatelessWidget {
                   const SizedBox(height: 10),
                   FormattedTime(
                     displayed: journalAudio,
-                    labelColor: secondaryTextColor,
+                    labelColor: Theme.of(context).colorScheme.outline,
                   ),
                 ],
               ),
@@ -202,7 +202,7 @@ class JournalCard extends StatelessWidget {
                   return LeadingIcon(
                     Icons.mic,
                     color: transcripts != null && transcripts.isNotEmpty
-                        ? secondaryTextColor
+                        ? Theme.of(context).colorScheme.outline
                         : errorColor.withOpacity(0.4),
                   );
                 },
@@ -248,7 +248,7 @@ class LeadingIcon extends StatelessWidget {
     return Icon(
       iconData,
       size: 32,
-      color: color ?? secondaryTextColor,
+      color: color ?? Theme.of(context).colorScheme.outline,
     );
   }
 }

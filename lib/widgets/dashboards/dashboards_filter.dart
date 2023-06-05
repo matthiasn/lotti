@@ -5,7 +5,6 @@ import 'package:lotti/blocs/dashboards/dashboards_page_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:pie_chart/pie_chart.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -49,7 +48,7 @@ class DashboardsFilter extends StatelessWidget {
               icon: dataMap.isEmpty
                   ? Icon(
                       Icons.filter_alt_off_outlined,
-                      color: secondaryTextColor,
+                      color: Theme.of(context).colorScheme.outline,
                     )
                   : PieChart(
                       dataMap: dataMap,
