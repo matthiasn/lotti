@@ -110,7 +110,8 @@ class HabitDetailsPage extends StatelessWidget {
                               key: const Key('habit_archived'),
                               initialValue: !state.habitDefinition.active,
                               title: localizations.habitArchivedLabel,
-                              activeColor: secondaryTextColor,
+                              activeColor:
+                                  Theme.of(context).colorScheme.outline,
                             ),
                             inputSpacer,
                             DateTimeField(
@@ -140,7 +141,7 @@ class HabitDetailsPage extends StatelessWidget {
                               iconSize: settingsIconSize,
                               tooltip: AppLocalizations.of(context)!
                                   .settingsHabitsDeleteTooltip,
-                              color: secondaryTextColor,
+                              color: Theme.of(context).colorScheme.outline,
                               onPressed: () async {
                                 const deleteKey = 'deleteKey';
                                 final result =

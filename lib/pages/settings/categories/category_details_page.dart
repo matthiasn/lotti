@@ -134,7 +134,7 @@ class CategoryDetailsPage extends StatelessWidget {
                                 iconSize: settingsIconSize,
                                 tooltip: AppLocalizations.of(context)!
                                     .settingsHabitsDeleteTooltip,
-                                color: secondaryTextColor,
+                                color: Theme.of(context).colorScheme.outline,
                                 onPressed: () async {
                                   const deleteKey = 'deleteKey';
                                   final result =

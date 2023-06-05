@@ -9,7 +9,6 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -61,7 +60,7 @@ class AudioPlayerWidget extends StatelessWidget {
                   tooltip: 'Play',
                   color: (state.status == AudioPlayerStatus.playing && isActive)
                       ? Theme.of(context).colorScheme.error
-                      : secondaryTextColor,
+                      : Theme.of(context).colorScheme.outline,
                   onPressed: () {
                     cubit
                       ..setAudioNote(journalAudio)
@@ -78,28 +77,28 @@ class AudioPlayerWidget extends StatelessWidget {
                         icon: const Icon(Icons.fast_rewind),
                         iconSize: 32,
                         tooltip: 'Rewind 15s',
-                        color: secondaryTextColor,
+                        color: Theme.of(context).colorScheme.outline,
                         onPressed: cubit.rew,
                       ),
                       IconButton(
                         icon: const Icon(Icons.pause),
                         iconSize: 32,
                         tooltip: 'Pause',
-                        color: secondaryTextColor,
+                        color: Theme.of(context).colorScheme.outline,
                         onPressed: cubit.pause,
                       ),
                       IconButton(
                         icon: const Icon(Icons.fast_forward),
                         iconSize: 32,
                         tooltip: 'Fast forward 15s',
-                        color: secondaryTextColor,
+                        color: Theme.of(context).colorScheme.outline,
                         onPressed: cubit.fwd,
                       ),
                       IconButton(
                         icon: const Icon(Icons.stop),
                         iconSize: 32,
                         tooltip: 'Stop',
-                        color: secondaryTextColor,
+                        color: Theme.of(context).colorScheme.outline,
                         onPressed: cubit.stopPlay,
                       ),
                       IconButton(
@@ -110,7 +109,7 @@ class AudioPlayerWidget extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: (state.speed != 1)
                                 ? Theme.of(context).colorScheme.error
-                                : secondaryTextColor,
+                                : Theme.of(context).colorScheme.outline,
                           ),
                         ),
                         iconSize: 32,
@@ -126,7 +125,7 @@ class AudioPlayerWidget extends StatelessWidget {
                     icon: const Icon(Icons.transcribe_outlined),
                     iconSize: 20,
                     tooltip: 'Transcribe',
-                    color: secondaryTextColor,
+                    color: Theme.of(context).colorScheme.outline,
                     onPressed: () async {
                       await cubit.setAudioNote(journalAudio);
                       await cubit.transcribe();
@@ -156,7 +155,7 @@ class AudioPlayerWidget extends StatelessWidget {
                     thumbRadius: 5,
                     onSeek: cubit.seek,
                     timeLabelTextStyle: monospaceTextStyle.copyWith(
-                      color: secondaryTextColor,
+                      color: Theme.of(context).colorScheme.outline,
                     ),
                   ),
                 ),
@@ -207,7 +206,7 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: secondaryTextColor.withOpacity(0.15),
+      color: Theme.of(context).colorScheme.outline.withOpacity(0.15),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: 15,
