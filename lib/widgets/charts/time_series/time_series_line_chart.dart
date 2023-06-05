@@ -31,8 +31,8 @@ class ChartLabel extends StatelessWidget {
 }
 
 List<Color> gradientColors = [
-  primaryColorLight,
-  primaryColor,
+  oldPrimaryColorLight,
+  oldPrimaryColor,
 ];
 
 Widget leftTitleWidgets(double value, TitleMeta meta) {
