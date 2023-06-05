@@ -22,6 +22,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: followSystemBrightnessFlag,
+    description: 'Follow system brightness?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: recordLocationFlag,
     description: 'Record geolocation?',
     status: false,
