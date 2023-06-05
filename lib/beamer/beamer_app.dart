@@ -163,6 +163,11 @@ class MyBeamerApp extends StatelessWidget {
     return StreamBuilder<Set<String>>(
       stream: _db.watchActiveConfigFlagNames(),
       builder: (context, snapshot) {
+        final flags = snapshot.data ?? {};
+        final showBrightScheme = flags.contains(showBrightSchemeFlag);
+        final followSystemBrightness =
+            flags.contains(followSystemBrightnessFlag);
+
         return MultiBlocProvider(
           providers: [
             BlocProvider<SyncConfigCubit>(
@@ -182,32 +187,30 @@ class MyBeamerApp extends StatelessWidget {
               create: (BuildContext context) => AudioPlayerCubit(),
             ),
           ],
-          child: StreamBuilder<bool>(
-            stream: getIt<JournalDb>().watchConfigFlag(showBrightSchemeFlag),
-            builder: (context, snapshot) {
-              return DesktopMenuWrapper(
-                child: MaterialApp.router(
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  theme: lightThemeMod,
-                  darkTheme: darkThemeMod,
-                  themeMode:
-                      snapshot.data ?? false ? ThemeMode.light : ThemeMode.dark,
-                  localizationsDelegates: const [
-                    AppLocalizations.delegate,
-                    FormBuilderLocalizations.delegate,
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                    GlobalCupertinoLocalizations.delegate,
-                  ],
-                  debugShowCheckedModeBanner: false,
-                  routerDelegate: routerDelegate,
-                  routeInformationParser: BeamerParser(),
-                  backButtonDispatcher: BeamerBackButtonDispatcher(
-                    delegate: routerDelegate,
-                  ),
-                ),
-              );
-            },
+          child: DesktopMenuWrapper(
+            child: MaterialApp.router(
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: lightThemeMod,
+              darkTheme: darkThemeMod,
+              themeMode: followSystemBrightness
+                  ? ThemeMode.system
+                  : showBrightScheme
+                      ? ThemeMode.light
+                      : ThemeMode.dark,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                FormBuilderLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              debugShowCheckedModeBanner: false,
+              routerDelegate: routerDelegate,
+              routeInformationParser: BeamerParser(),
+              backButtonDispatcher: BeamerBackButtonDispatcher(
+                delegate: routerDelegate,
+              ),
+            ),
           ),
         );
       },

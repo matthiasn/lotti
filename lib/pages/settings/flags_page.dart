@@ -26,6 +26,7 @@ class FlagsPage extends StatelessWidget {
           privateFlag,
           enableNotificationsFlag,
           showBrightSchemeFlag,
+          followSystemBrightnessFlag,
           recordLocationFlag,
           enableSyncFlag,
           enableTaskManagement,

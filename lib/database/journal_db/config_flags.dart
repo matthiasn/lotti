@@ -23,6 +23,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: followSystemBrightnessFlag,
+      description: 'Follow system brightness?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: allowInvalidCertFlag,
       description: 'Allow invalid certificate? (not recommended)',
       status: false,
