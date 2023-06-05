@@ -48,6 +48,7 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
       builder: (BuildContext context) {
         return HabitDialog(
           habitId: widget.habitDefinition.id,
+          themeData: Theme.of(context),
           dateString: dateString,
         );
       },
