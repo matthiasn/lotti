@@ -22,9 +22,7 @@ class WhisperModelCard extends StatelessWidget {
         final progress = snapshot.downloadProgress[model] ?? 0.0;
         final downloaded = progress == 1.0;
 
-        final textColor = downloaded
-            ? styleConfig().primaryTextColor
-            : styleConfig().secondaryTextColor;
+        final textColor = downloaded ? null : styleConfig().secondaryTextColor;
 
         return Card(
           margin: const EdgeInsets.all(5),

@@ -70,8 +70,7 @@ class LogLineCard extends StatelessWidget {
     final domain = logEntry.domain;
     final subDomain = logEntry.subDomain;
     final message = logEntry.message;
-    final color =
-        logEntry.level == 'ERROR' ? alarm : styleConfig().primaryTextColor;
+    final color = logEntry.level == 'ERROR' ? alarm : null;
 
     return GestureDetector(
       onTap: () => beamToNamed('/settings/advanced/logging/${logEntry.id}'),
@@ -167,7 +166,6 @@ class LogDetailPage extends StatelessWidget {
                 IconButton(
                   icon: const Icon(MdiIcons.clipboardOutline),
                   iconSize: 48,
-                  color: styleConfig().primaryTextColor,
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: clipboardText));
                   },

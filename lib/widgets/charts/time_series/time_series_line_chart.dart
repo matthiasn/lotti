@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/themes.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -30,8 +31,8 @@ class ChartLabel extends StatelessWidget {
 }
 
 List<Color> gradientColors = [
-  styleConfig().primaryColorLight,
-  styleConfig().primaryColor,
+  primaryColorLight,
+  primaryColor,
 ];
 
 Widget leftTitleWidgets(double value, TitleMeta meta) {
