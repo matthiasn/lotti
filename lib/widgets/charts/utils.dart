@@ -7,7 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/color.dart';
 
 class Observation extends Equatable {
@@ -204,7 +204,7 @@ final timeSeriesAxis = DateTimeAxisSpec(
   renderSpec: SmallTickRendererSpec(
     labelStyle: TextStyleSpec(
       fontSize: 10,
-      color: Color.fromHex(code: colorToCssHex(styleConfig().chartTextColor)),
+      color: Color.fromHex(code: colorToCssHex(chartTextColor)),
     ),
   ),
 );
@@ -212,7 +212,7 @@ final timeSeriesAxis = DateTimeAxisSpec(
 final numericRenderSpec = SmallTickRendererSpec<num>(
   labelStyle: TextStyleSpec(
     fontSize: 10,
-    color: Color.fromHex(code: colorToCssHex(styleConfig().chartTextColor)),
+    color: Color.fromHex(code: colorToCssHex(chartTextColor)),
   ),
 );
 

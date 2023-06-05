@@ -54,7 +54,7 @@ class DashboardItemModal extends StatelessWidget {
                   Navigator.pop(context);
                 },
                 label: Text(EnumToString.convertToString(aggregationType)),
-                selectedColor: styleConfig().primaryColor,
+                selectedColor: Theme.of(context).primaryColor,
                 selected: aggregationType == item.aggregationType,
               );
             }).toList(),

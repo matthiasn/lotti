@@ -7,18 +7,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/themes/themes.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
 final gridLine = FlLine(
-  color: styleConfig().chartTextColor.withOpacity(gridOpacity),
+  color: chartTextColor.withOpacity(gridOpacity),
   strokeWidth: 1,
 );
 
 final gridLineEmphasized = FlLine(
-  color: styleConfig().chartTextColor,
+  color: chartTextColor,
   strokeWidth: 2,
   dashArray: [5, 3],
 );
@@ -154,9 +154,7 @@ class HabitCompletionRateChart extends StatelessWidget
                     borderData: FlBorderData(
                       show: true,
                       border: Border.all(
-                        color: styleConfig()
-                            .chartTextColor
-                            .withOpacity(labelOpacity),
+                        color: chartTextColor.withOpacity(labelOpacity),
                       ),
                     ),
                     minX: 0,
@@ -199,7 +197,7 @@ class HabitCompletionRateChart extends StatelessWidget
                         showSuccessful: true,
                         showFailed: false,
                         habitDefinitions: state.habitDefinitions,
-                        color: styleConfig().primaryColor,
+                        color: Theme.of(context).primaryColor,
                       ),
                     ],
                   ),

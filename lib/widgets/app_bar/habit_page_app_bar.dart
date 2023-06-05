@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/blocs/habits/habits_state.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 import 'package:lotti/widgets/habits/habits_filter.dart';
 import 'package:lotti/widgets/habits/status_segmented_control.dart';
@@ -39,8 +39,8 @@ class HabitsSliverAppBar extends StatelessWidget {
                   icon: Icon(
                     Icons.search,
                     color: state.showSearch
-                        ? styleConfig().primaryColor
-                        : styleConfig().secondaryTextColor,
+                        ? Theme.of(context).primaryColor
+                        : secondaryTextColor,
                   ),
                 ),
                 IconButton(
@@ -48,8 +48,8 @@ class HabitsSliverAppBar extends StatelessWidget {
                   icon: Icon(
                     Icons.calendar_month,
                     color: state.showTimeSpan
-                        ? styleConfig().primaryColor
-                        : styleConfig().secondaryTextColor,
+                        ? Theme.of(context).primaryColor
+                        : secondaryTextColor,
                   ),
                 ),
                 SettingsButton('/settings/habits/search/${state.searchString}'),
@@ -60,7 +60,7 @@ class HabitsSliverAppBar extends StatelessWidget {
                       state.zeroBased
                           ? MdiIcons.unfoldLessHorizontal
                           : MdiIcons.unfoldMoreHorizontal,
-                      color: styleConfig().secondaryTextColor,
+                      color: secondaryTextColor,
                     ),
                   ),
               ],

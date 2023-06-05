@@ -125,7 +125,7 @@ class OutboxItemCard extends StatelessWidget {
         case OutboxStatus.error:
           return Theme.of(context).colorScheme.error;
         case OutboxStatus.sent:
-          return styleConfig().primaryColor;
+          return Theme.of(context).primaryColor;
       }
     }
 
@@ -190,9 +190,7 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-//    final textColor = Theme.of(context).textTheme
     return AppBar(
-      backgroundColor: styleConfig().cardColor,
       title: Column(
         children: [
           Row(
@@ -218,9 +216,6 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
           ),
           CupertinoSegmentedControl(
-            //selectedColor: styleConfig().primaryTextColor,
-            unselectedColor: styleConfig().cardColor,
-            //borderColor: styleConfig().primaryTextColor,
             groupValue: selectedValue,
             onValueChanged: onValueChanged,
             children: {

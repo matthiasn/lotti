@@ -4,7 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -59,7 +59,7 @@ class ShareButtonWidget extends StatelessWidget {
             iconSize: 24,
             tooltip: tooltip,
             padding: EdgeInsets.zero,
-            color: styleConfig().secondaryTextColor,
+            color: secondaryTextColor,
             onPressed: onPressed,
           ),
         );

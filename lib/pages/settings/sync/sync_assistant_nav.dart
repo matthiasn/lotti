@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_fadein/flutter_fadein.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_state.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/colors.dart';
 
 class AlignedNavIcon extends StatelessWidget {
   const AlignedNavIcon({
@@ -30,7 +30,7 @@ class AlignedNavIcon extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           icon: Icon(
             iconData,
-            color: styleConfig().secondaryTextColor,
+            color: secondaryTextColor,
             size: 32,
           ),
           onPressed: onPressed,

@@ -13,6 +13,7 @@ import 'package:lotti/pages/settings/dashboards/chart_multi_select.dart';
 import 'package:lotti/pages/settings/dashboards/dashboard_item_card.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
@@ -377,7 +378,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   name: 'active',
                                   initialValue: widget.dashboard.active,
                                   title: localizations.dashboardActiveLabel,
-                                  activeColor: styleConfig().starredGold,
+                                  activeColor: starredGold,
                                 ),
                                 SelectDashboardCategoryWidget(
                                   setCategory: setCategory,
@@ -493,7 +494,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           //   onPressed: () {
                           //     showCupertinoModalBottomSheet<void>(
                           //       context: context,
-                          //       backgroundColor: styleConfig().cardColor,
+                          //       backgroundColor:  cardColor,
                           //       shape: const RoundedRectangleBorder(
                           //         borderRadius: BorderRadius.vertical(
                           //           top: Radius.circular(16),
@@ -513,7 +514,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           //               child: TextField(
                           //                 controller: controller,
                           //                 style: TextStyle(
-                          //                   color: styleConfig().primaryTextColor,
+                          //                   color:  primaryTextColor,
                           //                 ),
                           //               ),
                           //             ),
@@ -545,7 +546,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       icon: const Icon(Icons.copy),
                                       iconSize: settingsIconSize,
                                       tooltip: localizations.dashboardCopyHint,
-                                      color: styleConfig().cardColor,
                                       onPressed: copyDashboard,
                                     ),
                                     IconButton(
@@ -555,7 +555,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       iconSize: settingsIconSize,
                                       tooltip:
                                           localizations.dashboardDeleteHint,
-                                      color: styleConfig().secondaryTextColor,
+                                      color: secondaryTextColor,
                                       onPressed: () async {
                                         const deleteKey = 'deleteKey';
                                         final result =
