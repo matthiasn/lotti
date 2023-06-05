@@ -140,7 +140,7 @@ class WorkoutChartInfoWidget extends StatelessWidget {
 
         return Positioned(
           top: 0,
-          left: 10,
+          left: 20,
           child: SizedBox(
             width: max(MediaQuery.of(context).size.width, 320) - 20,
             child: IgnorePointer(
