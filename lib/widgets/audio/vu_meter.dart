@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
-import 'package:lotti/themes/colors.dart';
 
 class CustomRect extends CustomClipper<Rect> {
   CustomRect(this.heightFactor);
@@ -45,7 +44,7 @@ class VuMeterButtonWidget extends StatelessWidget {
               Icon(
                 Icons.mic,
                 size: iconSize,
-                color: secondaryTextColor.withOpacity(0.5),
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
                 semanticLabel: 'Microphone',
               ),
               if (!hot)

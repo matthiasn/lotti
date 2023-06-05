@@ -5,7 +5,6 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -70,7 +69,8 @@ class LogLineCard extends StatelessWidget {
     final domain = logEntry.domain;
     final subDomain = logEntry.subDomain;
     final message = logEntry.message;
-    final color = logEntry.level == 'ERROR' ? alarm : null;
+    final color =
+        logEntry.level == 'ERROR' ? Theme.of(context).colorScheme.error : null;
 
     return GestureDetector(
       onTap: () => beamToNamed('/settings/advanced/logging/${logEntry.id}'),

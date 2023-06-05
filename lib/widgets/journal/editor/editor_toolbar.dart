@@ -27,7 +27,7 @@ class ToolbarWidget extends StatelessWidget {
     final iconTheme = QuillIconTheme(
       iconSelectedColor: cardColor,
       iconSelectedFillColor: Theme.of(context).primaryColor,
-      iconUnselectedColor: secondaryTextColor,
+      iconUnselectedColor: Theme.of(context).colorScheme.outline,
     );
 
     return BlocBuilder<EntryCubit, EntryState>(
@@ -132,7 +132,7 @@ class ToolbarWidget extends StatelessWidget {
               IconButton(
                 icon: Icon(
                   Icons.add_link,
-                  color: secondaryTextColor,
+                  color: Theme.of(context).colorScheme.outline,
                 ),
                 iconSize: toolbarIconSize,
                 tooltip: localizations.journalLinkFromHint,
@@ -141,7 +141,7 @@ class ToolbarWidget extends StatelessWidget {
               IconButton(
                 icon: Icon(
                   MdiIcons.target,
-                  color: secondaryTextColor,
+                  color: Theme.of(context).colorScheme.outline,
                 ),
                 iconSize: toolbarIconSize,
                 tooltip: localizations.journalLinkToHint,
@@ -151,7 +151,7 @@ class ToolbarWidget extends StatelessWidget {
                 IconButton(
                   icon: Icon(
                     MdiIcons.closeCircleOutline,
-                    color: secondaryTextColor,
+                    color: Theme.of(context).colorScheme.outline,
                   ),
                   iconSize: toolbarIconSize,
                   tooltip: localizations.journalUnlinkHint,

@@ -7,7 +7,6 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/journal/tags/tags_list_widget.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
@@ -107,7 +106,9 @@ class _TagsModalState extends State<TagsModal> {
                     onSubmitted: onSubmitted,
                     onChanged: onChanged,
                     autofocus: true,
-                    style: chartTitleStyle,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.titleLarge?.color,
+                    ),
                     cursorColor: Theme.of(context).primaryColor,
                   ),
                 ),

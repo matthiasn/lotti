@@ -6,7 +6,6 @@ import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
@@ -101,7 +100,7 @@ class SelectCategoryWidget extends StatelessWidget {
                 icon: ColorIcon(
                   category != null
                       ? colorFromCssHex(category.color)
-                      : secondaryTextColor.withOpacity(0.2),
+                      : Theme.of(context).colorScheme.outline.withOpacity(0.2),
                 ),
                 suffixIcon: categoryUndefined
                     ? null
