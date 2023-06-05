@@ -273,7 +273,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                         localizations
                                             .completeHabitSuccessButton,
                                         style: saveButtonStyle().copyWith(
-                                          color: styleConfig()
+                                          color: Theme.of(context)
                                               .primaryColor
                                               .darken(25),
                                         ),

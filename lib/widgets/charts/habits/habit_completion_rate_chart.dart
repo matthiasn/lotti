@@ -65,7 +65,7 @@ class HabitCompletionRateChart extends StatelessWidget
         }
 
         final skipColor =
-            styleConfig().primaryColorLight.mix(alarm.complement());
+            Theme.of(context).primaryColorLight.mix(alarm.complement());
 
         return Column(
           children: [

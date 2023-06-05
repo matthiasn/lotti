@@ -197,10 +197,7 @@ const settingsIconSize = 24.0;
 
 StyleConfig styleConfig() => getIt<ThemesService>().current;
 
-const habitCompletionHeaderStyle = TextStyle(
-  color: Colors.black,
-  fontSize: 20,
-);
+const habitCompletionHeaderStyle = TextStyle(fontSize: 20);
 
 TextStyle searchLabelStyle() => TextStyle(
       color: styleConfig().secondaryTextColor,
