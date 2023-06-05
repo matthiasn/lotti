@@ -22,45 +22,32 @@ class ChartMultiSelect<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fontColor = Theme.of(context).textTheme.titleLarge?.color;
+    final itemTextStyle = multiSelectStyle.copyWith(
+      color: fontColor,
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: MultiSelectBottomSheetField<T?>(
         searchable: true,
-        backgroundColor: styleConfig().cardColor,
         items: multiSelectItems,
         initialValue: const [],
         initialChildSize: 0.4,
         maxChildSize: 0.9,
         title: Text(title, style: titleStyle),
-        checkColor: styleConfig().primaryTextColor,
-        selectedColor: styleConfig().primaryColor,
         decoration: BoxDecoration(
-          color: styleConfig().secondaryTextColor.withOpacity(0.1),
           borderRadius: const BorderRadius.all(Radius.circular(10)),
           border: Border.all(color: styleConfig().secondaryTextColor),
         ),
-        itemsTextStyle: multiSelectStyle,
-        selectedItemsTextStyle: multiSelectStyle.copyWith(
+        itemsTextStyle: itemTextStyle,
+        selectedItemsTextStyle: itemTextStyle.copyWith(
           fontWeight: FontWeight.normal,
         ),
-        unselectedColor: styleConfig().primaryTextColor,
-        searchIcon: Icon(
-          Icons.search,
-          size: fontSizeLarge,
-          color: styleConfig().primaryTextColor,
-        ),
-        buttonIcon: Icon(
-          iconData,
-          color: styleConfig().primaryTextColor,
-        ),
-        buttonText: Text(
-          buttonText,
-          semanticsLabel: semanticsLabel,
-          style: TextStyle(
-            color: styleConfig().primaryTextColor,
-            fontSize: fontSizeMedium,
-          ),
-        ),
+        unselectedColor: fontColor,
+        searchIcon: const Icon(Icons.search),
+        buttonIcon: Icon(iconData),
+        buttonText: Text(buttonText, semanticsLabel: semanticsLabel),
         onConfirm: onConfirm,
       ),
     );
