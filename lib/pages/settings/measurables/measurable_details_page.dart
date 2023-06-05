@@ -141,18 +141,17 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           decoration: inputDecoration(
                             labelText: localizations
                                 .settingsMeasurableAggregationLabel,
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Icon(
-                                Icons.close,
-                                color: styleConfig().primaryTextColor,
-                              ),
+                            suffixIcon: const Padding(
+                              padding: EdgeInsets.only(right: 8),
+                              child: Icon(Icons.close),
                             ),
                             themeData: Theme.of(context),
                           ),
-                          iconEnabledColor: styleConfig().primaryTextColor,
-                          style: const TextStyle(fontSize: 40),
-                          dropdownColor: styleConfig().cardColor,
+                          style: TextStyle(
+                            fontSize: 40,
+                            color:
+                                Theme.of(context).textTheme.titleLarge?.color,
+                          ),
                           items: AggregationType.values.map((aggregationType) {
                             return DropdownMenuItem(
                               value: aggregationType,
@@ -162,10 +161,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                   EnumToString.convertToString(
                                     aggregationType,
                                   ),
-                                  style: TextStyle(
-                                    fontSize: fontSizeMedium,
-                                    color: styleConfig().primaryTextColor,
-                                  ),
+                                  style:
+                                      const TextStyle(fontSize: fontSizeMedium),
                                 ),
                               ),
                             );
@@ -184,7 +181,6 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           iconSize: settingsIconSize,
                           tooltip:
                               localizations.settingsMeasurableDeleteTooltip,
-                          color: styleConfig().secondaryTextColor,
                           onPressed: () async {
                             const deleteKey = 'deleteKey';
                             final result = await showModalActionSheet<String>(
