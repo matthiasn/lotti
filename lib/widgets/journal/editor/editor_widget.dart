@@ -109,7 +109,8 @@ class EditorWidget extends StatelessWidget {
                         textColor:
                             Theme.of(context).textTheme.bodyLarge?.color ??
                                 Colors.grey,
-                        codeBlockBackground: styleConfig().primaryColorLight,
+                        codeBlockBackground:
+                            Theme.of(context).primaryColorLight,
                       ),
                     ),
                   ),

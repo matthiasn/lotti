@@ -4,7 +4,6 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
-final Color white = colorFromCssHex('#FFFFFF');
 final Color iron = colorFromCssHex('#909090');
 final Color primaryColor = colorFromCssHex('#82E6CE');
 
@@ -22,10 +21,8 @@ final darkTheme = StyleConfig(
   selectedChoiceChipTextColor: const Color.fromRGBO(33, 33, 33, 1),
   unselectedChoiceChipColor: colorFromCssHex('#BBBBBB'),
   unselectedChoiceChipTextColor: const Color.fromRGBO(255, 245, 240, 1),
-  primaryTextColor: white,
   secondaryTextColor: primaryColor.desaturate(70).darken(20),
   primaryColor: primaryColor,
-  primaryColorLight: primaryColorLight,
   hover: iron,
   cardColor: primaryColor.desaturate(60).darken(60),
   chartTextColor: nickel,

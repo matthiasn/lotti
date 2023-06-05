@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart';
 
 class SettingsIcon extends StatelessWidget {
   const SettingsIcon(
@@ -15,7 +14,6 @@ class SettingsIcon extends StatelessWidget {
     return Icon(
       iconData,
       size: 40,
-      color: styleConfig().primaryTextColor,
     );
   }
 }
