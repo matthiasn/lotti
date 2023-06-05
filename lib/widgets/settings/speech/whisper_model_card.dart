@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_cubit.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -22,9 +23,7 @@ class WhisperModelCard extends StatelessWidget {
         final progress = snapshot.downloadProgress[model] ?? 0.0;
         final downloaded = progress == 1.0;
 
-        final textColor = downloaded
-            ? styleConfig().primaryTextColor
-            : styleConfig().secondaryTextColor;
+        final textColor = downloaded ? null : secondaryTextColor;
 
         return Card(
           margin: const EdgeInsets.all(5),
@@ -39,7 +38,7 @@ class WhisperModelCard extends StatelessWidget {
                   ignoring: !downloaded,
                   child: IconButton(
                     color: model == snapshot.selectedModel
-                        ? styleConfig().primaryColor
+                        ? Theme.of(context).primaryColor
                         : textColor,
                     onPressed: () => cubit.selectModel(model),
                     icon: model == snapshot.selectedModel
@@ -89,9 +88,8 @@ class WhisperModelCard extends StatelessWidget {
                       width: 80,
                       child: LinearProgressIndicator(
                         value: progress,
-                        color: styleConfig().primaryColor,
-                        backgroundColor:
-                            styleConfig().secondaryTextColor.withOpacity(0.5),
+                        color: Theme.of(context).primaryColor,
+                        backgroundColor: secondaryTextColor.withOpacity(0.5),
                         minHeight: 15,
                       ),
                     ),

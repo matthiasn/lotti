@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
 
@@ -33,7 +32,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       FloatingActionButton(
         heroTag: 'tag',
         key: const Key('add_tag_action'),
-        backgroundColor: styleConfig().primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         onPressed: () => createTag('TAG'),
         child: const Icon(
           MdiIcons.tagPlusOutline,
@@ -42,7 +41,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       ),
       FloatingActionButton(
         heroTag: 'person',
-        backgroundColor: styleConfig().primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         onPressed: () => createTag('PERSON'),
         child: const Icon(
           MdiIcons.tagFaces,
@@ -51,7 +50,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       ),
       FloatingActionButton(
         heroTag: 'story',
-        backgroundColor: styleConfig().primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         onPressed: () => createTag('STORY'),
         child: const Icon(
           MdiIcons.book,
@@ -64,7 +63,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       radius: widget.radius,
       useOpacity: true,
       items: items,
-      color: styleConfig().primaryColor,
+      color: Theme.of(context).primaryColor,
       icon: Icons.add,
       duration: const Duration(milliseconds: 500),
       curveAnim: Curves.ease,

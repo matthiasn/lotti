@@ -5,8 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/themes/themes.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class HabitResult extends Equatable {
@@ -31,7 +30,7 @@ Color habitCompletionColor(HabitCompletionType completionType) {
   return completionType == HabitCompletionType.fail
       ? alarm
       : completionType == HabitCompletionType.skip
-          ? styleConfig().secondaryTextColor.withOpacity(0.4)
+          ? secondaryTextColor.withOpacity(0.4)
           : completionType == HabitCompletionType.success
               ? primaryColor
               : alarm.withOpacity(0.6);

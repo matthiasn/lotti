@@ -3,9 +3,8 @@ import 'dart:ui';
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/themes.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/themes_service.dart';
 
 const fontSizeSmall = 11.0;
@@ -25,7 +24,7 @@ const mainFont = 'PlusJakartaSans';
 
 final inputBorder = OutlineInputBorder(
   borderRadius: BorderRadius.circular(inputBorderRadius),
-  borderSide: BorderSide(color: styleConfig().secondaryTextColor),
+  borderSide: BorderSide(color: secondaryTextColor),
 );
 
 final errorBorder = OutlineInputBorder(
@@ -85,9 +84,7 @@ const inputSpacerSmall = SizedBox(height: 15);
 TextStyle choiceChipTextStyle({required bool isSelected}) => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w300,
-      color: isSelected
-          ? styleConfig().selectedChoiceChipTextColor
-          : styleConfig().unselectedChoiceChipTextColor,
+      color: isSelected ? null : unselectedChoiceChipTextColor,
     );
 
 const chartTooltipStyle = TextStyle(
@@ -140,7 +137,7 @@ const searchFieldStyle = TextStyle(
 );
 
 final searchFieldHintStyle = searchFieldStyle.copyWith(
-  color: styleConfig().secondaryTextColor,
+  color: secondaryTextColor,
 );
 
 const settingsCardTextStyle = TextStyle(
@@ -195,15 +192,10 @@ const badgeStyle = TextStyle(
 
 const settingsIconSize = 24.0;
 
-StyleConfig styleConfig() => getIt<ThemesService>().current;
-
-const habitCompletionHeaderStyle = TextStyle(
-  color: Colors.black,
-  fontSize: 20,
-);
+const habitCompletionHeaderStyle = TextStyle(fontSize: 20);
 
 TextStyle searchLabelStyle() => TextStyle(
-      color: styleConfig().secondaryTextColor,
+      color: secondaryTextColor,
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w100,
     );

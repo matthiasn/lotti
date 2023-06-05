@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/duration_widget.dart';
@@ -63,11 +64,11 @@ class JournalCardTitle extends StatelessWidget {
                   ),
                   Visibility(
                     visible: fromNullableBool(item.meta.starred),
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
+                    child: const Padding(
+                      padding: EdgeInsets.only(left: 4),
                       child: Icon(
                         MdiIcons.star,
-                        color: styleConfig().starredGold,
+                        color: starredGold,
                         size: iconSize,
                       ),
                     ),
@@ -104,7 +105,7 @@ class JournalCardTitle extends StatelessWidget {
                   const SizedBox(height: 10),
                   FormattedTime(
                     displayed: journalAudio,
-                    labelColor: styleConfig().secondaryTextColor,
+                    labelColor: secondaryTextColor,
                   ),
                 ],
               ),
@@ -201,7 +202,7 @@ class JournalCard extends StatelessWidget {
                   return LeadingIcon(
                     Icons.mic,
                     color: transcripts != null && transcripts.isNotEmpty
-                        ? styleConfig().secondaryTextColor
+                        ? secondaryTextColor
                         : errorColor.withOpacity(0.4),
                   );
                 },
@@ -247,7 +248,7 @@ class LeadingIcon extends StatelessWidget {
     return Icon(
       iconData,
       size: 32,
-      color: color ?? styleConfig().secondaryTextColor,
+      color: color ?? secondaryTextColor,
     );
   }
 }

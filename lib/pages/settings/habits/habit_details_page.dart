@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
@@ -96,7 +97,7 @@ class HabitDetailsPage extends StatelessWidget {
                               semanticsLabel: 'Habit priority',
                               initialValue: state.habitDefinition.priority,
                               title: localizations.habitPriorityLabel,
-                              activeColor: styleConfig().starredGold,
+                              activeColor: starredGold,
                             ),
                             FormSwitch(
                               name: 'private',
@@ -109,7 +110,7 @@ class HabitDetailsPage extends StatelessWidget {
                               key: const Key('habit_archived'),
                               initialValue: !state.habitDefinition.active,
                               title: localizations.habitArchivedLabel,
-                              activeColor: styleConfig().secondaryTextColor,
+                              activeColor: secondaryTextColor,
                             ),
                             inputSpacer,
                             DateTimeField(
@@ -139,7 +140,7 @@ class HabitDetailsPage extends StatelessWidget {
                               iconSize: settingsIconSize,
                               tooltip: AppLocalizations.of(context)!
                                   .settingsHabitsDeleteTooltip,
-                              color: styleConfig().secondaryTextColor,
+                              color: secondaryTextColor,
                               onPressed: () async {
                                 const deleteKey = 'deleteKey';
                                 final result =

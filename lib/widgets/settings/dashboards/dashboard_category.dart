@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
@@ -93,7 +94,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
             icon: ColorIcon(
               category != null
                   ? colorFromCssHex(category.color)
-                  : styleConfig().secondaryTextColor.withOpacity(0.2),
+                  : secondaryTextColor.withOpacity(0.2),
             ),
             suffixIcon: categoryUndefined
                 ? null

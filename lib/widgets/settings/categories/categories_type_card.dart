@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -82,7 +83,7 @@ class CategoryColorIcon extends StatelessWidget {
     return ColorIcon(
       category != null
           ? colorFromCssHex(category.color)
-          : styleConfig().secondaryTextColor.withOpacity(0.2),
+          : secondaryTextColor.withOpacity(0.2),
       size: size,
     );
   }

@@ -12,7 +12,7 @@ import 'package:lotti/pages/settings/sync/sync_assistant_slide_intro_2.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_intro_3.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_qr_code.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_slide_success.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class SyncAssistantPage extends StatefulWidget {
@@ -51,13 +51,9 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
             ),
 
             /// Separator.
-            Align(
-              alignment: const Alignment(0, 0.85),
-              child: Container(
-                width: double.infinity,
-                height: 0.5,
-                color: styleConfig().primaryTextColor,
-              ),
+            const Align(
+              alignment: Alignment(0, 0.85),
+              child: SizedBox(width: double.infinity, height: 0.5),
             ),
             SyncNavPrevious(
               pageCtrl: _pageCtrl,
@@ -135,8 +131,8 @@ class _SlidingTutorial extends State<SlidingTutorial> {
       pageController: _pageController,
       pageCount: widget.pageCount,
       colors: [
-        styleConfig().cardColor.withOpacity(0.7),
-        styleConfig().cardColor,
+        cardColor.withOpacity(0.7),
+        cardColor,
       ],
       child: Stack(
         children: [
