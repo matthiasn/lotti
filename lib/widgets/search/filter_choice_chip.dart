@@ -34,9 +34,7 @@ class FilterChoiceChip extends StatelessWidget {
               style: choiceChipTextStyle(isSelected: isSelected),
             ),
             visualDensity: VisualDensity.compact,
-            backgroundColor: isSelected
-                ? styleConfig().selectedChoiceChipColor
-                : styleConfig().unselectedChoiceChipColor.withOpacity(0.7),
+            backgroundColor: isSelected ? Theme.of(context).primaryColor : null,
           ),
         ),
       ),

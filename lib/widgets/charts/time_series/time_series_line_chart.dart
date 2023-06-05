@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/themes/themes.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -40,7 +40,7 @@ Widget leftTitleWidgets(double value, TitleMeta meta) {
 }
 
 final gridLine = FlLine(
-  color: styleConfig().chartTextColor.withOpacity(gridOpacity),
+  color: chartTextColor.withOpacity(gridOpacity),
   strokeWidth: 1,
 );
 
@@ -120,7 +120,7 @@ class TimeSeriesLineChart extends StatelessWidget {
                 horizontal: 8,
                 vertical: 3,
               ),
-              tooltipBgColor: styleConfig().primaryColor.desaturate(),
+              tooltipBgColor: Theme.of(context).primaryColor.desaturate(),
               tooltipRoundedRadius: 8,
               getTooltipItems: (List<LineBarSpot> spots) {
                 return spots.map((spot) {

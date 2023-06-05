@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
@@ -53,7 +54,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
 
     final color = widget.hexColor != null
         ? colorFromCssHex(widget.hexColor)
-        : styleConfig().secondaryTextColor;
+        : secondaryTextColor;
 
     Future<void> onTap() async {
       await showModalBottomSheet<void>(
@@ -99,13 +100,13 @@ class _SelectColorFieldState extends State<SelectColorField> {
         icon: ColorIcon(color),
         hintText: localizations.colorPickerHint,
         hintStyle: style.copyWith(
-          color: styleConfig().secondaryTextColor.withOpacity(0.5),
+          color: secondaryTextColor.withOpacity(0.5),
         ),
         suffixIcon: IconButton(
           onPressed: onTap,
           icon: Icon(
             Icons.color_lens_outlined,
-            color: styleConfig().secondaryTextColor,
+            color: secondaryTextColor,
             semanticLabel: 'Pick color',
           ),
         ),

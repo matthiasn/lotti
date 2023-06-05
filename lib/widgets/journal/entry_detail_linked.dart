@@ -3,7 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/journal/entry_details_widget.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
@@ -34,7 +34,7 @@ class LinkedEntriesWidget extends StatelessWidget {
               Text(
                 localizations.journalLinkedEntriesLabel,
                 style: TextStyle(
-                  color: styleConfig().secondaryTextColor,
+                  color: secondaryTextColor,
                 ),
               ),
               ...List.generate(

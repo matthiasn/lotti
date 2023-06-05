@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -28,10 +29,10 @@ class TagWidget extends StatelessWidget {
       backgroundColor: getTagColor(tagEntity),
       visualDensity: VisualDensity.compact,
       onDeleted: onTapRemove,
-      deleteIcon: Icon(
+      deleteIcon: const Icon(
         MdiIcons.close,
         size: fontSizeMedium,
-        color: styleConfig().tagTextColor,
+        color: tagTextColor,
       ),
       deleteButtonTooltipMessage: localizations.journalTagsRemoveHint,
     );

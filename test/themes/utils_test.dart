@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -44,7 +45,7 @@ void main() {
 
       expect(
         getTagColor(testTag),
-        getIt<ThemesService>().current.tagColor,
+        tagColor,
       );
     });
 
@@ -60,7 +61,7 @@ void main() {
 
       expect(
         getTagColor(testTag),
-        getIt<ThemesService>().current.personTagColor,
+        personTagColor,
       );
     });
 
@@ -76,7 +77,7 @@ void main() {
 
       expect(
         getTagColor(testTag),
-        getIt<ThemesService>().current.storyTagColor,
+        storyTagColor,
       );
     });
   });

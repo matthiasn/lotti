@@ -3,7 +3,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/measurable_utils.dart';
 
 class MeasurementSuggestions extends StatelessWidget {
@@ -55,7 +54,7 @@ class MeasurementSuggestions extends StatelessWidget {
             return ActionChip(
               onPressed: onPressed,
               label: Text(label),
-              disabledColor: styleConfig().primaryColor,
+              disabledColor: Theme.of(context).primaryColor,
             );
           }).toList(),
         );
