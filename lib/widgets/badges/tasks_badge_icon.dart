@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/themes/themes.dart';
 
 class TasksBadge extends StatelessWidget {
   TasksBadge({super.key, this.child});

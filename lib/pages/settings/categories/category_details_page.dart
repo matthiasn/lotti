@@ -9,6 +9,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/categories/select_color_field.dart';
@@ -113,7 +114,7 @@ class CategoryDetailsPage extends StatelessWidget {
                                   key: const Key('category_active'),
                                   initialValue: state.categoryDefinition.active,
                                   title: localizations.dashboardActiveLabel,
-                                  activeColor: styleConfig().starredGold,
+                                  activeColor: starredGold,
                                 ),
                                 inputSpacer,
                                 SelectColorField(
@@ -133,7 +134,7 @@ class CategoryDetailsPage extends StatelessWidget {
                                 iconSize: settingsIconSize,
                                 tooltip: AppLocalizations.of(context)!
                                     .settingsHabitsDeleteTooltip,
-                                color: styleConfig().secondaryTextColor,
+                                color: secondaryTextColor,
                                 onPressed: () async {
                                   const deleteKey = 'deleteKey';
                                   final result =

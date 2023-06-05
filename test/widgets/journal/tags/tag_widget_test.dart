@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/tags/tag_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -44,7 +44,7 @@ void main() {
       // tag has expected color
       expect(
         (tester.firstWidget(find.byType(Chip)) as Chip).backgroundColor,
-        styleConfig().tagColor,
+        tagColor,
       );
 
       // onTapRemove is called
@@ -75,7 +75,7 @@ void main() {
       // tag has expected color
       expect(
         (tester.firstWidget(find.byType(Chip)) as Chip).backgroundColor,
-        styleConfig().storyTagColor,
+        storyTagColor,
       );
 
       // onTapRemove is called
@@ -106,7 +106,7 @@ void main() {
       // tag has expected color
       expect(
         (tester.firstWidget(find.byType(Chip)) as Chip).backgroundColor,
-        styleConfig().personTagColor,
+        personTagColor,
       );
 
       // onTapRemove is called

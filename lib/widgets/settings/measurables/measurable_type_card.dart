@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
@@ -33,11 +34,11 @@ class MeasurableTypeCard extends StatelessWidget {
           ),
           Visibility(
             visible: fromNullableBool(item.favorite),
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4),
+            child: const Padding(
+              padding: EdgeInsets.only(left: 4),
               child: Icon(
                 MdiIcons.star,
-                color: styleConfig().starredGold,
+                color: starredGold,
                 size: settingsIconSize,
               ),
             ),

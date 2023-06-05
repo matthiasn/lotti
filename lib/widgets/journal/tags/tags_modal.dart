@@ -108,7 +108,7 @@ class _TagsModalState extends State<TagsModal> {
                     onChanged: onChanged,
                     autofocus: true,
                     style: chartTitleStyle,
-                    cursorColor: styleConfig().primaryColor,
+                    cursorColor: Theme.of(context).primaryColor,
                   ),
                 ),
                 IconButton(

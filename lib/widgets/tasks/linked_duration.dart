@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -54,7 +55,7 @@ class LinkedDuration extends StatelessWidget {
                 final durationStyle = monospaceTextStyleSmall.copyWith(
                   color: (progress > estimate)
                       ? Theme.of(context).colorScheme.error
-                      : styleConfig().secondaryTextColor,
+                      : secondaryTextColor,
                 );
 
                 return Padding(
@@ -70,8 +71,7 @@ class LinkedDuration extends StatelessWidget {
                           color: (progress > estimate)
                               ? Theme.of(context).colorScheme.error
                               : Theme.of(context).colorScheme.primary,
-                          backgroundColor:
-                              styleConfig().secondaryTextColor.withOpacity(0.5),
+                          backgroundColor: secondaryTextColor.withOpacity(0.5),
                         ),
                       ),
                       const SizedBox(height: 5),

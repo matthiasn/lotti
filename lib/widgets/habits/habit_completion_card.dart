@@ -7,8 +7,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/themes/themes.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
@@ -96,11 +96,11 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                     children: [
                       Visibility(
                         visible: widget.habitDefinition.priority ?? false,
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 5),
+                        child: const Padding(
+                          padding: EdgeInsets.only(right: 5),
                           child: Icon(
                             Icons.star,
-                            color: styleConfig().starredGold,
+                            color: starredGold,
                           ),
                         ),
                       ),

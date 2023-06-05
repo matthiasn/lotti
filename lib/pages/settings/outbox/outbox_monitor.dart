@@ -125,7 +125,7 @@ class OutboxItemCard extends StatelessWidget {
         case OutboxStatus.error:
           return Theme.of(context).colorScheme.error;
         case OutboxStatus.sent:
-          return styleConfig().primaryColor;
+          return Theme.of(context).primaryColor;
       }
     }
 
@@ -141,16 +141,12 @@ class OutboxItemCard extends StatelessWidget {
           contentPadding: const EdgeInsets.only(left: 24, right: 24),
           title: Text(
             '${df.format(item.createdAt)} - $status',
-            style: TextStyle(
-              color: styleConfig().primaryTextColor,
-              fontSize: fontSizeMedium,
-            ),
+            style: const TextStyle(fontSize: fontSizeMedium),
           ),
           subtitle: Text(
             '${item.retries} $retriesText \n'
             '${item.filePath ?? localizations.outboxMonitorNoAttachment}',
-            style: TextStyle(
-              color: styleConfig().primaryTextColor,
+            style: const TextStyle(
               fontWeight: FontWeight.w200,
               fontSize: fontSizeSmall,
             ),
@@ -195,7 +191,6 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
     final localizations = AppLocalizations.of(context)!;
 
     return AppBar(
-      backgroundColor: styleConfig().cardColor,
       title: Column(
         children: [
           Row(
@@ -221,9 +216,6 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
           ),
           CupertinoSegmentedControl(
-            selectedColor: styleConfig().primaryTextColor,
-            unselectedColor: styleConfig().cardColor,
-            borderColor: styleConfig().primaryTextColor,
             groupValue: selectedValue,
             onValueChanged: onValueChanged,
             children: {

@@ -54,9 +54,8 @@ class _ConflictsPageState extends State<ConflictsPage> {
             title: localizations.settingsConflictsTitle,
             actions: [
               CupertinoSegmentedControl(
-                selectedColor: styleConfig().primaryColor,
-                unselectedColor: styleConfig().cardColor,
-                borderColor: styleConfig().primaryColor,
+                selectedColor: Theme.of(context).primaryColor,
+                borderColor: Theme.of(context).primaryColor,
                 groupValue: _selectedValue,
                 onValueChanged: (String value) {
                   setState(() {

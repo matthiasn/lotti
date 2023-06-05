@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_fadein/flutter_fadein.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 
 class Button extends StatelessWidget {
@@ -60,7 +59,6 @@ class RoundedButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: styleConfig().cardColor,
         side: const BorderSide(),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(100),
