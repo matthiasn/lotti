@@ -1,6 +1,7 @@
 const privateFlag = 'private';
 const enableNotificationsFlag = 'enable_notifications';
 const showBrightSchemeFlag = 'show_bright_scheme';
+const followSystemBrightnessFlag = 'follow_system_brightness';
 const allowInvalidCertFlag = 'allow_invalid_cert';
 const enableSyncFlag = 'enable_sync';
 const enableTaskManagement = 'enable_task_management';
