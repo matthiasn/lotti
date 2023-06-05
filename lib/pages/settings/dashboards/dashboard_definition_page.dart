@@ -555,7 +555,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       iconSize: settingsIconSize,
                                       tooltip:
                                           localizations.dashboardDeleteHint,
-                                      color: secondaryTextColor,
+                                      color:
+                                          Theme.of(context).colorScheme.outline,
                                       onPressed: () async {
                                         const deleteKey = 'deleteKey';
                                         final result =

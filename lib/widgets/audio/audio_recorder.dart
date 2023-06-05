@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/audio/vu_meter.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -46,7 +45,7 @@ class AudioRecorderWidget extends StatelessWidget {
                 child: Text(
                   formatDuration(state.progress.toString()),
                   style: monospaceTextStyleLarge.copyWith(
-                    color: secondaryTextColor,
+                    color: Theme.of(context).colorScheme.outline,
                   ),
                 ),
               ),

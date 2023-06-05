@@ -7,7 +7,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -216,7 +215,7 @@ class _TagEditPageState extends State<TagEditPage> {
                         icon: const Icon(MdiIcons.trashCanOutline),
                         iconSize: 24,
                         tooltip: localizations.settingsTagsDeleteTooltip,
-                        color: secondaryTextColor,
+                        color: Theme.of(context).colorScheme.outline,
                         onPressed: () {
                           persistenceLogic.upsertTagEntity(
                             widget.tagEntity.copyWith(

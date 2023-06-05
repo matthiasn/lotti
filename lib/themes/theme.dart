@@ -22,40 +22,41 @@ class AppTheme {
 const double inputBorderRadius = 10;
 const mainFont = 'PlusJakartaSans';
 
-final inputBorder = OutlineInputBorder(
-  borderRadius: BorderRadius.circular(inputBorderRadius),
-  borderSide: BorderSide(color: secondaryTextColor),
-);
-
-final errorBorder = OutlineInputBorder(
-  borderRadius: BorderRadius.circular(inputBorderRadius),
-  borderSide: BorderSide(color: alarm),
-);
-
 InputDecoration inputDecoration({
   required ThemeData themeData,
   String? labelText,
   String? semanticsLabel,
   Widget? suffixIcon,
-}) =>
-    InputDecoration(
-      border: inputBorder,
-      errorBorder: errorBorder,
-      enabledBorder: inputBorder,
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(inputBorderRadius),
-        borderSide: BorderSide(
-          color: themeData.primaryColor,
-          width: 2,
-        ),
+}) {
+  final inputBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(inputBorderRadius),
+    borderSide: BorderSide(color: themeData.colorScheme.outline),
+  );
+
+  final errorBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(inputBorderRadius),
+    borderSide: BorderSide(color: themeData.colorScheme.error),
+  );
+
+  return InputDecoration(
+    border: inputBorder,
+    errorBorder: errorBorder,
+    enabledBorder: inputBorder,
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(inputBorderRadius),
+      borderSide: BorderSide(
+        color: themeData.primaryColor,
+        width: 2,
       ),
-      floatingLabelBehavior: FloatingLabelBehavior.always,
-      suffixIcon: suffixIcon,
-      label: Text(
-        labelText ?? '',
-        semanticsLabel: semanticsLabel,
-      ),
-    );
+    ),
+    floatingLabelBehavior: FloatingLabelBehavior.always,
+    suffixIcon: suffixIcon,
+    label: Text(
+      labelText ?? '',
+      semanticsLabel: semanticsLabel,
+    ),
+  );
+}
 
 InputDecoration createDialogInputDecoration({
   required ThemeData themeData,
