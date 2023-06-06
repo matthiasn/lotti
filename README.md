@@ -8,6 +8,9 @@ Lotti helps you track habits, behavior, any data about yourself, in complete pri
 
 Read more on [**Substack**](https://matthiasnehlsen.substack.com).
 
+**New in 06/2023:** Lotti can now transcribe audio recordings in 99 languages using
+[`whisper.cpp`](https://github.com/ggerganov/whisper.cpp).
+
 ## How to use Lotti
 Check out the [MANUAL](https://github.com/matthiasn/lotti/blob/main/docs/MANUAL.md). The images in
 there are updated automatically in CI using [`Fluttium`](https://fluttium.dev).
