@@ -86,9 +86,10 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
           opacity: completedToday ? 0.75 : 1,
           child: Card(
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 5,
-                horizontal: 10,
+              contentPadding: const EdgeInsets.only(
+                bottom: 5,
+                left: 10,
+                right: 10,
               ),
               title: Column(
                 children: [
