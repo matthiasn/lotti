@@ -108,13 +108,15 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                         child: Text(
                           widget.habitDefinition.name,
                           style: completedToday
-                              ? chartTitleStyle.copyWith(
+                              ? habitTitleStyle.copyWith(
                                   decoration: TextDecoration.lineThrough,
-                                  decorationColor:
-                                      Theme.of(context).primaryColor,
-                                  decorationThickness: 3,
+                                  decorationColor: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.color,
+                                  decorationThickness: 2,
                                 )
-                              : chartTitleStyle,
+                              : habitTitleStyle,
                           overflow: TextOverflow.fade,
                           softWrap: false,
                         ),
