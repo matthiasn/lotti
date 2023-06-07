@@ -165,6 +165,10 @@ const chartTitleStyle = TextStyle(
   fontWeight: FontWeight.w300,
 );
 
+const habitTitleStyle = TextStyle(
+  fontSize: fontSizeLarge,
+);
+
 const chartTitleStyleSmall = TextStyle(
   fontSize: fontSizeSmall,
   fontWeight: FontWeight.w300,
