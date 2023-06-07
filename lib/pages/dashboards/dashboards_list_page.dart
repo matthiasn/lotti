@@ -19,10 +19,7 @@ class DashboardsListPage extends StatelessWidget {
         body: SafeArea(
           child: CustomScrollView(
             slivers: <Widget>[
-              SliverTitleBar(
-                localizations.navTabTitleInsights,
-                pinned: true,
-              ),
+              SliverTitleBar(localizations.navTabTitleInsights),
               const DashboardsSliverAppBar(),
               const DashboardsList(),
             ],
