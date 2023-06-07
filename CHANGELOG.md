@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgraded dependencies
+
+## [0.8.369] - 2023-06-06
+### Changed:
 - Improve habit completion chart colors
 
 ## [0.8.368] - 2023-06-06
