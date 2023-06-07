@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/habits/habits_cubit.dart';
@@ -19,58 +21,62 @@ class HabitsSliverAppBar extends StatelessWidget {
       builder: (context, HabitsState state) {
         final cubit = context.read<HabitsCubit>();
 
-        return SliverAppBar(
-          expandedHeight: 250,
-          primary: false,
-          title: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                HabitStatusSegmentedControl(
-                  filter: state.displayFilter,
-                  onValueChanged: cubit.setDisplayFilter,
-                ),
-                const SizedBox(width: 10),
-                const HabitsFilter(),
-                IconButton(
-                  onPressed: cubit.toggleShowSearch,
-                  icon: Icon(
-                    Icons.search,
-                    color: state.showSearch
-                        ? Theme.of(context).primaryColor
-                        : Theme.of(context).colorScheme.outline,
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: SliverAppBar(
+            expandedHeight: 250,
+            primary: false,
+            title: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HabitStatusSegmentedControl(
+                    filter: state.displayFilter,
+                    onValueChanged: cubit.setDisplayFilter,
                   ),
-                ),
-                IconButton(
-                  onPressed: cubit.toggleShowTimeSpan,
-                  icon: Icon(
-                    Icons.calendar_month,
-                    color: state.showTimeSpan
-                        ? Theme.of(context).primaryColor
-                        : Theme.of(context).colorScheme.outline,
-                  ),
-                ),
-                SettingsButton('/settings/habits/search/${state.searchString}'),
-                if (state.minY > 20)
+                  const SizedBox(width: 10),
+                  const HabitsFilter(),
                   IconButton(
-                    onPressed: cubit.toggleZeroBased,
+                    onPressed: cubit.toggleShowSearch,
                     icon: Icon(
-                      state.zeroBased
-                          ? MdiIcons.unfoldLessHorizontal
-                          : MdiIcons.unfoldMoreHorizontal,
-                      color: Theme.of(context).colorScheme.outline,
+                      Icons.search,
+                      color: state.showSearch
+                          ? Theme.of(context).primaryColor
+                          : Theme.of(context).colorScheme.outline,
                     ),
                   ),
-              ],
+                  IconButton(
+                    onPressed: cubit.toggleShowTimeSpan,
+                    icon: Icon(
+                      Icons.calendar_month,
+                      color: state.showTimeSpan
+                          ? Theme.of(context).primaryColor
+                          : Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                  SettingsButton(
+                      '/settings/habits/search/${state.searchString}'),
+                  if (state.minY > 20)
+                    IconButton(
+                      onPressed: cubit.toggleZeroBased,
+                      icon: Icon(
+                        state.zeroBased
+                            ? MdiIcons.unfoldLessHorizontal
+                            : MdiIcons.unfoldMoreHorizontal,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          pinned: true,
-          automaticallyImplyLeading: false,
-          flexibleSpace: const FlexibleSpaceBar(
-            background: Padding(
-              padding: EdgeInsets.only(top: 70),
-              child: HabitCompletionRateChart(),
+            pinned: true,
+            automaticallyImplyLeading: false,
+            flexibleSpace: const FlexibleSpaceBar(
+              background: Padding(
+                padding: EdgeInsets.only(top: 70),
+                child: HabitCompletionRateChart(),
+              ),
             ),
           ),
         );
