@@ -87,7 +87,6 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
           child: Card(
             child: ListTile(
               contentPadding: const EdgeInsets.only(
-                bottom: 5,
                 left: 10,
                 right: 10,
               ),
