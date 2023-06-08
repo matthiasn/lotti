@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/colors.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/tags/tag_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -22,7 +20,6 @@ void main() {
 
   group('TagWidget Widget Tests -', () {
     setUpAll(() {
-      getIt.registerSingleton<ThemesService>(ThemesService());
       when(testMock.onTapRemove).thenAnswer((_) {});
     });
 

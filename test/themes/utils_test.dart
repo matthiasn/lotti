@@ -3,7 +3,6 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/colors.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -15,11 +14,7 @@ void main() {
     setUpAll(() {
       final db = JournalDb(inMemoryDatabase: true);
 
-      getIt
-        ..registerSingleton<JournalDb>(db)
-        ..registerSingleton(
-          ThemesService(),
-        );
+      getIt.registerSingleton<JournalDb>(db);
 
       db.insertFlagIfNotExists(
         const ConfigFlag(

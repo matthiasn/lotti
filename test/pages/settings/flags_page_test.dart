@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/flags_page.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -28,9 +27,7 @@ void main() {
         ]),
       );
 
-      getIt
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<ThemesService>(ThemesService());
+      getIt.registerSingleton<JournalDb>(mockJournalDb);
     });
     tearDown(getIt.reset);
 

@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -15,9 +14,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('AudioRecordingIndicator Widget Tests - ', () {
-    setUp(() {
-      getIt.registerSingleton<ThemesService>(ThemesService());
-    });
+    setUp(() {});
     tearDown(getIt.reset);
 
     final mockAudioRecorderCubit = MockAudioRecorderCubit();

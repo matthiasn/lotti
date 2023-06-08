@@ -9,7 +9,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/habits/habits_page.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -42,7 +41,6 @@ void main() {
       ).thenAnswer((_) => habitFlossing);
 
       getIt
-        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<JournalDb>(mockJournalDb);
 

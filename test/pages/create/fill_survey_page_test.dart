@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/fill_survey_page.dart';
-import 'package:lotti/themes/themes_service.dart';
 
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
@@ -15,9 +14,7 @@ void main() {
     final mockPersistenceLogic = MockPersistenceLogic();
 
     setUp(() {
-      getIt
-        ..registerSingleton<ThemesService>(ThemesService())
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
     });
     tearDown(getIt.reset);
 
