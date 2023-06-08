@@ -152,10 +152,15 @@ class _HabitDialogState extends State<HabitDialog> {
                   child: Card(
                     margin: EdgeInsets.zero,
                     elevation: 10,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
+                      ),
+                      side: BorderSide(
+                        color: (Theme.of(context).textTheme.titleLarge?.color ??
+                                Colors.black)
+                            .withOpacity(0.5),
                       ),
                     ),
                     child: Container(

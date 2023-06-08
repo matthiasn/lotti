@@ -7,6 +7,7 @@ import 'package:lotti/themes/colors.dart';
 
 const fontSizeSmall = 11.0;
 const fontSizeMedium = 15.0;
+const fontSizeMediumLarge = 20.0;
 const fontSizeLarge = 25.0;
 
 class AppTheme {
@@ -164,7 +165,7 @@ const chartTitleStyle = TextStyle(
 );
 
 const habitTitleStyle = TextStyle(
-  fontSize: fontSizeLarge,
+  fontSize: fontSizeMediumLarge,
   fontWeight: FontWeight.w300,
 );
 
@@ -210,7 +211,10 @@ ThemeData withOverrides(ThemeData themeData) {
       clipBehavior: Clip.hardEdge,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
-    bottomSheetTheme: const BottomSheetThemeData(clipBehavior: Clip.hardEdge),
+    bottomSheetTheme: const BottomSheetThemeData(
+      clipBehavior: Clip.hardEdge,
+      elevation: 100,
+    ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
         alignment: Alignment.center,
