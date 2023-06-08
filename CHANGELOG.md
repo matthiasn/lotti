@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Colors in measurables dialog
 - Borders in bottom sheets and dialogs
+- Upgraded dependencies
 
 ## [0.8.370] - 2023-06-07
 ### Changed:
