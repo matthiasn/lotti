@@ -213,7 +213,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                           labelText: localizations.addMeasurementCommentLabel,
                           themeData: Theme.of(context),
                         ),
-                        keyboardAppearance: keyboardAppearance(),
+                        keyboardAppearance: Theme.of(context).brightness,
                         name: 'comment',
                       ),
                       inputSpacer,

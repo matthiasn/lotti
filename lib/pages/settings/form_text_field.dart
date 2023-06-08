@@ -27,7 +27,7 @@ class FormTextField extends StatelessWidget {
       maxLines: 3,
       initialValue: initialValue,
       textCapitalization: TextCapitalization.sentences,
-      keyboardAppearance: keyboardAppearance(),
+      keyboardAppearance: Theme.of(context).brightness,
       validator: fieldRequired ? FormBuilderValidators.required() : null,
       decoration: inputDecoration(
         labelText: labelText,
