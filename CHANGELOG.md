@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Improved dashboards page header
+- New Flutter version
+
+## [0.8.371] - 2023-06-08
+### Changed:
 - Colors in measurables dialog
 - Borders in bottom sheets and dialogs
 - Upgraded dependencies
