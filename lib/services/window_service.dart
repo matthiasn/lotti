@@ -26,7 +26,7 @@ class WindowService implements WindowListener {
     final sizeString = await getIt<SettingsDb>().itemByKey(sizeKey);
     final values = sizeString?.split(',').map(double.parse).toList();
     final width = values?.first ?? 400;
-    final height = values?.last ?? 800;
+    final height = values?.last ?? 900;
     await windowManager.setSize(Size(width, height));
   }
 
