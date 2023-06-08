@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Colors in measurables dialog
+- Borders in bottom sheets and dialogs
+
+## [0.8.370] - 2023-06-07
+### Changed:
 - Upgraded dependencies
 - Non-persistent title sliver app bar on dashboards page
 - Spacing in habits search header

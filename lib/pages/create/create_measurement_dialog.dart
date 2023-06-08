@@ -1,4 +1,3 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -108,10 +107,15 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
             top: 20,
             right: 10,
           ),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.all(Radius.circular(20)),
+            side: BorderSide(
+              color: (Theme.of(context).textTheme.titleLarge?.color ??
+                      Colors.black)
+                  .withOpacity(0.5),
+            ),
           ),
-          backgroundColor: Theme.of(context).primaryColorLight.lighten(),
+          //backgroundColor: Theme.of(context).primaryColorLight.lighten(),
           actionsAlignment: MainAxisAlignment.spaceBetween,
           actionsPadding: const EdgeInsets.only(
             left: 30,
@@ -155,9 +159,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   children: [
                     Text(
                       dataType.displayName,
-                      style: const TextStyle(
-                        fontSize: fontSizeMedium,
-                      ),
                     ),
                     IconButton(
                       padding: const EdgeInsets.all(10),
@@ -174,11 +175,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       if (dataType.description.isNotEmpty)
                         Text(
                           dataType.description,
-                          style: const TextStyle(
-                            color: Colors.black38,
-                            fontWeight: FontWeight.w300,
-                            fontSize: fontSizeMedium,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.w300),
                         ),
                       inputSpacer,
                       DateTimeField(
