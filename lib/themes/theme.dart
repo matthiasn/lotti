@@ -3,9 +3,7 @@ import 'dart:ui';
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/colors.dart';
-import 'package:lotti/themes/themes_service.dart';
 
 const fontSizeSmall = 11.0;
 const fontSizeMedium = 15.0;
@@ -165,6 +163,11 @@ const chartTitleStyle = TextStyle(
   fontWeight: FontWeight.w300,
 );
 
+const habitTitleStyle = TextStyle(
+  fontSize: fontSizeLarge,
+  fontWeight: FontWeight.w300,
+);
+
 const chartTitleStyleSmall = TextStyle(
   fontSize: fontSizeSmall,
   fontWeight: FontWeight.w300,
@@ -200,12 +203,6 @@ TextStyle searchLabelStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w100,
     );
-
-Brightness keyboardAppearance() {
-  return getIt<ThemesService>().darkKeyboard
-      ? Brightness.dark
-      : Brightness.light;
-}
 
 ThemeData withOverrides(ThemeData themeData) {
   return themeData.copyWith(

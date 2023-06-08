@@ -77,7 +77,7 @@ class HabitsTabPage extends StatelessWidget {
                         if (state.showTimeSpan)
                           Center(
                             child: Padding(
-                              padding: const EdgeInsets.only(top: 5),
+                              padding: const EdgeInsets.symmetric(vertical: 5),
                               child: TimeSpanSegmentedControl(
                                 timeSpanDays: timeSpanDays,
                                 onValueChanged: cubit.setTimeSpan,
