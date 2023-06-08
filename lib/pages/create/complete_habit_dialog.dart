@@ -228,7 +228,8 @@ class _HabitDialogState extends State<HabitDialog> {
                                       ),
                                       minLines: 1,
                                       maxLines: 10,
-                                      keyboardAppearance: keyboardAppearance(),
+                                      keyboardAppearance:
+                                          Theme.of(context).brightness,
                                       name: 'comment',
                                     ),
                                   ],
