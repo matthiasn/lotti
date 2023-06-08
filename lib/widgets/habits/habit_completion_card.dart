@@ -86,9 +86,10 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
           opacity: completedToday ? 0.75 : 1,
           child: Card(
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 5,
-                horizontal: 10,
+              contentPadding: const EdgeInsets.only(
+                bottom: 5,
+                left: 10,
+                right: 10,
               ),
               title: Column(
                 children: [
@@ -108,13 +109,15 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                         child: Text(
                           widget.habitDefinition.name,
                           style: completedToday
-                              ? chartTitleStyle.copyWith(
+                              ? habitTitleStyle.copyWith(
                                   decoration: TextDecoration.lineThrough,
-                                  decorationColor:
-                                      Theme.of(context).primaryColor,
-                                  decorationThickness: 3,
+                                  decorationColor: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.color,
+                                  decorationThickness: 2,
                                 )
-                              : chartTitleStyle,
+                              : habitTitleStyle,
                           overflow: TextOverflow.fade,
                           softWrap: false,
                         ),

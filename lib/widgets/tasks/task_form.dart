@@ -71,7 +71,7 @@ class _TaskFormState extends State<TaskForm> {
                           themeData: Theme.of(context),
                         ),
                         textCapitalization: TextCapitalization.sentences,
-                        keyboardAppearance: keyboardAppearance(),
+                        keyboardAppearance: Theme.of(context).brightness,
                         maxLines: null,
                         style: const TextStyle(fontSize: fontSizeLarge),
                         name: 'title',
