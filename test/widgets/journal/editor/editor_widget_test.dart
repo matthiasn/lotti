@@ -13,7 +13,6 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -28,7 +27,6 @@ void main() {
 
     setUpAll(() {
       getIt
-        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<VectorClockService>(MockVectorClockService())
         ..registerSingleton<LinkService>(MockLinkService())

@@ -4,7 +4,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
-import 'package:lotti/themes/themes_service.dart';
 
 import '../../mocks/mocks.dart';
 import '../../mocks/sync_config_test_mocks.dart';
@@ -12,9 +11,7 @@ import '../../widget_test_utils.dart';
 
 void main() {
   group('OutboxBadge Widget Tests - ', () {
-    setUp(() {
-      getIt.registerSingleton<ThemesService>(ThemesService());
-    });
+    setUp(() {});
     tearDown(getIt.reset);
 
     testWidgets('Badge shows count 999', (tester) async {

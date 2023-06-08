@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/audio/audio_recorder.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -17,7 +16,6 @@ void main() {
 
   group('AudioRecorderWidget Widget Tests - ', () {
     setUp(() {
-      getIt.registerSingleton<ThemesService>(ThemesService());
       VisibilityDetectorController.instance.updateInterval = Duration.zero;
     });
     tearDown(getIt.reset);

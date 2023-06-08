@@ -10,7 +10,6 @@ import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -58,8 +57,7 @@ void main() {
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<ThemesService>(ThemesService());
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
     });
     tearDown(getIt.reset);
 

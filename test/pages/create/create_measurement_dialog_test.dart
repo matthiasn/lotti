@@ -7,7 +7,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -33,7 +32,6 @@ void main() {
       mockPersistenceLogic = MockPersistenceLogic();
 
       getIt
-        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 

@@ -9,7 +9,6 @@ import 'package:lotti/pages/settings/tags/tags_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -43,8 +42,7 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<NavService>(NavService())
         ..registerSingleton<TagsService>(mockTagsService)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<ThemesService>(ThemesService());
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       when(() => secureStorageMock.readValue(lastRouteKey))
           .thenAnswer((_) async => '/settings');

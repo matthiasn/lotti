@@ -14,7 +14,6 @@ import 'package:lotti/pages/dashboards/dashboard_page.dart';
 import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -52,7 +51,6 @@ void main() {
       final mockHealthImport = MockHealthImport();
 
       getIt
-        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<TagsService>(mockTagsService)
