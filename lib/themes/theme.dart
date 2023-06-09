@@ -237,7 +237,7 @@ ThemeData withOverrides(ThemeData themeData) {
 
 final lightThemeMod = withOverrides(
   FlexThemeData.light(
-    scheme: FlexScheme.flutterDash,
+    scheme: FlexScheme.greyLaw,
     useMaterial3: true,
     fontFamily: mainFont,
   ),
@@ -245,7 +245,7 @@ final lightThemeMod = withOverrides(
 
 final darkThemeMod = withOverrides(
   FlexThemeData.dark(
-    scheme: FlexScheme.deepBlue,
+    scheme: FlexScheme.greyLaw,
     useMaterial3: true,
     fontFamily: mainFont,
   ),

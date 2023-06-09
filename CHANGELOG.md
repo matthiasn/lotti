@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Refactoring: remove ThemesService
+- Settings page for light and dark color themes
 
 ## [0.8.373] - 2023-06-08
 ### Fixed:
