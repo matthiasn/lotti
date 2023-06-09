@@ -7,7 +7,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/consts.dart';
 
 class DesktopMenuWrapper extends StatelessWidget {
   DesktopMenuWrapper({
@@ -116,24 +115,6 @@ class DesktopMenuWrapper extends StatelessWidget {
                   ),
                   const PlatformProvidedMenuItem(
                     type: PlatformProvidedMenuItemType.zoomWindow,
-                  ),
-                  PlatformMenuItemGroup(
-                    members: [
-                      PlatformMenuItem(
-                        label: snapshot.data?.contains(showBrightSchemeFlag) ??
-                                false
-                            ? localizations.viewMenuDisableBrightTheme
-                            : localizations.viewMenuEnableBrightTheme,
-                        shortcut: const SingleActivator(
-                          LogicalKeyboardKey.keyS,
-                          meta: true,
-                          alt: true,
-                        ),
-                        onSelected: () async {
-                          await _db.toggleConfigFlag(showBrightSchemeFlag);
-                        },
-                      ),
-                    ],
                   ),
                 ],
               ),

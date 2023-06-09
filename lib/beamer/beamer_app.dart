@@ -8,11 +8,12 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/blocs/theming/theming_cubit.dart';
+import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
@@ -149,8 +150,6 @@ class _AppScreenState extends State<AppScreen> {
 class MyBeamerApp extends StatelessWidget {
   MyBeamerApp({super.key});
 
-  final JournalDb _db = getIt<JournalDb>();
-
   final routerDelegate = BeamerDelegate(
     initialPath: getIt<NavService>().currentPath,
     locationBuilder: RoutesLocationBuilder(
@@ -160,43 +159,40 @@ class MyBeamerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<Set<String>>(
-      stream: _db.watchActiveConfigFlagNames(),
-      builder: (context, snapshot) {
-        final flags = snapshot.data ?? {};
-        final showBrightScheme = flags.contains(showBrightSchemeFlag);
-        final followSystemBrightness =
-            flags.contains(followSystemBrightnessFlag);
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<SyncConfigCubit>(
+          lazy: false,
+          create: (BuildContext context) => SyncConfigCubit(
+            testOnNetworkChange: true,
+          ),
+        ),
+        BlocProvider<OutboxCubit>(
+          lazy: false,
+          create: (BuildContext context) => OutboxCubit(),
+        ),
+        BlocProvider<AudioRecorderCubit>(
+          create: (BuildContext context) => AudioRecorderCubit(),
+        ),
+        BlocProvider<AudioPlayerCubit>(
+          create: (BuildContext context) => AudioPlayerCubit(),
+        ),
+        BlocProvider<ThemingCubit>(
+          create: (BuildContext context) => ThemingCubit(),
+        ),
+      ],
+      child: BlocBuilder<ThemingCubit, ThemingState>(
+        builder: (context, themingSnapshot) {
+          if (themingSnapshot.darkTheme == null) {
+            return const SizedBox.shrink();
+          }
 
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider<SyncConfigCubit>(
-              lazy: false,
-              create: (BuildContext context) => SyncConfigCubit(
-                testOnNetworkChange: true,
-              ),
-            ),
-            BlocProvider<OutboxCubit>(
-              lazy: false,
-              create: (BuildContext context) => OutboxCubit(),
-            ),
-            BlocProvider<AudioRecorderCubit>(
-              create: (BuildContext context) => AudioRecorderCubit(),
-            ),
-            BlocProvider<AudioPlayerCubit>(
-              create: (BuildContext context) => AudioPlayerCubit(),
-            ),
-          ],
-          child: DesktopMenuWrapper(
+          return DesktopMenuWrapper(
             child: MaterialApp.router(
               supportedLocales: AppLocalizations.supportedLocales,
-              theme: lightThemeMod,
-              darkTheme: darkThemeMod,
-              themeMode: followSystemBrightness
-                  ? ThemeMode.system
-                  : showBrightScheme
-                      ? ThemeMode.light
-                      : ThemeMode.dark,
+              theme: themingSnapshot.lightTheme,
+              darkTheme: themingSnapshot.darkTheme,
+              themeMode: themingSnapshot.themeMode,
               localizationsDelegates: const [
                 AppLocalizations.delegate,
                 FormBuilderLocalizations.delegate,
@@ -211,9 +207,9 @@ class MyBeamerApp extends StatelessWidget {
                 delegate: routerDelegate,
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

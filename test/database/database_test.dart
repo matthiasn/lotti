@@ -17,16 +17,6 @@ final expectedFlags = <ConfigFlag>{
     status: true,
   ),
   const ConfigFlag(
-    name: showBrightSchemeFlag,
-    description: 'Show Bright ☀️ scheme?',
-    status: false,
-  ),
-  const ConfigFlag(
-    name: followSystemBrightnessFlag,
-    description: 'Follow system brightness?',
-    status: false,
-  ),
-  const ConfigFlag(
     name: recordLocationFlag,
     description: 'Record geolocation?',
     status: false,
@@ -97,33 +87,6 @@ void main() {
           expectedActiveFlagNames,
         );
 
-        await db?.toggleConfigFlag(showBrightSchemeFlag);
-
-        expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlag),
-          const ConfigFlag(
-            name: showBrightSchemeFlag,
-            description: 'Show Bright ☀️ scheme?',
-            status: true,
-          ),
-        );
-
-        expect(
-          await db?.watchActiveConfigFlagNames().first,
-          expectedActiveFlagNames.union({showBrightSchemeFlag}),
-        );
-
-        await db?.toggleConfigFlag(showBrightSchemeFlag);
-
-        expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlag),
-          const ConfigFlag(
-            name: showBrightSchemeFlag,
-            description: 'Show Bright ☀️ scheme?',
-            status: false,
-          ),
-        );
-
         expect(
           await db?.watchActiveConfigFlagNames().first,
           expectedActiveFlagNames,
@@ -135,21 +98,21 @@ void main() {
       'ConfigFlag can be retrieved by name',
       () async {
         expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlag),
+          await db?.getConfigFlagByName(recordLocationFlag),
           const ConfigFlag(
-            name: showBrightSchemeFlag,
-            description: 'Show Bright ☀️ scheme?',
+            name: recordLocationFlag,
+            description: 'Record geolocation?',
             status: false,
           ),
         );
 
-        await db?.toggleConfigFlag(showBrightSchemeFlag);
+        await db?.toggleConfigFlag(recordLocationFlag);
 
         expect(
-          await db?.getConfigFlagByName(showBrightSchemeFlag),
+          await db?.getConfigFlagByName(recordLocationFlag),
           const ConfigFlag(
-            name: showBrightSchemeFlag,
-            description: 'Show Bright ☀️ scheme?',
+            name: recordLocationFlag,
+            description: 'Record geolocation?',
             status: true,
           ),
         );
