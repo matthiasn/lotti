@@ -234,19 +234,3 @@ ThemeData withOverrides(ThemeData themeData) {
         InputDecorationTheme(fillColor: themeData.primaryColor),
   );
 }
-
-final lightThemeMod = withOverrides(
-  FlexThemeData.light(
-    scheme: FlexScheme.flutterDash,
-    useMaterial3: true,
-    fontFamily: mainFont,
-  ),
-);
-
-final darkThemeMod = withOverrides(
-  FlexThemeData.dark(
-    scheme: FlexScheme.deepBlue,
-    useMaterial3: true,
-    fontFamily: mainFont,
-  ),
-);

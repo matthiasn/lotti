@@ -27,6 +27,7 @@ import 'package:lotti/pages/settings/sync/sync_assistant_page.dart';
 import 'package:lotti/pages/settings/tags/create_tag_page.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/pages/settings/tags/tags_page.dart';
+import 'package:lotti/pages/settings/theming_page.dart';
 
 class SettingsLocation extends BeamLocation<BeamState> {
   SettingsLocation(RouteInformation super.routeInformation);
@@ -51,6 +52,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/habits/create',
         '/settings/habits/search/:searchTerm',
         '/settings/flags',
+        '/settings/theming',
         '/settings/advanced',
         '/settings/outbox_monitor',
         '/settings/logging',
@@ -214,6 +216,13 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-flags'),
           child: FlagsPage(),
+        ),
+
+      // Theming
+      if (pathContains('theming'))
+        const BeamPage(
+          key: ValueKey('settings-theming'),
+          child: ThemingPage(),
         ),
 
       // Health Import
