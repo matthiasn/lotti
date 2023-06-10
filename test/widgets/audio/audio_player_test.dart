@@ -5,7 +5,6 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -20,9 +19,7 @@ void main() {
   final entryCubit = MockEntryCubit();
 
   group('AudioPlayerWidget Widget Tests - ', () {
-    setUp(() {
-      getIt.registerSingleton<ThemesService>(ThemesService());
-    });
+    setUp(() {});
     tearDown(getIt.reset);
 
     final mockAudioPlayerCubit = MockAudioPlayerCubit();

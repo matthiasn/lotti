@@ -5,7 +5,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -32,8 +31,7 @@ void main() {
       getIt
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<ThemesService>(ThemesService());
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       when(() => mockPersistenceLogic.upsertTagEntity(any()))
           .thenAnswer((_) async => 1);

@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_details/survey_summary.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -18,9 +17,7 @@ void main() {
 
   group('SurveySummary Widget Tests -', () {
     setUp(() {
-      getIt
-        ..registerSingleton<ThemesService>(ThemesService())
-        ..registerSingleton<JournalDb>(mockJournalDb);
+      getIt.registerSingleton<JournalDb>(mockJournalDb);
     });
     tearDown(getIt.reset);
 

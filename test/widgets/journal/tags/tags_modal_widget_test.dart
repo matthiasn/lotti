@@ -6,7 +6,6 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/tags/tags_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -74,9 +73,7 @@ void main() {
     when(() => entryCubit.addTagIds(any())).thenAnswer((_) async {});
 
     setUpAll(() {
-      getIt
-        ..registerSingleton<ThemesService>(ThemesService())
-        ..registerSingleton<TagsService>(mockTagsService);
+      getIt.registerSingleton<TagsService>(mockTagsService);
     });
 
     testWidgets('tag copy and paste', (tester) async {

@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/imap_config_status.dart';
 
 import '../../mocks/sync_config_test_mocks.dart';
@@ -13,9 +12,7 @@ import '../../widget_test_utils.dart';
 
 void main() {
   group('SyncConfig Imap Config Status Widgets Tests - ', () {
-    setUp(() {
-      getIt.registerSingleton<ThemesService>(ThemesService());
-    });
+    setUp(() {});
 
     tearDown(getIt.reset);
     testWidgets(

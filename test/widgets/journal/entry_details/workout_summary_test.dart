@@ -3,7 +3,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_details/workout_summary.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -22,7 +21,6 @@ void main() {
       mockJournalDb = MockJournalDb();
 
       getIt
-        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<HealthImport>(mockHealthImport);
     });

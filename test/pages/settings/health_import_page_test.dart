@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/pages/settings/health_import_page.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -16,9 +15,7 @@ void main() {
 
   group('HealthImportPage Widget Tests - ', () {
     setUp(() {
-      getIt
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<ThemesService>(ThemesService());
+      getIt.registerSingleton<HealthImport>(mockHealthImport);
 
       when(
         () => mockHealthImport.getActivityHealthData(

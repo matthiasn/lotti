@@ -5,7 +5,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/dashboards/dashboards_list_page.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -44,8 +43,7 @@ void main() {
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<ThemesService>(ThemesService());
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
     });
     tearDown(getIt.reset);
 

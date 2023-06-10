@@ -5,7 +5,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/measurables/measurable_create_page.dart';
 import 'package:lotti/pages/settings/measurables/measurable_details_page.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -33,8 +32,7 @@ void main() {
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<ThemesService>(ThemesService());
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
     });
     tearDown(getIt.reset);
 

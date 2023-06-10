@@ -12,7 +12,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -43,7 +42,6 @@ void main() {
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<TagsService>(mockTagsService)

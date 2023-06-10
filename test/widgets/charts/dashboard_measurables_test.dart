@@ -8,7 +8,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -28,7 +27,6 @@ void main() {
       mockJournalDb = MockJournalDb();
 
       getIt
-        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<NavService>(MockNavService())
