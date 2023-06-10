@@ -381,10 +381,10 @@ packages:
     dependency: transitive
     description:
       name: csslib
-      sha256: "831883fb353c8bdc1d71979e5b342c7d88acfbc643113c14ae51e2442ea0f20f"
+      sha256: "706b5707578e0c1b4b7550f64078f0a0f19dec3f50a178ffae7006b0a9ca58fb"
       url: "https://pub.dev"
     source: hosted
-    version: "0.17.3"
+    version: "1.0.0"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -878,10 +878,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "27724b0a0a3d970addaea85133daf3153d2dbe21a1d4713e373343215ddc9b12"
+      sha256: "9c74294172b354a469f7d0dd20eefbe958832459ea978d0cd635c5ef5861a1eb"
       url: "https://pub.dev"
     source: hosted
-    version: "7.2.2"
+    version: "7.2.3"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1062,10 +1062,10 @@ packages:
     dependency: transitive
     description:
       name: html
-      sha256: "58e3491f7bf0b6a4ea5110c0c688877460d1a6366731155c4a4580e7ded773e8"
+      sha256: "3a7812d5bcd2894edf53dfaf8cd640876cf6cef50a8f238745c8b8120ea74d3a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.15.3"
+    version: "0.15.4"
   html_unescape:
     dependency: transitive
     description:
@@ -1299,10 +1299,10 @@ packages:
     dependency: "direct main"
     description:
       name: material_design_icons_flutter
-      sha256: "8ef8562d16e747b2d93e5da5c2508931588939c5c00ebc8e2768e803db7dfd3c"
+      sha256: "4c81ebf55b9661d1eb94652884a7b098af63153ea75b9070caedaddfae308e02"
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.7096"
+    version: "6.0.7296"
   media_kit:
     dependency: "direct main"
     description:
