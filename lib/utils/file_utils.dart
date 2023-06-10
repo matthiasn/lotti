@@ -83,7 +83,7 @@ Future<Directory> findDocumentsDirectory() async {
   final docDir = await getApplicationDocumentsDirectory();
   final appSupportDir = await getApplicationSupportDirectory();
 
-  if (Platform.isWindows) {
+  if (Platform.isWindows || Platform.isLinux) {
     return appSupportDir;
   } else {
     return docDir;
