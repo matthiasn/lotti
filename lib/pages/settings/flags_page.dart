@@ -25,8 +25,6 @@ class FlagsPage extends StatelessWidget {
         const displayedItems = {
           privateFlag,
           enableNotificationsFlag,
-          showBrightSchemeFlag,
-          followSystemBrightnessFlag,
           recordLocationFlag,
           enableSyncFlag,
           enableTaskManagement,

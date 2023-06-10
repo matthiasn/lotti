@@ -10,7 +10,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/habits/habit_create_page.dart';
 import 'package:lotti/pages/settings/habits/habit_details_page.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -65,8 +64,7 @@ void main() {
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<TagsService>(mockTagsService)
-        ..registerSingleton<ThemesService>(ThemesService());
+        ..registerSingleton<TagsService>(mockTagsService);
     });
     tearDown(getIt.reset);
 

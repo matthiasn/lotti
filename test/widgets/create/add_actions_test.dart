@@ -10,7 +10,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -44,7 +43,6 @@ void main() {
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<TimeService>(mockTimeService)

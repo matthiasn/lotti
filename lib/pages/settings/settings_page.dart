@@ -47,6 +47,10 @@ class SettingsPage extends StatelessWidget {
               semanticsLabel: 'Measurable Data Types',
               path: '/settings/measurables',
             ),
+            SettingsNavCard(
+              title: localizations.settingsThemingTitle,
+              path: '/settings/theming',
+            ),
             if (isMobile)
               SettingsNavCard(
                 title: localizations.settingsHealthImportTitle,

@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/settings/dashboards/dashboard_definition_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -14,9 +13,7 @@ void main() {
     final mockEntitiesCacheService = MockEntitiesCacheService();
 
     setUp(() {
-      getIt
-        ..registerSingleton<ThemesService>(ThemesService())
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
+      getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
     });
     tearDown(getIt.reset);
 

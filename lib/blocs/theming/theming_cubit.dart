@@ -1,0 +1,121 @@
+import 'dart:async';
+
+import 'package:bloc/bloc.dart';
+import 'package:enum_to_string/enum_to_string.dart';
+import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/blocs/theming/theming_state.dart';
+import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/themes/theme.dart';
+
+const lightSchemeNameKey = 'LIGHT_SCHEME';
+const darkSchemeNameKey = 'DARK_SCHEMA';
+const themeModeKey = 'THEME_MODE';
+
+class ThemingCubit extends Cubit<ThemingState> {
+  ThemingCubit() : super(ThemingState()) {
+    _loadSelectedSchemes();
+  }
+
+  Future<void> _loadSelectedSchemes() async {
+    _darkThemeName = await getIt<SettingsDb>().itemByKey(darkSchemeNameKey);
+    _lightThemeName = await getIt<SettingsDb>().itemByKey(lightSchemeNameKey);
+    _initLightTheme(_lightThemeName);
+    _initDarkTheme(_darkThemeName);
+
+    final themeMode = await getIt<SettingsDb>().itemByKey(themeModeKey);
+
+    if (themeMode != null) {
+      _themeMode = EnumToString.fromString(ThemeMode.values, themeMode) ??
+          ThemeMode.system;
+    }
+
+    emitState();
+  }
+
+  void _initLightTheme(String? themeName) {
+    final scheme = themes[themeName] ?? FlexScheme.greyLaw;
+    _lightTheme = withOverrides(
+      FlexThemeData.light(
+        scheme: scheme,
+        useMaterial3: true,
+        fontFamily: mainFont,
+      ),
+    );
+  }
+
+  void _initDarkTheme(String? themeName) {
+    final scheme = themes[themeName] ?? FlexScheme.greyLaw;
+    _darkTheme = withOverrides(
+      FlexThemeData.dark(
+        scheme: scheme,
+        useMaterial3: true,
+        fontFamily: mainFont,
+      ),
+    );
+  }
+
+  String? _darkThemeName = 'Grey Law';
+  String? _lightThemeName = 'Grey Law';
+  ThemeData? _darkTheme;
+  ThemeData? _lightTheme;
+  ThemeMode _themeMode = ThemeMode.system;
+
+  void emitState() {
+    emit(
+      ThemingState(
+        darkTheme: _darkTheme,
+        darkThemeName: _darkThemeName,
+        lightTheme: _lightTheme,
+        lightThemeName: _lightThemeName,
+        themeMode: _themeMode,
+      ),
+    );
+  }
+
+  void setLightTheme(String themeName) {
+    final theme = themes[themeName];
+    if (theme != null) {
+      _initLightTheme(themeName);
+      _lightThemeName = themeName;
+
+      getIt<SettingsDb>().saveSettingsItem(
+        lightSchemeNameKey,
+        themeName,
+      );
+
+      emitState();
+    }
+  }
+
+  void onThemeSelectionChanged(Set<ThemeMode> modes) {
+    _themeMode = modes.first;
+
+    getIt<SettingsDb>().saveSettingsItem(
+      themeModeKey,
+      EnumToString.convertToString(_themeMode),
+    );
+    emitState();
+  }
+
+  void setDarkTheme(String themeName) {
+    final theme = themes[themeName];
+    if (theme != null) {
+      _initDarkTheme(themeName);
+      _darkThemeName = themeName;
+
+      getIt<SettingsDb>().saveSettingsItem(
+        darkSchemeNameKey,
+        themeName,
+      );
+
+      emitState();
+    }
+  }
+
+  @override
+  Future<void> close() async {
+    await super.close();
+  }
+}

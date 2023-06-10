@@ -5,7 +5,6 @@ import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/sync/qr_widget.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -17,9 +16,7 @@ void main() {
   group('SyncConfig QR Widget Tests - ', () {
     setUp(() {
       final mockSyncConfigService = MockSyncConfigService();
-      getIt
-        ..registerSingleton<ThemesService>(ThemesService())
-        ..registerSingleton<SyncConfigService>(mockSyncConfigService);
+      getIt.registerSingleton<SyncConfigService>(mockSyncConfigService);
     });
 
     tearDown(getIt.reset);

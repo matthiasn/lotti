@@ -7,7 +7,6 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/speech/speech_settings_page.dart';
 import 'package:lotti/services/asr_service.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -27,7 +26,6 @@ void main() {
       final settingsDb = SettingsDb(inMemoryDatabase: true);
 
       getIt
-        ..registerSingleton<ThemesService>(ThemesService())
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<Directory>(docDir)

@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed:
+- Refactoring: remove ThemesService
+- Settings page for light and dark color themes
+
+## [0.8.373] - 2023-06-08
 ### Fixed:
 - BP chart header
 

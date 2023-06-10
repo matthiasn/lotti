@@ -3,8 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/themes/themes_service.dart';
 import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -16,9 +14,7 @@ void main() {
   group('DeleteIconWidget', () {
     final entryCubit = MockEntryCubit();
 
-    setUpAll(() {
-      getIt.registerSingleton<ThemesService>(ThemesService());
-    });
+    setUpAll(() {});
 
     testWidgets('calls delete in cubit', (WidgetTester tester) async {
       when(() => entryCubit.state).thenAnswer(
