@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 - App data folders on Linux
 
+### Changed:
+- Upgraded dependencies
+
 ## [0.8.374] - 2023-06-09
 ### Changed:
 - Refactoring: remove ThemesService
