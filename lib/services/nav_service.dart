@@ -23,7 +23,7 @@ class NavService {
     });
   }
 
-  String currentPath = '/dashboards';
+  String currentPath = '/habits';
   final indexStreamController = StreamController<int>.broadcast();
 
   int index = 0;
@@ -37,6 +37,7 @@ class NavService {
 
   Future<void> restoreRoute() async {
     final path = await getSavedRoute();
+    debugPrint('restoreRoute $path');
     if (path != null) {
       beamToNamed(path);
     }
