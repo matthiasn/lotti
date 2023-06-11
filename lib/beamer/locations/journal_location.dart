@@ -11,6 +11,7 @@ class JournalLocation extends BeamLocation<BeamState> {
 
   @override
   List<String> get pathPatterns => [
+        '/journal',
         '/journal/:entryId',
         '/journal/:entryId/record_audio/:linkedId',
         '/journal/fill_survey/:surveyType',
