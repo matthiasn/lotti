@@ -10,6 +10,7 @@ class TasksLocation extends BeamLocation<BeamState> {
 
   @override
   List<String> get pathPatterns => [
+        '/tasks',
         '/tasks/:entryId',
         '/tasks/:entryId/record_audio/:linkedId',
       ];

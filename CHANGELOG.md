@@ -8,11 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 - Text weight and whitespace in entry card footer
 
+### Fixed:
+- Filter choice chip text color
+- Short display of black screen at startup
+- Missing routes
+
 ## [0.8.375] - 2023-06-10
 ### Fixed:
 - App data folders on Linux
-- Filter choice chip text color
-- Short display of black screen at startup
 
 ### Changed:
 - Upgraded dependencies
