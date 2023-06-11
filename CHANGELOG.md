@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Text weight and whitespace in entry card footer
+- Splash screen
 
 ### Fixed:
 - Filter choice chip text color
