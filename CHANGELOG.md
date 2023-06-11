@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.8.375] - 2023-06-10
 ### Fixed:
 - App data folders on Linux
+- Filter choice chip text color
 
 ### Changed:
 - Upgraded dependencies
