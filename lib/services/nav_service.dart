@@ -21,6 +21,7 @@ class NavService {
         setIndex(3);
       }
       delegateByIndex(3).update();
+      emitState();
     });
   }
 
@@ -29,6 +30,7 @@ class NavService {
 
   int index = 0;
   bool tasksEnabled = false;
+  bool tasksInitialized = false;
 
   final BeamerDelegate habitsDelegate = habitsBeamerDelegate;
   final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
@@ -120,6 +122,10 @@ class NavService {
     if (index != newIndex) {
       setIndex(newIndex);
     } else {
+      setTabRoot(newIndex);
+    }
+
+    if (tasksEnabled && !tasksInitialized && newIndex == 3) {
       setTabRoot(newIndex);
     }
   }

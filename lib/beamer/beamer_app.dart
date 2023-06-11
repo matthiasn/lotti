@@ -71,7 +71,8 @@ class _AppScreenState extends State<AppScreen> {
               ),
               bottomNavigationBar: BottomNavigationBar(
                 selectedItemColor: Theme.of(context).primaryColor,
-                unselectedItemColor: Theme.of(context).secondaryHeaderColor,
+                unselectedItemColor:
+                    Theme.of(context).colorScheme.inversePrimary,
                 enableFeedback: true,
                 elevation: 8,
                 iconSize: 30,

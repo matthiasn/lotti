@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Filter choice chip text color
 - Short display of black screen at startup
 - Missing routes
+- Not found error on tasks page
 
 ## [0.8.375] - 2023-06-10
 ### Fixed:
