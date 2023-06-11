@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 - App data folders on Linux
 - Filter choice chip text color
+- Short display of black screen at startup
 
 ### Changed:
 - Upgraded dependencies
