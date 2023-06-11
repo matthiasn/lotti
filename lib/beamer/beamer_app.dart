@@ -20,6 +20,9 @@ import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 
+import '../pages/empty_scaffold.dart';
+import '../widgets/charts/loading_widget.dart';
+
 class AppScreen extends StatefulWidget {
   const AppScreen({super.key});
 
@@ -184,7 +187,10 @@ class MyBeamerApp extends StatelessWidget {
       child: BlocBuilder<ThemingCubit, ThemingState>(
         builder: (context, themingSnapshot) {
           if (themingSnapshot.darkTheme == null) {
-            return const SizedBox.shrink();
+            return const EmptyScaffoldWithTitle(
+              '...',
+              body: LoadingWidget(),
+            );
           }
 
           return DesktopMenuWrapper(
