@@ -164,7 +164,7 @@ class LogDetailPage extends StatelessWidget {
                   SelectableText(stacktrace, style: monospaceTextStyle),
                 ],
                 IconButton(
-                  icon: const Icon(MdiIcons.clipboardOutline),
+                  icon: Icon(MdiIcons.clipboardOutline),
                   iconSize: 48,
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: clipboardText));

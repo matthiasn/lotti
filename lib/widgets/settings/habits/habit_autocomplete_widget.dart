@@ -120,7 +120,7 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
               children: [
                 Text('Path ${widget.path}'),
                 IconButton(
-                  icon: const Icon(MdiIcons.delete),
+                  icon: Icon(MdiIcons.delete),
                   iconSize: settingsIconSize,
                   color: Colors.black38,
                   onPressed: () {

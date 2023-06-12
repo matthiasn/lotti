@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgrade icons
+
+## [0.8.376] - 2023-06-12
+### Changed:
 - Text weight and whitespace in entry card footer
 - Splash screen
 

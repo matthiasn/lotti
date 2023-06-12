@@ -253,7 +253,7 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                               transcript: widget.transcript,
                             );
                           },
-                          icon: const Icon(
+                          icon: Icon(
                             MdiIcons.trashCanOutline,
                             size: fontSizeMedium,
                           ),

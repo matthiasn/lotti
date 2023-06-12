@@ -77,7 +77,7 @@ class WhisperModelCard extends StatelessWidget {
                     padding: const EdgeInsets.all(10),
                     icon: Semantics(
                       label: 'delete whisper model',
-                      child: const Icon(MdiIcons.trashCanOutline),
+                      child: Icon(MdiIcons.trashCanOutline),
                     ),
                     onPressed: () => cubit.deleteModel(model),
                   ),

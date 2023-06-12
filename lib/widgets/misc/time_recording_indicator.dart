@@ -45,7 +45,7 @@ class TimeRecordingIndicatorWidget extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       MdiIcons.timerOutline,
                       color: Colors.black,
                       size: 16,

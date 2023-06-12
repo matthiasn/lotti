@@ -119,7 +119,7 @@ class _TagsModalState extends State<TagsModal> {
                     top: 16,
                     bottom: 16,
                   ),
-                  icon: const Icon(MdiIcons.contentCopy),
+                  icon: Icon(MdiIcons.contentCopy),
                   tooltip: localizations.journalTagsCopyHint,
                 ),
                 IconButton(
@@ -129,7 +129,7 @@ class _TagsModalState extends State<TagsModal> {
                     top: 16,
                     bottom: 16,
                   ),
-                  icon: const Icon(MdiIcons.contentPaste),
+                  icon: Icon(MdiIcons.contentPaste),
                   tooltip: localizations.journalTagsPasteHint,
                 ),
               ],

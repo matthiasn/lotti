@@ -130,7 +130,7 @@ class CategoryDetailsPage extends StatelessWidget {
                             children: [
                               IconButton(
                                 key: const Key('category_delete'),
-                                icon: const Icon(MdiIcons.trashCanOutline),
+                                icon: Icon(MdiIcons.trashCanOutline),
                                 iconSize: settingsIconSize,
                                 tooltip: AppLocalizations.of(context)!
                                     .settingsHabitsDeleteTooltip,

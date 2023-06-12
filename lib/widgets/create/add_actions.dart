@@ -69,7 +69,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
                 rebuild();
                 await createScreenshot(linkedId: widget.linked?.meta.id);
               },
-              child: const Icon(
+              child: Icon(
                 MdiIcons.monitorScreenshot,
                 size: actionIconSize,
               ),
@@ -107,10 +107,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
                 final linkedId = widget.linked?.meta.id;
                 await createTextEntry(linkedId: linkedId);
               },
-              child: const Icon(
-                MdiIcons.textLong,
-                size: actionIconSize,
-              ),
+              child: Icon(MdiIcons.textLong, size: actionIconSize),
             ),
           );
 
@@ -125,7 +122,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
                 final linkedId = widget.linked?.meta.id;
                 await createTimerEntry(linkedId: linkedId);
               },
-              child: const Icon(
+              child: Icon(
                 MdiIcons.timerOutline,
                 size: actionIconSize,
               ),
@@ -147,7 +144,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
                 beamToNamed('/journal/$linkedId/record_audio/$linkedId');
               }
             },
-            child: const Icon(
+            child: Icon(
               MdiIcons.microphone,
               size: actionIconSize,
             ),

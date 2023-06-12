@@ -44,7 +44,7 @@ class TagAddIconWidget extends StatelessWidget {
           width: 40,
           child: IconButton(
             onPressed: onTapAdd,
-            icon: const Icon(MdiIcons.tag),
+            icon: Icon(MdiIcons.tag),
             splashColor: Colors.transparent,
             tooltip: localizations.journalTagPlusHint,
           ),

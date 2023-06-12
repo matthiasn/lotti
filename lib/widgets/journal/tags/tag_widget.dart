@@ -29,7 +29,7 @@ class TagWidget extends StatelessWidget {
       backgroundColor: getTagColor(tagEntity),
       visualDensity: VisualDensity.compact,
       onDeleted: onTapRemove,
-      deleteIcon: const Icon(
+      deleteIcon: Icon(
         MdiIcons.close,
         size: fontSizeMedium,
         color: tagTextColor,
