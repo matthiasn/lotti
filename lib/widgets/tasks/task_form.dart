@@ -90,6 +90,7 @@ class _TaskFormState extends State<TaskForm> {
                               labelText: localizations.taskEstimateLabel,
                               themeData: Theme.of(context),
                             ),
+                            style: Theme.of(context).textTheme.titleMedium,
                             readOnly: true,
                             controller: TextEditingController(
                               text: formatDuration(widget.data?.estimate)

@@ -265,7 +265,9 @@ class _HabitDialogState extends State<HabitDialog> {
                                           saveHabit(HabitCompletionType.skip),
                                       child: Text(
                                         localizations.completeHabitSkipButton,
-                                        style: saveButtonStyle().copyWith(
+                                        style:
+                                            saveButtonStyle(Theme.of(context))
+                                                .copyWith(
                                           color: habitSkipColor.desaturate(),
                                         ),
                                       ),
@@ -278,7 +280,9 @@ class _HabitDialogState extends State<HabitDialog> {
                                       child: Text(
                                         localizations
                                             .completeHabitSuccessButton,
-                                        style: saveButtonStyle().copyWith(
+                                        style:
+                                            saveButtonStyle(Theme.of(context))
+                                                .copyWith(
                                           color: habitSuccessColor.darken(25),
                                         ),
                                       ),

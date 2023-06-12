@@ -30,10 +30,6 @@ class _SearchWidgetState extends State<SearchWidget> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    //final styleActive = searchFieldStyle();
-    //final styleHint = searchFieldHintStyle();
-    //final style = widget.text.isEmpty ? styleHint : styleActive;
-
     return Container(
       margin: widget.margin,
       height: 53,

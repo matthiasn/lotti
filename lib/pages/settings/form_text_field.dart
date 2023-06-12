@@ -11,6 +11,7 @@ class FormTextField extends StatelessWidget {
     this.semanticsLabel,
     super.key,
     this.fieldRequired = true,
+    this.large = false,
   });
 
   final String initialValue;
@@ -18,9 +19,11 @@ class FormTextField extends StatelessWidget {
   final String name;
   final String labelText;
   final bool fieldRequired;
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.titleMedium;
     return FormBuilderTextField(
       name: name,
       minLines: 1,
@@ -29,6 +32,7 @@ class FormTextField extends StatelessWidget {
       textCapitalization: TextCapitalization.sentences,
       keyboardAppearance: Theme.of(context).brightness,
       validator: fieldRequired ? FormBuilderValidators.required() : null,
+      style: large ? style?.copyWith(fontSize: fontSizeLarge) : style,
       decoration: inputDecoration(
         labelText: labelText,
         semanticsLabel: semanticsLabel,

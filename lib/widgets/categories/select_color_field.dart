@@ -48,8 +48,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
       }
     });
 
-    final style =
-        widget.hexColor != null ? searchFieldHintStyle : searchFieldStyle;
+    final style = Theme.of(context).textTheme.titleMedium;
 
     final color = widget.hexColor != null
         ? colorFromCssHex(widget.hexColor)
@@ -98,7 +97,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
       ).copyWith(
         icon: ColorIcon(color),
         hintText: localizations.colorPickerHint,
-        hintStyle: style.copyWith(
+        hintStyle: style?.copyWith(
           color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
         ),
         suffixIcon: IconButton(
@@ -112,7 +111,6 @@ class _SelectColorFieldState extends State<SelectColorField> {
         errorText: valid ? null : localizations.colorPickerError,
       ),
       style: style,
-      //onChanged: widget.onChanged,
     );
   }
 }

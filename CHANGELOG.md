@@ -6,7 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
-- Upgrade icons
+- Upgraded icons
+- Consistent text style in input fields
+- Prominent name fields in entity definitions
 
 ### Fixed:
 - Text weight and whitespace in entry card footer

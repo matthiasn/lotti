@@ -42,7 +42,7 @@ class CategoryDetailsPage extends StatelessWidget {
 
             return Scaffold(
               appBar: TitleAppBar(
-                title: state.categoryDefinition.name,
+                title: '',
                 actions: [
                   if (state.dirty && state.valid)
                     TextButton(
@@ -52,7 +52,7 @@ class CategoryDetailsPage extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           AppLocalizations.of(context)!.settingsHabitsSaveLabel,
-                          style: saveButtonStyle(),
+                          style: saveButtonStyle(Theme.of(context)),
                           semanticsLabel: 'Save Category',
                         ),
                       ),
@@ -80,6 +80,12 @@ class CategoryDetailsPage extends StatelessWidget {
                                   initialValue: item.name,
                                   textCapitalization:
                                       TextCapitalization.sentences,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        fontSize: fontSizeLarge,
+                                      ),
                                   validator: FormBuilderValidators.compose([
                                     FormBuilderValidators.required(),
                                     (categoryName) {
