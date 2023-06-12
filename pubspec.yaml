@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.375+2230
+version: 0.9.376+2237
 
 msix_config:
   display_name: LottiApp
@@ -237,4 +237,4 @@ flutter:
         - asset: assets/fonts/PlusJakartaSans/PlusJakartaSans-SemiBoldItalic.ttf
 
 flutter_native_splash:
-  color: "#000000"
+  color: "#333333"

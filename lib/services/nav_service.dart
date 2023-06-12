@@ -20,14 +20,17 @@ class NavService {
       if (index == 4 && !enabled) {
         setIndex(3);
       }
+      delegateByIndex(3).update();
+      emitState();
     });
   }
 
-  String currentPath = '/dashboards';
+  String currentPath = '/habits';
   final indexStreamController = StreamController<int>.broadcast();
 
   int index = 0;
   bool tasksEnabled = false;
+  bool tasksInitialized = false;
 
   final BeamerDelegate habitsDelegate = habitsBeamerDelegate;
   final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
@@ -37,6 +40,7 @@ class NavService {
 
   Future<void> restoreRoute() async {
     final path = await getSavedRoute();
+    debugPrint('restoreRoute $path');
     if (path != null) {
       beamToNamed(path);
     }
@@ -118,6 +122,10 @@ class NavService {
     if (index != newIndex) {
       setIndex(newIndex);
     } else {
+      setTabRoot(newIndex);
+    }
+
+    if (tasksEnabled && !tasksInitialized && newIndex == 3) {
       setTabRoot(newIndex);
     }
   }

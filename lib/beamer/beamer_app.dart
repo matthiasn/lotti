@@ -12,11 +12,13 @@ import 'package:lotti/blocs/theming/theming_cubit.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
+import 'package:lotti/widgets/charts/loading_widget.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 
@@ -69,7 +71,8 @@ class _AppScreenState extends State<AppScreen> {
               ),
               bottomNavigationBar: BottomNavigationBar(
                 selectedItemColor: Theme.of(context).primaryColor,
-                unselectedItemColor: Theme.of(context).secondaryHeaderColor,
+                unselectedItemColor:
+                    Theme.of(context).colorScheme.inversePrimary,
                 enableFeedback: true,
                 elevation: 8,
                 iconSize: 30,
@@ -184,7 +187,10 @@ class MyBeamerApp extends StatelessWidget {
       child: BlocBuilder<ThemingCubit, ThemingState>(
         builder: (context, themingSnapshot) {
           if (themingSnapshot.darkTheme == null) {
-            return const SizedBox.shrink();
+            return const EmptyScaffoldWithTitle(
+              '...',
+              body: LoadingWidget(),
+            );
           }
 
           return DesktopMenuWrapper(
