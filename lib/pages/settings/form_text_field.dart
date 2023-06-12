@@ -29,6 +29,7 @@ class FormTextField extends StatelessWidget {
       textCapitalization: TextCapitalization.sentences,
       keyboardAppearance: Theme.of(context).brightness,
       validator: fieldRequired ? FormBuilderValidators.required() : null,
+      style: Theme.of(context).textTheme.titleMedium,
       decoration: inputDecoration(
         labelText: labelText,
         semanticsLabel: semanticsLabel,

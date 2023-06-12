@@ -47,7 +47,11 @@ class ChartMultiSelect<T> extends StatelessWidget {
         unselectedColor: fontColor,
         searchIcon: const Icon(Icons.search),
         buttonIcon: Icon(iconData),
-        buttonText: Text(buttonText, semanticsLabel: semanticsLabel),
+        buttonText: Text(
+          buttonText,
+          semanticsLabel: semanticsLabel,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         onConfirm: onConfirm,
       ),
     );
