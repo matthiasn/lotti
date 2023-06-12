@@ -58,6 +58,14 @@ class DurationWidget extends StatelessWidget {
                   (isRecent && showRecordIcon),
               child: Row(
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Icon(
+                      MdiIcons.timerOutline,
+                      color: labelColor,
+                      size: 15,
+                    ),
+                  ),
                   FormattedTime(
                     labelColor: labelColor,
                     displayed: displayed,
@@ -120,21 +128,9 @@ class FormattedTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(right: 4),
-          child: Icon(
-            MdiIcons.timerOutline,
-            color: labelColor,
-            size: 15,
-          ),
-        ),
-        Text(
-          formatDuration(entryDuration(displayed)),
-          style: monospaceTextStyle.copyWith(color: labelColor),
-        ),
-      ],
+    return Text(
+      formatDuration(entryDuration(displayed)),
+      style: monospaceTextStyle.copyWith(color: labelColor),
     );
   }
 }
