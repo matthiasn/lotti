@@ -319,7 +319,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
                           localizations.dashboardSaveLabel,
-                          style: saveButtonStyle(),
+                          style: saveButtonStyle(Theme.of(context)),
                           semanticsLabel: 'Save Dashboard',
                         ),
                       ),

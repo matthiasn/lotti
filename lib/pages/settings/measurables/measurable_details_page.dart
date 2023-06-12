@@ -76,7 +76,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   localizations.settingsMeasurableSaveLabel,
-                  style: saveButtonStyle(),
+                  style: saveButtonStyle(Theme.of(context)),
                   semanticsLabel: 'Save Measurable',
                 ),
               ),
@@ -162,7 +162,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                     aggregationType,
                                   ),
                                   style:
-                                      const TextStyle(fontSize: fontSizeMedium),
+                                      Theme.of(context).textTheme.titleMedium,
                                 ),
                               ),
                             );
