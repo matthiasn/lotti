@@ -107,6 +107,7 @@ const transcriptHeaderStyle = TextStyle(
 
 const monospaceTextStyle = TextStyle(
   fontSize: fontSizeMedium,
+  fontWeight: FontWeight.w500,
   fontFeatures: [FontFeature.tabularFigures()],
 );
 
