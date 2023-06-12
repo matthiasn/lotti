@@ -37,7 +37,7 @@ class HabitDetailsPage extends StatelessWidget {
 
         return Scaffold(
           appBar: TitleAppBar(
-            title: state.habitDefinition.name,
+            title: '',
             actions: [
               if (state.dirty)
                 TextButton(
@@ -75,6 +75,7 @@ class HabitDetailsPage extends StatelessWidget {
                                   .settingsHabitsNameLabel,
                               name: 'name',
                               semanticsLabel: 'Habit name field',
+                              large: true,
                             ),
                             inputSpacer,
                             FormTextField(

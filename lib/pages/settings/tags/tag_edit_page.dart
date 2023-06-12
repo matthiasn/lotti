@@ -105,7 +105,7 @@ class _TagEditPageState extends State<TagEditPage> {
 
     return Scaffold(
       appBar: TitleAppBar(
-        title: widget.tagEntity.tag,
+        title: '',
         actions: [
           if (dirty)
             TextButton(
@@ -143,6 +143,7 @@ class _TagEditPageState extends State<TagEditPage> {
                         labelText: localizations.settingsTagsTagName,
                         name: 'tag',
                         key: const Key('tag_name_field'),
+                        large: true,
                       ),
                       inputSpacer,
                       FormSwitch(
