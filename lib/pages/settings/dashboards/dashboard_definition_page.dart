@@ -549,7 +549,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       onPressed: copyDashboard,
                                     ),
                                     IconButton(
-                                      icon: const Icon(
+                                      icon: Icon(
                                         MdiIcons.trashCanOutline,
                                       ),
                                       iconSize: settingsIconSize,

@@ -29,7 +29,7 @@ class AdvancedSettingsPage extends StatelessWidget {
             ),
             SettingsNavCard(
               trailing: OutboxBadgeIcon(
-                icon: const SettingsIcon(MdiIcons.mailboxOutline),
+                icon: SettingsIcon(MdiIcons.mailboxOutline),
               ),
               title: localizations.settingsSyncOutboxTitle,
               path: '/settings/advanced/outbox_monitor',

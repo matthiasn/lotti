@@ -121,9 +121,12 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
                       sigmaX: 12,
                       sigmaY: 12,
                     ),
-                    child: const Icon(MdiIcons.close, size: 32),
+                    child: Icon(
+                      MdiIcons.close,
+                      size: 32,
+                    ),
                   ),
-                  const Icon(
+                  Icon(
                     MdiIcons.close,
                     size: 32,
                     color: Colors.white,

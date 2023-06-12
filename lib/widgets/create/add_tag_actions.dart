@@ -34,7 +34,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
         key: const Key('add_tag_action'),
         backgroundColor: Theme.of(context).primaryColor,
         onPressed: () => createTag('TAG'),
-        child: const Icon(
+        child: Icon(
           MdiIcons.tagPlusOutline,
           size: 32,
         ),
@@ -43,7 +43,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
         heroTag: 'person',
         backgroundColor: Theme.of(context).primaryColor,
         onPressed: () => createTag('PERSON'),
-        child: const Icon(
+        child: Icon(
           MdiIcons.tagFaces,
           size: 32,
         ),
@@ -52,10 +52,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
         heroTag: 'story',
         backgroundColor: Theme.of(context).primaryColor,
         onPressed: () => createTag('STORY'),
-        child: const Icon(
-          MdiIcons.book,
-          size: 32,
-        ),
+        child: Icon(MdiIcons.book, size: 32),
       ),
     ];
 

@@ -212,7 +212,7 @@ class _TagEditPageState extends State<TagEditPage> {
                     children: [
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(MdiIcons.trashCanOutline),
+                        icon: Icon(MdiIcons.trashCanOutline),
                         iconSize: 24,
                         tooltip: localizations.settingsTagsDeleteTooltip,
                         color: Theme.of(context).colorScheme.outline,

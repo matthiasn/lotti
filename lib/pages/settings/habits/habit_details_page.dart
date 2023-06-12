@@ -137,7 +137,7 @@ class HabitDetailsPage extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             IconButton(
-                              icon: const Icon(MdiIcons.trashCanOutline),
+                              icon: Icon(MdiIcons.trashCanOutline),
                               iconSize: settingsIconSize,
                               tooltip: AppLocalizations.of(context)!
                                   .settingsHabitsDeleteTooltip,

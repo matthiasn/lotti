@@ -53,7 +53,7 @@ class ShareButtonWidget extends StatelessWidget {
         return SizedBox(
           width: 40,
           child: IconButton(
-            icon: const Icon(MdiIcons.shareOutline),
+            icon: Icon(MdiIcons.shareOutline),
             splashColor: Colors.transparent,
             iconSize: 24,
             tooltip: tooltip,
