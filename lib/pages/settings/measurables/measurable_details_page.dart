@@ -66,7 +66,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
 
     return Scaffold(
       appBar: TitleAppBar(
-        title: widget.dataType.displayName,
+        title: '',
         actions: [
           if (dirty)
             TextButton(
@@ -108,6 +108,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           labelText: localizations.settingsMeasurableNameLabel,
                           name: 'displayName',
                           semanticsLabel: 'Measurable - name field',
+                          large: true,
                         ),
                         inputSpacer,
                         FormTextField(
