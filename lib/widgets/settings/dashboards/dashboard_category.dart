@@ -75,8 +75,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
         }
 
         final categoryUndefined = categoryId == null;
-        final style =
-            categoryUndefined ? searchFieldHintStyle : searchFieldStyle;
+        final style = Theme.of(context).textTheme.titleMedium;
 
         return TextField(
           key: const Key('select_dashboard_category'),
@@ -100,7 +99,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
                 : GestureDetector(
                     child: Icon(
                       Icons.close_rounded,
-                      color: style.color,
+                      color: style?.color,
                     ),
                     onTap: () {
                       controller.clear();
@@ -108,11 +107,12 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
                     },
                   ),
             hintText: localizations.habitCategoryHint,
-            hintStyle: style,
+            hintStyle: style?.copyWith(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+            ),
             border: InputBorder.none,
           ),
           style: style,
-          //onChanged: widget.onChanged,
         );
       },
     );

@@ -1,7 +1,6 @@
 // ignore_for_file: equal_keys_in_map
 import 'dart:ui';
 
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/colors.dart';
 
@@ -177,16 +176,16 @@ const chartTitleStyleSmall = TextStyle(
   fontWeight: FontWeight.w300,
 );
 
-TextStyle saveButtonStyle() => TextStyle(
-      fontSize: fontSizeMedium,
+TextStyle saveButtonStyle(ThemeData themeData) => TextStyle(
+      fontSize: fontSizeMediumLarge,
       fontWeight: FontWeight.bold,
-      color: alarm.darken(),
+      color: themeData.colorScheme.error,
     );
 
 TextStyle failButtonStyle() => TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.bold,
-      color: alarm.darken(),
+      color: habitFailColor,
     );
 
 const segmentItemStyle = TextStyle(
@@ -218,6 +217,12 @@ ThemeData withOverrides(ThemeData themeData) {
       clipBehavior: Clip.hardEdge,
       elevation: 100,
     ),
+    textTheme: themeData.textTheme.copyWith(
+      titleMedium: const TextStyle(
+        fontSize: fontSizeMedium,
+        fontWeight: FontWeight.normal,
+      ),
+    ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
         alignment: Alignment.center,
@@ -233,7 +238,24 @@ ThemeData withOverrides(ThemeData themeData) {
         enableFeedback: true,
       ),
     ),
-    inputDecorationTheme:
-        InputDecorationTheme(fillColor: themeData.primaryColor),
+    inputDecorationTheme: InputDecorationTheme(
+      fillColor: themeData.primaryColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(inputBorderRadius),
+        borderSide: BorderSide(color: themeData.colorScheme.outline),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(inputBorderRadius),
+        borderSide: BorderSide(color: themeData.colorScheme.error),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(inputBorderRadius),
+        borderSide: BorderSide(
+          color: themeData.primaryColor,
+          width: 2,
+        ),
+      ),
+      floatingLabelBehavior: FloatingLabelBehavior.always,
+    ),
   );
 }

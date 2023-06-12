@@ -52,7 +52,7 @@ class CategoryDetailsPage extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           AppLocalizations.of(context)!.settingsHabitsSaveLabel,
-                          style: saveButtonStyle(),
+                          style: saveButtonStyle(Theme.of(context)),
                           semanticsLabel: 'Save Category',
                         ),
                       ),

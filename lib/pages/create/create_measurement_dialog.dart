@@ -137,7 +137,9 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                 ),
                 child: Text(
                   localizations.addMeasurementSaveButton,
-                  style: saveButtonStyle(),
+                  style: saveButtonStyle(
+                    Theme.of(context),
+                  ),
                 ),
               )
             else
