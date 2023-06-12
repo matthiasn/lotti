@@ -309,7 +309,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
 
             return Scaffold(
               appBar: TitleAppBar(
-                title: widget.dashboard.name,
+                title: '',
                 actions: [
                   if (dirty)
                     TextButton(
@@ -319,7 +319,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
                           localizations.dashboardSaveLabel,
-                          style: saveButtonStyle(),
+                          style: saveButtonStyle(Theme.of(context)),
                           semanticsLabel: 'Save Dashboard',
                         ),
                       ),
@@ -352,6 +352,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   name: 'name',
                                   semanticsLabel: 'Dashboard - name field',
                                   key: const Key('dashboard_name_field'),
+                                  large: true,
                                 ),
                                 inputSpacer,
                                 FormTextField(

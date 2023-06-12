@@ -105,7 +105,7 @@ class _TagEditPageState extends State<TagEditPage> {
 
     return Scaffold(
       appBar: TitleAppBar(
-        title: widget.tagEntity.tag,
+        title: '',
         actions: [
           if (dirty)
             TextButton(
@@ -115,7 +115,7 @@ class _TagEditPageState extends State<TagEditPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   localizations.settingsTagsSaveLabel,
-                  style: saveButtonStyle(),
+                  style: saveButtonStyle(Theme.of(context)),
                 ),
               ),
             ),
@@ -143,6 +143,7 @@ class _TagEditPageState extends State<TagEditPage> {
                         labelText: localizations.settingsTagsTagName,
                         name: 'tag',
                         key: const Key('tag_name_field'),
+                        large: true,
                       ),
                       inputSpacer,
                       FormSwitch(
@@ -181,24 +182,15 @@ class _TagEditPageState extends State<TagEditPage> {
                         options: [
                           FormBuilderChipOption<String>(
                             value: 'TAG',
-                            child: Text(
-                              localizations.settingsTagsTypeTag,
-                              style: const TextStyle(color: Colors.black87),
-                            ),
+                            child: Text(localizations.settingsTagsTypeTag),
                           ),
                           FormBuilderChipOption<String>(
                             value: 'PERSON',
-                            child: Text(
-                              localizations.settingsTagsTypePerson,
-                              style: const TextStyle(color: Colors.black87),
-                            ),
+                            child: Text(localizations.settingsTagsTypePerson),
                           ),
                           FormBuilderChipOption<String>(
                             value: 'STORY',
-                            child: Text(
-                              localizations.settingsTagsTypeStory,
-                              style: const TextStyle(color: Colors.black87),
-                            ),
+                            child: Text(localizations.settingsTagsTypeStory),
                           ),
                         ],
                       ),

@@ -37,7 +37,7 @@ class HabitDetailsPage extends StatelessWidget {
 
         return Scaffold(
           appBar: TitleAppBar(
-            title: state.habitDefinition.name,
+            title: '',
             actions: [
               if (state.dirty)
                 TextButton(
@@ -47,7 +47,7 @@ class HabitDetailsPage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       AppLocalizations.of(context)!.settingsHabitsSaveLabel,
-                      style: saveButtonStyle(),
+                      style: saveButtonStyle(Theme.of(context)),
                       semanticsLabel: 'Save Habit',
                     ),
                   ),
@@ -75,6 +75,7 @@ class HabitDetailsPage extends StatelessWidget {
                                   .settingsHabitsNameLabel,
                               name: 'name',
                               semanticsLabel: 'Habit name field',
+                              large: true,
                             ),
                             inputSpacer,
                             FormTextField(

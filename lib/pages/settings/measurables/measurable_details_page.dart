@@ -66,7 +66,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
 
     return Scaffold(
       appBar: TitleAppBar(
-        title: widget.dataType.displayName,
+        title: '',
         actions: [
           if (dirty)
             TextButton(
@@ -76,7 +76,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   localizations.settingsMeasurableSaveLabel,
-                  style: saveButtonStyle(),
+                  style: saveButtonStyle(Theme.of(context)),
                   semanticsLabel: 'Save Measurable',
                 ),
               ),
@@ -108,6 +108,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                           labelText: localizations.settingsMeasurableNameLabel,
                           name: 'displayName',
                           semanticsLabel: 'Measurable - name field',
+                          large: true,
                         ),
                         inputSpacer,
                         FormTextField(
@@ -162,7 +163,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                     aggregationType,
                                   ),
                                   style:
-                                      const TextStyle(fontSize: fontSizeMedium),
+                                      Theme.of(context).textTheme.titleMedium,
                                 ),
                               ),
                             );

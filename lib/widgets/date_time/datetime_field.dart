@@ -10,14 +10,12 @@ class DateTimeField extends StatefulWidget {
     required this.labelText,
     required this.setDateTime,
     this.mode = CupertinoDatePickerMode.dateAndTime,
-    this.style,
     super.key,
   });
 
   final DateTime? dateTime;
   final String labelText;
   final void Function(DateTime) setDateTime;
-  final TextStyle? style;
   final CupertinoDatePickerMode mode;
 
   @override
@@ -27,6 +25,8 @@ class DateTimeField extends StatefulWidget {
 class _DateTimeFieldState extends State<DateTimeField> {
   @override
   Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.titleMedium;
+
     final df = widget.mode == CupertinoDatePickerMode.date
         ? dfYmd
         : widget.mode == CupertinoDatePickerMode.time
@@ -36,10 +36,10 @@ class _DateTimeFieldState extends State<DateTimeField> {
     return TextField(
       decoration: createDialogInputDecoration(
         labelText: widget.labelText,
-        style: widget.style,
+        style: style,
         themeData: Theme.of(context),
       ),
-      style: widget.style,
+      style: style,
       readOnly: true,
       controller: TextEditingController(
         text: widget.dateTime != null ? df.format(widget.dateTime!) : '',

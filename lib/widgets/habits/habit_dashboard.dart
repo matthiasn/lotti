@@ -85,7 +85,7 @@ class SelectDashboardWidget extends StatelessWidget {
             }
 
             final undefined = state.habitDefinition.dashboardId == null;
-            final style = undefined ? searchFieldHintStyle : searchFieldStyle;
+            final style = Theme.of(context).textTheme.titleMedium;
 
             return TextField(
               onTap: onTap,
@@ -101,7 +101,7 @@ class SelectDashboardWidget extends StatelessWidget {
                     : GestureDetector(
                         child: Icon(
                           Icons.close_rounded,
-                          color: style.color,
+                          color: style?.color,
                         ),
                         onTap: () {
                           controller.clear();
@@ -109,11 +109,12 @@ class SelectDashboardWidget extends StatelessWidget {
                         },
                       ),
                 hintText: localizations.habitDashboardHint,
-                hintStyle: style,
+                hintStyle: style?.copyWith(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                ),
                 border: InputBorder.none,
               ),
               style: style,
-              //onChanged: widget.onChanged,
             );
           },
         );

@@ -83,8 +83,7 @@ class SelectCategoryWidget extends StatelessWidget {
             }
 
             final categoryUndefined = state.habitDefinition.categoryId == null;
-            final style =
-                categoryUndefined ? searchFieldHintStyle : searchFieldStyle;
+            final style = Theme.of(context).textTheme.titleMedium;
 
             return TextField(
               onTap: onTap,
@@ -107,7 +106,7 @@ class SelectCategoryWidget extends StatelessWidget {
                     : GestureDetector(
                         child: Icon(
                           Icons.close_rounded,
-                          color: style.color,
+                          color: style?.color,
                         ),
                         onTap: () {
                           controller.clear();
@@ -115,11 +114,12 @@ class SelectCategoryWidget extends StatelessWidget {
                         },
                       ),
                 hintText: localizations.habitCategoryHint,
-                hintStyle: style,
+                hintStyle: style?.copyWith(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                ),
                 border: InputBorder.none,
               ),
               style: style,
-              //onChanged: widget.onChanged,
             );
           },
         );
