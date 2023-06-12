@@ -81,10 +81,13 @@ const switchDecoration = InputDecoration(border: InputBorder.none);
 const inputSpacer = SizedBox(height: 25);
 const inputSpacerSmall = SizedBox(height: 15);
 
-TextStyle choiceChipTextStyle({required bool isSelected}) => TextStyle(
+TextStyle choiceChipTextStyle({
+  required ThemeData themeData,
+}) =>
+    TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w300,
-      color: isSelected ? null : unselectedChoiceChipTextColor,
+      color: themeData.colorScheme.inversePrimary,
     );
 
 const chartTooltipStyle = TextStyle(
@@ -103,7 +106,6 @@ const transcriptHeaderStyle = TextStyle(
 );
 
 const monospaceTextStyle = TextStyle(
-  fontWeight: FontWeight.w300,
   fontSize: fontSizeMedium,
   fontFeatures: [FontFeature.tabularFigures()],
 );

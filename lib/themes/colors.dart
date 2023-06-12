@@ -23,6 +23,5 @@ const personTagColor = Color.fromRGBO(55, 201, 154, 1);
 const storyTagColor = Color.fromRGBO(200, 120, 0, 1);
 const starredGold = Color.fromRGBO(255, 215, 0, 1);
 
-const unselectedChoiceChipTextColor = Color.fromRGBO(99, 99, 99, 0.7);
 final secondaryTextColor = oldPrimaryColor.desaturate(70).darken(20);
 final chartTextColor = nickel;
