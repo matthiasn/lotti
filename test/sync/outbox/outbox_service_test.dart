@@ -77,7 +77,7 @@ void main() {
       getIt
         ..registerSingleton<LoggingDb>(getLoggingDb())
         ..registerSingleton<SettingsDb>(getSettingsDb())
-        ..registerSingleton<SyncDatabase>(getSyncDatabase())
+        ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<FgBgService>(mockFgBgService)
         ..registerSingleton<VectorClockService>(mockVectorClockService)
