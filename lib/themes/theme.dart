@@ -174,7 +174,7 @@ TextStyle saveButtonStyle(ThemeData themeData) => TextStyle(
     );
 
 TextStyle failButtonStyle() => TextStyle(
-      fontSize: fontSizeMedium,
+      fontSize: fontSizeMediumLarge,
       fontWeight: FontWeight.bold,
       color: habitFailColor,
     );
