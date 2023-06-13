@@ -209,7 +209,7 @@ ThemeData withOverrides(ThemeData themeData) {
       elevation: 100,
     ),
     textTheme: themeData.textTheme.copyWith(
-      titleMedium: const TextStyle(
+      titleMedium: themeData.textTheme.titleMedium?.copyWith(
         fontSize: fontSizeMedium,
         fontWeight: FontWeight.normal,
       ),

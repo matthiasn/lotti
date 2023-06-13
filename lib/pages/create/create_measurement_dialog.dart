@@ -177,7 +177,10 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       if (dataType.description.isNotEmpty)
                         Text(
                           dataType.description,
-                          style: const TextStyle(fontWeight: FontWeight.w300),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w300,
+                            fontSize: fontSizeSmall,
+                          ),
                         ),
                       inputSpacer,
                       DateTimeField(
