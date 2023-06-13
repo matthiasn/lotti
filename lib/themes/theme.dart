@@ -174,7 +174,7 @@ TextStyle saveButtonStyle(ThemeData themeData) => TextStyle(
     );
 
 TextStyle failButtonStyle() => TextStyle(
-      fontSize: fontSizeMedium,
+      fontSize: fontSizeMediumLarge,
       fontWeight: FontWeight.bold,
       color: habitFailColor,
     );
@@ -209,7 +209,7 @@ ThemeData withOverrides(ThemeData themeData) {
       elevation: 100,
     ),
     textTheme: themeData.textTheme.copyWith(
-      titleMedium: const TextStyle(
+      titleMedium: themeData.textTheme.titleMedium?.copyWith(
         fontSize: fontSizeMedium,
         fontWeight: FontWeight.normal,
       ),

@@ -51,7 +51,11 @@ class HabitsSliverAppBar extends StatelessWidget {
                         : Theme.of(context).colorScheme.outline,
                   ),
                 ),
-                SettingsButton('/settings/habits/search/${state.searchString}'),
+                SettingsButton(
+                  state.searchString.isNotEmpty
+                      ? '/settings/habits/search/${state.searchString}'
+                      : '/settings/habits',
+                ),
                 if (state.minY > 20)
                   IconButton(
                     onPressed: cubit.toggleZeroBased,
