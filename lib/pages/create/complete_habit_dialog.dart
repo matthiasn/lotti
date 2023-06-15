@@ -268,7 +268,8 @@ class _HabitDialogState extends State<HabitDialog> {
                                         style:
                                             saveButtonStyle(Theme.of(context))
                                                 .copyWith(
-                                          color: habitSkipColor.darken(),
+                                          color:
+                                              habitSkipColor.withOpacity(0.8),
                                         ),
                                       ),
                                     ),
@@ -283,7 +284,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                         style:
                                             saveButtonStyle(Theme.of(context))
                                                 .copyWith(
-                                          color: habitSuccessColor.darken(25),
+                                          color: habitSuccessColor,
                                         ),
                                       ),
                                     ),
