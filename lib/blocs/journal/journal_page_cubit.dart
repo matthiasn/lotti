@@ -51,6 +51,15 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       ),
       keyDownHandler: (hotKey) => refreshQuery(),
     );
+
+    if (showTasks) {
+      _db.watchTasks(
+        starredStatuses: [true, false],
+        taskStatuses: _selectedTaskStatuses.toList(),
+      ).listen((event) {
+        refreshQuery();
+      });
+    }
   }
 
   final JournalDb _db = getIt<JournalDb>();
