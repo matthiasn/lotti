@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Text weight and whitespace in entry card footer
 - Form field text color in light mode
 - Flaky test
+- Habit skip and completion colors
 
 ## [0.8.376] - 2023-06-12
 ### Changed:
