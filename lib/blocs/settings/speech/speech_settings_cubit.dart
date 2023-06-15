@@ -96,10 +96,13 @@ class SpeechSettingsCubit extends Cubit<SpeechSettingsState> {
       final value = task.progress.value;
       _downloadProgress[model] = value;
 
-      if (value == 1.0 && _selectedModel.isEmpty) {
-        _selectedModel = model;
-      }
+      if (value == 1.0) {
+        detectDownloadedModels();
 
+        if (_selectedModel.isEmpty) {
+          _selectedModel = model;
+        }
+      }
       emitState();
     });
 
