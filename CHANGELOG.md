@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Form field text color in light mode
 - Flaky test
 - Habit skip and completion colors
+- Clipped habit bottom sheet corners
 
 ## [0.8.376] - 2023-06-12
 ### Changed:
