@@ -154,8 +154,8 @@ class _HabitDialogState extends State<HabitDialog> {
                     elevation: 10,
                     shape: RoundedRectangleBorder(
                       borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
+                        topLeft: Radius.circular(30),
+                        topRight: Radius.circular(30),
                       ),
                       side: BorderSide(
                         color: (Theme.of(context).textTheme.titleLarge?.color ??
@@ -268,7 +268,8 @@ class _HabitDialogState extends State<HabitDialog> {
                                         style:
                                             saveButtonStyle(Theme.of(context))
                                                 .copyWith(
-                                          color: habitSkipColor.darken(),
+                                          color:
+                                              habitSkipColor.withOpacity(0.8),
                                         ),
                                       ),
                                     ),
@@ -283,7 +284,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                         style:
                                             saveButtonStyle(Theme.of(context))
                                                 .copyWith(
-                                          color: habitSuccessColor.darken(25),
+                                          color: habitSuccessColor,
                                         ),
                                       ),
                                     ),
