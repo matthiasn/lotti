@@ -154,8 +154,8 @@ class _HabitDialogState extends State<HabitDialog> {
                     elevation: 10,
                     shape: RoundedRectangleBorder(
                       borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
+                        topLeft: Radius.circular(30),
+                        topRight: Radius.circular(30),
                       ),
                       side: BorderSide(
                         color: (Theme.of(context).textTheme.titleLarge?.color ??
