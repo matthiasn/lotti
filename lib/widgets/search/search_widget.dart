@@ -30,36 +30,40 @@ class _SearchWidgetState extends State<SearchWidget> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return Container(
-      margin: widget.margin,
-      height: 53,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: SearchBar(
-        controller: controller,
-        hintText: widget.hintText ?? localizations.searchHint,
-        onChanged: widget.onChanged,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 8),
-          child: Icon(Icons.search),
-        ),
-        trailing: [
-          Visibility(
-            visible: controller.text.isNotEmpty,
-            child: GestureDetector(
-              child: const Padding(
-                padding: EdgeInsets.only(right: 8),
-                child: Icon(
-                  Icons.close_rounded,
-                ),
-              ),
-              onTap: () {
-                controller.clear();
-                widget.onChanged('');
-                FocusScope.of(context).requestFocus(FocusNode());
-              },
-            ),
+    return Theme(
+      data: Theme.of(context)
+          .copyWith(inputDecorationTheme: const InputDecorationTheme()),
+      child: Container(
+        margin: widget.margin,
+        height: 53,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: SearchBar(
+          controller: controller,
+          hintText: widget.hintText ?? localizations.searchHint,
+          onChanged: widget.onChanged,
+          leading: const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: Icon(Icons.search),
           ),
-        ],
+          trailing: [
+            Visibility(
+              visible: controller.text.isNotEmpty,
+              child: GestureDetector(
+                child: const Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: Icon(
+                    Icons.close_rounded,
+                  ),
+                ),
+                onTap: () {
+                  controller.clear();
+                  widget.onChanged('');
+                  FocusScope.of(context).requestFocus(FocusNode());
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
