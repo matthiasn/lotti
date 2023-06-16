@@ -6,7 +6,6 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class ToolbarWidget extends StatelessWidget {
@@ -25,7 +24,7 @@ class ToolbarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final iconTheme = QuillIconTheme(
-      iconSelectedColor: cardColor,
+      iconSelectedColor: Theme.of(context).colorScheme.inversePrimary,
       iconSelectedFillColor: Theme.of(context).primaryColor,
       iconUnselectedColor: Theme.of(context).colorScheme.outline,
     );
