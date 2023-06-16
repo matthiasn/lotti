@@ -53,6 +53,25 @@ void main() {
         measurableChocolate,
       ]);
 
+      when(
+        () => mockJournalDb.watchTasks(
+          starredStatuses: [true, false],
+          taskStatuses: [
+            'OPEN',
+            'GROOMED',
+            'IN PROGRESS',
+            'BLOCKED',
+            'ON HOLD',
+            'DONE',
+            'REJECTED',
+          ],
+        ),
+      ).thenAnswer(
+        (_) => Stream<List<JournalEntity>>.fromIterable([
+          [testTask]
+        ]),
+      );
+
       when(() => mockJournalDb.watchConfigFlag(enableTaskManagement))
           .thenAnswer(
         (_) => Stream<bool>.fromIterable([false]),
