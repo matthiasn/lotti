@@ -8,7 +8,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
-import 'package:lotti/widgets/journal/entry_details/duration_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/habit_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/health_summary.dart';
 import 'package:lotti/widgets/journal/entry_details/measurement_summary.dart';
@@ -95,19 +94,9 @@ class JournalCardTitle extends StatelessWidget {
                 qe,
                 showChart: false,
               ),
-              journalAudio: (JournalAudio journalAudio) => Column(
-                children: [
-                  if (journalAudio.entryText?.plainText != null)
-                    TextViewerWidget(
-                      entryText: journalAudio.entryText,
-                      maxHeight: maxHeight,
-                    ),
-                  const SizedBox(height: 10),
-                  FormattedTime(
-                    displayed: journalAudio,
-                    labelColor: Theme.of(context).colorScheme.outline,
-                  ),
-                ],
+              journalAudio: (JournalAudio journalAudio) => TextViewerWidget(
+                entryText: journalAudio.entryText,
+                maxHeight: maxHeight,
               ),
               journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
                 entryText: journalEntry.entryText,
