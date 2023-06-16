@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -71,6 +73,8 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
                     Colors.grey,
                 fontSize: fontSizeLarge,
                 fontWeight: FontWeight.w300,
+                fontFamily: mainFont,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ),

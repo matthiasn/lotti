@@ -248,5 +248,15 @@ ThemeData withOverrides(ThemeData themeData) {
       ),
       floatingLabelBehavior: FloatingLabelBehavior.always,
     ),
+    textButtonTheme: TextButtonThemeData(
+      style: ButtonStyle(
+        textStyle: MaterialStateProperty.resolveWith((states) {
+          return const TextStyle(
+            fontSize: fontSizeMediumLarge,
+            fontFamily: mainFont,
+          );
+        }),
+      ),
+    ),
   );
 }
