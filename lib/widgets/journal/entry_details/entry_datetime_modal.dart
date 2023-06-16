@@ -4,7 +4,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -103,9 +102,6 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                     padding: const EdgeInsets.only(left: 8),
                     child: Text(
                       formatDuration(dateFrom.difference(dateTo).abs()),
-                      style: monospaceTextStyle.copyWith(
-                        fontWeight: FontWeight.w100,
-                      ),
                     ),
                   ),
                 ],
