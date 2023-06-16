@@ -106,7 +106,6 @@ class TimeSeriesLineChart extends StatelessWidget {
         LineChartData(
           gridData: FlGridData(
             show: false,
-            drawVerticalLine: true,
             horizontalInterval: double.maxFinite,
             verticalInterval:
                 Duration.millisecondsPerDay.toDouble() * gridInterval,
@@ -146,15 +145,8 @@ class TimeSeriesLineChart extends StatelessWidget {
             ),
           ),
           titlesData: FlTitlesData(
-            show: true,
-            rightTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: false,
-              ),
-            ),
-            topTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
+            rightTitles: const AxisTitles(),
+            topTitles: const AxisTitles(),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
@@ -163,7 +155,7 @@ class TimeSeriesLineChart extends StatelessWidget {
                 getTitlesWidget: bottomTitleWidgets,
               ),
             ),
-            leftTitles: AxisTitles(
+            leftTitles: const AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 interval: double.maxFinite,
@@ -188,9 +180,8 @@ class TimeSeriesLineChart extends StatelessWidget {
               gradient: LinearGradient(
                 colors: gradientColors,
               ),
-              barWidth: 2,
               isStrokeCapRound: true,
-              dotData: FlDotData(
+              dotData: const FlDotData(
                 show: false,
               ),
               belowBarData: BarAreaData(
@@ -204,7 +195,7 @@ class TimeSeriesLineChart extends StatelessWidget {
             ),
           ],
         ),
-        swapAnimationDuration: Duration.zero,
+        duration: Duration.zero,
       ),
     );
   }
