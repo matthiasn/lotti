@@ -19,7 +19,6 @@ final gridLine = FlLine(
 
 final gridLineEmphasized = FlLine(
   color: chartTextColor,
-  strokeWidth: 2,
   dashArray: [5, 3],
 );
 
@@ -110,8 +109,6 @@ class HabitCompletionRateChart extends StatelessWidget
                       ),
                     ),
                     gridData: FlGridData(
-                      show: true,
-                      drawVerticalLine: true,
                       horizontalInterval: 20,
                       verticalInterval: 1,
                       getDrawingHorizontalLine: (value) {
@@ -124,13 +121,8 @@ class HabitCompletionRateChart extends StatelessWidget
                       getDrawingVerticalLine: (value) => gridLine,
                     ),
                     titlesData: FlTitlesData(
-                      show: true,
-                      rightTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      topTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
+                      rightTitles: const AxisTitles(),
+                      topTitles: const AxisTitles(),
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
@@ -139,7 +131,7 @@ class HabitCompletionRateChart extends StatelessWidget
                           getTitlesWidget: bottomTitleWidgets,
                         ),
                       ),
-                      leftTitles: AxisTitles(
+                      leftTitles: const AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
                           interval: 20,
@@ -202,7 +194,7 @@ class HabitCompletionRateChart extends StatelessWidget
                       ),
                     ],
                   ),
-                  swapAnimationCurve: Curves.easeInOut,
+                  curve: Curves.easeInOut,
                 ),
               ),
             ),
@@ -261,7 +253,7 @@ LineChartBarData barData({
     spots: spots,
     color: color,
     barWidth: 1,
-    dotData: FlDotData(show: false),
+    dotData: const FlDotData(show: false),
     belowBarData: BarAreaData(
       show: true,
       color: color.withOpacity(opacity),

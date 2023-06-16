@@ -69,8 +69,6 @@ class DashboardHealthBpChart extends StatelessWidget {
             child: LineChart(
               LineChartData(
                 gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: true,
                   horizontalInterval: 10,
                   verticalInterval: double.maxFinite,
                   getDrawingHorizontalLine: (value) {
@@ -122,15 +120,8 @@ class DashboardHealthBpChart extends StatelessWidget {
                   ),
                 ),
                 titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: false,
-                    ),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
+                  rightTitles: const AxisTitles(),
+                  topTitles: const AxisTitles(),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -139,7 +130,7 @@ class DashboardHealthBpChart extends StatelessWidget {
                       getTitlesWidget: bottomTitleWidgets,
                     ),
                   ),
-                  leftTitles: AxisTitles(
+                  leftTitles: const AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       interval: 10,
@@ -173,11 +164,8 @@ class DashboardHealthBpChart extends StatelessWidget {
                       color: Colors.red.withOpacity(0.1),
                     ),
                     curveSmoothness: 0.1,
-                    barWidth: 2,
                     isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: false,
-                    ),
+                    dotData: const FlDotData(show: false),
                   ),
                   LineChartBarData(
                     spots: diastolicData
@@ -195,15 +183,14 @@ class DashboardHealthBpChart extends StatelessWidget {
                       show: true,
                       color: Colors.blue.withOpacity(0.2),
                     ),
-                    barWidth: 2,
                     isStrokeCapRound: true,
-                    dotData: FlDotData(
+                    dotData: const FlDotData(
                       show: false,
                     ),
                   ),
                 ],
               ),
-              swapAnimationDuration: Duration.zero,
+              duration: Duration.zero,
             ),
           ),
           chartHeader: const BpChartInfoWidget(),
