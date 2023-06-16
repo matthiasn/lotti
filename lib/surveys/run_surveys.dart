@@ -21,8 +21,12 @@ Future<void> runSurvey({
       return Theme(
         data: themeData.copyWith(
           scaffoldBackgroundColor: Colors.transparent,
-          textTheme: Theme.of(context)
-              .textTheme
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              foregroundColor: themeData.colorScheme.onPrimary,
+            ),
+          ),
+          textTheme: themeData.textTheme
               .apply(
                 fontFamily: 'PlusJakartaSans',
               )

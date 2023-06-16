@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.381+2255
+version: 0.9.381+2258
 
 msix_config:
   display_name: LottiApp
@@ -49,7 +49,7 @@ dependencies:
   exif: ^3.0.1
 
   ffmpeg_kit_flutter: ^5.1.0
-  fl_chart: ^0.62.0
+  fl_chart: ^0.63.0
   flex_color_scheme: ^7.1.2
   flutter:
     sdk: flutter
@@ -73,7 +73,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  flutter_map: ^4.0.0
+  flutter_map: ^5.0.0
   flutter_markdown: ^0.6.9+1
   flutter_native_timezone: ^2.0.0
   flutter_quill: ^7.1.18
@@ -84,7 +84,7 @@ dependencies:
   freezed_annotation: ^2.0.3
   geoclue: ^0.1.0
   get_it: ^7.2.0
-  google_fonts: ^4.0.3
+  google_fonts: ^5.0.0
 
   #health: ^4.4.0
   health:
@@ -99,7 +99,7 @@ dependencies:
   intl: ^0.18.0
   jiffy: ^6.1.0
   json_annotation: ^4.8.1
-  latlong2: ^0.8.1
+  latlong2: ^0.9.0
   location: ^4.3.0
   lottie: ^2.2.0
   material_design_icons_flutter: ^7.0.7096
@@ -128,7 +128,7 @@ dependencies:
 
   random_password_generator: ^0.2.1
   record: ^4.4.4
-  research_package: ^1.3.1
+  research_package: ^1.3.2
   retry: ^3.1.0
   rxdart: ^0.27.7
   share_plus: ^7.0.0
@@ -148,6 +148,7 @@ dependencies:
 
 dependency_overrides:
   device_info_plus: ^9.0.0
+  http: ^1.0.0
   image: ^4.0.13
   intl: ^0.18.0
   rxdart: ^0.27.1
