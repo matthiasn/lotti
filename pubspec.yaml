@@ -49,7 +49,7 @@ dependencies:
   exif: ^3.0.1
 
   ffmpeg_kit_flutter: ^5.1.0
-  fl_chart: ^0.62.0
+  fl_chart: ^0.63.0
   flex_color_scheme: ^7.1.2
   flutter:
     sdk: flutter
