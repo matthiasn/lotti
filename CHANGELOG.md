@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typography in DateTime modal
 - Selected color in editor toolbar
 
+### Fixed:
+- Survey next button text color
+
 ## [0.8.380] - 2023-06-16
 ### Fixed:
 - Border in search widget
