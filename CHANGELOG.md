@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Typography in DateTime modal
+- Selected color in editor toolbar
 
 ## [0.8.380] - 2023-06-16
 ### Fixed:
