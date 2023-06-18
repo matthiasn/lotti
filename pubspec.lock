@@ -478,18 +478,18 @@ packages:
     dependency: "direct main"
     description:
       name: drift
-      sha256: ece158210150b6fec9380d8ac6eaa3bf8f9acd8f305cfbde6689d059f88df88f
+      sha256: a8ec4e44b4359ef44eab3d2c2f8e44b41a00c15673b879984484b34d27656ad5
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.2"
+    version: "2.9.0"
   drift_dev:
     dependency: "direct dev"
     description:
       name: drift_dev
-      sha256: "4704966d9eb8f5717bebad7e722397d8150235f4bb1d64eb8b22c55d4566cf6a"
+      sha256: "2713aabc91d8e9cdf269b2ecfa503f103341925b07186e845de11a781015f7eb"
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.3"
+    version: "2.9.0"
   easy_debounce:
     dependency: "direct main"
     description:
@@ -574,10 +574,10 @@ packages:
     dependency: transitive
     description:
       name: extended_image_library
-      sha256: af3ff1c09c23ca7663f94272313d63499a6bd19121e99378e375e0cf2ac7a3e4
+      sha256: bb8d08c504ebc73d476ec1c99451a61f12e95538869e734fc4f55a3a2d5c98ec
       url: "https://pub.dev"
     source: hosted
-    version: "3.5.2"
+    version: "3.5.3"
   fake_async:
     dependency: transitive
     description:
@@ -886,10 +886,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: edfb681c0b173dc2ac389add08ef60acac4f8f0a553ac42cd5fa90da6e08016f
+      sha256: "8af9c0dfd6db290d4f2da6abc5aff838fde41061fb2fa892ebee5902faeb7cb1"
       url: "https://pub.dev"
     source: hosted
-    version: "7.2.6"
+    version: "7.2.7"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1094,10 +1094,10 @@ packages:
     dependency: transitive
     description:
       name: http_client_helper
-      sha256: "14c6e756644339f561321dab021215475ba4779aa962466f59ccb3ecf66b36c3"
+      sha256: "8a9127650734da86b5c73760de2b404494c968a3fd55602045ffec789dac3cb1"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.4"
+    version: "3.0.0"
   http_multi_server:
     dependency: transitive
     description:
@@ -2065,10 +2065,10 @@ packages:
     dependency: transitive
     description:
       name: sqlite3
-      sha256: "281b672749af2edf259fc801f0fcba092257425bcd32a0ce1c8237130bc934c7"
+      sha256: f7511ddd6a2dda8ded9d849f8a925bb6020e0faa59db2443debc18d484e59401
       url: "https://pub.dev"
     source: hosted
-    version: "1.11.2"
+    version: "2.0.0"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
@@ -2289,10 +2289,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_platform_interface
-      sha256: "6c9ca697a5ae218ce56cece69d46128169a58aa8653c1b01d26fcd4aad8c4370"
+      sha256: bfdfa402f1f3298637d71ca8ecfe840b4696698213d5346e9d12d4ab647ee2ea
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.2"
+    version: "2.1.3"
   url_launcher_web:
     dependency: transitive
     description:
