@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
@@ -287,7 +288,17 @@ class _HabitDialogState extends State<HabitDialog> {
                                           color: habitSuccessColor,
                                         ),
                                       ),
-                                    ),
+                                    )
+                                        .animate(
+                                          autoPlay: true,
+                                          onPlay: (controller) =>
+                                              controller.repeat(),
+                                        )
+                                        .shimmer(
+                                          delay: 1.seconds,
+                                          duration: .7.seconds,
+                                          color: Theme.of(context).cardColor,
+                                        ),
                                   ],
                                 ),
                               ),

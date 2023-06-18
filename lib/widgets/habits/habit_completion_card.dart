@@ -1,6 +1,7 @@
 import 'dart:core';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -189,7 +190,16 @@ class _HabitCompletionCardState extends State<HabitCompletionCard> {
                   size: 30,
                   semanticLabel: 'Complete ${widget.habitDefinition.name}',
                 ),
-              ),
+              )
+                  .animate(
+                    autoPlay: true,
+                    onPlay: (controller) => controller.repeat(),
+                  )
+                  .shimmer(
+                    delay: 1.5.seconds,
+                    duration: .7.seconds,
+                    color: Theme.of(context).cardColor,
+                  ),
             ),
           ),
         );
