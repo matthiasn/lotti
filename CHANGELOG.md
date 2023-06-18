@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shimmer animation on habit success button
 - Shimmer animation on habit complete button
 
+### Changed:
+- Upgraded dependencies
+
 ## [0.8.381] - 2023-06-17
 ### Changed:
 - Typography in DateTime modal
