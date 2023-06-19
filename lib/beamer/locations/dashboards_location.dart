@@ -21,7 +21,6 @@ class DashboardsLocation extends BeamLocation<BeamState> {
       const BeamPage(
         key: ValueKey('dashboards'),
         title: 'Dashboards',
-        type: BeamPageType.noTransition,
         child: DashboardsListPage(),
       ),
       if (isUuid(dashboardId))
