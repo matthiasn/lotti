@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -46,7 +47,7 @@ class EntryDetailPage extends StatelessWidget {
             isMacOS: Platform.isMacOS,
             isIOS: Platform.isIOS,
             isAndroid: Platform.isAndroid,
-          ),
+          ).animate().fadeIn(duration: const Duration(milliseconds: 2000)),
           body: SingleChildScrollView(
             physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.only(
@@ -66,7 +67,7 @@ class EntryDetailPage extends StatelessWidget {
                 LinkedEntriesWidget(item: item),
                 LinkedFromEntriesWidget(item: item),
               ],
-            ),
+            ).animate().fadeIn(duration: const Duration(milliseconds: 250)),
           ),
         );
       },

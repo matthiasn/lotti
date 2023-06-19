@@ -18,7 +18,6 @@ class HabitsLocation extends BeamLocation<BeamState> {
       BeamPage(
         key: const ValueKey('habits'),
         title: 'Habits',
-        type: BeamPageType.noTransition,
         child: BlocProvider<HabitsCubit>(
           create: (BuildContext context) => HabitsCubit(),
           child: const HabitsTabPage(),

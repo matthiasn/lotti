@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/themes/theme.dart';
@@ -30,7 +31,11 @@ class TitleAppBar extends StatelessWidget implements PreferredSizeWidget {
         title,
         style: appBarTextStyleNew,
       ),
-      leading: showBackButton ? const BackWidget() : Container(),
+      leading: showBackButton
+          ? const BackWidget()
+              .animate()
+              .fadeIn(duration: const Duration(seconds: 1))
+          : Container(),
       centerTitle: true,
     );
   }
@@ -78,6 +83,6 @@ class BackWidget extends StatelessWidget {
           ),
         ),
       ],
-    );
+    ).animate().fadeIn(duration: const Duration(seconds: 1));
   }
 }

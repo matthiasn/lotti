@@ -262,5 +262,8 @@ ThemeData withOverrides(ThemeData themeData) {
         }),
       ),
     ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: <TargetPlatform, PageTransitionsBuilder>{},
+    ),
   );
 }

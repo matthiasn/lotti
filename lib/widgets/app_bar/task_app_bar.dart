@@ -28,7 +28,7 @@ class TaskAppBar extends StatelessWidget implements PreferredSizeWidget {
       ) {
         final item = snapshot.data;
         if (item == null || item.meta.deletedAt != null) {
-          return const TitleAppBar(title: 'Lotti');
+          return const TitleAppBar(title: '');
         }
 
         final isTask = item is Task;
