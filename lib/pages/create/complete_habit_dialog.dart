@@ -269,8 +269,9 @@ class _HabitDialogState extends State<HabitDialog> {
                                         style:
                                             saveButtonStyle(Theme.of(context))
                                                 .copyWith(
-                                          color:
-                                              habitSkipColor.withOpacity(0.8),
+                                          color: habitSkipColor
+                                              .desaturate(40)
+                                              .withOpacity(0.8),
                                         ),
                                       ),
                                     ),
