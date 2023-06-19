@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 
 class SliverBoxAdapterPage extends StatelessWidget {
@@ -24,7 +25,9 @@ class SliverBoxAdapterPage extends StatelessWidget {
             showBackButton: showBackButton,
           ),
           SliverToBoxAdapter(
-            child: child,
+            child: child
+                .animate()
+                .fadeIn(duration: const Duration(milliseconds: 500)),
           )
         ],
       ),

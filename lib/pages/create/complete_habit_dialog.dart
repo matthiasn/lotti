@@ -289,13 +289,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                           color: habitSuccessColor,
                                         ),
                                       ),
-                                    )
-                                        .animate(
-                                          autoPlay: true,
-                                          onPlay: (controller) =>
-                                              controller.repeat(),
-                                        )
-                                        .shimmer(
+                                    ).animate(autoPlay: true).shimmer(
                                           delay: 1.seconds,
                                           duration: .7.seconds,
                                           color: Theme.of(context).cardColor,
