@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 - Upgraded dependencies
+- Choice chip styles
 
 ## [0.8.381] - 2023-06-17
 ### Changed:
