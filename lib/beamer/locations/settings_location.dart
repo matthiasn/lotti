@@ -72,7 +72,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
       const BeamPage(
         key: ValueKey('settings'),
         title: 'Settings',
-        type: BeamPageType.noTransition,
         child: SettingsPage(),
       ),
 

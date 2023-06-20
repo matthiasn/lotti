@@ -48,6 +48,7 @@ class ThemingPage extends StatelessWidget {
           title: localizations.settingsThemingTitle,
           showBackButton: true,
           child: Card(
+            margin: const EdgeInsets.all(10),
             child: Padding(
               padding: const EdgeInsets.all(25),
               child: Column(

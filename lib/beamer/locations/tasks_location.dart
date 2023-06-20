@@ -26,7 +26,6 @@ class TasksLocation extends BeamLocation<BeamState> {
       const BeamPage(
         key: ValueKey('tasks'),
         title: 'Tasks',
-        type: BeamPageType.noTransition,
         child: InfiniteJournalPage(showTasks: true),
       ),
       if (isUuid(entryId))

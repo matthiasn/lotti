@@ -64,7 +64,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             FloatingActionButton(
               heroTag: 'screenshot',
               tooltip: localizations.addActionAddScreenshot,
-              backgroundColor: Theme.of(context).primaryColorLight,
               onPressed: () async {
                 rebuild();
                 await createScreenshot(linkedId: widget.linked?.meta.id);
@@ -82,7 +81,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             FloatingActionButton(
               heroTag: 'photo',
               tooltip: localizations.addActionAddPhotos,
-              backgroundColor: Theme.of(context).primaryColorLight,
               onPressed: () {
                 rebuild();
 
@@ -101,7 +99,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             FloatingActionButton(
               heroTag: 'text',
               tooltip: localizations.addActionAddText,
-              backgroundColor: Theme.of(context).primaryColorLight,
               onPressed: () async {
                 rebuild();
                 final linkedId = widget.linked?.meta.id;
@@ -116,7 +113,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             FloatingActionButton(
               heroTag: 'timer',
               tooltip: localizations.addActionAddTimeRecording,
-              backgroundColor: Theme.of(context).primaryColorLight,
               onPressed: () async {
                 rebuild();
                 final linkedId = widget.linked?.meta.id;
@@ -134,7 +130,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           FloatingActionButton(
             heroTag: 'audio',
             tooltip: localizations.addActionAddAudioRecording,
-            backgroundColor: Theme.of(context).primaryColorLight,
             onPressed: () {
               rebuild();
               final linkedId = widget.linked?.meta.id;
@@ -156,7 +151,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             FloatingActionButton(
               heroTag: 'task',
               tooltip: localizations.addActionAddTask,
-              backgroundColor: Theme.of(context).primaryColorLight,
               onPressed: () async {
                 rebuild();
                 final linkedId = widget.linked?.meta.id;
@@ -174,15 +168,17 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           );
         }
 
-        return CircleFloatingButton.floatingActionButton(
-          radius: 80 + items.length * 24,
-          key: ValueKey('add_actions $keyDateTime $showTasksTab'),
-          useOpacity: true,
-          items: items,
-          color: Theme.of(context).primaryColorLight,
-          icon: Icons.add,
-          duration: const Duration(milliseconds: 500),
-          curveAnim: Curves.ease,
+        return Padding(
+          padding: const EdgeInsets.only(right: 1, bottom: 1.5),
+          child: CircleFloatingButton.floatingActionButton(
+            radius: 80 + items.length * 24,
+            key: ValueKey('add_actions $keyDateTime $showTasksTab'),
+            useOpacity: true,
+            items: items,
+            icon: Icons.add,
+            duration: const Duration(milliseconds: 500),
+            curveAnim: Curves.ease,
+          ),
         );
       },
     );

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -215,7 +216,7 @@ class JournalCard extends StatelessWidget {
               ),
               onTap: onTap,
             ),
-          ),
+          ).animate().fadeIn(duration: const Duration(milliseconds: 100)),
         );
       },
     );
@@ -297,7 +298,7 @@ class JournalImageCard extends StatelessWidget {
               ],
             ),
           ),
-        );
+        ).animate().fadeIn(duration: const Duration(milliseconds: 100));
       },
     );
   }
