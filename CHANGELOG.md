@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added:
+- Shimmer animation on habit success button
+
+### Changed:
+- Upgraded dependencies
+- Choice chip styles
+- Habit skip button saturation
+- Smoother transitions on navigate
+
+## [0.8.381] - 2023-06-17
 ### Changed:
 - Typography in DateTime modal
 - Selected color in editor toolbar

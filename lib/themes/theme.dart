@@ -82,11 +82,14 @@ const inputSpacerSmall = SizedBox(height: 15);
 
 TextStyle choiceChipTextStyle({
   required ThemeData themeData,
+  required bool isSelected,
 }) =>
     TextStyle(
       fontSize: fontSizeMedium,
       fontWeight: FontWeight.w300,
-      color: themeData.colorScheme.inversePrimary,
+      color: isSelected
+          ? themeData.colorScheme.onSecondary
+          : themeData.colorScheme.secondary,
     );
 
 const chartTooltipStyle = TextStyle(
@@ -229,6 +232,7 @@ ThemeData withOverrides(ThemeData themeData) {
         enableFeedback: true,
       ),
     ),
+    chipTheme: const ChipThemeData(side: BorderSide.none),
     inputDecorationTheme: InputDecorationTheme(
       fillColor: themeData.primaryColor,
       border: OutlineInputBorder(
@@ -257,6 +261,9 @@ ThemeData withOverrides(ThemeData themeData) {
           );
         }),
       ),
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: <TargetPlatform, PageTransitionsBuilder>{},
     ),
   );
 }
