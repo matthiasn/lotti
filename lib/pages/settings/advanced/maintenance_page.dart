@@ -27,54 +27,57 @@ class MaintenancePage extends StatelessWidget {
         return SliverBoxAdapterPage(
           title: localizations.settingsMaintenanceTitle,
           showBackButton: true,
-          child: Column(
-            children: [
-              SettingsCard(
-                title:
-                    '${localizations.maintenanceDeleteTagged}, n = ${snapshot.data}',
-                onTap: maintenance.deleteTaggedLinks,
-              ),
-              SettingsCard(
-                title: localizations.maintenanceDeleteEditorDb,
-                onTap: maintenance.deleteEditorDb,
-              ),
-              SettingsCard(
-                title: localizations.maintenanceDeleteLoggingDb,
-                onTap: maintenance.deleteLoggingDb,
-              ),
-              SettingsCard(
-                title: localizations.maintenanceRecreateTagged,
-                onTap: maintenance.recreateTaggedLinks,
-              ),
-              SettingsCard(
-                title: localizations.maintenanceStories,
-                onTap: maintenance.recreateStoryAssignment,
-              ),
-              SettingsCard(
-                title: localizations.maintenanceSyncDefinitions,
-                onTap: maintenance.syncDefinitions,
-              ),
-              SettingsCard(
-                title: localizations.maintenancePurgeDeleted,
-                onTap: db.purgeDeleted,
-              ),
-              SettingsCard(
-                title: localizations.maintenanceReprocessSync,
-                onTap: () => getIt<SyncConfigService>().resetOffset(),
-              ),
-              SettingsCard(
-                title: localizations.maintenanceResetHostId,
-                onTap: () => getIt<SyncConfigService>().resetHostId(),
-              ),
-              SettingsCard(
-                title: localizations.maintenanceCancelNotifications,
-                onTap: () => getIt<NotificationService>().cancelAll(),
-              ),
-              SettingsCard(
-                title: localizations.maintenanceRecreateFts5,
-                onTap: () => getIt<Maintenance>().recreateFts5(),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            child: Column(
+              children: [
+                SettingsCard(
+                  title:
+                      '${localizations.maintenanceDeleteTagged}, n = ${snapshot.data}',
+                  onTap: maintenance.deleteTaggedLinks,
+                ),
+                SettingsCard(
+                  title: localizations.maintenanceDeleteEditorDb,
+                  onTap: maintenance.deleteEditorDb,
+                ),
+                SettingsCard(
+                  title: localizations.maintenanceDeleteLoggingDb,
+                  onTap: maintenance.deleteLoggingDb,
+                ),
+                SettingsCard(
+                  title: localizations.maintenanceRecreateTagged,
+                  onTap: maintenance.recreateTaggedLinks,
+                ),
+                SettingsCard(
+                  title: localizations.maintenanceStories,
+                  onTap: maintenance.recreateStoryAssignment,
+                ),
+                SettingsCard(
+                  title: localizations.maintenanceSyncDefinitions,
+                  onTap: maintenance.syncDefinitions,
+                ),
+                SettingsCard(
+                  title: localizations.maintenancePurgeDeleted,
+                  onTap: db.purgeDeleted,
+                ),
+                SettingsCard(
+                  title: localizations.maintenanceReprocessSync,
+                  onTap: () => getIt<SyncConfigService>().resetOffset(),
+                ),
+                SettingsCard(
+                  title: localizations.maintenanceResetHostId,
+                  onTap: () => getIt<SyncConfigService>().resetHostId(),
+                ),
+                SettingsCard(
+                  title: localizations.maintenanceCancelNotifications,
+                  onTap: () => getIt<NotificationService>().cancelAll(),
+                ),
+                SettingsCard(
+                  title: localizations.maintenanceRecreateFts5,
+                  onTap: () => getIt<Maintenance>().recreateFts5(),
+                ),
+              ],
+            ),
           ),
         );
       },

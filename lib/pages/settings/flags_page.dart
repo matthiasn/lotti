@@ -37,15 +37,18 @@ class FlagsPage extends StatelessWidget {
         return SliverBoxAdapterPage(
           title: localizations.settingsFlagsTitle,
           showBackButton: true,
-          child: Column(
-            children: [
-              ...filteredItems.mapIndexed(
-                (index, flag) => ConfigFlagCard(
-                  item: flag,
-                  index: index,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            child: Column(
+              children: [
+                ...filteredItems.mapIndexed(
+                  (index, flag) => ConfigFlagCard(
+                    item: flag,
+                    index: index,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

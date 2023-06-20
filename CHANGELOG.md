@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed:
 - Upgraded dependencies
+- More consistent whitespace in settings pages
 
 ## [0.8.381] - 2023-06-19
 ### Added:

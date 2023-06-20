@@ -26,7 +26,10 @@ class WhisperModelCard extends StatelessWidget {
             downloaded ? null : Theme.of(context).colorScheme.outline;
 
         return Card(
-          margin: const EdgeInsets.all(5),
+          margin: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 5,
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 20,

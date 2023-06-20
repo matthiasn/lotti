@@ -77,15 +77,18 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
                 ),
               ),
               SliverToBoxAdapter(
-                child: Column(
-                  children: List.generate(
-                    filtered.length,
-                    (int index) {
-                      return widget.definitionCard(
-                        index,
-                        filtered.elementAt(index),
-                      );
-                    },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: Column(
+                    children: List.generate(
+                      filtered.length,
+                      (int index) {
+                        return widget.definitionCard(
+                          index,
+                          filtered.elementAt(index),
+                        );
+                      },
+                    ),
                   ),
                 ),
               )
