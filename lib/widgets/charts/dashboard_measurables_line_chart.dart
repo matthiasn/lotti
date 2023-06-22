@@ -185,7 +185,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
                   IconButton(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     onPressed: captureData,
-                    icon: const Icon(Icons.add),
+                    icon: const Icon(Icons.add_rounded),
                   ),
               ],
             ),

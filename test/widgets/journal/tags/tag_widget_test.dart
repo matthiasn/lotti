@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/journal/tags/tag_widget.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../test_data/test_data.dart';
@@ -45,7 +44,7 @@ void main() {
       );
 
       // onTapRemove is called
-      final closeIconFinder = find.byIcon(MdiIcons.close);
+      final closeIconFinder = find.byIcon(Icons.close_rounded);
       expect(closeIconFinder, findsOneWidget);
 
       await tester.tap(closeIconFinder);
@@ -76,7 +75,7 @@ void main() {
       );
 
       // onTapRemove is called
-      final closeIconFinder = find.byIcon(MdiIcons.close);
+      final closeIconFinder = find.byIcon(Icons.close_rounded);
       expect(closeIconFinder, findsOneWidget);
 
       await tester.tap(closeIconFinder);
@@ -107,7 +106,7 @@ void main() {
       );
 
       // onTapRemove is called
-      final closeIconFinder = find.byIcon(MdiIcons.close);
+      final closeIconFinder = find.byIcon(Icons.close_rounded);
       expect(closeIconFinder, findsOneWidget);
 
       await tester.tap(closeIconFinder);
