@@ -18,6 +18,7 @@ import 'package:lotti/widgets/habits/habit_category.dart';
 import 'package:lotti/widgets/habits/habit_dashboard.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:lotti/widgets/settings/entity_detail_card.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -54,125 +55,115 @@ class HabitDetailsPage extends StatelessWidget {
                 )
             ],
           ),
-          body: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
+          body: EntityDetailCard(
+            child: Column(
+              children: [
+                FormBuilder(
+                  key: state.formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  onChanged: cubit.setDirty,
                   child: Column(
-                    children: [
-                      FormBuilder(
-                        key: state.formKey,
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        onChanged: cubit.setDirty,
-                        child: Column(
-                          children: <Widget>[
-                            FormTextField(
-                              key: const Key('habit_name_field'),
-                              initialValue: item.name,
-                              labelText: AppLocalizations.of(context)!
-                                  .settingsHabitsNameLabel,
-                              name: 'name',
-                              semanticsLabel: 'Habit name field',
-                              large: true,
-                            ),
-                            inputSpacer,
-                            FormTextField(
-                              key: const Key('habit_description_field'),
-                              initialValue: item.description,
-                              labelText: AppLocalizations.of(context)!
-                                  .settingsHabitsDescriptionLabel,
-                              fieldRequired: false,
-                              name: 'description',
-                              semanticsLabel: 'Habit description field',
-                            ),
-                            inputSpacer,
-                            const SelectCategoryWidget(),
-                            inputSpacer,
-                            SelectDashboardWidget(),
-                            inputSpacer,
-                            FormSwitch(
-                              name: 'priority',
-                              key: const Key('habit_priority'),
-                              semanticsLabel: 'Habit priority',
-                              initialValue: state.habitDefinition.priority,
-                              title: localizations.habitPriorityLabel,
-                              activeColor: starredGold,
-                            ),
-                            FormSwitch(
-                              name: 'private',
-                              initialValue: item.private,
-                              title: localizations.settingsHabitsPrivateLabel,
-                              activeColor: Theme.of(context).colorScheme.error,
-                            ),
-                            FormSwitch(
-                              name: 'archived',
-                              key: const Key('habit_archived'),
-                              initialValue: !state.habitDefinition.active,
-                              title: localizations.habitArchivedLabel,
-                              activeColor:
-                                  Theme.of(context).colorScheme.outline,
-                            ),
-                            inputSpacer,
-                            DateTimeField(
-                              dateTime: item.activeFrom,
-                              labelText: localizations.habitActiveFromLabel,
-                              setDateTime: cubit.setActiveFrom,
-                              mode: CupertinoDatePickerMode.date,
-                            ),
-                            inputSpacer,
-                            if (isDaily)
-                              DateTimeField(
-                                dateTime: showFrom,
-                                labelText: localizations.habitShowFromLabel,
-                                setDateTime: cubit.setShowFrom,
-                                mode: CupertinoDatePickerMode.time,
-                              ),
-                          ],
-                        ),
+                    children: <Widget>[
+                      FormTextField(
+                        key: const Key('habit_name_field'),
+                        initialValue: item.name,
+                        labelText: AppLocalizations.of(context)!
+                            .settingsHabitsNameLabel,
+                        name: 'name',
+                        semanticsLabel: 'Habit name field',
+                        large: true,
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            IconButton(
-                              icon: Icon(MdiIcons.trashCanOutline),
-                              iconSize: settingsIconSize,
-                              tooltip: AppLocalizations.of(context)!
-                                  .settingsHabitsDeleteTooltip,
-                              color: Theme.of(context).colorScheme.outline,
-                              onPressed: () async {
-                                const deleteKey = 'deleteKey';
-                                final result =
-                                    await showModalActionSheet<String>(
-                                  context: context,
-                                  title: localizations.habitDeleteQuestion,
-                                  actions: [
-                                    ModalSheetAction(
-                                      icon: Icons.warning,
-                                      label: localizations.habitDeleteConfirm,
-                                      key: deleteKey,
-                                      isDestructiveAction: true,
-                                      isDefaultAction: true,
-                                    ),
-                                  ],
-                                );
-
-                                if (result == deleteKey) {
-                                  await cubit.delete();
-                                }
-                              },
-                            ),
-                          ],
-                        ),
+                      inputSpacer,
+                      FormTextField(
+                        key: const Key('habit_description_field'),
+                        initialValue: item.description,
+                        labelText: AppLocalizations.of(context)!
+                            .settingsHabitsDescriptionLabel,
+                        fieldRequired: false,
+                        name: 'description',
+                        semanticsLabel: 'Habit description field',
                       ),
-                      // const HabitAutocompleteWrapper(),
+                      inputSpacer,
+                      const SelectCategoryWidget(),
+                      inputSpacer,
+                      SelectDashboardWidget(),
+                      inputSpacer,
+                      FormSwitch(
+                        name: 'priority',
+                        key: const Key('habit_priority'),
+                        semanticsLabel: 'Habit priority',
+                        initialValue: state.habitDefinition.priority,
+                        title: localizations.habitPriorityLabel,
+                        activeColor: starredGold,
+                      ),
+                      FormSwitch(
+                        name: 'private',
+                        initialValue: item.private,
+                        title: localizations.settingsHabitsPrivateLabel,
+                        activeColor: Theme.of(context).colorScheme.error,
+                      ),
+                      FormSwitch(
+                        name: 'archived',
+                        key: const Key('habit_archived'),
+                        initialValue: !state.habitDefinition.active,
+                        title: localizations.habitArchivedLabel,
+                        activeColor: Theme.of(context).colorScheme.outline,
+                      ),
+                      inputSpacer,
+                      DateTimeField(
+                        dateTime: item.activeFrom,
+                        labelText: localizations.habitActiveFromLabel,
+                        setDateTime: cubit.setActiveFrom,
+                        mode: CupertinoDatePickerMode.date,
+                      ),
+                      inputSpacer,
+                      if (isDaily)
+                        DateTimeField(
+                          dateTime: showFrom,
+                          labelText: localizations.habitShowFromLabel,
+                          setDateTime: cubit.setShowFrom,
+                          mode: CupertinoDatePickerMode.time,
+                        ),
                     ],
                   ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        icon: Icon(MdiIcons.trashCanOutline),
+                        iconSize: settingsIconSize,
+                        tooltip: AppLocalizations.of(context)!
+                            .settingsHabitsDeleteTooltip,
+                        color: Theme.of(context).colorScheme.outline,
+                        onPressed: () async {
+                          const deleteKey = 'deleteKey';
+                          final result = await showModalActionSheet<String>(
+                            context: context,
+                            title: localizations.habitDeleteQuestion,
+                            actions: [
+                              ModalSheetAction(
+                                icon: Icons.warning,
+                                label: localizations.habitDeleteConfirm,
+                                key: deleteKey,
+                                isDestructiveAction: true,
+                                isDefaultAction: true,
+                              ),
+                            ],
+                          );
+
+                          if (result == deleteKey) {
+                            await cubit.delete();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                // const HabitAutocompleteWrapper(),
+              ],
             ),
           ),
         );

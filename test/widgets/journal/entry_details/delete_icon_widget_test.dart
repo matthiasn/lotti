@@ -46,7 +46,7 @@ void main() {
       await tester.tap(trashIconFinder);
       await tester.pumpAndSettle();
 
-      final warningIconFinder = find.byIcon(Icons.warning);
+      final warningIconFinder = find.byIcon(Icons.warning_rounded);
       expect(warningIconFinder, findsOneWidget);
 
       await tester.tap(warningIconFinder);

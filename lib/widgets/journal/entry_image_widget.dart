@@ -8,7 +8,6 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:photo_view/photo_view.dart';
 
 class EntryImageWidget extends StatefulWidget {
@@ -121,13 +120,13 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
                       sigmaX: 12,
                       sigmaY: 12,
                     ),
-                    child: Icon(
-                      MdiIcons.close,
+                    child: const Icon(
+                      Icons.close_rounded,
                       size: 32,
                     ),
                   ),
-                  Icon(
-                    MdiIcons.close,
+                  const Icon(
+                    Icons.close_rounded,
                     size: 32,
                     color: Colors.white,
                   ),

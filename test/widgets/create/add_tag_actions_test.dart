@@ -41,7 +41,7 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        final addIconFinder = find.byIcon(Icons.add);
+        final addIconFinder = find.byIcon(Icons.add_rounded);
         expect(addIconFinder, findsOneWidget);
 
         final tagIconFinder = find.byIcon(MdiIcons.tagPlusOutline);
@@ -71,7 +71,7 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        final addIconFinder = find.byIcon(Icons.add);
+        final addIconFinder = find.byIcon(Icons.add_rounded);
         expect(addIconFinder, findsOneWidget);
 
         final tagIconFinder = find.byIcon(MdiIcons.tagFaces);
@@ -101,7 +101,7 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        final addIconFinder = find.byIcon(Icons.add);
+        final addIconFinder = find.byIcon(Icons.add_rounded);
         expect(addIconFinder, findsOneWidget);
 
         final tagIconFinder = find.byIcon(MdiIcons.book);

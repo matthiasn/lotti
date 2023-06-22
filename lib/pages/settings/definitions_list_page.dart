@@ -11,6 +11,7 @@ class DefinitionsListPage<T> extends StatefulWidget {
     required this.definitionCard,
     required this.floatingActionButton,
     this.initialSearchTerm,
+    this.searchCallback,
     super.key,
   });
 
@@ -20,6 +21,7 @@ class DefinitionsListPage<T> extends StatefulWidget {
   final Widget Function(int index, T item) definitionCard;
   final Widget? floatingActionButton;
   final String? initialSearchTerm;
+  final void Function(String)? searchCallback;
 
   @override
   State<DefinitionsListPage<T>> createState() => _DefinitionsListPageState();
@@ -41,6 +43,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
 
   Future<void> onQueryChanged(String query) async {
     setState(() {
+      widget.searchCallback?.call(query);
       match = query.toLowerCase();
     });
   }
@@ -77,15 +80,18 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
                 ),
               ),
               SliverToBoxAdapter(
-                child: Column(
-                  children: List.generate(
-                    filtered.length,
-                    (int index) {
-                      return widget.definitionCard(
-                        index,
-                        filtered.elementAt(index),
-                      );
-                    },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: Column(
+                    children: List.generate(
+                      filtered.length,
+                      (int index) {
+                        return widget.definitionCard(
+                          index,
+                          filtered.elementAt(index),
+                        );
+                      },
+                    ),
                   ),
                 ),
               )
@@ -114,7 +120,7 @@ class FloatingAddIcon extends StatelessWidget {
       child: FloatingActionButton(
         onPressed: createFn,
         child: Icon(
-          Icons.add,
+          Icons.add_rounded,
           semanticLabel: semanticLabel,
         ),
       ),
