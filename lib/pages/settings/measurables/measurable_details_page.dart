@@ -12,6 +12,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:lotti/widgets/settings/entity_detail_card.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -83,137 +84,124 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
             )
         ],
       ),
-      body: SingleChildScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
+      body: EntityDetailCard(
+        child: Column(
+          children: [
+            FormBuilder(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              onChanged: () {
+                setState(() {
+                  dirty = true;
+                });
+              },
               child: Column(
-                children: [
-                  FormBuilder(
-                    key: _formKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    onChanged: () {
-                      setState(() {
-                        dirty = true;
-                      });
-                    },
-                    child: Column(
-                      children: <Widget>[
-                        FormTextField(
-                          key: const Key('measurable_name_field'),
-                          initialValue: item.displayName,
-                          labelText: localizations.settingsMeasurableNameLabel,
-                          name: 'displayName',
-                          semanticsLabel: 'Measurable - name field',
-                          large: true,
-                        ),
-                        inputSpacer,
-                        FormTextField(
-                          key: const Key('measurable_description_field'),
-                          initialValue: item.description,
-                          labelText:
-                              localizations.settingsMeasurableDescriptionLabel,
-                          fieldRequired: false,
-                          name: 'description',
-                          semanticsLabel: 'Measurable - description field',
-                        ),
-                        inputSpacer,
-                        FormTextField(
-                          initialValue: item.unitName,
-                          labelText: localizations.settingsMeasurableUnitLabel,
-                          fieldRequired: false,
-                          name: 'unitName',
-                          semanticsLabel: 'Measurable - unit name field',
-                        ),
-                        inputSpacer,
-                        FormSwitch(
-                          name: 'private',
-                          initialValue: item.private,
-                          title: localizations.settingsMeasurablePrivateLabel,
-                          activeColor: Theme.of(context).colorScheme.error,
-                        ),
-                        inputSpacer,
-                        FormBuilderDropdown(
-                          name: 'aggregationType',
-                          initialValue: item.aggregationType,
-                          decoration: inputDecoration(
-                            labelText: localizations
-                                .settingsMeasurableAggregationLabel,
-                            suffixIcon: const Padding(
-                              padding: EdgeInsets.only(right: 8),
-                              child: Icon(Icons.close_rounded),
-                            ),
-                            themeData: Theme.of(context),
-                          ),
-                          style: TextStyle(
-                            fontSize: 40,
-                            color:
-                                Theme.of(context).textTheme.titleLarge?.color,
-                          ),
-                          items: AggregationType.values.map((aggregationType) {
-                            return DropdownMenuItem(
-                              value: aggregationType,
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Text(
-                                  EnumToString.convertToString(
-                                    aggregationType,
-                                  ),
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ),
+                children: <Widget>[
+                  FormTextField(
+                    key: const Key('measurable_name_field'),
+                    initialValue: item.displayName,
+                    labelText: localizations.settingsMeasurableNameLabel,
+                    name: 'displayName',
+                    semanticsLabel: 'Measurable - name field',
+                    large: true,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        IconButton(
-                          icon: Icon(MdiIcons.trashCanOutline),
-                          iconSize: settingsIconSize,
-                          tooltip:
-                              localizations.settingsMeasurableDeleteTooltip,
-                          onPressed: () async {
-                            const deleteKey = 'deleteKey';
-                            final result = await showModalActionSheet<String>(
-                              context: context,
-                              title: localizations.measurableDeleteQuestion,
-                              actions: [
-                                ModalSheetAction(
-                                  icon: Icons.warning,
-                                  label: localizations.measurableDeleteConfirm,
-                                  key: deleteKey,
-                                  isDestructiveAction: true,
-                                  isDefaultAction: true,
-                                ),
-                              ],
-                            );
-
-                            if (result == deleteKey) {
-                              await persistenceLogic.upsertEntityDefinition(
-                                item.copyWith(deletedAt: DateTime.now()),
-                              );
-
-                              maybePop();
-                            }
-                          },
-                        ),
-                      ],
+                  inputSpacer,
+                  FormTextField(
+                    key: const Key('measurable_description_field'),
+                    initialValue: item.description,
+                    labelText: localizations.settingsMeasurableDescriptionLabel,
+                    fieldRequired: false,
+                    name: 'description',
+                    semanticsLabel: 'Measurable - description field',
+                  ),
+                  inputSpacer,
+                  FormTextField(
+                    initialValue: item.unitName,
+                    labelText: localizations.settingsMeasurableUnitLabel,
+                    fieldRequired: false,
+                    name: 'unitName',
+                    semanticsLabel: 'Measurable - unit name field',
+                  ),
+                  inputSpacer,
+                  FormSwitch(
+                    name: 'private',
+                    initialValue: item.private,
+                    title: localizations.settingsMeasurablePrivateLabel,
+                    activeColor: Theme.of(context).colorScheme.error,
+                  ),
+                  inputSpacer,
+                  FormBuilderDropdown(
+                    name: 'aggregationType',
+                    initialValue: item.aggregationType,
+                    decoration: inputDecoration(
+                      labelText:
+                          localizations.settingsMeasurableAggregationLabel,
+                      suffixIcon: const Padding(
+                        padding: EdgeInsets.only(right: 8),
+                        child: Icon(Icons.close_rounded),
+                      ),
+                      themeData: Theme.of(context),
                     ),
+                    style: TextStyle(
+                      fontSize: 40,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
+                    ),
+                    items: AggregationType.values.map((aggregationType) {
+                      return DropdownMenuItem(
+                        value: aggregationType,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Text(
+                            EnumToString.convertToString(
+                              aggregationType,
+                            ),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: Icon(MdiIcons.trashCanOutline),
+                    iconSize: settingsIconSize,
+                    tooltip: localizations.settingsMeasurableDeleteTooltip,
+                    onPressed: () async {
+                      const deleteKey = 'deleteKey';
+                      final result = await showModalActionSheet<String>(
+                        context: context,
+                        title: localizations.measurableDeleteQuestion,
+                        actions: [
+                          ModalSheetAction(
+                            icon: Icons.warning,
+                            label: localizations.measurableDeleteConfirm,
+                            key: deleteKey,
+                            isDestructiveAction: true,
+                            isDefaultAction: true,
+                          ),
+                        ],
+                      );
+
+                      if (result == deleteKey) {
+                        await persistenceLogic.upsertEntityDefinition(
+                          item.copyWith(deletedAt: DateTime.now()),
+                        );
+
+                        maybePop();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
