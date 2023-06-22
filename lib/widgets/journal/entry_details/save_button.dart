@@ -26,7 +26,10 @@ class SaveButton extends StatelessWidget {
         return Opacity(
           opacity: unsaved ? 1 : 0,
           child: TextButton(
-            onPressed: context.read<EntryCubit>().save,
+            onPressed: () {
+              context.read<EntryCubit>().save();
+              FocusScope.of(context).unfocus();
+            },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
