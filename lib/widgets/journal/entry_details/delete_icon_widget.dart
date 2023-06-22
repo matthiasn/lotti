@@ -49,7 +49,7 @@ class DeleteIconWidget extends StatelessWidget {
         return SizedBox(
           width: 40,
           child: IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: const Icon(Icons.delete_outline_rounded),
             splashColor: Colors.transparent,
             tooltip: localizations.journalDeleteHint,
             padding: EdgeInsets.zero,

@@ -42,9 +42,9 @@ class VuMeterButtonWidget extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             children: [
               Icon(
-                Icons.mic,
+                Icons.mic_rounded,
                 size: iconSize,
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                color: Theme.of(context).colorScheme.outline,
                 semanticLabel: 'Microphone',
               ),
               if (!hot)
@@ -52,7 +52,7 @@ class VuMeterButtonWidget extends StatelessWidget {
                   key: Key(state.decibels.toString()),
                   clipper: CustomRect(audioLevel),
                   child: Icon(
-                    Icons.mic,
+                    Icons.mic_rounded,
                     size: iconSize,
                     color: Theme.of(context).colorScheme.error.withOpacity(0.6),
                     semanticLabel: 'Microphone',
@@ -63,7 +63,7 @@ class VuMeterButtonWidget extends StatelessWidget {
                   key: Key(state.decibels.toString()),
                   clipper: CustomRect(audioLevel),
                   child: Icon(
-                    Icons.mic,
+                    Icons.mic_rounded,
                     size: iconSize,
                     color: Theme.of(context).colorScheme.error,
                     semanticLabel: 'Microphone',
