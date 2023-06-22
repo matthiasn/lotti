@@ -21,29 +21,34 @@ class HabitsSearchWidget extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 40),
               height: 50,
               padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: SearchBar(
-                controller: controller,
-                leading: const Padding(
-                  padding: EdgeInsets.only(left: 8),
-                  child: Icon(Icons.search),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: const InputDecorationTheme(),
                 ),
-                trailing: [
-                  Visibility(
-                    visible: cubit.state.searchString.isNotEmpty,
-                    child: GestureDetector(
-                      child: const Padding(
-                        padding: EdgeInsets.only(right: 8),
-                        child: Icon(Icons.close_rounded),
-                      ),
-                      onTap: () {
-                        cubit.setSearchString('');
-                        controller.clear();
-                        FocusScope.of(context).requestFocus(FocusNode());
-                      },
-                    ),
+                child: SearchBar(
+                  controller: controller,
+                  leading: const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: Icon(Icons.search),
                   ),
-                ],
-                onChanged: cubit.setSearchString,
+                  trailing: [
+                    Visibility(
+                      visible: cubit.state.searchString.isNotEmpty,
+                      child: GestureDetector(
+                        child: const Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: Icon(Icons.close_rounded),
+                        ),
+                        onTap: () {
+                          cubit.setSearchString('');
+                          controller.clear();
+                          FocusScope.of(context).requestFocus(FocusNode());
+                        },
+                      ),
+                    ),
+                  ],
+                  onChanged: cubit.setSearchString,
+                ),
               ),
             ),
           ),
