@@ -15,6 +15,7 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/categories/select_color_field.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:lotti/widgets/settings/entity_detail_card.dart';
 import 'package:lotti/widgets/settings/form/form_switch.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -59,118 +60,104 @@ class CategoryDetailsPage extends StatelessWidget {
                     )
                 ],
               ),
-              body: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
+              body: EntityDetailCard(
+                child: Column(
+                  children: [
+                    FormBuilder(
+                      key: state.formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      onChanged: cubit.setDirty,
                       child: Column(
-                        children: [
-                          FormBuilder(
-                            key: state.formKey,
-                            autovalidateMode:
-                                AutovalidateMode.onUserInteraction,
-                            onChanged: cubit.setDirty,
-                            child: Column(
-                              children: <Widget>[
-                                FormBuilderTextField(
-                                  key: const Key('category_name_field'),
-                                  name: 'name',
-                                  initialValue: item.name,
-                                  textCapitalization:
-                                      TextCapitalization.sentences,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        fontSize: fontSizeLarge,
-                                      ),
-                                  validator: FormBuilderValidators.compose([
-                                    FormBuilderValidators.required(),
-                                    (categoryName) {
-                                      final existingId = categoryNames[
-                                          categoryName?.toLowerCase()];
-                                      if (existingId != null &&
-                                          existingId != item.id) {
-                                        return localizations
-                                            .settingsCategoriesDuplicateError;
-                                      }
-                                      return null;
-                                    }
-                                  ]),
-                                  decoration: inputDecoration(
-                                    labelText: AppLocalizations.of(context)!
-                                        .settingsCategoriesNameLabel,
-                                    semanticsLabel: 'Category name field',
-                                    themeData: Theme.of(context),
-                                  ),
+                        children: <Widget>[
+                          FormBuilderTextField(
+                            key: const Key('category_name_field'),
+                            name: 'name',
+                            initialValue: item.name,
+                            textCapitalization: TextCapitalization.sentences,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontSize: fontSizeLarge,
                                 ),
-                                inputSpacer,
-                                FormSwitch(
-                                  name: 'private',
-                                  initialValue: item.private,
-                                  title:
-                                      localizations.settingsHabitsPrivateLabel,
-                                  activeColor:
-                                      Theme.of(context).colorScheme.error,
-                                ),
-                                FormSwitch(
-                                  name: 'active',
-                                  key: const Key('category_active'),
-                                  initialValue: state.categoryDefinition.active,
-                                  title: localizations.dashboardActiveLabel,
-                                  activeColor: starredGold,
-                                ),
-                                inputSpacer,
-                                SelectColorField(
-                                  hexColor: state.categoryDefinition.color,
-                                  onColorChanged: cubit.setColor,
-                                ),
-                                inputSpacer,
-                              ],
+                            validator: FormBuilderValidators.compose([
+                              FormBuilderValidators.required(),
+                              (categoryName) {
+                                final existingId =
+                                    categoryNames[categoryName?.toLowerCase()];
+                                if (existingId != null &&
+                                    existingId != item.id) {
+                                  return localizations
+                                      .settingsCategoriesDuplicateError;
+                                }
+                                return null;
+                              }
+                            ]),
+                            decoration: inputDecoration(
+                              labelText: AppLocalizations.of(context)!
+                                  .settingsCategoriesNameLabel,
+                              semanticsLabel: 'Category name field',
+                              themeData: Theme.of(context),
                             ),
                           ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              IconButton(
-                                key: const Key('category_delete'),
-                                icon: Icon(MdiIcons.trashCanOutline),
-                                iconSize: settingsIconSize,
-                                tooltip: AppLocalizations.of(context)!
-                                    .settingsHabitsDeleteTooltip,
-                                color: Theme.of(context).colorScheme.outline,
-                                onPressed: () async {
-                                  const deleteKey = 'deleteKey';
-                                  final result =
-                                      await showModalActionSheet<String>(
-                                    context: context,
-                                    title: localizations.categoryDeleteQuestion,
-                                    actions: [
-                                      ModalSheetAction(
-                                        icon: Icons.warning,
-                                        label:
-                                            localizations.categoryDeleteConfirm,
-                                        key: deleteKey,
-                                        isDestructiveAction: true,
-                                        isDefaultAction: true,
-                                      ),
-                                    ],
-                                  );
-
-                                  if (result == deleteKey) {
-                                    await cubit.delete();
-                                  }
-                                },
-                              ),
-                            ],
+                          inputSpacer,
+                          FormSwitch(
+                            name: 'private',
+                            initialValue: item.private,
+                            title: localizations.settingsHabitsPrivateLabel,
+                            activeColor: Theme.of(context).colorScheme.error,
                           ),
-                          // const HabitAutocompleteWrapper(),
+                          FormSwitch(
+                            name: 'active',
+                            key: const Key('category_active'),
+                            initialValue: state.categoryDefinition.active,
+                            title: localizations.dashboardActiveLabel,
+                            activeColor: starredGold,
+                          ),
+                          inputSpacer,
+                          SelectColorField(
+                            hexColor: state.categoryDefinition.color,
+                            onColorChanged: cubit.setColor,
+                          ),
+                          inputSpacer,
                         ],
                       ),
                     ),
-                  ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          key: const Key('category_delete'),
+                          icon: Icon(MdiIcons.trashCanOutline),
+                          iconSize: settingsIconSize,
+                          tooltip: AppLocalizations.of(context)!
+                              .settingsHabitsDeleteTooltip,
+                          color: Theme.of(context).colorScheme.outline,
+                          onPressed: () async {
+                            const deleteKey = 'deleteKey';
+                            final result = await showModalActionSheet<String>(
+                              context: context,
+                              title: localizations.categoryDeleteQuestion,
+                              actions: [
+                                ModalSheetAction(
+                                  icon: Icons.warning,
+                                  label: localizations.categoryDeleteConfirm,
+                                  key: deleteKey,
+                                  isDestructiveAction: true,
+                                  isDefaultAction: true,
+                                ),
+                              ],
+                            );
+
+                            if (result == deleteKey) {
+                              await cubit.delete();
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    // const HabitAutocompleteWrapper(),
+                  ],
                 ),
               ),
             );
