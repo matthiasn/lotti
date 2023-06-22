@@ -5,7 +5,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TagWidget extends StatelessWidget {
   const TagWidget({
@@ -29,8 +28,8 @@ class TagWidget extends StatelessWidget {
       backgroundColor: getTagColor(tagEntity),
       visualDensity: VisualDensity.compact,
       onDeleted: onTapRemove,
-      deleteIcon: Icon(
-        MdiIcons.close,
+      deleteIcon: const Icon(
+        Icons.close_rounded,
         size: fontSizeMedium,
         color: tagTextColor,
       ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
+import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 class CreateTagPage extends StatefulWidget {
@@ -24,6 +26,9 @@ class _CreateTagPageState extends State<CreateTagPage> {
     super.initState();
 
     final now = DateTime.now();
+
+    final tag = getIt<TagsService>().match ?? '';
+
     if (widget.tagType == 'TAG') {
       _tagEntity = TagEntity.genericTag(
         id: uuid.v1(),
@@ -31,7 +36,7 @@ class _CreateTagPageState extends State<CreateTagPage> {
         createdAt: now,
         updatedAt: now,
         private: false,
-        tag: '',
+        tag: tag,
       );
     }
     if (widget.tagType == 'PERSON') {
@@ -41,7 +46,7 @@ class _CreateTagPageState extends State<CreateTagPage> {
         createdAt: now,
         updatedAt: now,
         private: false,
-        tag: '',
+        tag: tag,
       );
     }
     if (widget.tagType == 'STORY') {
@@ -51,7 +56,7 @@ class _CreateTagPageState extends State<CreateTagPage> {
         createdAt: now,
         updatedAt: now,
         private: false,
-        tag: '',
+        tag: tag,
       );
     }
   }
@@ -61,6 +66,9 @@ class _CreateTagPageState extends State<CreateTagPage> {
     if (_tagEntity == null) {
       return const EmptyScaffoldWithTitle('');
     }
-    return TagEditPage(tagEntity: _tagEntity!);
+    return TagEditPage(
+      tagEntity: _tagEntity!,
+      newTag: true,
+    );
   }
 }

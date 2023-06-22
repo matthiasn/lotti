@@ -5,6 +5,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/definitions_list_page.dart';
+import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/create/add_tag_actions.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
@@ -45,6 +46,9 @@ class TagsPage extends StatelessWidget {
       floatingActionButton: const RadialAddTagButtons(),
       title: localizations.settingsTagsTitle,
       getName: (tag) => tag.tag,
+      searchCallback: (match) {
+        getIt<TagsService>().match = match;
+      },
       definitionCard: (int index, TagEntity item) =>
           TagCard(tagEntity: item, index: index),
     );

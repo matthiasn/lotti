@@ -175,7 +175,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             key: ValueKey('add_actions $keyDateTime $showTasksTab'),
             useOpacity: true,
             items: items,
-            icon: Icons.add,
+            icon: Icons.add_rounded,
             duration: const Duration(milliseconds: 500),
             curveAnim: Curves.ease,
           ),

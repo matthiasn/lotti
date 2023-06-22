@@ -61,7 +61,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       useOpacity: true,
       items: items,
       color: Theme.of(context).primaryColor,
-      icon: Icons.add,
+      icon: Icons.add_rounded,
       duration: const Duration(milliseconds: 500),
       curveAnim: Curves.ease,
     );

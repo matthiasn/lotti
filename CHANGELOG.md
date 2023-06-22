@@ -6,13 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Delete icon style
+- Start new tag dialog with search field content
+- Whitespace on entity detail pages
+
+## [0.8.384] - 2023-06-21
+### Changed
 - Audio recorder and player icons and style
 
-## [0.8.382] - 2023-06-21
+## [0.8.383] - 2023-06-21
 ### Changed:
 - Upgraded dependencies
 
-## [0.8.381] - 2023-06-19
+## [0.8.382] - 2023-06-19
 ### Added:
 - Shimmer animation on habit success button
 

@@ -164,7 +164,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     ),
                     IconButton(
                       padding: const EdgeInsets.all(10),
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close_rounded),
                       onPressed: () => Navigator.pop(context, 'Close'),
                     ),
                   ],
