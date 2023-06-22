@@ -16,10 +16,12 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class TagEditPage extends StatefulWidget {
   const TagEditPage({
     required this.tagEntity,
+    this.newTag = false,
     super.key,
   });
 
   final TagEntity tagEntity;
+  final bool newTag;
 
   @override
   State<TagEditPage> createState() {
@@ -31,6 +33,16 @@ class _TagEditPageState extends State<TagEditPage> {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
   bool dirty = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.newTag && widget.tagEntity.tag.isNotEmpty) {
+      setState(() {
+        dirty = true;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 - Delete icon style
+- Start new tag dialog with search field content
 
 ## [0.8.384] - 2023-06-21
 ### Changed

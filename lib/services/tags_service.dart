@@ -18,6 +18,7 @@ class TagsService {
   late final JournalDb _db;
   late final Stream<List<TagEntity>> stream;
   String? _clipboardCopiedId;
+  String? match;
   Map<String, TagEntity> tagsById = {};
 
   TagEntity? getTagById(String id) {
