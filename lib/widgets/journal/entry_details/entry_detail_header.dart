@@ -41,8 +41,8 @@ class EntryDetailHeader extends StatelessWidget {
                   tooltip: localizations.journalFavoriteTooltip,
                   onPressed: cubit.toggleStarred,
                   value: item.meta.starred ?? false,
-                  icon: Icons.star_outline,
-                  activeIcon: Icons.star,
+                  icon: Icons.star_outline_rounded,
+                  activeIcon: Icons.star_rounded,
                   activeColor: starredGold,
                 ),
                 SwitchIconWidget(

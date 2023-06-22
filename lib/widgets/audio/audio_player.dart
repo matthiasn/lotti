@@ -55,7 +55,7 @@ class AudioPlayerWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 IconButton(
-                  icon: const Icon(Icons.play_arrow),
+                  icon: const Icon(Icons.play_arrow_rounded),
                   iconSize: 32,
                   tooltip: 'Play',
                   color: (state.status == AudioPlayerStatus.playing && isActive)
@@ -74,28 +74,28 @@ class AudioPlayerWidget extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       IconButton(
-                        icon: const Icon(Icons.fast_rewind),
+                        icon: const Icon(Icons.fast_rewind_rounded),
                         iconSize: 32,
                         tooltip: 'Rewind 15s',
                         color: Theme.of(context).colorScheme.outline,
                         onPressed: cubit.rew,
                       ),
                       IconButton(
-                        icon: const Icon(Icons.pause),
+                        icon: const Icon(Icons.pause_rounded),
                         iconSize: 32,
                         tooltip: 'Pause',
                         color: Theme.of(context).colorScheme.outline,
                         onPressed: cubit.pause,
                       ),
                       IconButton(
-                        icon: const Icon(Icons.fast_forward),
+                        icon: const Icon(Icons.fast_forward_rounded),
                         iconSize: 32,
                         tooltip: 'Fast forward 15s',
                         color: Theme.of(context).colorScheme.outline,
                         onPressed: cubit.fwd,
                       ),
                       IconButton(
-                        icon: const Icon(Icons.stop),
+                        icon: const Icon(Icons.stop_rounded),
                         iconSize: 32,
                         tooltip: 'Stop',
                         color: Theme.of(context).colorScheme.outline,
@@ -122,7 +122,7 @@ class AudioPlayerWidget extends StatelessWidget {
                 ),
                 if (Platform.isMacOS || Platform.isIOS)
                   IconButton(
-                    icon: const Icon(Icons.transcribe_outlined),
+                    icon: const Icon(Icons.transcribe_rounded),
                     iconSize: 20,
                     tooltip: 'Transcribe',
                     color: Theme.of(context).colorScheme.outline,
