@@ -54,7 +54,10 @@ class AudioRecorderWidget extends StatelessWidget {
                 children: <Widget>[
                   IconButton(
                     key: const Key('pauseIcon'),
-                    icon: const Icon(Icons.pause),
+                    icon: Icon(
+                      Icons.pause_rounded,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
                     padding: const EdgeInsets.only(
                       left: 8,
                       top: 8,
@@ -67,7 +70,10 @@ class AudioRecorderWidget extends StatelessWidget {
                   ),
                   IconButton(
                     key: const Key('stopIcon'),
-                    icon: const Icon(Icons.stop_outlined),
+                    icon: Icon(
+                      Icons.stop_rounded,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
                     padding: const EdgeInsets.only(
                       left: 29,
                       top: 8,

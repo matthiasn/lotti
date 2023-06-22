@@ -48,7 +48,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final starIconActiveFinder = find.byIcon(Icons.star);
+      final starIconActiveFinder = find.byIcon(Icons.star_rounded);
       expect(starIconActiveFinder, findsOneWidget);
 
       await tester.tap(starIconActiveFinder);

@@ -265,7 +265,7 @@ void main() {
       );
 
       // test text entry is starred
-      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
     });
 
     testWidgets('Task Entry is rendered', (tester) async {
@@ -311,7 +311,7 @@ void main() {
       );
 
       // test task is starred
-      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
     });
 
     testWidgets('Weight Entry is rendered properly', (tester) async {
@@ -339,7 +339,7 @@ void main() {
       );
 
       // test weight entry is not starred
-      expect(find.byIcon(Icons.star_outline), findsOneWidget);
+      expect(find.byIcon(Icons.star_outline_rounded), findsOneWidget);
     });
   });
 }
