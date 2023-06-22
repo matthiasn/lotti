@@ -68,11 +68,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final stopIconFinder = find.byIcon(Icons.stop);
-      final playIconFinder = find.byIcon(Icons.play_arrow);
-      final rewindIconFinder = find.byIcon(Icons.fast_rewind);
-      final pauseIconFinder = find.byIcon(Icons.pause);
-      final fwdIconFinder = find.byIcon(Icons.fast_forward);
+      final stopIconFinder = find.byIcon(Icons.stop_rounded);
+      final playIconFinder = find.byIcon(Icons.play_arrow_rounded);
+      final rewindIconFinder = find.byIcon(Icons.fast_rewind_rounded);
+      final pauseIconFinder = find.byIcon(Icons.pause_rounded);
+      final fwdIconFinder = find.byIcon(Icons.fast_forward_rounded);
 
       final normalSpeedIcon = find.text('1x');
 
@@ -135,11 +135,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final stopIconFinder = find.byIcon(Icons.stop);
-      final playIconFinder = find.byIcon(Icons.play_arrow);
-      final rewindIconFinder = find.byIcon(Icons.fast_rewind);
-      final pauseIconFinder = find.byIcon(Icons.pause);
-      final fwdIconFinder = find.byIcon(Icons.fast_forward);
+      final stopIconFinder = find.byIcon(Icons.stop_rounded);
+      final playIconFinder = find.byIcon(Icons.play_arrow_rounded);
+      final rewindIconFinder = find.byIcon(Icons.fast_rewind_rounded);
+      final pauseIconFinder = find.byIcon(Icons.pause_rounded);
+      final fwdIconFinder = find.byIcon(Icons.fast_forward_rounded);
 
       final normalSpeedIcon = find.text('1x');
       final fasterSpeedIcon = find.text('1.25x');
