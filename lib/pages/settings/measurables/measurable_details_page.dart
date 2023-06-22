@@ -144,7 +144,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                 .settingsMeasurableAggregationLabel,
                             suffixIcon: const Padding(
                               padding: EdgeInsets.only(right: 8),
-                              child: Icon(Icons.close),
+                              child: Icon(Icons.close_rounded),
                             ),
                             themeData: Theme.of(context),
                           ),

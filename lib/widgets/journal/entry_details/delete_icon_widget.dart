@@ -32,7 +32,7 @@ class DeleteIconWidget extends StatelessWidget {
             title: localizations.journalDeleteQuestion,
             actions: [
               ModalSheetAction(
-                icon: Icons.warning,
+                icon: Icons.warning_rounded,
                 label: localizations.journalDeleteConfirm,
                 key: deleteKey,
                 isDestructiveAction: true,

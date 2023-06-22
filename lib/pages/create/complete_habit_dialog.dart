@@ -198,7 +198,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                     padding: const EdgeInsets.all(10),
                                     icon: Semantics(
                                       label: 'close habit completion',
-                                      child: const Icon(Icons.close),
+                                      child: const Icon(Icons.close_rounded),
                                     ),
                                     onPressed: () => Navigator.pop(context),
                                   ),

@@ -114,7 +114,7 @@ class FloatingAddIcon extends StatelessWidget {
       child: FloatingActionButton(
         onPressed: createFn,
         child: Icon(
-          Icons.add,
+          Icons.add_rounded,
           semanticLabel: semanticLabel,
         ),
       ),

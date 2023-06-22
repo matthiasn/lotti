@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -194,7 +195,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final closeIconFinder = find.byIcon(MdiIcons.close);
+      final closeIconFinder = find.byIcon(Icons.close_rounded);
       expect(closeIconFinder, findsNWidgets(2));
 
       when(() => entryCubit.removeTagId(any())).thenAnswer((_) async {});
