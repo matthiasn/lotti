@@ -162,59 +162,64 @@ class MyBeamerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<SyncConfigCubit>(
-          lazy: false,
-          create: (BuildContext context) => SyncConfigCubit(
-            testOnNetworkChange: true,
-          ),
-        ),
-        BlocProvider<OutboxCubit>(
-          lazy: false,
-          create: (BuildContext context) => OutboxCubit(),
-        ),
-        BlocProvider<AudioRecorderCubit>(
-          create: (BuildContext context) => AudioRecorderCubit(),
-        ),
-        BlocProvider<AudioPlayerCubit>(
-          create: (BuildContext context) => AudioPlayerCubit(),
-        ),
-        BlocProvider<ThemingCubit>(
-          create: (BuildContext context) => ThemingCubit(),
-        ),
-      ],
-      child: BlocBuilder<ThemingCubit, ThemingState>(
-        builder: (context, themingSnapshot) {
-          if (themingSnapshot.darkTheme == null) {
-            return const EmptyScaffoldWithTitle(
-              '...',
-              body: LoadingWidget(),
-            );
-          }
-
-          return DesktopMenuWrapper(
-            child: MaterialApp.router(
-              supportedLocales: AppLocalizations.supportedLocales,
-              theme: themingSnapshot.lightTheme,
-              darkTheme: themingSnapshot.darkTheme,
-              themeMode: themingSnapshot.themeMode,
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                FormBuilderLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              debugShowCheckedModeBanner: false,
-              routerDelegate: routerDelegate,
-              routeInformationParser: BeamerParser(),
-              backButtonDispatcher: BeamerBackButtonDispatcher(
-                delegate: routerDelegate,
-              ),
+    return GestureDetector(
+      onTap: () {
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<SyncConfigCubit>(
+            lazy: false,
+            create: (BuildContext context) => SyncConfigCubit(
+              testOnNetworkChange: true,
             ),
-          );
-        },
+          ),
+          BlocProvider<OutboxCubit>(
+            lazy: false,
+            create: (BuildContext context) => OutboxCubit(),
+          ),
+          BlocProvider<AudioRecorderCubit>(
+            create: (BuildContext context) => AudioRecorderCubit(),
+          ),
+          BlocProvider<AudioPlayerCubit>(
+            create: (BuildContext context) => AudioPlayerCubit(),
+          ),
+          BlocProvider<ThemingCubit>(
+            create: (BuildContext context) => ThemingCubit(),
+          ),
+        ],
+        child: BlocBuilder<ThemingCubit, ThemingState>(
+          builder: (context, themingSnapshot) {
+            if (themingSnapshot.darkTheme == null) {
+              return const EmptyScaffoldWithTitle(
+                '...',
+                body: LoadingWidget(),
+              );
+            }
+
+            return DesktopMenuWrapper(
+              child: MaterialApp.router(
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: themingSnapshot.lightTheme,
+                darkTheme: themingSnapshot.darkTheme,
+                themeMode: themingSnapshot.themeMode,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  FormBuilderLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                debugShowCheckedModeBanner: false,
+                routerDelegate: routerDelegate,
+                routeInformationParser: BeamerParser(),
+                backButtonDispatcher: BeamerBackButtonDispatcher(
+                  delegate: routerDelegate,
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
