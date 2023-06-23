@@ -172,7 +172,7 @@ class InboxServiceIsolate {
               final subject = '${msg.decodeSubject()}';
               if (lastReadUid != current) {
                 _loggingDb.captureEvent(
-                  'lastReadUid $lastReadUid current $current',
+                  'lastReadUid $lastReadUid current $current $subject',
                   domain: 'INBOX_ISOLATE',
                   subDomain: 'fetch',
                 );
