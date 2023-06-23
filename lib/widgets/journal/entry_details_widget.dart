@@ -51,7 +51,10 @@ class EntryDetailWidget extends StatelessWidget {
         final isAudio = item is JournalAudio;
 
         if (isTask && !showTaskDetails) {
-          return JournalCard(item: item);
+          return JournalCard(
+            item: item,
+            showLinkedDuration: true,
+          );
         }
 
         return BlocProvider<EntryCubit>(
