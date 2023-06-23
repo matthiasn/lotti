@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/task_utils.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 class TaskStatusWidget extends StatelessWidget {
   const TaskStatusWidget(
@@ -15,6 +16,7 @@ class TaskStatusWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final backgroundColor = taskColor(task.data.status) ?? Colors.grey;
 
     return Chip(
       label: Text(
@@ -29,9 +31,12 @@ class TaskStatusWidget extends StatelessWidget {
           done: (_) => localizations.taskStatusDone,
           rejected: (_) => localizations.taskStatusRejected,
         ),
-        style: const TextStyle(fontSize: fontSizeSmall),
+        style: TextStyle(
+          fontSize: fontSizeSmall,
+          color: backgroundColor.isLight ? Colors.black : Colors.white,
+        ),
       ),
-      backgroundColor: taskColor(task.data.status),
+      backgroundColor: backgroundColor,
       visualDensity: VisualDensity.compact,
     );
   }

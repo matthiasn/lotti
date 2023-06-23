@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Upgraded dependencies
+
+### Fixed:
+- Text color on tag and task status chips
+
+## [0.8.387] - 2023-06-22
+### Changed:
 - Unfocus keyboard on entry/task save
 
 ## [0.8.386] - 2023-06-22
