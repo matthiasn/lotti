@@ -50,6 +50,7 @@ class LinkedFromEntriesWidget extends StatelessWidget {
                       return JournalCard(
                         item: item,
                         key: Key('${item.meta.id}-${item.meta.id}'),
+                        showLinkedDuration: true,
                       );
                     },
                   );

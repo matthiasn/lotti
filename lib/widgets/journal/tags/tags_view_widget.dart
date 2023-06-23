@@ -6,14 +6,20 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
 
-class TagsViewWidget extends StatelessWidget {
-  TagsViewWidget({
+class TagsViewWidget extends StatefulWidget {
+  const TagsViewWidget({
     required this.item,
     super.key,
   });
 
-  final TagsService tagsService = getIt<TagsService>();
   final JournalEntity item;
+
+  @override
+  State<TagsViewWidget> createState() => _TagsViewWidgetState();
+}
+
+class _TagsViewWidgetState extends State<TagsViewWidget> {
+  final TagsService tagsService = getIt<TagsService>();
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +32,7 @@ class TagsViewWidget extends StatelessWidget {
         // data in the tags service will already have been updated.
         AsyncSnapshot<List<TagEntity>> _,
       ) {
-        final tagIds = item.meta.tagIds ?? [];
+        final tagIds = widget.item.meta.tagIds ?? [];
         final tagsFromTagIds = <TagEntity>[];
 
         for (final tagId in tagIds) {
