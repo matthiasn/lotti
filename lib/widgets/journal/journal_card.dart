@@ -148,12 +148,12 @@ class JournalCardTitle extends StatelessWidget {
   }
 }
 
-class JournalCard extends StatelessWidget {
+class JournalCard extends StatefulWidget {
   const JournalCard({
     required this.item,
     super.key,
     this.maxHeight = 120,
-    this.showLinkedDuration = true,
+    this.showLinkedDuration = false,
   });
 
   final JournalEntity item;
@@ -161,14 +161,19 @@ class JournalCard extends StatelessWidget {
   final bool showLinkedDuration;
 
   @override
+  State<JournalCard> createState() => _JournalCardState();
+}
+
+class _JournalCardState extends State<JournalCard> {
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<JournalEntity?>(
-      stream: getIt<JournalDb>().watchEntityById(item.meta.id),
+      stream: getIt<JournalDb>().watchEntityById(widget.item.meta.id),
       builder: (
         BuildContext context,
         AsyncSnapshot<JournalEntity?> snapshot,
       ) {
-        final updatedItem = snapshot.data ?? item;
+        final updatedItem = snapshot.data ?? widget.item;
         if (updatedItem.meta.deletedAt != null) {
           return const SizedBox.shrink();
         }
@@ -211,8 +216,8 @@ class JournalCard extends StatelessWidget {
               ),
               title: JournalCardTitle(
                 item: updatedItem,
-                maxHeight: maxHeight,
-                showLinkedDuration: showLinkedDuration,
+                maxHeight: widget.maxHeight,
+                showLinkedDuration: widget.showLinkedDuration,
               ),
               onTap: onTap,
             ),
