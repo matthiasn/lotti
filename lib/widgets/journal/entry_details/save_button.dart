@@ -28,7 +28,7 @@ class SaveButton extends StatelessWidget {
           child: TextButton(
             onPressed: () {
               context.read<EntryCubit>().save();
-              FocusScope.of(context).unfocus();
+              FocusManager.instance.primaryFocus?.unfocus();
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
