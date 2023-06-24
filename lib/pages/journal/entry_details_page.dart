@@ -47,9 +47,8 @@ class EntryDetailPage extends StatelessWidget {
             isMacOS: Platform.isMacOS,
             isIOS: Platform.isIOS,
             isAndroid: Platform.isAndroid,
-          ).animate().fadeIn(duration: const Duration(milliseconds: 2000)),
+          ).animate().fadeIn(duration: const Duration(milliseconds: 1000)),
           body: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.only(
               top: 8,
               bottom: 96,
