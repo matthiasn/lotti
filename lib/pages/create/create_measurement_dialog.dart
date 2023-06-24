@@ -115,19 +115,19 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   .withOpacity(0.5),
             ),
           ),
-          //backgroundColor: Theme.of(context).primaryColorLight.lighten(),
-          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsAlignment: MainAxisAlignment.end,
           actionsPadding: const EdgeInsets.only(
             left: 30,
             right: 20,
             bottom: 20,
           ),
           actions: [
-            MeasurementSuggestions(
-              measurableDataType: dataType,
-              saveMeasurement: saveMeasurement,
-              measurementTime: measurementTime,
-            ),
+            if (!dirty)
+              MeasurementSuggestions(
+                measurableDataType: dataType,
+                saveMeasurement: saveMeasurement,
+                measurementTime: measurementTime,
+              ),
             if (dirty && validate())
               TextButton(
                 key: const Key('measurement_save'),
