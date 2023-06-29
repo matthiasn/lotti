@@ -195,7 +195,7 @@ class _JournalCardState extends State<JournalCard> {
                 journalAudio: (item) {
                   final transcripts = item.data.transcripts;
                   return LeadingIcon(
-                    Icons.mic,
+                    Icons.mic_rounded,
                     color: transcripts != null && transcripts.isNotEmpty
                         ? Theme.of(context).colorScheme.outline
                         : errorColor.withOpacity(0.4),

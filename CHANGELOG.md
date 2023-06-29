@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- Consistent microphone icon across app
+
+## [0.8.392] - 2023-06-24
+### Changed:
 - Hide measurement suggestions when input dirty
 - Upgraded dependencies
 
