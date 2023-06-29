@@ -359,7 +359,7 @@ void main() {
         final addIconFinder = find.byIcon(Icons.add_rounded);
         expect(addIconFinder, findsOneWidget);
 
-        final addAudioIconFinder = find.byIcon(MdiIcons.microphone);
+        final addAudioIconFinder = find.byIcon(Icons.mic_rounded);
 
         await tester.tap(addIconFinder);
         await tester.pumpAndSettle();
@@ -410,7 +410,7 @@ void main() {
         final addIconFinder = find.byIcon(Icons.add_rounded);
         expect(addIconFinder, findsOneWidget);
 
-        final addAudioIconFinder = find.byIcon(MdiIcons.microphone);
+        final addAudioIconFinder = find.byIcon(Icons.mic_rounded);
 
         await tester.tap(addIconFinder);
         await tester.pumpAndSettle();
@@ -464,7 +464,7 @@ void main() {
         final addIconFinder = find.byIcon(Icons.add_rounded);
         expect(addIconFinder, findsOneWidget);
 
-        final addAudioIconFinder = find.byIcon(MdiIcons.microphone);
+        final addAudioIconFinder = find.byIcon(Icons.mic_rounded);
 
         await tester.tap(addIconFinder);
         await tester.pumpAndSettle();
