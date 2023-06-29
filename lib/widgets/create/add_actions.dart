@@ -139,10 +139,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
                 beamToNamed('/journal/$linkedId/record_audio/$linkedId');
               }
             },
-            child: Icon(
-              MdiIcons.microphone,
-              size: actionIconSize,
-            ),
+            child: const Icon(Icons.mic_rounded, size: actionIconSize),
           ),
         );
 
