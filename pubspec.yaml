@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.392+2281
+version: 0.9.393+2283
 
 msix_config:
   display_name: LottiApp
@@ -67,7 +67,7 @@ dependencies:
       url: https://github.com/matthiasn/flutter_health_fit.git
       ref: 37afbc9
 
-  flutter_image_compress: ^1.1.0
+  flutter_image_compress: ^2.0.3
   flutter_linkify: ^6.0.0
   flutter_local_notifications: ^14.1.0
 
@@ -80,7 +80,7 @@ dependencies:
   flutter_quill: ^7.1.18
   flutter_secure_storage: ^8.0.0
   flutter_sliding_tutorial: ^2.0.0
-  flutter_svg: ^2.0.0
+  flutter_svg: ^2.0.7
   form_builder_validators: ^8.1.1
   freezed_annotation: ^2.0.3
   geoclue: ^0.1.0
@@ -122,10 +122,7 @@ dependencies:
   qr_code_scanner: ^1.0.1
   qr_flutter: ^4.0.0
   quiver: ^3.2.1
-  radial_button:
-    git:
-      url: https://github.com/redinterface/radial_button
-      ref: 8140fcf
+  radial_button: ^1.0.1
 
   random_password_generator: ^0.2.1
   record: ^4.4.4
@@ -140,7 +137,7 @@ dependencies:
   tinycolor2: ^3.0.0
   url_launcher: ^6.1.2
   uuid: ^3.0.4
-  vector_graphics: 1.1.5
+  vector_graphics: 1.1.7
   visibility_detector: ^0.4.0+2
   wechat_assets_picker: ^8.4.1
   week_of_year: ^2.0.0
