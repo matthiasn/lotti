@@ -19,7 +19,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
             speed: 1,
           ),
         ) {
-    _audioPlayer.streams.position.listen(updateProgress);
+    _audioPlayer.stream.position.listen(updateProgress);
   }
 
   final Player _audioPlayer = Player();
