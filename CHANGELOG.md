@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed:
 - Sort categories
+- Bottom sheet heights
 
 ## [0.8.392] - 2023-06-24
 ### Changed:
