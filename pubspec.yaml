@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.393+2283
+version: 0.9.394+2289
 
 msix_config:
   display_name: LottiApp
@@ -69,7 +69,7 @@ dependencies:
 
   flutter_image_compress: ^2.0.3
   flutter_linkify: ^6.0.0
-  flutter_local_notifications: ^14.1.0
+  flutter_local_notifications: ^15.1.0+1
 
   flutter_localizations:
     sdk: flutter
@@ -101,10 +101,10 @@ dependencies:
   jiffy: ^6.1.0
   json_annotation: ^4.8.1
   latlong2: ^0.9.0
-  location: ^4.3.0
+  location: ^5.0.0
   lottie: ^2.2.0
   material_design_icons_flutter: ^7.0.7096
-  media_kit: ^0.0.7
+  media_kit: ^1.0.2
   media_kit_libs_android_audio: ^1.0.3
   media_kit_libs_ios_audio: ^1.0.4
   media_kit_libs_linux: ^1.0.2

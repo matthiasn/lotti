@@ -152,7 +152,6 @@ class HabitItemCard extends StatelessWidget {
         AsyncSnapshot<HabitDefinition?> snapshot,
       ) {
         final habitDefinition = snapshot.data;
-        debugPrint(habitDefinition.toString());
 
         return ItemCard(
           leadingIcon: MdiIcons.lightningBolt,
@@ -179,9 +178,10 @@ class ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
       child: ListTile(
-        tileColor: Colors.transparent,
+        tileColor: colorScheme.secondaryContainer,
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(
           vertical: 8,
@@ -190,10 +190,12 @@ class ItemCard extends StatelessWidget {
         leading: Icon(
           leadingIcon,
           size: 32,
+          color: colorScheme.onSecondaryContainer,
         ),
         title: Text(
           title,
           softWrap: true,
+          style: TextStyle(color: colorScheme.onSecondaryContainer),
         ),
       ),
     );
