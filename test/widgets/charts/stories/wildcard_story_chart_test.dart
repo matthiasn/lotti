@@ -40,7 +40,7 @@ void main() {
           WildcardStoryChart(
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
-            chartConfig: WildcardStoryTimeItem(
+            chartConfig: const WildcardStoryTimeItem(
               color: '#00FF00',
               storySubstring: 'Lotti',
             ),
@@ -82,7 +82,7 @@ void main() {
           WildcardStoryWeeklyChart(
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
-            chartConfig: WildcardStoryTimeItem(
+            chartConfig: const WildcardStoryTimeItem(
               color: '#00FF00',
               storySubstring: 'Lotti',
             ),

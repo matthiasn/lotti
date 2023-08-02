@@ -153,7 +153,7 @@ class __$$_EntryTextCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_EntryText implements _EntryText {
-  _$_EntryText(
+  const _$_EntryText(
       {required this.plainText, this.geolocation, this.markdown, this.quill});
 
   factory _$_EntryText.fromJson(Map<String, dynamic> json) =>
@@ -207,7 +207,7 @@ class _$_EntryText implements _EntryText {
 }
 
 abstract class _EntryText implements EntryText {
-  factory _EntryText(
+  const factory _EntryText(
       {required final String plainText,
       final Geolocation? geolocation,
       final String? markdown,

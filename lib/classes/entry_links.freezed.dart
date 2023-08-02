@@ -246,7 +246,7 @@ class __$$BasicLinkCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$BasicLink implements BasicLink {
-  _$BasicLink(
+  const _$BasicLink(
       {required this.id,
       required this.fromId,
       required this.toId,
@@ -407,7 +407,7 @@ class _$BasicLink implements BasicLink {
 }
 
 abstract class BasicLink implements EntryLink {
-  factory BasicLink(
+  const factory BasicLink(
       {required final String id,
       required final String fromId,
       required final String toId,

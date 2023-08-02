@@ -309,7 +309,7 @@ class __$$_TaskOpenCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_TaskOpen implements _TaskOpen {
-  _$_TaskOpen(
+  const _$_TaskOpen(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -522,7 +522,7 @@ class _$_TaskOpen implements _TaskOpen {
 }
 
 abstract class _TaskOpen implements TaskStatus {
-  factory _TaskOpen(
+  const factory _TaskOpen(
       {required final String id,
       required final DateTime createdAt,
       required final int utcOffset,
@@ -611,7 +611,7 @@ class __$$_TaskStartedCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_TaskStarted implements _TaskStarted {
-  _$_TaskStarted(
+  const _$_TaskStarted(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -824,7 +824,7 @@ class _$_TaskStarted implements _TaskStarted {
 }
 
 abstract class _TaskStarted implements TaskStatus {
-  factory _TaskStarted(
+  const factory _TaskStarted(
       {required final String id,
       required final DateTime createdAt,
       required final int utcOffset,
@@ -914,7 +914,7 @@ class __$$_TaskInProgressCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_TaskInProgress implements _TaskInProgress {
-  _$_TaskInProgress(
+  const _$_TaskInProgress(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -1127,7 +1127,7 @@ class _$_TaskInProgress implements _TaskInProgress {
 }
 
 abstract class _TaskInProgress implements TaskStatus {
-  factory _TaskInProgress(
+  const factory _TaskInProgress(
       {required final String id,
       required final DateTime createdAt,
       required final int utcOffset,
@@ -1217,7 +1217,7 @@ class __$$_TaskGroomedCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_TaskGroomed implements _TaskGroomed {
-  _$_TaskGroomed(
+  const _$_TaskGroomed(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -1430,7 +1430,7 @@ class _$_TaskGroomed implements _TaskGroomed {
 }
 
 abstract class _TaskGroomed implements TaskStatus {
-  factory _TaskGroomed(
+  const factory _TaskGroomed(
       {required final String id,
       required final DateTime createdAt,
       required final int utcOffset,
@@ -1526,7 +1526,7 @@ class __$$_TaskBlockedCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_TaskBlocked implements _TaskBlocked {
-  _$_TaskBlocked(
+  const _$_TaskBlocked(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -1744,7 +1744,7 @@ class _$_TaskBlocked implements _TaskBlocked {
 }
 
 abstract class _TaskBlocked implements TaskStatus {
-  factory _TaskBlocked(
+  const factory _TaskBlocked(
       {required final String id,
       required final DateTime createdAt,
       required final int utcOffset,
@@ -1842,7 +1842,7 @@ class __$$_TaskOnHoldCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_TaskOnHold implements _TaskOnHold {
-  _$_TaskOnHold(
+  const _$_TaskOnHold(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -2060,7 +2060,7 @@ class _$_TaskOnHold implements _TaskOnHold {
 }
 
 abstract class _TaskOnHold implements TaskStatus {
-  factory _TaskOnHold(
+  const factory _TaskOnHold(
       {required final String id,
       required final DateTime createdAt,
       required final int utcOffset,
@@ -2151,7 +2151,7 @@ class __$$_TaskDoneCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_TaskDone implements _TaskDone {
-  _$_TaskDone(
+  const _$_TaskDone(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -2364,7 +2364,7 @@ class _$_TaskDone implements _TaskDone {
 }
 
 abstract class _TaskDone implements TaskStatus {
-  factory _TaskDone(
+  const factory _TaskDone(
       {required final String id,
       required final DateTime createdAt,
       required final int utcOffset,
@@ -2453,7 +2453,7 @@ class __$$_TaskRejectedCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_TaskRejected implements _TaskRejected {
-  _$_TaskRejected(
+  const _$_TaskRejected(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -2666,7 +2666,7 @@ class _$_TaskRejected implements _TaskRejected {
 }
 
 abstract class _TaskRejected implements TaskStatus {
-  factory _TaskRejected(
+  const factory _TaskRejected(
       {required final String id,
       required final DateTime createdAt,
       required final int utcOffset,
@@ -2879,7 +2879,7 @@ class __$$_TaskDataCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_TaskData implements _TaskData {
-  _$_TaskData(
+  const _$_TaskData(
       {required this.status,
       required this.dateFrom,
       required this.dateTo,
@@ -2976,7 +2976,7 @@ class _$_TaskData implements _TaskData {
 }
 
 abstract class _TaskData implements TaskData {
-  factory _TaskData(
+  const factory _TaskData(
       {required final TaskStatus status,
       required final DateTime dateFrom,
       required final DateTime dateTo,

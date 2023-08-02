@@ -11,7 +11,7 @@ void main() {
     test('entryTextFromPlain returns expected EntryText', () {
       expect(
         entryTextFromPlain('some entry text'),
-        EntryText(
+        const EntryText(
           plainText: 'some entry text\n',
           quill: r'[{"insert":"some entry text\n"}]',
           markdown: 'some entry text\n',

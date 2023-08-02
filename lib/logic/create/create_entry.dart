@@ -10,7 +10,7 @@ import 'package:lotti/utils/screenshots.dart';
 
 Future<JournalEntity?> createTextEntry({String? linkedId}) async {
   final entry = await getIt<PersistenceLogic>().createTextEntry(
-    EntryText(plainText: ''),
+    const EntryText(plainText: ''),
     id: uuid.v1(),
     linkedId: linkedId,
     started: DateTime.now(),
@@ -44,7 +44,7 @@ Future<Task?> createTask({String? linkedId}) async {
       dateFrom: now,
       estimate: Duration.zero,
     ),
-    entryText: EntryText(plainText: ''),
+    entryText: const EntryText(plainText: ''),
     linkedId: linkedId,
   );
 

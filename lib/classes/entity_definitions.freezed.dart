@@ -157,7 +157,7 @@ class __$$DailyHabitScheduleCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$DailyHabitSchedule implements DailyHabitSchedule {
-  _$DailyHabitSchedule(
+  const _$DailyHabitSchedule(
       {required this.requiredCompletions, this.showFrom, final String? $type})
       : $type = $type ?? 'daily';
 
@@ -277,7 +277,7 @@ class _$DailyHabitSchedule implements DailyHabitSchedule {
 }
 
 abstract class DailyHabitSchedule implements HabitSchedule {
-  factory DailyHabitSchedule(
+  const factory DailyHabitSchedule(
       {required final int requiredCompletions,
       final DateTime? showFrom}) = _$DailyHabitSchedule;
 
@@ -329,7 +329,7 @@ class __$$WeeklyHabitScheduleCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$WeeklyHabitSchedule implements WeeklyHabitSchedule {
-  _$WeeklyHabitSchedule(
+  const _$WeeklyHabitSchedule(
       {required this.requiredCompletions, final String? $type})
       : $type = $type ?? 'weekly';
 
@@ -445,7 +445,7 @@ class _$WeeklyHabitSchedule implements WeeklyHabitSchedule {
 }
 
 abstract class WeeklyHabitSchedule implements HabitSchedule {
-  factory WeeklyHabitSchedule({required final int requiredCompletions}) =
+  const factory WeeklyHabitSchedule({required final int requiredCompletions}) =
       _$WeeklyHabitSchedule;
 
   factory WeeklyHabitSchedule.fromJson(Map<String, dynamic> json) =
@@ -495,7 +495,7 @@ class __$$MonthlyHabitScheduleCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$MonthlyHabitSchedule implements MonthlyHabitSchedule {
-  _$MonthlyHabitSchedule(
+  const _$MonthlyHabitSchedule(
       {required this.requiredCompletions, final String? $type})
       : $type = $type ?? 'monthly';
 
@@ -611,7 +611,7 @@ class _$MonthlyHabitSchedule implements MonthlyHabitSchedule {
 }
 
 abstract class MonthlyHabitSchedule implements HabitSchedule {
-  factory MonthlyHabitSchedule({required final int requiredCompletions}) =
+  const factory MonthlyHabitSchedule({required final int requiredCompletions}) =
       _$MonthlyHabitSchedule;
 
   factory MonthlyHabitSchedule.fromJson(Map<String, dynamic> json) =
@@ -833,7 +833,7 @@ class __$$AutoCompleteRuleHealthCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$AutoCompleteRuleHealth implements AutoCompleteRuleHealth {
-  _$AutoCompleteRuleHealth(
+  const _$AutoCompleteRuleHealth(
       {required this.dataType,
       this.minimum,
       this.maximum,
@@ -1010,7 +1010,7 @@ class _$AutoCompleteRuleHealth implements AutoCompleteRuleHealth {
 }
 
 abstract class AutoCompleteRuleHealth implements AutoCompleteRule {
-  factory AutoCompleteRuleHealth(
+  const factory AutoCompleteRuleHealth(
       {required final String dataType,
       final num? minimum,
       final num? maximum,
@@ -1081,7 +1081,7 @@ class __$$AutoCompleteRuleWorkoutCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$AutoCompleteRuleWorkout implements AutoCompleteRuleWorkout {
-  _$AutoCompleteRuleWorkout(
+  const _$AutoCompleteRuleWorkout(
       {required this.dataType,
       this.minimum,
       this.maximum,
@@ -1258,7 +1258,7 @@ class _$AutoCompleteRuleWorkout implements AutoCompleteRuleWorkout {
 }
 
 abstract class AutoCompleteRuleWorkout implements AutoCompleteRule {
-  factory AutoCompleteRuleWorkout(
+  const factory AutoCompleteRuleWorkout(
       {required final String dataType,
       final num? minimum,
       final num? maximum,
@@ -1331,7 +1331,7 @@ class __$$AutoCompleteRuleMeasurableCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$AutoCompleteRuleMeasurable implements AutoCompleteRuleMeasurable {
-  _$AutoCompleteRuleMeasurable(
+  const _$AutoCompleteRuleMeasurable(
       {required this.dataTypeId,
       this.minimum,
       this.maximum,
@@ -1508,7 +1508,7 @@ class _$AutoCompleteRuleMeasurable implements AutoCompleteRuleMeasurable {
 }
 
 abstract class AutoCompleteRuleMeasurable implements AutoCompleteRule {
-  factory AutoCompleteRuleMeasurable(
+  const factory AutoCompleteRuleMeasurable(
       {required final String dataTypeId,
       final num? minimum,
       final num? maximum,
@@ -1569,7 +1569,7 @@ class __$$AutoCompleteRuleHabitCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$AutoCompleteRuleHabit implements AutoCompleteRuleHabit {
-  _$AutoCompleteRuleHabit(
+  const _$AutoCompleteRuleHabit(
       {required this.habitId, this.title, final String? $type})
       : $type = $type ?? 'habit';
 
@@ -1734,7 +1734,7 @@ class _$AutoCompleteRuleHabit implements AutoCompleteRuleHabit {
 }
 
 abstract class AutoCompleteRuleHabit implements AutoCompleteRule {
-  factory AutoCompleteRuleHabit(
+  const factory AutoCompleteRuleHabit(
       {required final String habitId,
       final String? title}) = _$AutoCompleteRuleHabit;
 
@@ -1791,7 +1791,7 @@ class __$$AutoCompleteRuleAndCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$AutoCompleteRuleAnd implements AutoCompleteRuleAnd {
-  _$AutoCompleteRuleAnd(
+  const _$AutoCompleteRuleAnd(
       {required final List<AutoCompleteRule> rules,
       this.title,
       final String? $type})
@@ -1966,7 +1966,7 @@ class _$AutoCompleteRuleAnd implements AutoCompleteRuleAnd {
 }
 
 abstract class AutoCompleteRuleAnd implements AutoCompleteRule {
-  factory AutoCompleteRuleAnd(
+  const factory AutoCompleteRuleAnd(
       {required final List<AutoCompleteRule> rules,
       final String? title}) = _$AutoCompleteRuleAnd;
 
@@ -2023,7 +2023,7 @@ class __$$AutoCompleteRuleOrCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$AutoCompleteRuleOr implements AutoCompleteRuleOr {
-  _$AutoCompleteRuleOr(
+  const _$AutoCompleteRuleOr(
       {required final List<AutoCompleteRule> rules,
       this.title,
       final String? $type})
@@ -2198,7 +2198,7 @@ class _$AutoCompleteRuleOr implements AutoCompleteRuleOr {
 }
 
 abstract class AutoCompleteRuleOr implements AutoCompleteRule {
-  factory AutoCompleteRuleOr(
+  const factory AutoCompleteRuleOr(
       {required final List<AutoCompleteRule> rules,
       final String? title}) = _$AutoCompleteRuleOr;
 
@@ -2260,7 +2260,7 @@ class __$$AutoCompleteRuleMultipleCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$AutoCompleteRuleMultiple implements AutoCompleteRuleMultiple {
-  _$AutoCompleteRuleMultiple(
+  const _$AutoCompleteRuleMultiple(
       {required final List<AutoCompleteRule> rules,
       required this.successes,
       this.title,
@@ -2441,7 +2441,7 @@ class _$AutoCompleteRuleMultiple implements AutoCompleteRuleMultiple {
 }
 
 abstract class AutoCompleteRuleMultiple implements AutoCompleteRule {
-  factory AutoCompleteRuleMultiple(
+  const factory AutoCompleteRuleMultiple(
       {required final List<AutoCompleteRule> rules,
       required final int successes,
       final String? title}) = _$AutoCompleteRuleMultiple;
@@ -2900,7 +2900,7 @@ class __$$MeasurableDataTypeCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$MeasurableDataType implements MeasurableDataType {
-  _$MeasurableDataType(
+  const _$MeasurableDataType(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -3312,7 +3312,7 @@ class _$MeasurableDataType implements MeasurableDataType {
 }
 
 abstract class MeasurableDataType implements EntityDefinition {
-  factory MeasurableDataType(
+  const factory MeasurableDataType(
       {required final String id,
       required final DateTime createdAt,
       required final DateTime updatedAt,
@@ -3447,7 +3447,7 @@ class __$$CategoryDefinitionCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$CategoryDefinition implements CategoryDefinition {
-  _$CategoryDefinition(
+  const _$CategoryDefinition(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -3793,7 +3793,7 @@ class _$CategoryDefinition implements CategoryDefinition {
 }
 
 abstract class CategoryDefinition implements EntityDefinition {
-  factory CategoryDefinition(
+  const factory CategoryDefinition(
       {required final String id,
       required final DateTime createdAt,
       required final DateTime updatedAt,
@@ -3993,7 +3993,7 @@ class __$$HabitDefinitionCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$HabitDefinition implements HabitDefinition {
-  _$HabitDefinition(
+  const _$HabitDefinition(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -4447,7 +4447,7 @@ class _$HabitDefinition implements HabitDefinition {
 }
 
 abstract class HabitDefinition implements EntityDefinition {
-  factory HabitDefinition(
+  const factory HabitDefinition(
       {required final String id,
       required final DateTime createdAt,
       required final DateTime updatedAt,
@@ -4622,7 +4622,7 @@ class __$$DashboardDefinitionCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$DashboardDefinition implements DashboardDefinition {
-  _$DashboardDefinition(
+  const _$DashboardDefinition(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -5056,7 +5056,7 @@ class _$DashboardDefinition implements DashboardDefinition {
 }
 
 abstract class DashboardDefinition implements EntityDefinition {
-  factory DashboardDefinition(
+  const factory DashboardDefinition(
       {required final String id,
       required final DateTime createdAt,
       required final DateTime updatedAt,
@@ -5220,7 +5220,7 @@ class __$$_MeasurementDataCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_MeasurementData implements _MeasurementData {
-  _$_MeasurementData(
+  const _$_MeasurementData(
       {required this.dateFrom,
       required this.dateTo,
       required this.value,
@@ -5276,7 +5276,7 @@ class _$_MeasurementData implements _MeasurementData {
 }
 
 abstract class _MeasurementData implements MeasurementData {
-  factory _MeasurementData(
+  const factory _MeasurementData(
       {required final DateTime dateFrom,
       required final DateTime dateTo,
       required final num value,
@@ -5462,7 +5462,7 @@ class __$$_WorkoutDataCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_WorkoutData implements _WorkoutData {
-  _$_WorkoutData(
+  const _$_WorkoutData(
       {required this.dateFrom,
       required this.dateTo,
       required this.id,
@@ -5531,7 +5531,7 @@ class _$_WorkoutData implements _WorkoutData {
 }
 
 abstract class _WorkoutData implements WorkoutData {
-  factory _WorkoutData(
+  const factory _WorkoutData(
       {required final DateTime dateFrom,
       required final DateTime dateTo,
       required final String id,
@@ -5687,7 +5687,7 @@ class __$$_HabitCompletionDataCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_HabitCompletionData implements _HabitCompletionData {
-  _$_HabitCompletionData(
+  const _$_HabitCompletionData(
       {required this.dateFrom,
       required this.dateTo,
       required this.habitId,
@@ -5744,7 +5744,7 @@ class _$_HabitCompletionData implements _HabitCompletionData {
 }
 
 abstract class _HabitCompletionData implements HabitCompletionData {
-  factory _HabitCompletionData(
+  const factory _HabitCompletionData(
       {required final DateTime dateFrom,
       required final DateTime dateTo,
       required final String habitId,
@@ -5937,7 +5937,7 @@ class __$$DashboardMeasurementItemCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$DashboardMeasurementItem implements DashboardMeasurementItem {
-  _$DashboardMeasurementItem(
+  const _$DashboardMeasurementItem(
       {required this.id, this.aggregationType, final String? $type})
       : $type = $type ?? 'measurement';
 
@@ -6097,7 +6097,7 @@ class _$DashboardMeasurementItem implements DashboardMeasurementItem {
 }
 
 abstract class DashboardMeasurementItem implements DashboardItem {
-  factory DashboardMeasurementItem(
+  const factory DashboardMeasurementItem(
       {required final String id,
       final AggregationType? aggregationType}) = _$DashboardMeasurementItem;
 
@@ -6150,7 +6150,7 @@ class __$$DashboardHealthItemCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$DashboardHealthItem implements DashboardHealthItem {
-  _$DashboardHealthItem(
+  const _$DashboardHealthItem(
       {required this.color, required this.healthType, final String? $type})
       : $type = $type ?? 'healthChart';
 
@@ -6309,7 +6309,7 @@ class _$DashboardHealthItem implements DashboardHealthItem {
 }
 
 abstract class DashboardHealthItem implements DashboardItem {
-  factory DashboardHealthItem(
+  const factory DashboardHealthItem(
       {required final String color,
       required final String healthType}) = _$DashboardHealthItem;
 
@@ -6376,7 +6376,7 @@ class __$$DashboardWorkoutItemCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$DashboardWorkoutItem implements DashboardWorkoutItem {
-  _$DashboardWorkoutItem(
+  const _$DashboardWorkoutItem(
       {required this.workoutType,
       required this.displayName,
       required this.color,
@@ -6548,7 +6548,7 @@ class _$DashboardWorkoutItem implements DashboardWorkoutItem {
 }
 
 abstract class DashboardWorkoutItem implements DashboardItem {
-  factory DashboardWorkoutItem(
+  const factory DashboardWorkoutItem(
       {required final String workoutType,
       required final String displayName,
       required final String color,
@@ -6600,7 +6600,7 @@ class __$$DashboardHabitItemCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$DashboardHabitItem implements DashboardHabitItem {
-  _$DashboardHabitItem({required this.habitId, final String? $type})
+  const _$DashboardHabitItem({required this.habitId, final String? $type})
       : $type = $type ?? 'habitChart';
 
   factory _$DashboardHabitItem.fromJson(Map<String, dynamic> json) =>
@@ -6754,7 +6754,7 @@ class _$DashboardHabitItem implements DashboardHabitItem {
 }
 
 abstract class DashboardHabitItem implements DashboardItem {
-  factory DashboardHabitItem({required final String habitId}) =
+  const factory DashboardHabitItem({required final String habitId}) =
       _$DashboardHabitItem;
 
   factory DashboardHabitItem.fromJson(Map<String, dynamic> json) =
@@ -6813,7 +6813,7 @@ class __$$DashboardSurveyItemCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$DashboardSurveyItem implements DashboardSurveyItem {
-  _$DashboardSurveyItem(
+  const _$DashboardSurveyItem(
       {required final Map<String, String> colorsByScoreKey,
       required this.surveyType,
       required this.surveyName,
@@ -6991,7 +6991,7 @@ class _$DashboardSurveyItem implements DashboardSurveyItem {
 }
 
 abstract class DashboardSurveyItem implements DashboardItem {
-  factory DashboardSurveyItem(
+  const factory DashboardSurveyItem(
       {required final Map<String, String> colorsByScoreKey,
       required final String surveyType,
       required final String surveyName}) = _$DashboardSurveyItem;
@@ -7046,7 +7046,7 @@ class __$$DashboardStoryTimeItemCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$DashboardStoryTimeItem implements DashboardStoryTimeItem {
-  _$DashboardStoryTimeItem(
+  const _$DashboardStoryTimeItem(
       {required this.storyTagId, required this.color, final String? $type})
       : $type = $type ?? 'storyTimeChart';
 
@@ -7205,7 +7205,7 @@ class _$DashboardStoryTimeItem implements DashboardStoryTimeItem {
 }
 
 abstract class DashboardStoryTimeItem implements DashboardItem {
-  factory DashboardStoryTimeItem(
+  const factory DashboardStoryTimeItem(
       {required final String storyTagId,
       required final String color}) = _$DashboardStoryTimeItem;
 
@@ -7258,7 +7258,7 @@ class __$$WildcardStoryTimeItemCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$WildcardStoryTimeItem implements WildcardStoryTimeItem {
-  _$WildcardStoryTimeItem(
+  const _$WildcardStoryTimeItem(
       {required this.storySubstring, required this.color, final String? $type})
       : $type = $type ?? 'wildcardStoryTimeChart';
 
@@ -7417,7 +7417,7 @@ class _$WildcardStoryTimeItem implements WildcardStoryTimeItem {
 }
 
 abstract class WildcardStoryTimeItem implements DashboardItem {
-  factory WildcardStoryTimeItem(
+  const factory WildcardStoryTimeItem(
       {required final String storySubstring,
       required final String color}) = _$WildcardStoryTimeItem;
 

@@ -5,7 +5,7 @@ part 'audio_note.g.dart';
 
 @freezed
 class AudioNote with _$AudioNote {
-  factory AudioNote({
+  const factory AudioNote({
     required DateTime createdAt,
     required String audioFile,
     required String audioDirectory,
