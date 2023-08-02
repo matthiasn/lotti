@@ -5,7 +5,7 @@ part 'config.g.dart';
 
 @freezed
 class ImapConfig with _$ImapConfig {
-  factory ImapConfig({
+  const factory ImapConfig({
     required String host,
     required String folder,
     required String userName,
@@ -19,7 +19,7 @@ class ImapConfig with _$ImapConfig {
 
 @freezed
 class SyncConfig with _$SyncConfig {
-  factory SyncConfig({
+  const factory SyncConfig({
     required ImapConfig imapConfig,
     required String sharedSecret,
   }) = _SyncConfig;

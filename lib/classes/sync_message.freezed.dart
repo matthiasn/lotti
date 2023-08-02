@@ -185,7 +185,7 @@ class __$$SyncJournalEntityCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$SyncJournalEntity implements SyncJournalEntity {
-  _$SyncJournalEntity(
+  const _$SyncJournalEntity(
       {required this.journalEntity, required this.status, final String? $type})
       : $type = $type ?? 'journalEntity';
 
@@ -319,7 +319,7 @@ class _$SyncJournalEntity implements SyncJournalEntity {
 }
 
 abstract class SyncJournalEntity implements SyncMessage {
-  factory SyncJournalEntity(
+  const factory SyncJournalEntity(
       {required final JournalEntity journalEntity,
       required final SyncEntryStatus status}) = _$SyncJournalEntity;
 
@@ -386,7 +386,7 @@ class __$$SyncEntityDefinitionCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$SyncEntityDefinition implements SyncEntityDefinition {
-  _$SyncEntityDefinition(
+  const _$SyncEntityDefinition(
       {required this.entityDefinition,
       required this.status,
       final String? $type})
@@ -523,7 +523,7 @@ class _$SyncEntityDefinition implements SyncEntityDefinition {
 }
 
 abstract class SyncEntityDefinition implements SyncMessage {
-  factory SyncEntityDefinition(
+  const factory SyncEntityDefinition(
       {required final EntityDefinition entityDefinition,
       required final SyncEntryStatus status}) = _$SyncEntityDefinition;
 
@@ -590,7 +590,7 @@ class __$$SyncTagEntityCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$SyncTagEntity implements SyncTagEntity {
-  _$SyncTagEntity(
+  const _$SyncTagEntity(
       {required this.tagEntity, required this.status, final String? $type})
       : $type = $type ?? 'tagEntity';
 
@@ -724,7 +724,7 @@ class _$SyncTagEntity implements SyncTagEntity {
 }
 
 abstract class SyncTagEntity implements SyncMessage {
-  factory SyncTagEntity(
+  const factory SyncTagEntity(
       {required final TagEntity tagEntity,
       required final SyncEntryStatus status}) = _$SyncTagEntity;
 
@@ -791,7 +791,7 @@ class __$$SyncEntryLinkCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$SyncEntryLink implements SyncEntryLink {
-  _$SyncEntryLink(
+  const _$SyncEntryLink(
       {required this.entryLink, required this.status, final String? $type})
       : $type = $type ?? 'entryLink';
 
@@ -925,7 +925,7 @@ class _$SyncEntryLink implements SyncEntryLink {
 }
 
 abstract class SyncEntryLink implements SyncMessage {
-  factory SyncEntryLink(
+  const factory SyncEntryLink(
       {required final EntryLink entryLink,
       required final SyncEntryStatus status}) = _$SyncEntryLink;
 

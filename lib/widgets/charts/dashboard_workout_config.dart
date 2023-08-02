@@ -3,67 +3,67 @@ import 'dart:core';
 import 'package:lotti/classes/entity_definitions.dart';
 
 Map<String, DashboardWorkoutItem> workoutTypes = {
-  'walking.duration': DashboardWorkoutItem(
+  'walking.duration': const DashboardWorkoutItem(
     displayName: 'Walking (time)',
     workoutType: 'walking',
     color: '#82E6CE',
     valueType: WorkoutValueType.duration,
   ),
-  'walking.energy': DashboardWorkoutItem(
+  'walking.energy': const DashboardWorkoutItem(
     displayName: 'Walking (calories)',
     workoutType: 'walking',
     color: '#82E6CE',
     valueType: WorkoutValueType.energy,
   ),
-  'walking.distance': DashboardWorkoutItem(
+  'walking.distance': const DashboardWorkoutItem(
     displayName: 'Walking distance (m)',
     workoutType: 'walking',
     color: '#82E6CE',
     valueType: WorkoutValueType.distance,
   ),
-  'running.duration': DashboardWorkoutItem(
+  'running.duration': const DashboardWorkoutItem(
     displayName: 'Running (time)',
     workoutType: 'running',
     color: '#82E6CE',
     valueType: WorkoutValueType.duration,
   ),
-  'running.energy': DashboardWorkoutItem(
+  'running.energy': const DashboardWorkoutItem(
     displayName: 'Running (calories)',
     workoutType: 'running',
     color: '#82E6CE',
     valueType: WorkoutValueType.energy,
   ),
-  'running.distance': DashboardWorkoutItem(
+  'running.distance': const DashboardWorkoutItem(
     displayName: 'Running distance (m)',
     workoutType: 'running',
     color: '#82E6CE',
     valueType: WorkoutValueType.distance,
   ),
-  'swimming.duration': DashboardWorkoutItem(
+  'swimming.duration': const DashboardWorkoutItem(
     displayName: 'Swimming (time)',
     workoutType: 'swimming',
     color: '#82E6CE',
     valueType: WorkoutValueType.duration,
   ),
-  'swimming.energy': DashboardWorkoutItem(
+  'swimming.energy': const DashboardWorkoutItem(
     displayName: 'Swimming (calories)',
     workoutType: 'swimming',
     color: '#82E6CE',
     valueType: WorkoutValueType.energy,
   ),
-  'swimming.distance': DashboardWorkoutItem(
+  'swimming.distance': const DashboardWorkoutItem(
     displayName: 'Swimming distance (m)',
     workoutType: 'swimming',
     color: '#82E6CE',
     valueType: WorkoutValueType.distance,
   ),
-  'functionalStrengthTraining.duration': DashboardWorkoutItem(
+  'functionalStrengthTraining.duration': const DashboardWorkoutItem(
     displayName: 'Strength training (time)',
     workoutType: 'functionalStrengthTraining',
     color: '#82E6CE',
     valueType: WorkoutValueType.duration,
   ),
-  'functionalStrengthTraining.energy': DashboardWorkoutItem(
+  'functionalStrengthTraining.energy': const DashboardWorkoutItem(
     displayName: 'Strength training (calories)',
     workoutType: 'functionalStrengthTraining',
     color: '#82E6CE',

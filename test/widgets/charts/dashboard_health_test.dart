@@ -50,7 +50,7 @@ void main() {
           DashboardHealthChart(
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
-            chartConfig: DashboardHealthItem(
+            chartConfig: const DashboardHealthItem(
               color: '#0000FF',
               healthType: 'HealthDataType.WEIGHT',
             ),
@@ -97,7 +97,7 @@ void main() {
           DashboardHealthChart(
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
-            chartConfig: DashboardHealthItem(
+            chartConfig: const DashboardHealthItem(
               color: '#0000FF',
               healthType: bpType,
             ),
@@ -179,7 +179,7 @@ void main() {
           DashboardHealthChart(
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
-            chartConfig: DashboardHealthItem(
+            chartConfig: const DashboardHealthItem(
               color: '#0000FF',
               healthType: healthType,
             ),

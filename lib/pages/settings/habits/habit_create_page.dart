@@ -16,7 +16,7 @@ class CreateHabitPage extends StatelessWidget {
     description: '',
     private: false,
     vectorClock: null,
-    habitSchedule: HabitSchedule.daily(requiredCompletions: 1),
+    habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
     version: '',
     active: true,
   );
