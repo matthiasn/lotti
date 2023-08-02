@@ -5,7 +5,7 @@ part 'health.g.dart';
 
 @freezed
 class QuantitativeData with _$QuantitativeData {
-  factory QuantitativeData.cumulativeQuantityData({
+  const factory QuantitativeData.cumulativeQuantityData({
     required DateTime dateFrom,
     required DateTime dateTo,
     required num value,
@@ -15,7 +15,7 @@ class QuantitativeData with _$QuantitativeData {
     String? platformType,
   }) = CumulativeQuantityData;
 
-  factory QuantitativeData.discreteQuantityData({
+  const factory QuantitativeData.discreteQuantityData({
     required DateTime dateFrom,
     required DateTime dateTo,
     required num value,

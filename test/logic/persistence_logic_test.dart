@@ -125,7 +125,7 @@ void main() {
 
         // create test entry
         final textEntry = await getIt<PersistenceLogic>().createTextEntry(
-          EntryText(plainText: testText),
+          const EntryText(plainText: testText),
           id: uuid.v1(),
           started: now,
         );
@@ -149,7 +149,7 @@ void main() {
         // update entry with new plaintext
         await getIt<PersistenceLogic>().updateJournalEntity(
           textEntry.copyWith(
-            entryText: EntryText(plainText: updatedTestText),
+            entryText: const EntryText(plainText: updatedTestText),
           ),
           textEntry.meta,
         );
@@ -194,7 +194,7 @@ void main() {
       // create test task
       final task = await getIt<PersistenceLogic>().createTaskEntry(
         data: taskData,
-        entryText: EntryText(plainText: testTaskText),
+        entryText: const EntryText(plainText: testTaskText),
       );
 
       // expect to find created task
@@ -339,7 +339,7 @@ void main() {
       const testText = 'test comment for task';
       const updatedTestText = 'updated test comment for task';
       final comment = await getIt<PersistenceLogic>().createTextEntry(
-        EntryText(plainText: testText),
+        const EntryText(plainText: testText),
         id: uuid.v1(),
         started: now,
         linkedId: task.meta.id,
@@ -382,7 +382,7 @@ void main() {
 
       await getIt<PersistenceLogic>().updateJournalEntityText(
         comment!.meta.id,
-        EntryText(
+        const EntryText(
           plainText: updatedTestText,
         ),
         comment.meta.dateTo,

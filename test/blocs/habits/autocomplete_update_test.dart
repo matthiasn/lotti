@@ -43,7 +43,7 @@ void main() {
           replaceAt(
             testAutoComplete,
             replaceAtPath: [0, 0, 0, 1],
-            replaceWith: AutoCompleteRule.measurable(
+            replaceWith: const AutoCompleteRule.measurable(
               dataTypeId: 'pull-ups',
               minimum: 18,
             ),

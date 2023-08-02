@@ -10,7 +10,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-final testAutoComplete = AutoCompleteRule.and(
+const testAutoComplete = AutoCompleteRule.and(
   title: 'Physical Exercises and Hydration',
   rules: [
     AutoCompleteRule.or(

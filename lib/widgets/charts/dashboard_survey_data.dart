@@ -6,13 +6,13 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-DashboardSurveyItem cfq11SurveyChart = DashboardSurveyItem(
+DashboardSurveyItem cfq11SurveyChart = const DashboardSurveyItem(
   surveyType: 'cfq11SurveyTask',
   surveyName: 'CFQ11',
   colorsByScoreKey: {'CFQ11': '#82E6CE'},
 );
 
-DashboardSurveyItem panasSurveyChart = DashboardSurveyItem(
+DashboardSurveyItem panasSurveyChart = const DashboardSurveyItem(
   surveyType: 'panasSurveyTask',
   surveyName: 'PANAS',
   colorsByScoreKey: {

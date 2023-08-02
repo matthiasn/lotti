@@ -335,7 +335,7 @@ class __$$GenericTagCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$GenericTag implements GenericTag {
-  _$GenericTag(
+  const _$GenericTag(
       {required this.id,
       required this.tag,
       required this.private,
@@ -579,7 +579,7 @@ class _$GenericTag implements GenericTag {
 }
 
 abstract class GenericTag implements TagEntity {
-  factory GenericTag(
+  const factory GenericTag(
       {required final String id,
       required final String tag,
       required final bool private,
@@ -704,7 +704,7 @@ class __$$PersonTagCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$PersonTag implements PersonTag {
-  _$PersonTag(
+  const _$PersonTag(
       {required this.id,
       required this.tag,
       required this.private,
@@ -958,7 +958,7 @@ class _$PersonTag implements PersonTag {
 }
 
 abstract class PersonTag implements TagEntity {
-  factory PersonTag(
+  const factory PersonTag(
       {required final String id,
       required final String tag,
       required final bool private,
@@ -1085,7 +1085,7 @@ class __$$StoryTagCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$StoryTag implements StoryTag {
-  _$StoryTag(
+  const _$StoryTag(
       {required this.id,
       required this.tag,
       required this.private,
@@ -1339,7 +1339,7 @@ class _$StoryTag implements StoryTag {
 }
 
 abstract class StoryTag implements TagEntity {
-  factory StoryTag(
+  const factory StoryTag(
       {required final String id,
       required final String tag,
       required final bool private,

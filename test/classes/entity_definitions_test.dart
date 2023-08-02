@@ -6,7 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 void main() {
   group('Entity definitions tests', () {
     test('Recursive autocomplete can be serialized and deserialized', () {
-      final sleepAutoComplete = AutoCompleteRuleOr(
+      const sleepAutoComplete = AutoCompleteRuleOr(
         rules: [
           AutoCompleteRule.and(
             rules: [

@@ -6,7 +6,7 @@ part 'check_list_item.g.dart';
 
 @freezed
 class CheckListItem with _$CheckListItem {
-  factory CheckListItem({
+  const factory CheckListItem({
     required String id,
     required DateTime createdAt,
     required int utcOffset,

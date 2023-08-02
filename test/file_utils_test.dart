@@ -35,7 +35,7 @@ void main() {
     test('JSON file name for journal entry should be correct', () async {
       final testEntity = JournalEntity.journalEntry(
         meta: testMeta,
-        entryText: EntryText(plainText: 'test'),
+        entryText: const EntryText(plainText: 'test'),
       );
 
       final path = entityPath(testEntity, Directory(''));

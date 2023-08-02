@@ -194,7 +194,7 @@ class __$$_CheckListItemCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_CheckListItem implements _CheckListItem {
-  _$_CheckListItem(
+  const _$_CheckListItem(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -266,7 +266,7 @@ class _$_CheckListItem implements _CheckListItem {
 }
 
 abstract class _CheckListItem implements CheckListItem {
-  factory _CheckListItem(
+  const factory _CheckListItem(
       {required final String id,
       required final DateTime createdAt,
       required final int utcOffset,

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed:
+- const factories
+
+## [0.8.393] - 2023-06-29
+### Changed:
 - Consistent microphone icon across app
 - Upgraded dependencies
 

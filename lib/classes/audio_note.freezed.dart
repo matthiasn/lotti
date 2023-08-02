@@ -136,7 +136,7 @@ class __$$_AudioNoteCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_AudioNote implements _AudioNote {
-  _$_AudioNote(
+  const _$_AudioNote(
       {required this.createdAt,
       required this.audioFile,
       required this.audioDirectory,
@@ -194,7 +194,7 @@ class _$_AudioNote implements _AudioNote {
 }
 
 abstract class _AudioNote implements AudioNote {
-  factory _AudioNote(
+  const factory _AudioNote(
       {required final DateTime createdAt,
       required final String audioFile,
       required final String audioDirectory,

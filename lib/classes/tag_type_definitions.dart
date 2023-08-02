@@ -6,7 +6,7 @@ part 'tag_type_definitions.g.dart';
 
 @freezed
 class TagEntity with _$TagEntity {
-  factory TagEntity.genericTag({
+  const factory TagEntity.genericTag({
     required String id,
     required String tag,
     required bool private,
@@ -17,7 +17,7 @@ class TagEntity with _$TagEntity {
     bool? inactive,
   }) = GenericTag;
 
-  factory TagEntity.personTag({
+  const factory TagEntity.personTag({
     required String id,
     required String tag,
     required bool private,
@@ -30,7 +30,7 @@ class TagEntity with _$TagEntity {
     bool? inactive,
   }) = PersonTag;
 
-  factory TagEntity.storyTag({
+  const factory TagEntity.storyTag({
     required String id,
     required String tag,
     required bool private,
