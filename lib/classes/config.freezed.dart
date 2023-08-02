@@ -143,7 +143,7 @@ class __$$_ImapConfigCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_ImapConfig implements _ImapConfig {
-  _$_ImapConfig(
+  const _$_ImapConfig(
       {required this.host,
       required this.folder,
       required this.userName,
@@ -203,7 +203,7 @@ class _$_ImapConfig implements _ImapConfig {
 }
 
 abstract class _ImapConfig implements ImapConfig {
-  factory _ImapConfig(
+  const factory _ImapConfig(
       {required final String host,
       required final String folder,
       required final String userName,
@@ -336,7 +336,7 @@ class __$$_SyncConfigCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_SyncConfig implements _SyncConfig {
-  _$_SyncConfig({required this.imapConfig, required this.sharedSecret});
+  const _$_SyncConfig({required this.imapConfig, required this.sharedSecret});
 
   factory _$_SyncConfig.fromJson(Map<String, dynamic> json) =>
       _$$_SyncConfigFromJson(json);
@@ -381,7 +381,7 @@ class _$_SyncConfig implements _SyncConfig {
 }
 
 abstract class _SyncConfig implements SyncConfig {
-  factory _SyncConfig(
+  const factory _SyncConfig(
       {required final ImapConfig imapConfig,
       required final String sharedSecret}) = _$_SyncConfig;
 

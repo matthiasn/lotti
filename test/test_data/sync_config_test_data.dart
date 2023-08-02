@@ -4,7 +4,7 @@ const defaultWait = Duration(milliseconds: 100);
 
 const testSharedKey = 'abc123';
 
-final testImapConfig = ImapConfig(
+const testImapConfig = ImapConfig(
   host: 'mail.foo.com',
   folder: 'folder',
   userName: 'userName',
@@ -12,12 +12,12 @@ final testImapConfig = ImapConfig(
   port: 993,
 );
 
-final testSyncConfigNoKey = SyncConfig(
+const testSyncConfigNoKey = SyncConfig(
   imapConfig: testImapConfig,
   sharedSecret: '',
 );
 
-final testSyncConfigConfigured = SyncConfig(
+const testSyncConfigConfigured = SyncConfig(
   imapConfig: testImapConfig,
   sharedSecret: testSharedKey,
 );
