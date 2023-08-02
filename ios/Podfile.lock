@@ -18,7 +18,7 @@ PODS:
     - Flutter
   - flutter_health_fit (0.0.1):
     - Flutter
-  - flutter_image_compress (1.0.0):
+  - flutter_image_compress_common (1.0.0):
     - Flutter
     - Mantle
     - SDWebImage
@@ -66,7 +66,7 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - permission_handler_apple (9.1.0):
+  - permission_handler_apple (9.1.1):
     - Flutter
   - photo_manager (2.0.0):
     - Flutter
@@ -77,12 +77,12 @@ PODS:
   - ReachabilitySwift (5.0.0)
   - record (0.0.1):
     - Flutter
-  - SDWebImage (5.15.4):
-    - SDWebImage/Core (= 5.15.4)
-  - SDWebImage/Core (5.15.4)
-  - SDWebImageWebPCoder (0.10.1):
+  - SDWebImage (5.16.0):
+    - SDWebImage/Core (= 5.16.0)
+  - SDWebImage/Core (5.16.0)
+  - SDWebImageWebPCoder (0.12.0):
     - libwebp (~> 1.0)
-    - SDWebImage/Core (~> 5.15)
+    - SDWebImage/Core (~> 5.16)
   - share_plus (0.0.1):
     - Flutter
   - shared_preferences_foundation (0.0.1):
@@ -119,7 +119,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_fgbg (from `.symlinks/plugins/flutter_fgbg/ios`)
   - flutter_health_fit (from `.symlinks/plugins/flutter_health_fit/ios`)
-  - flutter_image_compress (from `.symlinks/plugins/flutter_image_compress/ios`)
+  - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_keyboard_visibility (from `.symlinks/plugins/flutter_keyboard_visibility/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
@@ -171,8 +171,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_fgbg/ios"
   flutter_health_fit:
     :path: ".symlinks/plugins/flutter_health_fit/ios"
-  flutter_image_compress:
-    :path: ".symlinks/plugins/flutter_image_compress/ios"
+  flutter_image_compress_common:
+    :path: ".symlinks/plugins/flutter_image_compress_common/ios"
   flutter_keyboard_visibility:
     :path: ".symlinks/plugins/flutter_keyboard_visibility/ios"
   flutter_local_notifications:
@@ -229,7 +229,7 @@ SPEC CHECKSUMS:
   Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
   flutter_fgbg: 31c0d1140a131daea2d342121808f6aa0dcd879d
   flutter_health_fit: af332b5d7512b9cc8a05e7282cfcee02b056d32e
-  flutter_image_compress: 5a5e9aee05b6553048b8df1c3bc456d0afaac433
+  flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
   flutter_keyboard_visibility: 0339d06371254c3eb25eeb90ba8d17dca8f9c069
   flutter_local_notifications: 0c0b1ae97e741e1521e4c1629a459d04b9aec743
   flutter_native_splash: 52501b97d1c0a5f898d687f1646226c1f93c56ef
@@ -242,20 +242,20 @@ SPEC CHECKSUMS:
   location: 3a2eed4dd2fab25e7b7baf2a9efefe82b512d740
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
   media_kit_libs_ios_audio: 54c8c3556addbc15f3e8100306f5fa866c1233ab
-  media_kit_native_event_loop: 4aee6fad741e020d6935e204b8b1388bbd68beeb
+  media_kit_native_event_loop: b90c17c84c17c7d03e6409483ae2ce36036374d0
   MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
   package_info_plus: fd030dabf36271f146f1f3beacd48f564b0f17f7
   pasteboard: 982969ebaa7c78af3e6cc7761e8f5e77565d9ce0
-  path_provider_foundation: eaf5b3e458fc0e5fbb9940fb09980e853fe058b8
-  permission_handler_apple: 8f116445eff3c0e7c65ad60f5fef5490aa94b4e4
+  path_provider_foundation: 29f094ae23ebbca9d3d0cec13889cd9060c0e943
+  permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
   photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
   qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
   record: cae05d8dd3cdb1dea3511b20e5a5811a1ae00d0d
-  SDWebImage: 1c39de67663e5eebb2f41324d5d580eeea12dd4c
-  SDWebImageWebPCoder: 4851414d9f8894e328e8b97c93ea4f4f4e4418ae
+  SDWebImage: 2aea163b50bfcb569a2726b6a754c54a4506fcf6
+  SDWebImageWebPCoder: f0f287cee4cd96a59937fbf3c77a8cfda9ba67b0
   share_plus: 599aa54e4ea31d4b4c0e9c911bcc26c55e791028
-  shared_preferences_foundation: e2dae3258e06f44cc55f49d42024fd8dd03c590c
+  shared_preferences_foundation: 5b919d13b803cadd15ed2dc053125c68730e5126
   sqflite: 31f7eba61e3074736dff8807a9b41581e4f7f15a
   sqlite3: fd89671d969f3e73efe503ce203e28b016b58f68
   sqlite3_flutter_libs: 04ba0d14a04335a2fbf9a331e8664f401fbccdd5

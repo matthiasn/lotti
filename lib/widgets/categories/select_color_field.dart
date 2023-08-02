@@ -61,7 +61,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
         builder: (BuildContext _) {
           return Container(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.8,
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
             ),
             padding: const EdgeInsets.symmetric(
               horizontal: 10,

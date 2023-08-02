@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -22,7 +23,8 @@ class SelectCategoryWidget extends StatelessWidget {
     return StreamBuilder<List<CategoryDefinition>>(
       stream: getIt<JournalDb>().watchCategories(),
       builder: (context, snapshot) {
-        final categories = snapshot.data ?? <CategoryDefinition>[];
+        final categories = snapshot.data ?? <CategoryDefinition>[]
+          ..sortBy((category) => category.name);
         final categoriesById = <String, CategoryDefinition>{};
 
         for (final category in categories) {
@@ -49,7 +51,7 @@ class SelectCategoryWidget extends StatelessWidget {
                     value: BlocProvider.of<HabitSettingsCubit>(context),
                     child: Container(
                       constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.8,
+                        maxHeight: MediaQuery.of(context).size.height * 0.7,
                       ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,

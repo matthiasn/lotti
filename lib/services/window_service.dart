@@ -104,4 +104,10 @@ class WindowService implements WindowListener {
   void onWindowResized() {
     _onResized();
   }
+
+  @override
+  void onWindowDocked() {}
+
+  @override
+  void onWindowUndocked() {}
 }
