@@ -6,7 +6,7 @@ part 'entry_text.g.dart';
 
 @freezed
 class EntryText with _$EntryText {
-  factory EntryText({
+  const factory EntryText({
     required String plainText,
     Geolocation? geolocation,
     String? markdown,

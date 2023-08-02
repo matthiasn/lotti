@@ -11,22 +11,22 @@ enum SyncEntryStatus { initial, update }
 
 @freezed
 class SyncMessage with _$SyncMessage {
-  factory SyncMessage.journalEntity({
+  const factory SyncMessage.journalEntity({
     required JournalEntity journalEntity,
     required SyncEntryStatus status,
   }) = SyncJournalEntity;
 
-  factory SyncMessage.entityDefinition({
+  const factory SyncMessage.entityDefinition({
     required EntityDefinition entityDefinition,
     required SyncEntryStatus status,
   }) = SyncEntityDefinition;
 
-  factory SyncMessage.tagEntity({
+  const factory SyncMessage.tagEntity({
     required TagEntity tagEntity,
     required SyncEntryStatus status,
   }) = SyncTagEntity;
 
-  factory SyncMessage.entryLink({
+  const factory SyncMessage.entryLink({
     required EntryLink entryLink,
     required SyncEntryStatus status,
   }) = SyncEntryLink;

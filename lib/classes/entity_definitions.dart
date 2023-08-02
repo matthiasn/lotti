@@ -10,16 +10,16 @@ enum HabitCompletionType { success, skip, fail, open }
 
 @freezed
 class HabitSchedule with _$HabitSchedule {
-  factory HabitSchedule.daily({
+  const factory HabitSchedule.daily({
     required int requiredCompletions,
     DateTime? showFrom,
   }) = DailyHabitSchedule;
 
-  factory HabitSchedule.weekly({
+  const factory HabitSchedule.weekly({
     required int requiredCompletions,
   }) = WeeklyHabitSchedule;
 
-  factory HabitSchedule.monthly({
+  const factory HabitSchedule.monthly({
     required int requiredCompletions,
   }) = MonthlyHabitSchedule;
 
@@ -29,43 +29,43 @@ class HabitSchedule with _$HabitSchedule {
 
 @freezed
 class AutoCompleteRule with _$AutoCompleteRule {
-  factory AutoCompleteRule.health({
+  const factory AutoCompleteRule.health({
     required String dataType,
     num? minimum,
     num? maximum,
     String? title,
   }) = AutoCompleteRuleHealth;
 
-  factory AutoCompleteRule.workout({
+  const factory AutoCompleteRule.workout({
     required String dataType,
     num? minimum,
     num? maximum,
     String? title,
   }) = AutoCompleteRuleWorkout;
 
-  factory AutoCompleteRule.measurable({
+  const factory AutoCompleteRule.measurable({
     required String dataTypeId,
     num? minimum,
     num? maximum,
     String? title,
   }) = AutoCompleteRuleMeasurable;
 
-  factory AutoCompleteRule.habit({
+  const factory AutoCompleteRule.habit({
     required String habitId,
     String? title,
   }) = AutoCompleteRuleHabit;
 
-  factory AutoCompleteRule.and({
+  const factory AutoCompleteRule.and({
     required List<AutoCompleteRule> rules,
     String? title,
   }) = AutoCompleteRuleAnd;
 
-  factory AutoCompleteRule.or({
+  const factory AutoCompleteRule.or({
     required List<AutoCompleteRule> rules,
     String? title,
   }) = AutoCompleteRuleOr;
 
-  factory AutoCompleteRule.multiple({
+  const factory AutoCompleteRule.multiple({
     required List<AutoCompleteRule> rules,
     required int successes,
     String? title,
@@ -77,7 +77,7 @@ class AutoCompleteRule with _$AutoCompleteRule {
 
 @freezed
 class EntityDefinition with _$EntityDefinition {
-  factory EntityDefinition.measurableDataType({
+  const factory EntityDefinition.measurableDataType({
     required String id,
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -93,7 +93,7 @@ class EntityDefinition with _$EntityDefinition {
     AggregationType? aggregationType,
   }) = MeasurableDataType;
 
-  factory EntityDefinition.categoryDefinition({
+  const factory EntityDefinition.categoryDefinition({
     required String id,
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -106,7 +106,7 @@ class EntityDefinition with _$EntityDefinition {
     DateTime? deletedAt,
   }) = CategoryDefinition;
 
-  factory EntityDefinition.habit({
+  const factory EntityDefinition.habit({
     required String id,
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -127,7 +127,7 @@ class EntityDefinition with _$EntityDefinition {
     bool? priority,
   }) = HabitDefinition;
 
-  factory EntityDefinition.dashboard({
+  const factory EntityDefinition.dashboard({
     required String id,
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -151,7 +151,7 @@ class EntityDefinition with _$EntityDefinition {
 
 @freezed
 class MeasurementData with _$MeasurementData {
-  factory MeasurementData({
+  const factory MeasurementData({
     required DateTime dateFrom,
     required DateTime dateTo,
     required num value,
@@ -164,7 +164,7 @@ class MeasurementData with _$MeasurementData {
 
 @freezed
 class WorkoutData with _$WorkoutData {
-  factory WorkoutData({
+  const factory WorkoutData({
     required DateTime dateFrom,
     required DateTime dateTo,
     required String id,
@@ -180,7 +180,7 @@ class WorkoutData with _$WorkoutData {
 
 @freezed
 class HabitCompletionData with _$HabitCompletionData {
-  factory HabitCompletionData({
+  const factory HabitCompletionData({
     required DateTime dateFrom,
     required DateTime dateTo,
     required String habitId,
@@ -199,39 +199,39 @@ enum WorkoutValueType {
 
 @freezed
 class DashboardItem with _$DashboardItem {
-  factory DashboardItem.measurement({
+  const factory DashboardItem.measurement({
     required String id,
     AggregationType? aggregationType,
   }) = DashboardMeasurementItem;
 
-  factory DashboardItem.healthChart({
+  const factory DashboardItem.healthChart({
     required String color,
     required String healthType,
   }) = DashboardHealthItem;
 
-  factory DashboardItem.workoutChart({
+  const factory DashboardItem.workoutChart({
     required String workoutType,
     required String displayName,
     required String color,
     required WorkoutValueType valueType,
   }) = DashboardWorkoutItem;
 
-  factory DashboardItem.habitChart({
+  const factory DashboardItem.habitChart({
     required String habitId,
   }) = DashboardHabitItem;
 
-  factory DashboardItem.surveyChart({
+  const factory DashboardItem.surveyChart({
     required Map<String, String> colorsByScoreKey,
     required String surveyType,
     required String surveyName,
   }) = DashboardSurveyItem;
 
-  factory DashboardItem.storyTimeChart({
+  const factory DashboardItem.storyTimeChart({
     required String storyTagId,
     required String color,
   }) = DashboardStoryTimeItem;
 
-  factory DashboardItem.wildcardStoryTimeChart({
+  const factory DashboardItem.wildcardStoryTimeChart({
     required String storySubstring,
     required String color,
   }) = WildcardStoryTimeItem;

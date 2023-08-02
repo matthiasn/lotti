@@ -266,7 +266,7 @@ class __$$_MetadataCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_Metadata implements _Metadata {
-  _$_Metadata(
+  const _$_Metadata(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -399,7 +399,7 @@ class _$_Metadata implements _Metadata {
 }
 
 abstract class _Metadata implements Metadata {
-  factory _Metadata(
+  const factory _Metadata(
       {required final String id,
       required final DateTime createdAt,
       required final DateTime updatedAt,
@@ -603,7 +603,7 @@ class __$$_ImageDataCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_ImageData implements _ImageData {
-  _$_ImageData(
+  const _$_ImageData(
       {required this.capturedAt,
       required this.imageId,
       required this.imageFile,
@@ -665,7 +665,7 @@ class _$_ImageData implements _ImageData {
 }
 
 abstract class _ImageData implements ImageData {
-  factory _ImageData(
+  const factory _ImageData(
       {required final DateTime capturedAt,
       required final String imageId,
       required final String imageFile,
@@ -839,7 +839,7 @@ class __$$_AudioDataCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_AudioData implements _AudioData {
-  _$_AudioData(
+  const _$_AudioData(
       {required this.dateFrom,
       required this.dateTo,
       required this.audioFile,
@@ -920,7 +920,7 @@ class _$_AudioData implements _AudioData {
 }
 
 abstract class _AudioData implements AudioData {
-  factory _AudioData(
+  const factory _AudioData(
       {required final DateTime dateFrom,
       required final DateTime dateTo,
       required final String audioFile,
@@ -1099,7 +1099,7 @@ class __$$_AudioTranscriptCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_AudioTranscript implements _AudioTranscript {
-  _$_AudioTranscript(
+  const _$_AudioTranscript(
       {required this.created,
       required this.library,
       required this.model,
@@ -1164,7 +1164,7 @@ class _$_AudioTranscript implements _AudioTranscript {
 }
 
 abstract class _AudioTranscript implements AudioTranscript {
-  factory _AudioTranscript(
+  const factory _AudioTranscript(
       {required final DateTime created,
       required final String library,
       required final String model,
@@ -1305,7 +1305,7 @@ class __$$_SurveyDataCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_SurveyData implements _SurveyData {
-  _$_SurveyData(
+  const _$_SurveyData(
       {required this.taskResult,
       required final Map<String, Set<String>> scoreDefinitions,
       required final Map<String, int> calculatedScores})
@@ -1374,7 +1374,7 @@ class _$_SurveyData implements _SurveyData {
 }
 
 abstract class _SurveyData implements SurveyData {
-  factory _SurveyData(
+  const factory _SurveyData(
       {required final RPTaskResult taskResult,
       required final Map<String, Set<String>> scoreDefinitions,
       required final Map<String, int> calculatedScores}) = _$_SurveyData;
@@ -1428,7 +1428,8 @@ mixin _$JournalEntity {
   Geolocation? get geolocation => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
         journalEntry,
     required TResult Function(Metadata meta, ImageData data,
             EntryText? entryText, Geolocation? geolocation)
@@ -1445,16 +1446,21 @@ mixin _$JournalEntity {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
-    required TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
         workout,
-    required TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation) habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation) survey,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -1471,16 +1477,21 @@ mixin _$JournalEntity {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult? Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult? Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -1497,11 +1508,15 @@ mixin _$JournalEntity {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -1683,7 +1698,7 @@ class __$$JournalEntryCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$JournalEntry implements JournalEntry {
-  _$JournalEntry(
+  const _$JournalEntry(
       {required this.meta,
       this.entryText,
       this.geolocation,
@@ -1733,7 +1748,8 @@ class _$JournalEntry implements JournalEntry {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
         journalEntry,
     required TResult Function(Metadata meta, ImageData data,
             EntryText? entryText, Geolocation? geolocation)
@@ -1750,11 +1766,15 @@ class _$JournalEntry implements JournalEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
-    required TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
         workout,
-    required TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation) habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation) survey,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
   }) {
     return journalEntry(meta, entryText, geolocation);
   }
@@ -1762,7 +1782,8 @@ class _$JournalEntry implements JournalEntry {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -1779,11 +1800,15 @@ class _$JournalEntry implements JournalEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult? Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult? Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
   }) {
     return journalEntry?.call(meta, entryText, geolocation);
   }
@@ -1791,7 +1816,8 @@ class _$JournalEntry implements JournalEntry {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -1808,11 +1834,15 @@ class _$JournalEntry implements JournalEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
     required TResult orElse(),
   }) {
     if (journalEntry != null) {
@@ -1882,7 +1912,7 @@ class _$JournalEntry implements JournalEntry {
 }
 
 abstract class JournalEntry implements JournalEntity {
-  factory JournalEntry(
+  const factory JournalEntry(
       {required final Metadata meta,
       final EntryText? entryText,
       final Geolocation? geolocation}) = _$JournalEntry;
@@ -2028,7 +2058,8 @@ class _$JournalImage implements JournalImage {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
         journalEntry,
     required TResult Function(Metadata meta, ImageData data,
             EntryText? entryText, Geolocation? geolocation)
@@ -2045,11 +2076,15 @@ class _$JournalImage implements JournalImage {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
-    required TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
         workout,
-    required TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation) habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation) survey,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
   }) {
     return journalImage(meta, data, entryText, geolocation);
   }
@@ -2057,7 +2092,8 @@ class _$JournalImage implements JournalImage {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -2074,11 +2110,15 @@ class _$JournalImage implements JournalImage {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult? Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult? Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
   }) {
     return journalImage?.call(meta, data, entryText, geolocation);
   }
@@ -2086,7 +2126,8 @@ class _$JournalImage implements JournalImage {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -2103,11 +2144,15 @@ class _$JournalImage implements JournalImage {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
     required TResult orElse(),
   }) {
     if (journalImage != null) {
@@ -2325,7 +2370,8 @@ class _$JournalAudio implements JournalAudio {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
         journalEntry,
     required TResult Function(Metadata meta, ImageData data,
             EntryText? entryText, Geolocation? geolocation)
@@ -2342,11 +2388,15 @@ class _$JournalAudio implements JournalAudio {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
-    required TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
         workout,
-    required TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation) habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation) survey,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
   }) {
     return journalAudio(meta, data, entryText, geolocation);
   }
@@ -2354,7 +2404,8 @@ class _$JournalAudio implements JournalAudio {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -2371,11 +2422,15 @@ class _$JournalAudio implements JournalAudio {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult? Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult? Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
   }) {
     return journalAudio?.call(meta, data, entryText, geolocation);
   }
@@ -2383,7 +2438,8 @@ class _$JournalAudio implements JournalAudio {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -2400,11 +2456,15 @@ class _$JournalAudio implements JournalAudio {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
     required TResult orElse(),
   }) {
     if (journalAudio != null) {
@@ -2618,7 +2678,8 @@ class _$Task implements Task {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
         journalEntry,
     required TResult Function(Metadata meta, ImageData data,
             EntryText? entryText, Geolocation? geolocation)
@@ -2635,11 +2696,15 @@ class _$Task implements Task {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
-    required TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
         workout,
-    required TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation) habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation) survey,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
   }) {
     return task(meta, data, entryText, geolocation);
   }
@@ -2647,7 +2712,8 @@ class _$Task implements Task {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -2664,11 +2730,15 @@ class _$Task implements Task {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult? Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult? Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
   }) {
     return task?.call(meta, data, entryText, geolocation);
   }
@@ -2676,7 +2746,8 @@ class _$Task implements Task {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -2693,11 +2764,15 @@ class _$Task implements Task {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
     required TResult orElse(),
   }) {
     if (task != null) {
@@ -2913,7 +2988,8 @@ class _$QuantitativeEntry implements QuantitativeEntry {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
         journalEntry,
     required TResult Function(Metadata meta, ImageData data,
             EntryText? entryText, Geolocation? geolocation)
@@ -2930,11 +3006,15 @@ class _$QuantitativeEntry implements QuantitativeEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
-    required TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
         workout,
-    required TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation) habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation) survey,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
   }) {
     return quantitative(meta, data, entryText, geolocation);
   }
@@ -2942,7 +3022,8 @@ class _$QuantitativeEntry implements QuantitativeEntry {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -2959,11 +3040,15 @@ class _$QuantitativeEntry implements QuantitativeEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult? Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult? Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
   }) {
     return quantitative?.call(meta, data, entryText, geolocation);
   }
@@ -2971,7 +3056,8 @@ class _$QuantitativeEntry implements QuantitativeEntry {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -2988,11 +3074,15 @@ class _$QuantitativeEntry implements QuantitativeEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
     required TResult orElse(),
   }) {
     if (quantitative != null) {
@@ -3210,7 +3300,8 @@ class _$MeasurementEntry implements MeasurementEntry {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
         journalEntry,
     required TResult Function(Metadata meta, ImageData data,
             EntryText? entryText, Geolocation? geolocation)
@@ -3227,11 +3318,15 @@ class _$MeasurementEntry implements MeasurementEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
-    required TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
         workout,
-    required TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation) habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation) survey,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
   }) {
     return measurement(meta, data, entryText, geolocation);
   }
@@ -3239,7 +3334,8 @@ class _$MeasurementEntry implements MeasurementEntry {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -3256,11 +3352,15 @@ class _$MeasurementEntry implements MeasurementEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult? Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult? Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
   }) {
     return measurement?.call(meta, data, entryText, geolocation);
   }
@@ -3268,7 +3368,8 @@ class _$MeasurementEntry implements MeasurementEntry {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -3285,11 +3386,15 @@ class _$MeasurementEntry implements MeasurementEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
     required TResult orElse(),
   }) {
     if (measurement != null) {
@@ -3507,7 +3612,8 @@ class _$WorkoutEntry implements WorkoutEntry {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
         journalEntry,
     required TResult Function(Metadata meta, ImageData data,
             EntryText? entryText, Geolocation? geolocation)
@@ -3524,11 +3630,15 @@ class _$WorkoutEntry implements WorkoutEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
-    required TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
         workout,
-    required TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation) habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation) survey,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
   }) {
     return workout(meta, data, entryText, geolocation);
   }
@@ -3536,7 +3646,8 @@ class _$WorkoutEntry implements WorkoutEntry {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -3553,11 +3664,15 @@ class _$WorkoutEntry implements WorkoutEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult? Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult? Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
   }) {
     return workout?.call(meta, data, entryText, geolocation);
   }
@@ -3565,7 +3680,8 @@ class _$WorkoutEntry implements WorkoutEntry {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -3582,11 +3698,15 @@ class _$WorkoutEntry implements WorkoutEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
     required TResult orElse(),
   }) {
     if (workout != null) {
@@ -3805,7 +3925,8 @@ class _$HabitCompletionEntry implements HabitCompletionEntry {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
         journalEntry,
     required TResult Function(Metadata meta, ImageData data,
             EntryText? entryText, Geolocation? geolocation)
@@ -3822,11 +3943,15 @@ class _$HabitCompletionEntry implements HabitCompletionEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
-    required TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
         workout,
-    required TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation) habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation) survey,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
   }) {
     return habitCompletion(meta, data, entryText, geolocation);
   }
@@ -3834,7 +3959,8 @@ class _$HabitCompletionEntry implements HabitCompletionEntry {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -3851,11 +3977,15 @@ class _$HabitCompletionEntry implements HabitCompletionEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult? Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult? Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
   }) {
     return habitCompletion?.call(meta, data, entryText, geolocation);
   }
@@ -3863,7 +3993,8 @@ class _$HabitCompletionEntry implements HabitCompletionEntry {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -3880,11 +4011,15 @@ class _$HabitCompletionEntry implements HabitCompletionEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
     required TResult orElse(),
   }) {
     if (habitCompletion != null) {
@@ -4102,7 +4237,8 @@ class _$SurveyEntry implements SurveyEntry {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)
         journalEntry,
     required TResult Function(Metadata meta, ImageData data,
             EntryText? entryText, Geolocation? geolocation)
@@ -4119,11 +4255,15 @@ class _$SurveyEntry implements SurveyEntry {
     required TResult Function(Metadata meta, MeasurementData data,
             EntryText? entryText, Geolocation? geolocation)
         measurement,
-    required TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)
+    required TResult Function(Metadata meta, WorkoutData data,
+            EntryText? entryText, Geolocation? geolocation)
         workout,
-    required TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation) habitCompletion,
-    required TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation) survey,
+    required TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)
+        habitCompletion,
+    required TResult Function(Metadata meta, SurveyData data,
+            EntryText? entryText, Geolocation? geolocation)
+        survey,
   }) {
     return survey(meta, data, entryText, geolocation);
   }
@@ -4131,7 +4271,8 @@ class _$SurveyEntry implements SurveyEntry {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult? Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -4148,11 +4289,15 @@ class _$SurveyEntry implements SurveyEntry {
     TResult? Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult? Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult? Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult? Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult? Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
   }) {
     return survey?.call(meta, data, entryText, geolocation);
   }
@@ -4160,7 +4305,8 @@ class _$SurveyEntry implements SurveyEntry {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Metadata meta, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(
+            Metadata meta, EntryText? entryText, Geolocation? geolocation)?
         journalEntry,
     TResult Function(Metadata meta, ImageData data, EntryText? entryText,
             Geolocation? geolocation)?
@@ -4177,11 +4323,15 @@ class _$SurveyEntry implements SurveyEntry {
     TResult Function(Metadata meta, MeasurementData data, EntryText? entryText,
             Geolocation? geolocation)?
         measurement,
-    TResult Function(
-            Metadata meta, WorkoutData data, EntryText? entryText, Geolocation? geolocation)?
+    TResult Function(Metadata meta, WorkoutData data, EntryText? entryText,
+            Geolocation? geolocation)?
         workout,
-    TResult Function(Metadata meta, HabitCompletionData data, EntryText? entryText, Geolocation? geolocation)? habitCompletion,
-    TResult Function(Metadata meta, SurveyData data, EntryText? entryText, Geolocation? geolocation)? survey,
+    TResult Function(Metadata meta, HabitCompletionData data,
+            EntryText? entryText, Geolocation? geolocation)?
+        habitCompletion,
+    TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        survey,
     required TResult orElse(),
   }) {
     if (survey != null) {

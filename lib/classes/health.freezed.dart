@@ -281,7 +281,7 @@ class __$$CumulativeQuantityDataCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$CumulativeQuantityData implements CumulativeQuantityData {
-  _$CumulativeQuantityData(
+  const _$CumulativeQuantityData(
       {required this.dateFrom,
       required this.dateTo,
       required this.value,
@@ -480,7 +480,7 @@ class _$CumulativeQuantityData implements CumulativeQuantityData {
 }
 
 abstract class CumulativeQuantityData implements QuantitativeData {
-  factory CumulativeQuantityData(
+  const factory CumulativeQuantityData(
       {required final DateTime dateFrom,
       required final DateTime dateTo,
       required final num value,
@@ -603,7 +603,7 @@ class __$$DiscreteQuantityDataCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$DiscreteQuantityData implements DiscreteQuantityData {
-  _$DiscreteQuantityData(
+  const _$DiscreteQuantityData(
       {required this.dateFrom,
       required this.dateTo,
       required this.value,
@@ -817,7 +817,7 @@ class _$DiscreteQuantityData implements DiscreteQuantityData {
 }
 
 abstract class DiscreteQuantityData implements QuantitativeData {
-  factory DiscreteQuantityData(
+  const factory DiscreteQuantityData(
       {required final DateTime dateFrom,
       required final DateTime dateTo,
       required final num value,

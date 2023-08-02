@@ -242,7 +242,7 @@ class __$$_GeolocationCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$_Geolocation implements _Geolocation {
-  _$_Geolocation(
+  const _$_Geolocation(
       {required this.createdAt,
       required this.latitude,
       required this.longitude,
@@ -350,7 +350,7 @@ class _$_Geolocation implements _Geolocation {
 }
 
 abstract class _Geolocation implements Geolocation {
-  factory _Geolocation(
+  const factory _Geolocation(
       {required final DateTime createdAt,
       required final double latitude,
       required final double longitude,

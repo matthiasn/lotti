@@ -1,6 +1,6 @@
 import 'package:lotti/classes/entity_definitions.dart';
 
-final testAutoComplete = AutoCompleteRule.and(
+const testAutoComplete = AutoCompleteRule.and(
   title: 'Physical Exercises and Hydration',
   rules: [
     AutoCompleteRule.or(
@@ -72,7 +72,7 @@ final testAutoComplete = AutoCompleteRule.and(
   ],
 );
 
-final testAutoCompleteWithoutHydration = AutoCompleteRule.and(
+const testAutoCompleteWithoutHydration = AutoCompleteRule.and(
   title: 'Physical Exercises and Hydration',
   rules: [
     AutoCompleteRule.or(
@@ -139,7 +139,7 @@ final testAutoCompleteWithoutHydration = AutoCompleteRule.and(
   ],
 );
 
-final testAutoCompleteWithoutPullUps = AutoCompleteRule.and(
+const testAutoCompleteWithoutPullUps = AutoCompleteRule.and(
   title: 'Physical Exercises and Hydration',
   rules: [
     AutoCompleteRule.or(
@@ -207,7 +207,7 @@ final testAutoCompleteWithoutPullUps = AutoCompleteRule.and(
   ],
 );
 
-final testAutoCompletePullUpHarder = AutoCompleteRule.and(
+const testAutoCompletePullUpHarder = AutoCompleteRule.and(
   title: 'Physical Exercises and Hydration',
   rules: [
     AutoCompleteRule.or(

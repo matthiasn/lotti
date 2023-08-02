@@ -42,7 +42,7 @@ final habitFlossing = HabitDefinition(
   createdAt: testEpochDateTime,
   updatedAt: testEpochDateTime,
   vectorClock: null,
-  habitSchedule: HabitSchedule.daily(requiredCompletions: 1),
+  habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
   active: true,
   private: false,
 );
@@ -54,7 +54,7 @@ final habitFlossingDueLater = HabitDefinition(
   createdAt: testEpochDateTime,
   updatedAt: testEpochDateTime,
   vectorClock: null,
-  habitSchedule: HabitSchedule.daily(requiredCompletions: 1),
+  habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
   active: true,
   private: false,
   activeFrom: DateTime.now().add(const Duration(minutes: 10)),
@@ -101,24 +101,24 @@ const testDashboardDescription = 'Some test dashboard description';
 
 final testDashboardConfig = DashboardDefinition(
   items: [
-    DashboardHealthItem(
+    const DashboardHealthItem(
       color: '#0000FF',
       healthType: 'HealthDataType.RESTING_HEART_RATE',
     ),
-    DashboardWorkoutItem(
+    const DashboardWorkoutItem(
       workoutType: 'running',
       displayName: 'Running calories',
       color: '#0000FF',
       valueType: WorkoutValueType.energy,
     ),
-    DashboardMeasurementItem(
+    const DashboardMeasurementItem(
       id: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
       aggregationType: AggregationType.dailySum,
     ),
-    DashboardMeasurementItem(
+    const DashboardMeasurementItem(
       id: 'f8f55c10-e30b-4bf5-990d-d569ce4867fb',
     ),
-    DashboardSurveyItem(
+    const DashboardSurveyItem(
       colorsByScoreKey: {
         'Positive Affect Score': '#00FF00',
         'Negative Affect Score': '#FF0000',
@@ -195,7 +195,7 @@ final testTextEntry = JournalEntry(
     starred: true,
     vectorClock: const VectorClock({'a': 11}),
   ),
-  entryText: EntryText(plainText: 'test entry text'),
+  entryText: const EntryText(plainText: 'test entry text'),
   geolocation: Geolocation(
     geohashString: '',
     longitude: 13.43,
@@ -222,7 +222,7 @@ final testImageEntry = JournalImage(
     updatedAt: DateTime(2022, 7, 7, 13),
     starred: true,
   ),
-  entryText: EntryText(plainText: 'test image entry text'),
+  entryText: const EntryText(plainText: 'test image entry text'),
   data: ImageData(
     imageId: '',
     imageFile: '',
@@ -240,7 +240,7 @@ final testAudioEntry = JournalAudio(
     updatedAt: DateTime(2022, 7, 7, 13),
     starred: true,
   ),
-  entryText: EntryText(plainText: 'test image entry text'),
+  entryText: const EntryText(plainText: 'test image entry text'),
   data: AudioData(
     dateFrom: DateTime(2022, 7, 7, 13),
     dateTo: DateTime(2022, 7, 7, 14),
@@ -259,7 +259,7 @@ final testAudioEntryWithTranscripts = JournalAudio(
     updatedAt: DateTime(2022, 7, 7, 13),
     starred: true,
   ),
-  entryText: EntryText(plainText: 'test image entry text'),
+  entryText: const EntryText(plainText: 'test image entry text'),
   data: AudioData(
     dateFrom: DateTime(2022, 7, 7, 13),
     dateTo: DateTime(2022, 7, 7, 14),
@@ -287,7 +287,7 @@ final testHabitCompletionEntry = HabitCompletionEntry(
     updatedAt: DateTime.now(),
     starred: true,
   ),
-  entryText: EntryText(plainText: 'test image entry text'),
+  entryText: const EntryText(plainText: 'test image entry text'),
   data: HabitCompletionData(
     dateFrom: DateTime.now(),
     dateTo: DateTime.now(),
@@ -316,7 +316,7 @@ final testTask = Task(
     updatedAt: DateTime(2022, 7, 7, 11),
     starred: true,
   ),
-  entryText: EntryText(plainText: '- test task text'),
+  entryText: const EntryText(plainText: '- test task text'),
 );
 
 final testWeightEntry = QuantitativeEntry(
@@ -443,7 +443,7 @@ final testMeasuredCoverageEntry = MeasurementEntry(
     dateTo: DateTime(2022, 7, 7, 17),
     dateFrom: DateTime(2022, 7, 7, 17),
   ),
-  entryText: EntryText(plainText: 'test measurement comment'),
+  entryText: const EntryText(plainText: 'test measurement comment'),
 );
 
 final testMeasuredPullUpsEntry = MeasurementEntry(

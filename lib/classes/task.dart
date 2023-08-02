@@ -8,7 +8,7 @@ part 'task.g.dart';
 
 @freezed
 class TaskStatus with _$TaskStatus {
-  factory TaskStatus.open({
+  const factory TaskStatus.open({
     required String id,
     required DateTime createdAt,
     required int utcOffset,
@@ -16,7 +16,7 @@ class TaskStatus with _$TaskStatus {
     Geolocation? geolocation,
   }) = _TaskOpen;
 
-  factory TaskStatus.started({
+  const factory TaskStatus.started({
     required String id,
     required DateTime createdAt,
     required int utcOffset,
@@ -24,7 +24,7 @@ class TaskStatus with _$TaskStatus {
     Geolocation? geolocation,
   }) = _TaskStarted;
 
-  factory TaskStatus.inProgress({
+  const factory TaskStatus.inProgress({
     required String id,
     required DateTime createdAt,
     required int utcOffset,
@@ -32,7 +32,7 @@ class TaskStatus with _$TaskStatus {
     Geolocation? geolocation,
   }) = _TaskInProgress;
 
-  factory TaskStatus.groomed({
+  const factory TaskStatus.groomed({
     required String id,
     required DateTime createdAt,
     required int utcOffset,
@@ -40,7 +40,7 @@ class TaskStatus with _$TaskStatus {
     Geolocation? geolocation,
   }) = _TaskGroomed;
 
-  factory TaskStatus.blocked({
+  const factory TaskStatus.blocked({
     required String id,
     required DateTime createdAt,
     required int utcOffset,
@@ -49,7 +49,7 @@ class TaskStatus with _$TaskStatus {
     Geolocation? geolocation,
   }) = _TaskBlocked;
 
-  factory TaskStatus.onHold({
+  const factory TaskStatus.onHold({
     required String id,
     required DateTime createdAt,
     required int utcOffset,
@@ -58,7 +58,7 @@ class TaskStatus with _$TaskStatus {
     Geolocation? geolocation,
   }) = _TaskOnHold;
 
-  factory TaskStatus.done({
+  const factory TaskStatus.done({
     required String id,
     required DateTime createdAt,
     required int utcOffset,
@@ -66,7 +66,7 @@ class TaskStatus with _$TaskStatus {
     Geolocation? geolocation,
   }) = _TaskDone;
 
-  factory TaskStatus.rejected({
+  const factory TaskStatus.rejected({
     required String id,
     required DateTime createdAt,
     required int utcOffset,
@@ -80,7 +80,7 @@ class TaskStatus with _$TaskStatus {
 
 @freezed
 class TaskData with _$TaskData {
-  factory TaskData({
+  const factory TaskData({
     required TaskStatus status,
     required DateTime dateFrom,
     required DateTime dateTo,
