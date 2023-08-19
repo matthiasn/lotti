@@ -106,7 +106,7 @@ class DashboardsFilter extends StatelessWidget {
                                       backgroundColor: color,
                                     ),
                                   );
-                                })
+                                }),
                               ],
                             ),
                           );

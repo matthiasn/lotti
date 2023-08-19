@@ -39,7 +39,7 @@ class _ImapConfigWidgetState extends State<ImapConfigWidget> {
               state.maybeWhen(
                 orElse: () => const SizedBox.shrink(),
                 empty: () => const EmptyConfigWidget(),
-              )
+              ),
             ],
           ),
         );

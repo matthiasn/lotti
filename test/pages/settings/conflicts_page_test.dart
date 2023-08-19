@@ -18,14 +18,14 @@ void main() {
       when(() => mockJournalDb.watchConflicts(ConflictStatus.resolved))
           .thenAnswer(
         (_) => Stream<List<Conflict>>.fromIterable([
-          [resolvedConflict]
+          [resolvedConflict],
         ]),
       );
 
       when(() => mockJournalDb.watchConflicts(ConflictStatus.unresolved))
           .thenAnswer(
         (_) => Stream<List<Conflict>>.fromIterable([
-          [unresolvedConflict]
+          [unresolvedConflict],
         ]),
       );
 

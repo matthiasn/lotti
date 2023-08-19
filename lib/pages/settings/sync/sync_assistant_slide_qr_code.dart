@@ -60,7 +60,7 @@ class SyncAssistantQrCodeSlide extends StatelessWidget {
                     child: EncryptionQrWidget(),
                   ),
                 ),
-              )
+              ),
             ],
           ),
         );

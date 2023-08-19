@@ -157,7 +157,7 @@ RPOrderedTask panasSurveyTask = RPOrderedTask(
       title: 'Afraid',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
-    panasCompletionStep
+    panasCompletionStep,
   ],
 );
 

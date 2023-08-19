@@ -52,7 +52,7 @@ class HabitDetailsPage extends StatelessWidget {
                       semanticsLabel: 'Save Habit',
                     ),
                   ),
-                )
+                ),
             ],
           ),
           body: EntityDetailCard(

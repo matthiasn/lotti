@@ -89,7 +89,7 @@ class LinkedDuration extends StatelessWidget {
                             Text(
                               formatDuration(estimate),
                               style: durationStyle,
-                            )
+                            ),
                           ],
                         ),
                       ),

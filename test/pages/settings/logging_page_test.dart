@@ -60,7 +60,7 @@ void main() {
         () => getIt<LoggingDb>().watchLogEntries(),
       ).thenAnswer(
         (_) => Stream<List<LogEntry>>.fromIterable([
-          [testLogEntry]
+          [testLogEntry],
         ]),
       );
 
@@ -106,7 +106,7 @@ void main() {
         () => getIt<LoggingDb>().watchLogEntryById(testLogEntry.id),
       ).thenAnswer(
         (_) => Stream<List<LogEntry>>.fromIterable([
-          [testLogEntry]
+          [testLogEntry],
         ]),
       );
 
