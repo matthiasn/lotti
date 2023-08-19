@@ -74,7 +74,7 @@ class SelectCategoryWidget extends StatelessWidget {
                                   colorFromCssHex(category.color),
                                 ),
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ),

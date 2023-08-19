@@ -73,7 +73,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
               measureFn: (Observation val, _) => val.value,
               colorFn: (_, __) => charts.Color.fromHex(code: '#82E6CE'),
               data: data,
-            )
+            ),
           ];
 
           void infoSelectionModelUpdated(
@@ -100,13 +100,13 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
               selectionModels: [
                 charts.SelectionModelConfig(
                   updatedListener: infoSelectionModelUpdated,
-                )
+                ),
               ],
               behaviors: [
                 chartRangeAnnotation(
                   widget.rangeStart,
                   widget.rangeEnd,
-                )
+                ),
               ],
               domainAxis: timeSeriesAxis,
               primaryMeasureAxis: const charts.NumericAxisSpec(

@@ -41,13 +41,13 @@ void main() {
 
       when(mockJournalDb.watchCategories).thenAnswer(
         (_) => Stream<List<CategoryDefinition>>.fromIterable([
-          [categoryMindfulness]
+          [categoryMindfulness],
         ]),
       );
 
       when(mockJournalDb.watchHabitDefinitions).thenAnswer(
         (_) => Stream<List<HabitDefinition>>.fromIterable([
-          [habitFlossing]
+          [habitFlossing],
         ]),
       );
 
@@ -481,7 +481,7 @@ void main() {
         () => mockJournalDb.watchDashboardById(testDashboardConfig.id),
       ).thenAnswer(
         (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          <DashboardDefinition>[testDashboardConfig]
+          <DashboardDefinition>[testDashboardConfig],
         ]),
       );
 

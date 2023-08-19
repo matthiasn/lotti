@@ -53,7 +53,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasuredCoverageEntry]
+          [testMeasuredCoverageEntry],
         ]),
       );
 

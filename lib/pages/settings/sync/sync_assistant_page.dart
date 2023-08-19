@@ -91,7 +91,7 @@ class _SyncAssistantPageState extends State<SyncAssistantPage> {
                 inactiveIndicatorSize: 14,
                 activeIndicatorSize: 14,
               ),
-            )
+            ),
           ],
         ),
       ),

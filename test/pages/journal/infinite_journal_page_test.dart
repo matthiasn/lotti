@@ -68,7 +68,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testTask]
+          [testTask],
         ]),
       );
 
@@ -133,7 +133,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<Map<String, Duration>>.fromIterable([
-          {testTask.meta.id: const Duration(hours: 1)}
+          {testTask.meta.id: const Duration(hours: 1)},
         ]),
       );
 
@@ -163,7 +163,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testTextEntry]
+          [testTextEntry],
         ]),
       );
 
@@ -219,7 +219,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testTask]
+          [testTask],
         ]),
       );
 
@@ -272,7 +272,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testTask]
+          [testTask],
         ]),
       );
 
@@ -328,7 +328,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testWeightEntry]
+          [testWeightEntry],
         ]),
       );
 
@@ -428,7 +428,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasurementChocolateEntry]
+          [testMeasurementChocolateEntry],
         ]),
       );
 
@@ -530,7 +530,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasuredCoverageEntry]
+          [testMeasuredCoverageEntry],
         ]),
       );
 

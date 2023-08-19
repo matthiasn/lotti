@@ -273,7 +273,7 @@ final testAudioEntryWithTranscripts = JournalAudio(
         model: 'ggml-small.bin',
         detectedLanguage: 'en',
         transcript: 'transcript',
-      )
+      ),
     ],
   ),
 );

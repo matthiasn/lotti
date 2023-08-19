@@ -67,7 +67,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
                             colorFromCssHex(category.color),
                           ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),

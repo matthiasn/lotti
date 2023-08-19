@@ -126,7 +126,7 @@ class StatusIndicator extends StatelessWidget {
               color: statusColor,
               blurRadius: 5,
               spreadRadius: 1,
-            )
+            ),
           ],
         ),
       ),

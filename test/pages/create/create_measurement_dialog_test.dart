@@ -139,7 +139,7 @@ void main() {
         'if only one exists', (tester) async {
       when(mockJournalDb.watchMeasurableDataTypes).thenAnswer(
         (_) => Stream<List<MeasurableDataType>>.fromIterable([
-          [measurableWater]
+          [measurableWater],
         ]),
       );
 

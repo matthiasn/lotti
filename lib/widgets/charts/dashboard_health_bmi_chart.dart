@@ -194,7 +194,7 @@ class BmiRangeLegend extends StatelessWidget {
               color: Colors.black.withOpacity(0.3), //New
               blurRadius: 8,
               offset: const Offset(0, 8),
-            )
+            ),
           ],
         ),
         child: ClipRRect(

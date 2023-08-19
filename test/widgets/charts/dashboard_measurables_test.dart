@@ -37,7 +37,7 @@ void main() {
 
       when(mockJournalDb.watchMeasurableDataTypes).thenAnswer(
         (_) => Stream<List<MeasurableDataType>>.fromIterable([
-          [measurableWater]
+          [measurableWater],
         ]),
       );
     });
@@ -54,7 +54,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasurementChocolateEntry]
+          [testMeasurementChocolateEntry],
         ]),
       );
 
@@ -99,7 +99,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasurementChocolateEntry]
+          [testMeasurementChocolateEntry],
         ]),
       );
 
@@ -145,7 +145,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasuredCoverageEntry]
+          [testMeasuredCoverageEntry],
         ]),
       );
 
@@ -191,7 +191,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasuredPullUpsEntry]
+          [testMeasuredPullUpsEntry],
         ]),
       );
 

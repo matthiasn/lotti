@@ -74,7 +74,7 @@ class SelectDashboardWidget extends StatelessWidget {
                                 },
                                 title: dashboard.name,
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ),

@@ -77,7 +77,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
                     labelTypes: const [],
                     onColorChanged: widget.onColorChanged,
                     pickerAreaBorderRadius: BorderRadius.circular(10),
-                  )
+                  ),
                 ],
               ),
             ),
