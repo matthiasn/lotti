@@ -125,7 +125,7 @@ RPOrderedTask cfq11SurveyTask = RPOrderedTask(
       title: 'How is your memory?',
       answerFormat: cfq11ImageChoiceAnswerFormat,
     ),
-    cfq11CompletionStep
+    cfq11CompletionStep,
   ],
 );
 

@@ -37,7 +37,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testSurveyEntry]
+          [testSurveyEntry],
         ]),
       );
 

@@ -75,7 +75,7 @@ class SyncDatabase extends _$SyncDatabase {
             (t) => OrderingTerm(
                   expression: t.createdAt,
                   mode: OrderingMode.desc,
-                )
+                ),
           ])
           ..limit(limit))
         .watch();

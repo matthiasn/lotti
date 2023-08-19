@@ -57,7 +57,7 @@ class CategoryDetailsPage extends StatelessWidget {
                           semanticsLabel: 'Save Category',
                         ),
                       ),
-                    )
+                    ),
                 ],
               ),
               body: EntityDetailCard(

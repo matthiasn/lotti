@@ -37,13 +37,13 @@ void main() {
 
       when(mockJournalDb.watchCategories).thenAnswer(
         (_) => Stream<List<CategoryDefinition>>.fromIterable([
-          [categoryMindfulness]
+          [categoryMindfulness],
         ]),
       );
 
       when(mockJournalDb.watchDashboards).thenAnswer(
         (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [testDashboardConfig]
+          [testDashboardConfig],
         ]),
       );
 

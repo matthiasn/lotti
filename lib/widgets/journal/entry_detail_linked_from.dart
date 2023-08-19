@@ -55,7 +55,7 @@ class LinkedFromEntriesWidget extends StatelessWidget {
                     },
                   );
                 },
-              )
+              ),
             ],
           );
         }

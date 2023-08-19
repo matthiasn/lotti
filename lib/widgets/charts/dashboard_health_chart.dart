@@ -111,7 +111,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
               domainFn: (Observation val, _) => val.dateTime,
               measureFn: (Observation val, _) => val.value,
               data: data,
-            )
+            ),
           ];
 
           return DashboardChart(

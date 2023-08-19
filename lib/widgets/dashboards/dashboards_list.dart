@@ -24,7 +24,7 @@ class DashboardsList extends StatelessWidget {
                     dashboard: dashboard,
                     index: index,
                   ),
-                )
+                ),
               ],
             ),
           ),

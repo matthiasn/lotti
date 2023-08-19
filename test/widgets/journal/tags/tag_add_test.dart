@@ -24,13 +24,13 @@ void main() {
 
     when(() => mockTagsService.stream).thenAnswer(
       (_) => Stream<List<TagEntity>>.fromIterable([
-        [testStoryTag1]
+        [testStoryTag1],
       ]),
     );
 
     when(mockTagsService.watchTags).thenAnswer(
       (_) => Stream<List<TagEntity>>.fromIterable([
-        [testStoryTag1]
+        [testStoryTag1],
       ]),
     );
 
