@@ -63,7 +63,7 @@ void main() {
         () => mockJournalDb.watchDashboardById(testDashboardConfig.id),
       ).thenAnswer(
         (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          <DashboardDefinition>[testDashboardConfig]
+          <DashboardDefinition>[testDashboardConfig],
         ]),
       );
 
@@ -125,7 +125,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<Map<String, Duration>>.fromIterable([
-          {testTask.meta.id: const Duration(hours: 1)}
+          {testTask.meta.id: const Duration(hours: 1)},
         ]),
       );
 
@@ -154,7 +154,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testTextEntry]
+          [testTextEntry],
         ]),
       );
 

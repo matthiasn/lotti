@@ -184,7 +184,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
               item,
               item.name,
             ),
-          )
+          ),
         ];
 
         return StreamBuilder<List<MeasurableDataType>>(
@@ -201,7 +201,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                   item,
                   item.displayName,
                 ),
-              )
+              ),
             ];
 
             final healthSelectItems = healthTypes.keys.map((String typeName) {

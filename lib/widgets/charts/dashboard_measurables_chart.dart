@@ -147,7 +147,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                   domainFn: (Observation val, _) => val.dateTime,
                   measureFn: (Observation val, _) => val.value,
                   data: data,
-                )
+                ),
               ];
               return DashboardChart(
                 topMargin: 10,
@@ -158,7 +158,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                   selectionModels: [
                     charts.SelectionModelConfig(
                       updatedListener: infoSelectionModelUpdated,
-                    )
+                    ),
                   ],
                   behaviors: [
                     chartRangeAnnotation(
@@ -170,7 +170,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
                                   .subtract(const Duration(days: 1))
                               : widget.rangeStart,
                       widget.rangeEnd,
-                    )
+                    ),
                   ],
                   domainAxis: timeSeriesAxis,
                   primaryMeasureAxis: charts.NumericAxisSpec(

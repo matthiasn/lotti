@@ -19,7 +19,7 @@ void main() {
     setUp(() {
       when(mockJournalDb.watchCategories).thenAnswer(
         (_) => Stream<List<CategoryDefinition>>.fromIterable([
-          [categoryMindfulness]
+          [categoryMindfulness],
         ]),
       );
 

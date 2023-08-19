@@ -10,10 +10,10 @@ final habitsBeamerDelegate = BeamerDelegate(
   updateParent: false,
   updateFromParent: false,
   locationBuilder: (routeInformation, _) {
-    if (routeInformation.location!.contains('habits')) {
+    if (routeInformation.uri.path.contains('habits')) {
       return HabitsLocation(routeInformation);
     }
-    return NotFound(path: routeInformation.location!);
+    return NotFound(path: routeInformation.uri.path);
   },
 );
 
@@ -22,10 +22,10 @@ final dashboardsBeamerDelegate = BeamerDelegate(
   updateParent: false,
   updateFromParent: false,
   locationBuilder: (routeInformation, _) {
-    if (routeInformation.location!.contains('dashboards')) {
+    if (routeInformation.uri.path.contains('dashboards')) {
       return DashboardsLocation(routeInformation);
     }
-    return NotFound(path: routeInformation.location!);
+    return NotFound(path: routeInformation.uri.path);
   },
 );
 
@@ -34,10 +34,10 @@ final journalBeamerDelegate = BeamerDelegate(
   updateParent: false,
   updateFromParent: false,
   locationBuilder: (routeInformation, _) {
-    if (routeInformation.location!.contains('journal')) {
+    if (routeInformation.uri.path.contains('journal')) {
       return JournalLocation(routeInformation);
     }
-    return NotFound(path: routeInformation.location!);
+    return NotFound(path: routeInformation.uri.path);
   },
 );
 
@@ -46,10 +46,10 @@ final tasksBeamerDelegate = BeamerDelegate(
   updateParent: false,
   updateFromParent: false,
   locationBuilder: (routeInformation, _) {
-    if (routeInformation.location!.contains('tasks')) {
+    if (routeInformation.uri.path.contains('tasks')) {
       return TasksLocation(routeInformation);
     }
-    return NotFound(path: routeInformation.location!);
+    return NotFound(path: routeInformation.uri.path);
   },
 );
 
@@ -58,9 +58,9 @@ final settingsBeamerDelegate = BeamerDelegate(
   updateParent: false,
   updateFromParent: false,
   locationBuilder: (routeInformation, _) {
-    if (routeInformation.location!.contains('settings')) {
+    if (routeInformation.uri.path.contains('settings')) {
       return SettingsLocation(routeInformation);
     }
-    return NotFound(path: routeInformation.location!);
+    return NotFound(path: routeInformation.uri.path);
   },
 );

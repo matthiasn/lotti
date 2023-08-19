@@ -30,7 +30,7 @@ void main() {
 
       when(mockJournalDb.watchCategories).thenAnswer(
         (_) => Stream<List<CategoryDefinition>>.fromIterable([
-          [categoryMindfulness]
+          [categoryMindfulness],
         ]),
       );
 
@@ -52,7 +52,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testHabitCompletionEntry]
+          [testHabitCompletionEntry],
         ]),
       );
 
@@ -72,7 +72,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testHabitCompletionEntry]
+          [testHabitCompletionEntry],
         ]),
       );
     });

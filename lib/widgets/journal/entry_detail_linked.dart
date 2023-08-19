@@ -73,7 +73,7 @@ class LinkedEntriesWidget extends StatelessWidget {
                     parentTags: item.meta.tagIds?.toSet(),
                   );
                 },
-              )
+              ),
             ],
           );
         }

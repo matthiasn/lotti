@@ -105,7 +105,7 @@ class HabitsFilter extends StatelessWidget {
                                       backgroundColor: color,
                                     ),
                                   );
-                                })
+                                }),
                               ],
                             ),
                           );
