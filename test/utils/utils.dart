@@ -1,11 +1,11 @@
 import 'package:lotti/utils/platform.dart';
-import 'package:media_kit/src/player/libmpv/core/native_library.dart';
+import 'package:media_kit/media_kit.dart';
 
 void ensureMpvInitialized() {
   if (isMacOS) {
-    NativeLibrary.ensureInitialized(libmpv: '/opt/homebrew/bin/mpv');
+    MediaKit.ensureInitialized(libmpv: '/opt/homebrew/bin/mpv');
   }
   if (isLinux || isWindows) {
-    NativeLibrary.ensureInitialized();
+    MediaKit.ensureInitialized();
   }
 }
