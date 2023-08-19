@@ -75,7 +75,7 @@ void main() {
 
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([
-          [testStoryTag1]
+          [testStoryTag1],
         ]),
       );
 
@@ -199,7 +199,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream<Map<String, Duration>>.fromIterable([
-          {testTask.meta.id: const Duration(hours: 1)}
+          {testTask.meta.id: const Duration(hours: 1)},
         ]),
       );
 

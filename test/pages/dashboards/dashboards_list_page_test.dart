@@ -31,13 +31,13 @@ void main() {
 
       when(mockJournalDb.watchCategories).thenAnswer(
         (_) => Stream<List<CategoryDefinition>>.fromIterable([
-          [categoryMindfulness]
+          [categoryMindfulness],
         ]),
       );
 
       when(mockJournalDb.watchHabitDefinitions).thenAnswer(
         (_) => Stream<List<HabitDefinition>>.fromIterable([
-          [habitFlossing]
+          [habitFlossing],
         ]),
       );
 

@@ -86,7 +86,7 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
                 rangeStart: widget.rangeStart,
                 rangeEnd: widget.rangeEnd,
               ),
-            )
+            ),
           ];
 
           return DashboardChart(

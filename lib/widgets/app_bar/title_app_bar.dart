@@ -77,7 +77,7 @@ class BackWidget extends StatelessWidget {
                   localizations.appBarBack,
                   style: appBarTextStyleNew,
                   semanticsLabel: 'Navigate back',
-                )
+                ),
               ],
             ),
           ),

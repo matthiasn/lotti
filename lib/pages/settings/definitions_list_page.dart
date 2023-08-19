@@ -67,6 +67,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
         return Scaffold(
           floatingActionButton: widget.floatingActionButton,
           body: CustomScrollView(
+            // ignore: require_trailing_commas
             slivers: <Widget>[
               SliverTitleBar(
                 widget.title,
@@ -94,7 +95,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
                     ),
                   ),
                 ),
-              )
+              ),
             ],
           ),
         );

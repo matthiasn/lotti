@@ -195,7 +195,7 @@ RangeAnnotation<DateTime> chartRangeAnnotation(
       rangeEnd.subtract(const Duration(days: 1)),
       RangeAnnotationAxisType.domain,
       color: Color.transparent,
-    )
+    ),
   ]);
 }
 

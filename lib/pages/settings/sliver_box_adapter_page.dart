@@ -28,7 +28,7 @@ class SliverBoxAdapterPage extends StatelessWidget {
             child: child
                 .animate()
                 .fadeIn(duration: const Duration(milliseconds: 500)),
-          )
+          ),
         ],
       ),
     );

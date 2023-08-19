@@ -81,7 +81,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                   semanticsLabel: 'Save Measurable',
                 ),
               ),
-            )
+            ),
         ],
       ),
       body: EntityDetailCard(
