@@ -70,10 +70,9 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxItem> {
   List<GeneratedColumn> get $columns =>
       [id, createdAt, updatedAt, status, retries, message, subject, filePath];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'outbox';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'outbox';
+  String get actualTableName => 'outbox';
   @override
   VerificationContext validateIntegrity(Insertable<OutboxItem> instance,
       {bool isInserting = false}) {

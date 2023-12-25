@@ -31,10 +31,9 @@ class Settings extends Table with TableInfo<Settings, SettingsItem> {
   @override
   List<GeneratedColumn> get $columns => [configKey, value, updatedAt];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'settings';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'settings';
+  String get actualTableName => 'settings';
   @override
   VerificationContext validateIntegrity(Insertable<SettingsItem> instance,
       {bool isInserting = false}) {
