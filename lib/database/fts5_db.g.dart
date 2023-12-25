@@ -46,9 +46,10 @@ class JournalFts extends Table
   @override
   List<GeneratedColumn> get $columns => [plainText, title, summary, tags, uuid];
   @override
-  String get aliasedName => _alias ?? 'journal_fts';
+  String get aliasedName => _alias ?? actualTableName;
   @override
-  String get actualTableName => 'journal_fts';
+  String get actualTableName => $name;
+  static const String $name = 'journal_fts';
   @override
   VerificationContext validateIntegrity(Insertable<JournalFt> instance,
       {bool isInserting = false}) {
