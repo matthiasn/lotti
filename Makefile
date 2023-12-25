@@ -67,7 +67,7 @@ check-null-safety:
 	fvm flutter pub outdated --mode=null-safety
 
 .PHONY: build_runner
-build_runner: deps l10n
+build_runner: deps
 	dart run build_runner build --delete-conflicting-outputs
 
 .PHONY: watch
@@ -281,7 +281,7 @@ icons:
 	dart run flutter_launcher_icons:main
 
 .PHONY: clean_test
-clean_test: clean deps l10n build_runner test
+clean_test: clean deps build_runner l10n test
 
 .PHONY: clean_build_analyze
 clean_build_analyze: clean deps l10n build_runner analyze
