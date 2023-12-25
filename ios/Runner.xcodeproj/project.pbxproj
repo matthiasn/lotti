@@ -541,7 +541,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 10;
-				DEVELOPMENT_TEAM = SS586VG7L7;
+				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
@@ -554,7 +554,7 @@
 					"-O3",
 					"-DNDEBUG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasn.lotti.dev;
+				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasnehlsen.lotti.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";

@@ -235,11 +235,11 @@ class InboxServiceIsolate {
       final imapConfig = syncConfig.imapConfig;
 
       final account = MailAccount.fromManualSettings(
-        'sync',
-        imapConfig.userName,
-        imapConfig.host,
-        imapConfig.host,
-        imapConfig.password,
+        name: 'sync',
+        incomingHost: imapConfig.host,
+        email: imapConfig.userName,
+        outgoingHost: imapConfig.host,
+        password: imapConfig.password,
       );
 
       await _observingClient?.stopPollingIfNeeded();
