@@ -135,11 +135,11 @@ class _$SyncMessageCopyWithImpl<$Res, $Val extends SyncMessage>
 }
 
 /// @nodoc
-abstract class _$$SyncJournalEntityCopyWith<$Res>
+abstract class _$$SyncJournalEntityImplCopyWith<$Res>
     implements $SyncMessageCopyWith<$Res> {
-  factory _$$SyncJournalEntityCopyWith(
-          _$SyncJournalEntity value, $Res Function(_$SyncJournalEntity) then) =
-      __$$SyncJournalEntityCopyWithImpl<$Res>;
+  factory _$$SyncJournalEntityImplCopyWith(_$SyncJournalEntityImpl value,
+          $Res Function(_$SyncJournalEntityImpl) then) =
+      __$$SyncJournalEntityImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({JournalEntity journalEntity, SyncEntryStatus status});
@@ -148,11 +148,11 @@ abstract class _$$SyncJournalEntityCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$SyncJournalEntityCopyWithImpl<$Res>
-    extends _$SyncMessageCopyWithImpl<$Res, _$SyncJournalEntity>
-    implements _$$SyncJournalEntityCopyWith<$Res> {
-  __$$SyncJournalEntityCopyWithImpl(
-      _$SyncJournalEntity _value, $Res Function(_$SyncJournalEntity) _then)
+class __$$SyncJournalEntityImplCopyWithImpl<$Res>
+    extends _$SyncMessageCopyWithImpl<$Res, _$SyncJournalEntityImpl>
+    implements _$$SyncJournalEntityImplCopyWith<$Res> {
+  __$$SyncJournalEntityImplCopyWithImpl(_$SyncJournalEntityImpl _value,
+      $Res Function(_$SyncJournalEntityImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -161,7 +161,7 @@ class __$$SyncJournalEntityCopyWithImpl<$Res>
     Object? journalEntity = null,
     Object? status = null,
   }) {
-    return _then(_$SyncJournalEntity(
+    return _then(_$SyncJournalEntityImpl(
       journalEntity: null == journalEntity
           ? _value.journalEntity
           : journalEntity // ignore: cast_nullable_to_non_nullable
@@ -184,13 +184,13 @@ class __$$SyncJournalEntityCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$SyncJournalEntity implements SyncJournalEntity {
-  const _$SyncJournalEntity(
+class _$SyncJournalEntityImpl implements SyncJournalEntity {
+  const _$SyncJournalEntityImpl(
       {required this.journalEntity, required this.status, final String? $type})
       : $type = $type ?? 'journalEntity';
 
-  factory _$SyncJournalEntity.fromJson(Map<String, dynamic> json) =>
-      _$$SyncJournalEntityFromJson(json);
+  factory _$SyncJournalEntityImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SyncJournalEntityImplFromJson(json);
 
   @override
   final JournalEntity journalEntity;
@@ -206,10 +206,10 @@ class _$SyncJournalEntity implements SyncJournalEntity {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$SyncJournalEntity &&
+            other is _$SyncJournalEntityImpl &&
             (identical(other.journalEntity, journalEntity) ||
                 other.journalEntity == journalEntity) &&
             (identical(other.status, status) || other.status == status));
@@ -222,8 +222,9 @@ class _$SyncJournalEntity implements SyncJournalEntity {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$SyncJournalEntityCopyWith<_$SyncJournalEntity> get copyWith =>
-      __$$SyncJournalEntityCopyWithImpl<_$SyncJournalEntity>(this, _$identity);
+  _$$SyncJournalEntityImplCopyWith<_$SyncJournalEntityImpl> get copyWith =>
+      __$$SyncJournalEntityImplCopyWithImpl<_$SyncJournalEntityImpl>(
+          this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -312,7 +313,7 @@ class _$SyncJournalEntity implements SyncJournalEntity {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$SyncJournalEntityToJson(
+    return _$$SyncJournalEntityImplToJson(
       this,
     );
   }
@@ -321,26 +322,26 @@ class _$SyncJournalEntity implements SyncJournalEntity {
 abstract class SyncJournalEntity implements SyncMessage {
   const factory SyncJournalEntity(
       {required final JournalEntity journalEntity,
-      required final SyncEntryStatus status}) = _$SyncJournalEntity;
+      required final SyncEntryStatus status}) = _$SyncJournalEntityImpl;
 
   factory SyncJournalEntity.fromJson(Map<String, dynamic> json) =
-      _$SyncJournalEntity.fromJson;
+      _$SyncJournalEntityImpl.fromJson;
 
   JournalEntity get journalEntity;
   @override
   SyncEntryStatus get status;
   @override
   @JsonKey(ignore: true)
-  _$$SyncJournalEntityCopyWith<_$SyncJournalEntity> get copyWith =>
+  _$$SyncJournalEntityImplCopyWith<_$SyncJournalEntityImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$SyncEntityDefinitionCopyWith<$Res>
+abstract class _$$SyncEntityDefinitionImplCopyWith<$Res>
     implements $SyncMessageCopyWith<$Res> {
-  factory _$$SyncEntityDefinitionCopyWith(_$SyncEntityDefinition value,
-          $Res Function(_$SyncEntityDefinition) then) =
-      __$$SyncEntityDefinitionCopyWithImpl<$Res>;
+  factory _$$SyncEntityDefinitionImplCopyWith(_$SyncEntityDefinitionImpl value,
+          $Res Function(_$SyncEntityDefinitionImpl) then) =
+      __$$SyncEntityDefinitionImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({EntityDefinition entityDefinition, SyncEntryStatus status});
@@ -349,11 +350,11 @@ abstract class _$$SyncEntityDefinitionCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$SyncEntityDefinitionCopyWithImpl<$Res>
-    extends _$SyncMessageCopyWithImpl<$Res, _$SyncEntityDefinition>
-    implements _$$SyncEntityDefinitionCopyWith<$Res> {
-  __$$SyncEntityDefinitionCopyWithImpl(_$SyncEntityDefinition _value,
-      $Res Function(_$SyncEntityDefinition) _then)
+class __$$SyncEntityDefinitionImplCopyWithImpl<$Res>
+    extends _$SyncMessageCopyWithImpl<$Res, _$SyncEntityDefinitionImpl>
+    implements _$$SyncEntityDefinitionImplCopyWith<$Res> {
+  __$$SyncEntityDefinitionImplCopyWithImpl(_$SyncEntityDefinitionImpl _value,
+      $Res Function(_$SyncEntityDefinitionImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -362,7 +363,7 @@ class __$$SyncEntityDefinitionCopyWithImpl<$Res>
     Object? entityDefinition = null,
     Object? status = null,
   }) {
-    return _then(_$SyncEntityDefinition(
+    return _then(_$SyncEntityDefinitionImpl(
       entityDefinition: null == entityDefinition
           ? _value.entityDefinition
           : entityDefinition // ignore: cast_nullable_to_non_nullable
@@ -385,15 +386,15 @@ class __$$SyncEntityDefinitionCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$SyncEntityDefinition implements SyncEntityDefinition {
-  const _$SyncEntityDefinition(
+class _$SyncEntityDefinitionImpl implements SyncEntityDefinition {
+  const _$SyncEntityDefinitionImpl(
       {required this.entityDefinition,
       required this.status,
       final String? $type})
       : $type = $type ?? 'entityDefinition';
 
-  factory _$SyncEntityDefinition.fromJson(Map<String, dynamic> json) =>
-      _$$SyncEntityDefinitionFromJson(json);
+  factory _$SyncEntityDefinitionImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SyncEntityDefinitionImplFromJson(json);
 
   @override
   final EntityDefinition entityDefinition;
@@ -409,10 +410,10 @@ class _$SyncEntityDefinition implements SyncEntityDefinition {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$SyncEntityDefinition &&
+            other is _$SyncEntityDefinitionImpl &&
             (identical(other.entityDefinition, entityDefinition) ||
                 other.entityDefinition == entityDefinition) &&
             (identical(other.status, status) || other.status == status));
@@ -425,9 +426,10 @@ class _$SyncEntityDefinition implements SyncEntityDefinition {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$SyncEntityDefinitionCopyWith<_$SyncEntityDefinition> get copyWith =>
-      __$$SyncEntityDefinitionCopyWithImpl<_$SyncEntityDefinition>(
-          this, _$identity);
+  _$$SyncEntityDefinitionImplCopyWith<_$SyncEntityDefinitionImpl>
+      get copyWith =>
+          __$$SyncEntityDefinitionImplCopyWithImpl<_$SyncEntityDefinitionImpl>(
+              this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -516,7 +518,7 @@ class _$SyncEntityDefinition implements SyncEntityDefinition {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$SyncEntityDefinitionToJson(
+    return _$$SyncEntityDefinitionImplToJson(
       this,
     );
   }
@@ -525,26 +527,26 @@ class _$SyncEntityDefinition implements SyncEntityDefinition {
 abstract class SyncEntityDefinition implements SyncMessage {
   const factory SyncEntityDefinition(
       {required final EntityDefinition entityDefinition,
-      required final SyncEntryStatus status}) = _$SyncEntityDefinition;
+      required final SyncEntryStatus status}) = _$SyncEntityDefinitionImpl;
 
   factory SyncEntityDefinition.fromJson(Map<String, dynamic> json) =
-      _$SyncEntityDefinition.fromJson;
+      _$SyncEntityDefinitionImpl.fromJson;
 
   EntityDefinition get entityDefinition;
   @override
   SyncEntryStatus get status;
   @override
   @JsonKey(ignore: true)
-  _$$SyncEntityDefinitionCopyWith<_$SyncEntityDefinition> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$SyncEntityDefinitionImplCopyWith<_$SyncEntityDefinitionImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$SyncTagEntityCopyWith<$Res>
+abstract class _$$SyncTagEntityImplCopyWith<$Res>
     implements $SyncMessageCopyWith<$Res> {
-  factory _$$SyncTagEntityCopyWith(
-          _$SyncTagEntity value, $Res Function(_$SyncTagEntity) then) =
-      __$$SyncTagEntityCopyWithImpl<$Res>;
+  factory _$$SyncTagEntityImplCopyWith(
+          _$SyncTagEntityImpl value, $Res Function(_$SyncTagEntityImpl) then) =
+      __$$SyncTagEntityImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({TagEntity tagEntity, SyncEntryStatus status});
@@ -553,11 +555,11 @@ abstract class _$$SyncTagEntityCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$SyncTagEntityCopyWithImpl<$Res>
-    extends _$SyncMessageCopyWithImpl<$Res, _$SyncTagEntity>
-    implements _$$SyncTagEntityCopyWith<$Res> {
-  __$$SyncTagEntityCopyWithImpl(
-      _$SyncTagEntity _value, $Res Function(_$SyncTagEntity) _then)
+class __$$SyncTagEntityImplCopyWithImpl<$Res>
+    extends _$SyncMessageCopyWithImpl<$Res, _$SyncTagEntityImpl>
+    implements _$$SyncTagEntityImplCopyWith<$Res> {
+  __$$SyncTagEntityImplCopyWithImpl(
+      _$SyncTagEntityImpl _value, $Res Function(_$SyncTagEntityImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -566,7 +568,7 @@ class __$$SyncTagEntityCopyWithImpl<$Res>
     Object? tagEntity = null,
     Object? status = null,
   }) {
-    return _then(_$SyncTagEntity(
+    return _then(_$SyncTagEntityImpl(
       tagEntity: null == tagEntity
           ? _value.tagEntity
           : tagEntity // ignore: cast_nullable_to_non_nullable
@@ -589,13 +591,13 @@ class __$$SyncTagEntityCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$SyncTagEntity implements SyncTagEntity {
-  const _$SyncTagEntity(
+class _$SyncTagEntityImpl implements SyncTagEntity {
+  const _$SyncTagEntityImpl(
       {required this.tagEntity, required this.status, final String? $type})
       : $type = $type ?? 'tagEntity';
 
-  factory _$SyncTagEntity.fromJson(Map<String, dynamic> json) =>
-      _$$SyncTagEntityFromJson(json);
+  factory _$SyncTagEntityImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SyncTagEntityImplFromJson(json);
 
   @override
   final TagEntity tagEntity;
@@ -611,10 +613,10 @@ class _$SyncTagEntity implements SyncTagEntity {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$SyncTagEntity &&
+            other is _$SyncTagEntityImpl &&
             (identical(other.tagEntity, tagEntity) ||
                 other.tagEntity == tagEntity) &&
             (identical(other.status, status) || other.status == status));
@@ -627,8 +629,8 @@ class _$SyncTagEntity implements SyncTagEntity {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$SyncTagEntityCopyWith<_$SyncTagEntity> get copyWith =>
-      __$$SyncTagEntityCopyWithImpl<_$SyncTagEntity>(this, _$identity);
+  _$$SyncTagEntityImplCopyWith<_$SyncTagEntityImpl> get copyWith =>
+      __$$SyncTagEntityImplCopyWithImpl<_$SyncTagEntityImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -717,7 +719,7 @@ class _$SyncTagEntity implements SyncTagEntity {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$SyncTagEntityToJson(
+    return _$$SyncTagEntityImplToJson(
       this,
     );
   }
@@ -726,26 +728,26 @@ class _$SyncTagEntity implements SyncTagEntity {
 abstract class SyncTagEntity implements SyncMessage {
   const factory SyncTagEntity(
       {required final TagEntity tagEntity,
-      required final SyncEntryStatus status}) = _$SyncTagEntity;
+      required final SyncEntryStatus status}) = _$SyncTagEntityImpl;
 
   factory SyncTagEntity.fromJson(Map<String, dynamic> json) =
-      _$SyncTagEntity.fromJson;
+      _$SyncTagEntityImpl.fromJson;
 
   TagEntity get tagEntity;
   @override
   SyncEntryStatus get status;
   @override
   @JsonKey(ignore: true)
-  _$$SyncTagEntityCopyWith<_$SyncTagEntity> get copyWith =>
+  _$$SyncTagEntityImplCopyWith<_$SyncTagEntityImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$SyncEntryLinkCopyWith<$Res>
+abstract class _$$SyncEntryLinkImplCopyWith<$Res>
     implements $SyncMessageCopyWith<$Res> {
-  factory _$$SyncEntryLinkCopyWith(
-          _$SyncEntryLink value, $Res Function(_$SyncEntryLink) then) =
-      __$$SyncEntryLinkCopyWithImpl<$Res>;
+  factory _$$SyncEntryLinkImplCopyWith(
+          _$SyncEntryLinkImpl value, $Res Function(_$SyncEntryLinkImpl) then) =
+      __$$SyncEntryLinkImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({EntryLink entryLink, SyncEntryStatus status});
@@ -754,11 +756,11 @@ abstract class _$$SyncEntryLinkCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$SyncEntryLinkCopyWithImpl<$Res>
-    extends _$SyncMessageCopyWithImpl<$Res, _$SyncEntryLink>
-    implements _$$SyncEntryLinkCopyWith<$Res> {
-  __$$SyncEntryLinkCopyWithImpl(
-      _$SyncEntryLink _value, $Res Function(_$SyncEntryLink) _then)
+class __$$SyncEntryLinkImplCopyWithImpl<$Res>
+    extends _$SyncMessageCopyWithImpl<$Res, _$SyncEntryLinkImpl>
+    implements _$$SyncEntryLinkImplCopyWith<$Res> {
+  __$$SyncEntryLinkImplCopyWithImpl(
+      _$SyncEntryLinkImpl _value, $Res Function(_$SyncEntryLinkImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -767,7 +769,7 @@ class __$$SyncEntryLinkCopyWithImpl<$Res>
     Object? entryLink = null,
     Object? status = null,
   }) {
-    return _then(_$SyncEntryLink(
+    return _then(_$SyncEntryLinkImpl(
       entryLink: null == entryLink
           ? _value.entryLink
           : entryLink // ignore: cast_nullable_to_non_nullable
@@ -790,13 +792,13 @@ class __$$SyncEntryLinkCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$SyncEntryLink implements SyncEntryLink {
-  const _$SyncEntryLink(
+class _$SyncEntryLinkImpl implements SyncEntryLink {
+  const _$SyncEntryLinkImpl(
       {required this.entryLink, required this.status, final String? $type})
       : $type = $type ?? 'entryLink';
 
-  factory _$SyncEntryLink.fromJson(Map<String, dynamic> json) =>
-      _$$SyncEntryLinkFromJson(json);
+  factory _$SyncEntryLinkImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SyncEntryLinkImplFromJson(json);
 
   @override
   final EntryLink entryLink;
@@ -812,10 +814,10 @@ class _$SyncEntryLink implements SyncEntryLink {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$SyncEntryLink &&
+            other is _$SyncEntryLinkImpl &&
             (identical(other.entryLink, entryLink) ||
                 other.entryLink == entryLink) &&
             (identical(other.status, status) || other.status == status));
@@ -828,8 +830,8 @@ class _$SyncEntryLink implements SyncEntryLink {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$SyncEntryLinkCopyWith<_$SyncEntryLink> get copyWith =>
-      __$$SyncEntryLinkCopyWithImpl<_$SyncEntryLink>(this, _$identity);
+  _$$SyncEntryLinkImplCopyWith<_$SyncEntryLinkImpl> get copyWith =>
+      __$$SyncEntryLinkImplCopyWithImpl<_$SyncEntryLinkImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -918,7 +920,7 @@ class _$SyncEntryLink implements SyncEntryLink {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$SyncEntryLinkToJson(
+    return _$$SyncEntryLinkImplToJson(
       this,
     );
   }
@@ -927,16 +929,16 @@ class _$SyncEntryLink implements SyncEntryLink {
 abstract class SyncEntryLink implements SyncMessage {
   const factory SyncEntryLink(
       {required final EntryLink entryLink,
-      required final SyncEntryStatus status}) = _$SyncEntryLink;
+      required final SyncEntryStatus status}) = _$SyncEntryLinkImpl;
 
   factory SyncEntryLink.fromJson(Map<String, dynamic> json) =
-      _$SyncEntryLink.fromJson;
+      _$SyncEntryLinkImpl.fromJson;
 
   EntryLink get entryLink;
   @override
   SyncEntryStatus get status;
   @override
   @JsonKey(ignore: true)
-  _$$SyncEntryLinkCopyWith<_$SyncEntryLink> get copyWith =>
+  _$$SyncEntryLinkImplCopyWith<_$SyncEntryLinkImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -122,11 +122,11 @@ class _$JournalPageStateCopyWithImpl<$Res, $Val extends JournalPageState>
 }
 
 /// @nodoc
-abstract class _$$_JournalPageStateCopyWith<$Res>
+abstract class _$$JournalPageStateImplCopyWith<$Res>
     implements $JournalPageStateCopyWith<$Res> {
-  factory _$$_JournalPageStateCopyWith(
-          _$_JournalPageState value, $Res Function(_$_JournalPageState) then) =
-      __$$_JournalPageStateCopyWithImpl<$Res>;
+  factory _$$JournalPageStateImplCopyWith(_$JournalPageStateImpl value,
+          $Res Function(_$JournalPageStateImpl) then) =
+      __$$JournalPageStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -143,11 +143,11 @@ abstract class _$$_JournalPageStateCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_JournalPageStateCopyWithImpl<$Res>
-    extends _$JournalPageStateCopyWithImpl<$Res, _$_JournalPageState>
-    implements _$$_JournalPageStateCopyWith<$Res> {
-  __$$_JournalPageStateCopyWithImpl(
-      _$_JournalPageState _value, $Res Function(_$_JournalPageState) _then)
+class __$$JournalPageStateImplCopyWithImpl<$Res>
+    extends _$JournalPageStateCopyWithImpl<$Res, _$JournalPageStateImpl>
+    implements _$$JournalPageStateImplCopyWith<$Res> {
+  __$$JournalPageStateImplCopyWithImpl(_$JournalPageStateImpl _value,
+      $Res Function(_$JournalPageStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -164,7 +164,7 @@ class __$$_JournalPageStateCopyWithImpl<$Res>
     Object? taskStatuses = null,
     Object? selectedTaskStatuses = null,
   }) {
-    return _then(_$_JournalPageState(
+    return _then(_$JournalPageStateImpl(
       match: null == match
           ? _value.match
           : match // ignore: cast_nullable_to_non_nullable
@@ -211,8 +211,8 @@ class __$$_JournalPageStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_JournalPageState implements _JournalPageState {
-  _$_JournalPageState(
+class _$JournalPageStateImpl implements _JournalPageState {
+  _$JournalPageStateImpl(
       {required this.match,
       required final Set<String> tagIds,
       required final Set<DisplayFilter> filters,
@@ -294,10 +294,10 @@ class _$_JournalPageState implements _JournalPageState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_JournalPageState &&
+            other is _$JournalPageStateImpl &&
             (identical(other.match, match) || other.match == match) &&
             const DeepCollectionEquality().equals(other._tagIds, _tagIds) &&
             const DeepCollectionEquality().equals(other._filters, _filters) &&
@@ -334,22 +334,24 @@ class _$_JournalPageState implements _JournalPageState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_JournalPageStateCopyWith<_$_JournalPageState> get copyWith =>
-      __$$_JournalPageStateCopyWithImpl<_$_JournalPageState>(this, _$identity);
+  _$$JournalPageStateImplCopyWith<_$JournalPageStateImpl> get copyWith =>
+      __$$JournalPageStateImplCopyWithImpl<_$JournalPageStateImpl>(
+          this, _$identity);
 }
 
 abstract class _JournalPageState implements JournalPageState {
   factory _JournalPageState(
-      {required final String match,
-      required final Set<String> tagIds,
-      required final Set<DisplayFilter> filters,
-      required final bool showPrivateEntries,
-      required final bool showTasks,
-      required final List<String> selectedEntryTypes,
-      required final Set<String> fullTextMatches,
-      required final PagingController<int, JournalEntity> pagingController,
-      required final List<String> taskStatuses,
-      required final Set<String> selectedTaskStatuses}) = _$_JournalPageState;
+          {required final String match,
+          required final Set<String> tagIds,
+          required final Set<DisplayFilter> filters,
+          required final bool showPrivateEntries,
+          required final bool showTasks,
+          required final List<String> selectedEntryTypes,
+          required final Set<String> fullTextMatches,
+          required final PagingController<int, JournalEntity> pagingController,
+          required final List<String> taskStatuses,
+          required final Set<String> selectedTaskStatuses}) =
+      _$JournalPageStateImpl;
 
   @override
   String get match;
@@ -373,6 +375,6 @@ abstract class _JournalPageState implements JournalPageState {
   Set<String> get selectedTaskStatuses;
   @override
   @JsonKey(ignore: true)
-  _$$_JournalPageStateCopyWith<_$_JournalPageState> get copyWith =>
+  _$$JournalPageStateImplCopyWith<_$JournalPageStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -58,22 +58,24 @@ class _$WorkoutChartInfoStateCopyWithImpl<$Res,
 }
 
 /// @nodoc
-abstract class _$$_WorkoutChartInfoStateCopyWith<$Res>
+abstract class _$$WorkoutChartInfoStateImplCopyWith<$Res>
     implements $WorkoutChartInfoStateCopyWith<$Res> {
-  factory _$$_WorkoutChartInfoStateCopyWith(_$_WorkoutChartInfoState value,
-          $Res Function(_$_WorkoutChartInfoState) then) =
-      __$$_WorkoutChartInfoStateCopyWithImpl<$Res>;
+  factory _$$WorkoutChartInfoStateImplCopyWith(
+          _$WorkoutChartInfoStateImpl value,
+          $Res Function(_$WorkoutChartInfoStateImpl) then) =
+      __$$WorkoutChartInfoStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({Observation? selected});
 }
 
 /// @nodoc
-class __$$_WorkoutChartInfoStateCopyWithImpl<$Res>
-    extends _$WorkoutChartInfoStateCopyWithImpl<$Res, _$_WorkoutChartInfoState>
-    implements _$$_WorkoutChartInfoStateCopyWith<$Res> {
-  __$$_WorkoutChartInfoStateCopyWithImpl(_$_WorkoutChartInfoState _value,
-      $Res Function(_$_WorkoutChartInfoState) _then)
+class __$$WorkoutChartInfoStateImplCopyWithImpl<$Res>
+    extends _$WorkoutChartInfoStateCopyWithImpl<$Res,
+        _$WorkoutChartInfoStateImpl>
+    implements _$$WorkoutChartInfoStateImplCopyWith<$Res> {
+  __$$WorkoutChartInfoStateImplCopyWithImpl(_$WorkoutChartInfoStateImpl _value,
+      $Res Function(_$WorkoutChartInfoStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -81,7 +83,7 @@ class __$$_WorkoutChartInfoStateCopyWithImpl<$Res>
   $Res call({
     Object? selected = freezed,
   }) {
-    return _then(_$_WorkoutChartInfoState(
+    return _then(_$WorkoutChartInfoStateImpl(
       selected: freezed == selected
           ? _value.selected
           : selected // ignore: cast_nullable_to_non_nullable
@@ -92,8 +94,8 @@ class __$$_WorkoutChartInfoStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_WorkoutChartInfoState implements _WorkoutChartInfoState {
-  _$_WorkoutChartInfoState({required this.selected});
+class _$WorkoutChartInfoStateImpl implements _WorkoutChartInfoState {
+  _$WorkoutChartInfoStateImpl({required this.selected});
 
   @override
   final Observation? selected;
@@ -104,10 +106,10 @@ class _$_WorkoutChartInfoState implements _WorkoutChartInfoState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_WorkoutChartInfoState &&
+            other is _$WorkoutChartInfoStateImpl &&
             (identical(other.selected, selected) ||
                 other.selected == selected));
   }
@@ -118,19 +120,19 @@ class _$_WorkoutChartInfoState implements _WorkoutChartInfoState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_WorkoutChartInfoStateCopyWith<_$_WorkoutChartInfoState> get copyWith =>
-      __$$_WorkoutChartInfoStateCopyWithImpl<_$_WorkoutChartInfoState>(
-          this, _$identity);
+  _$$WorkoutChartInfoStateImplCopyWith<_$WorkoutChartInfoStateImpl>
+      get copyWith => __$$WorkoutChartInfoStateImplCopyWithImpl<
+          _$WorkoutChartInfoStateImpl>(this, _$identity);
 }
 
 abstract class _WorkoutChartInfoState implements WorkoutChartInfoState {
   factory _WorkoutChartInfoState({required final Observation? selected}) =
-      _$_WorkoutChartInfoState;
+      _$WorkoutChartInfoStateImpl;
 
   @override
   Observation? get selected;
   @override
   @JsonKey(ignore: true)
-  _$$_WorkoutChartInfoStateCopyWith<_$_WorkoutChartInfoState> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$WorkoutChartInfoStateImplCopyWith<_$WorkoutChartInfoStateImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }

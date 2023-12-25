@@ -79,9 +79,10 @@ class LogEntries extends Table with TableInfo<LogEntries, LogEntry> {
         data
       ];
   @override
-  String get aliasedName => _alias ?? 'log_entries';
+  String get aliasedName => _alias ?? actualTableName;
   @override
-  String get actualTableName => 'log_entries';
+  String get actualTableName => $name;
+  static const String $name = 'log_entries';
   @override
   VerificationContext validateIntegrity(Insertable<LogEntry> instance,
       {bool isInserting = false}) {

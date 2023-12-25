@@ -52,9 +52,10 @@ class EditorDrafts extends Table
   List<GeneratedColumn> get $columns =>
       [id, entryId, status, createdAt, lastSaved, delta];
   @override
-  String get aliasedName => _alias ?? 'editor_drafts';
+  String get aliasedName => _alias ?? actualTableName;
   @override
-  String get actualTableName => 'editor_drafts';
+  String get actualTableName => $name;
+  static const String $name = 'editor_drafts';
   @override
   VerificationContext validateIntegrity(Insertable<EditorDraftState> instance,
       {bool isInserting = false}) {

@@ -140,11 +140,11 @@ class _$GeolocationCopyWithImpl<$Res, $Val extends Geolocation>
 }
 
 /// @nodoc
-abstract class _$$_GeolocationCopyWith<$Res>
+abstract class _$$GeolocationImplCopyWith<$Res>
     implements $GeolocationCopyWith<$Res> {
-  factory _$$_GeolocationCopyWith(
-          _$_Geolocation value, $Res Function(_$_Geolocation) then) =
-      __$$_GeolocationCopyWithImpl<$Res>;
+  factory _$$GeolocationImplCopyWith(
+          _$GeolocationImpl value, $Res Function(_$GeolocationImpl) then) =
+      __$$GeolocationImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -163,11 +163,11 @@ abstract class _$$_GeolocationCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_GeolocationCopyWithImpl<$Res>
-    extends _$GeolocationCopyWithImpl<$Res, _$_Geolocation>
-    implements _$$_GeolocationCopyWith<$Res> {
-  __$$_GeolocationCopyWithImpl(
-      _$_Geolocation _value, $Res Function(_$_Geolocation) _then)
+class __$$GeolocationImplCopyWithImpl<$Res>
+    extends _$GeolocationCopyWithImpl<$Res, _$GeolocationImpl>
+    implements _$$GeolocationImplCopyWith<$Res> {
+  __$$GeolocationImplCopyWithImpl(
+      _$GeolocationImpl _value, $Res Function(_$GeolocationImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -186,7 +186,7 @@ class __$$_GeolocationCopyWithImpl<$Res>
     Object? headingAccuracy = freezed,
     Object? altitude = freezed,
   }) {
-    return _then(_$_Geolocation(
+    return _then(_$GeolocationImpl(
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -241,8 +241,8 @@ class __$$_GeolocationCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_Geolocation implements _Geolocation {
-  const _$_Geolocation(
+class _$GeolocationImpl implements _Geolocation {
+  const _$GeolocationImpl(
       {required this.createdAt,
       required this.latitude,
       required this.longitude,
@@ -256,8 +256,8 @@ class _$_Geolocation implements _Geolocation {
       this.headingAccuracy,
       this.altitude});
 
-  factory _$_Geolocation.fromJson(Map<String, dynamic> json) =>
-      _$$_GeolocationFromJson(json);
+  factory _$GeolocationImpl.fromJson(Map<String, dynamic> json) =>
+      _$$GeolocationImplFromJson(json);
 
   @override
   final DateTime createdAt;
@@ -290,10 +290,10 @@ class _$_Geolocation implements _Geolocation {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_Geolocation &&
+            other is _$GeolocationImpl &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.latitude, latitude) ||
@@ -338,12 +338,12 @@ class _$_Geolocation implements _Geolocation {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_GeolocationCopyWith<_$_Geolocation> get copyWith =>
-      __$$_GeolocationCopyWithImpl<_$_Geolocation>(this, _$identity);
+  _$$GeolocationImplCopyWith<_$GeolocationImpl> get copyWith =>
+      __$$GeolocationImplCopyWithImpl<_$GeolocationImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_GeolocationToJson(
+    return _$$GeolocationImplToJson(
       this,
     );
   }
@@ -362,10 +362,10 @@ abstract class _Geolocation implements Geolocation {
       final double? speedAccuracy,
       final double? heading,
       final double? headingAccuracy,
-      final double? altitude}) = _$_Geolocation;
+      final double? altitude}) = _$GeolocationImpl;
 
   factory _Geolocation.fromJson(Map<String, dynamic> json) =
-      _$_Geolocation.fromJson;
+      _$GeolocationImpl.fromJson;
 
   @override
   DateTime get createdAt;
@@ -393,6 +393,6 @@ abstract class _Geolocation implements Geolocation {
   double? get altitude;
   @override
   @JsonKey(ignore: true)
-  _$$_GeolocationCopyWith<_$_Geolocation> get copyWith =>
+  _$$GeolocationImplCopyWith<_$GeolocationImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

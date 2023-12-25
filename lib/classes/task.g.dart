@@ -6,7 +6,8 @@ part of 'task.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$_TaskOpen _$$_TaskOpenFromJson(Map<String, dynamic> json) => _$_TaskOpen(
+_$TaskOpenImpl _$$TaskOpenImplFromJson(Map<String, dynamic> json) =>
+    _$TaskOpenImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       utcOffset: json['utcOffset'] as int,
@@ -17,7 +18,7 @@ _$_TaskOpen _$$_TaskOpenFromJson(Map<String, dynamic> json) => _$_TaskOpen(
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$_TaskOpenToJson(_$_TaskOpen instance) =>
+Map<String, dynamic> _$$TaskOpenImplToJson(_$TaskOpenImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'createdAt': instance.createdAt.toIso8601String(),
@@ -27,8 +28,8 @@ Map<String, dynamic> _$$_TaskOpenToJson(_$_TaskOpen instance) =>
       'runtimeType': instance.$type,
     };
 
-_$_TaskStarted _$$_TaskStartedFromJson(Map<String, dynamic> json) =>
-    _$_TaskStarted(
+_$TaskStartedImpl _$$TaskStartedImplFromJson(Map<String, dynamic> json) =>
+    _$TaskStartedImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       utcOffset: json['utcOffset'] as int,
@@ -39,7 +40,7 @@ _$_TaskStarted _$$_TaskStartedFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$_TaskStartedToJson(_$_TaskStarted instance) =>
+Map<String, dynamic> _$$TaskStartedImplToJson(_$TaskStartedImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'createdAt': instance.createdAt.toIso8601String(),
@@ -49,8 +50,8 @@ Map<String, dynamic> _$$_TaskStartedToJson(_$_TaskStarted instance) =>
       'runtimeType': instance.$type,
     };
 
-_$_TaskInProgress _$$_TaskInProgressFromJson(Map<String, dynamic> json) =>
-    _$_TaskInProgress(
+_$TaskInProgressImpl _$$TaskInProgressImplFromJson(Map<String, dynamic> json) =>
+    _$TaskInProgressImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       utcOffset: json['utcOffset'] as int,
@@ -61,7 +62,8 @@ _$_TaskInProgress _$$_TaskInProgressFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$_TaskInProgressToJson(_$_TaskInProgress instance) =>
+Map<String, dynamic> _$$TaskInProgressImplToJson(
+        _$TaskInProgressImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'createdAt': instance.createdAt.toIso8601String(),
@@ -71,8 +73,8 @@ Map<String, dynamic> _$$_TaskInProgressToJson(_$_TaskInProgress instance) =>
       'runtimeType': instance.$type,
     };
 
-_$_TaskGroomed _$$_TaskGroomedFromJson(Map<String, dynamic> json) =>
-    _$_TaskGroomed(
+_$TaskGroomedImpl _$$TaskGroomedImplFromJson(Map<String, dynamic> json) =>
+    _$TaskGroomedImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       utcOffset: json['utcOffset'] as int,
@@ -83,7 +85,7 @@ _$_TaskGroomed _$$_TaskGroomedFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$_TaskGroomedToJson(_$_TaskGroomed instance) =>
+Map<String, dynamic> _$$TaskGroomedImplToJson(_$TaskGroomedImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'createdAt': instance.createdAt.toIso8601String(),
@@ -93,32 +95,8 @@ Map<String, dynamic> _$$_TaskGroomedToJson(_$_TaskGroomed instance) =>
       'runtimeType': instance.$type,
     };
 
-_$_TaskBlocked _$$_TaskBlockedFromJson(Map<String, dynamic> json) =>
-    _$_TaskBlocked(
-      id: json['id'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      utcOffset: json['utcOffset'] as int,
-      reason: json['reason'] as String,
-      timezone: json['timezone'] as String?,
-      geolocation: json['geolocation'] == null
-          ? null
-          : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
-      $type: json['runtimeType'] as String?,
-    );
-
-Map<String, dynamic> _$$_TaskBlockedToJson(_$_TaskBlocked instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'utcOffset': instance.utcOffset,
-      'reason': instance.reason,
-      'timezone': instance.timezone,
-      'geolocation': instance.geolocation,
-      'runtimeType': instance.$type,
-    };
-
-_$_TaskOnHold _$$_TaskOnHoldFromJson(Map<String, dynamic> json) =>
-    _$_TaskOnHold(
+_$TaskBlockedImpl _$$TaskBlockedImplFromJson(Map<String, dynamic> json) =>
+    _$TaskBlockedImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       utcOffset: json['utcOffset'] as int,
@@ -130,7 +108,7 @@ _$_TaskOnHold _$$_TaskOnHoldFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$_TaskOnHoldToJson(_$_TaskOnHold instance) =>
+Map<String, dynamic> _$$TaskBlockedImplToJson(_$TaskBlockedImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'createdAt': instance.createdAt.toIso8601String(),
@@ -141,7 +119,32 @@ Map<String, dynamic> _$$_TaskOnHoldToJson(_$_TaskOnHold instance) =>
       'runtimeType': instance.$type,
     };
 
-_$_TaskDone _$$_TaskDoneFromJson(Map<String, dynamic> json) => _$_TaskDone(
+_$TaskOnHoldImpl _$$TaskOnHoldImplFromJson(Map<String, dynamic> json) =>
+    _$TaskOnHoldImpl(
+      id: json['id'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      utcOffset: json['utcOffset'] as int,
+      reason: json['reason'] as String,
+      timezone: json['timezone'] as String?,
+      geolocation: json['geolocation'] == null
+          ? null
+          : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$$TaskOnHoldImplToJson(_$TaskOnHoldImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'utcOffset': instance.utcOffset,
+      'reason': instance.reason,
+      'timezone': instance.timezone,
+      'geolocation': instance.geolocation,
+      'runtimeType': instance.$type,
+    };
+
+_$TaskDoneImpl _$$TaskDoneImplFromJson(Map<String, dynamic> json) =>
+    _$TaskDoneImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       utcOffset: json['utcOffset'] as int,
@@ -152,7 +155,7 @@ _$_TaskDone _$$_TaskDoneFromJson(Map<String, dynamic> json) => _$_TaskDone(
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$_TaskDoneToJson(_$_TaskDone instance) =>
+Map<String, dynamic> _$$TaskDoneImplToJson(_$TaskDoneImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'createdAt': instance.createdAt.toIso8601String(),
@@ -162,8 +165,8 @@ Map<String, dynamic> _$$_TaskDoneToJson(_$_TaskDone instance) =>
       'runtimeType': instance.$type,
     };
 
-_$_TaskRejected _$$_TaskRejectedFromJson(Map<String, dynamic> json) =>
-    _$_TaskRejected(
+_$TaskRejectedImpl _$$TaskRejectedImplFromJson(Map<String, dynamic> json) =>
+    _$TaskRejectedImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       utcOffset: json['utcOffset'] as int,
@@ -174,7 +177,7 @@ _$_TaskRejected _$$_TaskRejectedFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$_TaskRejectedToJson(_$_TaskRejected instance) =>
+Map<String, dynamic> _$$TaskRejectedImplToJson(_$TaskRejectedImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'createdAt': instance.createdAt.toIso8601String(),
@@ -184,7 +187,8 @@ Map<String, dynamic> _$$_TaskRejectedToJson(_$_TaskRejected instance) =>
       'runtimeType': instance.$type,
     };
 
-_$_TaskData _$$_TaskDataFromJson(Map<String, dynamic> json) => _$_TaskData(
+_$TaskDataImpl _$$TaskDataImplFromJson(Map<String, dynamic> json) =>
+    _$TaskDataImpl(
       status: TaskStatus.fromJson(json['status'] as Map<String, dynamic>),
       dateFrom: DateTime.parse(json['dateFrom'] as String),
       dateTo: DateTime.parse(json['dateTo'] as String),
@@ -201,7 +205,7 @@ _$_TaskData _$$_TaskDataFromJson(Map<String, dynamic> json) => _$_TaskData(
           .toList(),
     );
 
-Map<String, dynamic> _$$_TaskDataToJson(_$_TaskData instance) =>
+Map<String, dynamic> _$$TaskDataImplToJson(_$TaskDataImpl instance) =>
     <String, dynamic>{
       'status': instance.status,
       'dateFrom': instance.dateFrom.toIso8601String(),

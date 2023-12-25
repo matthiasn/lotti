@@ -93,24 +93,25 @@ class _$OutboxStateCopyWithImpl<$Res, $Val extends OutboxState>
 }
 
 /// @nodoc
-abstract class _$$_InitialCopyWith<$Res> {
-  factory _$$_InitialCopyWith(
-          _$_Initial value, $Res Function(_$_Initial) then) =
-      __$$_InitialCopyWithImpl<$Res>;
+abstract class _$$InitialImplCopyWith<$Res> {
+  factory _$$InitialImplCopyWith(
+          _$InitialImpl value, $Res Function(_$InitialImpl) then) =
+      __$$InitialImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
-class __$$_InitialCopyWithImpl<$Res>
-    extends _$OutboxStateCopyWithImpl<$Res, _$_Initial>
-    implements _$$_InitialCopyWith<$Res> {
-  __$$_InitialCopyWithImpl(_$_Initial _value, $Res Function(_$_Initial) _then)
+class __$$InitialImplCopyWithImpl<$Res>
+    extends _$OutboxStateCopyWithImpl<$Res, _$InitialImpl>
+    implements _$$InitialImplCopyWith<$Res> {
+  __$$InitialImplCopyWithImpl(
+      _$InitialImpl _value, $Res Function(_$InitialImpl) _then)
       : super(_value, _then);
 }
 
 /// @nodoc
 
-class _$_Initial implements _Initial {
-  _$_Initial();
+class _$InitialImpl implements _Initial {
+  _$InitialImpl();
 
   @override
   String toString() {
@@ -118,9 +119,9 @@ class _$_Initial implements _Initial {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$_Initial);
+        (other.runtimeType == runtimeType && other is _$InitialImpl);
   }
 
   @override
@@ -208,28 +209,29 @@ class _$_Initial implements _Initial {
 }
 
 abstract class _Initial implements OutboxState {
-  factory _Initial() = _$_Initial;
+  factory _Initial() = _$InitialImpl;
 }
 
 /// @nodoc
-abstract class _$$_LoadingCopyWith<$Res> {
-  factory _$$_LoadingCopyWith(
-          _$_Loading value, $Res Function(_$_Loading) then) =
-      __$$_LoadingCopyWithImpl<$Res>;
+abstract class _$$LoadingImplCopyWith<$Res> {
+  factory _$$LoadingImplCopyWith(
+          _$LoadingImpl value, $Res Function(_$LoadingImpl) then) =
+      __$$LoadingImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
-class __$$_LoadingCopyWithImpl<$Res>
-    extends _$OutboxStateCopyWithImpl<$Res, _$_Loading>
-    implements _$$_LoadingCopyWith<$Res> {
-  __$$_LoadingCopyWithImpl(_$_Loading _value, $Res Function(_$_Loading) _then)
+class __$$LoadingImplCopyWithImpl<$Res>
+    extends _$OutboxStateCopyWithImpl<$Res, _$LoadingImpl>
+    implements _$$LoadingImplCopyWith<$Res> {
+  __$$LoadingImplCopyWithImpl(
+      _$LoadingImpl _value, $Res Function(_$LoadingImpl) _then)
       : super(_value, _then);
 }
 
 /// @nodoc
 
-class _$_Loading implements _Loading {
-  _$_Loading();
+class _$LoadingImpl implements _Loading {
+  _$LoadingImpl();
 
   @override
   String toString() {
@@ -237,9 +239,9 @@ class _$_Loading implements _Loading {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$_Loading);
+        (other.runtimeType == runtimeType && other is _$LoadingImpl);
   }
 
   @override
@@ -327,27 +329,29 @@ class _$_Loading implements _Loading {
 }
 
 abstract class _Loading implements OutboxState {
-  factory _Loading() = _$_Loading;
+  factory _Loading() = _$LoadingImpl;
 }
 
 /// @nodoc
-abstract class _$$_OnlineCopyWith<$Res> {
-  factory _$$_OnlineCopyWith(_$_Online value, $Res Function(_$_Online) then) =
-      __$$_OnlineCopyWithImpl<$Res>;
+abstract class _$$OnlineImplCopyWith<$Res> {
+  factory _$$OnlineImplCopyWith(
+          _$OnlineImpl value, $Res Function(_$OnlineImpl) then) =
+      __$$OnlineImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
-class __$$_OnlineCopyWithImpl<$Res>
-    extends _$OutboxStateCopyWithImpl<$Res, _$_Online>
-    implements _$$_OnlineCopyWith<$Res> {
-  __$$_OnlineCopyWithImpl(_$_Online _value, $Res Function(_$_Online) _then)
+class __$$OnlineImplCopyWithImpl<$Res>
+    extends _$OutboxStateCopyWithImpl<$Res, _$OnlineImpl>
+    implements _$$OnlineImplCopyWith<$Res> {
+  __$$OnlineImplCopyWithImpl(
+      _$OnlineImpl _value, $Res Function(_$OnlineImpl) _then)
       : super(_value, _then);
 }
 
 /// @nodoc
 
-class _$_Online implements _Online {
-  _$_Online();
+class _$OnlineImpl implements _Online {
+  _$OnlineImpl();
 
   @override
   String toString() {
@@ -355,9 +359,9 @@ class _$_Online implements _Online {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$_Online);
+        (other.runtimeType == runtimeType && other is _$OnlineImpl);
   }
 
   @override
@@ -445,29 +449,29 @@ class _$_Online implements _Online {
 }
 
 abstract class _Online implements OutboxState {
-  factory _Online() = _$_Online;
+  factory _Online() = _$OnlineImpl;
 }
 
 /// @nodoc
-abstract class _$$OutboxDisabledCopyWith<$Res> {
-  factory _$$OutboxDisabledCopyWith(
-          _$OutboxDisabled value, $Res Function(_$OutboxDisabled) then) =
-      __$$OutboxDisabledCopyWithImpl<$Res>;
+abstract class _$$OutboxDisabledImplCopyWith<$Res> {
+  factory _$$OutboxDisabledImplCopyWith(_$OutboxDisabledImpl value,
+          $Res Function(_$OutboxDisabledImpl) then) =
+      __$$OutboxDisabledImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
-class __$$OutboxDisabledCopyWithImpl<$Res>
-    extends _$OutboxStateCopyWithImpl<$Res, _$OutboxDisabled>
-    implements _$$OutboxDisabledCopyWith<$Res> {
-  __$$OutboxDisabledCopyWithImpl(
-      _$OutboxDisabled _value, $Res Function(_$OutboxDisabled) _then)
+class __$$OutboxDisabledImplCopyWithImpl<$Res>
+    extends _$OutboxStateCopyWithImpl<$Res, _$OutboxDisabledImpl>
+    implements _$$OutboxDisabledImplCopyWith<$Res> {
+  __$$OutboxDisabledImplCopyWithImpl(
+      _$OutboxDisabledImpl _value, $Res Function(_$OutboxDisabledImpl) _then)
       : super(_value, _then);
 }
 
 /// @nodoc
 
-class _$OutboxDisabled implements OutboxDisabled {
-  _$OutboxDisabled();
+class _$OutboxDisabledImpl implements OutboxDisabled {
+  _$OutboxDisabledImpl();
 
   @override
   String toString() {
@@ -475,9 +479,9 @@ class _$OutboxDisabled implements OutboxDisabled {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$OutboxDisabled);
+        (other.runtimeType == runtimeType && other is _$OutboxDisabledImpl);
   }
 
   @override
@@ -565,27 +569,29 @@ class _$OutboxDisabled implements OutboxDisabled {
 }
 
 abstract class OutboxDisabled implements OutboxState {
-  factory OutboxDisabled() = _$OutboxDisabled;
+  factory OutboxDisabled() = _$OutboxDisabledImpl;
 }
 
 /// @nodoc
-abstract class _$$_FailedCopyWith<$Res> {
-  factory _$$_FailedCopyWith(_$_Failed value, $Res Function(_$_Failed) then) =
-      __$$_FailedCopyWithImpl<$Res>;
+abstract class _$$FailedImplCopyWith<$Res> {
+  factory _$$FailedImplCopyWith(
+          _$FailedImpl value, $Res Function(_$FailedImpl) then) =
+      __$$FailedImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
-class __$$_FailedCopyWithImpl<$Res>
-    extends _$OutboxStateCopyWithImpl<$Res, _$_Failed>
-    implements _$$_FailedCopyWith<$Res> {
-  __$$_FailedCopyWithImpl(_$_Failed _value, $Res Function(_$_Failed) _then)
+class __$$FailedImplCopyWithImpl<$Res>
+    extends _$OutboxStateCopyWithImpl<$Res, _$FailedImpl>
+    implements _$$FailedImplCopyWith<$Res> {
+  __$$FailedImplCopyWithImpl(
+      _$FailedImpl _value, $Res Function(_$FailedImpl) _then)
       : super(_value, _then);
 }
 
 /// @nodoc
 
-class _$_Failed implements _Failed {
-  _$_Failed();
+class _$FailedImpl implements _Failed {
+  _$FailedImpl();
 
   @override
   String toString() {
@@ -593,9 +599,9 @@ class _$_Failed implements _Failed {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$_Failed);
+        (other.runtimeType == runtimeType && other is _$FailedImpl);
   }
 
   @override
@@ -683,5 +689,5 @@ class _$_Failed implements _Failed {
 }
 
 abstract class _Failed implements OutboxState {
-  factory _Failed() = _$_Failed;
+  factory _Failed() = _$FailedImpl;
 }

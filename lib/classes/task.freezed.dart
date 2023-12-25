@@ -247,10 +247,11 @@ class _$TaskStatusCopyWithImpl<$Res, $Val extends TaskStatus>
 }
 
 /// @nodoc
-abstract class _$$_TaskOpenCopyWith<$Res> implements $TaskStatusCopyWith<$Res> {
-  factory _$$_TaskOpenCopyWith(
-          _$_TaskOpen value, $Res Function(_$_TaskOpen) then) =
-      __$$_TaskOpenCopyWithImpl<$Res>;
+abstract class _$$TaskOpenImplCopyWith<$Res>
+    implements $TaskStatusCopyWith<$Res> {
+  factory _$$TaskOpenImplCopyWith(
+          _$TaskOpenImpl value, $Res Function(_$TaskOpenImpl) then) =
+      __$$TaskOpenImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -265,11 +266,11 @@ abstract class _$$_TaskOpenCopyWith<$Res> implements $TaskStatusCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_TaskOpenCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$_TaskOpen>
-    implements _$$_TaskOpenCopyWith<$Res> {
-  __$$_TaskOpenCopyWithImpl(
-      _$_TaskOpen _value, $Res Function(_$_TaskOpen) _then)
+class __$$TaskOpenImplCopyWithImpl<$Res>
+    extends _$TaskStatusCopyWithImpl<$Res, _$TaskOpenImpl>
+    implements _$$TaskOpenImplCopyWith<$Res> {
+  __$$TaskOpenImplCopyWithImpl(
+      _$TaskOpenImpl _value, $Res Function(_$TaskOpenImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -281,7 +282,7 @@ class __$$_TaskOpenCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$_TaskOpen(
+    return _then(_$TaskOpenImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -308,8 +309,8 @@ class __$$_TaskOpenCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_TaskOpen implements _TaskOpen {
-  const _$_TaskOpen(
+class _$TaskOpenImpl implements _TaskOpen {
+  const _$TaskOpenImpl(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -318,8 +319,8 @@ class _$_TaskOpen implements _TaskOpen {
       final String? $type})
       : $type = $type ?? 'open';
 
-  factory _$_TaskOpen.fromJson(Map<String, dynamic> json) =>
-      _$$_TaskOpenFromJson(json);
+  factory _$TaskOpenImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TaskOpenImplFromJson(json);
 
   @override
   final String id;
@@ -341,10 +342,10 @@ class _$_TaskOpen implements _TaskOpen {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_TaskOpen &&
+            other is _$TaskOpenImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -364,8 +365,8 @@ class _$_TaskOpen implements _TaskOpen {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_TaskOpenCopyWith<_$_TaskOpen> get copyWith =>
-      __$$_TaskOpenCopyWithImpl<_$_TaskOpen>(this, _$identity);
+  _$$TaskOpenImplCopyWith<_$TaskOpenImpl> get copyWith =>
+      __$$TaskOpenImplCopyWithImpl<_$TaskOpenImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -515,7 +516,7 @@ class _$_TaskOpen implements _TaskOpen {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_TaskOpenToJson(
+    return _$$TaskOpenImplToJson(
       this,
     );
   }
@@ -527,9 +528,10 @@ abstract class _TaskOpen implements TaskStatus {
       required final DateTime createdAt,
       required final int utcOffset,
       final String? timezone,
-      final Geolocation? geolocation}) = _$_TaskOpen;
+      final Geolocation? geolocation}) = _$TaskOpenImpl;
 
-  factory _TaskOpen.fromJson(Map<String, dynamic> json) = _$_TaskOpen.fromJson;
+  factory _TaskOpen.fromJson(Map<String, dynamic> json) =
+      _$TaskOpenImpl.fromJson;
 
   @override
   String get id;
@@ -543,16 +545,16 @@ abstract class _TaskOpen implements TaskStatus {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$_TaskOpenCopyWith<_$_TaskOpen> get copyWith =>
+  _$$TaskOpenImplCopyWith<_$TaskOpenImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_TaskStartedCopyWith<$Res>
+abstract class _$$TaskStartedImplCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$_TaskStartedCopyWith(
-          _$_TaskStarted value, $Res Function(_$_TaskStarted) then) =
-      __$$_TaskStartedCopyWithImpl<$Res>;
+  factory _$$TaskStartedImplCopyWith(
+          _$TaskStartedImpl value, $Res Function(_$TaskStartedImpl) then) =
+      __$$TaskStartedImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -567,11 +569,11 @@ abstract class _$$_TaskStartedCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_TaskStartedCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$_TaskStarted>
-    implements _$$_TaskStartedCopyWith<$Res> {
-  __$$_TaskStartedCopyWithImpl(
-      _$_TaskStarted _value, $Res Function(_$_TaskStarted) _then)
+class __$$TaskStartedImplCopyWithImpl<$Res>
+    extends _$TaskStatusCopyWithImpl<$Res, _$TaskStartedImpl>
+    implements _$$TaskStartedImplCopyWith<$Res> {
+  __$$TaskStartedImplCopyWithImpl(
+      _$TaskStartedImpl _value, $Res Function(_$TaskStartedImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -583,7 +585,7 @@ class __$$_TaskStartedCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$_TaskStarted(
+    return _then(_$TaskStartedImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -610,8 +612,8 @@ class __$$_TaskStartedCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_TaskStarted implements _TaskStarted {
-  const _$_TaskStarted(
+class _$TaskStartedImpl implements _TaskStarted {
+  const _$TaskStartedImpl(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -620,8 +622,8 @@ class _$_TaskStarted implements _TaskStarted {
       final String? $type})
       : $type = $type ?? 'started';
 
-  factory _$_TaskStarted.fromJson(Map<String, dynamic> json) =>
-      _$$_TaskStartedFromJson(json);
+  factory _$TaskStartedImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TaskStartedImplFromJson(json);
 
   @override
   final String id;
@@ -643,10 +645,10 @@ class _$_TaskStarted implements _TaskStarted {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_TaskStarted &&
+            other is _$TaskStartedImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -666,8 +668,8 @@ class _$_TaskStarted implements _TaskStarted {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_TaskStartedCopyWith<_$_TaskStarted> get copyWith =>
-      __$$_TaskStartedCopyWithImpl<_$_TaskStarted>(this, _$identity);
+  _$$TaskStartedImplCopyWith<_$TaskStartedImpl> get copyWith =>
+      __$$TaskStartedImplCopyWithImpl<_$TaskStartedImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -817,7 +819,7 @@ class _$_TaskStarted implements _TaskStarted {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_TaskStartedToJson(
+    return _$$TaskStartedImplToJson(
       this,
     );
   }
@@ -829,10 +831,10 @@ abstract class _TaskStarted implements TaskStatus {
       required final DateTime createdAt,
       required final int utcOffset,
       final String? timezone,
-      final Geolocation? geolocation}) = _$_TaskStarted;
+      final Geolocation? geolocation}) = _$TaskStartedImpl;
 
   factory _TaskStarted.fromJson(Map<String, dynamic> json) =
-      _$_TaskStarted.fromJson;
+      _$TaskStartedImpl.fromJson;
 
   @override
   String get id;
@@ -846,16 +848,16 @@ abstract class _TaskStarted implements TaskStatus {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$_TaskStartedCopyWith<_$_TaskStarted> get copyWith =>
+  _$$TaskStartedImplCopyWith<_$TaskStartedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_TaskInProgressCopyWith<$Res>
+abstract class _$$TaskInProgressImplCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$_TaskInProgressCopyWith(
-          _$_TaskInProgress value, $Res Function(_$_TaskInProgress) then) =
-      __$$_TaskInProgressCopyWithImpl<$Res>;
+  factory _$$TaskInProgressImplCopyWith(_$TaskInProgressImpl value,
+          $Res Function(_$TaskInProgressImpl) then) =
+      __$$TaskInProgressImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -870,11 +872,11 @@ abstract class _$$_TaskInProgressCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_TaskInProgressCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$_TaskInProgress>
-    implements _$$_TaskInProgressCopyWith<$Res> {
-  __$$_TaskInProgressCopyWithImpl(
-      _$_TaskInProgress _value, $Res Function(_$_TaskInProgress) _then)
+class __$$TaskInProgressImplCopyWithImpl<$Res>
+    extends _$TaskStatusCopyWithImpl<$Res, _$TaskInProgressImpl>
+    implements _$$TaskInProgressImplCopyWith<$Res> {
+  __$$TaskInProgressImplCopyWithImpl(
+      _$TaskInProgressImpl _value, $Res Function(_$TaskInProgressImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -886,7 +888,7 @@ class __$$_TaskInProgressCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$_TaskInProgress(
+    return _then(_$TaskInProgressImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -913,8 +915,8 @@ class __$$_TaskInProgressCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_TaskInProgress implements _TaskInProgress {
-  const _$_TaskInProgress(
+class _$TaskInProgressImpl implements _TaskInProgress {
+  const _$TaskInProgressImpl(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -923,8 +925,8 @@ class _$_TaskInProgress implements _TaskInProgress {
       final String? $type})
       : $type = $type ?? 'inProgress';
 
-  factory _$_TaskInProgress.fromJson(Map<String, dynamic> json) =>
-      _$$_TaskInProgressFromJson(json);
+  factory _$TaskInProgressImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TaskInProgressImplFromJson(json);
 
   @override
   final String id;
@@ -946,10 +948,10 @@ class _$_TaskInProgress implements _TaskInProgress {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_TaskInProgress &&
+            other is _$TaskInProgressImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -969,8 +971,9 @@ class _$_TaskInProgress implements _TaskInProgress {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_TaskInProgressCopyWith<_$_TaskInProgress> get copyWith =>
-      __$$_TaskInProgressCopyWithImpl<_$_TaskInProgress>(this, _$identity);
+  _$$TaskInProgressImplCopyWith<_$TaskInProgressImpl> get copyWith =>
+      __$$TaskInProgressImplCopyWithImpl<_$TaskInProgressImpl>(
+          this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -1120,7 +1123,7 @@ class _$_TaskInProgress implements _TaskInProgress {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_TaskInProgressToJson(
+    return _$$TaskInProgressImplToJson(
       this,
     );
   }
@@ -1132,10 +1135,10 @@ abstract class _TaskInProgress implements TaskStatus {
       required final DateTime createdAt,
       required final int utcOffset,
       final String? timezone,
-      final Geolocation? geolocation}) = _$_TaskInProgress;
+      final Geolocation? geolocation}) = _$TaskInProgressImpl;
 
   factory _TaskInProgress.fromJson(Map<String, dynamic> json) =
-      _$_TaskInProgress.fromJson;
+      _$TaskInProgressImpl.fromJson;
 
   @override
   String get id;
@@ -1149,16 +1152,16 @@ abstract class _TaskInProgress implements TaskStatus {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$_TaskInProgressCopyWith<_$_TaskInProgress> get copyWith =>
+  _$$TaskInProgressImplCopyWith<_$TaskInProgressImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_TaskGroomedCopyWith<$Res>
+abstract class _$$TaskGroomedImplCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$_TaskGroomedCopyWith(
-          _$_TaskGroomed value, $Res Function(_$_TaskGroomed) then) =
-      __$$_TaskGroomedCopyWithImpl<$Res>;
+  factory _$$TaskGroomedImplCopyWith(
+          _$TaskGroomedImpl value, $Res Function(_$TaskGroomedImpl) then) =
+      __$$TaskGroomedImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -1173,11 +1176,11 @@ abstract class _$$_TaskGroomedCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_TaskGroomedCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$_TaskGroomed>
-    implements _$$_TaskGroomedCopyWith<$Res> {
-  __$$_TaskGroomedCopyWithImpl(
-      _$_TaskGroomed _value, $Res Function(_$_TaskGroomed) _then)
+class __$$TaskGroomedImplCopyWithImpl<$Res>
+    extends _$TaskStatusCopyWithImpl<$Res, _$TaskGroomedImpl>
+    implements _$$TaskGroomedImplCopyWith<$Res> {
+  __$$TaskGroomedImplCopyWithImpl(
+      _$TaskGroomedImpl _value, $Res Function(_$TaskGroomedImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1189,7 +1192,7 @@ class __$$_TaskGroomedCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$_TaskGroomed(
+    return _then(_$TaskGroomedImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -1216,8 +1219,8 @@ class __$$_TaskGroomedCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_TaskGroomed implements _TaskGroomed {
-  const _$_TaskGroomed(
+class _$TaskGroomedImpl implements _TaskGroomed {
+  const _$TaskGroomedImpl(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -1226,8 +1229,8 @@ class _$_TaskGroomed implements _TaskGroomed {
       final String? $type})
       : $type = $type ?? 'groomed';
 
-  factory _$_TaskGroomed.fromJson(Map<String, dynamic> json) =>
-      _$$_TaskGroomedFromJson(json);
+  factory _$TaskGroomedImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TaskGroomedImplFromJson(json);
 
   @override
   final String id;
@@ -1249,10 +1252,10 @@ class _$_TaskGroomed implements _TaskGroomed {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_TaskGroomed &&
+            other is _$TaskGroomedImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -1272,8 +1275,8 @@ class _$_TaskGroomed implements _TaskGroomed {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_TaskGroomedCopyWith<_$_TaskGroomed> get copyWith =>
-      __$$_TaskGroomedCopyWithImpl<_$_TaskGroomed>(this, _$identity);
+  _$$TaskGroomedImplCopyWith<_$TaskGroomedImpl> get copyWith =>
+      __$$TaskGroomedImplCopyWithImpl<_$TaskGroomedImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -1423,7 +1426,7 @@ class _$_TaskGroomed implements _TaskGroomed {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_TaskGroomedToJson(
+    return _$$TaskGroomedImplToJson(
       this,
     );
   }
@@ -1435,10 +1438,10 @@ abstract class _TaskGroomed implements TaskStatus {
       required final DateTime createdAt,
       required final int utcOffset,
       final String? timezone,
-      final Geolocation? geolocation}) = _$_TaskGroomed;
+      final Geolocation? geolocation}) = _$TaskGroomedImpl;
 
   factory _TaskGroomed.fromJson(Map<String, dynamic> json) =
-      _$_TaskGroomed.fromJson;
+      _$TaskGroomedImpl.fromJson;
 
   @override
   String get id;
@@ -1452,16 +1455,16 @@ abstract class _TaskGroomed implements TaskStatus {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$_TaskGroomedCopyWith<_$_TaskGroomed> get copyWith =>
+  _$$TaskGroomedImplCopyWith<_$TaskGroomedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_TaskBlockedCopyWith<$Res>
+abstract class _$$TaskBlockedImplCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$_TaskBlockedCopyWith(
-          _$_TaskBlocked value, $Res Function(_$_TaskBlocked) then) =
-      __$$_TaskBlockedCopyWithImpl<$Res>;
+  factory _$$TaskBlockedImplCopyWith(
+          _$TaskBlockedImpl value, $Res Function(_$TaskBlockedImpl) then) =
+      __$$TaskBlockedImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -1477,11 +1480,11 @@ abstract class _$$_TaskBlockedCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_TaskBlockedCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$_TaskBlocked>
-    implements _$$_TaskBlockedCopyWith<$Res> {
-  __$$_TaskBlockedCopyWithImpl(
-      _$_TaskBlocked _value, $Res Function(_$_TaskBlocked) _then)
+class __$$TaskBlockedImplCopyWithImpl<$Res>
+    extends _$TaskStatusCopyWithImpl<$Res, _$TaskBlockedImpl>
+    implements _$$TaskBlockedImplCopyWith<$Res> {
+  __$$TaskBlockedImplCopyWithImpl(
+      _$TaskBlockedImpl _value, $Res Function(_$TaskBlockedImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1494,7 +1497,7 @@ class __$$_TaskBlockedCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$_TaskBlocked(
+    return _then(_$TaskBlockedImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -1525,8 +1528,8 @@ class __$$_TaskBlockedCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_TaskBlocked implements _TaskBlocked {
-  const _$_TaskBlocked(
+class _$TaskBlockedImpl implements _TaskBlocked {
+  const _$TaskBlockedImpl(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -1536,8 +1539,8 @@ class _$_TaskBlocked implements _TaskBlocked {
       final String? $type})
       : $type = $type ?? 'blocked';
 
-  factory _$_TaskBlocked.fromJson(Map<String, dynamic> json) =>
-      _$$_TaskBlockedFromJson(json);
+  factory _$TaskBlockedImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TaskBlockedImplFromJson(json);
 
   @override
   final String id;
@@ -1561,10 +1564,10 @@ class _$_TaskBlocked implements _TaskBlocked {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_TaskBlocked &&
+            other is _$TaskBlockedImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -1585,8 +1588,8 @@ class _$_TaskBlocked implements _TaskBlocked {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_TaskBlockedCopyWith<_$_TaskBlocked> get copyWith =>
-      __$$_TaskBlockedCopyWithImpl<_$_TaskBlocked>(this, _$identity);
+  _$$TaskBlockedImplCopyWith<_$TaskBlockedImpl> get copyWith =>
+      __$$TaskBlockedImplCopyWithImpl<_$TaskBlockedImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -1737,7 +1740,7 @@ class _$_TaskBlocked implements _TaskBlocked {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_TaskBlockedToJson(
+    return _$$TaskBlockedImplToJson(
       this,
     );
   }
@@ -1750,10 +1753,10 @@ abstract class _TaskBlocked implements TaskStatus {
       required final int utcOffset,
       required final String reason,
       final String? timezone,
-      final Geolocation? geolocation}) = _$_TaskBlocked;
+      final Geolocation? geolocation}) = _$TaskBlockedImpl;
 
   factory _TaskBlocked.fromJson(Map<String, dynamic> json) =
-      _$_TaskBlocked.fromJson;
+      _$TaskBlockedImpl.fromJson;
 
   @override
   String get id;
@@ -1768,16 +1771,16 @@ abstract class _TaskBlocked implements TaskStatus {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$_TaskBlockedCopyWith<_$_TaskBlocked> get copyWith =>
+  _$$TaskBlockedImplCopyWith<_$TaskBlockedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_TaskOnHoldCopyWith<$Res>
+abstract class _$$TaskOnHoldImplCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$_TaskOnHoldCopyWith(
-          _$_TaskOnHold value, $Res Function(_$_TaskOnHold) then) =
-      __$$_TaskOnHoldCopyWithImpl<$Res>;
+  factory _$$TaskOnHoldImplCopyWith(
+          _$TaskOnHoldImpl value, $Res Function(_$TaskOnHoldImpl) then) =
+      __$$TaskOnHoldImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -1793,11 +1796,11 @@ abstract class _$$_TaskOnHoldCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_TaskOnHoldCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$_TaskOnHold>
-    implements _$$_TaskOnHoldCopyWith<$Res> {
-  __$$_TaskOnHoldCopyWithImpl(
-      _$_TaskOnHold _value, $Res Function(_$_TaskOnHold) _then)
+class __$$TaskOnHoldImplCopyWithImpl<$Res>
+    extends _$TaskStatusCopyWithImpl<$Res, _$TaskOnHoldImpl>
+    implements _$$TaskOnHoldImplCopyWith<$Res> {
+  __$$TaskOnHoldImplCopyWithImpl(
+      _$TaskOnHoldImpl _value, $Res Function(_$TaskOnHoldImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1810,7 +1813,7 @@ class __$$_TaskOnHoldCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$_TaskOnHold(
+    return _then(_$TaskOnHoldImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -1841,8 +1844,8 @@ class __$$_TaskOnHoldCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_TaskOnHold implements _TaskOnHold {
-  const _$_TaskOnHold(
+class _$TaskOnHoldImpl implements _TaskOnHold {
+  const _$TaskOnHoldImpl(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -1852,8 +1855,8 @@ class _$_TaskOnHold implements _TaskOnHold {
       final String? $type})
       : $type = $type ?? 'onHold';
 
-  factory _$_TaskOnHold.fromJson(Map<String, dynamic> json) =>
-      _$$_TaskOnHoldFromJson(json);
+  factory _$TaskOnHoldImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TaskOnHoldImplFromJson(json);
 
   @override
   final String id;
@@ -1877,10 +1880,10 @@ class _$_TaskOnHold implements _TaskOnHold {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_TaskOnHold &&
+            other is _$TaskOnHoldImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -1901,8 +1904,8 @@ class _$_TaskOnHold implements _TaskOnHold {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_TaskOnHoldCopyWith<_$_TaskOnHold> get copyWith =>
-      __$$_TaskOnHoldCopyWithImpl<_$_TaskOnHold>(this, _$identity);
+  _$$TaskOnHoldImplCopyWith<_$TaskOnHoldImpl> get copyWith =>
+      __$$TaskOnHoldImplCopyWithImpl<_$TaskOnHoldImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -2053,7 +2056,7 @@ class _$_TaskOnHold implements _TaskOnHold {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_TaskOnHoldToJson(
+    return _$$TaskOnHoldImplToJson(
       this,
     );
   }
@@ -2066,10 +2069,10 @@ abstract class _TaskOnHold implements TaskStatus {
       required final int utcOffset,
       required final String reason,
       final String? timezone,
-      final Geolocation? geolocation}) = _$_TaskOnHold;
+      final Geolocation? geolocation}) = _$TaskOnHoldImpl;
 
   factory _TaskOnHold.fromJson(Map<String, dynamic> json) =
-      _$_TaskOnHold.fromJson;
+      _$TaskOnHoldImpl.fromJson;
 
   @override
   String get id;
@@ -2084,15 +2087,16 @@ abstract class _TaskOnHold implements TaskStatus {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$_TaskOnHoldCopyWith<_$_TaskOnHold> get copyWith =>
+  _$$TaskOnHoldImplCopyWith<_$TaskOnHoldImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_TaskDoneCopyWith<$Res> implements $TaskStatusCopyWith<$Res> {
-  factory _$$_TaskDoneCopyWith(
-          _$_TaskDone value, $Res Function(_$_TaskDone) then) =
-      __$$_TaskDoneCopyWithImpl<$Res>;
+abstract class _$$TaskDoneImplCopyWith<$Res>
+    implements $TaskStatusCopyWith<$Res> {
+  factory _$$TaskDoneImplCopyWith(
+          _$TaskDoneImpl value, $Res Function(_$TaskDoneImpl) then) =
+      __$$TaskDoneImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -2107,11 +2111,11 @@ abstract class _$$_TaskDoneCopyWith<$Res> implements $TaskStatusCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_TaskDoneCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$_TaskDone>
-    implements _$$_TaskDoneCopyWith<$Res> {
-  __$$_TaskDoneCopyWithImpl(
-      _$_TaskDone _value, $Res Function(_$_TaskDone) _then)
+class __$$TaskDoneImplCopyWithImpl<$Res>
+    extends _$TaskStatusCopyWithImpl<$Res, _$TaskDoneImpl>
+    implements _$$TaskDoneImplCopyWith<$Res> {
+  __$$TaskDoneImplCopyWithImpl(
+      _$TaskDoneImpl _value, $Res Function(_$TaskDoneImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -2123,7 +2127,7 @@ class __$$_TaskDoneCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$_TaskDone(
+    return _then(_$TaskDoneImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -2150,8 +2154,8 @@ class __$$_TaskDoneCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_TaskDone implements _TaskDone {
-  const _$_TaskDone(
+class _$TaskDoneImpl implements _TaskDone {
+  const _$TaskDoneImpl(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -2160,8 +2164,8 @@ class _$_TaskDone implements _TaskDone {
       final String? $type})
       : $type = $type ?? 'done';
 
-  factory _$_TaskDone.fromJson(Map<String, dynamic> json) =>
-      _$$_TaskDoneFromJson(json);
+  factory _$TaskDoneImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TaskDoneImplFromJson(json);
 
   @override
   final String id;
@@ -2183,10 +2187,10 @@ class _$_TaskDone implements _TaskDone {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_TaskDone &&
+            other is _$TaskDoneImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -2206,8 +2210,8 @@ class _$_TaskDone implements _TaskDone {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_TaskDoneCopyWith<_$_TaskDone> get copyWith =>
-      __$$_TaskDoneCopyWithImpl<_$_TaskDone>(this, _$identity);
+  _$$TaskDoneImplCopyWith<_$TaskDoneImpl> get copyWith =>
+      __$$TaskDoneImplCopyWithImpl<_$TaskDoneImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -2357,7 +2361,7 @@ class _$_TaskDone implements _TaskDone {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_TaskDoneToJson(
+    return _$$TaskDoneImplToJson(
       this,
     );
   }
@@ -2369,9 +2373,10 @@ abstract class _TaskDone implements TaskStatus {
       required final DateTime createdAt,
       required final int utcOffset,
       final String? timezone,
-      final Geolocation? geolocation}) = _$_TaskDone;
+      final Geolocation? geolocation}) = _$TaskDoneImpl;
 
-  factory _TaskDone.fromJson(Map<String, dynamic> json) = _$_TaskDone.fromJson;
+  factory _TaskDone.fromJson(Map<String, dynamic> json) =
+      _$TaskDoneImpl.fromJson;
 
   @override
   String get id;
@@ -2385,16 +2390,16 @@ abstract class _TaskDone implements TaskStatus {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$_TaskDoneCopyWith<_$_TaskDone> get copyWith =>
+  _$$TaskDoneImplCopyWith<_$TaskDoneImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_TaskRejectedCopyWith<$Res>
+abstract class _$$TaskRejectedImplCopyWith<$Res>
     implements $TaskStatusCopyWith<$Res> {
-  factory _$$_TaskRejectedCopyWith(
-          _$_TaskRejected value, $Res Function(_$_TaskRejected) then) =
-      __$$_TaskRejectedCopyWithImpl<$Res>;
+  factory _$$TaskRejectedImplCopyWith(
+          _$TaskRejectedImpl value, $Res Function(_$TaskRejectedImpl) then) =
+      __$$TaskRejectedImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -2409,11 +2414,11 @@ abstract class _$$_TaskRejectedCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_TaskRejectedCopyWithImpl<$Res>
-    extends _$TaskStatusCopyWithImpl<$Res, _$_TaskRejected>
-    implements _$$_TaskRejectedCopyWith<$Res> {
-  __$$_TaskRejectedCopyWithImpl(
-      _$_TaskRejected _value, $Res Function(_$_TaskRejected) _then)
+class __$$TaskRejectedImplCopyWithImpl<$Res>
+    extends _$TaskStatusCopyWithImpl<$Res, _$TaskRejectedImpl>
+    implements _$$TaskRejectedImplCopyWith<$Res> {
+  __$$TaskRejectedImplCopyWithImpl(
+      _$TaskRejectedImpl _value, $Res Function(_$TaskRejectedImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -2425,7 +2430,7 @@ class __$$_TaskRejectedCopyWithImpl<$Res>
     Object? timezone = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$_TaskRejected(
+    return _then(_$TaskRejectedImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -2452,8 +2457,8 @@ class __$$_TaskRejectedCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_TaskRejected implements _TaskRejected {
-  const _$_TaskRejected(
+class _$TaskRejectedImpl implements _TaskRejected {
+  const _$TaskRejectedImpl(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -2462,8 +2467,8 @@ class _$_TaskRejected implements _TaskRejected {
       final String? $type})
       : $type = $type ?? 'rejected';
 
-  factory _$_TaskRejected.fromJson(Map<String, dynamic> json) =>
-      _$$_TaskRejectedFromJson(json);
+  factory _$TaskRejectedImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TaskRejectedImplFromJson(json);
 
   @override
   final String id;
@@ -2485,10 +2490,10 @@ class _$_TaskRejected implements _TaskRejected {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_TaskRejected &&
+            other is _$TaskRejectedImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -2508,8 +2513,8 @@ class _$_TaskRejected implements _TaskRejected {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_TaskRejectedCopyWith<_$_TaskRejected> get copyWith =>
-      __$$_TaskRejectedCopyWithImpl<_$_TaskRejected>(this, _$identity);
+  _$$TaskRejectedImplCopyWith<_$TaskRejectedImpl> get copyWith =>
+      __$$TaskRejectedImplCopyWithImpl<_$TaskRejectedImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -2659,7 +2664,7 @@ class _$_TaskRejected implements _TaskRejected {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_TaskRejectedToJson(
+    return _$$TaskRejectedImplToJson(
       this,
     );
   }
@@ -2671,10 +2676,10 @@ abstract class _TaskRejected implements TaskStatus {
       required final DateTime createdAt,
       required final int utcOffset,
       final String? timezone,
-      final Geolocation? geolocation}) = _$_TaskRejected;
+      final Geolocation? geolocation}) = _$TaskRejectedImpl;
 
   factory _TaskRejected.fromJson(Map<String, dynamic> json) =
-      _$_TaskRejected.fromJson;
+      _$TaskRejectedImpl.fromJson;
 
   @override
   String get id;
@@ -2688,7 +2693,7 @@ abstract class _TaskRejected implements TaskStatus {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$_TaskRejectedCopyWith<_$_TaskRejected> get copyWith =>
+  _$$TaskRejectedImplCopyWith<_$TaskRejectedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -2799,10 +2804,11 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
 }
 
 /// @nodoc
-abstract class _$$_TaskDataCopyWith<$Res> implements $TaskDataCopyWith<$Res> {
-  factory _$$_TaskDataCopyWith(
-          _$_TaskData value, $Res Function(_$_TaskData) then) =
-      __$$_TaskDataCopyWithImpl<$Res>;
+abstract class _$$TaskDataImplCopyWith<$Res>
+    implements $TaskDataCopyWith<$Res> {
+  factory _$$TaskDataImplCopyWith(
+          _$TaskDataImpl value, $Res Function(_$TaskDataImpl) then) =
+      __$$TaskDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -2820,11 +2826,11 @@ abstract class _$$_TaskDataCopyWith<$Res> implements $TaskDataCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_TaskDataCopyWithImpl<$Res>
-    extends _$TaskDataCopyWithImpl<$Res, _$_TaskData>
-    implements _$$_TaskDataCopyWith<$Res> {
-  __$$_TaskDataCopyWithImpl(
-      _$_TaskData _value, $Res Function(_$_TaskData) _then)
+class __$$TaskDataImplCopyWithImpl<$Res>
+    extends _$TaskDataCopyWithImpl<$Res, _$TaskDataImpl>
+    implements _$$TaskDataImplCopyWith<$Res> {
+  __$$TaskDataImplCopyWithImpl(
+      _$TaskDataImpl _value, $Res Function(_$TaskDataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -2839,7 +2845,7 @@ class __$$_TaskDataCopyWithImpl<$Res>
     Object? estimate = freezed,
     Object? checklist = freezed,
   }) {
-    return _then(_$_TaskData(
+    return _then(_$TaskDataImpl(
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -2878,8 +2884,8 @@ class __$$_TaskDataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_TaskData implements _TaskData {
-  const _$_TaskData(
+class _$TaskDataImpl implements _TaskData {
+  const _$TaskDataImpl(
       {required this.status,
       required this.dateFrom,
       required this.dateTo,
@@ -2891,8 +2897,8 @@ class _$_TaskData implements _TaskData {
       : _statusHistory = statusHistory,
         _checklist = checklist;
 
-  factory _$_TaskData.fromJson(Map<String, dynamic> json) =>
-      _$$_TaskDataFromJson(json);
+  factory _$TaskDataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TaskDataImplFromJson(json);
 
   @override
   final TaskStatus status;
@@ -2930,10 +2936,10 @@ class _$_TaskData implements _TaskData {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_TaskData &&
+            other is _$TaskDataImpl &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
@@ -2964,12 +2970,12 @@ class _$_TaskData implements _TaskData {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_TaskDataCopyWith<_$_TaskData> get copyWith =>
-      __$$_TaskDataCopyWithImpl<_$_TaskData>(this, _$identity);
+  _$$TaskDataImplCopyWith<_$TaskDataImpl> get copyWith =>
+      __$$TaskDataImplCopyWithImpl<_$TaskDataImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_TaskDataToJson(
+    return _$$TaskDataImplToJson(
       this,
     );
   }
@@ -2984,9 +2990,10 @@ abstract class _TaskData implements TaskData {
       required final String title,
       final DateTime? due,
       final Duration? estimate,
-      final List<CheckListItem>? checklist}) = _$_TaskData;
+      final List<CheckListItem>? checklist}) = _$TaskDataImpl;
 
-  factory _TaskData.fromJson(Map<String, dynamic> json) = _$_TaskData.fromJson;
+  factory _TaskData.fromJson(Map<String, dynamic> json) =
+      _$TaskDataImpl.fromJson;
 
   @override
   TaskStatus get status;
@@ -3006,6 +3013,6 @@ abstract class _TaskData implements TaskData {
   List<CheckListItem>? get checklist;
   @override
   @JsonKey(ignore: true)
-  _$$_TaskDataCopyWith<_$_TaskData> get copyWith =>
+  _$$TaskDataImplCopyWith<_$TaskDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

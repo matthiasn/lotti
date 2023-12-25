@@ -209,11 +209,12 @@ class _$QuantitativeDataCopyWithImpl<$Res, $Val extends QuantitativeData>
 }
 
 /// @nodoc
-abstract class _$$CumulativeQuantityDataCopyWith<$Res>
+abstract class _$$CumulativeQuantityDataImplCopyWith<$Res>
     implements $QuantitativeDataCopyWith<$Res> {
-  factory _$$CumulativeQuantityDataCopyWith(_$CumulativeQuantityData value,
-          $Res Function(_$CumulativeQuantityData) then) =
-      __$$CumulativeQuantityDataCopyWithImpl<$Res>;
+  factory _$$CumulativeQuantityDataImplCopyWith(
+          _$CumulativeQuantityDataImpl value,
+          $Res Function(_$CumulativeQuantityDataImpl) then) =
+      __$$CumulativeQuantityDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -227,11 +228,12 @@ abstract class _$$CumulativeQuantityDataCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$CumulativeQuantityDataCopyWithImpl<$Res>
-    extends _$QuantitativeDataCopyWithImpl<$Res, _$CumulativeQuantityData>
-    implements _$$CumulativeQuantityDataCopyWith<$Res> {
-  __$$CumulativeQuantityDataCopyWithImpl(_$CumulativeQuantityData _value,
-      $Res Function(_$CumulativeQuantityData) _then)
+class __$$CumulativeQuantityDataImplCopyWithImpl<$Res>
+    extends _$QuantitativeDataCopyWithImpl<$Res, _$CumulativeQuantityDataImpl>
+    implements _$$CumulativeQuantityDataImplCopyWith<$Res> {
+  __$$CumulativeQuantityDataImplCopyWithImpl(
+      _$CumulativeQuantityDataImpl _value,
+      $Res Function(_$CumulativeQuantityDataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -245,7 +247,7 @@ class __$$CumulativeQuantityDataCopyWithImpl<$Res>
     Object? deviceType = freezed,
     Object? platformType = freezed,
   }) {
-    return _then(_$CumulativeQuantityData(
+    return _then(_$CumulativeQuantityDataImpl(
       dateFrom: null == dateFrom
           ? _value.dateFrom
           : dateFrom // ignore: cast_nullable_to_non_nullable
@@ -280,8 +282,8 @@ class __$$CumulativeQuantityDataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$CumulativeQuantityData implements CumulativeQuantityData {
-  const _$CumulativeQuantityData(
+class _$CumulativeQuantityDataImpl implements CumulativeQuantityData {
+  const _$CumulativeQuantityDataImpl(
       {required this.dateFrom,
       required this.dateTo,
       required this.value,
@@ -292,8 +294,8 @@ class _$CumulativeQuantityData implements CumulativeQuantityData {
       final String? $type})
       : $type = $type ?? 'cumulativeQuantityData';
 
-  factory _$CumulativeQuantityData.fromJson(Map<String, dynamic> json) =>
-      _$$CumulativeQuantityDataFromJson(json);
+  factory _$CumulativeQuantityDataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$CumulativeQuantityDataImplFromJson(json);
 
   @override
   final DateTime dateFrom;
@@ -319,10 +321,10 @@ class _$CumulativeQuantityData implements CumulativeQuantityData {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$CumulativeQuantityData &&
+            other is _$CumulativeQuantityDataImpl &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -344,9 +346,9 @@ class _$CumulativeQuantityData implements CumulativeQuantityData {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$CumulativeQuantityDataCopyWith<_$CumulativeQuantityData> get copyWith =>
-      __$$CumulativeQuantityDataCopyWithImpl<_$CumulativeQuantityData>(
-          this, _$identity);
+  _$$CumulativeQuantityDataImplCopyWith<_$CumulativeQuantityDataImpl>
+      get copyWith => __$$CumulativeQuantityDataImplCopyWithImpl<
+          _$CumulativeQuantityDataImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -473,7 +475,7 @@ class _$CumulativeQuantityData implements CumulativeQuantityData {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$CumulativeQuantityDataToJson(
+    return _$$CumulativeQuantityDataImplToJson(
       this,
     );
   }
@@ -487,10 +489,10 @@ abstract class CumulativeQuantityData implements QuantitativeData {
       required final String dataType,
       required final String unit,
       final String? deviceType,
-      final String? platformType}) = _$CumulativeQuantityData;
+      final String? platformType}) = _$CumulativeQuantityDataImpl;
 
   factory CumulativeQuantityData.fromJson(Map<String, dynamic> json) =
-      _$CumulativeQuantityData.fromJson;
+      _$CumulativeQuantityDataImpl.fromJson;
 
   @override
   DateTime get dateFrom;
@@ -508,16 +510,16 @@ abstract class CumulativeQuantityData implements QuantitativeData {
   String? get platformType;
   @override
   @JsonKey(ignore: true)
-  _$$CumulativeQuantityDataCopyWith<_$CumulativeQuantityData> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$CumulativeQuantityDataImplCopyWith<_$CumulativeQuantityDataImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DiscreteQuantityDataCopyWith<$Res>
+abstract class _$$DiscreteQuantityDataImplCopyWith<$Res>
     implements $QuantitativeDataCopyWith<$Res> {
-  factory _$$DiscreteQuantityDataCopyWith(_$DiscreteQuantityData value,
-          $Res Function(_$DiscreteQuantityData) then) =
-      __$$DiscreteQuantityDataCopyWithImpl<$Res>;
+  factory _$$DiscreteQuantityDataImplCopyWith(_$DiscreteQuantityDataImpl value,
+          $Res Function(_$DiscreteQuantityDataImpl) then) =
+      __$$DiscreteQuantityDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -534,11 +536,11 @@ abstract class _$$DiscreteQuantityDataCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$DiscreteQuantityDataCopyWithImpl<$Res>
-    extends _$QuantitativeDataCopyWithImpl<$Res, _$DiscreteQuantityData>
-    implements _$$DiscreteQuantityDataCopyWith<$Res> {
-  __$$DiscreteQuantityDataCopyWithImpl(_$DiscreteQuantityData _value,
-      $Res Function(_$DiscreteQuantityData) _then)
+class __$$DiscreteQuantityDataImplCopyWithImpl<$Res>
+    extends _$QuantitativeDataCopyWithImpl<$Res, _$DiscreteQuantityDataImpl>
+    implements _$$DiscreteQuantityDataImplCopyWith<$Res> {
+  __$$DiscreteQuantityDataImplCopyWithImpl(_$DiscreteQuantityDataImpl _value,
+      $Res Function(_$DiscreteQuantityDataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -555,7 +557,7 @@ class __$$DiscreteQuantityDataCopyWithImpl<$Res>
     Object? sourceId = freezed,
     Object? deviceId = freezed,
   }) {
-    return _then(_$DiscreteQuantityData(
+    return _then(_$DiscreteQuantityDataImpl(
       dateFrom: null == dateFrom
           ? _value.dateFrom
           : dateFrom // ignore: cast_nullable_to_non_nullable
@@ -602,8 +604,8 @@ class __$$DiscreteQuantityDataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DiscreteQuantityData implements DiscreteQuantityData {
-  const _$DiscreteQuantityData(
+class _$DiscreteQuantityDataImpl implements DiscreteQuantityData {
+  const _$DiscreteQuantityDataImpl(
       {required this.dateFrom,
       required this.dateTo,
       required this.value,
@@ -617,8 +619,8 @@ class _$DiscreteQuantityData implements DiscreteQuantityData {
       final String? $type})
       : $type = $type ?? 'discreteQuantityData';
 
-  factory _$DiscreteQuantityData.fromJson(Map<String, dynamic> json) =>
-      _$$DiscreteQuantityDataFromJson(json);
+  factory _$DiscreteQuantityDataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DiscreteQuantityDataImplFromJson(json);
 
   @override
   final DateTime dateFrom;
@@ -650,10 +652,10 @@ class _$DiscreteQuantityData implements DiscreteQuantityData {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DiscreteQuantityData &&
+            other is _$DiscreteQuantityDataImpl &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -681,9 +683,10 @@ class _$DiscreteQuantityData implements DiscreteQuantityData {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$DiscreteQuantityDataCopyWith<_$DiscreteQuantityData> get copyWith =>
-      __$$DiscreteQuantityDataCopyWithImpl<_$DiscreteQuantityData>(
-          this, _$identity);
+  _$$DiscreteQuantityDataImplCopyWith<_$DiscreteQuantityDataImpl>
+      get copyWith =>
+          __$$DiscreteQuantityDataImplCopyWithImpl<_$DiscreteQuantityDataImpl>(
+              this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -810,7 +813,7 @@ class _$DiscreteQuantityData implements DiscreteQuantityData {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$DiscreteQuantityDataToJson(
+    return _$$DiscreteQuantityDataImplToJson(
       this,
     );
   }
@@ -827,10 +830,10 @@ abstract class DiscreteQuantityData implements QuantitativeData {
       final String? platformType,
       final String? sourceName,
       final String? sourceId,
-      final String? deviceId}) = _$DiscreteQuantityData;
+      final String? deviceId}) = _$DiscreteQuantityDataImpl;
 
   factory DiscreteQuantityData.fromJson(Map<String, dynamic> json) =
-      _$DiscreteQuantityData.fromJson;
+      _$DiscreteQuantityDataImpl.fromJson;
 
   @override
   DateTime get dateFrom;
@@ -851,6 +854,6 @@ abstract class DiscreteQuantityData implements QuantitativeData {
   String? get deviceId;
   @override
   @JsonKey(ignore: true)
-  _$$DiscreteQuantityDataCopyWith<_$DiscreteQuantityData> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$DiscreteQuantityDataImplCopyWith<_$DiscreteQuantityDataImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
