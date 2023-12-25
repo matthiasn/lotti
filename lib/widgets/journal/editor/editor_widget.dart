@@ -4,7 +4,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/themes/theme.dart';
@@ -63,58 +63,64 @@ class EditorWidget extends StatelessWidget {
           }
         }
 
-        return RawKeyboardListener(
-          focusNode: FocusNode(),
-          onKey: (RawKeyEvent event) {
-            keyFormatter(event, 'b', Attribute.bold);
-            keyFormatter(event, 'i', Attribute.italic);
-            saveViaKeyboard(event);
-          },
-          child: Card(
-            color: Theme.of(context).colorScheme.surface.brighten(),
-            elevation: 0,
-            clipBehavior: Clip.hardEdge,
-            shape: const RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.all(Radius.circular(inputBorderRadius)),
-              side: BorderSide(),
-            ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: maxHeight,
+        return QuillProvider(
+          configurations: QuillConfigurations(
+            controller: controller,
+          ),
+          child: RawKeyboardListener(
+            focusNode: FocusNode(),
+            onKey: (RawKeyEvent event) {
+              keyFormatter(event, 'b', Attribute.bold);
+              keyFormatter(event, 'i', Attribute.italic);
+              saveViaKeyboard(event);
+            },
+            child: Card(
+              color: Theme.of(context).colorScheme.surface.brighten(),
+              elevation: 0,
+              clipBehavior: Clip.hardEdge,
+              shape: const RoundedRectangleBorder(
+                borderRadius:
+                    BorderRadius.all(Radius.circular(inputBorderRadius)),
+                side: BorderSide(),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (snapshot.isFocused) ToolbarWidget(unlinkFn: unlinkFn),
-                  Flexible(
-                    child: QuillEditor(
-                      controller: controller,
-                      readOnly: false,
-                      scrollController: ScrollController(),
-                      scrollable: true,
-                      focusNode: focusNode,
-                      autoFocus: autoFocus,
-                      expands: false,
-                      minHeight: minHeight,
-                      placeholder: localizations.editorPlaceholder,
-                      padding: EdgeInsets.only(
-                        top: 8,
-                        bottom: 16,
-                        left: padding,
-                        right: padding,
-                      ),
-                      keyboardAppearance: Theme.of(context).brightness,
-                      customStyles: customEditorStyles(
-                        textColor:
-                            Theme.of(context).textTheme.bodyLarge?.color ??
-                                Colors.grey,
-                        codeBlockBackground:
-                            Theme.of(context).primaryColorLight,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: maxHeight,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (snapshot.isFocused) ToolbarWidget(unlinkFn: unlinkFn),
+                    Flexible(
+                      child: QuillEditor(
+                        scrollController: ScrollController(),
+                        focusNode: focusNode,
+                        configurations: QuillEditorConfigurations(
+                          readOnly: false,
+                          autoFocus: autoFocus,
+                          expands: false,
+                          minHeight: minHeight,
+                          placeholder: localizations.editorPlaceholder,
+                          scrollable: true,
+                          padding: EdgeInsets.only(
+                            top: 8,
+                            bottom: 16,
+                            left: padding,
+                            right: padding,
+                          ),
+                          keyboardAppearance: Theme.of(context).brightness,
+                          customStyles: customEditorStyles(
+                            textColor:
+                                Theme.of(context).textTheme.bodyLarge?.color ??
+                                    Colors.grey,
+                            codeBlockBackground:
+                                Theme.of(context).primaryColorLight,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
