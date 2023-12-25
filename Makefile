@@ -7,15 +7,15 @@ LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 
 .PHONY: test
 test:
-	flutter test --coverage
+	fvm flutter test --coverage
 
 .PHONY: analyze
 analyze:
-	flutter analyze
+	fvm flutter analyze
 
 .PHONY: junit_test
 junit_test:
-	flutter test --coverage --reporter json > TEST-report.jsonl
+	fvm flutter test --coverage --reporter json > TEST-report.jsonl
 
 .PHONY: junit_upload
 junit_upload:
@@ -29,11 +29,11 @@ integration_test:
 
 .PHONY: clean
 clean:
-	flutter clean
+	fvm flutter clean
 
 .PHONY: deps
 deps:
-	flutter pub get
+	fvm flutter pub get
 
 .PHONY: enable_arb_tools
 enable_arb_tools:
@@ -45,13 +45,13 @@ sort_arb_files: enable_arb_tools
 
 .PHONY: l10n
 l10n: deps
-	flutter gen-l10n
+	fvm flutter gen-l10n
 	@echo "Missing translations:"
 	@cat missing_translations.txt
 
 .PHONY: doctor
 doctor:
-	flutter doctor
+	fvm flutter doctor
 
 .PHONY: coverage_report
 coverage_report:
@@ -64,7 +64,7 @@ coverage: test coverage_report
 
 .PHONY: check-null-safety
 check-null-safety:
-	flutter pub outdated --mode=null-safety
+	fvm flutter pub outdated --mode=null-safety
 
 .PHONY: build_runner
 build_runner: deps l10n
@@ -76,7 +76,7 @@ watch: l10n
 
 .PHONY: activate_fluttium
 activate_fluttium:
-	flutter pub global activate fluttium_cli
+	fvm flutter pub global activate fluttium_cli
 
 .PHONY: fluttium
 fluttium: get_whisper_cpp
@@ -107,13 +107,13 @@ migrate_db:
 
 .PHONY: bundle
 bundle:
-	flutter build bundle
+	fvm flutter build bundle
 
 #######################################
 
 .PHONY: ios_build_ipa
 ios_build_ipa: get_whisper_cpp_ios
-	flutter build ipa
+	fvm flutter build ipa
 
 .PHONY: ios_build
 ios_build: clean_test ios_build_ipa
@@ -155,7 +155,7 @@ ios: ios_build ios_fastlane_build ios_fastlane_upload
 
 .PHONY: macos_build_flutter
 macos_build_flutter: get_whisper_cpp
-	flutter build macos
+	fvm flutter build macos
 
 .PHONY: macos_build
 macos_build: clean_test macos_build_flutter
@@ -236,18 +236,18 @@ macos_local: macos_build
 
 .PHONY: android_build
 android_build:
-	flutter build appbundle
+	fvm flutter build appbundle
 
 .PHONY: linux_build
 linux_build:
-	flutter build linux
+	fvm flutter build linux
 
 .PHONY: linux
 linux: l10n test linux_build
 
 .PHONY: windows
 windows: clean_test
-	flutter build windows
+	fvm flutter build windows
 
 .PHONY: tag_push
 tag_push:
