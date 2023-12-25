@@ -44,28 +44,25 @@ class _MapWidgetState extends State<MapWidget> {
             if (pointerSignal is PointerScrollEvent) {
               if (pointerSignal.scrollDelta.dy < 0) {
                 mapController.move(
-                  mapController.center,
-                  mapController.zoom + 1,
+                  mapController.camera.center,
+                  mapController.camera.zoom + 1,
                 );
               } else {
                 mapController.move(
-                  mapController.center,
-                  mapController.zoom - 1,
+                  mapController.camera.center,
+                  mapController.camera.zoom - 1,
                 );
               }
             }
           },
           child: FlutterMap(
             mapController: mapController,
-            options: MapOptions(
-              center: loc,
-            ),
+            options: MapOptions(initialCenter: loc),
             children: [
               TileLayer(
                 tileProvider: CachedTileProvider(),
                 urlTemplate:
                     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                subdomains: const ['a', 'b', 'c'],
               ),
               MarkerLayer(
                 markers: [
@@ -73,12 +70,9 @@ class _MapWidgetState extends State<MapWidget> {
                     width: 64,
                     height: 64,
                     point: loc,
-                    builder: (ctx) => const Opacity(
-                      opacity: 0.8,
-                      child: Image(
-                        image: AssetImage(
-                          'assets/images/map/728975_location_map_marker_pin_place_icon.png',
-                        ),
+                    child: const Image(
+                      image: AssetImage(
+                        'assets/images/map/728975_location_map_marker_pin_place_icon.png',
                       ),
                     ),
                   ),
