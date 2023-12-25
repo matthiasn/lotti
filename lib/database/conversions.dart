@@ -60,10 +60,17 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     task: task,
     taskStatus: taskStatus,
     dateTo: entity.meta.dateTo,
-    type: entity.runtimeType
-        .toString()
-        .replaceFirst(r'_$', '')
-        .replaceFirst('Impl', ''),
+    type: entity.map(
+      journalEntry: (_) => 'JournalEntry',
+      journalImage: (_) => 'JournalImage',
+      journalAudio: (_) => 'JournalAudio',
+      task: (_) => 'Task',
+      quantitative: (_) => 'QuantitativeEntry',
+      measurement: (_) => 'MeasurementEntry',
+      workout: (_) => 'WorkoutEntry',
+      habitCompletion: (_) => 'HabitCompletionEntry',
+      survey: (_) => 'SurveyEntry',
+    ),
     subtype: subtype,
     serialized: json.encode(entity),
     schemaVersion: 0,

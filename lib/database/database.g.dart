@@ -173,10 +173,9 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
         geohashInt
       ];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'journal';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'journal';
+  String get actualTableName => 'journal';
   @override
   VerificationContext validateIntegrity(Insertable<JournalDbEntity> instance,
       {bool isInserting = false}) {
@@ -958,10 +957,9 @@ class Conflicts extends Table with TableInfo<Conflicts, Conflict> {
   List<GeneratedColumn> get $columns =>
       [id, createdAt, updatedAt, serialized, schemaVersion, status];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'conflicts';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'conflicts';
+  String get actualTableName => 'conflicts';
   @override
   VerificationContext validateIntegrity(Insertable<Conflict> instance,
       {bool isInserting = false}) {
@@ -1338,10 +1336,9 @@ class MeasurableTypes extends Table
         status
       ];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'measurable_types';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'measurable_types';
+  String get actualTableName => 'measurable_types';
   @override
   VerificationContext validateIntegrity(Insertable<MeasurableDbEntity> instance,
       {bool isInserting = false}) {
@@ -1785,10 +1782,9 @@ class HabitDefinitions extends Table
   List<GeneratedColumn> get $columns =>
       [id, name, createdAt, updatedAt, deleted, private, serialized, active];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'habit_definitions';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'habit_definitions';
+  String get actualTableName => 'habit_definitions';
   @override
   VerificationContext validateIntegrity(
       Insertable<HabitDefinitionDbEntity> instance,
@@ -2206,10 +2202,9 @@ class CategoryDefinitions extends Table
   List<GeneratedColumn> get $columns =>
       [id, name, createdAt, updatedAt, deleted, private, serialized, active];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'category_definitions';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'category_definitions';
+  String get actualTableName => 'category_definitions';
   @override
   VerificationContext validateIntegrity(
       Insertable<CategoryDefinitionDbEntity> instance,
@@ -2643,10 +2638,9 @@ class DashboardDefinitions extends Table
         active
       ];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'dashboard_definitions';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'dashboard_definitions';
+  String get actualTableName => 'dashboard_definitions';
   @override
   VerificationContext validateIntegrity(
       Insertable<DashboardDefinitionDbEntity> instance,
@@ -3059,10 +3053,9 @@ class ConfigFlags extends Table with TableInfo<ConfigFlags, ConfigFlag> {
   @override
   List<GeneratedColumn> get $columns => [name, description, status];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'config_flags';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'config_flags';
+  String get actualTableName => 'config_flags';
   @override
   VerificationContext validateIntegrity(Insertable<ConfigFlag> instance,
       {bool isInserting = false}) {
@@ -3340,10 +3333,9 @@ class TagEntities extends Table with TableInfo<TagEntities, TagDbEntity> {
         serialized
       ];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'tag_entities';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'tag_entities';
+  String get actualTableName => 'tag_entities';
   @override
   VerificationContext validateIntegrity(Insertable<TagDbEntity> instance,
       {bool isInserting = false}) {
@@ -3760,10 +3752,9 @@ class Tagged extends Table with TableInfo<Tagged, TaggedWith> {
   @override
   List<GeneratedColumn> get $columns => [id, journalId, tagEntityId];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'tagged';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'tagged';
+  String get actualTableName => 'tagged';
   @override
   VerificationContext validateIntegrity(Insertable<TaggedWith> instance,
       {bool isInserting = false}) {
@@ -4010,10 +4001,9 @@ class LinkedEntries extends Table with TableInfo<LinkedEntries, LinkedDbEntry> {
   @override
   List<GeneratedColumn> get $columns => [id, fromId, toId, type, serialized];
   @override
-  String get aliasedName => _alias ?? actualTableName;
+  String get aliasedName => _alias ?? 'linked_entries';
   @override
-  String get actualTableName => $name;
-  static const String $name = 'linked_entries';
+  String get actualTableName => 'linked_entries';
   @override
   VerificationContext validateIntegrity(Insertable<LinkedDbEntry> instance,
       {bool isInserting = false}) {
