@@ -81,11 +81,11 @@ class _$SpeechSettingsStateCopyWithImpl<$Res, $Val extends SpeechSettingsState>
 }
 
 /// @nodoc
-abstract class _$$_SpeechSettingsStateCopyWith<$Res>
+abstract class _$$SpeechSettingsStateImplCopyWith<$Res>
     implements $SpeechSettingsStateCopyWith<$Res> {
-  factory _$$_SpeechSettingsStateCopyWith(_$_SpeechSettingsState value,
-          $Res Function(_$_SpeechSettingsState) then) =
-      __$$_SpeechSettingsStateCopyWithImpl<$Res>;
+  factory _$$SpeechSettingsStateImplCopyWith(_$SpeechSettingsStateImpl value,
+          $Res Function(_$SpeechSettingsStateImpl) then) =
+      __$$SpeechSettingsStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -96,11 +96,11 @@ abstract class _$$_SpeechSettingsStateCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_SpeechSettingsStateCopyWithImpl<$Res>
-    extends _$SpeechSettingsStateCopyWithImpl<$Res, _$_SpeechSettingsState>
-    implements _$$_SpeechSettingsStateCopyWith<$Res> {
-  __$$_SpeechSettingsStateCopyWithImpl(_$_SpeechSettingsState _value,
-      $Res Function(_$_SpeechSettingsState) _then)
+class __$$SpeechSettingsStateImplCopyWithImpl<$Res>
+    extends _$SpeechSettingsStateCopyWithImpl<$Res, _$SpeechSettingsStateImpl>
+    implements _$$SpeechSettingsStateImplCopyWith<$Res> {
+  __$$SpeechSettingsStateImplCopyWithImpl(_$SpeechSettingsStateImpl _value,
+      $Res Function(_$SpeechSettingsStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -111,7 +111,7 @@ class __$$_SpeechSettingsStateCopyWithImpl<$Res>
     Object? downloadedModelSizes = null,
     Object? selectedModel = freezed,
   }) {
-    return _then(_$_SpeechSettingsState(
+    return _then(_$SpeechSettingsStateImpl(
       availableModels: null == availableModels
           ? _value._availableModels
           : availableModels // ignore: cast_nullable_to_non_nullable
@@ -134,8 +134,8 @@ class __$$_SpeechSettingsStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_SpeechSettingsState implements _SpeechSettingsState {
-  _$_SpeechSettingsState(
+class _$SpeechSettingsStateImpl implements _SpeechSettingsState {
+  _$SpeechSettingsStateImpl(
       {required final Set<String> availableModels,
       required final Map<String, double> downloadProgress,
       required final Map<String, double> downloadedModelSizes,
@@ -178,10 +178,10 @@ class _$_SpeechSettingsState implements _SpeechSettingsState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_SpeechSettingsState &&
+            other is _$SpeechSettingsStateImpl &&
             const DeepCollectionEquality()
                 .equals(other._availableModels, _availableModels) &&
             const DeepCollectionEquality()
@@ -203,8 +203,8 @@ class _$_SpeechSettingsState implements _SpeechSettingsState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_SpeechSettingsStateCopyWith<_$_SpeechSettingsState> get copyWith =>
-      __$$_SpeechSettingsStateCopyWithImpl<_$_SpeechSettingsState>(
+  _$$SpeechSettingsStateImplCopyWith<_$SpeechSettingsStateImpl> get copyWith =>
+      __$$SpeechSettingsStateImplCopyWithImpl<_$SpeechSettingsStateImpl>(
           this, _$identity);
 }
 
@@ -213,7 +213,7 @@ abstract class _SpeechSettingsState implements SpeechSettingsState {
       {required final Set<String> availableModels,
       required final Map<String, double> downloadProgress,
       required final Map<String, double> downloadedModelSizes,
-      final String? selectedModel}) = _$_SpeechSettingsState;
+      final String? selectedModel}) = _$SpeechSettingsStateImpl;
 
   @override
   Set<String> get availableModels;
@@ -225,6 +225,6 @@ abstract class _SpeechSettingsState implements SpeechSettingsState {
   String? get selectedModel;
   @override
   @JsonKey(ignore: true)
-  _$$_SpeechSettingsStateCopyWith<_$_SpeechSettingsState> get copyWith =>
+  _$$SpeechSettingsStateImplCopyWith<_$SpeechSettingsStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

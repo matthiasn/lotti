@@ -127,11 +127,12 @@ class _$OutboxIsolateMessageCopyWithImpl<$Res,
 }
 
 /// @nodoc
-abstract class _$$OutboxIsolateInitMessageCopyWith<$Res>
+abstract class _$$OutboxIsolateInitMessageImplCopyWith<$Res>
     implements $OutboxIsolateMessageCopyWith<$Res> {
-  factory _$$OutboxIsolateInitMessageCopyWith(_$OutboxIsolateInitMessage value,
-          $Res Function(_$OutboxIsolateInitMessage) then) =
-      __$$OutboxIsolateInitMessageCopyWithImpl<$Res>;
+  factory _$$OutboxIsolateInitMessageImplCopyWith(
+          _$OutboxIsolateInitMessageImpl value,
+          $Res Function(_$OutboxIsolateInitMessageImpl) then) =
+      __$$OutboxIsolateInitMessageImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -147,11 +148,13 @@ abstract class _$$OutboxIsolateInitMessageCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$OutboxIsolateInitMessageCopyWithImpl<$Res>
-    extends _$OutboxIsolateMessageCopyWithImpl<$Res, _$OutboxIsolateInitMessage>
-    implements _$$OutboxIsolateInitMessageCopyWith<$Res> {
-  __$$OutboxIsolateInitMessageCopyWithImpl(_$OutboxIsolateInitMessage _value,
-      $Res Function(_$OutboxIsolateInitMessage) _then)
+class __$$OutboxIsolateInitMessageImplCopyWithImpl<$Res>
+    extends _$OutboxIsolateMessageCopyWithImpl<$Res,
+        _$OutboxIsolateInitMessageImpl>
+    implements _$$OutboxIsolateInitMessageImplCopyWith<$Res> {
+  __$$OutboxIsolateInitMessageImplCopyWithImpl(
+      _$OutboxIsolateInitMessageImpl _value,
+      $Res Function(_$OutboxIsolateInitMessageImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -164,7 +167,7 @@ class __$$OutboxIsolateInitMessageCopyWithImpl<$Res>
     Object? allowInvalidCert = null,
     Object? docDir = null,
   }) {
-    return _then(_$OutboxIsolateInitMessage(
+    return _then(_$OutboxIsolateInitMessageImpl(
       syncConfig: null == syncConfig
           ? _value.syncConfig
           : syncConfig // ignore: cast_nullable_to_non_nullable
@@ -195,8 +198,8 @@ class __$$OutboxIsolateInitMessageCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$OutboxIsolateInitMessage implements OutboxIsolateInitMessage {
-  _$OutboxIsolateInitMessage(
+class _$OutboxIsolateInitMessageImpl implements OutboxIsolateInitMessage {
+  _$OutboxIsolateInitMessageImpl(
       {required this.syncConfig,
       required this.syncDbConnectPort,
       required this.loggingDbConnectPort,
@@ -223,10 +226,10 @@ class _$OutboxIsolateInitMessage implements OutboxIsolateInitMessage {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$OutboxIsolateInitMessage &&
+            other is _$OutboxIsolateInitMessageImpl &&
             (identical(other.syncConfig, syncConfig) ||
                 other.syncConfig == syncConfig) &&
             (identical(other.syncDbConnectPort, syncDbConnectPort) ||
@@ -247,10 +250,9 @@ class _$OutboxIsolateInitMessage implements OutboxIsolateInitMessage {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$OutboxIsolateInitMessageCopyWith<_$OutboxIsolateInitMessage>
-      get copyWith =>
-          __$$OutboxIsolateInitMessageCopyWithImpl<_$OutboxIsolateInitMessage>(
-              this, _$identity);
+  _$$OutboxIsolateInitMessageImplCopyWith<_$OutboxIsolateInitMessageImpl>
+      get copyWith => __$$OutboxIsolateInitMessageImplCopyWithImpl<
+          _$OutboxIsolateInitMessageImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -346,7 +348,7 @@ abstract class OutboxIsolateInitMessage implements OutboxIsolateMessage {
       required final SendPort loggingDbConnectPort,
       required final SendPort settingsDbConnectPort,
       required final bool allowInvalidCert,
-      required final Directory docDir}) = _$OutboxIsolateInitMessage;
+      required final Directory docDir}) = _$OutboxIsolateInitMessageImpl;
 
   @override
   SyncConfig get syncConfig;
@@ -357,17 +359,17 @@ abstract class OutboxIsolateInitMessage implements OutboxIsolateMessage {
   Directory get docDir;
   @override
   @JsonKey(ignore: true)
-  _$$OutboxIsolateInitMessageCopyWith<_$OutboxIsolateInitMessage>
+  _$$OutboxIsolateInitMessageImplCopyWith<_$OutboxIsolateInitMessageImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$OutboxIsolateRestartMessageCopyWith<$Res>
+abstract class _$$OutboxIsolateRestartMessageImplCopyWith<$Res>
     implements $OutboxIsolateMessageCopyWith<$Res> {
-  factory _$$OutboxIsolateRestartMessageCopyWith(
-          _$OutboxIsolateRestartMessage value,
-          $Res Function(_$OutboxIsolateRestartMessage) then) =
-      __$$OutboxIsolateRestartMessageCopyWithImpl<$Res>;
+  factory _$$OutboxIsolateRestartMessageImplCopyWith(
+          _$OutboxIsolateRestartMessageImpl value,
+          $Res Function(_$OutboxIsolateRestartMessageImpl) then) =
+      __$$OutboxIsolateRestartMessageImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({SyncConfig syncConfig});
@@ -377,13 +379,13 @@ abstract class _$$OutboxIsolateRestartMessageCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$OutboxIsolateRestartMessageCopyWithImpl<$Res>
+class __$$OutboxIsolateRestartMessageImplCopyWithImpl<$Res>
     extends _$OutboxIsolateMessageCopyWithImpl<$Res,
-        _$OutboxIsolateRestartMessage>
-    implements _$$OutboxIsolateRestartMessageCopyWith<$Res> {
-  __$$OutboxIsolateRestartMessageCopyWithImpl(
-      _$OutboxIsolateRestartMessage _value,
-      $Res Function(_$OutboxIsolateRestartMessage) _then)
+        _$OutboxIsolateRestartMessageImpl>
+    implements _$$OutboxIsolateRestartMessageImplCopyWith<$Res> {
+  __$$OutboxIsolateRestartMessageImplCopyWithImpl(
+      _$OutboxIsolateRestartMessageImpl _value,
+      $Res Function(_$OutboxIsolateRestartMessageImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -391,7 +393,7 @@ class __$$OutboxIsolateRestartMessageCopyWithImpl<$Res>
   $Res call({
     Object? syncConfig = null,
   }) {
-    return _then(_$OutboxIsolateRestartMessage(
+    return _then(_$OutboxIsolateRestartMessageImpl(
       syncConfig: null == syncConfig
           ? _value.syncConfig
           : syncConfig // ignore: cast_nullable_to_non_nullable
@@ -402,8 +404,8 @@ class __$$OutboxIsolateRestartMessageCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$OutboxIsolateRestartMessage implements OutboxIsolateRestartMessage {
-  _$OutboxIsolateRestartMessage({required this.syncConfig});
+class _$OutboxIsolateRestartMessageImpl implements OutboxIsolateRestartMessage {
+  _$OutboxIsolateRestartMessageImpl({required this.syncConfig});
 
   @override
   final SyncConfig syncConfig;
@@ -414,10 +416,10 @@ class _$OutboxIsolateRestartMessage implements OutboxIsolateRestartMessage {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$OutboxIsolateRestartMessage &&
+            other is _$OutboxIsolateRestartMessageImpl &&
             (identical(other.syncConfig, syncConfig) ||
                 other.syncConfig == syncConfig));
   }
@@ -428,9 +430,9 @@ class _$OutboxIsolateRestartMessage implements OutboxIsolateRestartMessage {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$OutboxIsolateRestartMessageCopyWith<_$OutboxIsolateRestartMessage>
-      get copyWith => __$$OutboxIsolateRestartMessageCopyWithImpl<
-          _$OutboxIsolateRestartMessage>(this, _$identity);
+  _$$OutboxIsolateRestartMessageImplCopyWith<_$OutboxIsolateRestartMessageImpl>
+      get copyWith => __$$OutboxIsolateRestartMessageImplCopyWithImpl<
+          _$OutboxIsolateRestartMessageImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -518,12 +520,12 @@ class _$OutboxIsolateRestartMessage implements OutboxIsolateRestartMessage {
 
 abstract class OutboxIsolateRestartMessage implements OutboxIsolateMessage {
   factory OutboxIsolateRestartMessage({required final SyncConfig syncConfig}) =
-      _$OutboxIsolateRestartMessage;
+      _$OutboxIsolateRestartMessageImpl;
 
   @override
   SyncConfig get syncConfig;
   @override
   @JsonKey(ignore: true)
-  _$$OutboxIsolateRestartMessageCopyWith<_$OutboxIsolateRestartMessage>
+  _$$OutboxIsolateRestartMessageImplCopyWith<_$OutboxIsolateRestartMessageImpl>
       get copyWith => throw _privateConstructorUsedError;
 }

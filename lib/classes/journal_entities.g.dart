@@ -6,7 +6,8 @@ part of 'journal_entities.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$_Metadata _$$_MetadataFromJson(Map<String, dynamic> json) => _$_Metadata(
+_$MetadataImpl _$$MetadataImplFromJson(Map<String, dynamic> json) =>
+    _$MetadataImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
@@ -28,7 +29,7 @@ _$_Metadata _$$_MetadataFromJson(Map<String, dynamic> json) => _$_Metadata(
       private: json['private'] as bool?,
     );
 
-Map<String, dynamic> _$$_MetadataToJson(_$_Metadata instance) =>
+Map<String, dynamic> _$$MetadataImplToJson(_$MetadataImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'createdAt': instance.createdAt.toIso8601String(),
@@ -52,7 +53,8 @@ const _$EntryFlagEnumMap = {
   EntryFlag.followUpNeeded: 'followUpNeeded',
 };
 
-_$_ImageData _$$_ImageDataFromJson(Map<String, dynamic> json) => _$_ImageData(
+_$ImageDataImpl _$$ImageDataImplFromJson(Map<String, dynamic> json) =>
+    _$ImageDataImpl(
       capturedAt: DateTime.parse(json['capturedAt'] as String),
       imageId: json['imageId'] as String,
       imageFile: json['imageFile'] as String,
@@ -62,7 +64,7 @@ _$_ImageData _$$_ImageDataFromJson(Map<String, dynamic> json) => _$_ImageData(
           : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$$_ImageDataToJson(_$_ImageData instance) =>
+Map<String, dynamic> _$$ImageDataImplToJson(_$ImageDataImpl instance) =>
     <String, dynamic>{
       'capturedAt': instance.capturedAt.toIso8601String(),
       'imageId': instance.imageId,
@@ -71,7 +73,8 @@ Map<String, dynamic> _$$_ImageDataToJson(_$_ImageData instance) =>
       'geolocation': instance.geolocation,
     };
 
-_$_AudioData _$$_AudioDataFromJson(Map<String, dynamic> json) => _$_AudioData(
+_$AudioDataImpl _$$AudioDataImplFromJson(Map<String, dynamic> json) =>
+    _$AudioDataImpl(
       dateFrom: DateTime.parse(json['dateFrom'] as String),
       dateTo: DateTime.parse(json['dateTo'] as String),
       audioFile: json['audioFile'] as String,
@@ -82,7 +85,7 @@ _$_AudioData _$$_AudioDataFromJson(Map<String, dynamic> json) => _$_AudioData(
           .toList(),
     );
 
-Map<String, dynamic> _$$_AudioDataToJson(_$_AudioData instance) =>
+Map<String, dynamic> _$$AudioDataImplToJson(_$AudioDataImpl instance) =>
     <String, dynamic>{
       'dateFrom': instance.dateFrom.toIso8601String(),
       'dateTo': instance.dateTo.toIso8601String(),
@@ -92,8 +95,9 @@ Map<String, dynamic> _$$_AudioDataToJson(_$_AudioData instance) =>
       'transcripts': instance.transcripts,
     };
 
-_$_AudioTranscript _$$_AudioTranscriptFromJson(Map<String, dynamic> json) =>
-    _$_AudioTranscript(
+_$AudioTranscriptImpl _$$AudioTranscriptImplFromJson(
+        Map<String, dynamic> json) =>
+    _$AudioTranscriptImpl(
       created: DateTime.parse(json['created'] as String),
       library: json['library'] as String,
       model: json['model'] as String,
@@ -104,7 +108,8 @@ _$_AudioTranscript _$$_AudioTranscriptFromJson(Map<String, dynamic> json) =>
           : Duration(microseconds: json['processingTime'] as int),
     );
 
-Map<String, dynamic> _$$_AudioTranscriptToJson(_$_AudioTranscript instance) =>
+Map<String, dynamic> _$$AudioTranscriptImplToJson(
+        _$AudioTranscriptImpl instance) =>
     <String, dynamic>{
       'created': instance.created.toIso8601String(),
       'library': instance.library,
@@ -114,8 +119,8 @@ Map<String, dynamic> _$$_AudioTranscriptToJson(_$_AudioTranscript instance) =>
       'processingTime': instance.processingTime?.inMicroseconds,
     };
 
-_$_SurveyData _$$_SurveyDataFromJson(Map<String, dynamic> json) =>
-    _$_SurveyData(
+_$SurveyDataImpl _$$SurveyDataImplFromJson(Map<String, dynamic> json) =>
+    _$SurveyDataImpl(
       taskResult:
           RPTaskResult.fromJson(json['taskResult'] as Map<String, dynamic>),
       scoreDefinitions: (json['scoreDefinitions'] as Map<String, dynamic>).map(
@@ -125,7 +130,7 @@ _$_SurveyData _$$_SurveyDataFromJson(Map<String, dynamic> json) =>
       calculatedScores: Map<String, int>.from(json['calculatedScores'] as Map),
     );
 
-Map<String, dynamic> _$$_SurveyDataToJson(_$_SurveyData instance) =>
+Map<String, dynamic> _$$SurveyDataImplToJson(_$SurveyDataImpl instance) =>
     <String, dynamic>{
       'taskResult': instance.taskResult,
       'scoreDefinitions':
@@ -133,8 +138,8 @@ Map<String, dynamic> _$$_SurveyDataToJson(_$_SurveyData instance) =>
       'calculatedScores': instance.calculatedScores,
     };
 
-_$JournalEntry _$$JournalEntryFromJson(Map<String, dynamic> json) =>
-    _$JournalEntry(
+_$JournalEntryImpl _$$JournalEntryImplFromJson(Map<String, dynamic> json) =>
+    _$JournalEntryImpl(
       meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
       entryText: json['entryText'] == null
           ? null
@@ -145,7 +150,7 @@ _$JournalEntry _$$JournalEntryFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$JournalEntryToJson(_$JournalEntry instance) =>
+Map<String, dynamic> _$$JournalEntryImplToJson(_$JournalEntryImpl instance) =>
     <String, dynamic>{
       'meta': instance.meta,
       'entryText': instance.entryText,
@@ -153,8 +158,8 @@ Map<String, dynamic> _$$JournalEntryToJson(_$JournalEntry instance) =>
       'runtimeType': instance.$type,
     };
 
-_$JournalImage _$$JournalImageFromJson(Map<String, dynamic> json) =>
-    _$JournalImage(
+_$JournalImageImpl _$$JournalImageImplFromJson(Map<String, dynamic> json) =>
+    _$JournalImageImpl(
       meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
       data: ImageData.fromJson(json['data'] as Map<String, dynamic>),
       entryText: json['entryText'] == null
@@ -166,7 +171,7 @@ _$JournalImage _$$JournalImageFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$JournalImageToJson(_$JournalImage instance) =>
+Map<String, dynamic> _$$JournalImageImplToJson(_$JournalImageImpl instance) =>
     <String, dynamic>{
       'meta': instance.meta,
       'data': instance.data,
@@ -175,8 +180,8 @@ Map<String, dynamic> _$$JournalImageToJson(_$JournalImage instance) =>
       'runtimeType': instance.$type,
     };
 
-_$JournalAudio _$$JournalAudioFromJson(Map<String, dynamic> json) =>
-    _$JournalAudio(
+_$JournalAudioImpl _$$JournalAudioImplFromJson(Map<String, dynamic> json) =>
+    _$JournalAudioImpl(
       meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
       data: AudioData.fromJson(json['data'] as Map<String, dynamic>),
       entryText: json['entryText'] == null
@@ -188,7 +193,7 @@ _$JournalAudio _$$JournalAudioFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$JournalAudioToJson(_$JournalAudio instance) =>
+Map<String, dynamic> _$$JournalAudioImplToJson(_$JournalAudioImpl instance) =>
     <String, dynamic>{
       'meta': instance.meta,
       'data': instance.data,
@@ -197,7 +202,7 @@ Map<String, dynamic> _$$JournalAudioToJson(_$JournalAudio instance) =>
       'runtimeType': instance.$type,
     };
 
-_$Task _$$TaskFromJson(Map<String, dynamic> json) => _$Task(
+_$TaskImpl _$$TaskImplFromJson(Map<String, dynamic> json) => _$TaskImpl(
       meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
       data: TaskData.fromJson(json['data'] as Map<String, dynamic>),
       entryText: json['entryText'] == null
@@ -209,7 +214,8 @@ _$Task _$$TaskFromJson(Map<String, dynamic> json) => _$Task(
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$TaskToJson(_$Task instance) => <String, dynamic>{
+Map<String, dynamic> _$$TaskImplToJson(_$TaskImpl instance) =>
+    <String, dynamic>{
       'meta': instance.meta,
       'data': instance.data,
       'entryText': instance.entryText,
@@ -217,8 +223,9 @@ Map<String, dynamic> _$$TaskToJson(_$Task instance) => <String, dynamic>{
       'runtimeType': instance.$type,
     };
 
-_$QuantitativeEntry _$$QuantitativeEntryFromJson(Map<String, dynamic> json) =>
-    _$QuantitativeEntry(
+_$QuantitativeEntryImpl _$$QuantitativeEntryImplFromJson(
+        Map<String, dynamic> json) =>
+    _$QuantitativeEntryImpl(
       meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
       data: QuantitativeData.fromJson(json['data'] as Map<String, dynamic>),
       entryText: json['entryText'] == null
@@ -230,7 +237,8 @@ _$QuantitativeEntry _$$QuantitativeEntryFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$QuantitativeEntryToJson(_$QuantitativeEntry instance) =>
+Map<String, dynamic> _$$QuantitativeEntryImplToJson(
+        _$QuantitativeEntryImpl instance) =>
     <String, dynamic>{
       'meta': instance.meta,
       'data': instance.data,
@@ -239,8 +247,9 @@ Map<String, dynamic> _$$QuantitativeEntryToJson(_$QuantitativeEntry instance) =>
       'runtimeType': instance.$type,
     };
 
-_$MeasurementEntry _$$MeasurementEntryFromJson(Map<String, dynamic> json) =>
-    _$MeasurementEntry(
+_$MeasurementEntryImpl _$$MeasurementEntryImplFromJson(
+        Map<String, dynamic> json) =>
+    _$MeasurementEntryImpl(
       meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
       data: MeasurementData.fromJson(json['data'] as Map<String, dynamic>),
       entryText: json['entryText'] == null
@@ -252,7 +261,8 @@ _$MeasurementEntry _$$MeasurementEntryFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$MeasurementEntryToJson(_$MeasurementEntry instance) =>
+Map<String, dynamic> _$$MeasurementEntryImplToJson(
+        _$MeasurementEntryImpl instance) =>
     <String, dynamic>{
       'meta': instance.meta,
       'data': instance.data,
@@ -261,8 +271,8 @@ Map<String, dynamic> _$$MeasurementEntryToJson(_$MeasurementEntry instance) =>
       'runtimeType': instance.$type,
     };
 
-_$WorkoutEntry _$$WorkoutEntryFromJson(Map<String, dynamic> json) =>
-    _$WorkoutEntry(
+_$WorkoutEntryImpl _$$WorkoutEntryImplFromJson(Map<String, dynamic> json) =>
+    _$WorkoutEntryImpl(
       meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
       data: WorkoutData.fromJson(json['data'] as Map<String, dynamic>),
       entryText: json['entryText'] == null
@@ -274,7 +284,7 @@ _$WorkoutEntry _$$WorkoutEntryFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$WorkoutEntryToJson(_$WorkoutEntry instance) =>
+Map<String, dynamic> _$$WorkoutEntryImplToJson(_$WorkoutEntryImpl instance) =>
     <String, dynamic>{
       'meta': instance.meta,
       'data': instance.data,
@@ -283,9 +293,9 @@ Map<String, dynamic> _$$WorkoutEntryToJson(_$WorkoutEntry instance) =>
       'runtimeType': instance.$type,
     };
 
-_$HabitCompletionEntry _$$HabitCompletionEntryFromJson(
+_$HabitCompletionEntryImpl _$$HabitCompletionEntryImplFromJson(
         Map<String, dynamic> json) =>
-    _$HabitCompletionEntry(
+    _$HabitCompletionEntryImpl(
       meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
       data: HabitCompletionData.fromJson(json['data'] as Map<String, dynamic>),
       entryText: json['entryText'] == null
@@ -297,8 +307,8 @@ _$HabitCompletionEntry _$$HabitCompletionEntryFromJson(
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$HabitCompletionEntryToJson(
-        _$HabitCompletionEntry instance) =>
+Map<String, dynamic> _$$HabitCompletionEntryImplToJson(
+        _$HabitCompletionEntryImpl instance) =>
     <String, dynamic>{
       'meta': instance.meta,
       'data': instance.data,
@@ -307,8 +317,8 @@ Map<String, dynamic> _$$HabitCompletionEntryToJson(
       'runtimeType': instance.$type,
     };
 
-_$SurveyEntry _$$SurveyEntryFromJson(Map<String, dynamic> json) =>
-    _$SurveyEntry(
+_$SurveyEntryImpl _$$SurveyEntryImplFromJson(Map<String, dynamic> json) =>
+    _$SurveyEntryImpl(
       meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
       data: SurveyData.fromJson(json['data'] as Map<String, dynamic>),
       entryText: json['entryText'] == null
@@ -320,7 +330,7 @@ _$SurveyEntry _$$SurveyEntryFromJson(Map<String, dynamic> json) =>
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$SurveyEntryToJson(_$SurveyEntry instance) =>
+Map<String, dynamic> _$$SurveyEntryImplToJson(_$SurveyEntryImpl instance) =>
     <String, dynamic>{
       'meta': instance.meta,
       'data': instance.data,

@@ -81,11 +81,12 @@ class _$CategorySettingsStateCopyWithImpl<$Res,
 }
 
 /// @nodoc
-abstract class _$$_CategorySettingsStateCopyWith<$Res>
+abstract class _$$CategorySettingsStateImplCopyWith<$Res>
     implements $CategorySettingsStateCopyWith<$Res> {
-  factory _$$_CategorySettingsStateCopyWith(_$_CategorySettingsState value,
-          $Res Function(_$_CategorySettingsState) then) =
-      __$$_CategorySettingsStateCopyWithImpl<$Res>;
+  factory _$$CategorySettingsStateImplCopyWith(
+          _$CategorySettingsStateImpl value,
+          $Res Function(_$CategorySettingsStateImpl) then) =
+      __$$CategorySettingsStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -96,11 +97,12 @@ abstract class _$$_CategorySettingsStateCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_CategorySettingsStateCopyWithImpl<$Res>
-    extends _$CategorySettingsStateCopyWithImpl<$Res, _$_CategorySettingsState>
-    implements _$$_CategorySettingsStateCopyWith<$Res> {
-  __$$_CategorySettingsStateCopyWithImpl(_$_CategorySettingsState _value,
-      $Res Function(_$_CategorySettingsState) _then)
+class __$$CategorySettingsStateImplCopyWithImpl<$Res>
+    extends _$CategorySettingsStateCopyWithImpl<$Res,
+        _$CategorySettingsStateImpl>
+    implements _$$CategorySettingsStateImplCopyWith<$Res> {
+  __$$CategorySettingsStateImplCopyWithImpl(_$CategorySettingsStateImpl _value,
+      $Res Function(_$CategorySettingsStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -111,7 +113,7 @@ class __$$_CategorySettingsStateCopyWithImpl<$Res>
     Object? valid = null,
     Object? formKey = null,
   }) {
-    return _then(_$_CategorySettingsState(
+    return _then(_$CategorySettingsStateImpl(
       categoryDefinition: freezed == categoryDefinition
           ? _value.categoryDefinition
           : categoryDefinition // ignore: cast_nullable_to_non_nullable
@@ -134,8 +136,8 @@ class __$$_CategorySettingsStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_CategorySettingsState implements _CategorySettingsState {
-  _$_CategorySettingsState(
+class _$CategorySettingsStateImpl implements _CategorySettingsState {
+  _$CategorySettingsStateImpl(
       {required this.categoryDefinition,
       required this.dirty,
       required this.valid,
@@ -156,10 +158,10 @@ class _$_CategorySettingsState implements _CategorySettingsState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_CategorySettingsState &&
+            other is _$CategorySettingsStateImpl &&
             const DeepCollectionEquality()
                 .equals(other.categoryDefinition, categoryDefinition) &&
             (identical(other.dirty, dirty) || other.dirty == dirty) &&
@@ -178,9 +180,9 @@ class _$_CategorySettingsState implements _CategorySettingsState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_CategorySettingsStateCopyWith<_$_CategorySettingsState> get copyWith =>
-      __$$_CategorySettingsStateCopyWithImpl<_$_CategorySettingsState>(
-          this, _$identity);
+  _$$CategorySettingsStateImplCopyWith<_$CategorySettingsStateImpl>
+      get copyWith => __$$CategorySettingsStateImplCopyWithImpl<
+          _$CategorySettingsStateImpl>(this, _$identity);
 }
 
 abstract class _CategorySettingsState implements CategorySettingsState {
@@ -189,7 +191,7 @@ abstract class _CategorySettingsState implements CategorySettingsState {
           required final bool dirty,
           required final bool valid,
           required final GlobalKey<FormBuilderState> formKey}) =
-      _$_CategorySettingsState;
+      _$CategorySettingsStateImpl;
 
   @override
   CategoryDefinition get categoryDefinition;
@@ -201,6 +203,6 @@ abstract class _CategorySettingsState implements CategorySettingsState {
   GlobalKey<FormBuilderState> get formKey;
   @override
   @JsonKey(ignore: true)
-  _$$_CategorySettingsStateCopyWith<_$_CategorySettingsState> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$CategorySettingsStateImplCopyWith<_$CategorySettingsStateImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }

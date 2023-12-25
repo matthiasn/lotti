@@ -150,11 +150,11 @@ class _$EntryStateCopyWithImpl<$Res, $Val extends EntryState>
 }
 
 /// @nodoc
-abstract class _$$_EntryStateSavedCopyWith<$Res>
+abstract class _$$EntryStateSavedImplCopyWith<$Res>
     implements $EntryStateCopyWith<$Res> {
-  factory _$$_EntryStateSavedCopyWith(
-          _$_EntryStateSaved value, $Res Function(_$_EntryStateSaved) then) =
-      __$$_EntryStateSavedCopyWithImpl<$Res>;
+  factory _$$EntryStateSavedImplCopyWith(_$EntryStateSavedImpl value,
+          $Res Function(_$EntryStateSavedImpl) then) =
+      __$$EntryStateSavedImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -169,11 +169,11 @@ abstract class _$$_EntryStateSavedCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_EntryStateSavedCopyWithImpl<$Res>
-    extends _$EntryStateCopyWithImpl<$Res, _$_EntryStateSaved>
-    implements _$$_EntryStateSavedCopyWith<$Res> {
-  __$$_EntryStateSavedCopyWithImpl(
-      _$_EntryStateSaved _value, $Res Function(_$_EntryStateSaved) _then)
+class __$$EntryStateSavedImplCopyWithImpl<$Res>
+    extends _$EntryStateCopyWithImpl<$Res, _$EntryStateSavedImpl>
+    implements _$$EntryStateSavedImplCopyWith<$Res> {
+  __$$EntryStateSavedImplCopyWithImpl(
+      _$EntryStateSavedImpl _value, $Res Function(_$EntryStateSavedImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -185,7 +185,7 @@ class __$$_EntryStateSavedCopyWithImpl<$Res>
     Object? isFocused = null,
     Object? epoch = null,
   }) {
-    return _then(_$_EntryStateSaved(
+    return _then(_$EntryStateSavedImpl(
       entryId: null == entryId
           ? _value.entryId
           : entryId // ignore: cast_nullable_to_non_nullable
@@ -212,8 +212,8 @@ class __$$_EntryStateSavedCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_EntryStateSaved implements _EntryStateSaved {
-  _$_EntryStateSaved(
+class _$EntryStateSavedImpl implements _EntryStateSaved {
+  _$EntryStateSavedImpl(
       {required this.entryId,
       required this.entry,
       required this.showMap,
@@ -237,10 +237,10 @@ class _$_EntryStateSaved implements _EntryStateSaved {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_EntryStateSaved &&
+            other is _$EntryStateSavedImpl &&
             (identical(other.entryId, entryId) || other.entryId == entryId) &&
             (identical(other.entry, entry) || other.entry == entry) &&
             (identical(other.showMap, showMap) || other.showMap == showMap) &&
@@ -256,8 +256,9 @@ class _$_EntryStateSaved implements _EntryStateSaved {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_EntryStateSavedCopyWith<_$_EntryStateSaved> get copyWith =>
-      __$$_EntryStateSavedCopyWithImpl<_$_EntryStateSaved>(this, _$identity);
+  _$$EntryStateSavedImplCopyWith<_$EntryStateSavedImpl> get copyWith =>
+      __$$EntryStateSavedImplCopyWithImpl<_$EntryStateSavedImpl>(
+          this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -340,7 +341,7 @@ abstract class _EntryStateSaved implements EntryState {
       required final JournalEntity? entry,
       required final bool showMap,
       required final bool isFocused,
-      required final int epoch}) = _$_EntryStateSaved;
+      required final int epoch}) = _$EntryStateSavedImpl;
 
   @override
   String get entryId;
@@ -354,16 +355,16 @@ abstract class _EntryStateSaved implements EntryState {
   int get epoch;
   @override
   @JsonKey(ignore: true)
-  _$$_EntryStateSavedCopyWith<_$_EntryStateSaved> get copyWith =>
+  _$$EntryStateSavedImplCopyWith<_$EntryStateSavedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$EntryStateDirtyCopyWith<$Res>
+abstract class _$$EntryStateDirtyImplCopyWith<$Res>
     implements $EntryStateCopyWith<$Res> {
-  factory _$$EntryStateDirtyCopyWith(
-          _$EntryStateDirty value, $Res Function(_$EntryStateDirty) then) =
-      __$$EntryStateDirtyCopyWithImpl<$Res>;
+  factory _$$EntryStateDirtyImplCopyWith(_$EntryStateDirtyImpl value,
+          $Res Function(_$EntryStateDirtyImpl) then) =
+      __$$EntryStateDirtyImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -378,11 +379,11 @@ abstract class _$$EntryStateDirtyCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$EntryStateDirtyCopyWithImpl<$Res>
-    extends _$EntryStateCopyWithImpl<$Res, _$EntryStateDirty>
-    implements _$$EntryStateDirtyCopyWith<$Res> {
-  __$$EntryStateDirtyCopyWithImpl(
-      _$EntryStateDirty _value, $Res Function(_$EntryStateDirty) _then)
+class __$$EntryStateDirtyImplCopyWithImpl<$Res>
+    extends _$EntryStateCopyWithImpl<$Res, _$EntryStateDirtyImpl>
+    implements _$$EntryStateDirtyImplCopyWith<$Res> {
+  __$$EntryStateDirtyImplCopyWithImpl(
+      _$EntryStateDirtyImpl _value, $Res Function(_$EntryStateDirtyImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -394,7 +395,7 @@ class __$$EntryStateDirtyCopyWithImpl<$Res>
     Object? isFocused = null,
     Object? epoch = null,
   }) {
-    return _then(_$EntryStateDirty(
+    return _then(_$EntryStateDirtyImpl(
       entryId: null == entryId
           ? _value.entryId
           : entryId // ignore: cast_nullable_to_non_nullable
@@ -421,8 +422,8 @@ class __$$EntryStateDirtyCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$EntryStateDirty implements EntryStateDirty {
-  _$EntryStateDirty(
+class _$EntryStateDirtyImpl implements EntryStateDirty {
+  _$EntryStateDirtyImpl(
       {required this.entryId,
       required this.entry,
       required this.showMap,
@@ -446,10 +447,10 @@ class _$EntryStateDirty implements EntryStateDirty {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$EntryStateDirty &&
+            other is _$EntryStateDirtyImpl &&
             (identical(other.entryId, entryId) || other.entryId == entryId) &&
             (identical(other.entry, entry) || other.entry == entry) &&
             (identical(other.showMap, showMap) || other.showMap == showMap) &&
@@ -465,8 +466,9 @@ class _$EntryStateDirty implements EntryStateDirty {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$EntryStateDirtyCopyWith<_$EntryStateDirty> get copyWith =>
-      __$$EntryStateDirtyCopyWithImpl<_$EntryStateDirty>(this, _$identity);
+  _$$EntryStateDirtyImplCopyWith<_$EntryStateDirtyImpl> get copyWith =>
+      __$$EntryStateDirtyImplCopyWithImpl<_$EntryStateDirtyImpl>(
+          this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -549,7 +551,7 @@ abstract class EntryStateDirty implements EntryState {
       required final JournalEntity? entry,
       required final bool showMap,
       required final bool isFocused,
-      required final int epoch}) = _$EntryStateDirty;
+      required final int epoch}) = _$EntryStateDirtyImpl;
 
   @override
   String get entryId;
@@ -563,6 +565,6 @@ abstract class EntryStateDirty implements EntryState {
   int get epoch;
   @override
   @JsonKey(ignore: true)
-  _$$EntryStateDirtyCopyWith<_$EntryStateDirty> get copyWith =>
+  _$$EntryStateDirtyImplCopyWith<_$EntryStateDirtyImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

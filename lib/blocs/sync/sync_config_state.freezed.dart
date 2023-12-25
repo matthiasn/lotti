@@ -113,10 +113,10 @@ class _$SyncConfigStateCopyWithImpl<$Res, $Val extends SyncConfigState>
 }
 
 /// @nodoc
-abstract class _$$_ConfiguredCopyWith<$Res> {
-  factory _$$_ConfiguredCopyWith(
-          _$_Configured value, $Res Function(_$_Configured) then) =
-      __$$_ConfiguredCopyWithImpl<$Res>;
+abstract class _$$ConfiguredImplCopyWith<$Res> {
+  factory _$$ConfiguredImplCopyWith(
+          _$ConfiguredImpl value, $Res Function(_$ConfiguredImpl) then) =
+      __$$ConfiguredImplCopyWithImpl<$Res>;
   @useResult
   $Res call({ImapConfig imapConfig, String sharedSecret});
 
@@ -124,11 +124,11 @@ abstract class _$$_ConfiguredCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_ConfiguredCopyWithImpl<$Res>
-    extends _$SyncConfigStateCopyWithImpl<$Res, _$_Configured>
-    implements _$$_ConfiguredCopyWith<$Res> {
-  __$$_ConfiguredCopyWithImpl(
-      _$_Configured _value, $Res Function(_$_Configured) _then)
+class __$$ConfiguredImplCopyWithImpl<$Res>
+    extends _$SyncConfigStateCopyWithImpl<$Res, _$ConfiguredImpl>
+    implements _$$ConfiguredImplCopyWith<$Res> {
+  __$$ConfiguredImplCopyWithImpl(
+      _$ConfiguredImpl _value, $Res Function(_$ConfiguredImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -137,7 +137,7 @@ class __$$_ConfiguredCopyWithImpl<$Res>
     Object? imapConfig = null,
     Object? sharedSecret = null,
   }) {
-    return _then(_$_Configured(
+    return _then(_$ConfiguredImpl(
       imapConfig: null == imapConfig
           ? _value.imapConfig
           : imapConfig // ignore: cast_nullable_to_non_nullable
@@ -160,8 +160,8 @@ class __$$_ConfiguredCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_Configured implements _Configured {
-  _$_Configured({required this.imapConfig, required this.sharedSecret});
+class _$ConfiguredImpl implements _Configured {
+  _$ConfiguredImpl({required this.imapConfig, required this.sharedSecret});
 
   @override
   final ImapConfig imapConfig;
@@ -174,10 +174,10 @@ class _$_Configured implements _Configured {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_Configured &&
+            other is _$ConfiguredImpl &&
             (identical(other.imapConfig, imapConfig) ||
                 other.imapConfig == imapConfig) &&
             (identical(other.sharedSecret, sharedSecret) ||
@@ -190,8 +190,8 @@ class _$_Configured implements _Configured {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_ConfiguredCopyWith<_$_Configured> get copyWith =>
-      __$$_ConfiguredCopyWithImpl<_$_Configured>(this, _$identity);
+  _$$ConfiguredImplCopyWith<_$ConfiguredImpl> get copyWith =>
+      __$$ConfiguredImplCopyWithImpl<_$ConfiguredImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -297,20 +297,20 @@ class _$_Configured implements _Configured {
 abstract class _Configured implements SyncConfigState {
   factory _Configured(
       {required final ImapConfig imapConfig,
-      required final String sharedSecret}) = _$_Configured;
+      required final String sharedSecret}) = _$ConfiguredImpl;
 
   ImapConfig get imapConfig;
   String get sharedSecret;
   @JsonKey(ignore: true)
-  _$$_ConfiguredCopyWith<_$_Configured> get copyWith =>
+  _$$ConfiguredImplCopyWith<_$ConfiguredImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_ImapSavedCopyWith<$Res> {
-  factory _$$_ImapSavedCopyWith(
-          _$_ImapSaved value, $Res Function(_$_ImapSaved) then) =
-      __$$_ImapSavedCopyWithImpl<$Res>;
+abstract class _$$ImapSavedImplCopyWith<$Res> {
+  factory _$$ImapSavedImplCopyWith(
+          _$ImapSavedImpl value, $Res Function(_$ImapSavedImpl) then) =
+      __$$ImapSavedImplCopyWithImpl<$Res>;
   @useResult
   $Res call({ImapConfig imapConfig});
 
@@ -318,11 +318,11 @@ abstract class _$$_ImapSavedCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_ImapSavedCopyWithImpl<$Res>
-    extends _$SyncConfigStateCopyWithImpl<$Res, _$_ImapSaved>
-    implements _$$_ImapSavedCopyWith<$Res> {
-  __$$_ImapSavedCopyWithImpl(
-      _$_ImapSaved _value, $Res Function(_$_ImapSaved) _then)
+class __$$ImapSavedImplCopyWithImpl<$Res>
+    extends _$SyncConfigStateCopyWithImpl<$Res, _$ImapSavedImpl>
+    implements _$$ImapSavedImplCopyWith<$Res> {
+  __$$ImapSavedImplCopyWithImpl(
+      _$ImapSavedImpl _value, $Res Function(_$ImapSavedImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -330,7 +330,7 @@ class __$$_ImapSavedCopyWithImpl<$Res>
   $Res call({
     Object? imapConfig = null,
   }) {
-    return _then(_$_ImapSaved(
+    return _then(_$ImapSavedImpl(
       imapConfig: null == imapConfig
           ? _value.imapConfig
           : imapConfig // ignore: cast_nullable_to_non_nullable
@@ -349,8 +349,8 @@ class __$$_ImapSavedCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_ImapSaved implements _ImapSaved {
-  _$_ImapSaved({required this.imapConfig});
+class _$ImapSavedImpl implements _ImapSaved {
+  _$ImapSavedImpl({required this.imapConfig});
 
   @override
   final ImapConfig imapConfig;
@@ -361,10 +361,10 @@ class _$_ImapSaved implements _ImapSaved {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_ImapSaved &&
+            other is _$ImapSavedImpl &&
             (identical(other.imapConfig, imapConfig) ||
                 other.imapConfig == imapConfig));
   }
@@ -375,8 +375,8 @@ class _$_ImapSaved implements _ImapSaved {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_ImapSavedCopyWith<_$_ImapSaved> get copyWith =>
-      __$$_ImapSavedCopyWithImpl<_$_ImapSaved>(this, _$identity);
+  _$$ImapSavedImplCopyWith<_$ImapSavedImpl> get copyWith =>
+      __$$ImapSavedImplCopyWithImpl<_$ImapSavedImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -480,19 +480,19 @@ class _$_ImapSaved implements _ImapSaved {
 }
 
 abstract class _ImapSaved implements SyncConfigState {
-  factory _ImapSaved({required final ImapConfig imapConfig}) = _$_ImapSaved;
+  factory _ImapSaved({required final ImapConfig imapConfig}) = _$ImapSavedImpl;
 
   ImapConfig get imapConfig;
   @JsonKey(ignore: true)
-  _$$_ImapSavedCopyWith<_$_ImapSaved> get copyWith =>
+  _$$ImapSavedImplCopyWith<_$ImapSavedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_ImapValidCopyWith<$Res> {
-  factory _$$_ImapValidCopyWith(
-          _$_ImapValid value, $Res Function(_$_ImapValid) then) =
-      __$$_ImapValidCopyWithImpl<$Res>;
+abstract class _$$ImapValidImplCopyWith<$Res> {
+  factory _$$ImapValidImplCopyWith(
+          _$ImapValidImpl value, $Res Function(_$ImapValidImpl) then) =
+      __$$ImapValidImplCopyWithImpl<$Res>;
   @useResult
   $Res call({ImapConfig imapConfig});
 
@@ -500,11 +500,11 @@ abstract class _$$_ImapValidCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_ImapValidCopyWithImpl<$Res>
-    extends _$SyncConfigStateCopyWithImpl<$Res, _$_ImapValid>
-    implements _$$_ImapValidCopyWith<$Res> {
-  __$$_ImapValidCopyWithImpl(
-      _$_ImapValid _value, $Res Function(_$_ImapValid) _then)
+class __$$ImapValidImplCopyWithImpl<$Res>
+    extends _$SyncConfigStateCopyWithImpl<$Res, _$ImapValidImpl>
+    implements _$$ImapValidImplCopyWith<$Res> {
+  __$$ImapValidImplCopyWithImpl(
+      _$ImapValidImpl _value, $Res Function(_$ImapValidImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -512,7 +512,7 @@ class __$$_ImapValidCopyWithImpl<$Res>
   $Res call({
     Object? imapConfig = null,
   }) {
-    return _then(_$_ImapValid(
+    return _then(_$ImapValidImpl(
       imapConfig: null == imapConfig
           ? _value.imapConfig
           : imapConfig // ignore: cast_nullable_to_non_nullable
@@ -531,8 +531,8 @@ class __$$_ImapValidCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_ImapValid implements _ImapValid {
-  _$_ImapValid({required this.imapConfig});
+class _$ImapValidImpl implements _ImapValid {
+  _$ImapValidImpl({required this.imapConfig});
 
   @override
   final ImapConfig imapConfig;
@@ -543,10 +543,10 @@ class _$_ImapValid implements _ImapValid {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_ImapValid &&
+            other is _$ImapValidImpl &&
             (identical(other.imapConfig, imapConfig) ||
                 other.imapConfig == imapConfig));
   }
@@ -557,8 +557,8 @@ class _$_ImapValid implements _ImapValid {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_ImapValidCopyWith<_$_ImapValid> get copyWith =>
-      __$$_ImapValidCopyWithImpl<_$_ImapValid>(this, _$identity);
+  _$$ImapValidImplCopyWith<_$ImapValidImpl> get copyWith =>
+      __$$ImapValidImplCopyWithImpl<_$ImapValidImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -662,19 +662,19 @@ class _$_ImapValid implements _ImapValid {
 }
 
 abstract class _ImapValid implements SyncConfigState {
-  factory _ImapValid({required final ImapConfig imapConfig}) = _$_ImapValid;
+  factory _ImapValid({required final ImapConfig imapConfig}) = _$ImapValidImpl;
 
   ImapConfig get imapConfig;
   @JsonKey(ignore: true)
-  _$$_ImapValidCopyWith<_$_ImapValid> get copyWith =>
+  _$$ImapValidImplCopyWith<_$ImapValidImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_ImapTestingCopyWith<$Res> {
-  factory _$$_ImapTestingCopyWith(
-          _$_ImapTesting value, $Res Function(_$_ImapTesting) then) =
-      __$$_ImapTestingCopyWithImpl<$Res>;
+abstract class _$$ImapTestingImplCopyWith<$Res> {
+  factory _$$ImapTestingImplCopyWith(
+          _$ImapTestingImpl value, $Res Function(_$ImapTestingImpl) then) =
+      __$$ImapTestingImplCopyWithImpl<$Res>;
   @useResult
   $Res call({ImapConfig imapConfig});
 
@@ -682,11 +682,11 @@ abstract class _$$_ImapTestingCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_ImapTestingCopyWithImpl<$Res>
-    extends _$SyncConfigStateCopyWithImpl<$Res, _$_ImapTesting>
-    implements _$$_ImapTestingCopyWith<$Res> {
-  __$$_ImapTestingCopyWithImpl(
-      _$_ImapTesting _value, $Res Function(_$_ImapTesting) _then)
+class __$$ImapTestingImplCopyWithImpl<$Res>
+    extends _$SyncConfigStateCopyWithImpl<$Res, _$ImapTestingImpl>
+    implements _$$ImapTestingImplCopyWith<$Res> {
+  __$$ImapTestingImplCopyWithImpl(
+      _$ImapTestingImpl _value, $Res Function(_$ImapTestingImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -694,7 +694,7 @@ class __$$_ImapTestingCopyWithImpl<$Res>
   $Res call({
     Object? imapConfig = null,
   }) {
-    return _then(_$_ImapTesting(
+    return _then(_$ImapTestingImpl(
       imapConfig: null == imapConfig
           ? _value.imapConfig
           : imapConfig // ignore: cast_nullable_to_non_nullable
@@ -713,8 +713,8 @@ class __$$_ImapTestingCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_ImapTesting implements _ImapTesting {
-  _$_ImapTesting({required this.imapConfig});
+class _$ImapTestingImpl implements _ImapTesting {
+  _$ImapTestingImpl({required this.imapConfig});
 
   @override
   final ImapConfig imapConfig;
@@ -725,10 +725,10 @@ class _$_ImapTesting implements _ImapTesting {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_ImapTesting &&
+            other is _$ImapTestingImpl &&
             (identical(other.imapConfig, imapConfig) ||
                 other.imapConfig == imapConfig));
   }
@@ -739,8 +739,8 @@ class _$_ImapTesting implements _ImapTesting {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_ImapTestingCopyWith<_$_ImapTesting> get copyWith =>
-      __$$_ImapTestingCopyWithImpl<_$_ImapTesting>(this, _$identity);
+  _$$ImapTestingImplCopyWith<_$ImapTestingImpl> get copyWith =>
+      __$$ImapTestingImplCopyWithImpl<_$ImapTestingImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -844,19 +844,20 @@ class _$_ImapTesting implements _ImapTesting {
 }
 
 abstract class _ImapTesting implements SyncConfigState {
-  factory _ImapTesting({required final ImapConfig imapConfig}) = _$_ImapTesting;
+  factory _ImapTesting({required final ImapConfig imapConfig}) =
+      _$ImapTestingImpl;
 
   ImapConfig get imapConfig;
   @JsonKey(ignore: true)
-  _$$_ImapTestingCopyWith<_$_ImapTesting> get copyWith =>
+  _$$ImapTestingImplCopyWith<_$ImapTestingImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_ImapInvalidCopyWith<$Res> {
-  factory _$$_ImapInvalidCopyWith(
-          _$_ImapInvalid value, $Res Function(_$_ImapInvalid) then) =
-      __$$_ImapInvalidCopyWithImpl<$Res>;
+abstract class _$$ImapInvalidImplCopyWith<$Res> {
+  factory _$$ImapInvalidImplCopyWith(
+          _$ImapInvalidImpl value, $Res Function(_$ImapInvalidImpl) then) =
+      __$$ImapInvalidImplCopyWithImpl<$Res>;
   @useResult
   $Res call({ImapConfig imapConfig, String errorMessage});
 
@@ -864,11 +865,11 @@ abstract class _$$_ImapInvalidCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_ImapInvalidCopyWithImpl<$Res>
-    extends _$SyncConfigStateCopyWithImpl<$Res, _$_ImapInvalid>
-    implements _$$_ImapInvalidCopyWith<$Res> {
-  __$$_ImapInvalidCopyWithImpl(
-      _$_ImapInvalid _value, $Res Function(_$_ImapInvalid) _then)
+class __$$ImapInvalidImplCopyWithImpl<$Res>
+    extends _$SyncConfigStateCopyWithImpl<$Res, _$ImapInvalidImpl>
+    implements _$$ImapInvalidImplCopyWith<$Res> {
+  __$$ImapInvalidImplCopyWithImpl(
+      _$ImapInvalidImpl _value, $Res Function(_$ImapInvalidImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -877,7 +878,7 @@ class __$$_ImapInvalidCopyWithImpl<$Res>
     Object? imapConfig = null,
     Object? errorMessage = null,
   }) {
-    return _then(_$_ImapInvalid(
+    return _then(_$ImapInvalidImpl(
       imapConfig: null == imapConfig
           ? _value.imapConfig
           : imapConfig // ignore: cast_nullable_to_non_nullable
@@ -900,8 +901,8 @@ class __$$_ImapInvalidCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_ImapInvalid implements _ImapInvalid {
-  _$_ImapInvalid({required this.imapConfig, required this.errorMessage});
+class _$ImapInvalidImpl implements _ImapInvalid {
+  _$ImapInvalidImpl({required this.imapConfig, required this.errorMessage});
 
   @override
   final ImapConfig imapConfig;
@@ -914,10 +915,10 @@ class _$_ImapInvalid implements _ImapInvalid {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_ImapInvalid &&
+            other is _$ImapInvalidImpl &&
             (identical(other.imapConfig, imapConfig) ||
                 other.imapConfig == imapConfig) &&
             (identical(other.errorMessage, errorMessage) ||
@@ -930,8 +931,8 @@ class _$_ImapInvalid implements _ImapInvalid {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_ImapInvalidCopyWith<_$_ImapInvalid> get copyWith =>
-      __$$_ImapInvalidCopyWithImpl<_$_ImapInvalid>(this, _$identity);
+  _$$ImapInvalidImplCopyWith<_$ImapInvalidImpl> get copyWith =>
+      __$$ImapInvalidImplCopyWithImpl<_$ImapInvalidImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -1037,34 +1038,35 @@ class _$_ImapInvalid implements _ImapInvalid {
 abstract class _ImapInvalid implements SyncConfigState {
   factory _ImapInvalid(
       {required final ImapConfig imapConfig,
-      required final String errorMessage}) = _$_ImapInvalid;
+      required final String errorMessage}) = _$ImapInvalidImpl;
 
   ImapConfig get imapConfig;
   String get errorMessage;
   @JsonKey(ignore: true)
-  _$$_ImapInvalidCopyWith<_$_ImapInvalid> get copyWith =>
+  _$$ImapInvalidImplCopyWith<_$ImapInvalidImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$_LoadingCopyWith<$Res> {
-  factory _$$_LoadingCopyWith(
-          _$_Loading value, $Res Function(_$_Loading) then) =
-      __$$_LoadingCopyWithImpl<$Res>;
+abstract class _$$LoadingImplCopyWith<$Res> {
+  factory _$$LoadingImplCopyWith(
+          _$LoadingImpl value, $Res Function(_$LoadingImpl) then) =
+      __$$LoadingImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
-class __$$_LoadingCopyWithImpl<$Res>
-    extends _$SyncConfigStateCopyWithImpl<$Res, _$_Loading>
-    implements _$$_LoadingCopyWith<$Res> {
-  __$$_LoadingCopyWithImpl(_$_Loading _value, $Res Function(_$_Loading) _then)
+class __$$LoadingImplCopyWithImpl<$Res>
+    extends _$SyncConfigStateCopyWithImpl<$Res, _$LoadingImpl>
+    implements _$$LoadingImplCopyWith<$Res> {
+  __$$LoadingImplCopyWithImpl(
+      _$LoadingImpl _value, $Res Function(_$LoadingImpl) _then)
       : super(_value, _then);
 }
 
 /// @nodoc
 
-class _$_Loading implements _Loading {
-  _$_Loading();
+class _$LoadingImpl implements _Loading {
+  _$LoadingImpl();
 
   @override
   String toString() {
@@ -1072,9 +1074,9 @@ class _$_Loading implements _Loading {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$_Loading);
+        (other.runtimeType == runtimeType && other is _$LoadingImpl);
   }
 
   @override
@@ -1182,29 +1184,29 @@ class _$_Loading implements _Loading {
 }
 
 abstract class _Loading implements SyncConfigState {
-  factory _Loading() = _$_Loading;
+  factory _Loading() = _$LoadingImpl;
 }
 
 /// @nodoc
-abstract class _$$_GeneratingCopyWith<$Res> {
-  factory _$$_GeneratingCopyWith(
-          _$_Generating value, $Res Function(_$_Generating) then) =
-      __$$_GeneratingCopyWithImpl<$Res>;
+abstract class _$$GeneratingImplCopyWith<$Res> {
+  factory _$$GeneratingImplCopyWith(
+          _$GeneratingImpl value, $Res Function(_$GeneratingImpl) then) =
+      __$$GeneratingImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
-class __$$_GeneratingCopyWithImpl<$Res>
-    extends _$SyncConfigStateCopyWithImpl<$Res, _$_Generating>
-    implements _$$_GeneratingCopyWith<$Res> {
-  __$$_GeneratingCopyWithImpl(
-      _$_Generating _value, $Res Function(_$_Generating) _then)
+class __$$GeneratingImplCopyWithImpl<$Res>
+    extends _$SyncConfigStateCopyWithImpl<$Res, _$GeneratingImpl>
+    implements _$$GeneratingImplCopyWith<$Res> {
+  __$$GeneratingImplCopyWithImpl(
+      _$GeneratingImpl _value, $Res Function(_$GeneratingImpl) _then)
       : super(_value, _then);
 }
 
 /// @nodoc
 
-class _$_Generating implements _Generating {
-  _$_Generating();
+class _$GeneratingImpl implements _Generating {
+  _$GeneratingImpl();
 
   @override
   String toString() {
@@ -1212,9 +1214,9 @@ class _$_Generating implements _Generating {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$_Generating);
+        (other.runtimeType == runtimeType && other is _$GeneratingImpl);
   }
 
   @override
@@ -1322,27 +1324,29 @@ class _$_Generating implements _Generating {
 }
 
 abstract class _Generating implements SyncConfigState {
-  factory _Generating() = _$_Generating;
+  factory _Generating() = _$GeneratingImpl;
 }
 
 /// @nodoc
-abstract class _$$_EmptyCopyWith<$Res> {
-  factory _$$_EmptyCopyWith(_$_Empty value, $Res Function(_$_Empty) then) =
-      __$$_EmptyCopyWithImpl<$Res>;
+abstract class _$$EmptyImplCopyWith<$Res> {
+  factory _$$EmptyImplCopyWith(
+          _$EmptyImpl value, $Res Function(_$EmptyImpl) then) =
+      __$$EmptyImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
-class __$$_EmptyCopyWithImpl<$Res>
-    extends _$SyncConfigStateCopyWithImpl<$Res, _$_Empty>
-    implements _$$_EmptyCopyWith<$Res> {
-  __$$_EmptyCopyWithImpl(_$_Empty _value, $Res Function(_$_Empty) _then)
+class __$$EmptyImplCopyWithImpl<$Res>
+    extends _$SyncConfigStateCopyWithImpl<$Res, _$EmptyImpl>
+    implements _$$EmptyImplCopyWith<$Res> {
+  __$$EmptyImplCopyWithImpl(
+      _$EmptyImpl _value, $Res Function(_$EmptyImpl) _then)
       : super(_value, _then);
 }
 
 /// @nodoc
 
-class _$_Empty implements _Empty {
-  _$_Empty();
+class _$EmptyImpl implements _Empty {
+  _$EmptyImpl();
 
   @override
   String toString() {
@@ -1350,9 +1354,9 @@ class _$_Empty implements _Empty {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$_Empty);
+        (other.runtimeType == runtimeType && other is _$EmptyImpl);
   }
 
   @override
@@ -1460,5 +1464,5 @@ class _$_Empty implements _Empty {
 }
 
 abstract class _Empty implements SyncConfigState {
-  factory _Empty() = _$_Empty;
+  factory _Empty() = _$EmptyImpl;
 }

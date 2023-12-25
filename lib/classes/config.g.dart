@@ -6,8 +6,8 @@ part of 'config.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$_ImapConfig _$$_ImapConfigFromJson(Map<String, dynamic> json) =>
-    _$_ImapConfig(
+_$ImapConfigImpl _$$ImapConfigImplFromJson(Map<String, dynamic> json) =>
+    _$ImapConfigImpl(
       host: json['host'] as String,
       folder: json['folder'] as String,
       userName: json['userName'] as String,
@@ -15,7 +15,7 @@ _$_ImapConfig _$$_ImapConfigFromJson(Map<String, dynamic> json) =>
       port: json['port'] as int,
     );
 
-Map<String, dynamic> _$$_ImapConfigToJson(_$_ImapConfig instance) =>
+Map<String, dynamic> _$$ImapConfigImplToJson(_$ImapConfigImpl instance) =>
     <String, dynamic>{
       'host': instance.host,
       'folder': instance.folder,
@@ -24,14 +24,14 @@ Map<String, dynamic> _$$_ImapConfigToJson(_$_ImapConfig instance) =>
       'port': instance.port,
     };
 
-_$_SyncConfig _$$_SyncConfigFromJson(Map<String, dynamic> json) =>
-    _$_SyncConfig(
+_$SyncConfigImpl _$$SyncConfigImplFromJson(Map<String, dynamic> json) =>
+    _$SyncConfigImpl(
       imapConfig:
           ImapConfig.fromJson(json['imapConfig'] as Map<String, dynamic>),
       sharedSecret: json['sharedSecret'] as String,
     );
 
-Map<String, dynamic> _$$_SyncConfigToJson(_$_SyncConfig instance) =>
+Map<String, dynamic> _$$SyncConfigImplToJson(_$SyncConfigImpl instance) =>
     <String, dynamic>{
       'imapConfig': instance.imapConfig,
       'sharedSecret': instance.sharedSecret,

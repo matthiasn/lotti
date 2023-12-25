@@ -258,10 +258,11 @@ class _$TagEntityCopyWithImpl<$Res, $Val extends TagEntity>
 }
 
 /// @nodoc
-abstract class _$$GenericTagCopyWith<$Res> implements $TagEntityCopyWith<$Res> {
-  factory _$$GenericTagCopyWith(
-          _$GenericTag value, $Res Function(_$GenericTag) then) =
-      __$$GenericTagCopyWithImpl<$Res>;
+abstract class _$$GenericTagImplCopyWith<$Res>
+    implements $TagEntityCopyWith<$Res> {
+  factory _$$GenericTagImplCopyWith(
+          _$GenericTagImpl value, $Res Function(_$GenericTagImpl) then) =
+      __$$GenericTagImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -276,11 +277,11 @@ abstract class _$$GenericTagCopyWith<$Res> implements $TagEntityCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$GenericTagCopyWithImpl<$Res>
-    extends _$TagEntityCopyWithImpl<$Res, _$GenericTag>
-    implements _$$GenericTagCopyWith<$Res> {
-  __$$GenericTagCopyWithImpl(
-      _$GenericTag _value, $Res Function(_$GenericTag) _then)
+class __$$GenericTagImplCopyWithImpl<$Res>
+    extends _$TagEntityCopyWithImpl<$Res, _$GenericTagImpl>
+    implements _$$GenericTagImplCopyWith<$Res> {
+  __$$GenericTagImplCopyWithImpl(
+      _$GenericTagImpl _value, $Res Function(_$GenericTagImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -295,7 +296,7 @@ class __$$GenericTagCopyWithImpl<$Res>
     Object? deletedAt = freezed,
     Object? inactive = freezed,
   }) {
-    return _then(_$GenericTag(
+    return _then(_$GenericTagImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -334,8 +335,8 @@ class __$$GenericTagCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$GenericTag implements GenericTag {
-  const _$GenericTag(
+class _$GenericTagImpl implements GenericTag {
+  const _$GenericTagImpl(
       {required this.id,
       required this.tag,
       required this.private,
@@ -347,8 +348,8 @@ class _$GenericTag implements GenericTag {
       final String? $type})
       : $type = $type ?? 'genericTag';
 
-  factory _$GenericTag.fromJson(Map<String, dynamic> json) =>
-      _$$GenericTagFromJson(json);
+  factory _$GenericTagImpl.fromJson(Map<String, dynamic> json) =>
+      _$$GenericTagImplFromJson(json);
 
   @override
   final String id;
@@ -376,10 +377,10 @@ class _$GenericTag implements GenericTag {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$GenericTag &&
+            other is _$GenericTagImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.tag, tag) || other.tag == tag) &&
             (identical(other.private, private) || other.private == private) &&
@@ -403,8 +404,8 @@ class _$GenericTag implements GenericTag {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$GenericTagCopyWith<_$GenericTag> get copyWith =>
-      __$$GenericTagCopyWithImpl<_$GenericTag>(this, _$identity);
+  _$$GenericTagImplCopyWith<_$GenericTagImpl> get copyWith =>
+      __$$GenericTagImplCopyWithImpl<_$GenericTagImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -572,7 +573,7 @@ class _$GenericTag implements GenericTag {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$GenericTagToJson(
+    return _$$GenericTagImplToJson(
       this,
     );
   }
@@ -587,10 +588,10 @@ abstract class GenericTag implements TagEntity {
       required final DateTime updatedAt,
       required final VectorClock? vectorClock,
       final DateTime? deletedAt,
-      final bool? inactive}) = _$GenericTag;
+      final bool? inactive}) = _$GenericTagImpl;
 
   factory GenericTag.fromJson(Map<String, dynamic> json) =
-      _$GenericTag.fromJson;
+      _$GenericTagImpl.fromJson;
 
   @override
   String get id;
@@ -610,15 +611,16 @@ abstract class GenericTag implements TagEntity {
   bool? get inactive;
   @override
   @JsonKey(ignore: true)
-  _$$GenericTagCopyWith<_$GenericTag> get copyWith =>
+  _$$GenericTagImplCopyWith<_$GenericTagImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$PersonTagCopyWith<$Res> implements $TagEntityCopyWith<$Res> {
-  factory _$$PersonTagCopyWith(
-          _$PersonTag value, $Res Function(_$PersonTag) then) =
-      __$$PersonTagCopyWithImpl<$Res>;
+abstract class _$$PersonTagImplCopyWith<$Res>
+    implements $TagEntityCopyWith<$Res> {
+  factory _$$PersonTagImplCopyWith(
+          _$PersonTagImpl value, $Res Function(_$PersonTagImpl) then) =
+      __$$PersonTagImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -635,11 +637,11 @@ abstract class _$$PersonTagCopyWith<$Res> implements $TagEntityCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$PersonTagCopyWithImpl<$Res>
-    extends _$TagEntityCopyWithImpl<$Res, _$PersonTag>
-    implements _$$PersonTagCopyWith<$Res> {
-  __$$PersonTagCopyWithImpl(
-      _$PersonTag _value, $Res Function(_$PersonTag) _then)
+class __$$PersonTagImplCopyWithImpl<$Res>
+    extends _$TagEntityCopyWithImpl<$Res, _$PersonTagImpl>
+    implements _$$PersonTagImplCopyWith<$Res> {
+  __$$PersonTagImplCopyWithImpl(
+      _$PersonTagImpl _value, $Res Function(_$PersonTagImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -656,7 +658,7 @@ class __$$PersonTagCopyWithImpl<$Res>
     Object? deletedAt = freezed,
     Object? inactive = freezed,
   }) {
-    return _then(_$PersonTag(
+    return _then(_$PersonTagImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -703,8 +705,8 @@ class __$$PersonTagCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$PersonTag implements PersonTag {
-  const _$PersonTag(
+class _$PersonTagImpl implements PersonTag {
+  const _$PersonTagImpl(
       {required this.id,
       required this.tag,
       required this.private,
@@ -718,8 +720,8 @@ class _$PersonTag implements PersonTag {
       final String? $type})
       : $type = $type ?? 'personTag';
 
-  factory _$PersonTag.fromJson(Map<String, dynamic> json) =>
-      _$$PersonTagFromJson(json);
+  factory _$PersonTagImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PersonTagImplFromJson(json);
 
   @override
   final String id;
@@ -751,10 +753,10 @@ class _$PersonTag implements PersonTag {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$PersonTag &&
+            other is _$PersonTagImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.tag, tag) || other.tag == tag) &&
             (identical(other.private, private) || other.private == private) &&
@@ -782,8 +784,8 @@ class _$PersonTag implements PersonTag {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$PersonTagCopyWith<_$PersonTag> get copyWith =>
-      __$$PersonTagCopyWithImpl<_$PersonTag>(this, _$identity);
+  _$$PersonTagImplCopyWith<_$PersonTagImpl> get copyWith =>
+      __$$PersonTagImplCopyWithImpl<_$PersonTagImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -951,7 +953,7 @@ class _$PersonTag implements PersonTag {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$PersonTagToJson(
+    return _$$PersonTagImplToJson(
       this,
     );
   }
@@ -968,9 +970,10 @@ abstract class PersonTag implements TagEntity {
       final String? firstName,
       final String? lastName,
       final DateTime? deletedAt,
-      final bool? inactive}) = _$PersonTag;
+      final bool? inactive}) = _$PersonTagImpl;
 
-  factory PersonTag.fromJson(Map<String, dynamic> json) = _$PersonTag.fromJson;
+  factory PersonTag.fromJson(Map<String, dynamic> json) =
+      _$PersonTagImpl.fromJson;
 
   @override
   String get id;
@@ -992,15 +995,16 @@ abstract class PersonTag implements TagEntity {
   bool? get inactive;
   @override
   @JsonKey(ignore: true)
-  _$$PersonTagCopyWith<_$PersonTag> get copyWith =>
+  _$$PersonTagImplCopyWith<_$PersonTagImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$StoryTagCopyWith<$Res> implements $TagEntityCopyWith<$Res> {
-  factory _$$StoryTagCopyWith(
-          _$StoryTag value, $Res Function(_$StoryTag) then) =
-      __$$StoryTagCopyWithImpl<$Res>;
+abstract class _$$StoryTagImplCopyWith<$Res>
+    implements $TagEntityCopyWith<$Res> {
+  factory _$$StoryTagImplCopyWith(
+          _$StoryTagImpl value, $Res Function(_$StoryTagImpl) then) =
+      __$$StoryTagImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -1017,10 +1021,11 @@ abstract class _$$StoryTagCopyWith<$Res> implements $TagEntityCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$StoryTagCopyWithImpl<$Res>
-    extends _$TagEntityCopyWithImpl<$Res, _$StoryTag>
-    implements _$$StoryTagCopyWith<$Res> {
-  __$$StoryTagCopyWithImpl(_$StoryTag _value, $Res Function(_$StoryTag) _then)
+class __$$StoryTagImplCopyWithImpl<$Res>
+    extends _$TagEntityCopyWithImpl<$Res, _$StoryTagImpl>
+    implements _$$StoryTagImplCopyWith<$Res> {
+  __$$StoryTagImplCopyWithImpl(
+      _$StoryTagImpl _value, $Res Function(_$StoryTagImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1037,7 +1042,7 @@ class __$$StoryTagCopyWithImpl<$Res>
     Object? deletedAt = freezed,
     Object? inactive = freezed,
   }) {
-    return _then(_$StoryTag(
+    return _then(_$StoryTagImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -1084,8 +1089,8 @@ class __$$StoryTagCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$StoryTag implements StoryTag {
-  const _$StoryTag(
+class _$StoryTagImpl implements StoryTag {
+  const _$StoryTagImpl(
       {required this.id,
       required this.tag,
       required this.private,
@@ -1099,8 +1104,8 @@ class _$StoryTag implements StoryTag {
       final String? $type})
       : $type = $type ?? 'storyTag';
 
-  factory _$StoryTag.fromJson(Map<String, dynamic> json) =>
-      _$$StoryTagFromJson(json);
+  factory _$StoryTagImpl.fromJson(Map<String, dynamic> json) =>
+      _$$StoryTagImplFromJson(json);
 
   @override
   final String id;
@@ -1132,10 +1137,10 @@ class _$StoryTag implements StoryTag {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$StoryTag &&
+            other is _$StoryTagImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.tag, tag) || other.tag == tag) &&
             (identical(other.private, private) || other.private == private) &&
@@ -1163,8 +1168,8 @@ class _$StoryTag implements StoryTag {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$StoryTagCopyWith<_$StoryTag> get copyWith =>
-      __$$StoryTagCopyWithImpl<_$StoryTag>(this, _$identity);
+  _$$StoryTagImplCopyWith<_$StoryTagImpl> get copyWith =>
+      __$$StoryTagImplCopyWithImpl<_$StoryTagImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -1332,7 +1337,7 @@ class _$StoryTag implements StoryTag {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$StoryTagToJson(
+    return _$$StoryTagImplToJson(
       this,
     );
   }
@@ -1349,9 +1354,10 @@ abstract class StoryTag implements TagEntity {
       final String? description,
       final String? longTitle,
       final DateTime? deletedAt,
-      final bool? inactive}) = _$StoryTag;
+      final bool? inactive}) = _$StoryTagImpl;
 
-  factory StoryTag.fromJson(Map<String, dynamic> json) = _$StoryTag.fromJson;
+  factory StoryTag.fromJson(Map<String, dynamic> json) =
+      _$StoryTagImpl.fromJson;
 
   @override
   String get id;
@@ -1373,6 +1379,6 @@ abstract class StoryTag implements TagEntity {
   bool? get inactive;
   @override
   @JsonKey(ignore: true)
-  _$$StoryTagCopyWith<_$StoryTag> get copyWith =>
+  _$$StoryTagImplCopyWith<_$StoryTagImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

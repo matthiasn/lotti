@@ -93,11 +93,11 @@ class _$AudioPlayerStateCopyWithImpl<$Res, $Val extends AudioPlayerState>
 }
 
 /// @nodoc
-abstract class _$$_AudioPlayerStateCopyWith<$Res>
+abstract class _$$AudioPlayerStateImplCopyWith<$Res>
     implements $AudioPlayerStateCopyWith<$Res> {
-  factory _$$_AudioPlayerStateCopyWith(
-          _$_AudioPlayerState value, $Res Function(_$_AudioPlayerState) then) =
-      __$$_AudioPlayerStateCopyWithImpl<$Res>;
+  factory _$$AudioPlayerStateImplCopyWith(_$AudioPlayerStateImpl value,
+          $Res Function(_$AudioPlayerStateImpl) then) =
+      __$$AudioPlayerStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -110,11 +110,11 @@ abstract class _$$_AudioPlayerStateCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_AudioPlayerStateCopyWithImpl<$Res>
-    extends _$AudioPlayerStateCopyWithImpl<$Res, _$_AudioPlayerState>
-    implements _$$_AudioPlayerStateCopyWith<$Res> {
-  __$$_AudioPlayerStateCopyWithImpl(
-      _$_AudioPlayerState _value, $Res Function(_$_AudioPlayerState) _then)
+class __$$AudioPlayerStateImplCopyWithImpl<$Res>
+    extends _$AudioPlayerStateCopyWithImpl<$Res, _$AudioPlayerStateImpl>
+    implements _$$AudioPlayerStateImplCopyWith<$Res> {
+  __$$AudioPlayerStateImplCopyWithImpl(_$AudioPlayerStateImpl _value,
+      $Res Function(_$AudioPlayerStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -127,7 +127,7 @@ class __$$_AudioPlayerStateCopyWithImpl<$Res>
     Object? speed = null,
     Object? audioNote = freezed,
   }) {
-    return _then(_$_AudioPlayerState(
+    return _then(_$AudioPlayerStateImpl(
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -158,8 +158,8 @@ class __$$_AudioPlayerStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_AudioPlayerState implements _AudioPlayerState {
-  _$_AudioPlayerState(
+class _$AudioPlayerStateImpl implements _AudioPlayerState {
+  _$AudioPlayerStateImpl(
       {required this.status,
       required this.totalDuration,
       required this.progress,
@@ -186,10 +186,10 @@ class _$_AudioPlayerState implements _AudioPlayerState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_AudioPlayerState &&
+            other is _$AudioPlayerStateImpl &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.totalDuration, totalDuration) ||
                 other.totalDuration == totalDuration) &&
@@ -208,8 +208,9 @@ class _$_AudioPlayerState implements _AudioPlayerState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_AudioPlayerStateCopyWith<_$_AudioPlayerState> get copyWith =>
-      __$$_AudioPlayerStateCopyWithImpl<_$_AudioPlayerState>(this, _$identity);
+  _$$AudioPlayerStateImplCopyWith<_$AudioPlayerStateImpl> get copyWith =>
+      __$$AudioPlayerStateImplCopyWithImpl<_$AudioPlayerStateImpl>(
+          this, _$identity);
 }
 
 abstract class _AudioPlayerState implements AudioPlayerState {
@@ -219,7 +220,7 @@ abstract class _AudioPlayerState implements AudioPlayerState {
       required final Duration progress,
       required final Duration pausedAt,
       required final double speed,
-      final JournalAudio? audioNote}) = _$_AudioPlayerState;
+      final JournalAudio? audioNote}) = _$AudioPlayerStateImpl;
 
   @override
   AudioPlayerStatus get status;
@@ -235,6 +236,6 @@ abstract class _AudioPlayerState implements AudioPlayerState {
   JournalAudio? get audioNote;
   @override
   @JsonKey(ignore: true)
-  _$$_AudioPlayerStateCopyWith<_$_AudioPlayerState> get copyWith =>
+  _$$AudioPlayerStateImplCopyWith<_$AudioPlayerStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
