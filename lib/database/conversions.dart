@@ -60,7 +60,10 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     task: task,
     taskStatus: taskStatus,
     dateTo: entity.meta.dateTo,
-    type: entity.runtimeType.toString().replaceFirst(r'_$', ''),
+    type: entity.runtimeType
+        .toString()
+        .replaceFirst(r'_$', '')
+        .replaceFirst('Impl', ''),
     subtype: subtype,
     serialized: json.encode(entity),
     schemaVersion: 0,
