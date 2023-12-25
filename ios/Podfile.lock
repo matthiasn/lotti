@@ -92,18 +92,18 @@ PODS:
   - sqflite (0.0.3):
     - Flutter
     - FMDB (>= 2.7.5)
-  - sqlite3 (3.41.2):
-    - sqlite3/common (= 3.41.2)
-  - sqlite3/common (3.41.2)
-  - sqlite3/fts5 (3.41.2):
+  - sqlite3 (3.44.0):
+    - sqlite3/common (= 3.44.0)
+  - sqlite3/common (3.44.0)
+  - sqlite3/fts5 (3.44.0):
     - sqlite3/common
-  - sqlite3/perf-threadsafe (3.41.2):
+  - sqlite3/perf-threadsafe (3.44.0):
     - sqlite3/common
-  - sqlite3/rtree (3.41.2):
+  - sqlite3/rtree (3.44.0):
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - Flutter
-    - sqlite3 (~> 3.41.2)
+    - sqlite3 (~> 3.44.0)
     - sqlite3/fts5
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
@@ -259,8 +259,8 @@ SPEC CHECKSUMS:
   share_plus: c3fef564749587fc939ef86ffb283ceac0baf9f5
   shared_preferences_foundation: 5b919d13b803cadd15ed2dc053125c68730e5126
   sqflite: 31f7eba61e3074736dff8807a9b41581e4f7f15a
-  sqlite3: fd89671d969f3e73efe503ce203e28b016b58f68
-  sqlite3_flutter_libs: 04ba0d14a04335a2fbf9a331e8664f401fbccdd5
+  sqlite3: 6e2d4a4879854d0ec86b476bf3c3e30870bac273
+  sqlite3_flutter_libs: eb769059df0356dc52ddda040f09cacc9391a7cf
   url_launcher_ios: bf5ce03e0e2088bad9cc378ea97fa0ed5b49673b
   video_player_avfoundation: e9e6f9cae7d7a6d9b43519b0aab382bca60fcfd1
 
