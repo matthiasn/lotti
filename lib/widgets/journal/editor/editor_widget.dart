@@ -90,18 +90,15 @@ class EditorWidget extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (snapshot.isFocused) ToolbarWidget(unlinkFn: unlinkFn),
+                    if (snapshot.isFocused) const ToolbarWidget(),
                     Flexible(
                       child: QuillEditor(
                         scrollController: ScrollController(),
                         focusNode: focusNode,
                         configurations: QuillEditorConfigurations(
-                          readOnly: false,
                           autoFocus: autoFocus,
-                          expands: false,
                           minHeight: minHeight,
                           placeholder: localizations.editorPlaceholder,
-                          scrollable: true,
                           padding: EdgeInsets.only(
                             top: 8,
                             bottom: 16,
