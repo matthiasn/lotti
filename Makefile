@@ -1,3 +1,12 @@
+OS := $(shell uname -s)
+FLUTTER_CMD :=
+
+ifeq ($(OS), Darwin)
+	FLUTTER_CMD := fvm flutter
+else
+	FLUTTER_CMD := flutter
+endif
+
 IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
 IOS_EXPORT_PATH = ./build/ios/export
 MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
@@ -7,15 +16,15 @@ LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 
 .PHONY: test
 test:
-	fvm flutter test --coverage
+	$(FLUTTER_CMD) test --coverage
 
 .PHONY: analyze
 analyze:
-	fvm flutter analyze
+	$(FLUTTER_CMD) analyze
 
 .PHONY: junit_test
 junit_test:
-	fvm flutter test --coverage --reporter json > TEST-report.jsonl
+	$(FLUTTER_CMD) test --coverage --reporter json > TEST-report.jsonl
 
 .PHONY: junit_upload
 junit_upload:
@@ -29,11 +38,11 @@ integration_test:
 
 .PHONY: clean
 clean:
-	fvm flutter clean
+	$(FLUTTER_CMD) clean
 
 .PHONY: deps
 deps:
-	fvm flutter pub get
+	$(FLUTTER_CMD) pub get
 
 .PHONY: enable_arb_tools
 enable_arb_tools:
@@ -45,13 +54,13 @@ sort_arb_files: enable_arb_tools
 
 .PHONY: l10n
 l10n: deps
-	fvm flutter gen-l10n
+	$(FLUTTER_CMD) gen-l10n
 	@echo "Missing translations:"
 	@cat missing_translations.txt
 
 .PHONY: doctor
 doctor:
-	fvm flutter doctor
+	$(FLUTTER_CMD) doctor
 
 .PHONY: coverage_report
 coverage_report:
@@ -64,7 +73,7 @@ coverage: test coverage_report
 
 .PHONY: check-null-safety
 check-null-safety:
-	fvm flutter pub outdated --mode=null-safety
+	$(FLUTTER_CMD) pub outdated --mode=null-safety
 
 .PHONY: build_runner
 build_runner: deps
@@ -76,7 +85,7 @@ watch: l10n
 
 .PHONY: activate_fluttium
 activate_fluttium:
-	fvm flutter pub global activate fluttium_cli
+	$(FLUTTER_CMD) pub global activate fluttium_cli
 
 .PHONY: fluttium
 fluttium: get_whisper_cpp
@@ -107,13 +116,13 @@ migrate_db:
 
 .PHONY: bundle
 bundle:
-	fvm flutter build bundle
+	$(FLUTTER_CMD) build bundle
 
 #######################################
 
 .PHONY: ios_build_ipa
 ios_build_ipa: get_whisper_cpp_ios
-	fvm flutter build ipa
+	$(FLUTTER_CMD) build ipa
 
 .PHONY: ios_build
 ios_build: clean_test ios_build_ipa
@@ -155,7 +164,7 @@ ios: ios_build ios_fastlane_build ios_fastlane_upload
 
 .PHONY: macos_build_flutter
 macos_build_flutter: get_whisper_cpp
-	fvm flutter build macos
+	$(FLUTTER_CMD) build macos
 
 .PHONY: macos_build
 macos_build: clean_test macos_build_flutter
@@ -236,18 +245,18 @@ macos_local: macos_build
 
 .PHONY: android_build
 android_build:
-	fvm flutter build appbundle
+	$(FLUTTER_CMD) build appbundle
 
 .PHONY: linux_build
 linux_build:
-	fvm flutter build linux
+	$(FLUTTER_CMD) build linux
 
 .PHONY: linux
 linux: l10n test linux_build
 
 .PHONY: windows
 windows: clean_test
-	fvm flutter build windows
+	$(FLUTTER_CMD) build windows
 
 .PHONY: tag_push
 tag_push:
