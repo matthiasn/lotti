@@ -205,11 +205,7 @@ get_whisper_cpp:
 get_whisper_cpp_ios:
 	cd ios/whisper.cpp/ && \
 	wget -nc https://github.com/ggerganov/whisper.cpp/archive/refs/tags/v$(WHISPER_CPP_VERSION).zip && \
-	unzip v$(WHISPER_CPP_VERSION).zip && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/ggml.c . && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/ggml.h . && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/whisper.cpp . && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/whisper.h .
+	unzip v$(WHISPER_CPP_VERSION).zip
 
 .PHONY: macos_fastlane_build
 macos_fastlane_build:
