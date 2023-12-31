@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.396+2305
+version: 0.9.396+2306
 
 msix_config:
   display_name: LottiApp
@@ -113,7 +113,7 @@ dependencies:
   media_kit_native_event_loop: ^1.0.3
   meta: ^1.8.0
   multi_select_flutter: ^4.0.0
-  package_info_plus: ^4.0.0
+  package_info_plus: ^5.0.1
   path: ^1.8.1
   path_provider: ^2.0.12
   permission_handler: ^11.0.1
@@ -133,14 +133,14 @@ dependencies:
   share_plus: ^7.0.0
   sqflite: ^2.0.1
   sqlite3_flutter_libs: ^0.5.15
-  syncfusion_flutter_datepicker: 22.2.12
+  syncfusion_flutter_datepicker: ^24.1.43
   timezone: ^0.9.1
   tinycolor2: ^3.0.0
   url_launcher: ^6.1.2
   uuid: ^3.0.4
   vector_graphics: ^1.1.9+1
   visibility_detector: ^0.4.0+2
-  wechat_assets_picker: ^8.4.1
+  wechat_assets_picker: ^9.0.0-dev.2
   week_of_year: ^2.0.0
   window_manager: ^0.3.0
 
