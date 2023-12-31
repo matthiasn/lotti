@@ -6,8 +6,8 @@ part of 'check_list_item.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$_CheckListItem _$$_CheckListItemFromJson(Map<String, dynamic> json) =>
-    _$_CheckListItem(
+_$CheckListItemImpl _$$CheckListItemImplFromJson(Map<String, dynamic> json) =>
+    _$CheckListItemImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       utcOffset: json['utcOffset'] as int,
@@ -21,7 +21,7 @@ _$_CheckListItem _$$_CheckListItemFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['updatedAt'] as String),
     );
 
-Map<String, dynamic> _$$_CheckListItemToJson(_$_CheckListItem instance) =>
+Map<String, dynamic> _$$CheckListItemImplToJson(_$CheckListItemImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'createdAt': instance.createdAt.toIso8601String(),

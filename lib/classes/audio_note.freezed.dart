@@ -83,10 +83,11 @@ class _$AudioNoteCopyWithImpl<$Res, $Val extends AudioNote>
 }
 
 /// @nodoc
-abstract class _$$_AudioNoteCopyWith<$Res> implements $AudioNoteCopyWith<$Res> {
-  factory _$$_AudioNoteCopyWith(
-          _$_AudioNote value, $Res Function(_$_AudioNote) then) =
-      __$$_AudioNoteCopyWithImpl<$Res>;
+abstract class _$$AudioNoteImplCopyWith<$Res>
+    implements $AudioNoteCopyWith<$Res> {
+  factory _$$AudioNoteImplCopyWith(
+          _$AudioNoteImpl value, $Res Function(_$AudioNoteImpl) then) =
+      __$$AudioNoteImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -97,11 +98,11 @@ abstract class _$$_AudioNoteCopyWith<$Res> implements $AudioNoteCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_AudioNoteCopyWithImpl<$Res>
-    extends _$AudioNoteCopyWithImpl<$Res, _$_AudioNote>
-    implements _$$_AudioNoteCopyWith<$Res> {
-  __$$_AudioNoteCopyWithImpl(
-      _$_AudioNote _value, $Res Function(_$_AudioNote) _then)
+class __$$AudioNoteImplCopyWithImpl<$Res>
+    extends _$AudioNoteCopyWithImpl<$Res, _$AudioNoteImpl>
+    implements _$$AudioNoteImplCopyWith<$Res> {
+  __$$AudioNoteImplCopyWithImpl(
+      _$AudioNoteImpl _value, $Res Function(_$AudioNoteImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -112,7 +113,7 @@ class __$$_AudioNoteCopyWithImpl<$Res>
     Object? audioDirectory = null,
     Object? duration = null,
   }) {
-    return _then(_$_AudioNote(
+    return _then(_$AudioNoteImpl(
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -135,15 +136,15 @@ class __$$_AudioNoteCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_AudioNote implements _AudioNote {
-  const _$_AudioNote(
+class _$AudioNoteImpl implements _AudioNote {
+  const _$AudioNoteImpl(
       {required this.createdAt,
       required this.audioFile,
       required this.audioDirectory,
       required this.duration});
 
-  factory _$_AudioNote.fromJson(Map<String, dynamic> json) =>
-      _$$_AudioNoteFromJson(json);
+  factory _$AudioNoteImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AudioNoteImplFromJson(json);
 
   @override
   final DateTime createdAt;
@@ -160,10 +161,10 @@ class _$_AudioNote implements _AudioNote {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_AudioNote &&
+            other is _$AudioNoteImpl &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.audioFile, audioFile) ||
@@ -182,12 +183,12 @@ class _$_AudioNote implements _AudioNote {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_AudioNoteCopyWith<_$_AudioNote> get copyWith =>
-      __$$_AudioNoteCopyWithImpl<_$_AudioNote>(this, _$identity);
+  _$$AudioNoteImplCopyWith<_$AudioNoteImpl> get copyWith =>
+      __$$AudioNoteImplCopyWithImpl<_$AudioNoteImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_AudioNoteToJson(
+    return _$$AudioNoteImplToJson(
       this,
     );
   }
@@ -198,10 +199,10 @@ abstract class _AudioNote implements AudioNote {
       {required final DateTime createdAt,
       required final String audioFile,
       required final String audioDirectory,
-      required final Duration duration}) = _$_AudioNote;
+      required final Duration duration}) = _$AudioNoteImpl;
 
   factory _AudioNote.fromJson(Map<String, dynamic> json) =
-      _$_AudioNote.fromJson;
+      _$AudioNoteImpl.fromJson;
 
   @override
   DateTime get createdAt;
@@ -213,6 +214,6 @@ abstract class _AudioNote implements AudioNote {
   Duration get duration;
   @override
   @JsonKey(ignore: true)
-  _$$_AudioNoteCopyWith<_$_AudioNote> get copyWith =>
+  _$$AudioNoteImplCopyWith<_$AudioNoteImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

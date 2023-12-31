@@ -58,25 +58,25 @@ class _$MeasurablesChartInfoStateCopyWithImpl<$Res,
 }
 
 /// @nodoc
-abstract class _$$_MeasurablesChartInfoStateCopyWith<$Res>
+abstract class _$$MeasurablesChartInfoStateImplCopyWith<$Res>
     implements $MeasurablesChartInfoStateCopyWith<$Res> {
-  factory _$$_MeasurablesChartInfoStateCopyWith(
-          _$_MeasurablesChartInfoState value,
-          $Res Function(_$_MeasurablesChartInfoState) then) =
-      __$$_MeasurablesChartInfoStateCopyWithImpl<$Res>;
+  factory _$$MeasurablesChartInfoStateImplCopyWith(
+          _$MeasurablesChartInfoStateImpl value,
+          $Res Function(_$MeasurablesChartInfoStateImpl) then) =
+      __$$MeasurablesChartInfoStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({Observation? selected});
 }
 
 /// @nodoc
-class __$$_MeasurablesChartInfoStateCopyWithImpl<$Res>
+class __$$MeasurablesChartInfoStateImplCopyWithImpl<$Res>
     extends _$MeasurablesChartInfoStateCopyWithImpl<$Res,
-        _$_MeasurablesChartInfoState>
-    implements _$$_MeasurablesChartInfoStateCopyWith<$Res> {
-  __$$_MeasurablesChartInfoStateCopyWithImpl(
-      _$_MeasurablesChartInfoState _value,
-      $Res Function(_$_MeasurablesChartInfoState) _then)
+        _$MeasurablesChartInfoStateImpl>
+    implements _$$MeasurablesChartInfoStateImplCopyWith<$Res> {
+  __$$MeasurablesChartInfoStateImplCopyWithImpl(
+      _$MeasurablesChartInfoStateImpl _value,
+      $Res Function(_$MeasurablesChartInfoStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -84,7 +84,7 @@ class __$$_MeasurablesChartInfoStateCopyWithImpl<$Res>
   $Res call({
     Object? selected = freezed,
   }) {
-    return _then(_$_MeasurablesChartInfoState(
+    return _then(_$MeasurablesChartInfoStateImpl(
       selected: freezed == selected
           ? _value.selected
           : selected // ignore: cast_nullable_to_non_nullable
@@ -95,8 +95,8 @@ class __$$_MeasurablesChartInfoStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_MeasurablesChartInfoState implements _MeasurablesChartInfoState {
-  _$_MeasurablesChartInfoState({required this.selected});
+class _$MeasurablesChartInfoStateImpl implements _MeasurablesChartInfoState {
+  _$MeasurablesChartInfoStateImpl({required this.selected});
 
   @override
   final Observation? selected;
@@ -107,10 +107,10 @@ class _$_MeasurablesChartInfoState implements _MeasurablesChartInfoState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_MeasurablesChartInfoState &&
+            other is _$MeasurablesChartInfoStateImpl &&
             (identical(other.selected, selected) ||
                 other.selected == selected));
   }
@@ -121,19 +121,19 @@ class _$_MeasurablesChartInfoState implements _MeasurablesChartInfoState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_MeasurablesChartInfoStateCopyWith<_$_MeasurablesChartInfoState>
-      get copyWith => __$$_MeasurablesChartInfoStateCopyWithImpl<
-          _$_MeasurablesChartInfoState>(this, _$identity);
+  _$$MeasurablesChartInfoStateImplCopyWith<_$MeasurablesChartInfoStateImpl>
+      get copyWith => __$$MeasurablesChartInfoStateImplCopyWithImpl<
+          _$MeasurablesChartInfoStateImpl>(this, _$identity);
 }
 
 abstract class _MeasurablesChartInfoState implements MeasurablesChartInfoState {
   factory _MeasurablesChartInfoState({required final Observation? selected}) =
-      _$_MeasurablesChartInfoState;
+      _$MeasurablesChartInfoStateImpl;
 
   @override
   Observation? get selected;
   @override
   @JsonKey(ignore: true)
-  _$$_MeasurablesChartInfoStateCopyWith<_$_MeasurablesChartInfoState>
+  _$$MeasurablesChartInfoStateImplCopyWith<_$MeasurablesChartInfoStateImpl>
       get copyWith => throw _privateConstructorUsedError;
 }

@@ -88,11 +88,11 @@ class _$DashboardsPageStateCopyWithImpl<$Res, $Val extends DashboardsPageState>
 }
 
 /// @nodoc
-abstract class _$$_DashboardsPageStateCopyWith<$Res>
+abstract class _$$DashboardsPageStateImplCopyWith<$Res>
     implements $DashboardsPageStateCopyWith<$Res> {
-  factory _$$_DashboardsPageStateCopyWith(_$_DashboardsPageState value,
-          $Res Function(_$_DashboardsPageState) then) =
-      __$$_DashboardsPageStateCopyWithImpl<$Res>;
+  factory _$$DashboardsPageStateImplCopyWith(_$DashboardsPageStateImpl value,
+          $Res Function(_$DashboardsPageStateImpl) then) =
+      __$$DashboardsPageStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -104,11 +104,11 @@ abstract class _$$_DashboardsPageStateCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_DashboardsPageStateCopyWithImpl<$Res>
-    extends _$DashboardsPageStateCopyWithImpl<$Res, _$_DashboardsPageState>
-    implements _$$_DashboardsPageStateCopyWith<$Res> {
-  __$$_DashboardsPageStateCopyWithImpl(_$_DashboardsPageState _value,
-      $Res Function(_$_DashboardsPageState) _then)
+class __$$DashboardsPageStateImplCopyWithImpl<$Res>
+    extends _$DashboardsPageStateCopyWithImpl<$Res, _$DashboardsPageStateImpl>
+    implements _$$DashboardsPageStateImplCopyWith<$Res> {
+  __$$DashboardsPageStateImplCopyWithImpl(_$DashboardsPageStateImpl _value,
+      $Res Function(_$DashboardsPageStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -120,7 +120,7 @@ class __$$_DashboardsPageStateCopyWithImpl<$Res>
     Object? showSearch = null,
     Object? searchString = null,
   }) {
-    return _then(_$_DashboardsPageState(
+    return _then(_$DashboardsPageStateImpl(
       allDashboards: null == allDashboards
           ? _value._allDashboards
           : allDashboards // ignore: cast_nullable_to_non_nullable
@@ -147,8 +147,8 @@ class __$$_DashboardsPageStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_DashboardsPageState implements _DashboardsPageState {
-  _$_DashboardsPageState(
+class _$DashboardsPageStateImpl implements _DashboardsPageState {
+  _$DashboardsPageStateImpl(
       {required final List<DashboardDefinition> allDashboards,
       required final List<DashboardDefinition> filteredSortedDashboards,
       required final Set<String> selectedCategoryIds,
@@ -195,10 +195,10 @@ class _$_DashboardsPageState implements _DashboardsPageState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_DashboardsPageState &&
+            other is _$DashboardsPageStateImpl &&
             const DeepCollectionEquality()
                 .equals(other._allDashboards, _allDashboards) &&
             const DeepCollectionEquality().equals(
@@ -223,8 +223,8 @@ class _$_DashboardsPageState implements _DashboardsPageState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_DashboardsPageStateCopyWith<_$_DashboardsPageState> get copyWith =>
-      __$$_DashboardsPageStateCopyWithImpl<_$_DashboardsPageState>(
+  _$$DashboardsPageStateImplCopyWith<_$DashboardsPageStateImpl> get copyWith =>
+      __$$DashboardsPageStateImplCopyWithImpl<_$DashboardsPageStateImpl>(
           this, _$identity);
 }
 
@@ -234,7 +234,7 @@ abstract class _DashboardsPageState implements DashboardsPageState {
       required final List<DashboardDefinition> filteredSortedDashboards,
       required final Set<String> selectedCategoryIds,
       required final bool showSearch,
-      required final String searchString}) = _$_DashboardsPageState;
+      required final String searchString}) = _$DashboardsPageStateImpl;
 
   @override
   List<DashboardDefinition> get allDashboards;
@@ -248,6 +248,6 @@ abstract class _DashboardsPageState implements DashboardsPageState {
   String get searchString;
   @override
   @JsonKey(ignore: true)
-  _$$_DashboardsPageStateCopyWith<_$_DashboardsPageState> get copyWith =>
+  _$$DashboardsPageStateImplCopyWith<_$DashboardsPageStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

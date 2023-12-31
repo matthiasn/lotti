@@ -57,22 +57,22 @@ class _$StoryChartInfoStateCopyWithImpl<$Res, $Val extends StoryChartInfoState>
 }
 
 /// @nodoc
-abstract class _$$_StoryChartInfoStateCopyWith<$Res>
+abstract class _$$StoryChartInfoStateImplCopyWith<$Res>
     implements $StoryChartInfoStateCopyWith<$Res> {
-  factory _$$_StoryChartInfoStateCopyWith(_$_StoryChartInfoState value,
-          $Res Function(_$_StoryChartInfoState) then) =
-      __$$_StoryChartInfoStateCopyWithImpl<$Res>;
+  factory _$$StoryChartInfoStateImplCopyWith(_$StoryChartInfoStateImpl value,
+          $Res Function(_$StoryChartInfoStateImpl) then) =
+      __$$StoryChartInfoStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({Observation? selected});
 }
 
 /// @nodoc
-class __$$_StoryChartInfoStateCopyWithImpl<$Res>
-    extends _$StoryChartInfoStateCopyWithImpl<$Res, _$_StoryChartInfoState>
-    implements _$$_StoryChartInfoStateCopyWith<$Res> {
-  __$$_StoryChartInfoStateCopyWithImpl(_$_StoryChartInfoState _value,
-      $Res Function(_$_StoryChartInfoState) _then)
+class __$$StoryChartInfoStateImplCopyWithImpl<$Res>
+    extends _$StoryChartInfoStateCopyWithImpl<$Res, _$StoryChartInfoStateImpl>
+    implements _$$StoryChartInfoStateImplCopyWith<$Res> {
+  __$$StoryChartInfoStateImplCopyWithImpl(_$StoryChartInfoStateImpl _value,
+      $Res Function(_$StoryChartInfoStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -80,7 +80,7 @@ class __$$_StoryChartInfoStateCopyWithImpl<$Res>
   $Res call({
     Object? selected = freezed,
   }) {
-    return _then(_$_StoryChartInfoState(
+    return _then(_$StoryChartInfoStateImpl(
       selected: freezed == selected
           ? _value.selected
           : selected // ignore: cast_nullable_to_non_nullable
@@ -91,8 +91,8 @@ class __$$_StoryChartInfoStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_StoryChartInfoState implements _StoryChartInfoState {
-  _$_StoryChartInfoState({required this.selected});
+class _$StoryChartInfoStateImpl implements _StoryChartInfoState {
+  _$StoryChartInfoStateImpl({required this.selected});
 
   @override
   final Observation? selected;
@@ -103,10 +103,10 @@ class _$_StoryChartInfoState implements _StoryChartInfoState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_StoryChartInfoState &&
+            other is _$StoryChartInfoStateImpl &&
             (identical(other.selected, selected) ||
                 other.selected == selected));
   }
@@ -117,20 +117,20 @@ class _$_StoryChartInfoState implements _StoryChartInfoState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_StoryChartInfoStateCopyWith<_$_StoryChartInfoState> get copyWith =>
-      __$$_StoryChartInfoStateCopyWithImpl<_$_StoryChartInfoState>(
+  _$$StoryChartInfoStateImplCopyWith<_$StoryChartInfoStateImpl> get copyWith =>
+      __$$StoryChartInfoStateImplCopyWithImpl<_$StoryChartInfoStateImpl>(
           this, _$identity);
 }
 
 abstract class _StoryChartInfoState implements StoryChartInfoState {
   factory _StoryChartInfoState({required final Observation? selected}) =
-      _$_StoryChartInfoState;
+      _$StoryChartInfoStateImpl;
 
   @override
   Observation? get selected;
   @override
   @JsonKey(ignore: true)
-  _$$_StoryChartInfoStateCopyWith<_$_StoryChartInfoState> get copyWith =>
+  _$$StoryChartInfoStateImplCopyWith<_$StoryChartInfoStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -178,25 +178,25 @@ class _$WeeklyStoryChartInfoStateCopyWithImpl<$Res,
 }
 
 /// @nodoc
-abstract class _$$_WeeklyStoryChartInfoStateCopyWith<$Res>
+abstract class _$$WeeklyStoryChartInfoStateImplCopyWith<$Res>
     implements $WeeklyStoryChartInfoStateCopyWith<$Res> {
-  factory _$$_WeeklyStoryChartInfoStateCopyWith(
-          _$_WeeklyStoryChartInfoState value,
-          $Res Function(_$_WeeklyStoryChartInfoState) then) =
-      __$$_WeeklyStoryChartInfoStateCopyWithImpl<$Res>;
+  factory _$$WeeklyStoryChartInfoStateImplCopyWith(
+          _$WeeklyStoryChartInfoStateImpl value,
+          $Res Function(_$WeeklyStoryChartInfoStateImpl) then) =
+      __$$WeeklyStoryChartInfoStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({WeeklyAggregate? selected});
 }
 
 /// @nodoc
-class __$$_WeeklyStoryChartInfoStateCopyWithImpl<$Res>
+class __$$WeeklyStoryChartInfoStateImplCopyWithImpl<$Res>
     extends _$WeeklyStoryChartInfoStateCopyWithImpl<$Res,
-        _$_WeeklyStoryChartInfoState>
-    implements _$$_WeeklyStoryChartInfoStateCopyWith<$Res> {
-  __$$_WeeklyStoryChartInfoStateCopyWithImpl(
-      _$_WeeklyStoryChartInfoState _value,
-      $Res Function(_$_WeeklyStoryChartInfoState) _then)
+        _$WeeklyStoryChartInfoStateImpl>
+    implements _$$WeeklyStoryChartInfoStateImplCopyWith<$Res> {
+  __$$WeeklyStoryChartInfoStateImplCopyWithImpl(
+      _$WeeklyStoryChartInfoStateImpl _value,
+      $Res Function(_$WeeklyStoryChartInfoStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -204,7 +204,7 @@ class __$$_WeeklyStoryChartInfoStateCopyWithImpl<$Res>
   $Res call({
     Object? selected = freezed,
   }) {
-    return _then(_$_WeeklyStoryChartInfoState(
+    return _then(_$WeeklyStoryChartInfoStateImpl(
       selected: freezed == selected
           ? _value.selected
           : selected // ignore: cast_nullable_to_non_nullable
@@ -215,8 +215,8 @@ class __$$_WeeklyStoryChartInfoStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_WeeklyStoryChartInfoState implements _WeeklyStoryChartInfoState {
-  _$_WeeklyStoryChartInfoState({required this.selected});
+class _$WeeklyStoryChartInfoStateImpl implements _WeeklyStoryChartInfoState {
+  _$WeeklyStoryChartInfoStateImpl({required this.selected});
 
   @override
   final WeeklyAggregate? selected;
@@ -227,10 +227,10 @@ class _$_WeeklyStoryChartInfoState implements _WeeklyStoryChartInfoState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_WeeklyStoryChartInfoState &&
+            other is _$WeeklyStoryChartInfoStateImpl &&
             (identical(other.selected, selected) ||
                 other.selected == selected));
   }
@@ -241,20 +241,20 @@ class _$_WeeklyStoryChartInfoState implements _WeeklyStoryChartInfoState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_WeeklyStoryChartInfoStateCopyWith<_$_WeeklyStoryChartInfoState>
-      get copyWith => __$$_WeeklyStoryChartInfoStateCopyWithImpl<
-          _$_WeeklyStoryChartInfoState>(this, _$identity);
+  _$$WeeklyStoryChartInfoStateImplCopyWith<_$WeeklyStoryChartInfoStateImpl>
+      get copyWith => __$$WeeklyStoryChartInfoStateImplCopyWithImpl<
+          _$WeeklyStoryChartInfoStateImpl>(this, _$identity);
 }
 
 abstract class _WeeklyStoryChartInfoState implements WeeklyStoryChartInfoState {
   factory _WeeklyStoryChartInfoState(
           {required final WeeklyAggregate? selected}) =
-      _$_WeeklyStoryChartInfoState;
+      _$WeeklyStoryChartInfoStateImpl;
 
   @override
   WeeklyAggregate? get selected;
   @override
   @JsonKey(ignore: true)
-  _$$_WeeklyStoryChartInfoStateCopyWith<_$_WeeklyStoryChartInfoState>
+  _$$WeeklyStoryChartInfoStateImplCopyWith<_$WeeklyStoryChartInfoStateImpl>
       get copyWith => throw _privateConstructorUsedError;
 }

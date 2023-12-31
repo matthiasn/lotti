@@ -6,15 +6,17 @@ part of 'sync_message.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$SyncJournalEntity _$$SyncJournalEntityFromJson(Map<String, dynamic> json) =>
-    _$SyncJournalEntity(
+_$SyncJournalEntityImpl _$$SyncJournalEntityImplFromJson(
+        Map<String, dynamic> json) =>
+    _$SyncJournalEntityImpl(
       journalEntity:
           JournalEntity.fromJson(json['journalEntity'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$SyncJournalEntityToJson(_$SyncJournalEntity instance) =>
+Map<String, dynamic> _$$SyncJournalEntityImplToJson(
+        _$SyncJournalEntityImpl instance) =>
     <String, dynamic>{
       'journalEntity': instance.journalEntity,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
@@ -26,45 +28,45 @@ const _$SyncEntryStatusEnumMap = {
   SyncEntryStatus.update: 'update',
 };
 
-_$SyncEntityDefinition _$$SyncEntityDefinitionFromJson(
+_$SyncEntityDefinitionImpl _$$SyncEntityDefinitionImplFromJson(
         Map<String, dynamic> json) =>
-    _$SyncEntityDefinition(
+    _$SyncEntityDefinitionImpl(
       entityDefinition: EntityDefinition.fromJson(
           json['entityDefinition'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$SyncEntityDefinitionToJson(
-        _$SyncEntityDefinition instance) =>
+Map<String, dynamic> _$$SyncEntityDefinitionImplToJson(
+        _$SyncEntityDefinitionImpl instance) =>
     <String, dynamic>{
       'entityDefinition': instance.entityDefinition,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'runtimeType': instance.$type,
     };
 
-_$SyncTagEntity _$$SyncTagEntityFromJson(Map<String, dynamic> json) =>
-    _$SyncTagEntity(
+_$SyncTagEntityImpl _$$SyncTagEntityImplFromJson(Map<String, dynamic> json) =>
+    _$SyncTagEntityImpl(
       tagEntity: TagEntity.fromJson(json['tagEntity'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$SyncTagEntityToJson(_$SyncTagEntity instance) =>
+Map<String, dynamic> _$$SyncTagEntityImplToJson(_$SyncTagEntityImpl instance) =>
     <String, dynamic>{
       'tagEntity': instance.tagEntity,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'runtimeType': instance.$type,
     };
 
-_$SyncEntryLink _$$SyncEntryLinkFromJson(Map<String, dynamic> json) =>
-    _$SyncEntryLink(
+_$SyncEntryLinkImpl _$$SyncEntryLinkImplFromJson(Map<String, dynamic> json) =>
+    _$SyncEntryLinkImpl(
       entryLink: EntryLink.fromJson(json['entryLink'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$SyncEntryLinkToJson(_$SyncEntryLink instance) =>
+Map<String, dynamic> _$$SyncEntryLinkImplToJson(_$SyncEntryLinkImpl instance) =>
     <String, dynamic>{
       'entryLink': instance.entryLink,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,

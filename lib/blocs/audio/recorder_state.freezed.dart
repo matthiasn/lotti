@@ -79,11 +79,11 @@ class _$AudioRecorderStateCopyWithImpl<$Res, $Val extends AudioRecorderState>
 }
 
 /// @nodoc
-abstract class _$$_AudioRecorderStateCopyWith<$Res>
+abstract class _$$AudioRecorderStateImplCopyWith<$Res>
     implements $AudioRecorderStateCopyWith<$Res> {
-  factory _$$_AudioRecorderStateCopyWith(_$_AudioRecorderState value,
-          $Res Function(_$_AudioRecorderState) then) =
-      __$$_AudioRecorderStateCopyWithImpl<$Res>;
+  factory _$$AudioRecorderStateImplCopyWith(_$AudioRecorderStateImpl value,
+          $Res Function(_$AudioRecorderStateImpl) then) =
+      __$$AudioRecorderStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -94,11 +94,11 @@ abstract class _$$_AudioRecorderStateCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_AudioRecorderStateCopyWithImpl<$Res>
-    extends _$AudioRecorderStateCopyWithImpl<$Res, _$_AudioRecorderState>
-    implements _$$_AudioRecorderStateCopyWith<$Res> {
-  __$$_AudioRecorderStateCopyWithImpl(
-      _$_AudioRecorderState _value, $Res Function(_$_AudioRecorderState) _then)
+class __$$AudioRecorderStateImplCopyWithImpl<$Res>
+    extends _$AudioRecorderStateCopyWithImpl<$Res, _$AudioRecorderStateImpl>
+    implements _$$AudioRecorderStateImplCopyWith<$Res> {
+  __$$AudioRecorderStateImplCopyWithImpl(_$AudioRecorderStateImpl _value,
+      $Res Function(_$AudioRecorderStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -109,7 +109,7 @@ class __$$_AudioRecorderStateCopyWithImpl<$Res>
     Object? decibels = null,
     Object? showIndicator = null,
   }) {
-    return _then(_$_AudioRecorderState(
+    return _then(_$AudioRecorderStateImpl(
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -132,8 +132,8 @@ class __$$_AudioRecorderStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_AudioRecorderState implements _AudioRecorderState {
-  _$_AudioRecorderState(
+class _$AudioRecorderStateImpl implements _AudioRecorderState {
+  _$AudioRecorderStateImpl(
       {required this.status,
       required this.progress,
       required this.decibels,
@@ -154,10 +154,10 @@ class _$_AudioRecorderState implements _AudioRecorderState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_AudioRecorderState &&
+            other is _$AudioRecorderStateImpl &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.progress, progress) ||
                 other.progress == progress) &&
@@ -174,8 +174,8 @@ class _$_AudioRecorderState implements _AudioRecorderState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_AudioRecorderStateCopyWith<_$_AudioRecorderState> get copyWith =>
-      __$$_AudioRecorderStateCopyWithImpl<_$_AudioRecorderState>(
+  _$$AudioRecorderStateImplCopyWith<_$AudioRecorderStateImpl> get copyWith =>
+      __$$AudioRecorderStateImplCopyWithImpl<_$AudioRecorderStateImpl>(
           this, _$identity);
 }
 
@@ -184,7 +184,7 @@ abstract class _AudioRecorderState implements AudioRecorderState {
       {required final AudioRecorderStatus status,
       required final Duration progress,
       required final double decibels,
-      required final bool showIndicator}) = _$_AudioRecorderState;
+      required final bool showIndicator}) = _$AudioRecorderStateImpl;
 
   @override
   AudioRecorderStatus get status;
@@ -196,6 +196,6 @@ abstract class _AudioRecorderState implements AudioRecorderState {
   bool get showIndicator;
   @override
   @JsonKey(ignore: true)
-  _$$_AudioRecorderStateCopyWith<_$_AudioRecorderState> get copyWith =>
+  _$$AudioRecorderStateImplCopyWith<_$AudioRecorderStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -132,11 +132,12 @@ class _$InboxIsolateMessageCopyWithImpl<$Res, $Val extends InboxIsolateMessage>
 }
 
 /// @nodoc
-abstract class _$$InboxIsolateInitMessageCopyWith<$Res>
+abstract class _$$InboxIsolateInitMessageImplCopyWith<$Res>
     implements $InboxIsolateMessageCopyWith<$Res> {
-  factory _$$InboxIsolateInitMessageCopyWith(_$InboxIsolateInitMessage value,
-          $Res Function(_$InboxIsolateInitMessage) then) =
-      __$$InboxIsolateInitMessageCopyWithImpl<$Res>;
+  factory _$$InboxIsolateInitMessageImplCopyWith(
+          _$InboxIsolateInitMessageImpl value,
+          $Res Function(_$InboxIsolateInitMessageImpl) then) =
+      __$$InboxIsolateInitMessageImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -154,11 +155,13 @@ abstract class _$$InboxIsolateInitMessageCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$InboxIsolateInitMessageCopyWithImpl<$Res>
-    extends _$InboxIsolateMessageCopyWithImpl<$Res, _$InboxIsolateInitMessage>
-    implements _$$InboxIsolateInitMessageCopyWith<$Res> {
-  __$$InboxIsolateInitMessageCopyWithImpl(_$InboxIsolateInitMessage _value,
-      $Res Function(_$InboxIsolateInitMessage) _then)
+class __$$InboxIsolateInitMessageImplCopyWithImpl<$Res>
+    extends _$InboxIsolateMessageCopyWithImpl<$Res,
+        _$InboxIsolateInitMessageImpl>
+    implements _$$InboxIsolateInitMessageImplCopyWith<$Res> {
+  __$$InboxIsolateInitMessageImplCopyWithImpl(
+      _$InboxIsolateInitMessageImpl _value,
+      $Res Function(_$InboxIsolateInitMessageImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -173,7 +176,7 @@ class __$$InboxIsolateInitMessageCopyWithImpl<$Res>
     Object? docDir = null,
     Object? lastReadUid = null,
   }) {
-    return _then(_$InboxIsolateInitMessage(
+    return _then(_$InboxIsolateInitMessageImpl(
       syncConfig: null == syncConfig
           ? _value.syncConfig
           : syncConfig // ignore: cast_nullable_to_non_nullable
@@ -212,8 +215,8 @@ class __$$InboxIsolateInitMessageCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$InboxIsolateInitMessage implements InboxIsolateInitMessage {
-  _$InboxIsolateInitMessage(
+class _$InboxIsolateInitMessageImpl implements InboxIsolateInitMessage {
+  _$InboxIsolateInitMessageImpl(
       {required this.syncConfig,
       required this.loggingDbConnectPort,
       required this.journalDbConnectPort,
@@ -246,10 +249,10 @@ class _$InboxIsolateInitMessage implements InboxIsolateInitMessage {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$InboxIsolateInitMessage &&
+            other is _$InboxIsolateInitMessageImpl &&
             (identical(other.syncConfig, syncConfig) ||
                 other.syncConfig == syncConfig) &&
             (identical(other.loggingDbConnectPort, loggingDbConnectPort) ||
@@ -282,9 +285,9 @@ class _$InboxIsolateInitMessage implements InboxIsolateInitMessage {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$InboxIsolateInitMessageCopyWith<_$InboxIsolateInitMessage> get copyWith =>
-      __$$InboxIsolateInitMessageCopyWithImpl<_$InboxIsolateInitMessage>(
-          this, _$identity);
+  _$$InboxIsolateInitMessageImplCopyWith<_$InboxIsolateInitMessageImpl>
+      get copyWith => __$$InboxIsolateInitMessageImplCopyWithImpl<
+          _$InboxIsolateInitMessageImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -395,7 +398,7 @@ abstract class InboxIsolateInitMessage implements InboxIsolateMessage {
       required final bool allowInvalidCert,
       required final String? hostHash,
       required final Directory docDir,
-      required final int lastReadUid}) = _$InboxIsolateInitMessage;
+      required final int lastReadUid}) = _$InboxIsolateInitMessageImpl;
 
   @override
   SyncConfig get syncConfig;
@@ -408,17 +411,17 @@ abstract class InboxIsolateInitMessage implements InboxIsolateMessage {
   int get lastReadUid;
   @override
   @JsonKey(ignore: true)
-  _$$InboxIsolateInitMessageCopyWith<_$InboxIsolateInitMessage> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$InboxIsolateInitMessageImplCopyWith<_$InboxIsolateInitMessageImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$InboxIsolateRestartMessageCopyWith<$Res>
+abstract class _$$InboxIsolateRestartMessageImplCopyWith<$Res>
     implements $InboxIsolateMessageCopyWith<$Res> {
-  factory _$$InboxIsolateRestartMessageCopyWith(
-          _$InboxIsolateRestartMessage value,
-          $Res Function(_$InboxIsolateRestartMessage) then) =
-      __$$InboxIsolateRestartMessageCopyWithImpl<$Res>;
+  factory _$$InboxIsolateRestartMessageImplCopyWith(
+          _$InboxIsolateRestartMessageImpl value,
+          $Res Function(_$InboxIsolateRestartMessageImpl) then) =
+      __$$InboxIsolateRestartMessageImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({SyncConfig syncConfig});
@@ -428,13 +431,13 @@ abstract class _$$InboxIsolateRestartMessageCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$InboxIsolateRestartMessageCopyWithImpl<$Res>
+class __$$InboxIsolateRestartMessageImplCopyWithImpl<$Res>
     extends _$InboxIsolateMessageCopyWithImpl<$Res,
-        _$InboxIsolateRestartMessage>
-    implements _$$InboxIsolateRestartMessageCopyWith<$Res> {
-  __$$InboxIsolateRestartMessageCopyWithImpl(
-      _$InboxIsolateRestartMessage _value,
-      $Res Function(_$InboxIsolateRestartMessage) _then)
+        _$InboxIsolateRestartMessageImpl>
+    implements _$$InboxIsolateRestartMessageImplCopyWith<$Res> {
+  __$$InboxIsolateRestartMessageImplCopyWithImpl(
+      _$InboxIsolateRestartMessageImpl _value,
+      $Res Function(_$InboxIsolateRestartMessageImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -442,7 +445,7 @@ class __$$InboxIsolateRestartMessageCopyWithImpl<$Res>
   $Res call({
     Object? syncConfig = null,
   }) {
-    return _then(_$InboxIsolateRestartMessage(
+    return _then(_$InboxIsolateRestartMessageImpl(
       syncConfig: null == syncConfig
           ? _value.syncConfig
           : syncConfig // ignore: cast_nullable_to_non_nullable
@@ -453,8 +456,8 @@ class __$$InboxIsolateRestartMessageCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$InboxIsolateRestartMessage implements InboxIsolateRestartMessage {
-  _$InboxIsolateRestartMessage({required this.syncConfig});
+class _$InboxIsolateRestartMessageImpl implements InboxIsolateRestartMessage {
+  _$InboxIsolateRestartMessageImpl({required this.syncConfig});
 
   @override
   final SyncConfig syncConfig;
@@ -465,10 +468,10 @@ class _$InboxIsolateRestartMessage implements InboxIsolateRestartMessage {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$InboxIsolateRestartMessage &&
+            other is _$InboxIsolateRestartMessageImpl &&
             (identical(other.syncConfig, syncConfig) ||
                 other.syncConfig == syncConfig));
   }
@@ -479,9 +482,9 @@ class _$InboxIsolateRestartMessage implements InboxIsolateRestartMessage {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$InboxIsolateRestartMessageCopyWith<_$InboxIsolateRestartMessage>
-      get copyWith => __$$InboxIsolateRestartMessageCopyWithImpl<
-          _$InboxIsolateRestartMessage>(this, _$identity);
+  _$$InboxIsolateRestartMessageImplCopyWith<_$InboxIsolateRestartMessageImpl>
+      get copyWith => __$$InboxIsolateRestartMessageImplCopyWithImpl<
+          _$InboxIsolateRestartMessageImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -575,13 +578,13 @@ class _$InboxIsolateRestartMessage implements InboxIsolateRestartMessage {
 
 abstract class InboxIsolateRestartMessage implements InboxIsolateMessage {
   factory InboxIsolateRestartMessage({required final SyncConfig syncConfig}) =
-      _$InboxIsolateRestartMessage;
+      _$InboxIsolateRestartMessageImpl;
 
   @override
   SyncConfig get syncConfig;
   @override
   @JsonKey(ignore: true)
-  _$$InboxIsolateRestartMessageCopyWith<_$InboxIsolateRestartMessage>
+  _$$InboxIsolateRestartMessageImplCopyWith<_$InboxIsolateRestartMessageImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
 
@@ -660,25 +663,25 @@ class _$IsolateInboxMessageCopyWithImpl<$Res, $Val extends IsolateInboxMessage>
 }
 
 /// @nodoc
-abstract class _$$IsolateInboxLastReadMessageCopyWith<$Res>
+abstract class _$$IsolateInboxLastReadMessageImplCopyWith<$Res>
     implements $IsolateInboxMessageCopyWith<$Res> {
-  factory _$$IsolateInboxLastReadMessageCopyWith(
-          _$IsolateInboxLastReadMessage value,
-          $Res Function(_$IsolateInboxLastReadMessage) then) =
-      __$$IsolateInboxLastReadMessageCopyWithImpl<$Res>;
+  factory _$$IsolateInboxLastReadMessageImplCopyWith(
+          _$IsolateInboxLastReadMessageImpl value,
+          $Res Function(_$IsolateInboxLastReadMessageImpl) then) =
+      __$$IsolateInboxLastReadMessageImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({int lastReadUid});
 }
 
 /// @nodoc
-class __$$IsolateInboxLastReadMessageCopyWithImpl<$Res>
+class __$$IsolateInboxLastReadMessageImplCopyWithImpl<$Res>
     extends _$IsolateInboxMessageCopyWithImpl<$Res,
-        _$IsolateInboxLastReadMessage>
-    implements _$$IsolateInboxLastReadMessageCopyWith<$Res> {
-  __$$IsolateInboxLastReadMessageCopyWithImpl(
-      _$IsolateInboxLastReadMessage _value,
-      $Res Function(_$IsolateInboxLastReadMessage) _then)
+        _$IsolateInboxLastReadMessageImpl>
+    implements _$$IsolateInboxLastReadMessageImplCopyWith<$Res> {
+  __$$IsolateInboxLastReadMessageImplCopyWithImpl(
+      _$IsolateInboxLastReadMessageImpl _value,
+      $Res Function(_$IsolateInboxLastReadMessageImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -686,7 +689,7 @@ class __$$IsolateInboxLastReadMessageCopyWithImpl<$Res>
   $Res call({
     Object? lastReadUid = null,
   }) {
-    return _then(_$IsolateInboxLastReadMessage(
+    return _then(_$IsolateInboxLastReadMessageImpl(
       lastReadUid: null == lastReadUid
           ? _value.lastReadUid
           : lastReadUid // ignore: cast_nullable_to_non_nullable
@@ -697,8 +700,8 @@ class __$$IsolateInboxLastReadMessageCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$IsolateInboxLastReadMessage implements IsolateInboxLastReadMessage {
-  _$IsolateInboxLastReadMessage({required this.lastReadUid});
+class _$IsolateInboxLastReadMessageImpl implements IsolateInboxLastReadMessage {
+  _$IsolateInboxLastReadMessageImpl({required this.lastReadUid});
 
   @override
   final int lastReadUid;
@@ -709,10 +712,10 @@ class _$IsolateInboxLastReadMessage implements IsolateInboxLastReadMessage {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$IsolateInboxLastReadMessage &&
+            other is _$IsolateInboxLastReadMessageImpl &&
             (identical(other.lastReadUid, lastReadUid) ||
                 other.lastReadUid == lastReadUid));
   }
@@ -723,9 +726,9 @@ class _$IsolateInboxLastReadMessage implements IsolateInboxLastReadMessage {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$IsolateInboxLastReadMessageCopyWith<_$IsolateInboxLastReadMessage>
-      get copyWith => __$$IsolateInboxLastReadMessageCopyWithImpl<
-          _$IsolateInboxLastReadMessage>(this, _$identity);
+  _$$IsolateInboxLastReadMessageImplCopyWith<_$IsolateInboxLastReadMessageImpl>
+      get copyWith => __$$IsolateInboxLastReadMessageImplCopyWithImpl<
+          _$IsolateInboxLastReadMessageImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -786,12 +789,12 @@ class _$IsolateInboxLastReadMessage implements IsolateInboxLastReadMessage {
 
 abstract class IsolateInboxLastReadMessage implements IsolateInboxMessage {
   factory IsolateInboxLastReadMessage({required final int lastReadUid}) =
-      _$IsolateInboxLastReadMessage;
+      _$IsolateInboxLastReadMessageImpl;
 
   @override
   int get lastReadUid;
   @override
   @JsonKey(ignore: true)
-  _$$IsolateInboxLastReadMessageCopyWith<_$IsolateInboxLastReadMessage>
+  _$$IsolateInboxLastReadMessageImplCopyWith<_$IsolateInboxLastReadMessageImpl>
       get copyWith => throw _privateConstructorUsedError;
 }

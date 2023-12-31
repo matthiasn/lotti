@@ -107,11 +107,12 @@ class _$HabitSettingsStateCopyWithImpl<$Res, $Val extends HabitSettingsState>
 }
 
 /// @nodoc
-abstract class _$$_HabitSettingsStateSavedCopyWith<$Res>
+abstract class _$$HabitSettingsStateSavedImplCopyWith<$Res>
     implements $HabitSettingsStateCopyWith<$Res> {
-  factory _$$_HabitSettingsStateSavedCopyWith(_$_HabitSettingsStateSaved value,
-          $Res Function(_$_HabitSettingsStateSaved) then) =
-      __$$_HabitSettingsStateSavedCopyWithImpl<$Res>;
+  factory _$$HabitSettingsStateSavedImplCopyWith(
+          _$HabitSettingsStateSavedImpl value,
+          $Res Function(_$HabitSettingsStateSavedImpl) then) =
+      __$$HabitSettingsStateSavedImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -127,11 +128,13 @@ abstract class _$$_HabitSettingsStateSavedCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_HabitSettingsStateSavedCopyWithImpl<$Res>
-    extends _$HabitSettingsStateCopyWithImpl<$Res, _$_HabitSettingsStateSaved>
-    implements _$$_HabitSettingsStateSavedCopyWith<$Res> {
-  __$$_HabitSettingsStateSavedCopyWithImpl(_$_HabitSettingsStateSaved _value,
-      $Res Function(_$_HabitSettingsStateSaved) _then)
+class __$$HabitSettingsStateSavedImplCopyWithImpl<$Res>
+    extends _$HabitSettingsStateCopyWithImpl<$Res,
+        _$HabitSettingsStateSavedImpl>
+    implements _$$HabitSettingsStateSavedImplCopyWith<$Res> {
+  __$$HabitSettingsStateSavedImplCopyWithImpl(
+      _$HabitSettingsStateSavedImpl _value,
+      $Res Function(_$HabitSettingsStateSavedImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -144,7 +147,7 @@ class __$$_HabitSettingsStateSavedCopyWithImpl<$Res>
     Object? autoCompleteRule = freezed,
     Object? defaultStory = freezed,
   }) {
-    return _then(_$_HabitSettingsStateSaved(
+    return _then(_$HabitSettingsStateSavedImpl(
       habitDefinition: freezed == habitDefinition
           ? _value.habitDefinition
           : habitDefinition // ignore: cast_nullable_to_non_nullable
@@ -175,8 +178,8 @@ class __$$_HabitSettingsStateSavedCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_HabitSettingsStateSaved implements _HabitSettingsStateSaved {
-  _$_HabitSettingsStateSaved(
+class _$HabitSettingsStateSavedImpl implements _HabitSettingsStateSaved {
+  _$HabitSettingsStateSavedImpl(
       {required this.habitDefinition,
       required this.dirty,
       required this.formKey,
@@ -210,10 +213,10 @@ class _$_HabitSettingsStateSaved implements _HabitSettingsStateSaved {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_HabitSettingsStateSaved &&
+            other is _$HabitSettingsStateSavedImpl &&
             const DeepCollectionEquality()
                 .equals(other.habitDefinition, habitDefinition) &&
             (identical(other.dirty, dirty) || other.dirty == dirty) &&
@@ -239,10 +242,9 @@ class _$_HabitSettingsStateSaved implements _HabitSettingsStateSaved {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_HabitSettingsStateSavedCopyWith<_$_HabitSettingsStateSaved>
-      get copyWith =>
-          __$$_HabitSettingsStateSavedCopyWithImpl<_$_HabitSettingsStateSaved>(
-              this, _$identity);
+  _$$HabitSettingsStateSavedImplCopyWith<_$HabitSettingsStateSavedImpl>
+      get copyWith => __$$HabitSettingsStateSavedImplCopyWithImpl<
+          _$HabitSettingsStateSavedImpl>(this, _$identity);
 }
 
 abstract class _HabitSettingsStateSaved implements HabitSettingsState {
@@ -252,7 +254,7 @@ abstract class _HabitSettingsStateSaved implements HabitSettingsState {
       required final GlobalKey<FormBuilderState> formKey,
       required final List<StoryTag> storyTags,
       required final AutoCompleteRule? autoCompleteRule,
-      final StoryTag? defaultStory}) = _$_HabitSettingsStateSaved;
+      final StoryTag? defaultStory}) = _$HabitSettingsStateSavedImpl;
 
   @override
   HabitDefinition get habitDefinition;
@@ -268,6 +270,6 @@ abstract class _HabitSettingsStateSaved implements HabitSettingsState {
   StoryTag? get defaultStory;
   @override
   @JsonKey(ignore: true)
-  _$$_HabitSettingsStateSavedCopyWith<_$_HabitSettingsStateSaved>
+  _$$HabitSettingsStateSavedImplCopyWith<_$HabitSettingsStateSavedImpl>
       get copyWith => throw _privateConstructorUsedError;
 }

@@ -87,11 +87,11 @@ class _$ImapConfigCopyWithImpl<$Res, $Val extends ImapConfig>
 }
 
 /// @nodoc
-abstract class _$$_ImapConfigCopyWith<$Res>
+abstract class _$$ImapConfigImplCopyWith<$Res>
     implements $ImapConfigCopyWith<$Res> {
-  factory _$$_ImapConfigCopyWith(
-          _$_ImapConfig value, $Res Function(_$_ImapConfig) then) =
-      __$$_ImapConfigCopyWithImpl<$Res>;
+  factory _$$ImapConfigImplCopyWith(
+          _$ImapConfigImpl value, $Res Function(_$ImapConfigImpl) then) =
+      __$$ImapConfigImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -99,11 +99,11 @@ abstract class _$$_ImapConfigCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_ImapConfigCopyWithImpl<$Res>
-    extends _$ImapConfigCopyWithImpl<$Res, _$_ImapConfig>
-    implements _$$_ImapConfigCopyWith<$Res> {
-  __$$_ImapConfigCopyWithImpl(
-      _$_ImapConfig _value, $Res Function(_$_ImapConfig) _then)
+class __$$ImapConfigImplCopyWithImpl<$Res>
+    extends _$ImapConfigCopyWithImpl<$Res, _$ImapConfigImpl>
+    implements _$$ImapConfigImplCopyWith<$Res> {
+  __$$ImapConfigImplCopyWithImpl(
+      _$ImapConfigImpl _value, $Res Function(_$ImapConfigImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -115,7 +115,7 @@ class __$$_ImapConfigCopyWithImpl<$Res>
     Object? password = null,
     Object? port = null,
   }) {
-    return _then(_$_ImapConfig(
+    return _then(_$ImapConfigImpl(
       host: null == host
           ? _value.host
           : host // ignore: cast_nullable_to_non_nullable
@@ -142,16 +142,16 @@ class __$$_ImapConfigCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_ImapConfig implements _ImapConfig {
-  const _$_ImapConfig(
+class _$ImapConfigImpl implements _ImapConfig {
+  const _$ImapConfigImpl(
       {required this.host,
       required this.folder,
       required this.userName,
       required this.password,
       required this.port});
 
-  factory _$_ImapConfig.fromJson(Map<String, dynamic> json) =>
-      _$$_ImapConfigFromJson(json);
+  factory _$ImapConfigImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ImapConfigImplFromJson(json);
 
   @override
   final String host;
@@ -170,10 +170,10 @@ class _$_ImapConfig implements _ImapConfig {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_ImapConfig &&
+            other is _$ImapConfigImpl &&
             (identical(other.host, host) || other.host == host) &&
             (identical(other.folder, folder) || other.folder == folder) &&
             (identical(other.userName, userName) ||
@@ -191,12 +191,12 @@ class _$_ImapConfig implements _ImapConfig {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_ImapConfigCopyWith<_$_ImapConfig> get copyWith =>
-      __$$_ImapConfigCopyWithImpl<_$_ImapConfig>(this, _$identity);
+  _$$ImapConfigImplCopyWith<_$ImapConfigImpl> get copyWith =>
+      __$$ImapConfigImplCopyWithImpl<_$ImapConfigImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_ImapConfigToJson(
+    return _$$ImapConfigImplToJson(
       this,
     );
   }
@@ -208,10 +208,10 @@ abstract class _ImapConfig implements ImapConfig {
       required final String folder,
       required final String userName,
       required final String password,
-      required final int port}) = _$_ImapConfig;
+      required final int port}) = _$ImapConfigImpl;
 
   factory _ImapConfig.fromJson(Map<String, dynamic> json) =
-      _$_ImapConfig.fromJson;
+      _$ImapConfigImpl.fromJson;
 
   @override
   String get host;
@@ -225,7 +225,7 @@ abstract class _ImapConfig implements ImapConfig {
   int get port;
   @override
   @JsonKey(ignore: true)
-  _$$_ImapConfigCopyWith<_$_ImapConfig> get copyWith =>
+  _$$ImapConfigImplCopyWith<_$ImapConfigImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -293,11 +293,11 @@ class _$SyncConfigCopyWithImpl<$Res, $Val extends SyncConfig>
 }
 
 /// @nodoc
-abstract class _$$_SyncConfigCopyWith<$Res>
+abstract class _$$SyncConfigImplCopyWith<$Res>
     implements $SyncConfigCopyWith<$Res> {
-  factory _$$_SyncConfigCopyWith(
-          _$_SyncConfig value, $Res Function(_$_SyncConfig) then) =
-      __$$_SyncConfigCopyWithImpl<$Res>;
+  factory _$$SyncConfigImplCopyWith(
+          _$SyncConfigImpl value, $Res Function(_$SyncConfigImpl) then) =
+      __$$SyncConfigImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({ImapConfig imapConfig, String sharedSecret});
@@ -307,11 +307,11 @@ abstract class _$$_SyncConfigCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_SyncConfigCopyWithImpl<$Res>
-    extends _$SyncConfigCopyWithImpl<$Res, _$_SyncConfig>
-    implements _$$_SyncConfigCopyWith<$Res> {
-  __$$_SyncConfigCopyWithImpl(
-      _$_SyncConfig _value, $Res Function(_$_SyncConfig) _then)
+class __$$SyncConfigImplCopyWithImpl<$Res>
+    extends _$SyncConfigCopyWithImpl<$Res, _$SyncConfigImpl>
+    implements _$$SyncConfigImplCopyWith<$Res> {
+  __$$SyncConfigImplCopyWithImpl(
+      _$SyncConfigImpl _value, $Res Function(_$SyncConfigImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -320,7 +320,7 @@ class __$$_SyncConfigCopyWithImpl<$Res>
     Object? imapConfig = null,
     Object? sharedSecret = null,
   }) {
-    return _then(_$_SyncConfig(
+    return _then(_$SyncConfigImpl(
       imapConfig: null == imapConfig
           ? _value.imapConfig
           : imapConfig // ignore: cast_nullable_to_non_nullable
@@ -335,11 +335,12 @@ class __$$_SyncConfigCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_SyncConfig implements _SyncConfig {
-  const _$_SyncConfig({required this.imapConfig, required this.sharedSecret});
+class _$SyncConfigImpl implements _SyncConfig {
+  const _$SyncConfigImpl(
+      {required this.imapConfig, required this.sharedSecret});
 
-  factory _$_SyncConfig.fromJson(Map<String, dynamic> json) =>
-      _$$_SyncConfigFromJson(json);
+  factory _$SyncConfigImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SyncConfigImplFromJson(json);
 
   @override
   final ImapConfig imapConfig;
@@ -352,10 +353,10 @@ class _$_SyncConfig implements _SyncConfig {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_SyncConfig &&
+            other is _$SyncConfigImpl &&
             (identical(other.imapConfig, imapConfig) ||
                 other.imapConfig == imapConfig) &&
             (identical(other.sharedSecret, sharedSecret) ||
@@ -369,12 +370,12 @@ class _$_SyncConfig implements _SyncConfig {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_SyncConfigCopyWith<_$_SyncConfig> get copyWith =>
-      __$$_SyncConfigCopyWithImpl<_$_SyncConfig>(this, _$identity);
+  _$$SyncConfigImplCopyWith<_$SyncConfigImpl> get copyWith =>
+      __$$SyncConfigImplCopyWithImpl<_$SyncConfigImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_SyncConfigToJson(
+    return _$$SyncConfigImplToJson(
       this,
     );
   }
@@ -383,10 +384,10 @@ class _$_SyncConfig implements _SyncConfig {
 abstract class _SyncConfig implements SyncConfig {
   const factory _SyncConfig(
       {required final ImapConfig imapConfig,
-      required final String sharedSecret}) = _$_SyncConfig;
+      required final String sharedSecret}) = _$SyncConfigImpl;
 
   factory _SyncConfig.fromJson(Map<String, dynamic> json) =
-      _$_SyncConfig.fromJson;
+      _$SyncConfigImpl.fromJson;
 
   @override
   ImapConfig get imapConfig;
@@ -394,6 +395,6 @@ abstract class _SyncConfig implements SyncConfig {
   String get sharedSecret;
   @override
   @JsonKey(ignore: true)
-  _$$_SyncConfigCopyWith<_$_SyncConfig> get copyWith =>
+  _$$SyncConfigImplCopyWith<_$SyncConfigImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

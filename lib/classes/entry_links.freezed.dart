@@ -169,10 +169,11 @@ class _$EntryLinkCopyWithImpl<$Res, $Val extends EntryLink>
 }
 
 /// @nodoc
-abstract class _$$BasicLinkCopyWith<$Res> implements $EntryLinkCopyWith<$Res> {
-  factory _$$BasicLinkCopyWith(
-          _$BasicLink value, $Res Function(_$BasicLink) then) =
-      __$$BasicLinkCopyWithImpl<$Res>;
+abstract class _$$BasicLinkImplCopyWith<$Res>
+    implements $EntryLinkCopyWith<$Res> {
+  factory _$$BasicLinkImplCopyWith(
+          _$BasicLinkImpl value, $Res Function(_$BasicLinkImpl) then) =
+      __$$BasicLinkImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -187,11 +188,11 @@ abstract class _$$BasicLinkCopyWith<$Res> implements $EntryLinkCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$BasicLinkCopyWithImpl<$Res>
-    extends _$EntryLinkCopyWithImpl<$Res, _$BasicLink>
-    implements _$$BasicLinkCopyWith<$Res> {
-  __$$BasicLinkCopyWithImpl(
-      _$BasicLink _value, $Res Function(_$BasicLink) _then)
+class __$$BasicLinkImplCopyWithImpl<$Res>
+    extends _$EntryLinkCopyWithImpl<$Res, _$BasicLinkImpl>
+    implements _$$BasicLinkImplCopyWith<$Res> {
+  __$$BasicLinkImplCopyWithImpl(
+      _$BasicLinkImpl _value, $Res Function(_$BasicLinkImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -206,7 +207,7 @@ class __$$BasicLinkCopyWithImpl<$Res>
     Object? linkType = freezed,
     Object? deletedAt = freezed,
   }) {
-    return _then(_$BasicLink(
+    return _then(_$BasicLinkImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -245,8 +246,8 @@ class __$$BasicLinkCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$BasicLink implements BasicLink {
-  const _$BasicLink(
+class _$BasicLinkImpl implements BasicLink {
+  const _$BasicLinkImpl(
       {required this.id,
       required this.fromId,
       required this.toId,
@@ -256,8 +257,8 @@ class _$BasicLink implements BasicLink {
       this.linkType,
       this.deletedAt});
 
-  factory _$BasicLink.fromJson(Map<String, dynamic> json) =>
-      _$$BasicLinkFromJson(json);
+  factory _$BasicLinkImpl.fromJson(Map<String, dynamic> json) =>
+      _$$BasicLinkImplFromJson(json);
 
   @override
   final String id;
@@ -282,10 +283,10 @@ class _$BasicLink implements BasicLink {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$BasicLink &&
+            other is _$BasicLinkImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.fromId, fromId) || other.fromId == fromId) &&
             (identical(other.toId, toId) || other.toId == toId) &&
@@ -309,8 +310,8 @@ class _$BasicLink implements BasicLink {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$BasicLinkCopyWith<_$BasicLink> get copyWith =>
-      __$$BasicLinkCopyWithImpl<_$BasicLink>(this, _$identity);
+  _$$BasicLinkImplCopyWith<_$BasicLinkImpl> get copyWith =>
+      __$$BasicLinkImplCopyWithImpl<_$BasicLinkImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -400,7 +401,7 @@ class _$BasicLink implements BasicLink {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$BasicLinkToJson(
+    return _$$BasicLinkImplToJson(
       this,
     );
   }
@@ -415,9 +416,10 @@ abstract class BasicLink implements EntryLink {
       required final DateTime updatedAt,
       required final VectorClock? vectorClock,
       final String? linkType,
-      final DateTime? deletedAt}) = _$BasicLink;
+      final DateTime? deletedAt}) = _$BasicLinkImpl;
 
-  factory BasicLink.fromJson(Map<String, dynamic> json) = _$BasicLink.fromJson;
+  factory BasicLink.fromJson(Map<String, dynamic> json) =
+      _$BasicLinkImpl.fromJson;
 
   @override
   String get id;
@@ -437,6 +439,6 @@ abstract class BasicLink implements EntryLink {
   DateTime? get deletedAt;
   @override
   @JsonKey(ignore: true)
-  _$$BasicLinkCopyWith<_$BasicLink> get copyWith =>
+  _$$BasicLinkImplCopyWith<_$BasicLinkImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

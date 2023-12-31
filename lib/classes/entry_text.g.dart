@@ -6,7 +6,8 @@ part of 'entry_text.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$_EntryText _$$_EntryTextFromJson(Map<String, dynamic> json) => _$_EntryText(
+_$EntryTextImpl _$$EntryTextImplFromJson(Map<String, dynamic> json) =>
+    _$EntryTextImpl(
       plainText: json['plainText'] as String,
       geolocation: json['geolocation'] == null
           ? null
@@ -15,7 +16,7 @@ _$_EntryText _$$_EntryTextFromJson(Map<String, dynamic> json) => _$_EntryText(
       quill: json['quill'] as String?,
     );
 
-Map<String, dynamic> _$$_EntryTextToJson(_$_EntryText instance) =>
+Map<String, dynamic> _$$EntryTextImplToJson(_$EntryTextImpl instance) =>
     <String, dynamic>{
       'plainText': instance.plainText,
       'geolocation': instance.geolocation,

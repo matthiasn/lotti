@@ -245,11 +245,11 @@ class _$HabitsStateCopyWithImpl<$Res, $Val extends HabitsState>
 }
 
 /// @nodoc
-abstract class _$$_HabitsStateSavedCopyWith<$Res>
+abstract class _$$HabitsStateSavedImplCopyWith<$Res>
     implements $HabitsStateCopyWith<$Res> {
-  factory _$$_HabitsStateSavedCopyWith(
-          _$_HabitsStateSaved value, $Res Function(_$_HabitsStateSaved) then) =
-      __$$_HabitsStateSavedCopyWithImpl<$Res>;
+  factory _$$HabitsStateSavedImplCopyWith(_$HabitsStateSavedImpl value,
+          $Res Function(_$HabitsStateSavedImpl) then) =
+      __$$HabitsStateSavedImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -283,11 +283,11 @@ abstract class _$$_HabitsStateSavedCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_HabitsStateSavedCopyWithImpl<$Res>
-    extends _$HabitsStateCopyWithImpl<$Res, _$_HabitsStateSaved>
-    implements _$$_HabitsStateSavedCopyWith<$Res> {
-  __$$_HabitsStateSavedCopyWithImpl(
-      _$_HabitsStateSaved _value, $Res Function(_$_HabitsStateSaved) _then)
+class __$$HabitsStateSavedImplCopyWithImpl<$Res>
+    extends _$HabitsStateCopyWithImpl<$Res, _$HabitsStateSavedImpl>
+    implements _$$HabitsStateSavedImplCopyWith<$Res> {
+  __$$HabitsStateSavedImplCopyWithImpl(_$HabitsStateSavedImpl _value,
+      $Res Function(_$HabitsStateSavedImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -321,7 +321,7 @@ class __$$_HabitsStateSavedCopyWithImpl<$Res>
     Object? searchString = null,
     Object? displayFilter = null,
   }) {
-    return _then(_$_HabitsStateSaved(
+    return _then(_$HabitsStateSavedImpl(
       habitDefinitions: null == habitDefinitions
           ? _value._habitDefinitions
           : habitDefinitions // ignore: cast_nullable_to_non_nullable
@@ -436,8 +436,8 @@ class __$$_HabitsStateSavedCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_HabitsStateSaved implements _HabitsStateSaved {
-  _$_HabitsStateSaved(
+class _$HabitsStateSavedImpl implements _HabitsStateSaved {
+  _$HabitsStateSavedImpl(
       {required final List<HabitDefinition> habitDefinitions,
       required final List<HabitDefinition> openHabits,
       required final List<HabitDefinition> openNow,
@@ -628,10 +628,10 @@ class _$_HabitsStateSaved implements _HabitsStateSaved {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_HabitsStateSaved &&
+            other is _$HabitsStateSavedImpl &&
             const DeepCollectionEquality()
                 .equals(other._habitDefinitions, _habitDefinitions) &&
             const DeepCollectionEquality()
@@ -719,39 +719,41 @@ class _$_HabitsStateSaved implements _HabitsStateSaved {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_HabitsStateSavedCopyWith<_$_HabitsStateSaved> get copyWith =>
-      __$$_HabitsStateSavedCopyWithImpl<_$_HabitsStateSaved>(this, _$identity);
+  _$$HabitsStateSavedImplCopyWith<_$HabitsStateSavedImpl> get copyWith =>
+      __$$HabitsStateSavedImplCopyWithImpl<_$HabitsStateSavedImpl>(
+          this, _$identity);
 }
 
 abstract class _HabitsStateSaved implements HabitsState {
   factory _HabitsStateSaved(
-      {required final List<HabitDefinition> habitDefinitions,
-      required final List<HabitDefinition> openHabits,
-      required final List<HabitDefinition> openNow,
-      required final List<HabitDefinition> pendingLater,
-      required final List<HabitDefinition> completed,
-      required final List<JournalEntity> habitCompletions,
-      required final Set<String> completedToday,
-      required final Set<String> successfulToday,
-      required final Set<String> selectedCategoryIds,
-      required final List<String> days,
-      required final Map<String, Set<String>> successfulByDay,
-      required final Map<String, Set<String>> skippedByDay,
-      required final Map<String, Set<String>> failedByDay,
-      required final Map<String, Set<String>> allByDay,
-      required final int successPercentage,
-      required final int skippedPercentage,
-      required final int failedPercentage,
-      required final String selectedInfoYmd,
-      required final int shortStreakCount,
-      required final int longStreakCount,
-      required final int timeSpanDays,
-      required final double minY,
-      required final bool zeroBased,
-      required final bool showTimeSpan,
-      required final bool showSearch,
-      required final String searchString,
-      required final HabitDisplayFilter displayFilter}) = _$_HabitsStateSaved;
+          {required final List<HabitDefinition> habitDefinitions,
+          required final List<HabitDefinition> openHabits,
+          required final List<HabitDefinition> openNow,
+          required final List<HabitDefinition> pendingLater,
+          required final List<HabitDefinition> completed,
+          required final List<JournalEntity> habitCompletions,
+          required final Set<String> completedToday,
+          required final Set<String> successfulToday,
+          required final Set<String> selectedCategoryIds,
+          required final List<String> days,
+          required final Map<String, Set<String>> successfulByDay,
+          required final Map<String, Set<String>> skippedByDay,
+          required final Map<String, Set<String>> failedByDay,
+          required final Map<String, Set<String>> allByDay,
+          required final int successPercentage,
+          required final int skippedPercentage,
+          required final int failedPercentage,
+          required final String selectedInfoYmd,
+          required final int shortStreakCount,
+          required final int longStreakCount,
+          required final int timeSpanDays,
+          required final double minY,
+          required final bool zeroBased,
+          required final bool showTimeSpan,
+          required final bool showSearch,
+          required final String searchString,
+          required final HabitDisplayFilter displayFilter}) =
+      _$HabitsStateSavedImpl;
 
   @override
   List<HabitDefinition> get habitDefinitions;
@@ -809,6 +811,6 @@ abstract class _HabitsStateSaved implements HabitsState {
   HabitDisplayFilter get displayFilter;
   @override
   @JsonKey(ignore: true)
-  _$$_HabitsStateSavedCopyWith<_$_HabitsStateSaved> get copyWith =>
+  _$$HabitsStateSavedImplCopyWith<_$HabitsStateSavedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

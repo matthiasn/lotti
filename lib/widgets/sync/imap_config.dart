@@ -25,22 +25,24 @@ class _ImapConfigWidgetState extends State<ImapConfigWidget> {
     }
     return BlocBuilder<SyncConfigCubit, SyncConfigState>(
       builder: (context, SyncConfigState state) {
-        return SizedBox(
-          width: 320,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const ImapConfigForm(),
-              const SizedBox(height: 32),
-              const ImapConfigStatus(),
-              const SizedBox(height: 32),
-              const ImapConfigActions(),
-              state.maybeWhen(
-                orElse: () => const SizedBox.shrink(),
-                empty: () => const EmptyConfigWidget(),
-              ),
-            ],
+        return SingleChildScrollView(
+          child: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ImapConfigForm(),
+                const SizedBox(height: 32),
+                const ImapConfigStatus(),
+                const SizedBox(height: 32),
+                const ImapConfigActions(),
+                state.maybeWhen(
+                  orElse: () => const SizedBox.shrink(),
+                  empty: () => const EmptyConfigWidget(),
+                ),
+              ],
+            ),
           ),
         );
       },

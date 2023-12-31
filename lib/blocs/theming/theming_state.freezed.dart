@@ -86,11 +86,11 @@ class _$ThemingStateCopyWithImpl<$Res, $Val extends ThemingState>
 }
 
 /// @nodoc
-abstract class _$$_ThemingStateCopyWith<$Res>
+abstract class _$$ThemingStateImplCopyWith<$Res>
     implements $ThemingStateCopyWith<$Res> {
-  factory _$$_ThemingStateCopyWith(
-          _$_ThemingState value, $Res Function(_$_ThemingState) then) =
-      __$$_ThemingStateCopyWithImpl<$Res>;
+  factory _$$ThemingStateImplCopyWith(
+          _$ThemingStateImpl value, $Res Function(_$ThemingStateImpl) then) =
+      __$$ThemingStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -102,11 +102,11 @@ abstract class _$$_ThemingStateCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_ThemingStateCopyWithImpl<$Res>
-    extends _$ThemingStateCopyWithImpl<$Res, _$_ThemingState>
-    implements _$$_ThemingStateCopyWith<$Res> {
-  __$$_ThemingStateCopyWithImpl(
-      _$_ThemingState _value, $Res Function(_$_ThemingState) _then)
+class __$$ThemingStateImplCopyWithImpl<$Res>
+    extends _$ThemingStateCopyWithImpl<$Res, _$ThemingStateImpl>
+    implements _$$ThemingStateImplCopyWith<$Res> {
+  __$$ThemingStateImplCopyWithImpl(
+      _$ThemingStateImpl _value, $Res Function(_$ThemingStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -118,7 +118,7 @@ class __$$_ThemingStateCopyWithImpl<$Res>
     Object? lightThemeName = freezed,
     Object? themeMode = freezed,
   }) {
-    return _then(_$_ThemingState(
+    return _then(_$ThemingStateImpl(
       darkTheme: freezed == darkTheme
           ? _value.darkTheme
           : darkTheme // ignore: cast_nullable_to_non_nullable
@@ -145,8 +145,8 @@ class __$$_ThemingStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_ThemingState implements _ThemingState {
-  _$_ThemingState(
+class _$ThemingStateImpl implements _ThemingState {
+  _$ThemingStateImpl(
       {this.darkTheme,
       this.lightTheme,
       this.darkThemeName,
@@ -170,10 +170,10 @@ class _$_ThemingState implements _ThemingState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_ThemingState &&
+            other is _$ThemingStateImpl &&
             (identical(other.darkTheme, darkTheme) ||
                 other.darkTheme == darkTheme) &&
             (identical(other.lightTheme, lightTheme) ||
@@ -193,8 +193,8 @@ class _$_ThemingState implements _ThemingState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_ThemingStateCopyWith<_$_ThemingState> get copyWith =>
-      __$$_ThemingStateCopyWithImpl<_$_ThemingState>(this, _$identity);
+  _$$ThemingStateImplCopyWith<_$ThemingStateImpl> get copyWith =>
+      __$$ThemingStateImplCopyWithImpl<_$ThemingStateImpl>(this, _$identity);
 }
 
 abstract class _ThemingState implements ThemingState {
@@ -203,7 +203,7 @@ abstract class _ThemingState implements ThemingState {
       final ThemeData? lightTheme,
       final String? darkThemeName,
       final String? lightThemeName,
-      final ThemeMode? themeMode}) = _$_ThemingState;
+      final ThemeMode? themeMode}) = _$ThemingStateImpl;
 
   @override
   ThemeData? get darkTheme;
@@ -217,6 +217,6 @@ abstract class _ThemingState implements ThemingState {
   ThemeMode? get themeMode;
   @override
   @JsonKey(ignore: true)
-  _$$_ThemingStateCopyWith<_$_ThemingState> get copyWith =>
+  _$$ThemingStateImplCopyWith<_$ThemingStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
