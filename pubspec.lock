@@ -437,8 +437,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: c850ca7
-      resolved-ref: c850ca7b0fd03169babc9e83bc87452dee209fc2
+      ref: bd33921
+      resolved-ref: bd33921a35ef17c4a61376a426af744c4ec9ba83
       url: "https://github.com/matthiasn/delta_markdown.git"
     source: git
     version: "0.7.0"
