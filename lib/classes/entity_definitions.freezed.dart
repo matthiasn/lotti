@@ -117,22 +117,22 @@ class _$HabitScheduleCopyWithImpl<$Res, $Val extends HabitSchedule>
 }
 
 /// @nodoc
-abstract class _$$DailyHabitScheduleCopyWith<$Res>
+abstract class _$$DailyHabitScheduleImplCopyWith<$Res>
     implements $HabitScheduleCopyWith<$Res> {
-  factory _$$DailyHabitScheduleCopyWith(_$DailyHabitSchedule value,
-          $Res Function(_$DailyHabitSchedule) then) =
-      __$$DailyHabitScheduleCopyWithImpl<$Res>;
+  factory _$$DailyHabitScheduleImplCopyWith(_$DailyHabitScheduleImpl value,
+          $Res Function(_$DailyHabitScheduleImpl) then) =
+      __$$DailyHabitScheduleImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({int requiredCompletions, DateTime? showFrom});
 }
 
 /// @nodoc
-class __$$DailyHabitScheduleCopyWithImpl<$Res>
-    extends _$HabitScheduleCopyWithImpl<$Res, _$DailyHabitSchedule>
-    implements _$$DailyHabitScheduleCopyWith<$Res> {
-  __$$DailyHabitScheduleCopyWithImpl(
-      _$DailyHabitSchedule _value, $Res Function(_$DailyHabitSchedule) _then)
+class __$$DailyHabitScheduleImplCopyWithImpl<$Res>
+    extends _$HabitScheduleCopyWithImpl<$Res, _$DailyHabitScheduleImpl>
+    implements _$$DailyHabitScheduleImplCopyWith<$Res> {
+  __$$DailyHabitScheduleImplCopyWithImpl(_$DailyHabitScheduleImpl _value,
+      $Res Function(_$DailyHabitScheduleImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -141,7 +141,7 @@ class __$$DailyHabitScheduleCopyWithImpl<$Res>
     Object? requiredCompletions = null,
     Object? showFrom = freezed,
   }) {
-    return _then(_$DailyHabitSchedule(
+    return _then(_$DailyHabitScheduleImpl(
       requiredCompletions: null == requiredCompletions
           ? _value.requiredCompletions
           : requiredCompletions // ignore: cast_nullable_to_non_nullable
@@ -156,13 +156,13 @@ class __$$DailyHabitScheduleCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DailyHabitSchedule implements DailyHabitSchedule {
-  const _$DailyHabitSchedule(
+class _$DailyHabitScheduleImpl implements DailyHabitSchedule {
+  const _$DailyHabitScheduleImpl(
       {required this.requiredCompletions, this.showFrom, final String? $type})
       : $type = $type ?? 'daily';
 
-  factory _$DailyHabitSchedule.fromJson(Map<String, dynamic> json) =>
-      _$$DailyHabitScheduleFromJson(json);
+  factory _$DailyHabitScheduleImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DailyHabitScheduleImplFromJson(json);
 
   @override
   final int requiredCompletions;
@@ -178,10 +178,10 @@ class _$DailyHabitSchedule implements DailyHabitSchedule {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DailyHabitSchedule &&
+            other is _$DailyHabitScheduleImpl &&
             (identical(other.requiredCompletions, requiredCompletions) ||
                 other.requiredCompletions == requiredCompletions) &&
             (identical(other.showFrom, showFrom) ||
@@ -195,8 +195,8 @@ class _$DailyHabitSchedule implements DailyHabitSchedule {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$DailyHabitScheduleCopyWith<_$DailyHabitSchedule> get copyWith =>
-      __$$DailyHabitScheduleCopyWithImpl<_$DailyHabitSchedule>(
+  _$$DailyHabitScheduleImplCopyWith<_$DailyHabitScheduleImpl> get copyWith =>
+      __$$DailyHabitScheduleImplCopyWithImpl<_$DailyHabitScheduleImpl>(
           this, _$identity);
 
   @override
@@ -270,7 +270,7 @@ class _$DailyHabitSchedule implements DailyHabitSchedule {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$DailyHabitScheduleToJson(
+    return _$$DailyHabitScheduleImplToJson(
       this,
     );
   }
@@ -279,37 +279,37 @@ class _$DailyHabitSchedule implements DailyHabitSchedule {
 abstract class DailyHabitSchedule implements HabitSchedule {
   const factory DailyHabitSchedule(
       {required final int requiredCompletions,
-      final DateTime? showFrom}) = _$DailyHabitSchedule;
+      final DateTime? showFrom}) = _$DailyHabitScheduleImpl;
 
   factory DailyHabitSchedule.fromJson(Map<String, dynamic> json) =
-      _$DailyHabitSchedule.fromJson;
+      _$DailyHabitScheduleImpl.fromJson;
 
   @override
   int get requiredCompletions;
   DateTime? get showFrom;
   @override
   @JsonKey(ignore: true)
-  _$$DailyHabitScheduleCopyWith<_$DailyHabitSchedule> get copyWith =>
+  _$$DailyHabitScheduleImplCopyWith<_$DailyHabitScheduleImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$WeeklyHabitScheduleCopyWith<$Res>
+abstract class _$$WeeklyHabitScheduleImplCopyWith<$Res>
     implements $HabitScheduleCopyWith<$Res> {
-  factory _$$WeeklyHabitScheduleCopyWith(_$WeeklyHabitSchedule value,
-          $Res Function(_$WeeklyHabitSchedule) then) =
-      __$$WeeklyHabitScheduleCopyWithImpl<$Res>;
+  factory _$$WeeklyHabitScheduleImplCopyWith(_$WeeklyHabitScheduleImpl value,
+          $Res Function(_$WeeklyHabitScheduleImpl) then) =
+      __$$WeeklyHabitScheduleImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({int requiredCompletions});
 }
 
 /// @nodoc
-class __$$WeeklyHabitScheduleCopyWithImpl<$Res>
-    extends _$HabitScheduleCopyWithImpl<$Res, _$WeeklyHabitSchedule>
-    implements _$$WeeklyHabitScheduleCopyWith<$Res> {
-  __$$WeeklyHabitScheduleCopyWithImpl(
-      _$WeeklyHabitSchedule _value, $Res Function(_$WeeklyHabitSchedule) _then)
+class __$$WeeklyHabitScheduleImplCopyWithImpl<$Res>
+    extends _$HabitScheduleCopyWithImpl<$Res, _$WeeklyHabitScheduleImpl>
+    implements _$$WeeklyHabitScheduleImplCopyWith<$Res> {
+  __$$WeeklyHabitScheduleImplCopyWithImpl(_$WeeklyHabitScheduleImpl _value,
+      $Res Function(_$WeeklyHabitScheduleImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -317,7 +317,7 @@ class __$$WeeklyHabitScheduleCopyWithImpl<$Res>
   $Res call({
     Object? requiredCompletions = null,
   }) {
-    return _then(_$WeeklyHabitSchedule(
+    return _then(_$WeeklyHabitScheduleImpl(
       requiredCompletions: null == requiredCompletions
           ? _value.requiredCompletions
           : requiredCompletions // ignore: cast_nullable_to_non_nullable
@@ -328,13 +328,13 @@ class __$$WeeklyHabitScheduleCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$WeeklyHabitSchedule implements WeeklyHabitSchedule {
-  const _$WeeklyHabitSchedule(
+class _$WeeklyHabitScheduleImpl implements WeeklyHabitSchedule {
+  const _$WeeklyHabitScheduleImpl(
       {required this.requiredCompletions, final String? $type})
       : $type = $type ?? 'weekly';
 
-  factory _$WeeklyHabitSchedule.fromJson(Map<String, dynamic> json) =>
-      _$$WeeklyHabitScheduleFromJson(json);
+  factory _$WeeklyHabitScheduleImpl.fromJson(Map<String, dynamic> json) =>
+      _$$WeeklyHabitScheduleImplFromJson(json);
 
   @override
   final int requiredCompletions;
@@ -348,10 +348,10 @@ class _$WeeklyHabitSchedule implements WeeklyHabitSchedule {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$WeeklyHabitSchedule &&
+            other is _$WeeklyHabitScheduleImpl &&
             (identical(other.requiredCompletions, requiredCompletions) ||
                 other.requiredCompletions == requiredCompletions));
   }
@@ -363,8 +363,8 @@ class _$WeeklyHabitSchedule implements WeeklyHabitSchedule {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$WeeklyHabitScheduleCopyWith<_$WeeklyHabitSchedule> get copyWith =>
-      __$$WeeklyHabitScheduleCopyWithImpl<_$WeeklyHabitSchedule>(
+  _$$WeeklyHabitScheduleImplCopyWith<_$WeeklyHabitScheduleImpl> get copyWith =>
+      __$$WeeklyHabitScheduleImplCopyWithImpl<_$WeeklyHabitScheduleImpl>(
           this, _$identity);
 
   @override
@@ -438,7 +438,7 @@ class _$WeeklyHabitSchedule implements WeeklyHabitSchedule {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$WeeklyHabitScheduleToJson(
+    return _$$WeeklyHabitScheduleImplToJson(
       this,
     );
   }
@@ -446,36 +446,36 @@ class _$WeeklyHabitSchedule implements WeeklyHabitSchedule {
 
 abstract class WeeklyHabitSchedule implements HabitSchedule {
   const factory WeeklyHabitSchedule({required final int requiredCompletions}) =
-      _$WeeklyHabitSchedule;
+      _$WeeklyHabitScheduleImpl;
 
   factory WeeklyHabitSchedule.fromJson(Map<String, dynamic> json) =
-      _$WeeklyHabitSchedule.fromJson;
+      _$WeeklyHabitScheduleImpl.fromJson;
 
   @override
   int get requiredCompletions;
   @override
   @JsonKey(ignore: true)
-  _$$WeeklyHabitScheduleCopyWith<_$WeeklyHabitSchedule> get copyWith =>
+  _$$WeeklyHabitScheduleImplCopyWith<_$WeeklyHabitScheduleImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$MonthlyHabitScheduleCopyWith<$Res>
+abstract class _$$MonthlyHabitScheduleImplCopyWith<$Res>
     implements $HabitScheduleCopyWith<$Res> {
-  factory _$$MonthlyHabitScheduleCopyWith(_$MonthlyHabitSchedule value,
-          $Res Function(_$MonthlyHabitSchedule) then) =
-      __$$MonthlyHabitScheduleCopyWithImpl<$Res>;
+  factory _$$MonthlyHabitScheduleImplCopyWith(_$MonthlyHabitScheduleImpl value,
+          $Res Function(_$MonthlyHabitScheduleImpl) then) =
+      __$$MonthlyHabitScheduleImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({int requiredCompletions});
 }
 
 /// @nodoc
-class __$$MonthlyHabitScheduleCopyWithImpl<$Res>
-    extends _$HabitScheduleCopyWithImpl<$Res, _$MonthlyHabitSchedule>
-    implements _$$MonthlyHabitScheduleCopyWith<$Res> {
-  __$$MonthlyHabitScheduleCopyWithImpl(_$MonthlyHabitSchedule _value,
-      $Res Function(_$MonthlyHabitSchedule) _then)
+class __$$MonthlyHabitScheduleImplCopyWithImpl<$Res>
+    extends _$HabitScheduleCopyWithImpl<$Res, _$MonthlyHabitScheduleImpl>
+    implements _$$MonthlyHabitScheduleImplCopyWith<$Res> {
+  __$$MonthlyHabitScheduleImplCopyWithImpl(_$MonthlyHabitScheduleImpl _value,
+      $Res Function(_$MonthlyHabitScheduleImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -483,7 +483,7 @@ class __$$MonthlyHabitScheduleCopyWithImpl<$Res>
   $Res call({
     Object? requiredCompletions = null,
   }) {
-    return _then(_$MonthlyHabitSchedule(
+    return _then(_$MonthlyHabitScheduleImpl(
       requiredCompletions: null == requiredCompletions
           ? _value.requiredCompletions
           : requiredCompletions // ignore: cast_nullable_to_non_nullable
@@ -494,13 +494,13 @@ class __$$MonthlyHabitScheduleCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$MonthlyHabitSchedule implements MonthlyHabitSchedule {
-  const _$MonthlyHabitSchedule(
+class _$MonthlyHabitScheduleImpl implements MonthlyHabitSchedule {
+  const _$MonthlyHabitScheduleImpl(
       {required this.requiredCompletions, final String? $type})
       : $type = $type ?? 'monthly';
 
-  factory _$MonthlyHabitSchedule.fromJson(Map<String, dynamic> json) =>
-      _$$MonthlyHabitScheduleFromJson(json);
+  factory _$MonthlyHabitScheduleImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MonthlyHabitScheduleImplFromJson(json);
 
   @override
   final int requiredCompletions;
@@ -514,10 +514,10 @@ class _$MonthlyHabitSchedule implements MonthlyHabitSchedule {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MonthlyHabitSchedule &&
+            other is _$MonthlyHabitScheduleImpl &&
             (identical(other.requiredCompletions, requiredCompletions) ||
                 other.requiredCompletions == requiredCompletions));
   }
@@ -529,9 +529,10 @@ class _$MonthlyHabitSchedule implements MonthlyHabitSchedule {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$MonthlyHabitScheduleCopyWith<_$MonthlyHabitSchedule> get copyWith =>
-      __$$MonthlyHabitScheduleCopyWithImpl<_$MonthlyHabitSchedule>(
-          this, _$identity);
+  _$$MonthlyHabitScheduleImplCopyWith<_$MonthlyHabitScheduleImpl>
+      get copyWith =>
+          __$$MonthlyHabitScheduleImplCopyWithImpl<_$MonthlyHabitScheduleImpl>(
+              this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -604,7 +605,7 @@ class _$MonthlyHabitSchedule implements MonthlyHabitSchedule {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$MonthlyHabitScheduleToJson(
+    return _$$MonthlyHabitScheduleImplToJson(
       this,
     );
   }
@@ -612,17 +613,17 @@ class _$MonthlyHabitSchedule implements MonthlyHabitSchedule {
 
 abstract class MonthlyHabitSchedule implements HabitSchedule {
   const factory MonthlyHabitSchedule({required final int requiredCompletions}) =
-      _$MonthlyHabitSchedule;
+      _$MonthlyHabitScheduleImpl;
 
   factory MonthlyHabitSchedule.fromJson(Map<String, dynamic> json) =
-      _$MonthlyHabitSchedule.fromJson;
+      _$MonthlyHabitScheduleImpl.fromJson;
 
   @override
   int get requiredCompletions;
   @override
   @JsonKey(ignore: true)
-  _$$MonthlyHabitScheduleCopyWith<_$MonthlyHabitSchedule> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$MonthlyHabitScheduleImplCopyWith<_$MonthlyHabitScheduleImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 AutoCompleteRule _$AutoCompleteRuleFromJson(Map<String, dynamic> json) {
@@ -783,22 +784,24 @@ class _$AutoCompleteRuleCopyWithImpl<$Res, $Val extends AutoCompleteRule>
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleHealthCopyWith<$Res>
+abstract class _$$AutoCompleteRuleHealthImplCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleHealthCopyWith(_$AutoCompleteRuleHealth value,
-          $Res Function(_$AutoCompleteRuleHealth) then) =
-      __$$AutoCompleteRuleHealthCopyWithImpl<$Res>;
+  factory _$$AutoCompleteRuleHealthImplCopyWith(
+          _$AutoCompleteRuleHealthImpl value,
+          $Res Function(_$AutoCompleteRuleHealthImpl) then) =
+      __$$AutoCompleteRuleHealthImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({String dataType, num? minimum, num? maximum, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleHealthCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleHealth>
-    implements _$$AutoCompleteRuleHealthCopyWith<$Res> {
-  __$$AutoCompleteRuleHealthCopyWithImpl(_$AutoCompleteRuleHealth _value,
-      $Res Function(_$AutoCompleteRuleHealth) _then)
+class __$$AutoCompleteRuleHealthImplCopyWithImpl<$Res>
+    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleHealthImpl>
+    implements _$$AutoCompleteRuleHealthImplCopyWith<$Res> {
+  __$$AutoCompleteRuleHealthImplCopyWithImpl(
+      _$AutoCompleteRuleHealthImpl _value,
+      $Res Function(_$AutoCompleteRuleHealthImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -809,7 +812,7 @@ class __$$AutoCompleteRuleHealthCopyWithImpl<$Res>
     Object? maximum = freezed,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleHealth(
+    return _then(_$AutoCompleteRuleHealthImpl(
       dataType: null == dataType
           ? _value.dataType
           : dataType // ignore: cast_nullable_to_non_nullable
@@ -832,8 +835,8 @@ class __$$AutoCompleteRuleHealthCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleHealth implements AutoCompleteRuleHealth {
-  const _$AutoCompleteRuleHealth(
+class _$AutoCompleteRuleHealthImpl implements AutoCompleteRuleHealth {
+  const _$AutoCompleteRuleHealthImpl(
       {required this.dataType,
       this.minimum,
       this.maximum,
@@ -841,8 +844,8 @@ class _$AutoCompleteRuleHealth implements AutoCompleteRuleHealth {
       final String? $type})
       : $type = $type ?? 'health';
 
-  factory _$AutoCompleteRuleHealth.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleHealthFromJson(json);
+  factory _$AutoCompleteRuleHealthImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AutoCompleteRuleHealthImplFromJson(json);
 
   @override
   final String dataType;
@@ -862,10 +865,10 @@ class _$AutoCompleteRuleHealth implements AutoCompleteRuleHealth {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleHealth &&
+            other is _$AutoCompleteRuleHealthImpl &&
             (identical(other.dataType, dataType) ||
                 other.dataType == dataType) &&
             (identical(other.minimum, minimum) || other.minimum == minimum) &&
@@ -881,9 +884,9 @@ class _$AutoCompleteRuleHealth implements AutoCompleteRuleHealth {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleHealthCopyWith<_$AutoCompleteRuleHealth> get copyWith =>
-      __$$AutoCompleteRuleHealthCopyWithImpl<_$AutoCompleteRuleHealth>(
-          this, _$identity);
+  _$$AutoCompleteRuleHealthImplCopyWith<_$AutoCompleteRuleHealthImpl>
+      get copyWith => __$$AutoCompleteRuleHealthImplCopyWithImpl<
+          _$AutoCompleteRuleHealthImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -1003,7 +1006,7 @@ class _$AutoCompleteRuleHealth implements AutoCompleteRuleHealth {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleHealthToJson(
+    return _$$AutoCompleteRuleHealthImplToJson(
       this,
     );
   }
@@ -1014,10 +1017,10 @@ abstract class AutoCompleteRuleHealth implements AutoCompleteRule {
       {required final String dataType,
       final num? minimum,
       final num? maximum,
-      final String? title}) = _$AutoCompleteRuleHealth;
+      final String? title}) = _$AutoCompleteRuleHealthImpl;
 
   factory AutoCompleteRuleHealth.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleHealth.fromJson;
+      _$AutoCompleteRuleHealthImpl.fromJson;
 
   String get dataType;
   num? get minimum;
@@ -1026,27 +1029,29 @@ abstract class AutoCompleteRuleHealth implements AutoCompleteRule {
   String? get title;
   @override
   @JsonKey(ignore: true)
-  _$$AutoCompleteRuleHealthCopyWith<_$AutoCompleteRuleHealth> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$AutoCompleteRuleHealthImplCopyWith<_$AutoCompleteRuleHealthImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleWorkoutCopyWith<$Res>
+abstract class _$$AutoCompleteRuleWorkoutImplCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleWorkoutCopyWith(_$AutoCompleteRuleWorkout value,
-          $Res Function(_$AutoCompleteRuleWorkout) then) =
-      __$$AutoCompleteRuleWorkoutCopyWithImpl<$Res>;
+  factory _$$AutoCompleteRuleWorkoutImplCopyWith(
+          _$AutoCompleteRuleWorkoutImpl value,
+          $Res Function(_$AutoCompleteRuleWorkoutImpl) then) =
+      __$$AutoCompleteRuleWorkoutImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({String dataType, num? minimum, num? maximum, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleWorkoutCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleWorkout>
-    implements _$$AutoCompleteRuleWorkoutCopyWith<$Res> {
-  __$$AutoCompleteRuleWorkoutCopyWithImpl(_$AutoCompleteRuleWorkout _value,
-      $Res Function(_$AutoCompleteRuleWorkout) _then)
+class __$$AutoCompleteRuleWorkoutImplCopyWithImpl<$Res>
+    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleWorkoutImpl>
+    implements _$$AutoCompleteRuleWorkoutImplCopyWith<$Res> {
+  __$$AutoCompleteRuleWorkoutImplCopyWithImpl(
+      _$AutoCompleteRuleWorkoutImpl _value,
+      $Res Function(_$AutoCompleteRuleWorkoutImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1057,7 +1062,7 @@ class __$$AutoCompleteRuleWorkoutCopyWithImpl<$Res>
     Object? maximum = freezed,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleWorkout(
+    return _then(_$AutoCompleteRuleWorkoutImpl(
       dataType: null == dataType
           ? _value.dataType
           : dataType // ignore: cast_nullable_to_non_nullable
@@ -1080,8 +1085,8 @@ class __$$AutoCompleteRuleWorkoutCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleWorkout implements AutoCompleteRuleWorkout {
-  const _$AutoCompleteRuleWorkout(
+class _$AutoCompleteRuleWorkoutImpl implements AutoCompleteRuleWorkout {
+  const _$AutoCompleteRuleWorkoutImpl(
       {required this.dataType,
       this.minimum,
       this.maximum,
@@ -1089,8 +1094,8 @@ class _$AutoCompleteRuleWorkout implements AutoCompleteRuleWorkout {
       final String? $type})
       : $type = $type ?? 'workout';
 
-  factory _$AutoCompleteRuleWorkout.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleWorkoutFromJson(json);
+  factory _$AutoCompleteRuleWorkoutImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AutoCompleteRuleWorkoutImplFromJson(json);
 
   @override
   final String dataType;
@@ -1110,10 +1115,10 @@ class _$AutoCompleteRuleWorkout implements AutoCompleteRuleWorkout {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleWorkout &&
+            other is _$AutoCompleteRuleWorkoutImpl &&
             (identical(other.dataType, dataType) ||
                 other.dataType == dataType) &&
             (identical(other.minimum, minimum) || other.minimum == minimum) &&
@@ -1129,9 +1134,9 @@ class _$AutoCompleteRuleWorkout implements AutoCompleteRuleWorkout {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleWorkoutCopyWith<_$AutoCompleteRuleWorkout> get copyWith =>
-      __$$AutoCompleteRuleWorkoutCopyWithImpl<_$AutoCompleteRuleWorkout>(
-          this, _$identity);
+  _$$AutoCompleteRuleWorkoutImplCopyWith<_$AutoCompleteRuleWorkoutImpl>
+      get copyWith => __$$AutoCompleteRuleWorkoutImplCopyWithImpl<
+          _$AutoCompleteRuleWorkoutImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -1251,7 +1256,7 @@ class _$AutoCompleteRuleWorkout implements AutoCompleteRuleWorkout {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleWorkoutToJson(
+    return _$$AutoCompleteRuleWorkoutImplToJson(
       this,
     );
   }
@@ -1262,10 +1267,10 @@ abstract class AutoCompleteRuleWorkout implements AutoCompleteRule {
       {required final String dataType,
       final num? minimum,
       final num? maximum,
-      final String? title}) = _$AutoCompleteRuleWorkout;
+      final String? title}) = _$AutoCompleteRuleWorkoutImpl;
 
   factory AutoCompleteRuleWorkout.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleWorkout.fromJson;
+      _$AutoCompleteRuleWorkoutImpl.fromJson;
 
   String get dataType;
   num? get minimum;
@@ -1274,29 +1279,30 @@ abstract class AutoCompleteRuleWorkout implements AutoCompleteRule {
   String? get title;
   @override
   @JsonKey(ignore: true)
-  _$$AutoCompleteRuleWorkoutCopyWith<_$AutoCompleteRuleWorkout> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$AutoCompleteRuleWorkoutImplCopyWith<_$AutoCompleteRuleWorkoutImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleMeasurableCopyWith<$Res>
+abstract class _$$AutoCompleteRuleMeasurableImplCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleMeasurableCopyWith(
-          _$AutoCompleteRuleMeasurable value,
-          $Res Function(_$AutoCompleteRuleMeasurable) then) =
-      __$$AutoCompleteRuleMeasurableCopyWithImpl<$Res>;
+  factory _$$AutoCompleteRuleMeasurableImplCopyWith(
+          _$AutoCompleteRuleMeasurableImpl value,
+          $Res Function(_$AutoCompleteRuleMeasurableImpl) then) =
+      __$$AutoCompleteRuleMeasurableImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({String dataTypeId, num? minimum, num? maximum, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleMeasurableCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleMeasurable>
-    implements _$$AutoCompleteRuleMeasurableCopyWith<$Res> {
-  __$$AutoCompleteRuleMeasurableCopyWithImpl(
-      _$AutoCompleteRuleMeasurable _value,
-      $Res Function(_$AutoCompleteRuleMeasurable) _then)
+class __$$AutoCompleteRuleMeasurableImplCopyWithImpl<$Res>
+    extends _$AutoCompleteRuleCopyWithImpl<$Res,
+        _$AutoCompleteRuleMeasurableImpl>
+    implements _$$AutoCompleteRuleMeasurableImplCopyWith<$Res> {
+  __$$AutoCompleteRuleMeasurableImplCopyWithImpl(
+      _$AutoCompleteRuleMeasurableImpl _value,
+      $Res Function(_$AutoCompleteRuleMeasurableImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1307,7 +1313,7 @@ class __$$AutoCompleteRuleMeasurableCopyWithImpl<$Res>
     Object? maximum = freezed,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleMeasurable(
+    return _then(_$AutoCompleteRuleMeasurableImpl(
       dataTypeId: null == dataTypeId
           ? _value.dataTypeId
           : dataTypeId // ignore: cast_nullable_to_non_nullable
@@ -1330,8 +1336,8 @@ class __$$AutoCompleteRuleMeasurableCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleMeasurable implements AutoCompleteRuleMeasurable {
-  const _$AutoCompleteRuleMeasurable(
+class _$AutoCompleteRuleMeasurableImpl implements AutoCompleteRuleMeasurable {
+  const _$AutoCompleteRuleMeasurableImpl(
       {required this.dataTypeId,
       this.minimum,
       this.maximum,
@@ -1339,8 +1345,9 @@ class _$AutoCompleteRuleMeasurable implements AutoCompleteRuleMeasurable {
       final String? $type})
       : $type = $type ?? 'measurable';
 
-  factory _$AutoCompleteRuleMeasurable.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleMeasurableFromJson(json);
+  factory _$AutoCompleteRuleMeasurableImpl.fromJson(
+          Map<String, dynamic> json) =>
+      _$$AutoCompleteRuleMeasurableImplFromJson(json);
 
   @override
   final String dataTypeId;
@@ -1360,10 +1367,10 @@ class _$AutoCompleteRuleMeasurable implements AutoCompleteRuleMeasurable {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleMeasurable &&
+            other is _$AutoCompleteRuleMeasurableImpl &&
             (identical(other.dataTypeId, dataTypeId) ||
                 other.dataTypeId == dataTypeId) &&
             (identical(other.minimum, minimum) || other.minimum == minimum) &&
@@ -1379,9 +1386,9 @@ class _$AutoCompleteRuleMeasurable implements AutoCompleteRuleMeasurable {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleMeasurableCopyWith<_$AutoCompleteRuleMeasurable>
-      get copyWith => __$$AutoCompleteRuleMeasurableCopyWithImpl<
-          _$AutoCompleteRuleMeasurable>(this, _$identity);
+  _$$AutoCompleteRuleMeasurableImplCopyWith<_$AutoCompleteRuleMeasurableImpl>
+      get copyWith => __$$AutoCompleteRuleMeasurableImplCopyWithImpl<
+          _$AutoCompleteRuleMeasurableImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -1501,7 +1508,7 @@ class _$AutoCompleteRuleMeasurable implements AutoCompleteRuleMeasurable {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleMeasurableToJson(
+    return _$$AutoCompleteRuleMeasurableImplToJson(
       this,
     );
   }
@@ -1512,10 +1519,10 @@ abstract class AutoCompleteRuleMeasurable implements AutoCompleteRule {
       {required final String dataTypeId,
       final num? minimum,
       final num? maximum,
-      final String? title}) = _$AutoCompleteRuleMeasurable;
+      final String? title}) = _$AutoCompleteRuleMeasurableImpl;
 
   factory AutoCompleteRuleMeasurable.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleMeasurable.fromJson;
+      _$AutoCompleteRuleMeasurableImpl.fromJson;
 
   String get dataTypeId;
   num? get minimum;
@@ -1524,27 +1531,28 @@ abstract class AutoCompleteRuleMeasurable implements AutoCompleteRule {
   String? get title;
   @override
   @JsonKey(ignore: true)
-  _$$AutoCompleteRuleMeasurableCopyWith<_$AutoCompleteRuleMeasurable>
+  _$$AutoCompleteRuleMeasurableImplCopyWith<_$AutoCompleteRuleMeasurableImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleHabitCopyWith<$Res>
+abstract class _$$AutoCompleteRuleHabitImplCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleHabitCopyWith(_$AutoCompleteRuleHabit value,
-          $Res Function(_$AutoCompleteRuleHabit) then) =
-      __$$AutoCompleteRuleHabitCopyWithImpl<$Res>;
+  factory _$$AutoCompleteRuleHabitImplCopyWith(
+          _$AutoCompleteRuleHabitImpl value,
+          $Res Function(_$AutoCompleteRuleHabitImpl) then) =
+      __$$AutoCompleteRuleHabitImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({String habitId, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleHabitCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleHabit>
-    implements _$$AutoCompleteRuleHabitCopyWith<$Res> {
-  __$$AutoCompleteRuleHabitCopyWithImpl(_$AutoCompleteRuleHabit _value,
-      $Res Function(_$AutoCompleteRuleHabit) _then)
+class __$$AutoCompleteRuleHabitImplCopyWithImpl<$Res>
+    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleHabitImpl>
+    implements _$$AutoCompleteRuleHabitImplCopyWith<$Res> {
+  __$$AutoCompleteRuleHabitImplCopyWithImpl(_$AutoCompleteRuleHabitImpl _value,
+      $Res Function(_$AutoCompleteRuleHabitImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1553,7 +1561,7 @@ class __$$AutoCompleteRuleHabitCopyWithImpl<$Res>
     Object? habitId = null,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleHabit(
+    return _then(_$AutoCompleteRuleHabitImpl(
       habitId: null == habitId
           ? _value.habitId
           : habitId // ignore: cast_nullable_to_non_nullable
@@ -1568,13 +1576,13 @@ class __$$AutoCompleteRuleHabitCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleHabit implements AutoCompleteRuleHabit {
-  const _$AutoCompleteRuleHabit(
+class _$AutoCompleteRuleHabitImpl implements AutoCompleteRuleHabit {
+  const _$AutoCompleteRuleHabitImpl(
       {required this.habitId, this.title, final String? $type})
       : $type = $type ?? 'habit';
 
-  factory _$AutoCompleteRuleHabit.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleHabitFromJson(json);
+  factory _$AutoCompleteRuleHabitImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AutoCompleteRuleHabitImplFromJson(json);
 
   @override
   final String habitId;
@@ -1590,10 +1598,10 @@ class _$AutoCompleteRuleHabit implements AutoCompleteRuleHabit {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleHabit &&
+            other is _$AutoCompleteRuleHabitImpl &&
             (identical(other.habitId, habitId) || other.habitId == habitId) &&
             (identical(other.title, title) || other.title == title));
   }
@@ -1605,9 +1613,9 @@ class _$AutoCompleteRuleHabit implements AutoCompleteRuleHabit {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleHabitCopyWith<_$AutoCompleteRuleHabit> get copyWith =>
-      __$$AutoCompleteRuleHabitCopyWithImpl<_$AutoCompleteRuleHabit>(
-          this, _$identity);
+  _$$AutoCompleteRuleHabitImplCopyWith<_$AutoCompleteRuleHabitImpl>
+      get copyWith => __$$AutoCompleteRuleHabitImplCopyWithImpl<
+          _$AutoCompleteRuleHabitImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -1727,7 +1735,7 @@ class _$AutoCompleteRuleHabit implements AutoCompleteRuleHabit {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleHabitToJson(
+    return _$$AutoCompleteRuleHabitImplToJson(
       this,
     );
   }
@@ -1736,37 +1744,37 @@ class _$AutoCompleteRuleHabit implements AutoCompleteRuleHabit {
 abstract class AutoCompleteRuleHabit implements AutoCompleteRule {
   const factory AutoCompleteRuleHabit(
       {required final String habitId,
-      final String? title}) = _$AutoCompleteRuleHabit;
+      final String? title}) = _$AutoCompleteRuleHabitImpl;
 
   factory AutoCompleteRuleHabit.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleHabit.fromJson;
+      _$AutoCompleteRuleHabitImpl.fromJson;
 
   String get habitId;
   @override
   String? get title;
   @override
   @JsonKey(ignore: true)
-  _$$AutoCompleteRuleHabitCopyWith<_$AutoCompleteRuleHabit> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$AutoCompleteRuleHabitImplCopyWith<_$AutoCompleteRuleHabitImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleAndCopyWith<$Res>
+abstract class _$$AutoCompleteRuleAndImplCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleAndCopyWith(_$AutoCompleteRuleAnd value,
-          $Res Function(_$AutoCompleteRuleAnd) then) =
-      __$$AutoCompleteRuleAndCopyWithImpl<$Res>;
+  factory _$$AutoCompleteRuleAndImplCopyWith(_$AutoCompleteRuleAndImpl value,
+          $Res Function(_$AutoCompleteRuleAndImpl) then) =
+      __$$AutoCompleteRuleAndImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({List<AutoCompleteRule> rules, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleAndCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleAnd>
-    implements _$$AutoCompleteRuleAndCopyWith<$Res> {
-  __$$AutoCompleteRuleAndCopyWithImpl(
-      _$AutoCompleteRuleAnd _value, $Res Function(_$AutoCompleteRuleAnd) _then)
+class __$$AutoCompleteRuleAndImplCopyWithImpl<$Res>
+    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleAndImpl>
+    implements _$$AutoCompleteRuleAndImplCopyWith<$Res> {
+  __$$AutoCompleteRuleAndImplCopyWithImpl(_$AutoCompleteRuleAndImpl _value,
+      $Res Function(_$AutoCompleteRuleAndImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1775,7 +1783,7 @@ class __$$AutoCompleteRuleAndCopyWithImpl<$Res>
     Object? rules = null,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleAnd(
+    return _then(_$AutoCompleteRuleAndImpl(
       rules: null == rules
           ? _value._rules
           : rules // ignore: cast_nullable_to_non_nullable
@@ -1790,16 +1798,16 @@ class __$$AutoCompleteRuleAndCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleAnd implements AutoCompleteRuleAnd {
-  const _$AutoCompleteRuleAnd(
+class _$AutoCompleteRuleAndImpl implements AutoCompleteRuleAnd {
+  const _$AutoCompleteRuleAndImpl(
       {required final List<AutoCompleteRule> rules,
       this.title,
       final String? $type})
       : _rules = rules,
         $type = $type ?? 'and';
 
-  factory _$AutoCompleteRuleAnd.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleAndFromJson(json);
+  factory _$AutoCompleteRuleAndImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AutoCompleteRuleAndImplFromJson(json);
 
   final List<AutoCompleteRule> _rules;
   @override
@@ -1821,10 +1829,10 @@ class _$AutoCompleteRuleAnd implements AutoCompleteRuleAnd {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleAnd &&
+            other is _$AutoCompleteRuleAndImpl &&
             const DeepCollectionEquality().equals(other._rules, _rules) &&
             (identical(other.title, title) || other.title == title));
   }
@@ -1837,8 +1845,8 @@ class _$AutoCompleteRuleAnd implements AutoCompleteRuleAnd {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleAndCopyWith<_$AutoCompleteRuleAnd> get copyWith =>
-      __$$AutoCompleteRuleAndCopyWithImpl<_$AutoCompleteRuleAnd>(
+  _$$AutoCompleteRuleAndImplCopyWith<_$AutoCompleteRuleAndImpl> get copyWith =>
+      __$$AutoCompleteRuleAndImplCopyWithImpl<_$AutoCompleteRuleAndImpl>(
           this, _$identity);
 
   @override
@@ -1959,7 +1967,7 @@ class _$AutoCompleteRuleAnd implements AutoCompleteRuleAnd {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleAndToJson(
+    return _$$AutoCompleteRuleAndImplToJson(
       this,
     );
   }
@@ -1968,37 +1976,37 @@ class _$AutoCompleteRuleAnd implements AutoCompleteRuleAnd {
 abstract class AutoCompleteRuleAnd implements AutoCompleteRule {
   const factory AutoCompleteRuleAnd(
       {required final List<AutoCompleteRule> rules,
-      final String? title}) = _$AutoCompleteRuleAnd;
+      final String? title}) = _$AutoCompleteRuleAndImpl;
 
   factory AutoCompleteRuleAnd.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleAnd.fromJson;
+      _$AutoCompleteRuleAndImpl.fromJson;
 
   List<AutoCompleteRule> get rules;
   @override
   String? get title;
   @override
   @JsonKey(ignore: true)
-  _$$AutoCompleteRuleAndCopyWith<_$AutoCompleteRuleAnd> get copyWith =>
+  _$$AutoCompleteRuleAndImplCopyWith<_$AutoCompleteRuleAndImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleOrCopyWith<$Res>
+abstract class _$$AutoCompleteRuleOrImplCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleOrCopyWith(_$AutoCompleteRuleOr value,
-          $Res Function(_$AutoCompleteRuleOr) then) =
-      __$$AutoCompleteRuleOrCopyWithImpl<$Res>;
+  factory _$$AutoCompleteRuleOrImplCopyWith(_$AutoCompleteRuleOrImpl value,
+          $Res Function(_$AutoCompleteRuleOrImpl) then) =
+      __$$AutoCompleteRuleOrImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({List<AutoCompleteRule> rules, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleOrCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleOr>
-    implements _$$AutoCompleteRuleOrCopyWith<$Res> {
-  __$$AutoCompleteRuleOrCopyWithImpl(
-      _$AutoCompleteRuleOr _value, $Res Function(_$AutoCompleteRuleOr) _then)
+class __$$AutoCompleteRuleOrImplCopyWithImpl<$Res>
+    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleOrImpl>
+    implements _$$AutoCompleteRuleOrImplCopyWith<$Res> {
+  __$$AutoCompleteRuleOrImplCopyWithImpl(_$AutoCompleteRuleOrImpl _value,
+      $Res Function(_$AutoCompleteRuleOrImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -2007,7 +2015,7 @@ class __$$AutoCompleteRuleOrCopyWithImpl<$Res>
     Object? rules = null,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleOr(
+    return _then(_$AutoCompleteRuleOrImpl(
       rules: null == rules
           ? _value._rules
           : rules // ignore: cast_nullable_to_non_nullable
@@ -2022,16 +2030,16 @@ class __$$AutoCompleteRuleOrCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleOr implements AutoCompleteRuleOr {
-  const _$AutoCompleteRuleOr(
+class _$AutoCompleteRuleOrImpl implements AutoCompleteRuleOr {
+  const _$AutoCompleteRuleOrImpl(
       {required final List<AutoCompleteRule> rules,
       this.title,
       final String? $type})
       : _rules = rules,
         $type = $type ?? 'or';
 
-  factory _$AutoCompleteRuleOr.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleOrFromJson(json);
+  factory _$AutoCompleteRuleOrImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AutoCompleteRuleOrImplFromJson(json);
 
   final List<AutoCompleteRule> _rules;
   @override
@@ -2053,10 +2061,10 @@ class _$AutoCompleteRuleOr implements AutoCompleteRuleOr {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleOr &&
+            other is _$AutoCompleteRuleOrImpl &&
             const DeepCollectionEquality().equals(other._rules, _rules) &&
             (identical(other.title, title) || other.title == title));
   }
@@ -2069,8 +2077,8 @@ class _$AutoCompleteRuleOr implements AutoCompleteRuleOr {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleOrCopyWith<_$AutoCompleteRuleOr> get copyWith =>
-      __$$AutoCompleteRuleOrCopyWithImpl<_$AutoCompleteRuleOr>(
+  _$$AutoCompleteRuleOrImplCopyWith<_$AutoCompleteRuleOrImpl> get copyWith =>
+      __$$AutoCompleteRuleOrImplCopyWithImpl<_$AutoCompleteRuleOrImpl>(
           this, _$identity);
 
   @override
@@ -2191,7 +2199,7 @@ class _$AutoCompleteRuleOr implements AutoCompleteRuleOr {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleOrToJson(
+    return _$$AutoCompleteRuleOrImplToJson(
       this,
     );
   }
@@ -2200,37 +2208,39 @@ class _$AutoCompleteRuleOr implements AutoCompleteRuleOr {
 abstract class AutoCompleteRuleOr implements AutoCompleteRule {
   const factory AutoCompleteRuleOr(
       {required final List<AutoCompleteRule> rules,
-      final String? title}) = _$AutoCompleteRuleOr;
+      final String? title}) = _$AutoCompleteRuleOrImpl;
 
   factory AutoCompleteRuleOr.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleOr.fromJson;
+      _$AutoCompleteRuleOrImpl.fromJson;
 
   List<AutoCompleteRule> get rules;
   @override
   String? get title;
   @override
   @JsonKey(ignore: true)
-  _$$AutoCompleteRuleOrCopyWith<_$AutoCompleteRuleOr> get copyWith =>
+  _$$AutoCompleteRuleOrImplCopyWith<_$AutoCompleteRuleOrImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$AutoCompleteRuleMultipleCopyWith<$Res>
+abstract class _$$AutoCompleteRuleMultipleImplCopyWith<$Res>
     implements $AutoCompleteRuleCopyWith<$Res> {
-  factory _$$AutoCompleteRuleMultipleCopyWith(_$AutoCompleteRuleMultiple value,
-          $Res Function(_$AutoCompleteRuleMultiple) then) =
-      __$$AutoCompleteRuleMultipleCopyWithImpl<$Res>;
+  factory _$$AutoCompleteRuleMultipleImplCopyWith(
+          _$AutoCompleteRuleMultipleImpl value,
+          $Res Function(_$AutoCompleteRuleMultipleImpl) then) =
+      __$$AutoCompleteRuleMultipleImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({List<AutoCompleteRule> rules, int successes, String? title});
 }
 
 /// @nodoc
-class __$$AutoCompleteRuleMultipleCopyWithImpl<$Res>
-    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleMultiple>
-    implements _$$AutoCompleteRuleMultipleCopyWith<$Res> {
-  __$$AutoCompleteRuleMultipleCopyWithImpl(_$AutoCompleteRuleMultiple _value,
-      $Res Function(_$AutoCompleteRuleMultiple) _then)
+class __$$AutoCompleteRuleMultipleImplCopyWithImpl<$Res>
+    extends _$AutoCompleteRuleCopyWithImpl<$Res, _$AutoCompleteRuleMultipleImpl>
+    implements _$$AutoCompleteRuleMultipleImplCopyWith<$Res> {
+  __$$AutoCompleteRuleMultipleImplCopyWithImpl(
+      _$AutoCompleteRuleMultipleImpl _value,
+      $Res Function(_$AutoCompleteRuleMultipleImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -2240,7 +2250,7 @@ class __$$AutoCompleteRuleMultipleCopyWithImpl<$Res>
     Object? successes = null,
     Object? title = freezed,
   }) {
-    return _then(_$AutoCompleteRuleMultiple(
+    return _then(_$AutoCompleteRuleMultipleImpl(
       rules: null == rules
           ? _value._rules
           : rules // ignore: cast_nullable_to_non_nullable
@@ -2259,8 +2269,8 @@ class __$$AutoCompleteRuleMultipleCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AutoCompleteRuleMultiple implements AutoCompleteRuleMultiple {
-  const _$AutoCompleteRuleMultiple(
+class _$AutoCompleteRuleMultipleImpl implements AutoCompleteRuleMultiple {
+  const _$AutoCompleteRuleMultipleImpl(
       {required final List<AutoCompleteRule> rules,
       required this.successes,
       this.title,
@@ -2268,8 +2278,8 @@ class _$AutoCompleteRuleMultiple implements AutoCompleteRuleMultiple {
       : _rules = rules,
         $type = $type ?? 'multiple';
 
-  factory _$AutoCompleteRuleMultiple.fromJson(Map<String, dynamic> json) =>
-      _$$AutoCompleteRuleMultipleFromJson(json);
+  factory _$AutoCompleteRuleMultipleImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AutoCompleteRuleMultipleImplFromJson(json);
 
   final List<AutoCompleteRule> _rules;
   @override
@@ -2293,10 +2303,10 @@ class _$AutoCompleteRuleMultiple implements AutoCompleteRuleMultiple {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AutoCompleteRuleMultiple &&
+            other is _$AutoCompleteRuleMultipleImpl &&
             const DeepCollectionEquality().equals(other._rules, _rules) &&
             (identical(other.successes, successes) ||
                 other.successes == successes) &&
@@ -2311,10 +2321,9 @@ class _$AutoCompleteRuleMultiple implements AutoCompleteRuleMultiple {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$AutoCompleteRuleMultipleCopyWith<_$AutoCompleteRuleMultiple>
-      get copyWith =>
-          __$$AutoCompleteRuleMultipleCopyWithImpl<_$AutoCompleteRuleMultiple>(
-              this, _$identity);
+  _$$AutoCompleteRuleMultipleImplCopyWith<_$AutoCompleteRuleMultipleImpl>
+      get copyWith => __$$AutoCompleteRuleMultipleImplCopyWithImpl<
+          _$AutoCompleteRuleMultipleImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -2434,7 +2443,7 @@ class _$AutoCompleteRuleMultiple implements AutoCompleteRuleMultiple {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AutoCompleteRuleMultipleToJson(
+    return _$$AutoCompleteRuleMultipleImplToJson(
       this,
     );
   }
@@ -2444,10 +2453,10 @@ abstract class AutoCompleteRuleMultiple implements AutoCompleteRule {
   const factory AutoCompleteRuleMultiple(
       {required final List<AutoCompleteRule> rules,
       required final int successes,
-      final String? title}) = _$AutoCompleteRuleMultiple;
+      final String? title}) = _$AutoCompleteRuleMultipleImpl;
 
   factory AutoCompleteRuleMultiple.fromJson(Map<String, dynamic> json) =
-      _$AutoCompleteRuleMultiple.fromJson;
+      _$AutoCompleteRuleMultipleImpl.fromJson;
 
   List<AutoCompleteRule> get rules;
   int get successes;
@@ -2455,7 +2464,7 @@ abstract class AutoCompleteRuleMultiple implements AutoCompleteRule {
   String? get title;
   @override
   @JsonKey(ignore: true)
-  _$$AutoCompleteRuleMultipleCopyWith<_$AutoCompleteRuleMultiple>
+  _$$AutoCompleteRuleMultipleImplCopyWith<_$AutoCompleteRuleMultipleImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
 
@@ -2792,11 +2801,11 @@ class _$EntityDefinitionCopyWithImpl<$Res, $Val extends EntityDefinition>
 }
 
 /// @nodoc
-abstract class _$$MeasurableDataTypeCopyWith<$Res>
+abstract class _$$MeasurableDataTypeImplCopyWith<$Res>
     implements $EntityDefinitionCopyWith<$Res> {
-  factory _$$MeasurableDataTypeCopyWith(_$MeasurableDataType value,
-          $Res Function(_$MeasurableDataType) then) =
-      __$$MeasurableDataTypeCopyWithImpl<$Res>;
+  factory _$$MeasurableDataTypeImplCopyWith(_$MeasurableDataTypeImpl value,
+          $Res Function(_$MeasurableDataTypeImpl) then) =
+      __$$MeasurableDataTypeImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -2816,11 +2825,11 @@ abstract class _$$MeasurableDataTypeCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$MeasurableDataTypeCopyWithImpl<$Res>
-    extends _$EntityDefinitionCopyWithImpl<$Res, _$MeasurableDataType>
-    implements _$$MeasurableDataTypeCopyWith<$Res> {
-  __$$MeasurableDataTypeCopyWithImpl(
-      _$MeasurableDataType _value, $Res Function(_$MeasurableDataType) _then)
+class __$$MeasurableDataTypeImplCopyWithImpl<$Res>
+    extends _$EntityDefinitionCopyWithImpl<$Res, _$MeasurableDataTypeImpl>
+    implements _$$MeasurableDataTypeImplCopyWith<$Res> {
+  __$$MeasurableDataTypeImplCopyWithImpl(_$MeasurableDataTypeImpl _value,
+      $Res Function(_$MeasurableDataTypeImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -2840,7 +2849,7 @@ class __$$MeasurableDataTypeCopyWithImpl<$Res>
     Object? categoryId = freezed,
     Object? aggregationType = freezed,
   }) {
-    return _then(_$MeasurableDataType(
+    return _then(_$MeasurableDataTypeImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -2899,8 +2908,8 @@ class __$$MeasurableDataTypeCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$MeasurableDataType implements MeasurableDataType {
-  const _$MeasurableDataType(
+class _$MeasurableDataTypeImpl implements MeasurableDataType {
+  const _$MeasurableDataTypeImpl(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -2917,8 +2926,8 @@ class _$MeasurableDataType implements MeasurableDataType {
       final String? $type})
       : $type = $type ?? 'measurableDataType';
 
-  factory _$MeasurableDataType.fromJson(Map<String, dynamic> json) =>
-      _$$MeasurableDataTypeFromJson(json);
+  factory _$MeasurableDataTypeImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MeasurableDataTypeImplFromJson(json);
 
   @override
   final String id;
@@ -2956,10 +2965,10 @@ class _$MeasurableDataType implements MeasurableDataType {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MeasurableDataType &&
+            other is _$MeasurableDataTypeImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -3006,8 +3015,8 @@ class _$MeasurableDataType implements MeasurableDataType {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$MeasurableDataTypeCopyWith<_$MeasurableDataType> get copyWith =>
-      __$$MeasurableDataTypeCopyWithImpl<_$MeasurableDataType>(
+  _$$MeasurableDataTypeImplCopyWith<_$MeasurableDataTypeImpl> get copyWith =>
+      __$$MeasurableDataTypeImplCopyWithImpl<_$MeasurableDataTypeImpl>(
           this, _$identity);
 
   @override
@@ -3305,7 +3314,7 @@ class _$MeasurableDataType implements MeasurableDataType {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$MeasurableDataTypeToJson(
+    return _$$MeasurableDataTypeImplToJson(
       this,
     );
   }
@@ -3325,10 +3334,10 @@ abstract class MeasurableDataType implements EntityDefinition {
       final bool? private,
       final bool? favorite,
       final String? categoryId,
-      final AggregationType? aggregationType}) = _$MeasurableDataType;
+      final AggregationType? aggregationType}) = _$MeasurableDataTypeImpl;
 
   factory MeasurableDataType.fromJson(Map<String, dynamic> json) =
-      _$MeasurableDataType.fromJson;
+      _$MeasurableDataTypeImpl.fromJson;
 
   @override
   String get id;
@@ -3352,16 +3361,16 @@ abstract class MeasurableDataType implements EntityDefinition {
   AggregationType? get aggregationType;
   @override
   @JsonKey(ignore: true)
-  _$$MeasurableDataTypeCopyWith<_$MeasurableDataType> get copyWith =>
+  _$$MeasurableDataTypeImplCopyWith<_$MeasurableDataTypeImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$CategoryDefinitionCopyWith<$Res>
+abstract class _$$CategoryDefinitionImplCopyWith<$Res>
     implements $EntityDefinitionCopyWith<$Res> {
-  factory _$$CategoryDefinitionCopyWith(_$CategoryDefinition value,
-          $Res Function(_$CategoryDefinition) then) =
-      __$$CategoryDefinitionCopyWithImpl<$Res>;
+  factory _$$CategoryDefinitionImplCopyWith(_$CategoryDefinitionImpl value,
+          $Res Function(_$CategoryDefinitionImpl) then) =
+      __$$CategoryDefinitionImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -3378,11 +3387,11 @@ abstract class _$$CategoryDefinitionCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$CategoryDefinitionCopyWithImpl<$Res>
-    extends _$EntityDefinitionCopyWithImpl<$Res, _$CategoryDefinition>
-    implements _$$CategoryDefinitionCopyWith<$Res> {
-  __$$CategoryDefinitionCopyWithImpl(
-      _$CategoryDefinition _value, $Res Function(_$CategoryDefinition) _then)
+class __$$CategoryDefinitionImplCopyWithImpl<$Res>
+    extends _$EntityDefinitionCopyWithImpl<$Res, _$CategoryDefinitionImpl>
+    implements _$$CategoryDefinitionImplCopyWith<$Res> {
+  __$$CategoryDefinitionImplCopyWithImpl(_$CategoryDefinitionImpl _value,
+      $Res Function(_$CategoryDefinitionImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -3399,7 +3408,7 @@ class __$$CategoryDefinitionCopyWithImpl<$Res>
     Object? categoryId = freezed,
     Object? deletedAt = freezed,
   }) {
-    return _then(_$CategoryDefinition(
+    return _then(_$CategoryDefinitionImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -3446,8 +3455,8 @@ class __$$CategoryDefinitionCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$CategoryDefinition implements CategoryDefinition {
-  const _$CategoryDefinition(
+class _$CategoryDefinitionImpl implements CategoryDefinition {
+  const _$CategoryDefinitionImpl(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -3461,8 +3470,8 @@ class _$CategoryDefinition implements CategoryDefinition {
       final String? $type})
       : $type = $type ?? 'categoryDefinition';
 
-  factory _$CategoryDefinition.fromJson(Map<String, dynamic> json) =>
-      _$$CategoryDefinitionFromJson(json);
+  factory _$CategoryDefinitionImpl.fromJson(Map<String, dynamic> json) =>
+      _$$CategoryDefinitionImplFromJson(json);
 
   @override
   final String id;
@@ -3494,10 +3503,10 @@ class _$CategoryDefinition implements CategoryDefinition {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$CategoryDefinition &&
+            other is _$CategoryDefinitionImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -3523,8 +3532,8 @@ class _$CategoryDefinition implements CategoryDefinition {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$CategoryDefinitionCopyWith<_$CategoryDefinition> get copyWith =>
-      __$$CategoryDefinitionCopyWithImpl<_$CategoryDefinition>(
+  _$$CategoryDefinitionImplCopyWith<_$CategoryDefinitionImpl> get copyWith =>
+      __$$CategoryDefinitionImplCopyWithImpl<_$CategoryDefinitionImpl>(
           this, _$identity);
 
   @override
@@ -3786,7 +3795,7 @@ class _$CategoryDefinition implements CategoryDefinition {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$CategoryDefinitionToJson(
+    return _$$CategoryDefinitionImplToJson(
       this,
     );
   }
@@ -3803,10 +3812,10 @@ abstract class CategoryDefinition implements EntityDefinition {
       required final bool active,
       final String? color,
       final String? categoryId,
-      final DateTime? deletedAt}) = _$CategoryDefinition;
+      final DateTime? deletedAt}) = _$CategoryDefinitionImpl;
 
   factory CategoryDefinition.fromJson(Map<String, dynamic> json) =
-      _$CategoryDefinition.fromJson;
+      _$CategoryDefinitionImpl.fromJson;
 
   @override
   String get id;
@@ -3827,16 +3836,16 @@ abstract class CategoryDefinition implements EntityDefinition {
   DateTime? get deletedAt;
   @override
   @JsonKey(ignore: true)
-  _$$CategoryDefinitionCopyWith<_$CategoryDefinition> get copyWith =>
+  _$$CategoryDefinitionImplCopyWith<_$CategoryDefinitionImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$HabitDefinitionCopyWith<$Res>
+abstract class _$$HabitDefinitionImplCopyWith<$Res>
     implements $EntityDefinitionCopyWith<$Res> {
-  factory _$$HabitDefinitionCopyWith(
-          _$HabitDefinition value, $Res Function(_$HabitDefinition) then) =
-      __$$HabitDefinitionCopyWithImpl<$Res>;
+  factory _$$HabitDefinitionImplCopyWith(_$HabitDefinitionImpl value,
+          $Res Function(_$HabitDefinitionImpl) then) =
+      __$$HabitDefinitionImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -3864,11 +3873,11 @@ abstract class _$$HabitDefinitionCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$HabitDefinitionCopyWithImpl<$Res>
-    extends _$EntityDefinitionCopyWithImpl<$Res, _$HabitDefinition>
-    implements _$$HabitDefinitionCopyWith<$Res> {
-  __$$HabitDefinitionCopyWithImpl(
-      _$HabitDefinition _value, $Res Function(_$HabitDefinition) _then)
+class __$$HabitDefinitionImplCopyWithImpl<$Res>
+    extends _$EntityDefinitionCopyWithImpl<$Res, _$HabitDefinitionImpl>
+    implements _$$HabitDefinitionImplCopyWith<$Res> {
+  __$$HabitDefinitionImplCopyWithImpl(
+      _$HabitDefinitionImpl _value, $Res Function(_$HabitDefinitionImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -3893,7 +3902,7 @@ class __$$HabitDefinitionCopyWithImpl<$Res>
     Object? dashboardId = freezed,
     Object? priority = freezed,
   }) {
-    return _then(_$HabitDefinition(
+    return _then(_$HabitDefinitionImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -3992,8 +4001,8 @@ class __$$HabitDefinitionCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$HabitDefinition implements HabitDefinition {
-  const _$HabitDefinition(
+class _$HabitDefinitionImpl implements HabitDefinition {
+  const _$HabitDefinitionImpl(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -4015,8 +4024,8 @@ class _$HabitDefinition implements HabitDefinition {
       final String? $type})
       : $type = $type ?? 'habit';
 
-  factory _$HabitDefinition.fromJson(Map<String, dynamic> json) =>
-      _$$HabitDefinitionFromJson(json);
+  factory _$HabitDefinitionImpl.fromJson(Map<String, dynamic> json) =>
+      _$$HabitDefinitionImplFromJson(json);
 
   @override
   final String id;
@@ -4064,10 +4073,10 @@ class _$HabitDefinition implements HabitDefinition {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$HabitDefinition &&
+            other is _$HabitDefinitionImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -4127,8 +4136,9 @@ class _$HabitDefinition implements HabitDefinition {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$HabitDefinitionCopyWith<_$HabitDefinition> get copyWith =>
-      __$$HabitDefinitionCopyWithImpl<_$HabitDefinition>(this, _$identity);
+  _$$HabitDefinitionImplCopyWith<_$HabitDefinitionImpl> get copyWith =>
+      __$$HabitDefinitionImplCopyWithImpl<_$HabitDefinitionImpl>(
+          this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -4440,7 +4450,7 @@ class _$HabitDefinition implements HabitDefinition {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$HabitDefinitionToJson(
+    return _$$HabitDefinitionImplToJson(
       this,
     );
   }
@@ -4465,10 +4475,10 @@ abstract class HabitDefinition implements EntityDefinition {
       final String? defaultStoryId,
       final String? categoryId,
       final String? dashboardId,
-      final bool? priority}) = _$HabitDefinition;
+      final bool? priority}) = _$HabitDefinitionImpl;
 
   factory HabitDefinition.fromJson(Map<String, dynamic> json) =
-      _$HabitDefinition.fromJson;
+      _$HabitDefinitionImpl.fromJson;
 
   @override
   String get id;
@@ -4497,16 +4507,16 @@ abstract class HabitDefinition implements EntityDefinition {
   bool? get priority;
   @override
   @JsonKey(ignore: true)
-  _$$HabitDefinitionCopyWith<_$HabitDefinition> get copyWith =>
+  _$$HabitDefinitionImplCopyWith<_$HabitDefinitionImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DashboardDefinitionCopyWith<$Res>
+abstract class _$$DashboardDefinitionImplCopyWith<$Res>
     implements $EntityDefinitionCopyWith<$Res> {
-  factory _$$DashboardDefinitionCopyWith(_$DashboardDefinition value,
-          $Res Function(_$DashboardDefinition) then) =
-      __$$DashboardDefinitionCopyWithImpl<$Res>;
+  factory _$$DashboardDefinitionImplCopyWith(_$DashboardDefinitionImpl value,
+          $Res Function(_$DashboardDefinitionImpl) then) =
+      __$$DashboardDefinitionImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -4528,11 +4538,11 @@ abstract class _$$DashboardDefinitionCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$DashboardDefinitionCopyWithImpl<$Res>
-    extends _$EntityDefinitionCopyWithImpl<$Res, _$DashboardDefinition>
-    implements _$$DashboardDefinitionCopyWith<$Res> {
-  __$$DashboardDefinitionCopyWithImpl(
-      _$DashboardDefinition _value, $Res Function(_$DashboardDefinition) _then)
+class __$$DashboardDefinitionImplCopyWithImpl<$Res>
+    extends _$EntityDefinitionCopyWithImpl<$Res, _$DashboardDefinitionImpl>
+    implements _$$DashboardDefinitionImplCopyWith<$Res> {
+  __$$DashboardDefinitionImplCopyWithImpl(_$DashboardDefinitionImpl _value,
+      $Res Function(_$DashboardDefinitionImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -4554,7 +4564,7 @@ class __$$DashboardDefinitionCopyWithImpl<$Res>
     Object? deletedAt = freezed,
     Object? categoryId = freezed,
   }) {
-    return _then(_$DashboardDefinition(
+    return _then(_$DashboardDefinitionImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -4621,8 +4631,8 @@ class __$$DashboardDefinitionCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardDefinition implements DashboardDefinition {
-  const _$DashboardDefinition(
+class _$DashboardDefinitionImpl implements DashboardDefinition {
+  const _$DashboardDefinitionImpl(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -4642,8 +4652,8 @@ class _$DashboardDefinition implements DashboardDefinition {
       : _items = items,
         $type = $type ?? 'dashboard';
 
-  factory _$DashboardDefinition.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardDefinitionFromJson(json);
+  factory _$DashboardDefinitionImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DashboardDefinitionImplFromJson(json);
 
   @override
   final String id;
@@ -4692,10 +4702,10 @@ class _$DashboardDefinition implements DashboardDefinition {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardDefinition &&
+            other is _$DashboardDefinitionImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -4744,8 +4754,8 @@ class _$DashboardDefinition implements DashboardDefinition {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$DashboardDefinitionCopyWith<_$DashboardDefinition> get copyWith =>
-      __$$DashboardDefinitionCopyWithImpl<_$DashboardDefinition>(
+  _$$DashboardDefinitionImplCopyWith<_$DashboardDefinitionImpl> get copyWith =>
+      __$$DashboardDefinitionImplCopyWithImpl<_$DashboardDefinitionImpl>(
           this, _$identity);
 
   @override
@@ -5049,7 +5059,7 @@ class _$DashboardDefinition implements DashboardDefinition {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$DashboardDefinitionToJson(
+    return _$$DashboardDefinitionImplToJson(
       this,
     );
   }
@@ -5071,10 +5081,10 @@ abstract class DashboardDefinition implements EntityDefinition {
       final DateTime? reviewAt,
       final int days,
       final DateTime? deletedAt,
-      final String? categoryId}) = _$DashboardDefinition;
+      final String? categoryId}) = _$DashboardDefinitionImpl;
 
   factory DashboardDefinition.fromJson(Map<String, dynamic> json) =
-      _$DashboardDefinition.fromJson;
+      _$DashboardDefinitionImpl.fromJson;
 
   @override
   String get id;
@@ -5100,7 +5110,7 @@ abstract class DashboardDefinition implements EntityDefinition {
   String? get categoryId;
   @override
   @JsonKey(ignore: true)
-  _$$DashboardDefinitionCopyWith<_$DashboardDefinition> get copyWith =>
+  _$$DashboardDefinitionImplCopyWith<_$DashboardDefinitionImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -5170,22 +5180,22 @@ class _$MeasurementDataCopyWithImpl<$Res, $Val extends MeasurementData>
 }
 
 /// @nodoc
-abstract class _$$_MeasurementDataCopyWith<$Res>
+abstract class _$$MeasurementDataImplCopyWith<$Res>
     implements $MeasurementDataCopyWith<$Res> {
-  factory _$$_MeasurementDataCopyWith(
-          _$_MeasurementData value, $Res Function(_$_MeasurementData) then) =
-      __$$_MeasurementDataCopyWithImpl<$Res>;
+  factory _$$MeasurementDataImplCopyWith(_$MeasurementDataImpl value,
+          $Res Function(_$MeasurementDataImpl) then) =
+      __$$MeasurementDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({DateTime dateFrom, DateTime dateTo, num value, String dataTypeId});
 }
 
 /// @nodoc
-class __$$_MeasurementDataCopyWithImpl<$Res>
-    extends _$MeasurementDataCopyWithImpl<$Res, _$_MeasurementData>
-    implements _$$_MeasurementDataCopyWith<$Res> {
-  __$$_MeasurementDataCopyWithImpl(
-      _$_MeasurementData _value, $Res Function(_$_MeasurementData) _then)
+class __$$MeasurementDataImplCopyWithImpl<$Res>
+    extends _$MeasurementDataCopyWithImpl<$Res, _$MeasurementDataImpl>
+    implements _$$MeasurementDataImplCopyWith<$Res> {
+  __$$MeasurementDataImplCopyWithImpl(
+      _$MeasurementDataImpl _value, $Res Function(_$MeasurementDataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -5196,7 +5206,7 @@ class __$$_MeasurementDataCopyWithImpl<$Res>
     Object? value = null,
     Object? dataTypeId = null,
   }) {
-    return _then(_$_MeasurementData(
+    return _then(_$MeasurementDataImpl(
       dateFrom: null == dateFrom
           ? _value.dateFrom
           : dateFrom // ignore: cast_nullable_to_non_nullable
@@ -5219,15 +5229,15 @@ class __$$_MeasurementDataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_MeasurementData implements _MeasurementData {
-  const _$_MeasurementData(
+class _$MeasurementDataImpl implements _MeasurementData {
+  const _$MeasurementDataImpl(
       {required this.dateFrom,
       required this.dateTo,
       required this.value,
       required this.dataTypeId});
 
-  factory _$_MeasurementData.fromJson(Map<String, dynamic> json) =>
-      _$$_MeasurementDataFromJson(json);
+  factory _$MeasurementDataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MeasurementDataImplFromJson(json);
 
   @override
   final DateTime dateFrom;
@@ -5244,10 +5254,10 @@ class _$_MeasurementData implements _MeasurementData {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_MeasurementData &&
+            other is _$MeasurementDataImpl &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -5264,12 +5274,13 @@ class _$_MeasurementData implements _MeasurementData {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_MeasurementDataCopyWith<_$_MeasurementData> get copyWith =>
-      __$$_MeasurementDataCopyWithImpl<_$_MeasurementData>(this, _$identity);
+  _$$MeasurementDataImplCopyWith<_$MeasurementDataImpl> get copyWith =>
+      __$$MeasurementDataImplCopyWithImpl<_$MeasurementDataImpl>(
+          this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_MeasurementDataToJson(
+    return _$$MeasurementDataImplToJson(
       this,
     );
   }
@@ -5280,10 +5291,10 @@ abstract class _MeasurementData implements MeasurementData {
       {required final DateTime dateFrom,
       required final DateTime dateTo,
       required final num value,
-      required final String dataTypeId}) = _$_MeasurementData;
+      required final String dataTypeId}) = _$MeasurementDataImpl;
 
   factory _MeasurementData.fromJson(Map<String, dynamic> json) =
-      _$_MeasurementData.fromJson;
+      _$MeasurementDataImpl.fromJson;
 
   @override
   DateTime get dateFrom;
@@ -5295,7 +5306,7 @@ abstract class _MeasurementData implements MeasurementData {
   String get dataTypeId;
   @override
   @JsonKey(ignore: true)
-  _$$_MeasurementDataCopyWith<_$_MeasurementData> get copyWith =>
+  _$$MeasurementDataImplCopyWith<_$MeasurementDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -5390,11 +5401,11 @@ class _$WorkoutDataCopyWithImpl<$Res, $Val extends WorkoutData>
 }
 
 /// @nodoc
-abstract class _$$_WorkoutDataCopyWith<$Res>
+abstract class _$$WorkoutDataImplCopyWith<$Res>
     implements $WorkoutDataCopyWith<$Res> {
-  factory _$$_WorkoutDataCopyWith(
-          _$_WorkoutData value, $Res Function(_$_WorkoutData) then) =
-      __$$_WorkoutDataCopyWithImpl<$Res>;
+  factory _$$WorkoutDataImplCopyWith(
+          _$WorkoutDataImpl value, $Res Function(_$WorkoutDataImpl) then) =
+      __$$WorkoutDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -5408,11 +5419,11 @@ abstract class _$$_WorkoutDataCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_WorkoutDataCopyWithImpl<$Res>
-    extends _$WorkoutDataCopyWithImpl<$Res, _$_WorkoutData>
-    implements _$$_WorkoutDataCopyWith<$Res> {
-  __$$_WorkoutDataCopyWithImpl(
-      _$_WorkoutData _value, $Res Function(_$_WorkoutData) _then)
+class __$$WorkoutDataImplCopyWithImpl<$Res>
+    extends _$WorkoutDataCopyWithImpl<$Res, _$WorkoutDataImpl>
+    implements _$$WorkoutDataImplCopyWith<$Res> {
+  __$$WorkoutDataImplCopyWithImpl(
+      _$WorkoutDataImpl _value, $Res Function(_$WorkoutDataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -5426,7 +5437,7 @@ class __$$_WorkoutDataCopyWithImpl<$Res>
     Object? distance = freezed,
     Object? source = freezed,
   }) {
-    return _then(_$_WorkoutData(
+    return _then(_$WorkoutDataImpl(
       dateFrom: null == dateFrom
           ? _value.dateFrom
           : dateFrom // ignore: cast_nullable_to_non_nullable
@@ -5461,8 +5472,8 @@ class __$$_WorkoutDataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_WorkoutData implements _WorkoutData {
-  const _$_WorkoutData(
+class _$WorkoutDataImpl implements _WorkoutData {
+  const _$WorkoutDataImpl(
       {required this.dateFrom,
       required this.dateTo,
       required this.id,
@@ -5471,8 +5482,8 @@ class _$_WorkoutData implements _WorkoutData {
       required this.distance,
       required this.source});
 
-  factory _$_WorkoutData.fromJson(Map<String, dynamic> json) =>
-      _$$_WorkoutDataFromJson(json);
+  factory _$WorkoutDataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$WorkoutDataImplFromJson(json);
 
   @override
   final DateTime dateFrom;
@@ -5495,10 +5506,10 @@ class _$_WorkoutData implements _WorkoutData {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_WorkoutData &&
+            other is _$WorkoutDataImpl &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -5519,12 +5530,12 @@ class _$_WorkoutData implements _WorkoutData {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_WorkoutDataCopyWith<_$_WorkoutData> get copyWith =>
-      __$$_WorkoutDataCopyWithImpl<_$_WorkoutData>(this, _$identity);
+  _$$WorkoutDataImplCopyWith<_$WorkoutDataImpl> get copyWith =>
+      __$$WorkoutDataImplCopyWithImpl<_$WorkoutDataImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_WorkoutDataToJson(
+    return _$$WorkoutDataImplToJson(
       this,
     );
   }
@@ -5538,10 +5549,10 @@ abstract class _WorkoutData implements WorkoutData {
       required final String workoutType,
       required final num? energy,
       required final num? distance,
-      required final String? source}) = _$_WorkoutData;
+      required final String? source}) = _$WorkoutDataImpl;
 
   factory _WorkoutData.fromJson(Map<String, dynamic> json) =
-      _$_WorkoutData.fromJson;
+      _$WorkoutDataImpl.fromJson;
 
   @override
   DateTime get dateFrom;
@@ -5559,7 +5570,7 @@ abstract class _WorkoutData implements WorkoutData {
   String? get source;
   @override
   @JsonKey(ignore: true)
-  _$$_WorkoutDataCopyWith<_$_WorkoutData> get copyWith =>
+  _$$WorkoutDataImplCopyWith<_$WorkoutDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -5633,11 +5644,11 @@ class _$HabitCompletionDataCopyWithImpl<$Res, $Val extends HabitCompletionData>
 }
 
 /// @nodoc
-abstract class _$$_HabitCompletionDataCopyWith<$Res>
+abstract class _$$HabitCompletionDataImplCopyWith<$Res>
     implements $HabitCompletionDataCopyWith<$Res> {
-  factory _$$_HabitCompletionDataCopyWith(_$_HabitCompletionData value,
-          $Res Function(_$_HabitCompletionData) then) =
-      __$$_HabitCompletionDataCopyWithImpl<$Res>;
+  factory _$$HabitCompletionDataImplCopyWith(_$HabitCompletionDataImpl value,
+          $Res Function(_$HabitCompletionDataImpl) then) =
+      __$$HabitCompletionDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -5648,11 +5659,11 @@ abstract class _$$_HabitCompletionDataCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_HabitCompletionDataCopyWithImpl<$Res>
-    extends _$HabitCompletionDataCopyWithImpl<$Res, _$_HabitCompletionData>
-    implements _$$_HabitCompletionDataCopyWith<$Res> {
-  __$$_HabitCompletionDataCopyWithImpl(_$_HabitCompletionData _value,
-      $Res Function(_$_HabitCompletionData) _then)
+class __$$HabitCompletionDataImplCopyWithImpl<$Res>
+    extends _$HabitCompletionDataCopyWithImpl<$Res, _$HabitCompletionDataImpl>
+    implements _$$HabitCompletionDataImplCopyWith<$Res> {
+  __$$HabitCompletionDataImplCopyWithImpl(_$HabitCompletionDataImpl _value,
+      $Res Function(_$HabitCompletionDataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -5663,7 +5674,7 @@ class __$$_HabitCompletionDataCopyWithImpl<$Res>
     Object? habitId = null,
     Object? completionType = freezed,
   }) {
-    return _then(_$_HabitCompletionData(
+    return _then(_$HabitCompletionDataImpl(
       dateFrom: null == dateFrom
           ? _value.dateFrom
           : dateFrom // ignore: cast_nullable_to_non_nullable
@@ -5686,15 +5697,15 @@ class __$$_HabitCompletionDataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_HabitCompletionData implements _HabitCompletionData {
-  const _$_HabitCompletionData(
+class _$HabitCompletionDataImpl implements _HabitCompletionData {
+  const _$HabitCompletionDataImpl(
       {required this.dateFrom,
       required this.dateTo,
       required this.habitId,
       this.completionType});
 
-  factory _$_HabitCompletionData.fromJson(Map<String, dynamic> json) =>
-      _$$_HabitCompletionDataFromJson(json);
+  factory _$HabitCompletionDataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$HabitCompletionDataImplFromJson(json);
 
   @override
   final DateTime dateFrom;
@@ -5711,10 +5722,10 @@ class _$_HabitCompletionData implements _HabitCompletionData {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_HabitCompletionData &&
+            other is _$HabitCompletionDataImpl &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -5731,13 +5742,13 @@ class _$_HabitCompletionData implements _HabitCompletionData {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_HabitCompletionDataCopyWith<_$_HabitCompletionData> get copyWith =>
-      __$$_HabitCompletionDataCopyWithImpl<_$_HabitCompletionData>(
+  _$$HabitCompletionDataImplCopyWith<_$HabitCompletionDataImpl> get copyWith =>
+      __$$HabitCompletionDataImplCopyWithImpl<_$HabitCompletionDataImpl>(
           this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_HabitCompletionDataToJson(
+    return _$$HabitCompletionDataImplToJson(
       this,
     );
   }
@@ -5748,10 +5759,10 @@ abstract class _HabitCompletionData implements HabitCompletionData {
       {required final DateTime dateFrom,
       required final DateTime dateTo,
       required final String habitId,
-      final HabitCompletionType? completionType}) = _$_HabitCompletionData;
+      final HabitCompletionType? completionType}) = _$HabitCompletionDataImpl;
 
   factory _HabitCompletionData.fromJson(Map<String, dynamic> json) =
-      _$_HabitCompletionData.fromJson;
+      _$HabitCompletionDataImpl.fromJson;
 
   @override
   DateTime get dateFrom;
@@ -5763,7 +5774,7 @@ abstract class _HabitCompletionData implements HabitCompletionData {
   HabitCompletionType? get completionType;
   @override
   @JsonKey(ignore: true)
-  _$$_HabitCompletionDataCopyWith<_$_HabitCompletionData> get copyWith =>
+  _$$HabitCompletionDataImplCopyWith<_$HabitCompletionDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -5899,20 +5910,22 @@ class _$DashboardItemCopyWithImpl<$Res, $Val extends DashboardItem>
 }
 
 /// @nodoc
-abstract class _$$DashboardMeasurementItemCopyWith<$Res> {
-  factory _$$DashboardMeasurementItemCopyWith(_$DashboardMeasurementItem value,
-          $Res Function(_$DashboardMeasurementItem) then) =
-      __$$DashboardMeasurementItemCopyWithImpl<$Res>;
+abstract class _$$DashboardMeasurementItemImplCopyWith<$Res> {
+  factory _$$DashboardMeasurementItemImplCopyWith(
+          _$DashboardMeasurementItemImpl value,
+          $Res Function(_$DashboardMeasurementItemImpl) then) =
+      __$$DashboardMeasurementItemImplCopyWithImpl<$Res>;
   @useResult
   $Res call({String id, AggregationType? aggregationType});
 }
 
 /// @nodoc
-class __$$DashboardMeasurementItemCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardMeasurementItem>
-    implements _$$DashboardMeasurementItemCopyWith<$Res> {
-  __$$DashboardMeasurementItemCopyWithImpl(_$DashboardMeasurementItem _value,
-      $Res Function(_$DashboardMeasurementItem) _then)
+class __$$DashboardMeasurementItemImplCopyWithImpl<$Res>
+    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardMeasurementItemImpl>
+    implements _$$DashboardMeasurementItemImplCopyWith<$Res> {
+  __$$DashboardMeasurementItemImplCopyWithImpl(
+      _$DashboardMeasurementItemImpl _value,
+      $Res Function(_$DashboardMeasurementItemImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -5921,7 +5934,7 @@ class __$$DashboardMeasurementItemCopyWithImpl<$Res>
     Object? id = null,
     Object? aggregationType = freezed,
   }) {
-    return _then(_$DashboardMeasurementItem(
+    return _then(_$DashboardMeasurementItemImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -5936,13 +5949,13 @@ class __$$DashboardMeasurementItemCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardMeasurementItem implements DashboardMeasurementItem {
-  const _$DashboardMeasurementItem(
+class _$DashboardMeasurementItemImpl implements DashboardMeasurementItem {
+  const _$DashboardMeasurementItemImpl(
       {required this.id, this.aggregationType, final String? $type})
       : $type = $type ?? 'measurement';
 
-  factory _$DashboardMeasurementItem.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardMeasurementItemFromJson(json);
+  factory _$DashboardMeasurementItemImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DashboardMeasurementItemImplFromJson(json);
 
   @override
   final String id;
@@ -5958,10 +5971,10 @@ class _$DashboardMeasurementItem implements DashboardMeasurementItem {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardMeasurementItem &&
+            other is _$DashboardMeasurementItemImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.aggregationType, aggregationType) ||
                 other.aggregationType == aggregationType));
@@ -5974,10 +5987,9 @@ class _$DashboardMeasurementItem implements DashboardMeasurementItem {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$DashboardMeasurementItemCopyWith<_$DashboardMeasurementItem>
-      get copyWith =>
-          __$$DashboardMeasurementItemCopyWithImpl<_$DashboardMeasurementItem>(
-              this, _$identity);
+  _$$DashboardMeasurementItemImplCopyWith<_$DashboardMeasurementItemImpl>
+      get copyWith => __$$DashboardMeasurementItemImplCopyWithImpl<
+          _$DashboardMeasurementItemImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -6090,7 +6102,7 @@ class _$DashboardMeasurementItem implements DashboardMeasurementItem {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$DashboardMeasurementItemToJson(
+    return _$$DashboardMeasurementItemImplToJson(
       this,
     );
   }
@@ -6099,33 +6111,33 @@ class _$DashboardMeasurementItem implements DashboardMeasurementItem {
 abstract class DashboardMeasurementItem implements DashboardItem {
   const factory DashboardMeasurementItem(
       {required final String id,
-      final AggregationType? aggregationType}) = _$DashboardMeasurementItem;
+      final AggregationType? aggregationType}) = _$DashboardMeasurementItemImpl;
 
   factory DashboardMeasurementItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardMeasurementItem.fromJson;
+      _$DashboardMeasurementItemImpl.fromJson;
 
   String get id;
   AggregationType? get aggregationType;
   @JsonKey(ignore: true)
-  _$$DashboardMeasurementItemCopyWith<_$DashboardMeasurementItem>
+  _$$DashboardMeasurementItemImplCopyWith<_$DashboardMeasurementItemImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DashboardHealthItemCopyWith<$Res> {
-  factory _$$DashboardHealthItemCopyWith(_$DashboardHealthItem value,
-          $Res Function(_$DashboardHealthItem) then) =
-      __$$DashboardHealthItemCopyWithImpl<$Res>;
+abstract class _$$DashboardHealthItemImplCopyWith<$Res> {
+  factory _$$DashboardHealthItemImplCopyWith(_$DashboardHealthItemImpl value,
+          $Res Function(_$DashboardHealthItemImpl) then) =
+      __$$DashboardHealthItemImplCopyWithImpl<$Res>;
   @useResult
   $Res call({String color, String healthType});
 }
 
 /// @nodoc
-class __$$DashboardHealthItemCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardHealthItem>
-    implements _$$DashboardHealthItemCopyWith<$Res> {
-  __$$DashboardHealthItemCopyWithImpl(
-      _$DashboardHealthItem _value, $Res Function(_$DashboardHealthItem) _then)
+class __$$DashboardHealthItemImplCopyWithImpl<$Res>
+    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardHealthItemImpl>
+    implements _$$DashboardHealthItemImplCopyWith<$Res> {
+  __$$DashboardHealthItemImplCopyWithImpl(_$DashboardHealthItemImpl _value,
+      $Res Function(_$DashboardHealthItemImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -6134,7 +6146,7 @@ class __$$DashboardHealthItemCopyWithImpl<$Res>
     Object? color = null,
     Object? healthType = null,
   }) {
-    return _then(_$DashboardHealthItem(
+    return _then(_$DashboardHealthItemImpl(
       color: null == color
           ? _value.color
           : color // ignore: cast_nullable_to_non_nullable
@@ -6149,13 +6161,13 @@ class __$$DashboardHealthItemCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardHealthItem implements DashboardHealthItem {
-  const _$DashboardHealthItem(
+class _$DashboardHealthItemImpl implements DashboardHealthItem {
+  const _$DashboardHealthItemImpl(
       {required this.color, required this.healthType, final String? $type})
       : $type = $type ?? 'healthChart';
 
-  factory _$DashboardHealthItem.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardHealthItemFromJson(json);
+  factory _$DashboardHealthItemImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DashboardHealthItemImplFromJson(json);
 
   @override
   final String color;
@@ -6171,10 +6183,10 @@ class _$DashboardHealthItem implements DashboardHealthItem {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardHealthItem &&
+            other is _$DashboardHealthItemImpl &&
             (identical(other.color, color) || other.color == color) &&
             (identical(other.healthType, healthType) ||
                 other.healthType == healthType));
@@ -6187,8 +6199,8 @@ class _$DashboardHealthItem implements DashboardHealthItem {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$DashboardHealthItemCopyWith<_$DashboardHealthItem> get copyWith =>
-      __$$DashboardHealthItemCopyWithImpl<_$DashboardHealthItem>(
+  _$$DashboardHealthItemImplCopyWith<_$DashboardHealthItemImpl> get copyWith =>
+      __$$DashboardHealthItemImplCopyWithImpl<_$DashboardHealthItemImpl>(
           this, _$identity);
 
   @override
@@ -6302,7 +6314,7 @@ class _$DashboardHealthItem implements DashboardHealthItem {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$DashboardHealthItemToJson(
+    return _$$DashboardHealthItemImplToJson(
       this,
     );
   }
@@ -6311,23 +6323,23 @@ class _$DashboardHealthItem implements DashboardHealthItem {
 abstract class DashboardHealthItem implements DashboardItem {
   const factory DashboardHealthItem(
       {required final String color,
-      required final String healthType}) = _$DashboardHealthItem;
+      required final String healthType}) = _$DashboardHealthItemImpl;
 
   factory DashboardHealthItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardHealthItem.fromJson;
+      _$DashboardHealthItemImpl.fromJson;
 
   String get color;
   String get healthType;
   @JsonKey(ignore: true)
-  _$$DashboardHealthItemCopyWith<_$DashboardHealthItem> get copyWith =>
+  _$$DashboardHealthItemImplCopyWith<_$DashboardHealthItemImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DashboardWorkoutItemCopyWith<$Res> {
-  factory _$$DashboardWorkoutItemCopyWith(_$DashboardWorkoutItem value,
-          $Res Function(_$DashboardWorkoutItem) then) =
-      __$$DashboardWorkoutItemCopyWithImpl<$Res>;
+abstract class _$$DashboardWorkoutItemImplCopyWith<$Res> {
+  factory _$$DashboardWorkoutItemImplCopyWith(_$DashboardWorkoutItemImpl value,
+          $Res Function(_$DashboardWorkoutItemImpl) then) =
+      __$$DashboardWorkoutItemImplCopyWithImpl<$Res>;
   @useResult
   $Res call(
       {String workoutType,
@@ -6337,11 +6349,11 @@ abstract class _$$DashboardWorkoutItemCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$DashboardWorkoutItemCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardWorkoutItem>
-    implements _$$DashboardWorkoutItemCopyWith<$Res> {
-  __$$DashboardWorkoutItemCopyWithImpl(_$DashboardWorkoutItem _value,
-      $Res Function(_$DashboardWorkoutItem) _then)
+class __$$DashboardWorkoutItemImplCopyWithImpl<$Res>
+    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardWorkoutItemImpl>
+    implements _$$DashboardWorkoutItemImplCopyWith<$Res> {
+  __$$DashboardWorkoutItemImplCopyWithImpl(_$DashboardWorkoutItemImpl _value,
+      $Res Function(_$DashboardWorkoutItemImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -6352,7 +6364,7 @@ class __$$DashboardWorkoutItemCopyWithImpl<$Res>
     Object? color = null,
     Object? valueType = null,
   }) {
-    return _then(_$DashboardWorkoutItem(
+    return _then(_$DashboardWorkoutItemImpl(
       workoutType: null == workoutType
           ? _value.workoutType
           : workoutType // ignore: cast_nullable_to_non_nullable
@@ -6375,8 +6387,8 @@ class __$$DashboardWorkoutItemCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardWorkoutItem implements DashboardWorkoutItem {
-  const _$DashboardWorkoutItem(
+class _$DashboardWorkoutItemImpl implements DashboardWorkoutItem {
+  const _$DashboardWorkoutItemImpl(
       {required this.workoutType,
       required this.displayName,
       required this.color,
@@ -6384,8 +6396,8 @@ class _$DashboardWorkoutItem implements DashboardWorkoutItem {
       final String? $type})
       : $type = $type ?? 'workoutChart';
 
-  factory _$DashboardWorkoutItem.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardWorkoutItemFromJson(json);
+  factory _$DashboardWorkoutItemImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DashboardWorkoutItemImplFromJson(json);
 
   @override
   final String workoutType;
@@ -6405,10 +6417,10 @@ class _$DashboardWorkoutItem implements DashboardWorkoutItem {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardWorkoutItem &&
+            other is _$DashboardWorkoutItemImpl &&
             (identical(other.workoutType, workoutType) ||
                 other.workoutType == workoutType) &&
             (identical(other.displayName, displayName) ||
@@ -6426,9 +6438,10 @@ class _$DashboardWorkoutItem implements DashboardWorkoutItem {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$DashboardWorkoutItemCopyWith<_$DashboardWorkoutItem> get copyWith =>
-      __$$DashboardWorkoutItemCopyWithImpl<_$DashboardWorkoutItem>(
-          this, _$identity);
+  _$$DashboardWorkoutItemImplCopyWith<_$DashboardWorkoutItemImpl>
+      get copyWith =>
+          __$$DashboardWorkoutItemImplCopyWithImpl<_$DashboardWorkoutItemImpl>(
+              this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -6541,7 +6554,7 @@ class _$DashboardWorkoutItem implements DashboardWorkoutItem {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$DashboardWorkoutItemToJson(
+    return _$$DashboardWorkoutItemImplToJson(
       this,
     );
   }
@@ -6552,35 +6565,35 @@ abstract class DashboardWorkoutItem implements DashboardItem {
       {required final String workoutType,
       required final String displayName,
       required final String color,
-      required final WorkoutValueType valueType}) = _$DashboardWorkoutItem;
+      required final WorkoutValueType valueType}) = _$DashboardWorkoutItemImpl;
 
   factory DashboardWorkoutItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardWorkoutItem.fromJson;
+      _$DashboardWorkoutItemImpl.fromJson;
 
   String get workoutType;
   String get displayName;
   String get color;
   WorkoutValueType get valueType;
   @JsonKey(ignore: true)
-  _$$DashboardWorkoutItemCopyWith<_$DashboardWorkoutItem> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$DashboardWorkoutItemImplCopyWith<_$DashboardWorkoutItemImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DashboardHabitItemCopyWith<$Res> {
-  factory _$$DashboardHabitItemCopyWith(_$DashboardHabitItem value,
-          $Res Function(_$DashboardHabitItem) then) =
-      __$$DashboardHabitItemCopyWithImpl<$Res>;
+abstract class _$$DashboardHabitItemImplCopyWith<$Res> {
+  factory _$$DashboardHabitItemImplCopyWith(_$DashboardHabitItemImpl value,
+          $Res Function(_$DashboardHabitItemImpl) then) =
+      __$$DashboardHabitItemImplCopyWithImpl<$Res>;
   @useResult
   $Res call({String habitId});
 }
 
 /// @nodoc
-class __$$DashboardHabitItemCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardHabitItem>
-    implements _$$DashboardHabitItemCopyWith<$Res> {
-  __$$DashboardHabitItemCopyWithImpl(
-      _$DashboardHabitItem _value, $Res Function(_$DashboardHabitItem) _then)
+class __$$DashboardHabitItemImplCopyWithImpl<$Res>
+    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardHabitItemImpl>
+    implements _$$DashboardHabitItemImplCopyWith<$Res> {
+  __$$DashboardHabitItemImplCopyWithImpl(_$DashboardHabitItemImpl _value,
+      $Res Function(_$DashboardHabitItemImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -6588,7 +6601,7 @@ class __$$DashboardHabitItemCopyWithImpl<$Res>
   $Res call({
     Object? habitId = null,
   }) {
-    return _then(_$DashboardHabitItem(
+    return _then(_$DashboardHabitItemImpl(
       habitId: null == habitId
           ? _value.habitId
           : habitId // ignore: cast_nullable_to_non_nullable
@@ -6599,12 +6612,12 @@ class __$$DashboardHabitItemCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardHabitItem implements DashboardHabitItem {
-  const _$DashboardHabitItem({required this.habitId, final String? $type})
+class _$DashboardHabitItemImpl implements DashboardHabitItem {
+  const _$DashboardHabitItemImpl({required this.habitId, final String? $type})
       : $type = $type ?? 'habitChart';
 
-  factory _$DashboardHabitItem.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardHabitItemFromJson(json);
+  factory _$DashboardHabitItemImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DashboardHabitItemImplFromJson(json);
 
   @override
   final String habitId;
@@ -6618,10 +6631,10 @@ class _$DashboardHabitItem implements DashboardHabitItem {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardHabitItem &&
+            other is _$DashboardHabitItemImpl &&
             (identical(other.habitId, habitId) || other.habitId == habitId));
   }
 
@@ -6632,8 +6645,8 @@ class _$DashboardHabitItem implements DashboardHabitItem {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$DashboardHabitItemCopyWith<_$DashboardHabitItem> get copyWith =>
-      __$$DashboardHabitItemCopyWithImpl<_$DashboardHabitItem>(
+  _$$DashboardHabitItemImplCopyWith<_$DashboardHabitItemImpl> get copyWith =>
+      __$$DashboardHabitItemImplCopyWithImpl<_$DashboardHabitItemImpl>(
           this, _$identity);
 
   @override
@@ -6747,7 +6760,7 @@ class _$DashboardHabitItem implements DashboardHabitItem {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$DashboardHabitItemToJson(
+    return _$$DashboardHabitItemImplToJson(
       this,
     );
   }
@@ -6755,22 +6768,22 @@ class _$DashboardHabitItem implements DashboardHabitItem {
 
 abstract class DashboardHabitItem implements DashboardItem {
   const factory DashboardHabitItem({required final String habitId}) =
-      _$DashboardHabitItem;
+      _$DashboardHabitItemImpl;
 
   factory DashboardHabitItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardHabitItem.fromJson;
+      _$DashboardHabitItemImpl.fromJson;
 
   String get habitId;
   @JsonKey(ignore: true)
-  _$$DashboardHabitItemCopyWith<_$DashboardHabitItem> get copyWith =>
+  _$$DashboardHabitItemImplCopyWith<_$DashboardHabitItemImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DashboardSurveyItemCopyWith<$Res> {
-  factory _$$DashboardSurveyItemCopyWith(_$DashboardSurveyItem value,
-          $Res Function(_$DashboardSurveyItem) then) =
-      __$$DashboardSurveyItemCopyWithImpl<$Res>;
+abstract class _$$DashboardSurveyItemImplCopyWith<$Res> {
+  factory _$$DashboardSurveyItemImplCopyWith(_$DashboardSurveyItemImpl value,
+          $Res Function(_$DashboardSurveyItemImpl) then) =
+      __$$DashboardSurveyItemImplCopyWithImpl<$Res>;
   @useResult
   $Res call(
       {Map<String, String> colorsByScoreKey,
@@ -6779,11 +6792,11 @@ abstract class _$$DashboardSurveyItemCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$DashboardSurveyItemCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardSurveyItem>
-    implements _$$DashboardSurveyItemCopyWith<$Res> {
-  __$$DashboardSurveyItemCopyWithImpl(
-      _$DashboardSurveyItem _value, $Res Function(_$DashboardSurveyItem) _then)
+class __$$DashboardSurveyItemImplCopyWithImpl<$Res>
+    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardSurveyItemImpl>
+    implements _$$DashboardSurveyItemImplCopyWith<$Res> {
+  __$$DashboardSurveyItemImplCopyWithImpl(_$DashboardSurveyItemImpl _value,
+      $Res Function(_$DashboardSurveyItemImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -6793,7 +6806,7 @@ class __$$DashboardSurveyItemCopyWithImpl<$Res>
     Object? surveyType = null,
     Object? surveyName = null,
   }) {
-    return _then(_$DashboardSurveyItem(
+    return _then(_$DashboardSurveyItemImpl(
       colorsByScoreKey: null == colorsByScoreKey
           ? _value._colorsByScoreKey
           : colorsByScoreKey // ignore: cast_nullable_to_non_nullable
@@ -6812,8 +6825,8 @@ class __$$DashboardSurveyItemCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardSurveyItem implements DashboardSurveyItem {
-  const _$DashboardSurveyItem(
+class _$DashboardSurveyItemImpl implements DashboardSurveyItem {
+  const _$DashboardSurveyItemImpl(
       {required final Map<String, String> colorsByScoreKey,
       required this.surveyType,
       required this.surveyName,
@@ -6821,8 +6834,8 @@ class _$DashboardSurveyItem implements DashboardSurveyItem {
       : _colorsByScoreKey = colorsByScoreKey,
         $type = $type ?? 'surveyChart';
 
-  factory _$DashboardSurveyItem.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardSurveyItemFromJson(json);
+  factory _$DashboardSurveyItemImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DashboardSurveyItemImplFromJson(json);
 
   final Map<String, String> _colorsByScoreKey;
   @override
@@ -6846,10 +6859,10 @@ class _$DashboardSurveyItem implements DashboardSurveyItem {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardSurveyItem &&
+            other is _$DashboardSurveyItemImpl &&
             const DeepCollectionEquality()
                 .equals(other._colorsByScoreKey, _colorsByScoreKey) &&
             (identical(other.surveyType, surveyType) ||
@@ -6869,8 +6882,8 @@ class _$DashboardSurveyItem implements DashboardSurveyItem {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$DashboardSurveyItemCopyWith<_$DashboardSurveyItem> get copyWith =>
-      __$$DashboardSurveyItemCopyWithImpl<_$DashboardSurveyItem>(
+  _$$DashboardSurveyItemImplCopyWith<_$DashboardSurveyItemImpl> get copyWith =>
+      __$$DashboardSurveyItemImplCopyWithImpl<_$DashboardSurveyItemImpl>(
           this, _$identity);
 
   @override
@@ -6984,7 +6997,7 @@ class _$DashboardSurveyItem implements DashboardSurveyItem {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$DashboardSurveyItemToJson(
+    return _$$DashboardSurveyItemImplToJson(
       this,
     );
   }
@@ -6994,34 +7007,36 @@ abstract class DashboardSurveyItem implements DashboardItem {
   const factory DashboardSurveyItem(
       {required final Map<String, String> colorsByScoreKey,
       required final String surveyType,
-      required final String surveyName}) = _$DashboardSurveyItem;
+      required final String surveyName}) = _$DashboardSurveyItemImpl;
 
   factory DashboardSurveyItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardSurveyItem.fromJson;
+      _$DashboardSurveyItemImpl.fromJson;
 
   Map<String, String> get colorsByScoreKey;
   String get surveyType;
   String get surveyName;
   @JsonKey(ignore: true)
-  _$$DashboardSurveyItemCopyWith<_$DashboardSurveyItem> get copyWith =>
+  _$$DashboardSurveyItemImplCopyWith<_$DashboardSurveyItemImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DashboardStoryTimeItemCopyWith<$Res> {
-  factory _$$DashboardStoryTimeItemCopyWith(_$DashboardStoryTimeItem value,
-          $Res Function(_$DashboardStoryTimeItem) then) =
-      __$$DashboardStoryTimeItemCopyWithImpl<$Res>;
+abstract class _$$DashboardStoryTimeItemImplCopyWith<$Res> {
+  factory _$$DashboardStoryTimeItemImplCopyWith(
+          _$DashboardStoryTimeItemImpl value,
+          $Res Function(_$DashboardStoryTimeItemImpl) then) =
+      __$$DashboardStoryTimeItemImplCopyWithImpl<$Res>;
   @useResult
   $Res call({String storyTagId, String color});
 }
 
 /// @nodoc
-class __$$DashboardStoryTimeItemCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardStoryTimeItem>
-    implements _$$DashboardStoryTimeItemCopyWith<$Res> {
-  __$$DashboardStoryTimeItemCopyWithImpl(_$DashboardStoryTimeItem _value,
-      $Res Function(_$DashboardStoryTimeItem) _then)
+class __$$DashboardStoryTimeItemImplCopyWithImpl<$Res>
+    extends _$DashboardItemCopyWithImpl<$Res, _$DashboardStoryTimeItemImpl>
+    implements _$$DashboardStoryTimeItemImplCopyWith<$Res> {
+  __$$DashboardStoryTimeItemImplCopyWithImpl(
+      _$DashboardStoryTimeItemImpl _value,
+      $Res Function(_$DashboardStoryTimeItemImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -7030,7 +7045,7 @@ class __$$DashboardStoryTimeItemCopyWithImpl<$Res>
     Object? storyTagId = null,
     Object? color = null,
   }) {
-    return _then(_$DashboardStoryTimeItem(
+    return _then(_$DashboardStoryTimeItemImpl(
       storyTagId: null == storyTagId
           ? _value.storyTagId
           : storyTagId // ignore: cast_nullable_to_non_nullable
@@ -7045,13 +7060,13 @@ class __$$DashboardStoryTimeItemCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DashboardStoryTimeItem implements DashboardStoryTimeItem {
-  const _$DashboardStoryTimeItem(
+class _$DashboardStoryTimeItemImpl implements DashboardStoryTimeItem {
+  const _$DashboardStoryTimeItemImpl(
       {required this.storyTagId, required this.color, final String? $type})
       : $type = $type ?? 'storyTimeChart';
 
-  factory _$DashboardStoryTimeItem.fromJson(Map<String, dynamic> json) =>
-      _$$DashboardStoryTimeItemFromJson(json);
+  factory _$DashboardStoryTimeItemImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DashboardStoryTimeItemImplFromJson(json);
 
   @override
   final String storyTagId;
@@ -7067,10 +7082,10 @@ class _$DashboardStoryTimeItem implements DashboardStoryTimeItem {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DashboardStoryTimeItem &&
+            other is _$DashboardStoryTimeItemImpl &&
             (identical(other.storyTagId, storyTagId) ||
                 other.storyTagId == storyTagId) &&
             (identical(other.color, color) || other.color == color));
@@ -7083,9 +7098,9 @@ class _$DashboardStoryTimeItem implements DashboardStoryTimeItem {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$DashboardStoryTimeItemCopyWith<_$DashboardStoryTimeItem> get copyWith =>
-      __$$DashboardStoryTimeItemCopyWithImpl<_$DashboardStoryTimeItem>(
-          this, _$identity);
+  _$$DashboardStoryTimeItemImplCopyWith<_$DashboardStoryTimeItemImpl>
+      get copyWith => __$$DashboardStoryTimeItemImplCopyWithImpl<
+          _$DashboardStoryTimeItemImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -7198,7 +7213,7 @@ class _$DashboardStoryTimeItem implements DashboardStoryTimeItem {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$DashboardStoryTimeItemToJson(
+    return _$$DashboardStoryTimeItemImplToJson(
       this,
     );
   }
@@ -7207,33 +7222,34 @@ class _$DashboardStoryTimeItem implements DashboardStoryTimeItem {
 abstract class DashboardStoryTimeItem implements DashboardItem {
   const factory DashboardStoryTimeItem(
       {required final String storyTagId,
-      required final String color}) = _$DashboardStoryTimeItem;
+      required final String color}) = _$DashboardStoryTimeItemImpl;
 
   factory DashboardStoryTimeItem.fromJson(Map<String, dynamic> json) =
-      _$DashboardStoryTimeItem.fromJson;
+      _$DashboardStoryTimeItemImpl.fromJson;
 
   String get storyTagId;
   String get color;
   @JsonKey(ignore: true)
-  _$$DashboardStoryTimeItemCopyWith<_$DashboardStoryTimeItem> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$DashboardStoryTimeItemImplCopyWith<_$DashboardStoryTimeItemImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$WildcardStoryTimeItemCopyWith<$Res> {
-  factory _$$WildcardStoryTimeItemCopyWith(_$WildcardStoryTimeItem value,
-          $Res Function(_$WildcardStoryTimeItem) then) =
-      __$$WildcardStoryTimeItemCopyWithImpl<$Res>;
+abstract class _$$WildcardStoryTimeItemImplCopyWith<$Res> {
+  factory _$$WildcardStoryTimeItemImplCopyWith(
+          _$WildcardStoryTimeItemImpl value,
+          $Res Function(_$WildcardStoryTimeItemImpl) then) =
+      __$$WildcardStoryTimeItemImplCopyWithImpl<$Res>;
   @useResult
   $Res call({String storySubstring, String color});
 }
 
 /// @nodoc
-class __$$WildcardStoryTimeItemCopyWithImpl<$Res>
-    extends _$DashboardItemCopyWithImpl<$Res, _$WildcardStoryTimeItem>
-    implements _$$WildcardStoryTimeItemCopyWith<$Res> {
-  __$$WildcardStoryTimeItemCopyWithImpl(_$WildcardStoryTimeItem _value,
-      $Res Function(_$WildcardStoryTimeItem) _then)
+class __$$WildcardStoryTimeItemImplCopyWithImpl<$Res>
+    extends _$DashboardItemCopyWithImpl<$Res, _$WildcardStoryTimeItemImpl>
+    implements _$$WildcardStoryTimeItemImplCopyWith<$Res> {
+  __$$WildcardStoryTimeItemImplCopyWithImpl(_$WildcardStoryTimeItemImpl _value,
+      $Res Function(_$WildcardStoryTimeItemImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -7242,7 +7258,7 @@ class __$$WildcardStoryTimeItemCopyWithImpl<$Res>
     Object? storySubstring = null,
     Object? color = null,
   }) {
-    return _then(_$WildcardStoryTimeItem(
+    return _then(_$WildcardStoryTimeItemImpl(
       storySubstring: null == storySubstring
           ? _value.storySubstring
           : storySubstring // ignore: cast_nullable_to_non_nullable
@@ -7257,13 +7273,13 @@ class __$$WildcardStoryTimeItemCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$WildcardStoryTimeItem implements WildcardStoryTimeItem {
-  const _$WildcardStoryTimeItem(
+class _$WildcardStoryTimeItemImpl implements WildcardStoryTimeItem {
+  const _$WildcardStoryTimeItemImpl(
       {required this.storySubstring, required this.color, final String? $type})
       : $type = $type ?? 'wildcardStoryTimeChart';
 
-  factory _$WildcardStoryTimeItem.fromJson(Map<String, dynamic> json) =>
-      _$$WildcardStoryTimeItemFromJson(json);
+  factory _$WildcardStoryTimeItemImpl.fromJson(Map<String, dynamic> json) =>
+      _$$WildcardStoryTimeItemImplFromJson(json);
 
   @override
   final String storySubstring;
@@ -7279,10 +7295,10 @@ class _$WildcardStoryTimeItem implements WildcardStoryTimeItem {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$WildcardStoryTimeItem &&
+            other is _$WildcardStoryTimeItemImpl &&
             (identical(other.storySubstring, storySubstring) ||
                 other.storySubstring == storySubstring) &&
             (identical(other.color, color) || other.color == color));
@@ -7295,9 +7311,9 @@ class _$WildcardStoryTimeItem implements WildcardStoryTimeItem {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$WildcardStoryTimeItemCopyWith<_$WildcardStoryTimeItem> get copyWith =>
-      __$$WildcardStoryTimeItemCopyWithImpl<_$WildcardStoryTimeItem>(
-          this, _$identity);
+  _$$WildcardStoryTimeItemImplCopyWith<_$WildcardStoryTimeItemImpl>
+      get copyWith => __$$WildcardStoryTimeItemImplCopyWithImpl<
+          _$WildcardStoryTimeItemImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -7410,7 +7426,7 @@ class _$WildcardStoryTimeItem implements WildcardStoryTimeItem {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$WildcardStoryTimeItemToJson(
+    return _$$WildcardStoryTimeItemImplToJson(
       this,
     );
   }
@@ -7419,14 +7435,14 @@ class _$WildcardStoryTimeItem implements WildcardStoryTimeItem {
 abstract class WildcardStoryTimeItem implements DashboardItem {
   const factory WildcardStoryTimeItem(
       {required final String storySubstring,
-      required final String color}) = _$WildcardStoryTimeItem;
+      required final String color}) = _$WildcardStoryTimeItemImpl;
 
   factory WildcardStoryTimeItem.fromJson(Map<String, dynamic> json) =
-      _$WildcardStoryTimeItem.fromJson;
+      _$WildcardStoryTimeItemImpl.fromJson;
 
   String get storySubstring;
   String get color;
   @JsonKey(ignore: true)
-  _$$WildcardStoryTimeItemCopyWith<_$WildcardStoryTimeItem> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$WildcardStoryTimeItemImplCopyWith<_$WildcardStoryTimeItemImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }

@@ -9,7 +9,6 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -29,7 +28,6 @@ void main() {
       getIt
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<VectorClockService>(MockVectorClockService())
-        ..registerSingleton<LinkService>(MockLinkService())
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
         ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())

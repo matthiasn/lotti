@@ -58,22 +58,22 @@ class _$HealthChartInfoStateCopyWithImpl<$Res,
 }
 
 /// @nodoc
-abstract class _$$_HealthChartInfoStateCopyWith<$Res>
+abstract class _$$HealthChartInfoStateImplCopyWith<$Res>
     implements $HealthChartInfoStateCopyWith<$Res> {
-  factory _$$_HealthChartInfoStateCopyWith(_$_HealthChartInfoState value,
-          $Res Function(_$_HealthChartInfoState) then) =
-      __$$_HealthChartInfoStateCopyWithImpl<$Res>;
+  factory _$$HealthChartInfoStateImplCopyWith(_$HealthChartInfoStateImpl value,
+          $Res Function(_$HealthChartInfoStateImpl) then) =
+      __$$HealthChartInfoStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({Observation? selected});
 }
 
 /// @nodoc
-class __$$_HealthChartInfoStateCopyWithImpl<$Res>
-    extends _$HealthChartInfoStateCopyWithImpl<$Res, _$_HealthChartInfoState>
-    implements _$$_HealthChartInfoStateCopyWith<$Res> {
-  __$$_HealthChartInfoStateCopyWithImpl(_$_HealthChartInfoState _value,
-      $Res Function(_$_HealthChartInfoState) _then)
+class __$$HealthChartInfoStateImplCopyWithImpl<$Res>
+    extends _$HealthChartInfoStateCopyWithImpl<$Res, _$HealthChartInfoStateImpl>
+    implements _$$HealthChartInfoStateImplCopyWith<$Res> {
+  __$$HealthChartInfoStateImplCopyWithImpl(_$HealthChartInfoStateImpl _value,
+      $Res Function(_$HealthChartInfoStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -81,7 +81,7 @@ class __$$_HealthChartInfoStateCopyWithImpl<$Res>
   $Res call({
     Object? selected = freezed,
   }) {
-    return _then(_$_HealthChartInfoState(
+    return _then(_$HealthChartInfoStateImpl(
       selected: freezed == selected
           ? _value.selected
           : selected // ignore: cast_nullable_to_non_nullable
@@ -92,8 +92,8 @@ class __$$_HealthChartInfoStateCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_HealthChartInfoState implements _HealthChartInfoState {
-  _$_HealthChartInfoState({required this.selected});
+class _$HealthChartInfoStateImpl implements _HealthChartInfoState {
+  _$HealthChartInfoStateImpl({required this.selected});
 
   @override
   final Observation? selected;
@@ -104,10 +104,10 @@ class _$_HealthChartInfoState implements _HealthChartInfoState {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_HealthChartInfoState &&
+            other is _$HealthChartInfoStateImpl &&
             (identical(other.selected, selected) ||
                 other.selected == selected));
   }
@@ -118,19 +118,20 @@ class _$_HealthChartInfoState implements _HealthChartInfoState {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_HealthChartInfoStateCopyWith<_$_HealthChartInfoState> get copyWith =>
-      __$$_HealthChartInfoStateCopyWithImpl<_$_HealthChartInfoState>(
-          this, _$identity);
+  _$$HealthChartInfoStateImplCopyWith<_$HealthChartInfoStateImpl>
+      get copyWith =>
+          __$$HealthChartInfoStateImplCopyWithImpl<_$HealthChartInfoStateImpl>(
+              this, _$identity);
 }
 
 abstract class _HealthChartInfoState implements HealthChartInfoState {
   factory _HealthChartInfoState({required final Observation? selected}) =
-      _$_HealthChartInfoState;
+      _$HealthChartInfoStateImpl;
 
   @override
   Observation? get selected;
   @override
   @JsonKey(ignore: true)
-  _$$_HealthChartInfoStateCopyWith<_$_HealthChartInfoState> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$HealthChartInfoStateImplCopyWith<_$HealthChartInfoStateImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }

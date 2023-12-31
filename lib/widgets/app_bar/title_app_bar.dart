@@ -67,7 +67,7 @@ class BackWidget extends StatelessWidget {
             cursor: SystemMouseCursors.click,
             child: Row(
               children: [
-                const SizedBox(width: 10),
+                const SizedBox(width: 9),
                 const Icon(
                   Icons.chevron_left,
                   size: 30,

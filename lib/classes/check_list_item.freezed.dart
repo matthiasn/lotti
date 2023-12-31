@@ -119,11 +119,11 @@ class _$CheckListItemCopyWithImpl<$Res, $Val extends CheckListItem>
 }
 
 /// @nodoc
-abstract class _$$_CheckListItemCopyWith<$Res>
+abstract class _$$CheckListItemImplCopyWith<$Res>
     implements $CheckListItemCopyWith<$Res> {
-  factory _$$_CheckListItemCopyWith(
-          _$_CheckListItem value, $Res Function(_$_CheckListItem) then) =
-      __$$_CheckListItemCopyWithImpl<$Res>;
+  factory _$$CheckListItemImplCopyWith(
+          _$CheckListItemImpl value, $Res Function(_$CheckListItemImpl) then) =
+      __$$CheckListItemImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -140,11 +140,11 @@ abstract class _$$_CheckListItemCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_CheckListItemCopyWithImpl<$Res>
-    extends _$CheckListItemCopyWithImpl<$Res, _$_CheckListItem>
-    implements _$$_CheckListItemCopyWith<$Res> {
-  __$$_CheckListItemCopyWithImpl(
-      _$_CheckListItem _value, $Res Function(_$_CheckListItem) _then)
+class __$$CheckListItemImplCopyWithImpl<$Res>
+    extends _$CheckListItemCopyWithImpl<$Res, _$CheckListItemImpl>
+    implements _$$CheckListItemImplCopyWith<$Res> {
+  __$$CheckListItemImplCopyWithImpl(
+      _$CheckListItemImpl _value, $Res Function(_$CheckListItemImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -158,7 +158,7 @@ class __$$_CheckListItemCopyWithImpl<$Res>
     Object? geolocation = freezed,
     Object? updatedAt = freezed,
   }) {
-    return _then(_$_CheckListItem(
+    return _then(_$CheckListItemImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -193,8 +193,8 @@ class __$$_CheckListItemCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_CheckListItem implements _CheckListItem {
-  const _$_CheckListItem(
+class _$CheckListItemImpl implements _CheckListItem {
+  const _$CheckListItemImpl(
       {required this.id,
       required this.createdAt,
       required this.utcOffset,
@@ -203,8 +203,8 @@ class _$_CheckListItem implements _CheckListItem {
       this.geolocation,
       this.updatedAt});
 
-  factory _$_CheckListItem.fromJson(Map<String, dynamic> json) =>
-      _$$_CheckListItemFromJson(json);
+  factory _$CheckListItemImpl.fromJson(Map<String, dynamic> json) =>
+      _$$CheckListItemImplFromJson(json);
 
   @override
   final String id;
@@ -227,10 +227,10 @@ class _$_CheckListItem implements _CheckListItem {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_CheckListItem &&
+            other is _$CheckListItemImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -254,12 +254,12 @@ class _$_CheckListItem implements _CheckListItem {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_CheckListItemCopyWith<_$_CheckListItem> get copyWith =>
-      __$$_CheckListItemCopyWithImpl<_$_CheckListItem>(this, _$identity);
+  _$$CheckListItemImplCopyWith<_$CheckListItemImpl> get copyWith =>
+      __$$CheckListItemImplCopyWithImpl<_$CheckListItemImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_CheckListItemToJson(
+    return _$$CheckListItemImplToJson(
       this,
     );
   }
@@ -273,10 +273,10 @@ abstract class _CheckListItem implements CheckListItem {
       required final String plainText,
       final String? timezone,
       final Geolocation? geolocation,
-      final DateTime? updatedAt}) = _$_CheckListItem;
+      final DateTime? updatedAt}) = _$CheckListItemImpl;
 
   factory _CheckListItem.fromJson(Map<String, dynamic> json) =
-      _$_CheckListItem.fromJson;
+      _$CheckListItemImpl.fromJson;
 
   @override
   String get id;
@@ -294,6 +294,6 @@ abstract class _CheckListItem implements CheckListItem {
   DateTime? get updatedAt;
   @override
   @JsonKey(ignore: true)
-  _$$_CheckListItemCopyWith<_$_CheckListItem> get copyWith =>
+  _$$CheckListItemImplCopyWith<_$CheckListItemImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

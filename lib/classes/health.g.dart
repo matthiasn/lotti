@@ -6,9 +6,9 @@ part of 'health.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$CumulativeQuantityData _$$CumulativeQuantityDataFromJson(
+_$CumulativeQuantityDataImpl _$$CumulativeQuantityDataImplFromJson(
         Map<String, dynamic> json) =>
-    _$CumulativeQuantityData(
+    _$CumulativeQuantityDataImpl(
       dateFrom: DateTime.parse(json['dateFrom'] as String),
       dateTo: DateTime.parse(json['dateTo'] as String),
       value: json['value'] as num,
@@ -19,8 +19,8 @@ _$CumulativeQuantityData _$$CumulativeQuantityDataFromJson(
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$CumulativeQuantityDataToJson(
-        _$CumulativeQuantityData instance) =>
+Map<String, dynamic> _$$CumulativeQuantityDataImplToJson(
+        _$CumulativeQuantityDataImpl instance) =>
     <String, dynamic>{
       'dateFrom': instance.dateFrom.toIso8601String(),
       'dateTo': instance.dateTo.toIso8601String(),
@@ -32,9 +32,9 @@ Map<String, dynamic> _$$CumulativeQuantityDataToJson(
       'runtimeType': instance.$type,
     };
 
-_$DiscreteQuantityData _$$DiscreteQuantityDataFromJson(
+_$DiscreteQuantityDataImpl _$$DiscreteQuantityDataImplFromJson(
         Map<String, dynamic> json) =>
-    _$DiscreteQuantityData(
+    _$DiscreteQuantityDataImpl(
       dateFrom: DateTime.parse(json['dateFrom'] as String),
       dateTo: DateTime.parse(json['dateTo'] as String),
       value: json['value'] as num,
@@ -48,8 +48,8 @@ _$DiscreteQuantityData _$$DiscreteQuantityDataFromJson(
       $type: json['runtimeType'] as String?,
     );
 
-Map<String, dynamic> _$$DiscreteQuantityDataToJson(
-        _$DiscreteQuantityData instance) =>
+Map<String, dynamic> _$$DiscreteQuantityDataImplToJson(
+        _$DiscreteQuantityDataImpl instance) =>
     <String, dynamic>{
       'dateFrom': instance.dateFrom.toIso8601String(),
       'dateTo': instance.dateTo.toIso8601String(),

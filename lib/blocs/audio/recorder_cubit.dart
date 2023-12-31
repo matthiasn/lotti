@@ -38,7 +38,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     });
   }
 
-  final _audioRecorder = Record();
+  final _audioRecorder = AudioRecorder();
   StreamSubscription<Amplitude>? _amplitudeSub;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
@@ -73,8 +73,8 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           );
 
           await _audioRecorder.start(
+            const RecordConfig(sampleRate: 48000),
             path: filePath,
-            samplingRate: 48000,
           );
         }
       } else {

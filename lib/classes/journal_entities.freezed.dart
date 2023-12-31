@@ -153,10 +153,11 @@ class _$MetadataCopyWithImpl<$Res, $Val extends Metadata>
 }
 
 /// @nodoc
-abstract class _$$_MetadataCopyWith<$Res> implements $MetadataCopyWith<$Res> {
-  factory _$$_MetadataCopyWith(
-          _$_Metadata value, $Res Function(_$_Metadata) then) =
-      __$$_MetadataCopyWithImpl<$Res>;
+abstract class _$$MetadataImplCopyWith<$Res>
+    implements $MetadataCopyWith<$Res> {
+  factory _$$MetadataImplCopyWith(
+          _$MetadataImpl value, $Res Function(_$MetadataImpl) then) =
+      __$$MetadataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -177,11 +178,11 @@ abstract class _$$_MetadataCopyWith<$Res> implements $MetadataCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_MetadataCopyWithImpl<$Res>
-    extends _$MetadataCopyWithImpl<$Res, _$_Metadata>
-    implements _$$_MetadataCopyWith<$Res> {
-  __$$_MetadataCopyWithImpl(
-      _$_Metadata _value, $Res Function(_$_Metadata) _then)
+class __$$MetadataImplCopyWithImpl<$Res>
+    extends _$MetadataCopyWithImpl<$Res, _$MetadataImpl>
+    implements _$$MetadataImplCopyWith<$Res> {
+  __$$MetadataImplCopyWithImpl(
+      _$MetadataImpl _value, $Res Function(_$MetadataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -202,7 +203,7 @@ class __$$_MetadataCopyWithImpl<$Res>
     Object? starred = freezed,
     Object? private = freezed,
   }) {
-    return _then(_$_Metadata(
+    return _then(_$MetadataImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -265,8 +266,8 @@ class __$$_MetadataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_Metadata implements _Metadata {
-  const _$_Metadata(
+class _$MetadataImpl implements _Metadata {
+  const _$MetadataImpl(
       {required this.id,
       required this.createdAt,
       required this.updatedAt,
@@ -284,8 +285,8 @@ class _$_Metadata implements _Metadata {
       : _tags = tags,
         _tagIds = tagIds;
 
-  factory _$_Metadata.fromJson(Map<String, dynamic> json) =>
-      _$$_MetadataFromJson(json);
+  factory _$MetadataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MetadataImplFromJson(json);
 
   @override
   final String id;
@@ -338,10 +339,10 @@ class _$_Metadata implements _Metadata {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_Metadata &&
+            other is _$MetadataImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -387,12 +388,12 @@ class _$_Metadata implements _Metadata {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_MetadataCopyWith<_$_Metadata> get copyWith =>
-      __$$_MetadataCopyWithImpl<_$_Metadata>(this, _$identity);
+  _$$MetadataImplCopyWith<_$MetadataImpl> get copyWith =>
+      __$$MetadataImplCopyWithImpl<_$MetadataImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_MetadataToJson(
+    return _$$MetadataImplToJson(
       this,
     );
   }
@@ -413,9 +414,10 @@ abstract class _Metadata implements Metadata {
       final DateTime? deletedAt,
       final EntryFlag? flag,
       final bool? starred,
-      final bool? private}) = _$_Metadata;
+      final bool? private}) = _$MetadataImpl;
 
-  factory _Metadata.fromJson(Map<String, dynamic> json) = _$_Metadata.fromJson;
+  factory _Metadata.fromJson(Map<String, dynamic> json) =
+      _$MetadataImpl.fromJson;
 
   @override
   String get id;
@@ -447,7 +449,7 @@ abstract class _Metadata implements Metadata {
   bool? get private;
   @override
   @JsonKey(ignore: true)
-  _$$_MetadataCopyWith<_$_Metadata> get copyWith =>
+  _$$MetadataImplCopyWith<_$MetadataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -541,10 +543,11 @@ class _$ImageDataCopyWithImpl<$Res, $Val extends ImageData>
 }
 
 /// @nodoc
-abstract class _$$_ImageDataCopyWith<$Res> implements $ImageDataCopyWith<$Res> {
-  factory _$$_ImageDataCopyWith(
-          _$_ImageData value, $Res Function(_$_ImageData) then) =
-      __$$_ImageDataCopyWithImpl<$Res>;
+abstract class _$$ImageDataImplCopyWith<$Res>
+    implements $ImageDataCopyWith<$Res> {
+  factory _$$ImageDataImplCopyWith(
+          _$ImageDataImpl value, $Res Function(_$ImageDataImpl) then) =
+      __$$ImageDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -559,11 +562,11 @@ abstract class _$$_ImageDataCopyWith<$Res> implements $ImageDataCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_ImageDataCopyWithImpl<$Res>
-    extends _$ImageDataCopyWithImpl<$Res, _$_ImageData>
-    implements _$$_ImageDataCopyWith<$Res> {
-  __$$_ImageDataCopyWithImpl(
-      _$_ImageData _value, $Res Function(_$_ImageData) _then)
+class __$$ImageDataImplCopyWithImpl<$Res>
+    extends _$ImageDataCopyWithImpl<$Res, _$ImageDataImpl>
+    implements _$$ImageDataImplCopyWith<$Res> {
+  __$$ImageDataImplCopyWithImpl(
+      _$ImageDataImpl _value, $Res Function(_$ImageDataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -575,7 +578,7 @@ class __$$_ImageDataCopyWithImpl<$Res>
     Object? imageDirectory = null,
     Object? geolocation = freezed,
   }) {
-    return _then(_$_ImageData(
+    return _then(_$ImageDataImpl(
       capturedAt: null == capturedAt
           ? _value.capturedAt
           : capturedAt // ignore: cast_nullable_to_non_nullable
@@ -602,16 +605,16 @@ class __$$_ImageDataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_ImageData implements _ImageData {
-  const _$_ImageData(
+class _$ImageDataImpl implements _ImageData {
+  const _$ImageDataImpl(
       {required this.capturedAt,
       required this.imageId,
       required this.imageFile,
       required this.imageDirectory,
       this.geolocation});
 
-  factory _$_ImageData.fromJson(Map<String, dynamic> json) =>
-      _$$_ImageDataFromJson(json);
+  factory _$ImageDataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ImageDataImplFromJson(json);
 
   @override
   final DateTime capturedAt;
@@ -630,10 +633,10 @@ class _$_ImageData implements _ImageData {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_ImageData &&
+            other is _$ImageDataImpl &&
             (identical(other.capturedAt, capturedAt) ||
                 other.capturedAt == capturedAt) &&
             (identical(other.imageId, imageId) || other.imageId == imageId) &&
@@ -653,12 +656,12 @@ class _$_ImageData implements _ImageData {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_ImageDataCopyWith<_$_ImageData> get copyWith =>
-      __$$_ImageDataCopyWithImpl<_$_ImageData>(this, _$identity);
+  _$$ImageDataImplCopyWith<_$ImageDataImpl> get copyWith =>
+      __$$ImageDataImplCopyWithImpl<_$ImageDataImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_ImageDataToJson(
+    return _$$ImageDataImplToJson(
       this,
     );
   }
@@ -670,10 +673,10 @@ abstract class _ImageData implements ImageData {
       required final String imageId,
       required final String imageFile,
       required final String imageDirectory,
-      final Geolocation? geolocation}) = _$_ImageData;
+      final Geolocation? geolocation}) = _$ImageDataImpl;
 
   factory _ImageData.fromJson(Map<String, dynamic> json) =
-      _$_ImageData.fromJson;
+      _$ImageDataImpl.fromJson;
 
   @override
   DateTime get capturedAt;
@@ -687,7 +690,7 @@ abstract class _ImageData implements ImageData {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$_ImageDataCopyWith<_$_ImageData> get copyWith =>
+  _$$ImageDataImplCopyWith<_$ImageDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -774,10 +777,11 @@ class _$AudioDataCopyWithImpl<$Res, $Val extends AudioData>
 }
 
 /// @nodoc
-abstract class _$$_AudioDataCopyWith<$Res> implements $AudioDataCopyWith<$Res> {
-  factory _$$_AudioDataCopyWith(
-          _$_AudioData value, $Res Function(_$_AudioData) then) =
-      __$$_AudioDataCopyWithImpl<$Res>;
+abstract class _$$AudioDataImplCopyWith<$Res>
+    implements $AudioDataCopyWith<$Res> {
+  factory _$$AudioDataImplCopyWith(
+          _$AudioDataImpl value, $Res Function(_$AudioDataImpl) then) =
+      __$$AudioDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -790,11 +794,11 @@ abstract class _$$_AudioDataCopyWith<$Res> implements $AudioDataCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_AudioDataCopyWithImpl<$Res>
-    extends _$AudioDataCopyWithImpl<$Res, _$_AudioData>
-    implements _$$_AudioDataCopyWith<$Res> {
-  __$$_AudioDataCopyWithImpl(
-      _$_AudioData _value, $Res Function(_$_AudioData) _then)
+class __$$AudioDataImplCopyWithImpl<$Res>
+    extends _$AudioDataCopyWithImpl<$Res, _$AudioDataImpl>
+    implements _$$AudioDataImplCopyWith<$Res> {
+  __$$AudioDataImplCopyWithImpl(
+      _$AudioDataImpl _value, $Res Function(_$AudioDataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -807,7 +811,7 @@ class __$$_AudioDataCopyWithImpl<$Res>
     Object? duration = null,
     Object? transcripts = freezed,
   }) {
-    return _then(_$_AudioData(
+    return _then(_$AudioDataImpl(
       dateFrom: null == dateFrom
           ? _value.dateFrom
           : dateFrom // ignore: cast_nullable_to_non_nullable
@@ -838,8 +842,8 @@ class __$$_AudioDataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_AudioData implements _AudioData {
-  const _$_AudioData(
+class _$AudioDataImpl implements _AudioData {
+  const _$AudioDataImpl(
       {required this.dateFrom,
       required this.dateTo,
       required this.audioFile,
@@ -848,8 +852,8 @@ class _$_AudioData implements _AudioData {
       final List<AudioTranscript>? transcripts})
       : _transcripts = transcripts;
 
-  factory _$_AudioData.fromJson(Map<String, dynamic> json) =>
-      _$$_AudioDataFromJson(json);
+  factory _$AudioDataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AudioDataImplFromJson(json);
 
   @override
   final DateTime dateFrom;
@@ -877,10 +881,10 @@ class _$_AudioData implements _AudioData {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_AudioData &&
+            other is _$AudioDataImpl &&
             (identical(other.dateFrom, dateFrom) ||
                 other.dateFrom == dateFrom) &&
             (identical(other.dateTo, dateTo) || other.dateTo == dateTo) &&
@@ -908,12 +912,12 @@ class _$_AudioData implements _AudioData {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_AudioDataCopyWith<_$_AudioData> get copyWith =>
-      __$$_AudioDataCopyWithImpl<_$_AudioData>(this, _$identity);
+  _$$AudioDataImplCopyWith<_$AudioDataImpl> get copyWith =>
+      __$$AudioDataImplCopyWithImpl<_$AudioDataImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_AudioDataToJson(
+    return _$$AudioDataImplToJson(
       this,
     );
   }
@@ -926,10 +930,10 @@ abstract class _AudioData implements AudioData {
       required final String audioFile,
       required final String audioDirectory,
       required final Duration duration,
-      final List<AudioTranscript>? transcripts}) = _$_AudioData;
+      final List<AudioTranscript>? transcripts}) = _$AudioDataImpl;
 
   factory _AudioData.fromJson(Map<String, dynamic> json) =
-      _$_AudioData.fromJson;
+      _$AudioDataImpl.fromJson;
 
   @override
   DateTime get dateFrom;
@@ -945,7 +949,7 @@ abstract class _AudioData implements AudioData {
   List<AudioTranscript>? get transcripts;
   @override
   @JsonKey(ignore: true)
-  _$$_AudioDataCopyWith<_$_AudioData> get copyWith =>
+  _$$AudioDataImplCopyWith<_$AudioDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -1033,11 +1037,11 @@ class _$AudioTranscriptCopyWithImpl<$Res, $Val extends AudioTranscript>
 }
 
 /// @nodoc
-abstract class _$$_AudioTranscriptCopyWith<$Res>
+abstract class _$$AudioTranscriptImplCopyWith<$Res>
     implements $AudioTranscriptCopyWith<$Res> {
-  factory _$$_AudioTranscriptCopyWith(
-          _$_AudioTranscript value, $Res Function(_$_AudioTranscript) then) =
-      __$$_AudioTranscriptCopyWithImpl<$Res>;
+  factory _$$AudioTranscriptImplCopyWith(_$AudioTranscriptImpl value,
+          $Res Function(_$AudioTranscriptImpl) then) =
+      __$$AudioTranscriptImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -1050,11 +1054,11 @@ abstract class _$$_AudioTranscriptCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_AudioTranscriptCopyWithImpl<$Res>
-    extends _$AudioTranscriptCopyWithImpl<$Res, _$_AudioTranscript>
-    implements _$$_AudioTranscriptCopyWith<$Res> {
-  __$$_AudioTranscriptCopyWithImpl(
-      _$_AudioTranscript _value, $Res Function(_$_AudioTranscript) _then)
+class __$$AudioTranscriptImplCopyWithImpl<$Res>
+    extends _$AudioTranscriptCopyWithImpl<$Res, _$AudioTranscriptImpl>
+    implements _$$AudioTranscriptImplCopyWith<$Res> {
+  __$$AudioTranscriptImplCopyWithImpl(
+      _$AudioTranscriptImpl _value, $Res Function(_$AudioTranscriptImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1067,7 +1071,7 @@ class __$$_AudioTranscriptCopyWithImpl<$Res>
     Object? transcript = null,
     Object? processingTime = freezed,
   }) {
-    return _then(_$_AudioTranscript(
+    return _then(_$AudioTranscriptImpl(
       created: null == created
           ? _value.created
           : created // ignore: cast_nullable_to_non_nullable
@@ -1098,8 +1102,8 @@ class __$$_AudioTranscriptCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_AudioTranscript implements _AudioTranscript {
-  const _$_AudioTranscript(
+class _$AudioTranscriptImpl implements _AudioTranscript {
+  const _$AudioTranscriptImpl(
       {required this.created,
       required this.library,
       required this.model,
@@ -1107,8 +1111,8 @@ class _$_AudioTranscript implements _AudioTranscript {
       required this.transcript,
       this.processingTime});
 
-  factory _$_AudioTranscript.fromJson(Map<String, dynamic> json) =>
-      _$$_AudioTranscriptFromJson(json);
+  factory _$AudioTranscriptImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AudioTranscriptImplFromJson(json);
 
   @override
   final DateTime created;
@@ -1129,10 +1133,10 @@ class _$_AudioTranscript implements _AudioTranscript {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_AudioTranscript &&
+            other is _$AudioTranscriptImpl &&
             (identical(other.created, created) || other.created == created) &&
             (identical(other.library, library) || other.library == library) &&
             (identical(other.model, model) || other.model == model) &&
@@ -1152,12 +1156,13 @@ class _$_AudioTranscript implements _AudioTranscript {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_AudioTranscriptCopyWith<_$_AudioTranscript> get copyWith =>
-      __$$_AudioTranscriptCopyWithImpl<_$_AudioTranscript>(this, _$identity);
+  _$$AudioTranscriptImplCopyWith<_$AudioTranscriptImpl> get copyWith =>
+      __$$AudioTranscriptImplCopyWithImpl<_$AudioTranscriptImpl>(
+          this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_AudioTranscriptToJson(
+    return _$$AudioTranscriptImplToJson(
       this,
     );
   }
@@ -1170,10 +1175,10 @@ abstract class _AudioTranscript implements AudioTranscript {
       required final String model,
       required final String detectedLanguage,
       required final String transcript,
-      final Duration? processingTime}) = _$_AudioTranscript;
+      final Duration? processingTime}) = _$AudioTranscriptImpl;
 
   factory _AudioTranscript.fromJson(Map<String, dynamic> json) =
-      _$_AudioTranscript.fromJson;
+      _$AudioTranscriptImpl.fromJson;
 
   @override
   DateTime get created;
@@ -1189,7 +1194,7 @@ abstract class _AudioTranscript implements AudioTranscript {
   Duration? get processingTime;
   @override
   @JsonKey(ignore: true)
-  _$$_AudioTranscriptCopyWith<_$_AudioTranscript> get copyWith =>
+  _$$AudioTranscriptImplCopyWith<_$AudioTranscriptImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -1257,11 +1262,11 @@ class _$SurveyDataCopyWithImpl<$Res, $Val extends SurveyData>
 }
 
 /// @nodoc
-abstract class _$$_SurveyDataCopyWith<$Res>
+abstract class _$$SurveyDataImplCopyWith<$Res>
     implements $SurveyDataCopyWith<$Res> {
-  factory _$$_SurveyDataCopyWith(
-          _$_SurveyData value, $Res Function(_$_SurveyData) then) =
-      __$$_SurveyDataCopyWithImpl<$Res>;
+  factory _$$SurveyDataImplCopyWith(
+          _$SurveyDataImpl value, $Res Function(_$SurveyDataImpl) then) =
+      __$$SurveyDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -1271,11 +1276,11 @@ abstract class _$$_SurveyDataCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_SurveyDataCopyWithImpl<$Res>
-    extends _$SurveyDataCopyWithImpl<$Res, _$_SurveyData>
-    implements _$$_SurveyDataCopyWith<$Res> {
-  __$$_SurveyDataCopyWithImpl(
-      _$_SurveyData _value, $Res Function(_$_SurveyData) _then)
+class __$$SurveyDataImplCopyWithImpl<$Res>
+    extends _$SurveyDataCopyWithImpl<$Res, _$SurveyDataImpl>
+    implements _$$SurveyDataImplCopyWith<$Res> {
+  __$$SurveyDataImplCopyWithImpl(
+      _$SurveyDataImpl _value, $Res Function(_$SurveyDataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1285,7 +1290,7 @@ class __$$_SurveyDataCopyWithImpl<$Res>
     Object? scoreDefinitions = null,
     Object? calculatedScores = null,
   }) {
-    return _then(_$_SurveyData(
+    return _then(_$SurveyDataImpl(
       taskResult: null == taskResult
           ? _value.taskResult
           : taskResult // ignore: cast_nullable_to_non_nullable
@@ -1304,16 +1309,16 @@ class __$$_SurveyDataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_SurveyData implements _SurveyData {
-  const _$_SurveyData(
+class _$SurveyDataImpl implements _SurveyData {
+  const _$SurveyDataImpl(
       {required this.taskResult,
       required final Map<String, Set<String>> scoreDefinitions,
       required final Map<String, int> calculatedScores})
       : _scoreDefinitions = scoreDefinitions,
         _calculatedScores = calculatedScores;
 
-  factory _$_SurveyData.fromJson(Map<String, dynamic> json) =>
-      _$$_SurveyDataFromJson(json);
+  factory _$SurveyDataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SurveyDataImplFromJson(json);
 
   @override
   final RPTaskResult taskResult;
@@ -1339,10 +1344,10 @@ class _$_SurveyData implements _SurveyData {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_SurveyData &&
+            other is _$SurveyDataImpl &&
             (identical(other.taskResult, taskResult) ||
                 other.taskResult == taskResult) &&
             const DeepCollectionEquality()
@@ -1362,12 +1367,12 @@ class _$_SurveyData implements _SurveyData {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_SurveyDataCopyWith<_$_SurveyData> get copyWith =>
-      __$$_SurveyDataCopyWithImpl<_$_SurveyData>(this, _$identity);
+  _$$SurveyDataImplCopyWith<_$SurveyDataImpl> get copyWith =>
+      __$$SurveyDataImplCopyWithImpl<_$SurveyDataImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_SurveyDataToJson(
+    return _$$SurveyDataImplToJson(
       this,
     );
   }
@@ -1377,10 +1382,10 @@ abstract class _SurveyData implements SurveyData {
   const factory _SurveyData(
       {required final RPTaskResult taskResult,
       required final Map<String, Set<String>> scoreDefinitions,
-      required final Map<String, int> calculatedScores}) = _$_SurveyData;
+      required final Map<String, int> calculatedScores}) = _$SurveyDataImpl;
 
   factory _SurveyData.fromJson(Map<String, dynamic> json) =
-      _$_SurveyData.fromJson;
+      _$SurveyDataImpl.fromJson;
 
   @override
   RPTaskResult get taskResult;
@@ -1390,7 +1395,7 @@ abstract class _SurveyData implements SurveyData {
   Map<String, int> get calculatedScores;
   @override
   @JsonKey(ignore: true)
-  _$$_SurveyDataCopyWith<_$_SurveyData> get copyWith =>
+  _$$SurveyDataImplCopyWith<_$SurveyDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -1646,11 +1651,11 @@ class _$JournalEntityCopyWithImpl<$Res, $Val extends JournalEntity>
 }
 
 /// @nodoc
-abstract class _$$JournalEntryCopyWith<$Res>
+abstract class _$$JournalEntryImplCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$JournalEntryCopyWith(
-          _$JournalEntry value, $Res Function(_$JournalEntry) then) =
-      __$$JournalEntryCopyWithImpl<$Res>;
+  factory _$$JournalEntryImplCopyWith(
+          _$JournalEntryImpl value, $Res Function(_$JournalEntryImpl) then) =
+      __$$JournalEntryImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({Metadata meta, EntryText? entryText, Geolocation? geolocation});
@@ -1664,11 +1669,11 @@ abstract class _$$JournalEntryCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$JournalEntryCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$JournalEntry>
-    implements _$$JournalEntryCopyWith<$Res> {
-  __$$JournalEntryCopyWithImpl(
-      _$JournalEntry _value, $Res Function(_$JournalEntry) _then)
+class __$$JournalEntryImplCopyWithImpl<$Res>
+    extends _$JournalEntityCopyWithImpl<$Res, _$JournalEntryImpl>
+    implements _$$JournalEntryImplCopyWith<$Res> {
+  __$$JournalEntryImplCopyWithImpl(
+      _$JournalEntryImpl _value, $Res Function(_$JournalEntryImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1678,7 +1683,7 @@ class __$$JournalEntryCopyWithImpl<$Res>
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$JournalEntry(
+    return _then(_$JournalEntryImpl(
       meta: null == meta
           ? _value.meta
           : meta // ignore: cast_nullable_to_non_nullable
@@ -1697,16 +1702,16 @@ class __$$JournalEntryCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$JournalEntry implements JournalEntry {
-  const _$JournalEntry(
+class _$JournalEntryImpl implements JournalEntry {
+  const _$JournalEntryImpl(
       {required this.meta,
       this.entryText,
       this.geolocation,
       final String? $type})
       : $type = $type ?? 'journalEntry';
 
-  factory _$JournalEntry.fromJson(Map<String, dynamic> json) =>
-      _$$JournalEntryFromJson(json);
+  factory _$JournalEntryImpl.fromJson(Map<String, dynamic> json) =>
+      _$$JournalEntryImplFromJson(json);
 
   @override
   final Metadata meta;
@@ -1724,10 +1729,10 @@ class _$JournalEntry implements JournalEntry {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$JournalEntry &&
+            other is _$JournalEntryImpl &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.entryText, entryText) ||
                 other.entryText == entryText) &&
@@ -1742,8 +1747,8 @@ class _$JournalEntry implements JournalEntry {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$JournalEntryCopyWith<_$JournalEntry> get copyWith =>
-      __$$JournalEntryCopyWithImpl<_$JournalEntry>(this, _$identity);
+  _$$JournalEntryImplCopyWith<_$JournalEntryImpl> get copyWith =>
+      __$$JournalEntryImplCopyWithImpl<_$JournalEntryImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -1905,7 +1910,7 @@ class _$JournalEntry implements JournalEntry {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$JournalEntryToJson(
+    return _$$JournalEntryImplToJson(
       this,
     );
   }
@@ -1915,10 +1920,10 @@ abstract class JournalEntry implements JournalEntity {
   const factory JournalEntry(
       {required final Metadata meta,
       final EntryText? entryText,
-      final Geolocation? geolocation}) = _$JournalEntry;
+      final Geolocation? geolocation}) = _$JournalEntryImpl;
 
   factory JournalEntry.fromJson(Map<String, dynamic> json) =
-      _$JournalEntry.fromJson;
+      _$JournalEntryImpl.fromJson;
 
   @override
   Metadata get meta;
@@ -1928,16 +1933,16 @@ abstract class JournalEntry implements JournalEntity {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$JournalEntryCopyWith<_$JournalEntry> get copyWith =>
+  _$$JournalEntryImplCopyWith<_$JournalEntryImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$JournalImageCopyWith<$Res>
+abstract class _$$JournalImageImplCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$JournalImageCopyWith(
-          _$JournalImage value, $Res Function(_$JournalImage) then) =
-      __$$JournalImageCopyWithImpl<$Res>;
+  factory _$$JournalImageImplCopyWith(
+          _$JournalImageImpl value, $Res Function(_$JournalImageImpl) then) =
+      __$$JournalImageImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -1956,11 +1961,11 @@ abstract class _$$JournalImageCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$JournalImageCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$JournalImage>
-    implements _$$JournalImageCopyWith<$Res> {
-  __$$JournalImageCopyWithImpl(
-      _$JournalImage _value, $Res Function(_$JournalImage) _then)
+class __$$JournalImageImplCopyWithImpl<$Res>
+    extends _$JournalEntityCopyWithImpl<$Res, _$JournalImageImpl>
+    implements _$$JournalImageImplCopyWith<$Res> {
+  __$$JournalImageImplCopyWithImpl(
+      _$JournalImageImpl _value, $Res Function(_$JournalImageImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -1971,7 +1976,7 @@ class __$$JournalImageCopyWithImpl<$Res>
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$JournalImage(
+    return _then(_$JournalImageImpl(
       meta: null == meta
           ? _value.meta
           : meta // ignore: cast_nullable_to_non_nullable
@@ -2002,8 +2007,8 @@ class __$$JournalImageCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$JournalImage implements JournalImage {
-  const _$JournalImage(
+class _$JournalImageImpl implements JournalImage {
+  const _$JournalImageImpl(
       {required this.meta,
       required this.data,
       this.entryText,
@@ -2011,8 +2016,8 @@ class _$JournalImage implements JournalImage {
       final String? $type})
       : $type = $type ?? 'journalImage';
 
-  factory _$JournalImage.fromJson(Map<String, dynamic> json) =>
-      _$$JournalImageFromJson(json);
+  factory _$JournalImageImpl.fromJson(Map<String, dynamic> json) =>
+      _$$JournalImageImplFromJson(json);
 
   @override
   final Metadata meta;
@@ -2032,10 +2037,10 @@ class _$JournalImage implements JournalImage {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$JournalImage &&
+            other is _$JournalImageImpl &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -2052,8 +2057,8 @@ class _$JournalImage implements JournalImage {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$JournalImageCopyWith<_$JournalImage> get copyWith =>
-      __$$JournalImageCopyWithImpl<_$JournalImage>(this, _$identity);
+  _$$JournalImageImplCopyWith<_$JournalImageImpl> get copyWith =>
+      __$$JournalImageImplCopyWithImpl<_$JournalImageImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -2215,7 +2220,7 @@ class _$JournalImage implements JournalImage {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$JournalImageToJson(
+    return _$$JournalImageImplToJson(
       this,
     );
   }
@@ -2226,10 +2231,10 @@ abstract class JournalImage implements JournalEntity {
       {required final Metadata meta,
       required final ImageData data,
       final EntryText? entryText,
-      final Geolocation? geolocation}) = _$JournalImage;
+      final Geolocation? geolocation}) = _$JournalImageImpl;
 
   factory JournalImage.fromJson(Map<String, dynamic> json) =
-      _$JournalImage.fromJson;
+      _$JournalImageImpl.fromJson;
 
   @override
   Metadata get meta;
@@ -2240,16 +2245,16 @@ abstract class JournalImage implements JournalEntity {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$JournalImageCopyWith<_$JournalImage> get copyWith =>
+  _$$JournalImageImplCopyWith<_$JournalImageImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$JournalAudioCopyWith<$Res>
+abstract class _$$JournalAudioImplCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$JournalAudioCopyWith(
-          _$JournalAudio value, $Res Function(_$JournalAudio) then) =
-      __$$JournalAudioCopyWithImpl<$Res>;
+  factory _$$JournalAudioImplCopyWith(
+          _$JournalAudioImpl value, $Res Function(_$JournalAudioImpl) then) =
+      __$$JournalAudioImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -2268,11 +2273,11 @@ abstract class _$$JournalAudioCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$JournalAudioCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$JournalAudio>
-    implements _$$JournalAudioCopyWith<$Res> {
-  __$$JournalAudioCopyWithImpl(
-      _$JournalAudio _value, $Res Function(_$JournalAudio) _then)
+class __$$JournalAudioImplCopyWithImpl<$Res>
+    extends _$JournalEntityCopyWithImpl<$Res, _$JournalAudioImpl>
+    implements _$$JournalAudioImplCopyWith<$Res> {
+  __$$JournalAudioImplCopyWithImpl(
+      _$JournalAudioImpl _value, $Res Function(_$JournalAudioImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -2283,7 +2288,7 @@ class __$$JournalAudioCopyWithImpl<$Res>
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$JournalAudio(
+    return _then(_$JournalAudioImpl(
       meta: null == meta
           ? _value.meta
           : meta // ignore: cast_nullable_to_non_nullable
@@ -2314,8 +2319,8 @@ class __$$JournalAudioCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$JournalAudio implements JournalAudio {
-  const _$JournalAudio(
+class _$JournalAudioImpl implements JournalAudio {
+  const _$JournalAudioImpl(
       {required this.meta,
       required this.data,
       this.entryText,
@@ -2323,8 +2328,8 @@ class _$JournalAudio implements JournalAudio {
       final String? $type})
       : $type = $type ?? 'journalAudio';
 
-  factory _$JournalAudio.fromJson(Map<String, dynamic> json) =>
-      _$$JournalAudioFromJson(json);
+  factory _$JournalAudioImpl.fromJson(Map<String, dynamic> json) =>
+      _$$JournalAudioImplFromJson(json);
 
   @override
   final Metadata meta;
@@ -2344,10 +2349,10 @@ class _$JournalAudio implements JournalAudio {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$JournalAudio &&
+            other is _$JournalAudioImpl &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -2364,8 +2369,8 @@ class _$JournalAudio implements JournalAudio {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$JournalAudioCopyWith<_$JournalAudio> get copyWith =>
-      __$$JournalAudioCopyWithImpl<_$JournalAudio>(this, _$identity);
+  _$$JournalAudioImplCopyWith<_$JournalAudioImpl> get copyWith =>
+      __$$JournalAudioImplCopyWithImpl<_$JournalAudioImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -2527,7 +2532,7 @@ class _$JournalAudio implements JournalAudio {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$JournalAudioToJson(
+    return _$$JournalAudioImplToJson(
       this,
     );
   }
@@ -2538,10 +2543,10 @@ abstract class JournalAudio implements JournalEntity {
       {required final Metadata meta,
       required final AudioData data,
       final EntryText? entryText,
-      final Geolocation? geolocation}) = _$JournalAudio;
+      final Geolocation? geolocation}) = _$JournalAudioImpl;
 
   factory JournalAudio.fromJson(Map<String, dynamic> json) =
-      _$JournalAudio.fromJson;
+      _$JournalAudioImpl.fromJson;
 
   @override
   Metadata get meta;
@@ -2552,14 +2557,16 @@ abstract class JournalAudio implements JournalEntity {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$JournalAudioCopyWith<_$JournalAudio> get copyWith =>
+  _$$JournalAudioImplCopyWith<_$JournalAudioImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$TaskCopyWith<$Res> implements $JournalEntityCopyWith<$Res> {
-  factory _$$TaskCopyWith(_$Task value, $Res Function(_$Task) then) =
-      __$$TaskCopyWithImpl<$Res>;
+abstract class _$$TaskImplCopyWith<$Res>
+    implements $JournalEntityCopyWith<$Res> {
+  factory _$$TaskImplCopyWith(
+          _$TaskImpl value, $Res Function(_$TaskImpl) then) =
+      __$$TaskImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -2578,10 +2585,10 @@ abstract class _$$TaskCopyWith<$Res> implements $JournalEntityCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$TaskCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$Task>
-    implements _$$TaskCopyWith<$Res> {
-  __$$TaskCopyWithImpl(_$Task _value, $Res Function(_$Task) _then)
+class __$$TaskImplCopyWithImpl<$Res>
+    extends _$JournalEntityCopyWithImpl<$Res, _$TaskImpl>
+    implements _$$TaskImplCopyWith<$Res> {
+  __$$TaskImplCopyWithImpl(_$TaskImpl _value, $Res Function(_$TaskImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -2592,7 +2599,7 @@ class __$$TaskCopyWithImpl<$Res>
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$Task(
+    return _then(_$TaskImpl(
       meta: null == meta
           ? _value.meta
           : meta // ignore: cast_nullable_to_non_nullable
@@ -2623,8 +2630,8 @@ class __$$TaskCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$Task implements Task {
-  const _$Task(
+class _$TaskImpl implements Task {
+  const _$TaskImpl(
       {required this.meta,
       required this.data,
       this.entryText,
@@ -2632,7 +2639,8 @@ class _$Task implements Task {
       final String? $type})
       : $type = $type ?? 'task';
 
-  factory _$Task.fromJson(Map<String, dynamic> json) => _$$TaskFromJson(json);
+  factory _$TaskImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TaskImplFromJson(json);
 
   @override
   final Metadata meta;
@@ -2652,10 +2660,10 @@ class _$Task implements Task {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$Task &&
+            other is _$TaskImpl &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -2672,8 +2680,8 @@ class _$Task implements Task {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$TaskCopyWith<_$Task> get copyWith =>
-      __$$TaskCopyWithImpl<_$Task>(this, _$identity);
+  _$$TaskImplCopyWith<_$TaskImpl> get copyWith =>
+      __$$TaskImplCopyWithImpl<_$TaskImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -2835,7 +2843,7 @@ class _$Task implements Task {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$TaskToJson(
+    return _$$TaskImplToJson(
       this,
     );
   }
@@ -2846,9 +2854,9 @@ abstract class Task implements JournalEntity {
       {required final Metadata meta,
       required final TaskData data,
       final EntryText? entryText,
-      final Geolocation? geolocation}) = _$Task;
+      final Geolocation? geolocation}) = _$TaskImpl;
 
-  factory Task.fromJson(Map<String, dynamic> json) = _$Task.fromJson;
+  factory Task.fromJson(Map<String, dynamic> json) = _$TaskImpl.fromJson;
 
   @override
   Metadata get meta;
@@ -2859,15 +2867,16 @@ abstract class Task implements JournalEntity {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$TaskCopyWith<_$Task> get copyWith => throw _privateConstructorUsedError;
+  _$$TaskImplCopyWith<_$TaskImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$QuantitativeEntryCopyWith<$Res>
+abstract class _$$QuantitativeEntryImplCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$QuantitativeEntryCopyWith(
-          _$QuantitativeEntry value, $Res Function(_$QuantitativeEntry) then) =
-      __$$QuantitativeEntryCopyWithImpl<$Res>;
+  factory _$$QuantitativeEntryImplCopyWith(_$QuantitativeEntryImpl value,
+          $Res Function(_$QuantitativeEntryImpl) then) =
+      __$$QuantitativeEntryImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -2886,11 +2895,11 @@ abstract class _$$QuantitativeEntryCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$QuantitativeEntryCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$QuantitativeEntry>
-    implements _$$QuantitativeEntryCopyWith<$Res> {
-  __$$QuantitativeEntryCopyWithImpl(
-      _$QuantitativeEntry _value, $Res Function(_$QuantitativeEntry) _then)
+class __$$QuantitativeEntryImplCopyWithImpl<$Res>
+    extends _$JournalEntityCopyWithImpl<$Res, _$QuantitativeEntryImpl>
+    implements _$$QuantitativeEntryImplCopyWith<$Res> {
+  __$$QuantitativeEntryImplCopyWithImpl(_$QuantitativeEntryImpl _value,
+      $Res Function(_$QuantitativeEntryImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -2901,7 +2910,7 @@ class __$$QuantitativeEntryCopyWithImpl<$Res>
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$QuantitativeEntry(
+    return _then(_$QuantitativeEntryImpl(
       meta: null == meta
           ? _value.meta
           : meta // ignore: cast_nullable_to_non_nullable
@@ -2932,8 +2941,8 @@ class __$$QuantitativeEntryCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$QuantitativeEntry implements QuantitativeEntry {
-  const _$QuantitativeEntry(
+class _$QuantitativeEntryImpl implements QuantitativeEntry {
+  const _$QuantitativeEntryImpl(
       {required this.meta,
       required this.data,
       this.entryText,
@@ -2941,8 +2950,8 @@ class _$QuantitativeEntry implements QuantitativeEntry {
       final String? $type})
       : $type = $type ?? 'quantitative';
 
-  factory _$QuantitativeEntry.fromJson(Map<String, dynamic> json) =>
-      _$$QuantitativeEntryFromJson(json);
+  factory _$QuantitativeEntryImpl.fromJson(Map<String, dynamic> json) =>
+      _$$QuantitativeEntryImplFromJson(json);
 
   @override
   final Metadata meta;
@@ -2962,10 +2971,10 @@ class _$QuantitativeEntry implements QuantitativeEntry {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$QuantitativeEntry &&
+            other is _$QuantitativeEntryImpl &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -2982,8 +2991,9 @@ class _$QuantitativeEntry implements QuantitativeEntry {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$QuantitativeEntryCopyWith<_$QuantitativeEntry> get copyWith =>
-      __$$QuantitativeEntryCopyWithImpl<_$QuantitativeEntry>(this, _$identity);
+  _$$QuantitativeEntryImplCopyWith<_$QuantitativeEntryImpl> get copyWith =>
+      __$$QuantitativeEntryImplCopyWithImpl<_$QuantitativeEntryImpl>(
+          this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -3145,7 +3155,7 @@ class _$QuantitativeEntry implements QuantitativeEntry {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$QuantitativeEntryToJson(
+    return _$$QuantitativeEntryImplToJson(
       this,
     );
   }
@@ -3156,10 +3166,10 @@ abstract class QuantitativeEntry implements JournalEntity {
       {required final Metadata meta,
       required final QuantitativeData data,
       final EntryText? entryText,
-      final Geolocation? geolocation}) = _$QuantitativeEntry;
+      final Geolocation? geolocation}) = _$QuantitativeEntryImpl;
 
   factory QuantitativeEntry.fromJson(Map<String, dynamic> json) =
-      _$QuantitativeEntry.fromJson;
+      _$QuantitativeEntryImpl.fromJson;
 
   @override
   Metadata get meta;
@@ -3170,16 +3180,16 @@ abstract class QuantitativeEntry implements JournalEntity {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$QuantitativeEntryCopyWith<_$QuantitativeEntry> get copyWith =>
+  _$$QuantitativeEntryImplCopyWith<_$QuantitativeEntryImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$MeasurementEntryCopyWith<$Res>
+abstract class _$$MeasurementEntryImplCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$MeasurementEntryCopyWith(
-          _$MeasurementEntry value, $Res Function(_$MeasurementEntry) then) =
-      __$$MeasurementEntryCopyWithImpl<$Res>;
+  factory _$$MeasurementEntryImplCopyWith(_$MeasurementEntryImpl value,
+          $Res Function(_$MeasurementEntryImpl) then) =
+      __$$MeasurementEntryImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -3198,11 +3208,11 @@ abstract class _$$MeasurementEntryCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$MeasurementEntryCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$MeasurementEntry>
-    implements _$$MeasurementEntryCopyWith<$Res> {
-  __$$MeasurementEntryCopyWithImpl(
-      _$MeasurementEntry _value, $Res Function(_$MeasurementEntry) _then)
+class __$$MeasurementEntryImplCopyWithImpl<$Res>
+    extends _$JournalEntityCopyWithImpl<$Res, _$MeasurementEntryImpl>
+    implements _$$MeasurementEntryImplCopyWith<$Res> {
+  __$$MeasurementEntryImplCopyWithImpl(_$MeasurementEntryImpl _value,
+      $Res Function(_$MeasurementEntryImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -3213,7 +3223,7 @@ class __$$MeasurementEntryCopyWithImpl<$Res>
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$MeasurementEntry(
+    return _then(_$MeasurementEntryImpl(
       meta: null == meta
           ? _value.meta
           : meta // ignore: cast_nullable_to_non_nullable
@@ -3244,8 +3254,8 @@ class __$$MeasurementEntryCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$MeasurementEntry implements MeasurementEntry {
-  const _$MeasurementEntry(
+class _$MeasurementEntryImpl implements MeasurementEntry {
+  const _$MeasurementEntryImpl(
       {required this.meta,
       required this.data,
       this.entryText,
@@ -3253,8 +3263,8 @@ class _$MeasurementEntry implements MeasurementEntry {
       final String? $type})
       : $type = $type ?? 'measurement';
 
-  factory _$MeasurementEntry.fromJson(Map<String, dynamic> json) =>
-      _$$MeasurementEntryFromJson(json);
+  factory _$MeasurementEntryImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MeasurementEntryImplFromJson(json);
 
   @override
   final Metadata meta;
@@ -3274,10 +3284,10 @@ class _$MeasurementEntry implements MeasurementEntry {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MeasurementEntry &&
+            other is _$MeasurementEntryImpl &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -3294,8 +3304,9 @@ class _$MeasurementEntry implements MeasurementEntry {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$MeasurementEntryCopyWith<_$MeasurementEntry> get copyWith =>
-      __$$MeasurementEntryCopyWithImpl<_$MeasurementEntry>(this, _$identity);
+  _$$MeasurementEntryImplCopyWith<_$MeasurementEntryImpl> get copyWith =>
+      __$$MeasurementEntryImplCopyWithImpl<_$MeasurementEntryImpl>(
+          this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -3457,7 +3468,7 @@ class _$MeasurementEntry implements MeasurementEntry {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$MeasurementEntryToJson(
+    return _$$MeasurementEntryImplToJson(
       this,
     );
   }
@@ -3468,10 +3479,10 @@ abstract class MeasurementEntry implements JournalEntity {
       {required final Metadata meta,
       required final MeasurementData data,
       final EntryText? entryText,
-      final Geolocation? geolocation}) = _$MeasurementEntry;
+      final Geolocation? geolocation}) = _$MeasurementEntryImpl;
 
   factory MeasurementEntry.fromJson(Map<String, dynamic> json) =
-      _$MeasurementEntry.fromJson;
+      _$MeasurementEntryImpl.fromJson;
 
   @override
   Metadata get meta;
@@ -3482,16 +3493,16 @@ abstract class MeasurementEntry implements JournalEntity {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$MeasurementEntryCopyWith<_$MeasurementEntry> get copyWith =>
+  _$$MeasurementEntryImplCopyWith<_$MeasurementEntryImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$WorkoutEntryCopyWith<$Res>
+abstract class _$$WorkoutEntryImplCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$WorkoutEntryCopyWith(
-          _$WorkoutEntry value, $Res Function(_$WorkoutEntry) then) =
-      __$$WorkoutEntryCopyWithImpl<$Res>;
+  factory _$$WorkoutEntryImplCopyWith(
+          _$WorkoutEntryImpl value, $Res Function(_$WorkoutEntryImpl) then) =
+      __$$WorkoutEntryImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -3510,11 +3521,11 @@ abstract class _$$WorkoutEntryCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$WorkoutEntryCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$WorkoutEntry>
-    implements _$$WorkoutEntryCopyWith<$Res> {
-  __$$WorkoutEntryCopyWithImpl(
-      _$WorkoutEntry _value, $Res Function(_$WorkoutEntry) _then)
+class __$$WorkoutEntryImplCopyWithImpl<$Res>
+    extends _$JournalEntityCopyWithImpl<$Res, _$WorkoutEntryImpl>
+    implements _$$WorkoutEntryImplCopyWith<$Res> {
+  __$$WorkoutEntryImplCopyWithImpl(
+      _$WorkoutEntryImpl _value, $Res Function(_$WorkoutEntryImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -3525,7 +3536,7 @@ class __$$WorkoutEntryCopyWithImpl<$Res>
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$WorkoutEntry(
+    return _then(_$WorkoutEntryImpl(
       meta: null == meta
           ? _value.meta
           : meta // ignore: cast_nullable_to_non_nullable
@@ -3556,8 +3567,8 @@ class __$$WorkoutEntryCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$WorkoutEntry implements WorkoutEntry {
-  const _$WorkoutEntry(
+class _$WorkoutEntryImpl implements WorkoutEntry {
+  const _$WorkoutEntryImpl(
       {required this.meta,
       required this.data,
       this.entryText,
@@ -3565,8 +3576,8 @@ class _$WorkoutEntry implements WorkoutEntry {
       final String? $type})
       : $type = $type ?? 'workout';
 
-  factory _$WorkoutEntry.fromJson(Map<String, dynamic> json) =>
-      _$$WorkoutEntryFromJson(json);
+  factory _$WorkoutEntryImpl.fromJson(Map<String, dynamic> json) =>
+      _$$WorkoutEntryImplFromJson(json);
 
   @override
   final Metadata meta;
@@ -3586,10 +3597,10 @@ class _$WorkoutEntry implements WorkoutEntry {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$WorkoutEntry &&
+            other is _$WorkoutEntryImpl &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -3606,8 +3617,8 @@ class _$WorkoutEntry implements WorkoutEntry {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$WorkoutEntryCopyWith<_$WorkoutEntry> get copyWith =>
-      __$$WorkoutEntryCopyWithImpl<_$WorkoutEntry>(this, _$identity);
+  _$$WorkoutEntryImplCopyWith<_$WorkoutEntryImpl> get copyWith =>
+      __$$WorkoutEntryImplCopyWithImpl<_$WorkoutEntryImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -3769,7 +3780,7 @@ class _$WorkoutEntry implements WorkoutEntry {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$WorkoutEntryToJson(
+    return _$$WorkoutEntryImplToJson(
       this,
     );
   }
@@ -3780,10 +3791,10 @@ abstract class WorkoutEntry implements JournalEntity {
       {required final Metadata meta,
       required final WorkoutData data,
       final EntryText? entryText,
-      final Geolocation? geolocation}) = _$WorkoutEntry;
+      final Geolocation? geolocation}) = _$WorkoutEntryImpl;
 
   factory WorkoutEntry.fromJson(Map<String, dynamic> json) =
-      _$WorkoutEntry.fromJson;
+      _$WorkoutEntryImpl.fromJson;
 
   @override
   Metadata get meta;
@@ -3794,16 +3805,16 @@ abstract class WorkoutEntry implements JournalEntity {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$WorkoutEntryCopyWith<_$WorkoutEntry> get copyWith =>
+  _$$WorkoutEntryImplCopyWith<_$WorkoutEntryImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$HabitCompletionEntryCopyWith<$Res>
+abstract class _$$HabitCompletionEntryImplCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$HabitCompletionEntryCopyWith(_$HabitCompletionEntry value,
-          $Res Function(_$HabitCompletionEntry) then) =
-      __$$HabitCompletionEntryCopyWithImpl<$Res>;
+  factory _$$HabitCompletionEntryImplCopyWith(_$HabitCompletionEntryImpl value,
+          $Res Function(_$HabitCompletionEntryImpl) then) =
+      __$$HabitCompletionEntryImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -3822,11 +3833,11 @@ abstract class _$$HabitCompletionEntryCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$HabitCompletionEntryCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$HabitCompletionEntry>
-    implements _$$HabitCompletionEntryCopyWith<$Res> {
-  __$$HabitCompletionEntryCopyWithImpl(_$HabitCompletionEntry _value,
-      $Res Function(_$HabitCompletionEntry) _then)
+class __$$HabitCompletionEntryImplCopyWithImpl<$Res>
+    extends _$JournalEntityCopyWithImpl<$Res, _$HabitCompletionEntryImpl>
+    implements _$$HabitCompletionEntryImplCopyWith<$Res> {
+  __$$HabitCompletionEntryImplCopyWithImpl(_$HabitCompletionEntryImpl _value,
+      $Res Function(_$HabitCompletionEntryImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -3837,7 +3848,7 @@ class __$$HabitCompletionEntryCopyWithImpl<$Res>
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$HabitCompletionEntry(
+    return _then(_$HabitCompletionEntryImpl(
       meta: null == meta
           ? _value.meta
           : meta // ignore: cast_nullable_to_non_nullable
@@ -3868,8 +3879,8 @@ class __$$HabitCompletionEntryCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$HabitCompletionEntry implements HabitCompletionEntry {
-  const _$HabitCompletionEntry(
+class _$HabitCompletionEntryImpl implements HabitCompletionEntry {
+  const _$HabitCompletionEntryImpl(
       {required this.meta,
       required this.data,
       this.entryText,
@@ -3877,8 +3888,8 @@ class _$HabitCompletionEntry implements HabitCompletionEntry {
       final String? $type})
       : $type = $type ?? 'habitCompletion';
 
-  factory _$HabitCompletionEntry.fromJson(Map<String, dynamic> json) =>
-      _$$HabitCompletionEntryFromJson(json);
+  factory _$HabitCompletionEntryImpl.fromJson(Map<String, dynamic> json) =>
+      _$$HabitCompletionEntryImplFromJson(json);
 
   @override
   final Metadata meta;
@@ -3898,10 +3909,10 @@ class _$HabitCompletionEntry implements HabitCompletionEntry {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$HabitCompletionEntry &&
+            other is _$HabitCompletionEntryImpl &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -3918,9 +3929,10 @@ class _$HabitCompletionEntry implements HabitCompletionEntry {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$HabitCompletionEntryCopyWith<_$HabitCompletionEntry> get copyWith =>
-      __$$HabitCompletionEntryCopyWithImpl<_$HabitCompletionEntry>(
-          this, _$identity);
+  _$$HabitCompletionEntryImplCopyWith<_$HabitCompletionEntryImpl>
+      get copyWith =>
+          __$$HabitCompletionEntryImplCopyWithImpl<_$HabitCompletionEntryImpl>(
+              this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -4082,7 +4094,7 @@ class _$HabitCompletionEntry implements HabitCompletionEntry {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$HabitCompletionEntryToJson(
+    return _$$HabitCompletionEntryImplToJson(
       this,
     );
   }
@@ -4093,10 +4105,10 @@ abstract class HabitCompletionEntry implements JournalEntity {
       {required final Metadata meta,
       required final HabitCompletionData data,
       final EntryText? entryText,
-      final Geolocation? geolocation}) = _$HabitCompletionEntry;
+      final Geolocation? geolocation}) = _$HabitCompletionEntryImpl;
 
   factory HabitCompletionEntry.fromJson(Map<String, dynamic> json) =
-      _$HabitCompletionEntry.fromJson;
+      _$HabitCompletionEntryImpl.fromJson;
 
   @override
   Metadata get meta;
@@ -4107,16 +4119,16 @@ abstract class HabitCompletionEntry implements JournalEntity {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$HabitCompletionEntryCopyWith<_$HabitCompletionEntry> get copyWith =>
-      throw _privateConstructorUsedError;
+  _$$HabitCompletionEntryImplCopyWith<_$HabitCompletionEntryImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$SurveyEntryCopyWith<$Res>
+abstract class _$$SurveyEntryImplCopyWith<$Res>
     implements $JournalEntityCopyWith<$Res> {
-  factory _$$SurveyEntryCopyWith(
-          _$SurveyEntry value, $Res Function(_$SurveyEntry) then) =
-      __$$SurveyEntryCopyWithImpl<$Res>;
+  factory _$$SurveyEntryImplCopyWith(
+          _$SurveyEntryImpl value, $Res Function(_$SurveyEntryImpl) then) =
+      __$$SurveyEntryImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -4135,11 +4147,11 @@ abstract class _$$SurveyEntryCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$SurveyEntryCopyWithImpl<$Res>
-    extends _$JournalEntityCopyWithImpl<$Res, _$SurveyEntry>
-    implements _$$SurveyEntryCopyWith<$Res> {
-  __$$SurveyEntryCopyWithImpl(
-      _$SurveyEntry _value, $Res Function(_$SurveyEntry) _then)
+class __$$SurveyEntryImplCopyWithImpl<$Res>
+    extends _$JournalEntityCopyWithImpl<$Res, _$SurveyEntryImpl>
+    implements _$$SurveyEntryImplCopyWith<$Res> {
+  __$$SurveyEntryImplCopyWithImpl(
+      _$SurveyEntryImpl _value, $Res Function(_$SurveyEntryImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -4150,7 +4162,7 @@ class __$$SurveyEntryCopyWithImpl<$Res>
     Object? entryText = freezed,
     Object? geolocation = freezed,
   }) {
-    return _then(_$SurveyEntry(
+    return _then(_$SurveyEntryImpl(
       meta: null == meta
           ? _value.meta
           : meta // ignore: cast_nullable_to_non_nullable
@@ -4181,8 +4193,8 @@ class __$$SurveyEntryCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$SurveyEntry implements SurveyEntry {
-  const _$SurveyEntry(
+class _$SurveyEntryImpl implements SurveyEntry {
+  const _$SurveyEntryImpl(
       {required this.meta,
       required this.data,
       this.entryText,
@@ -4190,8 +4202,8 @@ class _$SurveyEntry implements SurveyEntry {
       final String? $type})
       : $type = $type ?? 'survey';
 
-  factory _$SurveyEntry.fromJson(Map<String, dynamic> json) =>
-      _$$SurveyEntryFromJson(json);
+  factory _$SurveyEntryImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SurveyEntryImplFromJson(json);
 
   @override
   final Metadata meta;
@@ -4211,10 +4223,10 @@ class _$SurveyEntry implements SurveyEntry {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$SurveyEntry &&
+            other is _$SurveyEntryImpl &&
             (identical(other.meta, meta) || other.meta == meta) &&
             (identical(other.data, data) || other.data == data) &&
             (identical(other.entryText, entryText) ||
@@ -4231,8 +4243,8 @@ class _$SurveyEntry implements SurveyEntry {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$SurveyEntryCopyWith<_$SurveyEntry> get copyWith =>
-      __$$SurveyEntryCopyWithImpl<_$SurveyEntry>(this, _$identity);
+  _$$SurveyEntryImplCopyWith<_$SurveyEntryImpl> get copyWith =>
+      __$$SurveyEntryImplCopyWithImpl<_$SurveyEntryImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
@@ -4394,7 +4406,7 @@ class _$SurveyEntry implements SurveyEntry {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$SurveyEntryToJson(
+    return _$$SurveyEntryImplToJson(
       this,
     );
   }
@@ -4405,10 +4417,10 @@ abstract class SurveyEntry implements JournalEntity {
       {required final Metadata meta,
       required final SurveyData data,
       final EntryText? entryText,
-      final Geolocation? geolocation}) = _$SurveyEntry;
+      final Geolocation? geolocation}) = _$SurveyEntryImpl;
 
   factory SurveyEntry.fromJson(Map<String, dynamic> json) =
-      _$SurveyEntry.fromJson;
+      _$SurveyEntryImpl.fromJson;
 
   @override
   Metadata get meta;
@@ -4419,6 +4431,6 @@ abstract class SurveyEntry implements JournalEntity {
   Geolocation? get geolocation;
   @override
   @JsonKey(ignore: true)
-  _$$SurveyEntryCopyWith<_$SurveyEntry> get copyWith =>
+  _$$SurveyEntryImplCopyWith<_$SurveyEntryImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

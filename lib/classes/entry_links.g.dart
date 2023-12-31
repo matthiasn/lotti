@@ -6,7 +6,8 @@ part of 'entry_links.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$BasicLink _$$BasicLinkFromJson(Map<String, dynamic> json) => _$BasicLink(
+_$BasicLinkImpl _$$BasicLinkImplFromJson(Map<String, dynamic> json) =>
+    _$BasicLinkImpl(
       id: json['id'] as String,
       fromId: json['fromId'] as String,
       toId: json['toId'] as String,
@@ -21,7 +22,7 @@ _$BasicLink _$$BasicLinkFromJson(Map<String, dynamic> json) => _$BasicLink(
           : DateTime.parse(json['deletedAt'] as String),
     );
 
-Map<String, dynamic> _$$BasicLinkToJson(_$BasicLink instance) =>
+Map<String, dynamic> _$$BasicLinkImplToJson(_$BasicLinkImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'fromId': instance.fromId,

@@ -5,6 +5,7 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -21,6 +22,7 @@ void main() {
     setUpAll(() {
       getIt
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
+        ..registerSingleton<LinkService>(MockLinkService())
         ..registerSingleton<TagsService>(TagsService());
 
       when(() => entryCubit.showMap).thenAnswer((_) => false);

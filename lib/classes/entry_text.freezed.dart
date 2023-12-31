@@ -97,10 +97,11 @@ class _$EntryTextCopyWithImpl<$Res, $Val extends EntryText>
 }
 
 /// @nodoc
-abstract class _$$_EntryTextCopyWith<$Res> implements $EntryTextCopyWith<$Res> {
-  factory _$$_EntryTextCopyWith(
-          _$_EntryText value, $Res Function(_$_EntryText) then) =
-      __$$_EntryTextCopyWithImpl<$Res>;
+abstract class _$$EntryTextImplCopyWith<$Res>
+    implements $EntryTextCopyWith<$Res> {
+  factory _$$EntryTextImplCopyWith(
+          _$EntryTextImpl value, $Res Function(_$EntryTextImpl) then) =
+      __$$EntryTextImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -114,11 +115,11 @@ abstract class _$$_EntryTextCopyWith<$Res> implements $EntryTextCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_EntryTextCopyWithImpl<$Res>
-    extends _$EntryTextCopyWithImpl<$Res, _$_EntryText>
-    implements _$$_EntryTextCopyWith<$Res> {
-  __$$_EntryTextCopyWithImpl(
-      _$_EntryText _value, $Res Function(_$_EntryText) _then)
+class __$$EntryTextImplCopyWithImpl<$Res>
+    extends _$EntryTextCopyWithImpl<$Res, _$EntryTextImpl>
+    implements _$$EntryTextImplCopyWith<$Res> {
+  __$$EntryTextImplCopyWithImpl(
+      _$EntryTextImpl _value, $Res Function(_$EntryTextImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -129,7 +130,7 @@ class __$$_EntryTextCopyWithImpl<$Res>
     Object? markdown = freezed,
     Object? quill = freezed,
   }) {
-    return _then(_$_EntryText(
+    return _then(_$EntryTextImpl(
       plainText: null == plainText
           ? _value.plainText
           : plainText // ignore: cast_nullable_to_non_nullable
@@ -152,12 +153,12 @@ class __$$_EntryTextCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_EntryText implements _EntryText {
-  const _$_EntryText(
+class _$EntryTextImpl implements _EntryText {
+  const _$EntryTextImpl(
       {required this.plainText, this.geolocation, this.markdown, this.quill});
 
-  factory _$_EntryText.fromJson(Map<String, dynamic> json) =>
-      _$$_EntryTextFromJson(json);
+  factory _$EntryTextImpl.fromJson(Map<String, dynamic> json) =>
+      _$$EntryTextImplFromJson(json);
 
   @override
   final String plainText;
@@ -174,10 +175,10 @@ class _$_EntryText implements _EntryText {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_EntryText &&
+            other is _$EntryTextImpl &&
             (identical(other.plainText, plainText) ||
                 other.plainText == plainText) &&
             (identical(other.geolocation, geolocation) ||
@@ -195,12 +196,12 @@ class _$_EntryText implements _EntryText {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_EntryTextCopyWith<_$_EntryText> get copyWith =>
-      __$$_EntryTextCopyWithImpl<_$_EntryText>(this, _$identity);
+  _$$EntryTextImplCopyWith<_$EntryTextImpl> get copyWith =>
+      __$$EntryTextImplCopyWithImpl<_$EntryTextImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_EntryTextToJson(
+    return _$$EntryTextImplToJson(
       this,
     );
   }
@@ -211,10 +212,10 @@ abstract class _EntryText implements EntryText {
       {required final String plainText,
       final Geolocation? geolocation,
       final String? markdown,
-      final String? quill}) = _$_EntryText;
+      final String? quill}) = _$EntryTextImpl;
 
   factory _EntryText.fromJson(Map<String, dynamic> json) =
-      _$_EntryText.fromJson;
+      _$EntryTextImpl.fromJson;
 
   @override
   String get plainText;
@@ -226,6 +227,6 @@ abstract class _EntryText implements EntryText {
   String? get quill;
   @override
   @JsonKey(ignore: true)
-  _$$_EntryTextCopyWith<_$_EntryText> get copyWith =>
+  _$$EntryTextImplCopyWith<_$EntryTextImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
