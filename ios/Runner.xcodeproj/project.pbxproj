@@ -13,9 +13,9 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
-		AD3F79932B41D98B009867B5 /* LibWhisper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD3F79922B41D98B009867B5 /* LibWhisper.swift */; };
-		AD3F79A12B41D9B5009867B5 /* whisper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD3F799D2B41D9B5009867B5 /* whisper.cpp */; };
-		AD3F79A22B41D9B5009867B5 /* ggml.c in Sources */ = {isa = PBXBuildFile; fileRef = AD3F799F2B41D9B5009867B5 /* ggml.c */; };
+		AD7744982B41E10000D73DE0 /* LibWhisper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD7744972B41E10000D73DE0 /* LibWhisper.swift */; };
+		AD77449D2B41E10F00D73DE0 /* ggml.c in Sources */ = {isa = PBXBuildFile; fileRef = AD7744992B41E10F00D73DE0 /* ggml.c */; };
+		AD77449E2B41E10F00D73DE0 /* whisper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD77449A2B41E10F00D73DE0 /* whisper.cpp */; };
 		ADB650B7270B3C4300B98C66 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADB650B6270B3C4300B98C66 /* HealthKit.framework */; };
 		FD4BDDFBB85CAB6754042A0B /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E08CACAFD56E1EF268BBD8C5 /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
@@ -50,12 +50,12 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AD0869BB271438AF00225DF9 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = Flutter/Base.xcconfig; sourceTree = "<group>"; };
-		AD3F79912B41D98B009867B5 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "Runner-Bridging-Header.h"; path = "../../whisper.cpp/Runner-Bridging-Header.h"; sourceTree = "<group>"; };
-		AD3F79922B41D98B009867B5 /* LibWhisper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = LibWhisper.swift; path = ../../whisper.cpp/LibWhisper.swift; sourceTree = "<group>"; };
-		AD3F799D2B41D9B5009867B5 /* whisper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = whisper.cpp; path = "../../whisper.cpp/whisper.cpp-1.4.2/whisper.cpp"; sourceTree = "<group>"; };
-		AD3F799E2B41D9B5009867B5 /* ggml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ggml.h; path = "../../whisper.cpp/whisper.cpp-1.4.2/ggml.h"; sourceTree = "<group>"; };
-		AD3F799F2B41D9B5009867B5 /* ggml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ggml.c; path = "../../whisper.cpp/whisper.cpp-1.4.2/ggml.c"; sourceTree = "<group>"; };
-		AD3F79A02B41D9B5009867B5 /* whisper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = whisper.h; path = "../../whisper.cpp/whisper.cpp-1.4.2/whisper.h"; sourceTree = "<group>"; };
+		AD7744962B41E10000D73DE0 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "Runner-Bridging-Header.h"; path = "../../whisper.cpp/Runner-Bridging-Header.h"; sourceTree = "<group>"; };
+		AD7744972B41E10000D73DE0 /* LibWhisper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = LibWhisper.swift; path = ../../whisper.cpp/LibWhisper.swift; sourceTree = "<group>"; };
+		AD7744992B41E10F00D73DE0 /* ggml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ggml.c; path = "../../whisper.cpp/whisper.cpp-1.4.2/ggml.c"; sourceTree = "<group>"; };
+		AD77449A2B41E10F00D73DE0 /* whisper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = whisper.cpp; path = "../../whisper.cpp/whisper.cpp-1.4.2/whisper.cpp"; sourceTree = "<group>"; };
+		AD77449B2B41E10F00D73DE0 /* ggml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ggml.h; path = "../../whisper.cpp/whisper.cpp-1.4.2/ggml.h"; sourceTree = "<group>"; };
+		AD77449C2B41E10F00D73DE0 /* whisper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = whisper.h; path = "../../whisper.cpp/whisper.cpp-1.4.2/whisper.h"; sourceTree = "<group>"; };
 		ADAEC2742738A8F200996377 /* RunnerRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerRelease.entitlements; sourceTree = "<group>"; };
 		ADB650B5270B3C4300B98C66 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		ADB650B6270B3C4300B98C66 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
@@ -101,7 +101,7 @@
 		97C146E51CF9000F007C117D = {
 			isa = PBXGroup;
 			children = (
-				ADA4137B2A0DB72A00C39C5B /* whisper.cpp */,
+				AD7744952B41E0D800D73DE0 /* whisper.cpp */,
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
 				97C146EF1CF9000F007C117D /* Products */,
@@ -136,15 +136,15 @@
 			path = Runner;
 			sourceTree = "<group>";
 		};
-		ADA4137B2A0DB72A00C39C5B /* whisper.cpp */ = {
+		AD7744952B41E0D800D73DE0 /* whisper.cpp */ = {
 			isa = PBXGroup;
 			children = (
-				AD3F799F2B41D9B5009867B5 /* ggml.c */,
-				AD3F799E2B41D9B5009867B5 /* ggml.h */,
-				AD3F799D2B41D9B5009867B5 /* whisper.cpp */,
-				AD3F79A02B41D9B5009867B5 /* whisper.h */,
-				AD3F79922B41D98B009867B5 /* LibWhisper.swift */,
-				AD3F79912B41D98B009867B5 /* Runner-Bridging-Header.h */,
+				AD7744992B41E10F00D73DE0 /* ggml.c */,
+				AD77449B2B41E10F00D73DE0 /* ggml.h */,
+				AD77449A2B41E10F00D73DE0 /* whisper.cpp */,
+				AD77449C2B41E10F00D73DE0 /* whisper.h */,
+				AD7744972B41E10000D73DE0 /* LibWhisper.swift */,
+				AD7744962B41E10000D73DE0 /* Runner-Bridging-Header.h */,
 			);
 			path = whisper.cpp;
 			sourceTree = "<group>";
@@ -310,9 +310,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
-				AD3F79A12B41D9B5009867B5 /* whisper.cpp in Sources */,
-				AD3F79932B41D98B009867B5 /* LibWhisper.swift in Sources */,
-				AD3F79A22B41D9B5009867B5 /* ggml.c in Sources */,
+				AD77449E2B41E10F00D73DE0 /* whisper.cpp in Sources */,
+				AD7744982B41E10000D73DE0 /* LibWhisper.swift in Sources */,
+				AD77449D2B41E10F00D73DE0 /* ggml.c in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
