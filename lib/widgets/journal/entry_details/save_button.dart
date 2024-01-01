@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -23,22 +24,22 @@ class SaveButton extends StatelessWidget {
           dirty: (_) => true,
           saved: (_) => false,
         );
-        return Opacity(
-          opacity: unsaved ? 1 : 0,
-          child: TextButton(
-            onPressed: () {
-              context.read<EntryCubit>().save();
-              FocusManager.instance.primaryFocus?.unfocus();
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                localizations.saveLabel,
-                style: saveButtonStyle(Theme.of(context)),
-              ),
+        if (!unsaved) {
+          return const SizedBox.shrink();
+        }
+        return TextButton(
+          onPressed: () {
+            context.read<EntryCubit>().save();
+            FocusManager.instance.primaryFocus?.unfocus();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              localizations.saveLabel,
+              style: saveButtonStyle(Theme.of(context)),
             ),
           ),
-        );
+        ).animate().fadeIn(duration: const Duration(milliseconds: 500));
       },
     );
   }
