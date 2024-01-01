@@ -126,7 +126,6 @@ class JournalCardTitle extends StatelessWidget {
                         fontSize: fontSizeLarge,
                       ),
                     ),
-                    const SizedBox(height: 8),
                     if (showLinkedDuration) LinkedDuration(task: task),
                     TextViewerWidget(
                       entryText: task.entryText,
