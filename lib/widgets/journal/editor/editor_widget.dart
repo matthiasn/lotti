@@ -107,11 +107,7 @@ class EditorWidget extends StatelessWidget {
                           ),
                           keyboardAppearance: Theme.of(context).brightness,
                           customStyles: customEditorStyles(
-                            textColor:
-                                Theme.of(context).textTheme.bodyLarge?.color ??
-                                    Colors.grey,
-                            codeBlockBackground:
-                                Theme.of(context).primaryColorLight,
+                            themeData: Theme.of(context),
                           ),
                         ),
                       ),

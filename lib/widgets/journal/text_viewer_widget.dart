@@ -1,7 +1,9 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:delta_markdown/delta_markdown.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entry_text.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/journal/editor/editor_styles.dart';
+import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 
 class TextViewerWidget extends StatelessWidget {
   const TextViewerWidget({
@@ -15,19 +17,21 @@ class TextViewerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final serializedQuill = entryText?.quill;
+    final markdown = entryText?.markdown ?? entryText?.plainText ?? '';
+    final quill = serializedQuill ?? markdownToDelta(markdown);
+    final controller = makeController(serializedQuill: quill);
+
     return LimitedBox(
       maxHeight: maxHeight,
-      child: Markdown(
-        data: entryText?.markdown ?? '',
-        shrinkWrap: true,
-        padding: const EdgeInsets.only(top: 10),
-        styleSheet: MarkdownStyleSheet.fromCupertinoTheme(
-          const CupertinoThemeData(
-            textTheme: CupertinoTextThemeData(
-              textStyle: TextStyle(
-                fontSize: fontSizeMedium,
-              ),
-            ),
+      child: QuillProvider(
+        configurations: QuillConfigurations(controller: controller),
+        child: QuillEditor(
+          scrollController: ScrollController(),
+          focusNode: FocusNode(),
+          configurations: QuillEditorConfigurations(
+            readOnly: true,
+            customStyles: customEditorStyles(themeData: Theme.of(context)),
           ),
         ),
       ),

@@ -15,7 +15,7 @@ class EmptyScaffoldWithTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FadeIn(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 1),
       child: Scaffold(
         appBar: TitleAppBar(title: title),
         body: body,
