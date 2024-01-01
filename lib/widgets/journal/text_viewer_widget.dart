@@ -25,21 +25,13 @@ class TextViewerWidget extends StatelessWidget {
     return LimitedBox(
       maxHeight: maxHeight,
       child: QuillProvider(
-        configurations: QuillConfigurations(
-          controller: controller,
-        ),
-        child: Flexible(
-          child: QuillEditor(
-            scrollController: ScrollController(),
-            focusNode: FocusNode(),
-            configurations: QuillEditorConfigurations(
-              readOnly: true,
-              customStyles: customEditorStyles(
-                textColor:
-                    Theme.of(context).textTheme.bodyLarge?.color ?? Colors.grey,
-                codeBlockBackground: Theme.of(context).primaryColorLight,
-              ),
-            ),
+        configurations: QuillConfigurations(controller: controller),
+        child: QuillEditor(
+          scrollController: ScrollController(),
+          focusNode: FocusNode(),
+          configurations: QuillEditorConfigurations(
+            readOnly: true,
+            customStyles: customEditorStyles(themeData: Theme.of(context)),
           ),
         ),
       ),

@@ -39,7 +39,11 @@ class JournalCardTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(
+        top: 8,
+        bottom: 8,
+        left: 8,
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,15 +204,8 @@ class _JournalCardState extends State<JournalCard> {
                         : errorColor.withOpacity(0.4),
                   );
                 },
-                journalEntry: (_) => const LeadingIcon(Icons.article),
                 quantitative: (_) => LeadingIcon(MdiIcons.heart),
                 measurement: (_) => LeadingIcon(MdiIcons.numeric),
-                task: (task) => LeadingIcon(
-                  task.data.status.maybeMap(
-                    done: (_) => MdiIcons.checkboxMarkedOutline,
-                    orElse: () => MdiIcons.checkboxBlankOutline,
-                  ),
-                ),
                 habitCompletion: (habitCompletion) =>
                     HabitCompletionColorIcon(habitCompletion.data.habitId),
                 orElse: () => null,

@@ -50,9 +50,9 @@ Future<void> main() async {
 
     FlutterError.onError = (FlutterErrorDetails details) {
       getIt<LoggingDb>().captureException(
-        details,
+        details.exception,
         domain: 'MAIN',
-        subDomain: 'onError',
+        subDomain: details.library,
       );
     };
 
