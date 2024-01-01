@@ -121,7 +121,7 @@ bundle:
 #######################################
 
 .PHONY: ios_build_ipa
-ios_build_ipa: get_whisper_cpp_ios
+ios_build_ipa: get_whisper_cpp
 	$(FLUTTER_CMD) build ipa
 
 .PHONY: ios_build
@@ -193,23 +193,9 @@ macos_open: macos_build macos_archive
 
 .PHONY: get_whisper_cpp
 get_whisper_cpp:
-	cd macos/whisper.cpp/ && \
+	cd whisper.cpp/ && \
 	wget -nc https://github.com/ggerganov/whisper.cpp/archive/refs/tags/v$(WHISPER_CPP_VERSION).zip && \
-	unzip v$(WHISPER_CPP_VERSION).zip && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/ggml.c . && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/ggml.h . && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/whisper.cpp . && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/whisper.h .
-
-.PHONY: get_whisper_cpp_ios
-get_whisper_cpp_ios:
-	cd ios/whisper.cpp/ && \
-	wget -nc https://github.com/ggerganov/whisper.cpp/archive/refs/tags/v$(WHISPER_CPP_VERSION).zip && \
-	unzip v$(WHISPER_CPP_VERSION).zip && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/ggml.c . && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/ggml.h . && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/whisper.cpp . && \
-	cp ./whisper.cpp-$(WHISPER_CPP_VERSION)/whisper.h .
+	unzip -n v$(WHISPER_CPP_VERSION).zip
 
 .PHONY: macos_fastlane_build
 macos_fastlane_build:
