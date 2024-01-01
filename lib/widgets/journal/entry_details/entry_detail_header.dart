@@ -14,7 +14,7 @@ import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
 import 'package:lotti/widgets/journal/tags/tag_add.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class EntryDetailHeader extends StatelessWidget {
+class EntryDetailHeader extends StatefulWidget {
   const EntryDetailHeader({
     this.inLinkedEntries = false,
     super.key,
@@ -23,6 +23,13 @@ class EntryDetailHeader extends StatelessWidget {
 
   final bool inLinkedEntries;
   final Future<void> Function()? unlinkFn;
+
+  @override
+  State<EntryDetailHeader> createState() => _EntryDetailHeaderState();
+}
+
+class _EntryDetailHeaderState extends State<EntryDetailHeader> {
+  bool showAllIcons = false;
 
   @override
   Widget build(BuildContext context) {
@@ -57,14 +64,6 @@ class EntryDetailHeader extends StatelessWidget {
                       activeColor: starredGold,
                     ),
                     SwitchIconWidget(
-                      tooltip: localizations.journalPrivateTooltip,
-                      onPressed: cubit.togglePrivate,
-                      value: item.meta.private ?? false,
-                      icon: Icons.shield_outlined,
-                      activeIcon: Icons.shield,
-                      activeColor: Theme.of(context).colorScheme.error,
-                    ),
-                    SwitchIconWidget(
                       tooltip: localizations.journalFlaggedTooltip,
                       onPressed: cubit.toggleFlagged,
                       value: item.meta.flag == EntryFlag.import,
@@ -72,45 +71,72 @@ class EntryDetailHeader extends StatelessWidget {
                       activeIcon: Icons.flag,
                       activeColor: Theme.of(context).colorScheme.error,
                     ),
-                    if (state.entry?.geolocation != null)
-                      SwitchIconWidget(
-                        tooltip: state.showMap
-                            ? localizations.journalHideMapHint
-                            : localizations.journalShowMapHint,
-                        onPressed: cubit.toggleMapVisible,
-                        value: cubit.showMap,
-                        icon: Icons.map_outlined,
-                        activeIcon: Icons.map,
-                        activeColor: Theme.of(context).primaryColor,
-                      ),
-                    DeleteIconWidget(beamBack: !inLinkedEntries),
-                    const ShareButtonWidget(),
-                    TagAddIconWidget(),
-                    SizedBox(
-                      width: 40,
-                      child: IconButton(
-                        icon: const Icon(Icons.add_link),
-                        tooltip: localizations.journalLinkFromHint,
-                        onPressed: () => linkService.linkFrom(id),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 40,
-                      child: IconButton(
-                        icon: Icon(MdiIcons.target),
-                        tooltip: localizations.journalLinkToHint,
-                        onPressed: () => linkService.linkTo(id),
-                      ),
-                    ),
-                    if (unlinkFn != null)
+                    if (!showAllIcons)
                       SizedBox(
                         width: 40,
                         child: IconButton(
-                          icon: Icon(MdiIcons.closeCircleOutline),
-                          tooltip: localizations.journalUnlinkHint,
-                          onPressed: unlinkFn,
+                          icon: const Icon(Icons.more_horiz),
+                          tooltip: localizations.journalLinkFromHint,
+                          onPressed: () => setState(() => showAllIcons = true),
+                        ),
+                      )
+                    else ...[
+                      SwitchIconWidget(
+                        tooltip: localizations.journalPrivateTooltip,
+                        onPressed: cubit.togglePrivate,
+                        value: item.meta.private ?? false,
+                        icon: Icons.shield_outlined,
+                        activeIcon: Icons.shield,
+                        activeColor: Theme.of(context).colorScheme.error,
+                      ),
+                      if (state.entry?.geolocation != null)
+                        SwitchIconWidget(
+                          tooltip: state.showMap
+                              ? localizations.journalHideMapHint
+                              : localizations.journalShowMapHint,
+                          onPressed: cubit.toggleMapVisible,
+                          value: cubit.showMap,
+                          icon: Icons.map_outlined,
+                          activeIcon: Icons.map,
+                          activeColor: Theme.of(context).primaryColor,
+                        ),
+                      DeleteIconWidget(beamBack: !widget.inLinkedEntries),
+                      const ShareButtonWidget(),
+                      TagAddIconWidget(),
+                      SizedBox(
+                        width: 40,
+                        child: IconButton(
+                          icon: const Icon(Icons.add_link),
+                          tooltip: localizations.journalLinkFromHint,
+                          onPressed: () => linkService.linkFrom(id),
                         ),
                       ),
+                      SizedBox(
+                        width: 40,
+                        child: IconButton(
+                          icon: Icon(MdiIcons.target),
+                          tooltip: localizations.journalLinkToHint,
+                          onPressed: () => linkService.linkTo(id),
+                        ),
+                      ),
+                      if (widget.unlinkFn != null)
+                        SizedBox(
+                          width: 40,
+                          child: IconButton(
+                            icon: Icon(MdiIcons.linkOff),
+                            tooltip: localizations.journalUnlinkHint,
+                            onPressed: widget.unlinkFn,
+                          ),
+                        ),
+                      SizedBox(
+                        width: 40,
+                        child: IconButton(
+                          icon: const Icon(Icons.more_outlined),
+                          tooltip: localizations.journalLinkFromHint,
+                          onPressed: () => setState(() => showAllIcons = false),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
