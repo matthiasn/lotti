@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,6 +45,8 @@ void main() {
         (WidgetTester tester) async {
       when(entryCubit.togglePrivate).thenAnswer((_) async => true);
 
+      const key = ValueKey('editor');
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
@@ -52,10 +56,14 @@ void main() {
             ),
             child: const EditorWidget(
               autoFocus: true,
+              key: key,
             ),
           ),
         ),
       );
+
+      final editorFinder = find.byKey(key);
+      await tester.tap(editorFinder);
       await tester.pumpAndSettle();
 
       final boldIconFinder = find.byIcon(Icons.format_bold);
