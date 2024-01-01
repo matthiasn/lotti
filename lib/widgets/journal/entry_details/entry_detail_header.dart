@@ -43,64 +43,77 @@ class EntryDetailHeader extends StatelessWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                SwitchIconWidget(
-                  tooltip: localizations.journalFavoriteTooltip,
-                  onPressed: cubit.toggleStarred,
-                  value: item.meta.starred ?? false,
-                  icon: Icons.star_outline_rounded,
-                  activeIcon: Icons.star_rounded,
-                  activeColor: starredGold,
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    SwitchIconWidget(
+                      tooltip: localizations.journalFavoriteTooltip,
+                      onPressed: cubit.toggleStarred,
+                      value: item.meta.starred ?? false,
+                      icon: Icons.star_outline_rounded,
+                      activeIcon: Icons.star_rounded,
+                      activeColor: starredGold,
+                    ),
+                    SwitchIconWidget(
+                      tooltip: localizations.journalPrivateTooltip,
+                      onPressed: cubit.togglePrivate,
+                      value: item.meta.private ?? false,
+                      icon: Icons.shield_outlined,
+                      activeIcon: Icons.shield,
+                      activeColor: Theme.of(context).colorScheme.error,
+                    ),
+                    SwitchIconWidget(
+                      tooltip: localizations.journalFlaggedTooltip,
+                      onPressed: cubit.toggleFlagged,
+                      value: item.meta.flag == EntryFlag.import,
+                      icon: Icons.flag_outlined,
+                      activeIcon: Icons.flag,
+                      activeColor: Theme.of(context).colorScheme.error,
+                    ),
+                    if (state.entry?.geolocation != null)
+                      SwitchIconWidget(
+                        tooltip: state.showMap
+                            ? localizations.journalHideMapHint
+                            : localizations.journalShowMapHint,
+                        onPressed: cubit.toggleMapVisible,
+                        value: cubit.showMap,
+                        icon: Icons.map_outlined,
+                        activeIcon: Icons.map,
+                        activeColor: Theme.of(context).primaryColor,
+                      ),
+                    DeleteIconWidget(beamBack: !inLinkedEntries),
+                    const ShareButtonWidget(),
+                    TagAddIconWidget(),
+                    SizedBox(
+                      width: 40,
+                      child: IconButton(
+                        icon: const Icon(Icons.add_link),
+                        tooltip: localizations.journalLinkFromHint,
+                        onPressed: () => linkService.linkFrom(id),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 40,
+                      child: IconButton(
+                        icon: Icon(MdiIcons.target),
+                        tooltip: localizations.journalLinkToHint,
+                        onPressed: () => linkService.linkTo(id),
+                      ),
+                    ),
+                    if (unlinkFn != null)
+                      SizedBox(
+                        width: 40,
+                        child: IconButton(
+                          icon: Icon(MdiIcons.closeCircleOutline),
+                          tooltip: localizations.journalUnlinkHint,
+                          onPressed: unlinkFn,
+                        ),
+                      ),
+                  ],
                 ),
-                SwitchIconWidget(
-                  tooltip: localizations.journalPrivateTooltip,
-                  onPressed: cubit.togglePrivate,
-                  value: item.meta.private ?? false,
-                  icon: Icons.shield_outlined,
-                  activeIcon: Icons.shield,
-                  activeColor: Theme.of(context).colorScheme.error,
-                ),
-                SwitchIconWidget(
-                  tooltip: localizations.journalFlaggedTooltip,
-                  onPressed: cubit.toggleFlagged,
-                  value: item.meta.flag == EntryFlag.import,
-                  icon: Icons.flag_outlined,
-                  activeIcon: Icons.flag,
-                  activeColor: Theme.of(context).colorScheme.error,
-                ),
-                if (state.entry?.geolocation != null)
-                  SwitchIconWidget(
-                    tooltip: state.showMap
-                        ? localizations.journalHideMapHint
-                        : localizations.journalShowMapHint,
-                    onPressed: cubit.toggleMapVisible,
-                    value: cubit.showMap,
-                    icon: Icons.map_outlined,
-                    activeIcon: Icons.map,
-                    activeColor: Theme.of(context).primaryColor,
-                  ),
-                DeleteIconWidget(beamBack: !inLinkedEntries),
-                const ShareButtonWidget(),
-                TagAddIconWidget(),
-                const SizedBox(width: 20),
-                IconButton(
-                  icon: const Icon(Icons.add_link),
-                  tooltip: localizations.journalLinkFromHint,
-                  onPressed: () => linkService.linkFrom(id),
-                ),
-                IconButton(
-                  icon: Icon(MdiIcons.target),
-                  tooltip: localizations.journalLinkToHint,
-                  onPressed: () => linkService.linkTo(id),
-                ),
-                if (unlinkFn != null)
-                  IconButton(
-                    icon: Icon(MdiIcons.closeCircleOutline),
-                    tooltip: localizations.journalUnlinkHint,
-                    onPressed: unlinkFn,
-                  ),
-              ],
+              ),
             ),
             const SaveButton(),
           ],
