@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:easy_debounce/easy_debounce.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/database/database.dart';
@@ -75,7 +74,6 @@ class EditorStateService {
     required DateTime lastSaved,
     required String json,
   }) {
-    debugPrint('saveTempState $id');
     editorStateById[id] = json;
     selectionById.remove(id);
 

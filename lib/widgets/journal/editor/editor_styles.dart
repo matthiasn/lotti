@@ -4,9 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/themes/theme.dart';
 
 DefaultStyles customEditorStyles({
-  required Color textColor,
-  required Color codeBlockBackground,
+  required ThemeData themeData,
 }) {
+  final textColor = themeData.textTheme.bodyLarge?.color;
+  final codeBlockBackground = themeData.primaryColorLight;
+
   return DefaultStyles(
     h1: DefaultTextBlockStyle(
       GoogleFonts.plusJakartaSans(
