@@ -92,6 +92,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+
+      final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
+      await tester.tap(moreHorizIconFinder);
+      await tester.pumpAndSettle();
+
       final shieldIconFinder = find.byIcon(Icons.shield_outlined);
 
       expect(shieldIconFinder, findsOneWidget);
@@ -185,6 +190,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
+      await tester.tap(moreHorizIconFinder);
+      await tester.pumpAndSettle();
+
       final mapIconFinder = find.byIcon(MdiIcons.mapOutline);
       expect(mapIconFinder, findsNothing);
     });
@@ -213,6 +222,10 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle();
+
+      final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
+      await tester.tap(moreHorizIconFinder);
       await tester.pumpAndSettle();
 
       final mapIconFinder = find.byIcon(Icons.map_outlined);
