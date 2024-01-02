@@ -14,7 +14,7 @@ class ToolbarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     const duration = Duration(milliseconds: 800);
     const curve = Curves.easeInOutQuint;
-    const height = 44.0;
+    const height = 60.0;
 
     return Material(
       elevation: 1,
@@ -24,6 +24,8 @@ class ToolbarWidget extends StatelessWidget {
           toolbarSize: height,
           toolbarSectionSpacing: 0,
           toolbarIconAlignment: WrapAlignment.start,
+          showUndo: false,
+          showRedo: false,
           multiRowsDisplay: false,
           showColorButton: false,
           showFontFamily: false,
@@ -32,6 +34,7 @@ class ToolbarWidget extends StatelessWidget {
           showSuperscript: false,
           showIndent: false,
           showFontSize: false,
+          showDividers: false,
         ),
       ),
     )
