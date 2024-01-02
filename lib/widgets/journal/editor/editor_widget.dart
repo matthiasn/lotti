@@ -39,20 +39,28 @@ class EditorWidget extends StatelessWidget {
         final controller = context.read<EntryCubit>().controller;
         final focusNode = context.read<EntryCubit>().focusNode;
 
-        void keyFormatter(
+        void keyFormatter<T>(
           RawKeyEvent event,
           String char,
-          Attribute<dynamic> attribute,
+          Attribute<T> attribute,
         ) {
           if (event.data.isMetaPressed && event.character == char) {
-            if (controller
-                .getSelectionStyle()
-                .attributes
-                .keys
-                .contains(attribute.key)) {
-              controller.formatSelection(Attribute.clone(attribute, null));
+            final attributes = controller.getSelectionStyle().attributes;
+            final alreadySet = attributes.keys.toSet().contains(attribute.key);
+            final selection = controller.selection;
+
+            if (alreadySet) {
+              controller.formatText(
+                selection.baseOffset,
+                selection.extentOffset - selection.baseOffset,
+                Attribute.clone(attribute, null),
+              );
             } else {
-              controller.formatSelection(attribute);
+              controller.formatText(
+                selection.baseOffset,
+                selection.extentOffset - selection.baseOffset,
+                attribute,
+              );
             }
           }
         }
@@ -63,57 +71,56 @@ class EditorWidget extends StatelessWidget {
           }
         }
 
-        return QuillProvider(
-          configurations: QuillConfigurations(
-            controller: controller,
-          ),
-          child: RawKeyboardListener(
-            focusNode: FocusNode(),
-            onKey: (RawKeyEvent event) {
-              keyFormatter(event, 'b', Attribute.bold);
-              keyFormatter(event, 'i', Attribute.italic);
-              saveViaKeyboard(event);
-            },
-            child: Card(
-              color: Theme.of(context).colorScheme.surface.brighten(),
-              elevation: 0,
-              clipBehavior: Clip.hardEdge,
-              shape: const RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.all(Radius.circular(inputBorderRadius)),
-                side: BorderSide(),
+        return RawKeyboardListener(
+          focusNode: FocusNode(),
+          onKey: (RawKeyEvent event) {
+            keyFormatter(event, 'b', Attribute.bold);
+            keyFormatter(event, 'i', Attribute.italic);
+            saveViaKeyboard(event);
+          },
+          child: Card(
+            color: Theme.of(context).colorScheme.surface.brighten(),
+            elevation: 0,
+            clipBehavior: Clip.hardEdge,
+            shape: const RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.all(Radius.circular(inputBorderRadius)),
+              side: BorderSide(),
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: maxHeight,
               ),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: maxHeight,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (snapshot.isFocused) const ToolbarWidget(),
-                    Flexible(
-                      child: QuillEditor(
-                        scrollController: ScrollController(),
-                        focusNode: focusNode,
-                        configurations: QuillEditorConfigurations(
-                          autoFocus: autoFocus,
-                          minHeight: minHeight,
-                          placeholder: localizations.editorPlaceholder,
-                          padding: EdgeInsets.only(
-                            top: 8,
-                            bottom: 16,
-                            left: padding,
-                            right: padding,
-                          ),
-                          keyboardAppearance: Theme.of(context).brightness,
-                          customStyles: customEditorStyles(
-                            themeData: Theme.of(context),
-                          ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (snapshot.isFocused)
+                    ToolbarWidget(
+                      controller: controller,
+                    ),
+                  Flexible(
+                    child: QuillEditor(
+                      scrollController: ScrollController(),
+                      focusNode: focusNode,
+                      configurations: QuillEditorConfigurations(
+                        autoFocus: autoFocus,
+                        minHeight: minHeight,
+                        placeholder: localizations.editorPlaceholder,
+                        padding: EdgeInsets.only(
+                          top: 8,
+                          bottom: 16,
+                          left: padding,
+                          right: padding,
                         ),
+                        keyboardAppearance: Theme.of(context).brightness,
+                        customStyles: customEditorStyles(
+                          themeData: Theme.of(context),
+                        ),
+                        controller: controller,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.398+2316
+version: 0.9.399+2319
 
 msix_config:
   display_name: LottiApp
@@ -37,7 +37,7 @@ dependencies:
   delta_markdown:
     git:
       url: https://github.com/matthiasn/delta_markdown.git
-      ref: bd33921
+      ref: f79a10b
 
   device_info_plus: ^9.0.0
   drift: ^2.11.1
@@ -76,7 +76,7 @@ dependencies:
 
   flutter_map: ^6.1.0
   flutter_native_timezone: ^2.0.0
-  flutter_quill: 8.6.4
+  flutter_quill: ^9.2.1
   flutter_secure_storage: ^9.0.0
   flutter_sliding_tutorial: ^2.0.0
   flutter_svg: ^2.0.7
@@ -149,6 +149,7 @@ dependency_overrides:
   image: ^4.0.13
   intl: ^0.18.0
   rxdart: ^0.27.1
+  uuid: ^3.0.4
 
 dev_dependencies:
   analyzer: ^5.12.0
