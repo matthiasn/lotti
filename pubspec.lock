@@ -417,6 +417,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.2"
+  dart_quill_delta:
+    dependency: transitive
+    description:
+      name: dart_quill_delta
+      sha256: "733eb31821ceb45f43c47bf7f8c5a8aaee39550c0985ed38ff440e8ea5353e2d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.1"
   dart_style:
     dependency: transitive
     description:
@@ -437,8 +445,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: bd33921
-      resolved-ref: bd33921a35ef17c4a61376a426af744c4ec9ba83
+      ref: f79a10b
+      resolved-ref: f79a10b11d35c87febe1bc08df187fd8924fe384
       url: "https://github.com/matthiasn/delta_markdown.git"
     source: git
     version: "0.7.0"
@@ -769,10 +777,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_keyboard_visibility
-      sha256: be41db80ab7156d893878ca48a7520d667075c4841a0435d5544fd836197b55a
+      sha256: "98664be7be0e3ffca00de50f7f6a287ab62c763fc8c762e0a21584584a3ff4f8"
       url: "https://pub.dev"
     source: hosted
-    version: "5.4.3"
+    version: "6.0.0"
   flutter_keyboard_visibility_linux:
     dependency: transitive
     description:
@@ -894,10 +902,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "9028fdec46e80ff513418ef151ffc236f4adfd306028476161b0909e36631104"
+      sha256: ba72f6cd98f7bac07f36d27d03d30e861474b15981d0fb747aefe87e38b85eed
       url: "https://pub.dev"
     source: hosted
-    version: "8.6.4"
+    version: "9.2.1"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1090,6 +1098,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.15.4"
+  html2md:
+    dependency: transitive
+    description:
+      name: html2md
+      sha256: "6f50cec926b0a09816aadb66a59e4cda45c91fd00551e5a8298870069729b508"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.1"
   html_unescape:
     dependency: transitive
     description:
@@ -1183,6 +1199,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.4"
+  irondash_engine_context:
+    dependency: transitive
+    description:
+      name: irondash_engine_context
+      sha256: "8b8c58f2b6414b0db739b329ca08baf3b66d4fcfc3c315525ddac61639addb90"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
+  irondash_message_channel:
+    dependency: transitive
+    description:
+      name: irondash_message_channel
+      sha256: "131d64d97a3612bc3617aefc878f3e3a8e23e0ce18b3bba8e78cb1930befcec1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
   jiffy:
     dependency: "direct main"
     description:
@@ -1295,6 +1327,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.7.0"
+  markdown:
+    dependency: transitive
+    description:
+      name: markdown
+      sha256: acf35edccc0463a9d7384e437c015a3535772e09714cf60e07eeef3a15870dcd
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.1.1"
   matcher:
     dependency: transitive
     description:
@@ -1479,14 +1519,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.1"
-  pasteboard:
-    dependency: transitive
-    description:
-      name: pasteboard
-      sha256: "1c8b6a8b3f1d12e55d4e9404433cda1b4abe66db6b17bc2d2fb5965772c04674"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.0"
   path:
     dependency: "direct main"
     description:
@@ -1647,6 +1679,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.4"
+  pixel_snap:
+    dependency: transitive
+    description:
+      name: pixel_snap
+      sha256: d31591a4f4aa8ed5dc6fc00b8d027338a5614dfbf5ca658b69d1faa7aba80af7
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.4"
   platform:
     dependency: transitive
     description:
@@ -2132,6 +2172,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.0"
+  super_clipboard:
+    dependency: transitive
+    description:
+      name: super_clipboard
+      sha256: "6281b19e4f4af4c4897c7b4117758164a21f63bbeee63da09c04d47823f8b228"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.1"
+  super_native_extensions:
+    dependency: transitive
+    description:
+      name: super_native_extensions
+      sha256: d6d445a644856430cdca70c233213065c413bc3046a3b1e21858e19087d01645
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.1"
   sync_http:
     dependency: transitive
     description:
@@ -2541,5 +2597,5 @@ packages:
     source: hosted
     version: "3.1.2"
 sdks:
-  dart: ">=3.2.0 <4.0.0"
+  dart: ">=3.2.3 <4.0.0"
   flutter: ">=3.16.0"

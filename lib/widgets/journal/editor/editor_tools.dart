@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill/quill_delta.dart';
 import 'package:lotti/classes/entry_text.dart';
 
 Delta deltaFromController(QuillController controller) {
