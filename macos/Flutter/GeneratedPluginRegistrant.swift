@@ -13,10 +13,10 @@ import flutter_local_notifications
 import flutter_native_timezone
 import flutter_secure_storage_macos
 import hotkey_manager
+import irondash_engine_context
 import location
 import media_kit_libs_macos_audio
 import package_info_plus
-import pasteboard
 import path_provider_foundation
 import photo_manager
 import record_macos
@@ -25,6 +25,7 @@ import share_plus
 import shared_preferences_foundation
 import sqflite
 import sqlite3_flutter_libs
+import super_native_extensions
 import url_launcher_macos
 import video_player_avfoundation
 import window_manager
@@ -38,10 +39,10 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FlutterNativeTimezonePlugin.register(with: registry.registrar(forPlugin: "FlutterNativeTimezonePlugin"))
   FlutterSecureStoragePlugin.register(with: registry.registrar(forPlugin: "FlutterSecureStoragePlugin"))
   HotkeyManagerPlugin.register(with: registry.registrar(forPlugin: "HotkeyManagerPlugin"))
+  IrondashEngineContextPlugin.register(with: registry.registrar(forPlugin: "IrondashEngineContextPlugin"))
   LocationPlugin.register(with: registry.registrar(forPlugin: "LocationPlugin"))
   MediaKitLibsMacosAudioPlugin.register(with: registry.registrar(forPlugin: "MediaKitLibsMacosAudioPlugin"))
   FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
-  PasteboardPlugin.register(with: registry.registrar(forPlugin: "PasteboardPlugin"))
   PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
   PhotoManagerPlugin.register(with: registry.registrar(forPlugin: "PhotoManagerPlugin"))
   RecordMacosPlugin.register(with: registry.registrar(forPlugin: "RecordMacosPlugin"))
@@ -50,6 +51,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
   SqflitePlugin.register(with: registry.registrar(forPlugin: "SqflitePlugin"))
   Sqlite3FlutterLibsPlugin.register(with: registry.registrar(forPlugin: "Sqlite3FlutterLibsPlugin"))
+  SuperNativeExtensionsPlugin.register(with: registry.registrar(forPlugin: "SuperNativeExtensionsPlugin"))
   UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
   FVPVideoPlayerPlugin.register(with: registry.registrar(forPlugin: "FVPVideoPlayerPlugin"))
   WindowManagerPlugin.register(with: registry.registrar(forPlugin: "WindowManagerPlugin"))

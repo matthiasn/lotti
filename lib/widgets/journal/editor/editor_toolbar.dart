@@ -4,8 +4,11 @@ import 'package:flutter_quill/flutter_quill.dart';
 
 class ToolbarWidget extends StatelessWidget {
   const ToolbarWidget({
+    required this.controller,
     super.key,
   });
+
+  final QuillController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -15,9 +18,9 @@ class ToolbarWidget extends StatelessWidget {
 
     return Material(
       elevation: 1,
-      child: QuillToolbar(
-        key: key,
-        configurations: const QuillToolbarConfigurations(
+      child: QuillToolbar.simple(
+        configurations: QuillSimpleToolbarConfigurations(
+          controller: controller,
           toolbarSize: height,
           toolbarSectionSpacing: 0,
           toolbarIconAlignment: WrapAlignment.start,
@@ -30,28 +33,29 @@ class ToolbarWidget extends StatelessWidget {
           showIndent: false,
           showFontSize: false,
         ),
-      )
-          .animate()
-          .scaleY(
-            duration: duration,
-            curve: curve,
-            begin: 0,
-            end: 1,
-          )
-          .fadeIn(
-            duration: duration,
-            curve: curve,
-          )
-          .custom(
-            duration: duration,
-            curve: curve,
-            builder: (context, value, child) {
-              return SizedBox(
-                height: height * value,
-                child: child, // child is the Text widget being animated
-              );
-            },
-          ),
-    );
+      ),
+    )
+        .animate()
+        .scaleY(
+          duration: duration,
+          curve: curve,
+          begin: 0,
+          end: 1,
+        )
+        .fadeIn(
+          duration: duration,
+          curve: curve,
+        )
+        .custom(
+          duration: duration,
+          curve: curve,
+          delay: const Duration(milliseconds: 100),
+          builder: (context, value, child) {
+            return SizedBox(
+              height: height * value,
+              child: child, // child is the Text widget being animated
+            );
+          },
+        );
   }
 }
