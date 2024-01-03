@@ -17,6 +17,7 @@ class TimeSeriesBarChart extends StatelessWidget {
     required this.rangeEnd,
     required this.colorByValue,
     this.unit = '',
+    this.valueInMinutes = false,
     super.key,
   });
 
@@ -24,6 +25,7 @@ class TimeSeriesBarChart extends StatelessWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final String unit;
+  final bool valueInMinutes;
   final ColorByValue colorByValue;
 
   @override
@@ -120,7 +122,9 @@ class TimeSeriesBarChart extends StatelessWidget {
               tooltipBgColor: Colors.grey.shade600,
               tooltipRoundedRadius: 8,
               getTooltipItem: (groupData, timestamp, rodData, foo) {
-                final formatted = NumberFormat('#,###').format(rodData.toY);
+                final formatted = valueInMinutes
+                    ? minutesToHhMmSs(rodData.toY)
+                    : NumberFormat('#,###').format(rodData.toY);
                 return BarTooltipItem(
                   '$formatted $unit\n'
                   '${chartDateFormatterYMD(groupData.x)}',
