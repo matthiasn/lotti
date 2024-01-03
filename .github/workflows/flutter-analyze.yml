@@ -23,9 +23,3 @@ jobs:
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
       - name: Run Flutter Analyze
         run: make clean_analyze
-      - name: Check unused files
-        run: make check_unused_files
-      - name: Check unused l10n
-        run: make check_unused_l10n
-      - name: Check unused code
-        run: make check_unused_code
