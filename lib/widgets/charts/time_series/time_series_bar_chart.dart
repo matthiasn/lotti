@@ -1,13 +1,15 @@
 import 'dart:core';
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:tinycolor2/tinycolor2.dart';
+
+typedef ColorByValue = Color Function(Observation);
 
 const gridOpacity = 0.3;
 const labelOpacity = 0.5;
@@ -44,11 +46,12 @@ final gridLine = FlLine(
   strokeWidth: 1,
 );
 
-class TimeSeriesLineChart extends StatelessWidget {
-  const TimeSeriesLineChart({
+class TimeSeriesBarChart extends StatelessWidget {
+  const TimeSeriesBarChart({
     required this.data,
     required this.rangeStart,
     required this.rangeEnd,
+    required this.colorByValue,
     this.unit = '',
     super.key,
   });
@@ -57,6 +60,7 @@ class TimeSeriesLineChart extends StatelessWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final String unit;
+  final ColorByValue colorByValue;
 
   @override
   Widget build(BuildContext context) {
@@ -74,19 +78,33 @@ class TimeSeriesLineChart extends StatelessWidget {
                 ? 7
                 : 1;
 
-    final spots = data
-        .map(
-          (item) => FlSpot(
-            item.dateTime.millisecondsSinceEpoch.toDouble(),
-            item.value.toDouble(),
-          ),
-        )
-        .toList();
+    const barsWidth = 5.0;
 
-    Widget bottomTitleWidgets(double value, TitleMeta meta) {
+    final barGroups =
+        data.sortedBy((observation) => observation.dateTime).map((observation) {
+      return BarChartGroupData(
+        x: observation.dateTime.millisecondsSinceEpoch,
+        barRods: [
+          BarChartRodData(
+            toY: observation.value.toDouble(),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(1),
+              topRight: Radius.circular(1),
+            ),
+            color: colorByValue(observation),
+            width: barsWidth,
+          ),
+        ],
+      );
+    }).toList();
+
+    Widget bottomTitleWidgets(
+      double value,
+      TitleMeta meta,
+    ) {
       final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
       if (ymd.day == 1 ||
-          (rangeInDays < 90 && ymd.day == 15) ||
+          (rangeInDays < 92 && ymd.day == 15) ||
           (rangeInDays < 30 && ymd.day == 8) ||
           (rangeInDays < 30 && ymd.day == 22)) {
         return SideTitleWidget(
@@ -102,8 +120,9 @@ class TimeSeriesLineChart extends StatelessWidget {
         top: 20,
         right: 20,
       ),
-      child: LineChart(
-        LineChartData(
+      child: BarChart(
+        BarChartData(
+          groupsSpace: 5,
           gridData: FlGridData(
             show: false,
             horizontalInterval: double.maxFinite,
@@ -112,35 +131,25 @@ class TimeSeriesLineChart extends StatelessWidget {
             getDrawingHorizontalLine: (value) => gridLine,
             getDrawingVerticalLine: (value) => gridLine,
           ),
-          lineTouchData: LineTouchData(
-            touchTooltipData: LineTouchTooltipData(
+          barTouchData: BarTouchData(
+            touchTooltipData: BarTouchTooltipData(
               tooltipMargin: isMobile ? 24 : 16,
               tooltipPadding: const EdgeInsets.symmetric(
                 horizontal: 8,
                 vertical: 3,
               ),
-              tooltipBgColor: Theme.of(context).primaryColor.desaturate(),
+              tooltipBgColor: Colors.grey[600],
               tooltipRoundedRadius: 8,
-              getTooltipItems: (List<LineBarSpot> spots) {
-                return spots.map((spot) {
-                  return LineTooltipItem(
-                    '',
-                    const TextStyle(
-                      fontSize: fontSizeSmall,
-                      fontWeight: FontWeight.w300,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: '${spot.y.toInt()} $unit\n',
-                        style: chartTooltipStyleBold,
-                      ),
-                      TextSpan(
-                        text: chartDateFormatterFull(spot.x),
-                        style: chartTooltipStyle,
-                      ),
-                    ],
-                  );
-                }).toList();
+              getTooltipItem: (groupData, timestamp, rodData, foo) {
+                return BarTooltipItem(
+                  '${chartDateFormatterYMD(groupData.x)} \n'
+                  '${rodData.toY.floor()} $unit',
+                  TextStyle(
+                    fontSize: fontSizeMedium,
+                    color: rodData.color,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
               },
             ),
           ),
@@ -168,34 +177,11 @@ class TimeSeriesLineChart extends StatelessWidget {
             show: true,
             border: Border.all(color: const Color(0xff37434d)),
           ),
-          minX: rangeStart.millisecondsSinceEpoch.toDouble(),
-          maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
           minY: max(minVal - valRange * 0.2, 0),
           maxY: maxVal + valRange * 0.2,
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              curveSmoothness: 0.1,
-              gradient: LinearGradient(
-                colors: gradientColors,
-              ),
-              isStrokeCapRound: true,
-              dotData: const FlDotData(
-                show: false,
-              ),
-              belowBarData: BarAreaData(
-                show: true,
-                gradient: LinearGradient(
-                  colors: gradientColors
-                      .map((color) => color.withOpacity(0.3))
-                      .toList(),
-                ),
-              ),
-            ),
-          ],
+          barGroups: barGroups,
         ),
-        duration: Duration.zero,
+        //duration: Duration.zero,
       ),
     );
   }

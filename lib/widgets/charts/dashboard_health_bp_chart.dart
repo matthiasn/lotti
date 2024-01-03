@@ -57,7 +57,7 @@ class DashboardHealthBpChart extends StatelessWidget {
               (rangeInDays < 30 && ymd.day == 22)) {
             return SideTitleWidget(
               axisSide: meta.axisSide,
-              child: ChartLabel(chartDateFormatter2(value)),
+              child: ChartLabel(chartDateFormatterMmDd(value)),
             );
           }
           return const SizedBox.shrink();

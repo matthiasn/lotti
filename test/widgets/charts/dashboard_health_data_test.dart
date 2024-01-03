@@ -173,17 +173,17 @@ void main() {
 
       expect(
         const Color(r: 252, g: 16, b: 13),
-        colorByValue(Observation(now, 1000), config),
+        colorByValueAndType(Observation(now, 1000), config),
       );
 
       expect(
         const Color(r: 255, g: 95, b: 31),
-        colorByValue(Observation(now, 7000), config),
+        colorByValueAndType(Observation(now, 7000), config),
       );
 
       expect(
         const Color(r: 75, g: 181, b: 67),
-        colorByValue(Observation(now, 17000), config),
+        colorByValueAndType(Observation(now, 17000), config),
       );
     },
   );
