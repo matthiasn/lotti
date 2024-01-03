@@ -82,7 +82,7 @@ class TimeSeriesBarChart extends StatelessWidget {
                 : 1;
 
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final barsWidth = (screenWidth - 80 - rangeInDays * 1.2) / rangeInDays;
+    final barsWidth = (screenWidth - 100 - rangeInDays * 1.3) / rangeInDays;
 
     final barGroups =
         data.sortedBy((observation) => observation.dateTime).map((observation) {
@@ -96,7 +96,7 @@ class TimeSeriesBarChart extends StatelessWidget {
               topRight: Radius.circular(1),
             ),
             color: colorByValue(observation),
-            width: barsWidth,
+            width: max(barsWidth, 1),
           ),
         ],
       );
