@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
@@ -64,6 +65,8 @@ class TimeSeriesBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final inRange = daysInRange(rangeStart: rangeStart, rangeEnd: rangeEnd);
+
     final minVal = data.isEmpty ? 0 : data.map((e) => e.value).reduce(min);
     final maxVal = data.isEmpty ? 0 : data.map((e) => e.value).reduce(max);
     final valRange = maxVal - minVal;
@@ -78,7 +81,8 @@ class TimeSeriesBarChart extends StatelessWidget {
                 ? 7
                 : 1;
 
-    const barsWidth = 5.0;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final barsWidth = (screenWidth - 80 - rangeInDays * 1.2) / rangeInDays;
 
     final barGroups =
         data.sortedBy((observation) => observation.dateTime).map((observation) {
@@ -138,17 +142,14 @@ class TimeSeriesBarChart extends StatelessWidget {
                 horizontal: 8,
                 vertical: 3,
               ),
-              tooltipBgColor: Colors.grey[600],
+              tooltipBgColor: Colors.grey.shade600,
               tooltipRoundedRadius: 8,
               getTooltipItem: (groupData, timestamp, rodData, foo) {
+                final formatted = NumberFormat('#,###').format(rodData.toY);
                 return BarTooltipItem(
-                  '${chartDateFormatterYMD(groupData.x)} \n'
-                  '${rodData.toY.floor()} $unit',
-                  TextStyle(
-                    fontSize: fontSizeMedium,
-                    color: rodData.color,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  '$formatted $unit\n'
+                  '${chartDateFormatterYMD(groupData.x)}',
+                  chartTooltipStyleBold.copyWith(color: rodData.color),
                 );
               },
             ),

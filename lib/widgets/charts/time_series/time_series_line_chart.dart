@@ -7,7 +7,6 @@ import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 const gridOpacity = 0.3;
 const labelOpacity = 0.5;
@@ -119,15 +118,16 @@ class TimeSeriesLineChart extends StatelessWidget {
                 horizontal: 8,
                 vertical: 3,
               ),
-              tooltipBgColor: Theme.of(context).primaryColor.desaturate(),
+              tooltipBgColor: Colors.grey.shade600,
               tooltipRoundedRadius: 8,
               getTooltipItems: (List<LineBarSpot> spots) {
                 return spots.map((spot) {
                   return LineTooltipItem(
                     '',
-                    const TextStyle(
+                    TextStyle(
                       fontSize: fontSizeSmall,
                       fontWeight: FontWeight.w300,
+                      color: oldPrimaryColor,
                     ),
                     children: [
                       TextSpan(

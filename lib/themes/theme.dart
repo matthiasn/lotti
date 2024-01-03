@@ -98,7 +98,7 @@ const chartTooltipStyle = TextStyle(
 );
 
 const chartTooltipStyleBold = TextStyle(
-  fontSize: fontSizeSmall,
+  fontSize: fontSizeMedium,
   fontWeight: FontWeight.bold,
 );
 
