@@ -5,47 +5,10 @@ import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/charts/time_series/utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-
-typedef ColorByValue = Color Function(Observation);
-
-const gridOpacity = 0.3;
-const labelOpacity = 0.5;
-
-class ChartLabel extends StatelessWidget {
-  const ChartLabel(this.text, {super.key});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: labelOpacity,
-      child: Text(
-        text,
-        style: chartTitleStyleSmall,
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-}
-
-List<Color> gradientColors = [
-  oldPrimaryColorLight,
-  oldPrimaryColor,
-];
-
-Widget leftTitleWidgets(double value, TitleMeta meta) {
-  return ChartLabel(value.toInt().toString());
-}
-
-final gridLine = FlLine(
-  color: chartTextColor.withOpacity(gridOpacity),
-  strokeWidth: 1,
-);
 
 class TimeSeriesBarChart extends StatelessWidget {
   const TimeSeriesBarChart({
@@ -180,7 +143,6 @@ class TimeSeriesBarChart extends StatelessWidget {
             leftTitles: const AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                interval: double.maxFinite,
                 getTitlesWidget: leftTitleWidgets,
                 reservedSize: 40,
               ),
