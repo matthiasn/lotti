@@ -2,9 +2,6 @@ import 'dart:core';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
-import 'package:lotti/blocs/charts/health_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -70,46 +67,43 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
     final healthType = healthTypes[dataType];
     final isBarChart = healthType?.chartType == HealthChartType.barChart;
 
-    return BlocProvider<HealthChartInfoCubit>(
-      create: (BuildContext context) => HealthChartInfoCubit(),
-      child: StreamBuilder<List<JournalEntity>>(
-        stream: _db.watchQuantitativeByType(
-          type: widget.chartConfig.healthType,
-          rangeStart: widget.rangeStart,
-          rangeEnd: widget.rangeEnd,
-        ),
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<List<JournalEntity>> snapshot,
-        ) {
-          final items = snapshot.data ?? [];
-          final data = aggregateByType(items, dataType);
-
-          return DashboardChart(
-            chart: isBarChart
-                ? TimeSeriesBarChart(
-                    data: data,
-                    rangeStart: widget.rangeStart,
-                    rangeEnd: widget.rangeEnd,
-                    unit: healthType?.unit ?? '',
-                    colorByValue: (Observation observation) =>
-                        colorByValueAndType(
-                      observation,
-                      healthType,
-                    ),
-                  )
-                : TimeSeriesLineChart(
-                    data: data,
-                    rangeStart: widget.rangeStart,
-                    rangeEnd: widget.rangeEnd,
-                    unit: healthType?.unit ?? '',
-                  ),
-            clipBehavior: Clip.none,
-            chartHeader: HealthChartInfoWidget(widget.chartConfig),
-            height: isBarChart ? 180 : 150,
-          );
-        },
+    return StreamBuilder<List<JournalEntity>>(
+      stream: _db.watchQuantitativeByType(
+        type: widget.chartConfig.healthType,
+        rangeStart: widget.rangeStart,
+        rangeEnd: widget.rangeEnd,
       ),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<JournalEntity>> snapshot,
+      ) {
+        final items = snapshot.data ?? [];
+        final data = aggregateByType(items, dataType);
+
+        return DashboardChart(
+          chart: isBarChart
+              ? TimeSeriesBarChart(
+                  data: data,
+                  rangeStart: widget.rangeStart,
+                  rangeEnd: widget.rangeEnd,
+                  unit: healthType?.unit ?? '',
+                  colorByValue: (Observation observation) =>
+                      colorByValueAndType(
+                    observation,
+                    healthType,
+                  ),
+                )
+              : TimeSeriesLineChart(
+                  data: data,
+                  rangeStart: widget.rangeStart,
+                  rangeEnd: widget.rangeEnd,
+                  unit: healthType?.unit ?? '',
+                ),
+          clipBehavior: Clip.none,
+          chartHeader: HealthChartInfoWidget(widget.chartConfig),
+          height: isBarChart ? 180 : 150,
+        );
+      },
     );
   }
 }
@@ -124,52 +118,25 @@ class HealthChartInfoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<HealthChartInfoCubit, HealthChartInfoState>(
-      builder: (BuildContext context, HealthChartInfoState state) {
-        final selected = state.selected;
-        final healthType = healthTypes[chartConfig.healthType];
+    final healthType = healthTypes[chartConfig.healthType];
 
-        final valueLabel = healthType?.hoursMinutes ?? false
-            ? hoursToHhMm(selected?.value ?? 0)
-            : ' ${NumberFormat('#,###.##').format(selected?.value ?? 0)}';
-
-        return Positioned(
-          top: 0,
-          left: 20,
-          child: SizedBox(
-            width: max(MediaQuery.of(context).size.width, 300) - 20,
-            child: IgnorePointer(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    healthType?.displayName ?? chartConfig.healthType,
-                    style: chartTitleStyle,
-                  ),
-                  if (selected != null) ...[
-                    const Spacer(),
-                    Padding(
-                      padding: AppTheme.chartDateHorizontalPadding,
-                      child: Text(
-                        ' ${ymd(selected.dateTime)}',
-                        style: chartTitleStyle,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      ' $valueLabel',
-                      style: chartTitleStyle.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                  ],
-                ],
+    return Positioned(
+      top: 0,
+      left: 20,
+      child: SizedBox(
+        width: max(MediaQuery.of(context).size.width, 300) - 20,
+        child: IgnorePointer(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                healthType?.displayName ?? chartConfig.healthType,
+                style: chartTitleStyle,
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
