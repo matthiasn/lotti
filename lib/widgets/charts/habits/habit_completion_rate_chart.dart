@@ -9,21 +9,9 @@ import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/charts/time_series/utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
-
-final gridLine = FlLine(
-  color: chartTextColor.withOpacity(gridOpacity),
-  strokeWidth: 1,
-);
-
-final gridLineEmphasized = FlLine(
-  color: chartTextColor,
-  dashArray: [5, 3],
-);
-
-const gridOpacity = 0.3;
-const labelOpacity = 0.5;
 
 class HabitCompletionRateChart extends StatelessWidget
     implements PreferredSizeWidget {
@@ -265,24 +253,6 @@ LineChartBarData barData({
           )
         : null,
   );
-}
-
-class ChartLabel extends StatelessWidget {
-  const ChartLabel(this.text, {super.key});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: labelOpacity,
-      child: Text(
-        text,
-        style: chartTitleStyleSmall,
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
 }
 
 Widget leftTitleWidgets(double value, TitleMeta meta) {
