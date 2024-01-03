@@ -252,21 +252,6 @@ tag_push:
 .PHONY: all
 all: ios macos
 
-.PHONY: check_unused_files
-check_unused_files:
-	dart run dart_code_metrics:metrics check-unused-files lib test
-
-.PHONY: check_unused_code
-check_unused_code:
-	dart run dart_code_metrics:metrics check-unused-code lib test
-
-.PHONY: check_unused_l10n
-check_unused_l10n:
-	dart run dart_code_metrics:metrics check-unused-l10n lib
-
-.PHONY: check_unused
-check_unused: check_unused_code check_unused_files check_unused_l10n
-
 .PHONY: splash
 splash:
 	dart run flutter_native_splash:create
