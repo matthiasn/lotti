@@ -74,12 +74,17 @@ String chartDateFormatter(String ymd) {
   return DateFormat('MMM dd').format(day);
 }
 
-String chartDateFormatter2(double millis) {
+String chartDateFormatterMmDd(num millis) {
   final day = DateTime.fromMillisecondsSinceEpoch(millis.toInt());
   return DateFormat('MMM dd').format(day);
 }
 
-String chartDateFormatterFull(double millis) {
+String chartDateFormatterYMD(num millis) {
+  final day = DateTime.fromMillisecondsSinceEpoch(millis.toInt());
+  return DateFormat.yMMMd().format(day);
+}
+
+String chartDateFormatterFull(num millis) {
   final day = DateTime.fromMillisecondsSinceEpoch(millis.toInt());
   return DateFormat('MMM dd, HH:mm').format(day);
 }

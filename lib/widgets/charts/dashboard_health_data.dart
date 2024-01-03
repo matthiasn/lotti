@@ -8,7 +8,7 @@ import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-Color colorByValue(
+Color colorByValueAndType(
   Observation observation,
   HealthTypeConfig? healthTypeConfig,
 ) {
