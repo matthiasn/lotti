@@ -67,9 +67,20 @@ class TimeSeriesBarChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final inRange = daysInRange(rangeStart: rangeStart, rangeEnd: rangeEnd);
 
+    final byDay = <String, Observation>{};
+    for (final observation in data) {
+      final day = ymd(observation.dateTime);
+      byDay[day] = observation;
+    }
+
     final minVal = data.isEmpty ? 0 : data.map((e) => e.value).reduce(min);
     final maxVal = data.isEmpty ? 0 : data.map((e) => e.value).reduce(max);
     final valRange = maxVal - minVal;
+
+    final dataWithEmptyDays = inRange.map((day) {
+      final observation = byDay[day] ?? Observation(DateTime.parse(day), 0);
+      return observation;
+    });
 
     final rangeInDays = rangeEnd.difference(rangeStart).inDays;
 
@@ -84,8 +95,9 @@ class TimeSeriesBarChart extends StatelessWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final barsWidth = (screenWidth - 100 - rangeInDays * 1.3) / rangeInDays;
 
-    final barGroups =
-        data.sortedBy((observation) => observation.dateTime).map((observation) {
+    final barGroups = dataWithEmptyDays
+        .sortedBy((observation) => observation.dateTime)
+        .map((observation) {
       return BarChartGroupData(
         x: observation.dateTime.millisecondsSinceEpoch,
         barRods: [
