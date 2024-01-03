@@ -79,12 +79,6 @@ class DashboardWidget extends StatelessWidget {
                     rangeStart: rangeStart,
                     rangeEnd: rangeEnd,
                   ),
-                  const SizedBox(height: 10),
-                  WildcardStoryWeeklyChart(
-                    chartConfig: storyChart,
-                    rangeStart: rangeStart,
-                    rangeEnd: rangeEnd,
-                  ),
                 ],
               );
             },

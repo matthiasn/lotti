@@ -75,25 +75,5 @@ void main() {
       );
     });
     tearDown(getIt.reset);
-
-    testWidgets('weekly story time chart is rendered', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          WildcardStoryWeeklyChart(
-            rangeStart: DateTime(2022),
-            rangeEnd: DateTime(2023),
-            chartConfig: const WildcardStoryTimeItem(
-              color: '#00FF00',
-              storySubstring: 'Lotti',
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // chart displays expected title
-      expect(find.text('Lotti [weekly]'), findsOneWidget);
-    });
   });
 }
