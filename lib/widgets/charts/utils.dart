@@ -1,14 +1,11 @@
 import 'dart:core';
 import 'dart:math';
 
-import 'package:charts_flutter/flutter.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/themes/colors.dart';
-import 'package:lotti/utils/color.dart';
 
 class Observation extends Equatable {
   const Observation(this.dateTime, this.value);
@@ -189,46 +186,6 @@ List<Observation> aggregateMeasurementNone(
 
   return aggregated;
 }
-
-RangeAnnotation<DateTime> chartRangeAnnotation(
-  DateTime rangeStart,
-  DateTime rangeEnd,
-) {
-  return RangeAnnotation([
-    RangeAnnotationSegment(
-      rangeStart.add(const Duration(days: 1)),
-      rangeEnd.subtract(const Duration(days: 1)),
-      RangeAnnotationAxisType.domain,
-      color: Color.transparent,
-    ),
-  ]);
-}
-
-final timeSeriesAxis = DateTimeAxisSpec(
-  tickProviderSpec: const AutoDateTimeTickProviderSpec(includeTime: false),
-  renderSpec: SmallTickRendererSpec(
-    labelStyle: TextStyleSpec(
-      fontSize: 10,
-      color: Color.fromHex(code: colorToCssHex(chartTextColor)),
-    ),
-  ),
-);
-
-final numericRenderSpec = SmallTickRendererSpec<num>(
-  labelStyle: TextStyleSpec(
-    fontSize: 10,
-    color: Color.fromHex(code: colorToCssHex(chartTextColor)),
-  ),
-);
-
-final SeriesRendererConfig<DateTime> defaultBarRenderer =
-    BarRendererConfig<DateTime>(
-  cornerStrategy: const NoCornerStrategy(),
-  layoutPaintOrder: 3,
-);
-
-final SeriesRendererConfig<DateTime> defaultLineRenderer =
-    LineRendererConfig<DateTime>(layoutPaintOrder: 4);
 
 DateTime getRangeStart({
   required BuildContext context,

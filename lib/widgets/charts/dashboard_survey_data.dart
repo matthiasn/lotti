@@ -1,6 +1,7 @@
 import 'dart:core';
 
-import 'package:charts_flutter/flutter.dart' as charts;
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/color.dart';
@@ -53,31 +54,53 @@ List<Observation> aggregateSurvey({
   return aggregated;
 }
 
-List<charts.Series<Observation, DateTime>> surveySeries({
+List<LineChartBarData> surveyLines({
   required List<JournalEntity> entities,
   required DashboardSurveyItem dashboardSurveyItem,
 }) {
-  final seriesList = <charts.Series<Observation, DateTime>>[];
   final colorsByScoreKey = dashboardSurveyItem.colorsByScoreKey;
 
-  for (final scoreKey in dashboardSurveyItem.colorsByScoreKey.keys) {
+  return dashboardSurveyItem.colorsByScoreKey.keys.map((scoreKey) {
     final color = colorFromCssHex(colorsByScoreKey[scoreKey] ?? '#82E6CE');
-    final lineColor = charts.Color(r: color.red, g: color.green, b: color.blue);
 
-    seriesList.add(
-      charts.Series<Observation, DateTime>(
-        id: scoreKey,
-        colorFn: (Observation val, _) => lineColor,
-        domainFn: (Observation val, _) => val.dateTime,
-        measureFn: (Observation val, _) => val.value,
-        data: aggregateSurvey(
-          entities: entities,
-          dashboardSurveyItem: dashboardSurveyItem,
-          scoreKey: scoreKey,
+    final data = aggregateSurvey(
+      entities: entities,
+      dashboardSurveyItem: dashboardSurveyItem,
+      scoreKey: scoreKey,
+    );
+    final spots = data
+        .map(
+          (item) => FlSpot(
+            item.dateTime.millisecondsSinceEpoch.toDouble(),
+            item.value.toDouble(),
+          ),
+        )
+        .toList();
+
+    final gradientColors = <Color>[
+      color.withOpacity(0.6),
+      color.withOpacity(0.9),
+    ];
+
+    return LineChartBarData(
+      spots: spots,
+      isCurved: true,
+      curveSmoothness: 0.1,
+      color: color,
+      gradient: LinearGradient(
+        colors: gradientColors,
+      ),
+      isStrokeCapRound: true,
+      dotData: const FlDotData(
+        show: false,
+      ),
+      belowBarData: BarAreaData(
+        show: true,
+        gradient: LinearGradient(
+          colors:
+              gradientColors.map((color) => color.withOpacity(0.1)).toList(),
         ),
       ),
     );
-  }
-
-  return seriesList;
+  }).toList();
 }
