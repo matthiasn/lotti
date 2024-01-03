@@ -99,7 +99,6 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                   rangeEnd: widget.rangeEnd,
                   unit: healthType?.unit ?? '',
                 ),
-          clipBehavior: Clip.none,
           chartHeader: HealthChartInfoWidget(widget.chartConfig),
           height: isBarChart ? 180 : 150,
         );
