@@ -1,8 +1,7 @@
 import 'dart:core';
 import 'dart:math';
+import 'dart:ui';
 
-import 'package:charts_flutter/flutter.dart' as charts;
-import 'package:charts_flutter/flutter.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
@@ -12,7 +11,7 @@ Color colorByValueAndType(
   Observation observation,
   HealthTypeConfig? healthTypeConfig,
 ) {
-  final color = charts.Color.fromHex(code: '#82E6CE');
+  final color = colorFromCssHex('#82E6CE');
 
   if (healthTypeConfig == null) {
     return color;
@@ -27,8 +26,7 @@ Color colorByValueAndType(
       orElse: () => 0,
     );
 
-    final color = colorFromCssHex(colorByValue[aboveThreshold] ?? '#000000');
-    return charts.Color(r: color.red, g: color.green, b: color.blue);
+    return colorFromCssHex(colorByValue[aboveThreshold] ?? '#000000');
   }
 
   return color;

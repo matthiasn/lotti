@@ -8,7 +8,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bp_chart.dart';
@@ -138,29 +137,4 @@ class HealthChartInfoWidget extends StatelessWidget {
       ),
     );
   }
-}
-
-Color colorByValueAndType(
-  Observation observation,
-  HealthTypeConfig? healthTypeConfig,
-) {
-  final color = colorFromCssHex('#82E6CE');
-
-  if (healthTypeConfig == null) {
-    return color;
-  }
-
-  if (healthTypeConfig.colorByValue != null) {
-    final colorByValue = healthTypeConfig.colorByValue;
-    final sortedThresholds = colorByValue!.keys.toList()..sort();
-
-    final aboveThreshold = sortedThresholds.reversed.firstWhere(
-      (threshold) => observation.value >= threshold,
-      orElse: () => 0,
-    );
-
-    return colorFromCssHex(colorByValue[aboveThreshold] ?? '#000000');
-  }
-
-  return color;
 }
