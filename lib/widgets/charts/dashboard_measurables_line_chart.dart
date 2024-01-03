@@ -1,8 +1,6 @@
 import 'dart:core';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/charts/measurables_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -44,64 +42,61 @@ class DashboardMeasurablesLineChart extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        return BlocProvider<MeasurablesChartInfoCubit>(
-          create: (BuildContext context) => MeasurablesChartInfoCubit(),
-          child: StreamBuilder<List<JournalEntity>>(
-            stream: db.watchMeasurementsByType(
-              type: measurableDataType.id,
-              rangeStart: rangeStart.subtract(const Duration(hours: 12)),
-              rangeEnd: rangeEnd,
-            ),
-            builder: (
-              BuildContext context,
-              AsyncSnapshot<List<JournalEntity>> measurementsSnapshot,
-            ) {
-              final measurements = measurementsSnapshot.data ?? [];
-
-              final aggregationType =
-                  measurableDataType.aggregationType ?? AggregationType.none;
-
-              List<Observation> data;
-              if (aggregationType == AggregationType.none) {
-                data = aggregateMeasurementNone(measurements);
-              } else if (aggregationType == AggregationType.dailyMax) {
-                data = aggregateMaxByDay(
-                  measurements,
-                  rangeStart: rangeStart,
-                  rangeEnd: rangeEnd,
-                );
-              } else if (aggregationType == AggregationType.hourlySum) {
-                data = aggregateSumByHour(
-                  measurements,
-                  rangeStart: rangeStart,
-                  rangeEnd: rangeEnd,
-                );
-              } else {
-                data = aggregateSumByDay(
-                  measurements,
-                  rangeStart: rangeStart,
-                  rangeEnd: rangeEnd,
-                );
-              }
-
-              return DashboardChart(
-                topMargin: 20,
-                chartHeader: MeasurablesChartInfoWidget(
-                  measurableDataType,
-                  dashboardId: dashboardId,
-                  enableCreate: enableCreate,
-                  aggregationType: aggregationType,
-                ),
-                height: 180,
-                chart: TimeSeriesLineChart(
-                  data: data,
-                  rangeStart: rangeStart,
-                  rangeEnd: rangeEnd,
-                  unit: measurableDataType.unitName,
-                ),
-              );
-            },
+        return StreamBuilder<List<JournalEntity>>(
+          stream: db.watchMeasurementsByType(
+            type: measurableDataType.id,
+            rangeStart: rangeStart.subtract(const Duration(hours: 12)),
+            rangeEnd: rangeEnd,
           ),
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<List<JournalEntity>> measurementsSnapshot,
+          ) {
+            final measurements = measurementsSnapshot.data ?? [];
+
+            final aggregationType =
+                measurableDataType.aggregationType ?? AggregationType.none;
+
+            List<Observation> data;
+            if (aggregationType == AggregationType.none) {
+              data = aggregateMeasurementNone(measurements);
+            } else if (aggregationType == AggregationType.dailyMax) {
+              data = aggregateMaxByDay(
+                measurements,
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              );
+            } else if (aggregationType == AggregationType.hourlySum) {
+              data = aggregateSumByHour(
+                measurements,
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              );
+            } else {
+              data = aggregateSumByDay(
+                measurements,
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              );
+            }
+
+            return DashboardChart(
+              topMargin: 20,
+              chartHeader: MeasurablesChartInfoWidget(
+                measurableDataType,
+                dashboardId: dashboardId,
+                enableCreate: enableCreate,
+                aggregationType: aggregationType,
+              ),
+              height: 180,
+              chart: TimeSeriesLineChart(
+                data: data,
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+                unit: measurableDataType.unitName,
+              ),
+            );
+          },
         );
       },
     );

@@ -54,7 +54,6 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
         final items = snapshot.data ?? [];
 
         return DashboardChart(
-          clipBehavior: Clip.none,
           chart: TimeSeriesBarChart(
             data: aggregateWorkoutDailySum(
               items,

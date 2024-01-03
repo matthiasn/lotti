@@ -8,7 +8,6 @@ class DashboardChart extends StatelessWidget {
     this.overlay,
     this.topMargin = 0,
     this.transparent = false,
-    this.clipBehavior,
     super.key,
   });
 
@@ -18,7 +17,6 @@ class DashboardChart extends StatelessWidget {
   final double height;
   final double topMargin;
   final bool transparent;
-  final Clip? clipBehavior;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +34,7 @@ class DashboardChart extends StatelessWidget {
               right: 10,
             ),
             child: Card(
-              clipBehavior: clipBehavior,
+              clipBehavior: Clip.none,
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(10)),
               ),
