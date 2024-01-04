@@ -1,7 +1,6 @@
 import 'dart:core';
 import 'dart:math';
 
-import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -11,7 +10,7 @@ import 'package:lotti/surveys/run_surveys.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
-import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/charts/time_series/time_series_multiline_chart.dart';
 
 class DashboardSurveyChart extends StatelessWidget {
   DashboardSurveyChart({
@@ -28,11 +27,6 @@ class DashboardSurveyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final charts.SeriesRendererConfig<DateTime> defaultRenderer =
-        charts.LineRendererConfig<DateTime>(
-      strokeWidthPx: 2.5,
-    );
-
     return StreamBuilder<List<JournalEntity>>(
       stream: _db.watchSurveysByType(
         type: chartConfig.surveyType,
@@ -60,24 +54,29 @@ class DashboardSurveyChart extends StatelessWidget {
           }
         }
 
+        final lineBarsData = surveyLines(
+          entities: items,
+          dashboardSurveyItem: chartConfig,
+        );
+
+        final allSpots = lineBarsData
+            .map((data) => data.spots)
+            .expand((spots) => spots)
+            .toList();
+
+        final minVal =
+            allSpots.isEmpty ? 0 : allSpots.map((spot) => spot.y).reduce(min);
+        final maxVal =
+            allSpots.isEmpty ? 0 : allSpots.map((spot) => spot.y).reduce(max);
+
         return DashboardChart(
           topMargin: 10,
-          chart: charts.TimeSeriesChart(
-            surveySeries(
-              entities: items,
-              dashboardSurveyItem: chartConfig,
-            ),
-            animate: false,
-            behaviors: [chartRangeAnnotation(rangeStart, rangeEnd)],
-            domainAxis: timeSeriesAxis,
-            defaultRenderer: defaultRenderer,
-            primaryMeasureAxis: charts.NumericAxisSpec(
-              tickProviderSpec: const charts.BasicNumericTickProviderSpec(
-                zeroBound: false,
-                desiredTickCount: 5,
-              ),
-              renderSpec: numericRenderSpec,
-            ),
+          chart: TimeSeriesMultiLineChart(
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+            lineBarsData: lineBarsData,
+            minVal: minVal,
+            maxVal: maxVal,
           ),
           chartHeader: Positioned(
             top: 0,
@@ -101,7 +100,7 @@ class DashboardSurveyChart extends StatelessWidget {
               ),
             ),
           ),
-          height: 120,
+          height: 180,
         );
       },
     );

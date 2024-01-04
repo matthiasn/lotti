@@ -1,7 +1,7 @@
-import 'package:charts_flutter/flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -172,18 +172,18 @@ void main() {
       final now = DateTime.now();
 
       expect(
-        const Color(r: 252, g: 16, b: 13),
-        colorByValue(Observation(now, 1000), config),
+        colorFromCssHex('#FC100D'),
+        colorByValueAndType(Observation(now, 1000), config),
       );
 
       expect(
-        const Color(r: 255, g: 95, b: 31),
-        colorByValue(Observation(now, 7000), config),
+        colorFromCssHex('#FF5F1F'),
+        colorByValueAndType(Observation(now, 7000), config),
       );
 
       expect(
-        const Color(r: 75, g: 181, b: 67),
-        colorByValue(Observation(now, 17000), config),
+        colorFromCssHex('#4BB543'),
+        colorByValueAndType(Observation(now, 17000), config),
       );
     },
   );
