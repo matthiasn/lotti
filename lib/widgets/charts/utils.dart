@@ -131,7 +131,7 @@ List<String> daysInRange({
   required DateTime rangeEnd,
 }) {
   final range = rangeEnd.difference(rangeStart);
-  return getDayStrings(range.inDays, rangeStart);
+  return getDayStrings(range.inDays + 1, rangeStart);
 }
 
 List<Observation> aggregateMaxByDay(
