@@ -137,6 +137,7 @@
   "maintenanceRecreateFts5": "Recreate full-text index",
   "maintenanceRecreateTagged": "Recreate tagged",
   "maintenanceReprocessSync": "Reprocess sync messages",
+  "maintenanceSyncSkip": "Skip sync message",
   "maintenanceResetHostId": "Reset Host ID",
   "maintenanceStories": "Assign stories from parent entries",
   "maintenanceSyncDefinitions": "Sync tags, measurables, dashboards, habits",
