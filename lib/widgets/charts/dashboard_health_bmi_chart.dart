@@ -201,7 +201,7 @@ class BmiChartInfoWidget extends StatelessWidget {
       left: 20,
       child: IgnorePointer(
         child: Container(
-          width: MediaQuery.of(context).size.width,
+          width: MediaQuery.of(context).size.width - 30,
           padding: const EdgeInsets.only(
             right: 10,
             left: 10,

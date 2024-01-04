@@ -104,6 +104,7 @@ class _DashboardMeasurablesChartState extends State<DashboardMeasurablesChart> {
             }
 
             return DashboardChart(
+              topMargin: 10,
               chart: TimeSeriesBarChart(
                 data: data,
                 rangeStart: widget.rangeStart,
