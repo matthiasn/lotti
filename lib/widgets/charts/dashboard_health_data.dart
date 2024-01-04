@@ -145,6 +145,10 @@ num findExtreme(
   List<Observation> observations,
   num Function(num, num) extremeFn,
 ) {
+  if (observations.isEmpty) {
+    return 0.0;
+  }
+
   var val = observations.first.value;
 
   for (final observation in observations) {
