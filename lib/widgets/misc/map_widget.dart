@@ -61,8 +61,7 @@ class _MapWidgetState extends State<MapWidget> {
             children: [
               TileLayer(
                 tileProvider: CachedTileProvider(),
-                urlTemplate:
-                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               ),
               MarkerLayer(
                 markers: [
