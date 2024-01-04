@@ -1,11 +1,8 @@
 import 'dart:core';
 
-import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health/health.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/blocs/charts/health_chart_info_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -18,7 +15,7 @@ import 'package:lotti/widgets/charts/dashboard_health_bmi_data.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/loading_widget.dart';
-import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/charts/time_series/time_series_line_chart.dart';
 
 class DashboardHealthBmiChart extends StatefulWidget {
   const DashboardHealthBmiChart({
@@ -49,130 +46,66 @@ class _DashboardHealthBmiChartState extends State<DashboardHealthBmiChart> {
 
   final JournalDb _db = getIt<JournalDb>();
   final HealthImport _healthImport = getIt<HealthImport>();
-  final _chartState = charts.UserManagedState<DateTime>();
 
   @override
   Widget build(BuildContext context) {
     const weightType = 'HealthDataType.WEIGHT';
 
-    final charts.SeriesRendererConfig<DateTime> defaultRenderer =
-        charts.LineRendererConfig<DateTime>();
-    return BlocProvider<HealthChartInfoCubit>(
-      create: (BuildContext context) => HealthChartInfoCubit(),
-      child: StreamBuilder<List<JournalEntity>>(
-        stream: _db.watchQuantitativeByType(
-          type: 'HealthDataType.HEIGHT',
-          rangeStart: DateTime(2010),
-          rangeEnd: DateTime.now(),
-        ),
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<List<JournalEntity>> snapshot,
-        ) {
-          void infoSelectionModelUpdated(
-            charts.SelectionModel<DateTime> model,
-          ) {
-            if (model.hasDatumSelection) {
-              final newSelection =
-                  model.selectedDatum.first.datum as Observation;
-              context.read<HealthChartInfoCubit>().setSelected(newSelection);
-
-              _chartState.selectionModels[charts.SelectionModelType.info] =
-                  charts.UserManagedSelectionModel(model: model);
-            } else {
-              context.read<HealthChartInfoCubit>().clearSelected();
-              _chartState.selectionModels[charts.SelectionModelType.info] =
-                  charts.UserManagedSelectionModel();
-            }
-          }
-
-          final heightEntry = snapshot.data?.first as QuantitativeEntry?;
-          final height = heightEntry?.data.value;
-
-          if (height == null) {
-            return const LoadingWidget();
-          }
-
-          return StreamBuilder<List<JournalEntity>>(
-            stream: _db.watchQuantitativeByType(
-              type: weightType,
-              rangeStart: widget.rangeStart,
-              rangeEnd: widget.rangeEnd,
-            ),
-            builder: (
-              BuildContext context,
-              AsyncSnapshot<List<JournalEntity>> snapshot,
-            ) {
-              if (snapshot.data == null) {
-                return const LoadingWidget();
-              }
-
-              final items = snapshot.data ?? [];
-              final weightData = aggregateNone(items, weightType);
-
-              final minInRange = findMin(weightData);
-              final maxInRange = findMax(weightData);
-
-              final rangeAnnotationSegments =
-                  makeRangeAnnotationSegments(weightData, height);
-
-              final tickCount = rangeAnnotationSegments.length * 2;
-              final blue = charts.MaterialPalette.blue.shadeDefault;
-
-              final seriesList = <charts.Series<Observation, DateTime>>[
-                charts.Series<Observation, DateTime>(
-                  id: weightType,
-                  colorFn: (Observation val, _) => blue,
-                  domainFn: (Observation val, _) => val.dateTime,
-                  measureFn: (Observation val, _) => val.value,
-                  data: weightData,
-                ),
-              ];
-
-              return DashboardChart(
-                chart: charts.TimeSeriesChart(
-                  seriesList,
-                  animate: false,
-                  behaviors: [
-                    charts.RangeAnnotation([
-                      charts.RangeAnnotationSegment(
-                        widget.rangeStart,
-                        widget.rangeEnd,
-                        charts.RangeAnnotationAxisType.domain,
-                        color: charts.Color.transparent,
-                      ),
-                      ...rangeAnnotationSegments,
-                    ]),
-                  ],
-                  domainAxis: timeSeriesAxis,
-                  defaultRenderer: defaultRenderer,
-                  selectionModels: [
-                    charts.SelectionModelConfig(
-                      updatedListener: infoSelectionModelUpdated,
-                    ),
-                  ],
-                  primaryMeasureAxis: charts.NumericAxisSpec(
-                    tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                      zeroBound: false,
-                      dataIsInWholeNumbers: true,
-                      desiredTickCount: tickCount,
-                    ),
-                    renderSpec: numericRenderSpec,
-                  ),
-                ),
-                chartHeader: BmiChartInfoWidget(
-                  widget.chartConfig,
-                  height: height,
-                  minInRange: minInRange,
-                  maxInRange: maxInRange,
-                ),
-                height: 320,
-                overlay: const BmiRangeLegend(),
-              );
-            },
-          );
-        },
+    return StreamBuilder<List<JournalEntity>>(
+      stream: _db.watchQuantitativeByType(
+        type: 'HealthDataType.HEIGHT',
+        rangeStart: DateTime(2010),
+        rangeEnd: DateTime.now(),
       ),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<JournalEntity>> snapshot,
+      ) {
+        final heightEntry = snapshot.data?.first as QuantitativeEntry?;
+        final height = heightEntry?.data.value;
+
+        if (height == null) {
+          return const LoadingWidget();
+        }
+
+        return StreamBuilder<List<JournalEntity>>(
+          stream: _db.watchQuantitativeByType(
+            type: weightType,
+            rangeStart: widget.rangeStart,
+            rangeEnd: widget.rangeEnd,
+          ),
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<List<JournalEntity>> snapshot,
+          ) {
+            if (snapshot.data == null) {
+              return const LoadingWidget();
+            }
+
+            final items = snapshot.data ?? [];
+            final weightData = aggregateNone(items, weightType);
+
+            final minInRange = findMin(weightData);
+            final maxInRange = findMax(weightData);
+
+            return DashboardChart(
+              chart: TimeSeriesLineChart(
+                data: weightData,
+                rangeStart: widget.rangeStart,
+                rangeEnd: widget.rangeEnd,
+              ),
+              chartHeader: BmiChartInfoWidget(
+                widget.chartConfig,
+                height: height,
+                minInRange: minInRange,
+                maxInRange: maxInRange,
+              ),
+              height: 320,
+              overlay: const BmiRangeLegend(),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -260,69 +193,38 @@ class BmiChartInfoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<HealthChartInfoCubit, HealthChartInfoState>(
-      builder: (BuildContext context, HealthChartInfoState state) {
-        final selected = state.selected;
-        final weight = selected?.value;
+    final minWeight = '${NumberFormat('#,###.#').format(minInRange)} kg';
+    final maxWeight = '${NumberFormat('#,###.#').format(maxInRange)} kg';
 
-        final minWeight = '${NumberFormat('#,###.#').format(minInRange)} kg';
-        final maxWeight = '${NumberFormat('#,###.#').format(maxInRange)} kg';
-
-        return Positioned(
-          top: 0,
-          left: 20,
-          child: IgnorePointer(
-            child: Container(
-              width: MediaQuery.of(context).size.width,
-              padding: const EdgeInsets.only(
-                right: 10,
-                left: 10,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (selected == null)
-                    Text(
-                      healthTypes[chartConfig.healthType]?.displayName ??
-                          chartConfig.healthType,
-                      style: chartTitleStyle,
-                    ),
-                  if (selected != null) ...[
-                    Padding(
-                      padding: AppTheme.chartDateHorizontalPadding,
-                      child: Text(
-                        ' ${ymd(selected.dateTime)}',
-                        style: chartTitleStyle,
-                      ),
-                    ),
-                    Text(
-                      ' ${NumberFormat('#,###.##').format(selected.value)} kg ',
-                      style: chartTitleStyle.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      ' BMI: ${NumberFormat('#.#').format(calculateBMI(height!, weight!))}',
-                      style: chartTitleStyle.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                  if (selected == null) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      '$minWeight - $maxWeight',
-                      style: chartTitleStyle.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+    return Positioned(
+      top: 0,
+      left: 20,
+      child: IgnorePointer(
+        child: Container(
+          width: MediaQuery.of(context).size.width - 30,
+          padding: const EdgeInsets.only(
+            right: 10,
+            left: 10,
           ),
-        );
-      },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                healthTypes[chartConfig.healthType]?.displayName ??
+                    chartConfig.healthType,
+                style: chartTitleStyle,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$minWeight - $maxWeight',
+                style: chartTitleStyle.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,10 +1,5 @@
 import 'dart:core';
 
-import 'package:charts_flutter/flutter.dart' as charts;
-import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
-import 'package:lotti/widgets/charts/utils.dart';
-
 num calculateBMI(num height, num weight) {
   final heightSquare = height * height;
   return weight / heightSquare;
@@ -142,58 +137,3 @@ List<BmiRange> bmiRanges = [
     ],
   ),
 ];
-
-charts.RangeAnnotationSegment<num> makeRangeSegment(
-  String hexColor,
-  num from,
-  num to,
-) {
-  final color = colorFromCssHex(hexColor);
-  return charts.RangeAnnotationSegment(
-    from,
-    to,
-    charts.RangeAnnotationAxisType.measure,
-    color: charts.Color(
-      r: color.red,
-      g: color.green,
-      b: color.blue,
-      a: 100,
-    ),
-  );
-}
-
-List<charts.RangeAnnotationSegment<num>> makeRangeAnnotationSegments(
-  List<Observation> observations,
-  num height,
-) {
-  final min = findMin(observations);
-  final max = findMax(observations);
-  final rangeSegments = <charts.RangeAnnotationSegment<num>>[];
-
-  for (final range in bmiRanges) {
-    for (final segment in range.segments) {
-      final lowerWeightBoundInclusive =
-          weightFromBmi(height, segment.lowerBoundInclusive);
-      final upperWeightBoundExclusive =
-          weightFromBmi(height, segment.upperBoundExclusive);
-
-      if (segment.alwaysShow ||
-          nearRange(
-            min: min,
-            max: max,
-            lowerBound: lowerWeightBoundInclusive,
-            upperBound: upperWeightBoundExclusive,
-          )) {
-        rangeSegments.add(
-          makeRangeSegment(
-            range.hexColor,
-            lowerWeightBoundInclusive,
-            upperWeightBoundExclusive,
-          ),
-        );
-      }
-    }
-  }
-
-  return rangeSegments;
-}

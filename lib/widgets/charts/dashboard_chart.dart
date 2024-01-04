@@ -34,6 +34,7 @@ class DashboardChart extends StatelessWidget {
               right: 10,
             ),
             child: Card(
+              clipBehavior: Clip.none,
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(10)),
               ),
