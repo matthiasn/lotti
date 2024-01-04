@@ -63,6 +63,10 @@ class MaintenancePage extends StatelessWidget {
                 onTap: () => getIt<SyncConfigService>().resetOffset(),
               ),
               SettingsCard(
+                title: localizations.maintenanceSyncSkip,
+                onTap: () => getIt<SyncConfigService>().resetOffset(),
+              ),
+              SettingsCard(
                 title: localizations.maintenanceResetHostId,
                 onTap: () => getIt<SyncConfigService>().resetHostId(),
               ),

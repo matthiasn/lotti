@@ -106,4 +106,11 @@ class SyncConfigService {
     await setLastReadUid(0);
     await resetHostId();
   }
+
+  Future<void> skipMessage() async {
+    final lastReadUid = await getLastReadUid();
+    if (lastReadUid != null) {
+      await setLastReadUid(lastReadUid + 1);
+    }
+  }
 }
