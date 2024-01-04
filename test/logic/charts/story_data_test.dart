@@ -22,6 +22,7 @@ void main() {
             '2022-07-04',
             '2022-07-05',
             '2022-07-06',
+            '2022-07-07',
           ],
         );
       },
@@ -37,6 +38,7 @@ void main() {
           ),
           [
             '2022-07-01',
+            '2022-07-02',
           ],
         );
       },
@@ -55,6 +57,7 @@ void main() {
             '2022-07-03',
             '2022-07-04',
             '2022-07-05',
+            '2022-07-06',
           ],
         );
       },
@@ -136,6 +139,7 @@ void main() {
             Observation(DateTime(2022, 7, 4), 0),
             Observation(DateTime(2022, 7, 5), 0),
             Observation(DateTime(2022, 7, 6), 0),
+            Observation(DateTime(2022, 7, 7), 0),
           ],
         );
       },
@@ -160,6 +164,7 @@ void main() {
             Observation(DateTime(2022, 7, 2), 0),
             Observation(DateTime(2022, 7, 3), 60.0),
             Observation(DateTime(2022, 7, 4), 251.55),
+            Observation(DateTime(2022, 7, 5), 0),
           ],
         );
       },
@@ -184,6 +189,7 @@ void main() {
             Observation(DateTime(2022, 7, 3), 1440.0),
             Observation(DateTime(2022, 7, 4), 1440.0),
             Observation(DateTime(2022, 7, 5), 60.0),
+            Observation(DateTime(2022, 7, 6), 0),
           ],
         );
       },
@@ -207,6 +213,7 @@ void main() {
             Observation(DateTime(2022, 7, 1), 60.0),
             Observation(DateTime(2022, 7, 2), 240.0),
             Observation(DateTime(2022, 7, 3), 1440.0),
+            Observation(DateTime(2022, 7, 4), 1440.0),
           ],
         );
       },
