@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +8,7 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/ai_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
@@ -136,6 +139,15 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                           onPressed: () => setState(() => showAllIcons = false),
                         ),
                       ),
+                      if (Platform.isMacOS)
+                        SizedBox(
+                          width: 40,
+                          child: IconButton(
+                            icon: const Icon(Icons.assistant_rounded),
+                            tooltip: 'Prompt',
+                            onPressed: () => getIt<AiService>().prompt(item),
+                          ),
+                        ),
                     ],
                   ],
                 ),
