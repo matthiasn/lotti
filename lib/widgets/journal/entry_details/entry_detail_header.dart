@@ -81,7 +81,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                         width: 40,
                         child: IconButton(
                           icon: const Icon(Icons.more_horiz),
-                          tooltip: localizations.journalLinkFromHint,
+                          tooltip: localizations.journalHeaderExpand,
                           onPressed: () => setState(() => showAllIcons = true),
                         ),
                       )
