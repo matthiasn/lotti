@@ -22,10 +22,12 @@ class EntryDetailHeader extends StatefulWidget {
     this.inLinkedEntries = false,
     super.key,
     this.unlinkFn,
+    this.linkedFromId,
   });
 
   final bool inLinkedEntries;
   final Future<void> Function()? unlinkFn;
+  final String? linkedFromId;
 
   @override
   State<EntryDetailHeader> createState() => _EntryDetailHeaderState();
@@ -145,7 +147,10 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                           child: IconButton(
                             icon: const Icon(Icons.assistant_rounded),
                             tooltip: 'Prompt',
-                            onPressed: () => getIt<AiService>().prompt(item),
+                            onPressed: () => getIt<AiService>().prompt(
+                              item,
+                              linkedFromId: widget.linkedFromId,
+                            ),
                           ),
                         ),
                     ],

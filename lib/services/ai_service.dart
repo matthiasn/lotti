@@ -12,7 +12,10 @@ import 'package:lotti/utils/file_utils.dart';
 class AiService {
   AiService();
 
-  Future<void> prompt(JournalEntity? journalEntity) async {
+  Future<void> prompt(
+    JournalEntity? journalEntity, {
+    String? linkedFromId,
+  }) async {
     final promptText = journalEntity?.entryText?.plainText;
 
     if (promptText == null || journalEntity == null) {
@@ -36,7 +39,7 @@ class AiService {
         quill: markdownToDelta(plainText),
       ),
       id: uuid.v1(),
-      linkedId: journalEntity.meta.id,
+      linkedId: linkedFromId ?? journalEntity.meta.id,
       started: DateTime.now(),
     );
   }

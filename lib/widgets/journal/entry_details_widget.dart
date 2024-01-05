@@ -26,12 +26,14 @@ class EntryDetailWidget extends StatelessWidget {
     this.showTaskDetails = false,
     this.unlinkFn,
     this.parentTags,
+    this.linkedFromId,
   });
 
   final String itemId;
   final bool popOnDelete;
   final bool showTaskDetails;
   final Future<void> Function()? unlinkFn;
+  final String? linkedFromId;
   final Set<String>? parentTags;
 
   @override
@@ -76,6 +78,7 @@ class EntryDetailWidget extends StatelessWidget {
                   ),
                   EntryDetailHeader(
                     inLinkedEntries: unlinkFn != null,
+                    linkedFromId: linkedFromId,
                     unlinkFn: unlinkFn,
                   ),
                   TagsListWidget(parentTags: parentTags),
