@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +9,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/ai_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/save_button.dart';
 import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
@@ -141,7 +140,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                           onPressed: () => setState(() => showAllIcons = false),
                         ),
                       ),
-                      if (Platform.isMacOS)
+                      if (isDesktop)
                         SizedBox(
                           width: 40,
                           child: IconButton(
