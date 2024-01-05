@@ -33,6 +33,7 @@ class OutboxService {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   late final StreamSubscription<FGBGType> fgBgSubscription;
+  Isolate? isolate;
   SendPort? _sendPort;
 
   void dispose() {
@@ -40,22 +41,31 @@ class OutboxService {
   }
 
   Future<void> restartRunner() async {
-    final syncConfig = await _syncConfigService.getSyncConfig();
+    killIsolate();
 
-    if (syncConfig != null) {
-      _sendPort?.send(
-        OutboxIsolateMessage.restart(
-          syncConfig: syncConfig,
-        ),
-      );
-    }
+    _loggingDb.captureEvent(
+      'Restarting',
+      domain: 'OUTBOX',
+      subDomain: 'restartRunner()',
+    );
+    await startIsolate();
+  }
+
+  void killIsolate() {
+    _loggingDb.captureEvent(
+      'Killing isolate',
+      domain: 'OUTBOX',
+      subDomain: 'killIsolate()',
+    );
+
+    isolate?.kill(priority: Isolate.immediate);
   }
 
   Future<void> startIsolate() async {
     final syncConfig = await _syncConfigService.getSyncConfig();
 
     final receivePort = ReceivePort();
-    await Isolate.spawn(entryPoint, receivePort.sendPort);
+    isolate = await Isolate.spawn(entryPoint, receivePort.sendPort);
     _sendPort = await receivePort.first as SendPort;
 
     final syncDbIsolate = await getIt<Future<DriftIsolate>>(
@@ -100,6 +110,8 @@ class OutboxService {
       _connectivityService.connectedStream.listen((connected) {
         if (connected) {
           restartRunner();
+        } else {
+          killIsolate();
         }
       });
 
