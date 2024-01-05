@@ -6,8 +6,10 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/ai_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/entry_details/delete_icon_widget.dart';
 import 'package:lotti/widgets/journal/entry_details/save_button.dart';
 import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
@@ -19,10 +21,12 @@ class EntryDetailHeader extends StatefulWidget {
     this.inLinkedEntries = false,
     super.key,
     this.unlinkFn,
+    this.linkedFromId,
   });
 
   final bool inLinkedEntries;
   final Future<void> Function()? unlinkFn;
+  final String? linkedFromId;
 
   @override
   State<EntryDetailHeader> createState() => _EntryDetailHeaderState();
@@ -76,7 +80,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                         width: 40,
                         child: IconButton(
                           icon: const Icon(Icons.more_horiz),
-                          tooltip: localizations.journalLinkFromHint,
+                          tooltip: localizations.journalHeaderExpand,
                           onPressed: () => setState(() => showAllIcons = true),
                         ),
                       )
@@ -136,6 +140,18 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                           onPressed: () => setState(() => showAllIcons = false),
                         ),
                       ),
+                      if (isDesktop)
+                        SizedBox(
+                          width: 40,
+                          child: IconButton(
+                            icon: const Icon(Icons.assistant_rounded),
+                            tooltip: 'Prompt',
+                            onPressed: () => getIt<AiService>().prompt(
+                              item,
+                              linkedFromId: widget.linkedFromId,
+                            ),
+                          ),
+                        ),
                     ],
                   ],
                 ),
