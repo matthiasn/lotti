@@ -113,6 +113,7 @@
   "journalLinkedEntriesLabel": "Linked:",
   "journalLinkedFromLabel": "Linked from:",
   "journalLinkFromHint": "Link from",
+  "journalHeaderExpand": "Show all",
   "journalLinkToHint": "Link to",
   "journalUnlinkHint": "Unlink",
   "journalPrivateTooltip": "private only",
