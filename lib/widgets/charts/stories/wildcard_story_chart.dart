@@ -63,7 +63,7 @@ class _WildcardStoryChartState extends State<WildcardStoryChart> {
         return DashboardChart(
           chart: TimeSeriesBarChart(
             data: data,
-            valueInMinutes: true,
+            valueInHours: true,
             rangeStart: widget.rangeStart,
             rangeEnd: widget.rangeEnd,
             colorByValue: (Observation observation) =>
