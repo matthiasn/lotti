@@ -63,7 +63,7 @@ Future<void> entryPoint(SendPort sendPort) async {
             }),
           );
         },
-        restart: (_) => outbox?.restartRunner(),
+        restart: (_) {},
       );
     }
   }
@@ -96,16 +96,6 @@ class OutboxServiceIsolate {
     );
   }
 
-  void restartRunner() {
-    _loggingDb.captureEvent(
-      'restartRunner()',
-      domain: 'OUTBOX_ISOLATE',
-      subDomain: 'Runner',
-    );
-    _clientRunner.close();
-    _startRunner();
-  }
-
   Future<void> init() async {
     Timer.periodic(const Duration(minutes: 1), (timer) async {
       final unprocessed = await getNextItems();
@@ -120,25 +110,19 @@ class OutboxServiceIsolate {
   }
 
   Future<void> sendNext() async {
-    _loggingDb.captureEvent(
-      'start',
-      domain: 'OUTBOX_ISOLATE',
-      subDomain: 'sendNext()',
-    );
-
     final b64Secret = syncConfig.sharedSecret;
 
-    _loggingDb.captureEvent(
-      'sendNext() start',
-      domain: 'OUTBOX_ISOLATE',
-    );
-
     try {
-      _loggingDb.captureEvent('sendNext() start ', domain: 'OUTBOX_ISOLATE');
-
       final unprocessed = await getNextItems();
       if (unprocessed.isNotEmpty) {
         final nextPending = unprocessed.first;
+
+        _loggingDb.captureEvent(
+          'trying ${nextPending.subject} ',
+          domain: 'OUTBOX_ISOLATE',
+          subDomain: 'sendNext()',
+        );
+
         try {
           final encryptedMessage = await encryptString(
             b64Secret: b64Secret,
@@ -181,8 +165,9 @@ class OutboxServiceIsolate {
           }
 
           _loggingDb.captureEvent(
-            'sendNext() done',
+            '${nextPending.subject} done',
             domain: 'OUTBOX_ISOLATE',
+            subDomain: 'sendNext()',
           );
         } catch (e) {
           await _syncDatabase.updateOutboxItem(
