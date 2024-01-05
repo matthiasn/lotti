@@ -100,7 +100,8 @@ List<Observation> aggregateStoryDailyTimeSum(
 
   for (final dayString in minutesByDay.keys) {
     final day = DateTime.parse(dayString);
-    aggregated.add(Observation(day, minutesByDay[dayString] ?? 0));
+    final minutes = minutesByDay[dayString] ?? 0;
+    aggregated.add(Observation(day, minutes / 60));
   }
 
   return aggregated;
@@ -154,12 +155,6 @@ List<Observation> aggregateStoryTimeSum(
   required DateTime rangeEnd,
   required AggregationTimeframe timeframe,
 }) {
-  aggregateStoryWeeklyTimeSum(
-    entities,
-    rangeStart: rangeStart,
-    rangeEnd: rangeEnd,
-  );
-
   return aggregateStoryDailyTimeSum(
     entities,
     rangeStart: rangeStart,
