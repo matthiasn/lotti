@@ -86,6 +86,7 @@ class _DashboardHealthChartState extends State<DashboardHealthChart> {
                   rangeStart: widget.rangeStart,
                   rangeEnd: widget.rangeEnd,
                   unit: healthType?.unit ?? '',
+                  valueInHours: healthType?.unit == 'h',
                   colorByValue: (Observation observation) =>
                       colorByValueAndType(
                     observation,

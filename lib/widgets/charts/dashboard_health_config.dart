@@ -137,7 +137,7 @@ Map<String, HealthTypeConfig> healthTypes = {
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
     hoursMinutes: true,
-    unit: 'min',
+    unit: 'h',
   ),
   'HealthDataType.SLEEP_ASLEEP_CORE': HealthTypeConfig(
     displayName: 'Asleep - core',
@@ -145,7 +145,7 @@ Map<String, HealthTypeConfig> healthTypes = {
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
     hoursMinutes: true,
-    unit: 'min',
+    unit: 'h',
   ),
   'HealthDataType.SLEEP_ASLEEP_DEEP': HealthTypeConfig(
     displayName: 'Asleep - deep',
@@ -153,7 +153,7 @@ Map<String, HealthTypeConfig> healthTypes = {
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
     hoursMinutes: true,
-    unit: 'min',
+    unit: 'h',
   ),
   'HealthDataType.SLEEP_ASLEEP_REM': HealthTypeConfig(
     displayName: 'Asleep - REM',
@@ -161,7 +161,7 @@ Map<String, HealthTypeConfig> healthTypes = {
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
     hoursMinutes: true,
-    unit: 'min',
+    unit: 'h',
   ),
   'HealthDataType.SLEEP_IN_BED': HealthTypeConfig(
     displayName: 'In bed',
@@ -169,7 +169,7 @@ Map<String, HealthTypeConfig> healthTypes = {
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
     hoursMinutes: true,
-    unit: 'min',
+    unit: 'h',
   ),
   'HealthDataType.SLEEP_AWAKE': HealthTypeConfig(
     displayName: 'Awake in bed',
@@ -177,6 +177,6 @@ Map<String, HealthTypeConfig> healthTypes = {
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyTimeSum,
     hoursMinutes: true,
-    unit: 'min',
+    unit: 'h',
   ),
 };
