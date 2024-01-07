@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/ui/ai_prompt_icon_widget.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/ai_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/platform.dart';
@@ -16,7 +17,7 @@ import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
 import 'package:lotti/widgets/journal/tags/tag_add.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class EntryDetailHeader extends StatefulWidget {
+class EntryDetailHeader extends ConsumerStatefulWidget {
   const EntryDetailHeader({
     this.inLinkedEntries = false,
     super.key,
@@ -29,10 +30,10 @@ class EntryDetailHeader extends StatefulWidget {
   final String? linkedFromId;
 
   @override
-  State<EntryDetailHeader> createState() => _EntryDetailHeaderState();
+  ConsumerState<EntryDetailHeader> createState() => _EntryDetailHeaderState();
 }
 
-class _EntryDetailHeaderState extends State<EntryDetailHeader> {
+class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
   bool showAllIcons = false;
 
   @override
@@ -143,13 +144,9 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
                       if (isDesktop)
                         SizedBox(
                           width: 40,
-                          child: IconButton(
-                            icon: const Icon(Icons.assistant_rounded),
-                            tooltip: 'Prompt',
-                            onPressed: () => getIt<AiService>().prompt(
-                              item,
-                              linkedFromId: widget.linkedFromId,
-                            ),
+                          child: AiPromptIconWidget(
+                            journalEntity: item,
+                            linkedFromId: widget.linkedFromId,
                           ),
                         ),
                     ],
