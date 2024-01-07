@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:drift/isolate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/database/common.dart';
@@ -56,7 +57,7 @@ Future<void> main() async {
       );
     };
 
-    runApp(MyBeamerApp());
+    runApp(ProviderScope(child: MyBeamerApp()));
   }, (Object error, StackTrace stackTrace) {
     getIt<LoggingDb>().captureException(
       error,
