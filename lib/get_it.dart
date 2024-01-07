@@ -10,7 +10,6 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/ai_service.dart';
 import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -57,7 +56,6 @@ Future<void> registerSingletons() async {
     ..registerSingleton<SyncDatabase>(getSyncDatabase())
     ..registerSingleton<ImapClientManager>(ImapClientManager())
     ..registerSingleton<AsrService>(AsrService())
-    ..registerSingleton<AiService>(AiService())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<SyncConfigService>(SyncConfigService())
     ..registerSingleton<TimeService>(TimeService())
