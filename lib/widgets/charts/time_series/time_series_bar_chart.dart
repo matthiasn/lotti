@@ -58,7 +58,8 @@ class TimeSeriesBarChart extends StatelessWidget {
                 : 1;
 
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final barsWidth = (screenWidth - 100 - rangeInDays * 1.3) / rangeInDays;
+    final barsWidth =
+        (screenWidth - 150 - rangeInDays - screenWidth * 0.1) / rangeInDays;
 
     final barGroups = dataWithEmptyDays
         .sortedBy((observation) => observation.dateTime)
