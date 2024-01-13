@@ -16,6 +16,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -1059,7 +1060,15 @@ class PersistenceLogic {
     JournalEntity journalEntity, {
     bool enqueueSync = false,
   }) async {
+    debugPrint('updateDbEntity');
+
     try {
+      unawaited(
+        getIt<AiLogic>().embed(
+          journalEntity,
+        ),
+      );
+
       await _journalDb.updateJournalEntity(journalEntity);
 
       await getIt<Fts5Db>().insertText(

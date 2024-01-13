@@ -115,6 +115,7 @@ dependencies:
   media_kit_native_event_loop: ^1.0.3
   meta: ^1.10.0
   multi_select_flutter: ^4.0.0
+  ollama_dart: ^0.0.2
   package_info_plus: ^5.0.1
   path: ^1.8.1
   path_provider: ^2.0.12
