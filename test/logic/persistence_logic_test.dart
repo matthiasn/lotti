@@ -13,6 +13,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/sync_config_service.dart';
@@ -42,6 +43,7 @@ void main() {
   final mockNotificationService = MockNotificationService();
   final mockConnectivityService = MockConnectivityService();
   final mockFgBgService = MockFgBgService();
+  final mockAiLogic = MockAiLogic();
   final mockFts5Db = MockFts5Db();
 
   group('Database Tests - ', () {
@@ -53,6 +55,10 @@ void main() {
 
     when(() => mockFgBgService.fgBgStream).thenAnswer(
       (_) => Stream<bool>.fromIterable([true]),
+    );
+
+    when(() => mockAiLogic.embed(any())).thenAnswer(
+      (_) async {},
     );
 
     setUpAll(() async {
@@ -96,6 +102,7 @@ void main() {
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<Fts5Db>(mockFts5Db)
         ..registerSingleton<FgBgService>(mockFgBgService)
+        ..registerSingleton<AiLogic>(mockAiLogic)
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(journalDb)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))

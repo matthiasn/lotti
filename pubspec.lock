@@ -1560,7 +1560,7 @@ packages:
     source: hosted
     version: "2.0.0"
   ollama_dart:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: ollama_dart
       sha256: "6e669c713f567c5ed1d2ec0db8bcd8457d5b01884a810c403f5fce1147d2cebf"
