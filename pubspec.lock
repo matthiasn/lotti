@@ -181,10 +181,10 @@ packages:
     dependency: "direct dev"
     description:
       name: build_runner
-      sha256: "67d591d602906ef9201caf93452495ad1812bea2074f04e25dbd7c133785821b"
+      sha256: "581bacf68f89ec8792f5e5a0b2c4decd1c948e97ce659dc783688c8a88fbec21"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.7"
+    version: "2.4.8"
   build_runner_core:
     dependency: transitive
     description:
@@ -910,10 +910,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "60168e016c3bcdfd11527a0a8c7f3caf6dd720e0b2838fa7029e200ce4f4411e"
+      sha256: da21db565b3bc9e6d0e1f54b41ef279f0c310971f8fadf61cb5dd35ea8ff46c4
       url: "https://pub.dev"
     source: hosted
-    version: "9.2.2"
+    version: "9.2.5"
   flutter_riverpod:
     dependency: "direct main"
     description:
@@ -1166,10 +1166,10 @@ packages:
     dependency: "direct overridden"
     description:
       name: image
-      sha256: "028f61960d56f26414eb616b48b04eb37d700cbe477b7fb09bf1d7ce57fd9271"
+      sha256: "004a2e90ce080f8627b5a04aecb4cdfac87d2c3f3b520aa291260be5a32c033d"
       url: "https://pub.dev"
     source: hosted
-    version: "4.1.3"
+    version: "4.1.4"
   infinite_scroll_pagination:
     dependency: "direct main"
     description:
@@ -1267,10 +1267,10 @@ packages:
     dependency: transitive
     description:
       name: json_path
-      sha256: "93f2cb012eb37112e62d3b5e5eb535431beb4c2566a9c1987b079b13b308763b"
+      sha256: b1a3e5e34c862a6ca598e226e725647e462bde9fd98dbfa21bb53e105efeb177
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.6"
+    version: "0.7.0"
   json_serializable:
     dependency: "direct dev"
     description:
@@ -1283,18 +1283,26 @@ packages:
     dependency: "direct main"
     description:
       name: langchain
-      sha256: "7c8c9a0c9591a57fd38d3bc6f9356d86d0fea9f1856d53729eb119fa3ec9b018"
+      sha256: b17c6484edc68690b448bf37b7256c505579727d2534b05b0df0a8845bca871d
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.1+1"
+    version: "0.3.2"
   langchain_ollama:
     dependency: "direct main"
     description:
       name: langchain_ollama
-      sha256: b4b77ecdc67debc2be5b5e883f862c96d20019f6fa1426871cc64f166c061fdd
+      sha256: "46902a212be329d584b273356dead2abc524d0adc94ad8a027253165a74c3eed"
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.2+1"
+    version: "0.0.3"
+  langchain_tiktoken:
+    dependency: transitive
+    description:
+      name: langchain_tiktoken
+      sha256: c1804f4b3e56574ca67e562305d9f11e3eabe3c8aa87fea8635992f7efc66674
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   latlong2:
     dependency: "direct main"
     description:
@@ -1627,10 +1635,10 @@ packages:
     dependency: transitive
     description:
       name: path_provider_foundation
-      sha256: "19314d595120f82aca0ba62787d58dde2cc6b5df7d2f0daf72489e38d1b57f2d"
+      sha256: "5a7999be66e000916500be4f15a3633ebceb8302719b47b9cc49ce924125350f"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   path_provider_linux:
     dependency: transitive
     description:
@@ -2035,10 +2043,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_foundation
-      sha256: "7bf53a9f2d007329ee6f3df7268fd498f8373602f943c975598bbb34649b62a7"
+      sha256: "7708d83064f38060c7b39db12aefe449cb8cdc031d6062280087bc4cdb988f5c"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.4"
+    version: "2.3.5"
   shared_preferences_linux:
     dependency: transitive
     description:
@@ -2264,18 +2272,18 @@ packages:
     dependency: transitive
     description:
       name: super_clipboard
-      sha256: "158919981cfb9232b32869f999db094afe100e08f77832fcfcff37aeaa753140"
+      sha256: "7c041e91f1fbbf25984442a15512d431adbc7257af47464b12c23098bea21bcd"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.2+1"
+    version: "0.8.3"
   super_native_extensions:
     dependency: transitive
     description:
       name: super_native_extensions
-      sha256: "4e080671cacd1612df3ac52e86e925689c27283bcbdefb51a9b7bacb4bb0046c"
+      sha256: "206ed1ef39e0ad398f7f00db84b21c498bc31a3831b00ed16c022e45cdd5d2ee"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.2+1"
+    version: "0.8.3"
   sync_http:
     dependency: transitive
     description:
@@ -2340,14 +2348,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.5.9"
-  tiktoken:
-    dependency: transitive
-    description:
-      name: tiktoken
-      sha256: a100ca6e387e18be7b711478c8d18627e0753536846600a5961a83631ce5c586
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.3"
   timezone:
     dependency: "direct main"
     description:
@@ -2432,10 +2432,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_ios
-      sha256: cdb7b6da34483f9b2c9f8b2b29bc468fa7271d92e2021607ca0c4d3bcb04cdd4
+      sha256: "75bb6fe3f60070407704282a2d295630cab232991eb52542b18347a8a941df03"
       url: "https://pub.dev"
     source: hosted
-    version: "6.2.3"
+    version: "6.2.4"
   url_launcher_linux:
     dependency: transitive
     description:
@@ -2544,10 +2544,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_avfoundation
-      sha256: "752b783a00748684312dd6a68e22f795281d295921e69ae5ad36f90b7fb39cdb"
+      sha256: "309e3962795e761be010869bae65c0b0e45b5230c5cee1bec72197ca7db040ed"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.5"
+    version: "2.5.6"
   video_player_platform_interface:
     dependency: transitive
     description:
