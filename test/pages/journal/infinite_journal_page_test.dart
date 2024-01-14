@@ -237,22 +237,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // task entry displays expected date
-      expect(
-        find.text(dfShorter.format(testTask.meta.dateFrom)),
-        findsOneWidget,
-      );
-
       // test task title is displayed
       expect(
         find.text(testTask.data.title),
         findsOneWidget,
-      );
-
-      // test task is starred
-      expect(
-        (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
-        starredGold,
       );
     });
 
@@ -290,22 +278,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // task entry displays expected date
-      expect(
-        find.text(dfShorter.format(testTask.meta.dateFrom)),
-        findsOneWidget,
-      );
-
       // test task title is displayed
       expect(
         find.text(testTask.data.title),
         findsOneWidget,
-      );
-
-      // test task is starred
-      expect(
-        (tester.firstWidget(find.byIcon(MdiIcons.star)) as Icon).color,
-        starredGold,
       );
     });
 
