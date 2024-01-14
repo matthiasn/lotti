@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -217,7 +216,7 @@ class _JournalCardState extends State<JournalCard> {
               ),
               onTap: onTap,
             ),
-          ).animate().fadeIn(duration: const Duration(milliseconds: 100)),
+          ),
         );
       },
     );
@@ -299,8 +298,35 @@ class JournalImageCard extends StatelessWidget {
               ],
             ),
           ),
-        ).animate().fadeIn(duration: const Duration(milliseconds: 100));
+        );
       },
+    );
+  }
+}
+
+class TaskListCard extends StatelessWidget {
+  const TaskListCard({
+    required this.task,
+    super.key,
+  });
+
+  final Task task;
+
+  @override
+  Widget build(BuildContext context) {
+    void onTap() => beamToNamed('/tasks/${task.meta.id}');
+
+    return Card(
+      child: ListTile(
+        onTap: onTap,
+        trailing: TaskStatusWidget(task),
+        title: Text(
+          task.data.title,
+          style: const TextStyle(
+            fontSize: fontSizeMediumLarge,
+          ),
+        ),
+      ),
     );
   }
 }

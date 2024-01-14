@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -26,6 +26,51 @@ class TaskStatusFilter extends StatelessWidget {
               const SizedBox(width: 5),
             ],
           ),
+        );
+      },
+    );
+  }
+}
+
+class TaskListToggle extends StatelessWidget {
+  const TaskListToggle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<JournalPageCubit, JournalPageState>(
+      builder: (context, snapshot) {
+        final cubit = context.read<JournalPageCubit>();
+        final iconColor = Theme.of(context).textTheme.titleLarge?.color;
+        final inactiveIconColor = iconColor?.withOpacity(0.5);
+        final taskAsListView = snapshot.taskAsListView;
+
+        return Row(
+          children: [
+            const SizedBox(width: 15),
+            SegmentedButton<bool>(
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) {
+                cubit.toggleTaskAsListView();
+              },
+              segments: [
+                ButtonSegment<bool>(
+                  value: true,
+                  label: Icon(
+                    Icons.density_small_rounded,
+                    color: taskAsListView ? iconColor : inactiveIconColor,
+                  ),
+                ),
+                ButtonSegment<bool>(
+                  value: false,
+                  label: Icon(
+                    Icons.density_medium_rounded,
+                    color: taskAsListView ? inactiveIconColor : iconColor,
+                  ),
+                ),
+              ],
+              selected: {taskAsListView},
+            ),
+          ],
         );
       },
     );
