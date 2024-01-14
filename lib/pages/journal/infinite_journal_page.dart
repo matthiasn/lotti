@@ -82,6 +82,16 @@ class InfiniteJournalPageBody extends StatelessWidget {
                     return item.maybeMap(
                       journalImage: (JournalImage image) =>
                           JournalImageCard(item: image, key: valueKey),
+                      task: (Task task) {
+                        if (snapshot.taskAsListView) {
+                          return TaskListCard(
+                            task: task,
+                            key: valueKey,
+                          );
+                        } else {
+                          return JournalCard(item: item, key: valueKey);
+                        }
+                      },
                       orElse: () => JournalCard(item: item, key: valueKey),
                     );
                   },
