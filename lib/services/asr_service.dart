@@ -6,11 +6,13 @@ import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -113,9 +115,15 @@ class AsrService {
   }
 
   Future<void> enqueue({required JournalAudio entry}) async {
-    queue.add(entry);
-    if (!running) {
-      unawaited(_start());
+    final autoTranscribe = await getIt<JournalDb>().getConfigFlag(
+      autoTranscribeFlag,
+    );
+
+    if (autoTranscribe) {
+      queue.add(entry);
+      if (!running) {
+        unawaited(_start());
+      }
     }
   }
 }

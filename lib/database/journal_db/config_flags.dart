@@ -31,6 +31,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: autoTranscribeFlag,
+      description: 'Automatically transcribe audio',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableTaskManagement,
       description: 'Enable task management?',
       status: false,

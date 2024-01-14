@@ -17,6 +17,11 @@ final expectedFlags = <ConfigFlag>{
     status: true,
   ),
   const ConfigFlag(
+    name: autoTranscribeFlag,
+    description: 'Automatically transcribe audio',
+    status: false,
+  ),
+  const ConfigFlag(
     name: recordLocationFlag,
     description: 'Record geolocation?',
     status: false,
