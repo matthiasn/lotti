@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:langchain/langchain.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:ollama_dart/ollama_dart.dart';
 
 class AiLogic {
@@ -18,7 +19,7 @@ class AiLogic {
       _ => '',
     };
 
-    if (markdown == null || journalEntity == null) {
+    if (isMobile || markdown == null || journalEntity == null) {
       return;
     }
 

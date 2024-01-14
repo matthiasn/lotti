@@ -424,6 +424,6 @@ List<String> getDays(int timeSpanDays) {
 
   return daysInRange(
     rangeStart: now.subtract(Duration(days: timeSpanDays)),
-    rangeEnd: now.add(const Duration(days: 1)),
+    rangeEnd: now,
   )..sort();
 }
