@@ -1060,8 +1060,6 @@ class PersistenceLogic {
     JournalEntity journalEntity, {
     bool enqueueSync = false,
   }) async {
-    debugPrint('updateDbEntity');
-
     try {
       unawaited(
         getIt<AiLogic>().embed(
