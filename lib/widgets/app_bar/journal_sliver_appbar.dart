@@ -34,7 +34,13 @@ class JournalSliverAppBar extends StatelessWidget {
                     text: snapshot.match,
                     onChanged: cubit.setSearchString,
                   ),
-                  const JournalFilter(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const JournalFilter(),
+                      if (snapshot.showTasks) const TaskListToggle(),
+                    ],
+                  ),
                   const SizedBox(height: 10),
                   if (!snapshot.showTasks) const EntryTypeFilter(),
                   if (snapshot.showTasks) const TaskStatusFilter(),
