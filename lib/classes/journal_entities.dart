@@ -61,6 +61,7 @@ class AudioData with _$AudioData {
     required String audioFile,
     required String audioDirectory,
     required Duration duration,
+    @Default(false) bool autoTranscribeWasActive,
     List<AudioTranscript>? transcripts,
   }) = _AudioData;
 
