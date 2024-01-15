@@ -7,7 +7,6 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -99,14 +98,13 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       emit(initialState);
 
       if (_audioNote != null) {
-        final entry = await persistenceLogic.createAudioEntry(
+        await persistenceLogic.createAudioEntry(
           _audioNote!,
           linkedId: _linkedId,
         );
         _linkedId = null;
 
         getIt<NavService>().beamBack();
-        await getIt<AsrService>().enqueue(entry: entry!);
       }
     } catch (exception, stackTrace) {
       _loggingDb.captureException(

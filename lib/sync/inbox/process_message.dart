@@ -12,8 +12,10 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/sync/inbox/read_decrypt.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 Future<SyncMessage?> decodeMessage(
@@ -44,6 +46,15 @@ Future<void> processMessage(SyncConfig? syncConfig, MimeMessage message) async {
             journalAudio: (JournalAudio journalAudio) async {
               if (syncMessage.status == SyncEntryStatus.initial) {
                 await saveAudioAttachment(message, journalAudio, b64Secret);
+              }
+
+              final autoTranscribe = await getIt<JournalDb>().getConfigFlag(
+                autoTranscribeFlag,
+              );
+
+              if (!journalAudio.data.autoTranscribeWasActive &&
+                  autoTranscribe) {
+                await getIt<AsrService>().enqueue(entry: journalAudio);
               }
             },
             journalImage: (JournalImage journalImage) async {
