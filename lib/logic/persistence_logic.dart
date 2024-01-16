@@ -17,10 +17,12 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
+import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/entry_utils.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:lotti/utils/timezone.dart';
@@ -361,12 +363,17 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     try {
+      final autoTranscribe = await getIt<JournalDb>().getConfigFlag(
+        autoTranscribeFlag,
+      );
+
       final audioData = AudioData(
         audioDirectory: audioNote.audioDirectory,
         duration: audioNote.duration,
         audioFile: audioNote.audioFile,
         dateTo: audioNote.createdAt.add(audioNote.duration),
         dateFrom: audioNote.createdAt,
+        autoTranscribeWasActive: autoTranscribe,
       );
 
       final now = DateTime.now();
@@ -397,6 +404,11 @@ class PersistenceLogic {
         linkedId: linkedId,
       );
       addGeolocation(journalEntity.meta.id);
+
+      if (autoTranscribe) {
+        await getIt<AsrService>().enqueue(entry: journalEntity);
+      }
+
       return journalEntity;
     } catch (exception, stackTrace) {
       _loggingDb.captureException(

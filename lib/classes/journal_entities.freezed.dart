@@ -705,6 +705,7 @@ mixin _$AudioData {
   String get audioFile => throw _privateConstructorUsedError;
   String get audioDirectory => throw _privateConstructorUsedError;
   Duration get duration => throw _privateConstructorUsedError;
+  bool get autoTranscribeWasActive => throw _privateConstructorUsedError;
   List<AudioTranscript>? get transcripts => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -724,6 +725,7 @@ abstract class $AudioDataCopyWith<$Res> {
       String audioFile,
       String audioDirectory,
       Duration duration,
+      bool autoTranscribeWasActive,
       List<AudioTranscript>? transcripts});
 }
 
@@ -745,6 +747,7 @@ class _$AudioDataCopyWithImpl<$Res, $Val extends AudioData>
     Object? audioFile = null,
     Object? audioDirectory = null,
     Object? duration = null,
+    Object? autoTranscribeWasActive = null,
     Object? transcripts = freezed,
   }) {
     return _then(_value.copyWith(
@@ -768,6 +771,10 @@ class _$AudioDataCopyWithImpl<$Res, $Val extends AudioData>
           ? _value.duration
           : duration // ignore: cast_nullable_to_non_nullable
               as Duration,
+      autoTranscribeWasActive: null == autoTranscribeWasActive
+          ? _value.autoTranscribeWasActive
+          : autoTranscribeWasActive // ignore: cast_nullable_to_non_nullable
+              as bool,
       transcripts: freezed == transcripts
           ? _value.transcripts
           : transcripts // ignore: cast_nullable_to_non_nullable
@@ -790,6 +797,7 @@ abstract class _$$AudioDataImplCopyWith<$Res>
       String audioFile,
       String audioDirectory,
       Duration duration,
+      bool autoTranscribeWasActive,
       List<AudioTranscript>? transcripts});
 }
 
@@ -809,6 +817,7 @@ class __$$AudioDataImplCopyWithImpl<$Res>
     Object? audioFile = null,
     Object? audioDirectory = null,
     Object? duration = null,
+    Object? autoTranscribeWasActive = null,
     Object? transcripts = freezed,
   }) {
     return _then(_$AudioDataImpl(
@@ -832,6 +841,10 @@ class __$$AudioDataImplCopyWithImpl<$Res>
           ? _value.duration
           : duration // ignore: cast_nullable_to_non_nullable
               as Duration,
+      autoTranscribeWasActive: null == autoTranscribeWasActive
+          ? _value.autoTranscribeWasActive
+          : autoTranscribeWasActive // ignore: cast_nullable_to_non_nullable
+              as bool,
       transcripts: freezed == transcripts
           ? _value._transcripts
           : transcripts // ignore: cast_nullable_to_non_nullable
@@ -849,6 +862,7 @@ class _$AudioDataImpl implements _AudioData {
       required this.audioFile,
       required this.audioDirectory,
       required this.duration,
+      this.autoTranscribeWasActive = false,
       final List<AudioTranscript>? transcripts})
       : _transcripts = transcripts;
 
@@ -865,6 +879,9 @@ class _$AudioDataImpl implements _AudioData {
   final String audioDirectory;
   @override
   final Duration duration;
+  @override
+  @JsonKey()
+  final bool autoTranscribeWasActive;
   final List<AudioTranscript>? _transcripts;
   @override
   List<AudioTranscript>? get transcripts {
@@ -877,7 +894,7 @@ class _$AudioDataImpl implements _AudioData {
 
   @override
   String toString() {
-    return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, transcripts: $transcripts)';
+    return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, autoTranscribeWasActive: $autoTranscribeWasActive, transcripts: $transcripts)';
   }
 
   @override
@@ -894,6 +911,9 @@ class _$AudioDataImpl implements _AudioData {
                 other.audioDirectory == audioDirectory) &&
             (identical(other.duration, duration) ||
                 other.duration == duration) &&
+            (identical(
+                    other.autoTranscribeWasActive, autoTranscribeWasActive) ||
+                other.autoTranscribeWasActive == autoTranscribeWasActive) &&
             const DeepCollectionEquality()
                 .equals(other._transcripts, _transcripts));
   }
@@ -907,6 +927,7 @@ class _$AudioDataImpl implements _AudioData {
       audioFile,
       audioDirectory,
       duration,
+      autoTranscribeWasActive,
       const DeepCollectionEquality().hash(_transcripts));
 
   @JsonKey(ignore: true)
@@ -930,6 +951,7 @@ abstract class _AudioData implements AudioData {
       required final String audioFile,
       required final String audioDirectory,
       required final Duration duration,
+      final bool autoTranscribeWasActive,
       final List<AudioTranscript>? transcripts}) = _$AudioDataImpl;
 
   factory _AudioData.fromJson(Map<String, dynamic> json) =
@@ -945,6 +967,8 @@ abstract class _AudioData implements AudioData {
   String get audioDirectory;
   @override
   Duration get duration;
+  @override
+  bool get autoTranscribeWasActive;
   @override
   List<AudioTranscript>? get transcripts;
   @override
