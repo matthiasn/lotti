@@ -17,7 +17,7 @@ class LoadingWidget extends StatelessWidget {
           width: 80,
           height: 80,
           fit: BoxFit.contain,
-          frameRate: FrameRate(60),
+          frameRate: const FrameRate(60),
           reverse: true,
         ),
       ),

@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.413+2350
+version: 0.9.414+2351
 
 msix_config:
   display_name: LottiApp
@@ -104,7 +104,7 @@ dependencies:
   langchain_ollama: ^0.0.2+1
   latlong2: ^0.9.0
   location: ^5.0.0
-  lottie: ^2.2.0
+  lottie: ^3.0.0
   material_design_icons_flutter: ^7.0.7096
   media_kit: ^1.0.2
   media_kit_libs_android_audio: ^1.0.3
@@ -140,7 +140,7 @@ dependencies:
   timezone: ^0.9.1
   tinycolor2: ^3.0.0
   url_launcher: ^6.1.2
-  uuid: ^3.0.4
+  uuid: ^4.3.3
   vector_graphics: ^1.1.9+1
   visibility_detector: ^0.4.0+2
   wechat_assets_picker: ^9.0.0-dev.2
@@ -154,7 +154,7 @@ dependency_overrides:
   image: ^4.0.13
   intl: ^0.18.0
   rxdart: ^0.27.1
-  uuid: ^3.0.4
+  uuid: ^4.3.3
 
 dev_dependencies:
   analyzer: ^5.12.0
@@ -205,7 +205,6 @@ flutter:
     # from https://www.iconfinder.com/recepkutuk
     - assets/images/map/728975_location_map_marker_pin_place_icon.png
     - assets/images/tutorial/
-    - assets/lottiefiles/
 
   fonts:
     - family: Oswald
