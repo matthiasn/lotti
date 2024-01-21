@@ -23,6 +23,7 @@ import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
 import 'package:lotti/widgets/charts/loading_widget.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
+import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -73,7 +74,7 @@ class _AppScreenState extends State<AppScreen> {
                   ),
                 ],
               ),
-              bottomNavigationBar: BottomNavigationBar(
+              bottomNavigationBar: SpotifyStyleBottomNavigationBar(
                 selectedItemColor: Theme.of(context).colorScheme.primary,
                 unselectedItemColor:
                     Theme.of(context).colorScheme.primary.withOpacity(0.5),
@@ -90,7 +91,7 @@ class _AppScreenState extends State<AppScreen> {
                   fontWeight: FontWeight.w300,
                   fontSize: fontSizeSmall,
                 ),
-                type: BottomNavigationBarType.fixed,
+                type: SpotifyStyleBottomNavigationBarType.fixed,
                 currentIndex: index,
                 items: [
                   createNavBarItem(
