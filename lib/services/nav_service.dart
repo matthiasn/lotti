@@ -3,10 +3,8 @@ import 'dart:async';
 import 'package:beamer/beamer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/utils/consts.dart';
 
 const String lastRouteKey = 'NAV_LAST_ROUTE';
 
@@ -14,23 +12,12 @@ class NavService {
   NavService() {
     // TODO: fix and bring back
     // restoreRoute();
-
-    getIt<JournalDb>().watchConfigFlag(enableTaskManagement).forEach((enabled) {
-      tasksEnabled = enabled;
-      if (index == 4 && !enabled) {
-        setIndex(3);
-      }
-      delegateByIndex(3).update();
-      emitState();
-    });
   }
 
   String currentPath = '/habits';
   final indexStreamController = StreamController<int>.broadcast();
 
   int index = 0;
-  bool tasksEnabled = false;
-  bool tasksInitialized = false;
 
   final BeamerDelegate habitsDelegate = habitsBeamerDelegate;
   final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
@@ -65,10 +52,8 @@ class NavService {
     if (path.startsWith('/tasks')) {
       setIndex(3);
     }
-    if (path.startsWith('/settings') && !tasksEnabled) {
-      setIndex(3);
-    }
-    if (path.startsWith('/settings') && tasksEnabled) {
+
+    if (path.startsWith('/settings')) {
       setIndex(4);
     }
 
@@ -80,7 +65,7 @@ class NavService {
       habitsDelegate,
       dashboardsDelegate,
       journalDelegate,
-      if (tasksEnabled) tasksDelegate,
+      tasksDelegate,
       settingsDelegate,
     ];
 
@@ -97,12 +82,10 @@ class NavService {
     if (index == 2) {
       beamToNamed('/journal');
     }
-    if (index == 3 && tasksEnabled) {
+    if (index == 3) {
       beamToNamed('/tasks');
     }
-    if (index == 3 && !tasksEnabled) {
-      beamToNamed('/settings');
-    }
+
     if (index == 4) {
       beamToNamed('/settings');
     }
@@ -122,10 +105,6 @@ class NavService {
     if (index != newIndex) {
       setIndex(newIndex);
     } else {
-      setTabRoot(newIndex);
-    }
-
-    if (tasksEnabled && !tasksInitialized && newIndex == 3) {
       setTabRoot(newIndex);
     }
   }

@@ -28,7 +28,6 @@ class FlagsPage extends StatelessWidget {
           autoTranscribeFlag,
           recordLocationFlag,
           enableSyncFlag,
-          enableTaskManagement,
           allowInvalidCertFlag,
         };
 

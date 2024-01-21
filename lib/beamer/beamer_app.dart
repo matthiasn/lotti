@@ -17,7 +17,6 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
 import 'package:lotti/widgets/charts/loading_widget.dart';
@@ -42,102 +41,93 @@ class _AppScreenState extends State<AppScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return StreamBuilder<bool>(
-      stream: journalDb.watchConfigFlag(enableTaskManagement),
-      builder: (context, configSnapshot) {
-        final showTasksTab = configSnapshot.data ?? false;
+    return StreamBuilder<int>(
+      stream: navService.getIndexStream(),
+      builder: (context, snapshot) {
+        final index = snapshot.data ?? 0;
 
-        return StreamBuilder<int>(
-          stream: navService.getIndexStream(),
-          builder: (context, snapshot) {
-            final index = snapshot.data ?? 0;
-
-            return Scaffold(
-              body: Stack(
+        return Scaffold(
+          body: Stack(
+            children: [
+              IndexedStack(
+                index: index,
                 children: [
-                  IndexedStack(
-                    index: index,
-                    children: [
-                      Beamer(routerDelegate: navService.habitsDelegate),
-                      Beamer(routerDelegate: navService.dashboardsDelegate),
-                      Beamer(routerDelegate: navService.journalDelegate),
-                      if (showTasksTab)
-                        Beamer(routerDelegate: navService.tasksDelegate),
-                      Beamer(routerDelegate: navService.settingsDelegate),
-                    ],
-                  ),
-                  const TimeRecordingIndicator(),
-                  const Positioned(
-                    right: 120,
-                    bottom: 0,
-                    child: AudioRecordingIndicator(),
-                  ),
+                  Beamer(routerDelegate: navService.habitsDelegate),
+                  Beamer(routerDelegate: navService.dashboardsDelegate),
+                  Beamer(routerDelegate: navService.journalDelegate),
+                  Beamer(routerDelegate: navService.tasksDelegate),
+                  Beamer(routerDelegate: navService.settingsDelegate),
                 ],
               ),
-              bottomNavigationBar: SpotifyStyleBottomNavigationBar(
-                selectedItemColor: Theme.of(context).colorScheme.primary,
-                unselectedItemColor:
-                    Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                enableFeedback: true,
-                elevation: 8,
-                iconSize: 30,
-                selectedLabelStyle: const TextStyle(
-                  height: 2,
-                  fontWeight: FontWeight.normal,
-                  fontSize: fontSizeSmall,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  height: 2,
-                  fontWeight: FontWeight.w300,
-                  fontSize: fontSizeSmall,
-                ),
-                type: SpotifyStyleBottomNavigationBarType.fixed,
-                currentIndex: index,
-                items: [
-                  createNavBarItem(
-                    semanticLabel: 'Habits Tab',
-                    icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
-                    activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
-                    label: localizations.navTabTitleHabits,
-                  ),
-                  createNavBarItem(
-                    semanticLabel: 'Dashboards Tab',
-                    icon: const Icon(Ionicons.bar_chart_outline),
-                    activeIcon: const Icon(Ionicons.bar_chart),
-                    label: localizations.navTabTitleInsights,
-                  ),
-                  createNavBarItem(
-                    semanticLabel: 'Logbook Tab',
-                    icon: const Icon(Ionicons.book_outline),
-                    activeIcon: const Icon(Ionicons.book),
-                    label: localizations.navTabTitleJournal,
-                  ),
-                  if (showTasksTab)
-                    createNavBarItem(
-                      semanticLabel: 'Tasks Tab',
-                      icon: TasksBadge(
-                        child: Icon(MdiIcons.checkboxMarkedCircleOutline),
-                      ),
-                      activeIcon: TasksBadge(
-                        child: Icon(MdiIcons.checkboxMarkedCircle),
-                      ),
-                      label: localizations.navTabTitleTasks,
-                    ),
-                  createNavBarItem(
-                    semanticLabel: 'Settings Tab',
-                    icon: OutboxBadgeIcon(
-                      icon: const Icon(Ionicons.settings_outline),
-                    ),
-                    activeIcon: OutboxBadgeIcon(
-                      icon: const Icon(Ionicons.settings),
-                    ),
-                    label: localizations.navTabTitleSettings,
-                  ),
-                ],
-                onTap: navService.tapIndex,
+              const TimeRecordingIndicator(),
+              const Positioned(
+                right: 120,
+                bottom: 0,
+                child: AudioRecordingIndicator(),
               ),
-            );
-          },
+            ],
+          ),
+          bottomNavigationBar: SpotifyStyleBottomNavigationBar(
+            selectedItemColor: Theme.of(context).colorScheme.primary,
+            unselectedItemColor:
+                Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            enableFeedback: true,
+            elevation: 8,
+            iconSize: 30,
+            selectedLabelStyle: const TextStyle(
+              height: 2,
+              fontWeight: FontWeight.normal,
+              fontSize: fontSizeSmall,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              height: 2,
+              fontWeight: FontWeight.w300,
+              fontSize: fontSizeSmall,
+            ),
+            type: SpotifyStyleBottomNavigationBarType.fixed,
+            currentIndex: index,
+            items: [
+              createNavBarItem(
+                semanticLabel: 'Habits Tab',
+                icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
+                activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
+                label: localizations.navTabTitleHabits,
+              ),
+              createNavBarItem(
+                semanticLabel: 'Dashboards Tab',
+                icon: const Icon(Ionicons.bar_chart_outline),
+                activeIcon: const Icon(Ionicons.bar_chart),
+                label: localizations.navTabTitleInsights,
+              ),
+              createNavBarItem(
+                semanticLabel: 'Logbook Tab',
+                icon: const Icon(Ionicons.book_outline),
+                activeIcon: const Icon(Ionicons.book),
+                label: localizations.navTabTitleJournal,
+              ),
+              createNavBarItem(
+                semanticLabel: 'Tasks Tab',
+                icon: TasksBadge(
+                  child: Icon(MdiIcons.checkboxMarkedCircleOutline),
+                ),
+                activeIcon: TasksBadge(
+                  child: Icon(MdiIcons.checkboxMarkedCircle),
+                ),
+                label: localizations.navTabTitleTasks,
+              ),
+              createNavBarItem(
+                semanticLabel: 'Settings Tab',
+                icon: OutboxBadgeIcon(
+                  icon: const Icon(Ionicons.settings_outline),
+                ),
+                activeIcon: OutboxBadgeIcon(
+                  icon: const Icon(Ionicons.settings),
+                ),
+                label: localizations.navTabTitleSettings,
+              ),
+            ],
+            onTap: navService.tapIndex,
+          ),
         );
       },
     );

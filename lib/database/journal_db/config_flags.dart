@@ -36,13 +36,7 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: enableTaskManagement,
-      description: 'Enable task management?',
-      status: false,
-    ),
-  );
+
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: recordLocationFlag,
