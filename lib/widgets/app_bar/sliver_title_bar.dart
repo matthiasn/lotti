@@ -21,9 +21,13 @@ class SliverTitleBar extends StatelessWidget {
     return SliverAppBar(
       expandedHeight: 120,
       leadingWidth: 100,
-      leading: showBackButton ? const BackWidget() : Container(),
+      leading: showBackButton ? const BackWidget() : null,
       pinned: pinned,
       flexibleSpace: FlexibleSpaceBar(
+        centerTitle: true,
+        titlePadding: const EdgeInsetsDirectional.only(
+          bottom: 12,
+        ),
         title: Text(
           title,
           style: appBarTextStyleNewLarge.copyWith(
