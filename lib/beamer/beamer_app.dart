@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:ionicons/ionicons.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
@@ -15,12 +16,15 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/audio/audio_recording_indicator.dart';
 import 'package:lotti/widgets/badges/tasks_badge_icon.dart';
 import 'package:lotti/widgets/charts/loading_widget.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
+import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AppScreen extends StatefulWidget {
   const AppScreen({super.key});
@@ -78,66 +82,55 @@ class _AppScreenState extends State<AppScreen> {
                 iconSize: 30,
                 selectedLabelStyle: const TextStyle(
                   height: 2,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.normal,
+                  fontSize: fontSizeSmall,
                 ),
-                unselectedLabelStyle: const TextStyle(height: 2),
-                type: BottomNavigationBarType.shifting,
+                unselectedLabelStyle: const TextStyle(
+                  height: 2,
+                  fontWeight: FontWeight.w300,
+                  fontSize: fontSizeSmall,
+                ),
+                type: BottomNavigationBarType.fixed,
                 currentIndex: index,
                 items: [
-                  BottomNavigationBarItem(
-                    icon: Semantics(
-                      container: true,
-                      label: 'Habits Tab',
-                      image: true,
-                      child: const Icon(Icons.checklist_outlined),
-                    ),
+                  createNavBarItem(
+                    semanticLabel: 'Habits Tab',
+                    icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
+                    activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
                     label: localizations.navTabTitleHabits,
-                    tooltip: '',
                   ),
-                  BottomNavigationBarItem(
-                    icon: Semantics(
-                      container: true,
-                      label: 'Dashboards Tab',
-                      image: true,
-                      child: const Icon(Icons.insights_outlined),
-                    ),
+                  createNavBarItem(
+                    semanticLabel: 'Dashboards Tab',
+                    icon: const Icon(Ionicons.bar_chart_outline),
+                    activeIcon: const Icon(Ionicons.bar_chart),
                     label: localizations.navTabTitleInsights,
-                    tooltip: '',
                   ),
-                  BottomNavigationBarItem(
-                    icon: Semantics(
-                      container: true,
-                      label: 'Logbook Tab',
-                      image: true,
-                      child: const Icon(Icons.auto_stories_outlined),
-                    ),
+                  createNavBarItem(
+                    semanticLabel: 'Logbook Tab',
+                    icon: const Icon(Ionicons.book_outline),
+                    activeIcon: const Icon(Ionicons.book),
                     label: localizations.navTabTitleJournal,
-                    tooltip: '',
                   ),
                   if (showTasksTab)
-                    BottomNavigationBarItem(
-                      icon: Semantics(
-                        container: true,
-                        label: 'Tasks Tab',
-                        image: true,
-                        child: TasksBadge(
-                          child: const Icon(Icons.task_alt_outlined),
-                        ),
+                    createNavBarItem(
+                      semanticLabel: 'Tasks Tab',
+                      icon: TasksBadge(
+                        child: Icon(MdiIcons.checkboxMarkedCircleOutline),
+                      ),
+                      activeIcon: TasksBadge(
+                        child: Icon(MdiIcons.checkboxMarkedCircle),
                       ),
                       label: localizations.navTabTitleTasks,
-                      tooltip: '',
                     ),
-                  BottomNavigationBarItem(
-                    icon: Semantics(
-                      container: true,
-                      label: 'Settings Tab',
-                      image: true,
-                      child: OutboxBadgeIcon(
-                        icon: const Icon(Icons.settings_outlined),
-                      ),
+                  createNavBarItem(
+                    semanticLabel: 'Settings Tab',
+                    icon: OutboxBadgeIcon(
+                      icon: const Icon(Ionicons.settings_outline),
+                    ),
+                    activeIcon: OutboxBadgeIcon(
+                      icon: const Icon(Ionicons.settings),
                     ),
                     label: localizations.navTabTitleSettings,
-                    tooltip: '',
                   ),
                 ],
                 onTap: navService.tapIndex,
