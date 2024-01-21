@@ -17,7 +17,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -45,11 +44,6 @@ void main() {
         measurableChocolate,
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
-
-      when(() => mockJournalDb.watchConfigFlag(enableTaskManagement))
-          .thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
 
       final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();

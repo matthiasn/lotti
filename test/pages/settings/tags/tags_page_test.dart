@@ -9,7 +9,6 @@ import 'package:lotti/pages/settings/tags/tags_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -30,11 +29,6 @@ void main() {
       final mockPersistenceLogic = MockPersistenceLogic();
       final settingsDb = SettingsDb(inMemoryDatabase: true);
       final secureStorageMock = MockSecureStorage();
-
-      when(() => mockJournalDb.watchConfigFlag(enableTaskManagement))
-          .thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
 
       getIt
         ..registerSingleton<SecureStorage>(secureStorageMock)
