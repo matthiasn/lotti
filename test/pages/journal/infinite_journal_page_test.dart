@@ -72,11 +72,6 @@ void main() {
         ]),
       );
 
-      when(() => mockJournalDb.watchConfigFlag(enableTaskManagement))
-          .thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
-
       mockPersistenceLogic = MockPersistenceLogic();
 
       final mockTagsService = mockTagsServiceWithTags([]);

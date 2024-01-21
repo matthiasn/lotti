@@ -4,7 +4,6 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -24,11 +23,6 @@ void main() {
 
       when(() => secureStorageMock.writeValue(lastRouteKey, any()))
           .thenAnswer((_) async {});
-
-      when(() => mockJournalDb.watchConfigFlag(enableTaskManagement))
-          .thenAnswer(
-        (_) => Stream<bool>.fromIterable([true]),
-      );
 
       getIt
         ..registerSingleton<SecureStorage>(secureStorageMock)
