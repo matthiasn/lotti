@@ -20,9 +20,6 @@ PODS:
   - flutter_secure_storage_macos (6.1.1):
     - FlutterMacOS
   - FlutterMacOS (1.0.0)
-  - FMDB (2.7.5):
-    - FMDB/standard (= 2.7.5)
-  - FMDB/standard (2.7.5)
   - HotKey (0.1.2)
   - hotkey_manager (0.0.1):
     - FlutterMacOS
@@ -53,9 +50,9 @@ PODS:
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - sqflite (0.0.2):
+  - sqflite (0.0.3):
+    - Flutter
     - FlutterMacOS
-    - FMDB (>= 2.7.5)
   - sqlite3 (3.45.0):
     - sqlite3/common (= 3.45.0)
   - sqlite3/common (3.45.0)
@@ -102,7 +99,7 @@ DEPENDENCIES:
   - screen_retriever (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever/macos`)
   - share_plus (from `Flutter/ephemeral/.symlinks/plugins/share_plus/macos`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
-  - sqflite (from `Flutter/ephemeral/.symlinks/plugins/sqflite/macos`)
+  - sqflite (from `Flutter/ephemeral/.symlinks/plugins/sqflite/darwin`)
   - sqlite3_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/macos`)
   - super_native_extensions (from `Flutter/ephemeral/.symlinks/plugins/super_native_extensions/macos`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
@@ -112,7 +109,6 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - ffmpeg-kit-macos-https
-    - FMDB
     - HotKey
     - ReachabilitySwift
     - sqlite3
@@ -159,7 +155,7 @@ EXTERNAL SOURCES:
   shared_preferences_foundation:
     :path: Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin
   sqflite:
-    :path: Flutter/ephemeral/.symlinks/plugins/sqflite/macos
+    :path: Flutter/ephemeral/.symlinks/plugins/sqflite/darwin
   sqlite3_flutter_libs:
     :path: Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/macos
   super_native_extensions:
@@ -181,7 +177,6 @@ SPEC CHECKSUMS:
   flutter_native_timezone: 3a4724189c47dea215bb3e168e555e18308d312c
   flutter_secure_storage_macos: d56e2d218c1130b262bef8b4a7d64f88d7f9c9ea
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
-  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   HotKey: ad59450195936c10992438c4210f673de5aee43e
   hotkey_manager: c32bf0bfe8f934b7bc17ab4ad5c4c142960b023c
   irondash_engine_context: da62996ee25616d2f01bbeb85dc115d813359478
@@ -196,7 +191,7 @@ SPEC CHECKSUMS:
   screen_retriever: 59634572a57080243dd1bf715e55b6c54f241a38
   share_plus: 76dd39142738f7a68dd57b05093b5e8193f220f7
   shared_preferences_foundation: b4c3b4cddf1c21f02770737f147a3f5da9d39695
-  sqflite: a5789cceda41d54d23f31d6de539d65bb14100ea
+  sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
   sqlite3: f307b6291c4db7b5086c38d6237446b98a738581
   sqlite3_flutter_libs: 6b9913d8fbb718e5ebf23658aa6934a0fb509c0f
   super_native_extensions: 85efee3a7495b46b04befcfc86ed12069264ebf3
