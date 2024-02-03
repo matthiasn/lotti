@@ -20,7 +20,10 @@ class MatrixService {
           'lotti',
           databaseBuilder: (_) async {
             final dir = await getApplicationDocumentsDirectory();
-            final db = HiveCollectionsDatabase('lotti_sync', dir.path);
+            final db = HiveCollectionsDatabase(
+              'lotti_sync',
+              '${dir.path}/matrix/',
+            );
             await db.open();
             return db;
           },
@@ -105,14 +108,13 @@ class MatrixService {
       });
 
       const roomId = String.fromEnvironment('MATRIX_ROOM_ID');
-
       final room = client.getRoomById(roomId);
       debugPrint('Matrix room $room');
 
       client.onRoomState.stream.listen((Event eventUpdate) async {
-        debugPrint(
-          'MatrixService onRoomState.stream.listen plaintextBody: ${eventUpdate.plaintextBody}',
-        );
+        // debugPrint(
+        //   'MatrixService onRoomState.stream.listen plaintextBody: ${eventUpdate.plaintextBody}',
+        // );
 
         // final t = await room?.getTimeline();
         // await t?.setReadMarker(
@@ -136,16 +138,6 @@ class MatrixService {
           debugPrint('attachmentMimetype: $attachmentMimetype');
         }
       });
-
-      // await client.checkHomeserver(
-      //   Uri.parse(homeServer),
-      // );
-      //
-      // final timeline = await room?.getTimeline(
-      //   onInsert: (i) async {
-      //     debugPrint('New message in timeline! $i');
-      //   },
-      // );
     } catch (e, stackTrace) {
       debugPrint('$e');
       _loggingDb.captureException(
@@ -183,8 +175,6 @@ class MatrixService {
       final syncMessage = SyncMessage.fromJson(
         json.decode(decoded) as Map<String, dynamic>,
       );
-
-      debugPrint(syncMessage.toString());
 
       await syncMessage.when(
         journalEntity: (

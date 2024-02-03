@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
@@ -58,8 +57,6 @@ String entityPath(JournalEntity journalEntity, Directory docDir) {
 }
 
 Future<void> saveJournalEntityJson(JournalEntity journalEntity) async {
-  debugPrint('saveJournalEntityJson');
-
   final json = jsonEncode(journalEntity);
   final docDir = getDocumentsDirectory();
   final path = entityPath(journalEntity, docDir);

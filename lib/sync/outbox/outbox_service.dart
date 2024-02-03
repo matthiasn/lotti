@@ -19,14 +19,13 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
+import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/outbox/messages.dart';
 import 'package:lotti/sync/outbox/outbox_service_isolate.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-
-import '../matrix/matrix_service.dart';
 
 class OutboxService {
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
