@@ -76,6 +76,8 @@ dependencies:
   flutter_map: ^6.1.0
   flutter_markdown: ^0.6.18+3
   flutter_native_timezone: ^2.0.0
+  flutter_olm: ^1.4.1
+  flutter_openssl_crypto: ^0.3.0
   flutter_quill: ^9.2.1
   flutter_riverpod: ^2.4.9
   flutter_secure_storage: ^9.0.0
@@ -107,6 +109,7 @@ dependencies:
   location: ^5.0.0
   lottie: ^3.0.0
   material_design_icons_flutter: ^7.0.7096
+  matrix: ^0.25.4
   media_kit: ^1.0.2
   media_kit_libs_android_audio: ^1.0.3
   media_kit_libs_ios_audio: ^1.0.4

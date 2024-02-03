@@ -31,6 +31,11 @@ PODS:
     - Flutter
   - flutter_native_timezone (0.0.1):
     - Flutter
+  - flutter_olm (3.2.15):
+    - Flutter
+  - flutter_openssl_crypto (0.0.1):
+    - Flutter
+    - OpenSSL-Universal
   - flutter_secure_storage (6.0.0):
     - Flutter
   - health (1.0.4):
@@ -61,6 +66,12 @@ PODS:
   - media_kit_native_event_loop (1.0.0):
     - Flutter
   - MTBBarcodeScanner (5.0.11)
+  - OLMKit (3.2.12):
+    - OLMKit/olmc (= 3.2.12)
+    - OLMKit/olmcpp (= 3.2.12)
+  - OLMKit/olmc (3.2.12)
+  - OLMKit/olmcpp (3.2.12)
+  - OpenSSL-Universal (1.1.2200)
   - package_info_plus (0.4.5):
     - Flutter
   - path_provider_foundation (0.0.1):
@@ -127,6 +138,8 @@ DEPENDENCIES:
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_native_timezone (from `.symlinks/plugins/flutter_native_timezone/ios`)
+  - flutter_olm (from `.symlinks/plugins/flutter_olm/ios`)
+  - flutter_openssl_crypto (from `.symlinks/plugins/flutter_openssl_crypto/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - health (from `.symlinks/plugins/health/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
@@ -134,6 +147,7 @@ DEPENDENCIES:
   - location (from `.symlinks/plugins/location/ios`)
   - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
   - media_kit_native_event_loop (from `.symlinks/plugins/media_kit_native_event_loop/ios`)
+  - OLMKit
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
@@ -154,6 +168,8 @@ SPEC REPOS:
     - libwebp
     - Mantle
     - MTBBarcodeScanner
+    - OLMKit
+    - OpenSSL-Universal
     - ReachabilitySwift
     - SDWebImage
     - SDWebImageWebPCoder
@@ -184,6 +200,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
   flutter_native_timezone:
     :path: ".symlinks/plugins/flutter_native_timezone/ios"
+  flutter_olm:
+    :path: ".symlinks/plugins/flutter_olm/ios"
+  flutter_openssl_crypto:
+    :path: ".symlinks/plugins/flutter_openssl_crypto/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
   health:
@@ -239,6 +259,8 @@ SPEC CHECKSUMS:
   flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
   flutter_native_splash: 52501b97d1c0a5f898d687f1646226c1f93c56ef
   flutter_native_timezone: 5f05b2de06c9776b4cc70e1839f03de178394d22
+  flutter_olm: 7154e02866bd06d91e400e94f66d5e2a955de0b1
+  flutter_openssl_crypto: 636ad25f56fbe0f45b9e13b8589540b341a486a1
   flutter_secure_storage: 23fc622d89d073675f2eaa109381aefbcf5a49be
   health: 5a380c0f6c4f619535845992993964293962e99e
   integration_test: 13825b8a9334a850581300559b8839134b124670
@@ -249,6 +271,8 @@ SPEC CHECKSUMS:
   media_kit_libs_ios_audio: 8f39d96a9c630685dfb844c289bd1d114c486fb3
   media_kit_native_event_loop: 99111eded5acbdc9c2738021ea6550dd36ca8837
   MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
+  OLMKit: da115f16582e47626616874e20f7bb92222c7a51
+  OpenSSL-Universal: 6e1ae0555546e604dbc632a2b9a24a9c46c41ef6
   package_info_plus: 115f4ad11e0698c8c1c5d8a689390df880f47e85
   path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
   permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
@@ -267,6 +291,6 @@ SPEC CHECKSUMS:
   url_launcher_ios: bbd758c6e7f9fd7b5b1d4cde34d2b95fcce5e812
   video_player_avfoundation: 02011213dab73ae3687df27ce441fbbcc82b5579
 
-PODFILE CHECKSUM: 5b3398e7604abf76fbba588f5b0fc85f420e288c
+PODFILE CHECKSUM: 6f7e24f0f5383ee494e64eb1f1b496fc48d893f3
 
 COCOAPODS: 1.15.0

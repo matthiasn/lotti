@@ -27,6 +27,9 @@
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
 		7E2335674AA28E31A7EEBE87 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BAE814E2540AB2A5F49FEB9F /* Pods_Runner.framework */; };
+		AD2C9ED72B50DEE90023FFD8 /* libolm.3.dylib in Resources */ = {isa = PBXBuildFile; fileRef = AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */; };
+		AD2C9ED82B50E0240023FFD8 /* libolm.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */; settings = {ATTRIBUTES = (Weak, ); }; };
+		AD2C9ED92B50E0EA0023FFD8 /* libolm.3.dylib in Bundle Framework */ = {isa = PBXBuildFile; fileRef = AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		AD3F79962B41D994009867B5 /* LibWhisper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD3F79942B41D994009867B5 /* LibWhisper.swift */; };
 		AD3F799B2B41D9AA009867B5 /* ggml.c in Sources */ = {isa = PBXBuildFile; fileRef = AD3F79972B41D9AA009867B5 /* ggml.c */; };
 		AD3F799C2B41D9AA009867B5 /* whisper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD3F79992B41D9AA009867B5 /* whisper.cpp */; };
@@ -49,6 +52,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				AD2C9ED92B50E0EA0023FFD8 /* libolm.3.dylib in Bundle Framework */,
 			);
 			name = "Bundle Framework";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -74,6 +78,9 @@
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		A87512A16BAFE7C799AAEE04 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
+		AD2C9ED22B50D5E00023FFD8 /* OLMKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OLMKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD2C9ED42B50D9490023FFD8 /* libolm.dylib.3.2.16 */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libolm.dylib.3.2.16; path = ../../olm/build/libolm.dylib.3.2.16; sourceTree = "<group>"; };
+		AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libolm.3.dylib; path = Runner/libolm.3.dylib; sourceTree = "<group>"; };
 		AD3F79942B41D994009867B5 /* LibWhisper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = LibWhisper.swift; path = ../../whisper.cpp/LibWhisper.swift; sourceTree = "<group>"; };
 		AD3F79972B41D9AA009867B5 /* ggml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ggml.c; path = "../../whisper.cpp/whisper.cpp-1.4.2/ggml.c"; sourceTree = "<group>"; };
 		AD3F79982B41D9AA009867B5 /* whisper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = whisper.h; path = "../../whisper.cpp/whisper.cpp-1.4.2/whisper.h"; sourceTree = "<group>"; };
@@ -91,6 +98,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AD2C9ED82B50E0240023FFD8 /* libolm.3.dylib in Frameworks */,
 				7E2335674AA28E31A7EEBE87 /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -112,6 +120,7 @@
 		33CC10E42044A3C60003C045 = {
 			isa = PBXGroup;
 			children = (
+				AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */,
 				ADAC39812A06D91900E07F8F /* whisper.cpp */,
 				33FAB671232836740065AC1E /* Runner */,
 				33CEB47122A05771004F2AC0 /* Flutter */,
@@ -182,6 +191,8 @@
 		D73912EC22F37F3D000D13A0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				AD2C9ED42B50D9490023FFD8 /* libolm.dylib.3.2.16 */,
+				AD2C9ED22B50D5E00023FFD8 /* OLMKit.framework */,
 				BAE814E2540AB2A5F49FEB9F /* Pods_Runner.framework */,
 			);
 			name = Frameworks;
@@ -273,6 +284,7 @@
 			files = (
 				33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */,
 				33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */,
+				AD2C9ED72B50DEE90023FFD8 /* libolm.3.dylib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -456,6 +468,10 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Runner",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				OTHER_CFLAGS = (
 					"-O3",
@@ -592,6 +608,10 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Runner",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				OTHER_CFLAGS = (
 					"-O3",
@@ -621,6 +641,10 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Runner",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				OTHER_CFLAGS = (

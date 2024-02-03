@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:easy_debounce/easy_debounce.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
+import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 
 class SyncConfigCubit extends Cubit<SyncConfigState> {
@@ -42,6 +45,8 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     imapConfig = await _syncConfigService.getImapConfig();
 
     await testConnection();
+
+    await getIt<MatrixService>().sendMatrixMsg('Hello world');
 
     if (imapConfig != null && sharedSecret != null) {
       await getIt<InboxService>().init();
