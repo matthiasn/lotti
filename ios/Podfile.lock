@@ -66,11 +66,6 @@ PODS:
   - media_kit_native_event_loop (1.0.0):
     - Flutter
   - MTBBarcodeScanner (5.0.11)
-  - OLMKit (3.2.12):
-    - OLMKit/olmc (= 3.2.12)
-    - OLMKit/olmcpp (= 3.2.12)
-  - OLMKit/olmc (3.2.12)
-  - OLMKit/olmcpp (3.2.12)
   - OpenSSL-Universal (1.1.2200)
   - package_info_plus (0.4.5):
     - Flutter
@@ -147,7 +142,6 @@ DEPENDENCIES:
   - location (from `.symlinks/plugins/location/ios`)
   - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
   - media_kit_native_event_loop (from `.symlinks/plugins/media_kit_native_event_loop/ios`)
-  - OLMKit
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
@@ -168,7 +162,6 @@ SPEC REPOS:
     - libwebp
     - Mantle
     - MTBBarcodeScanner
-    - OLMKit
     - OpenSSL-Universal
     - ReachabilitySwift
     - SDWebImage
@@ -271,7 +264,6 @@ SPEC CHECKSUMS:
   media_kit_libs_ios_audio: 8f39d96a9c630685dfb844c289bd1d114c486fb3
   media_kit_native_event_loop: 99111eded5acbdc9c2738021ea6550dd36ca8837
   MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
-  OLMKit: da115f16582e47626616874e20f7bb92222c7a51
   OpenSSL-Universal: 6e1ae0555546e604dbc632a2b9a24a9c46c41ef6
   package_info_plus: 115f4ad11e0698c8c1c5d8a689390df880f47e85
   path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
@@ -291,6 +283,6 @@ SPEC CHECKSUMS:
   url_launcher_ios: bbd758c6e7f9fd7b5b1d4cde34d2b95fcce5e812
   video_player_avfoundation: 02011213dab73ae3687df27ce441fbbcc82b5579
 
-PODFILE CHECKSUM: 6f7e24f0f5383ee494e64eb1f1b496fc48d893f3
+PODFILE CHECKSUM: 5b3398e7604abf76fbba588f5b0fc85f420e288c
 
 COCOAPODS: 1.15.0
