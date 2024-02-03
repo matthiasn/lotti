@@ -26,6 +26,8 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 
+import '../matrix/matrix_service.dart';
+
 class OutboxService {
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
   final FgBgService _fgBgService = getIt<FgBgService>();
@@ -129,6 +131,12 @@ class OutboxService {
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     try {
+      unawaited(
+        getIt<MatrixService>().sendMatrixMsg(json.encode(syncMessage)),
+      );
+
+      return;
+
       final vectorClockService = getIt<VectorClockService>();
       final hostHash = await vectorClockService.getHostHash();
       final host = await vectorClockService.getHost();
