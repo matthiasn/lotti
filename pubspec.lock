@@ -97,6 +97,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  base58check:
+    dependency: transitive
+    description:
+      name: base58check
+      sha256: "6c300dfc33e598d2fe26319e13f6243fea81eaf8204cb4c6b69ef20a625319a5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   basic_utils:
     dependency: transitive
     description:
@@ -137,6 +145,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.1.5"
+  blurhash_dart:
+    dependency: transitive
+    description:
+      name: blurhash_dart
+      sha256: "43955b6c2e30a7d440028d1af0fa185852f3534b795cc6eb81fbf397b464409f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.1"
   boolean_selector:
     dependency: transitive
     description:
@@ -233,6 +249,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  canonical_json:
+    dependency: transitive
+    description:
+      name: canonical_json
+      sha256: d6be1dd66b420c6ac9f42e3693e09edf4ff6edfee26cb4c28c1c019fdb8c0c15
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.2"
   carousel_slider:
     dependency: "direct main"
     description:
@@ -498,6 +522,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.3"
+  enhanced_enum:
+    dependency: transitive
+    description:
+      name: enhanced_enum
+      sha256: "074c5a8b9664799ca91e1e8b68003b8694cb19998671cbafd9c7779c13fcdecf"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.4"
   enough_convert:
     dependency: transitive
     description:
@@ -906,6 +938,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  flutter_olm:
+    dependency: "direct main"
+    description:
+      name: flutter_olm
+      sha256: f98cafb434b3858d46446a93eb269a8e97eb38ccc5f8e0281b167d66d95c15dc
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  flutter_openssl_crypto:
+    dependency: "direct main"
+    description:
+      name: flutter_openssl_crypto
+      sha256: "6dcecf6f7c1804ae6f5d73ee05df8af72ea8133bf2447d25979d739503186c96"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   flutter_quill:
     dependency: "direct main"
     description:
@@ -1106,6 +1154,14 @@ packages:
       url: "https://github.com/matthiasn/flutter-plugins"
     source: git
     version: "4.4.0"
+  hive:
+    dependency: transitive
+    description:
+      name: hive
+      sha256: "8dcf6db979d7933da8217edcec84e9df1bdb4e4edc7fc77dbd5aa74356d6d941"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.3"
   hotkey_manager:
     dependency: "direct main"
     description:
@@ -1439,6 +1495,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.0"
+  matrix:
+    dependency: "direct main"
+    description:
+      name: matrix
+      sha256: aaad2dc736d0a605cadb8abeaa9f184e6eafa6f4f2cada63200fedfe508341c6
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.25.4"
+  matrix_api_lite:
+    dependency: transitive
+    description:
+      name: matrix_api_lite
+      sha256: "0e92d3402b4cbb8ab9283fd2fbe44147facf6f73de88f5adf0b3123bc5114bc1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.7.3"
   maybe_just_nothing:
     dependency: transitive
     description:
@@ -1591,6 +1663,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.0.2+1"
+  olm:
+    dependency: transitive
+    description:
+      name: olm
+      sha256: "37948a6576949256f3ee1d0063d5b408634ff7e452b9a5c2f6410f9d7ced1c20"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.3"
   package_config:
     dependency: transitive
     description:
@@ -1911,6 +1991,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.1"
+  random_string:
+    dependency: transitive
+    description:
+      name: random_string
+      sha256: "03b52435aae8cbdd1056cf91bfc5bf845e9706724dd35ae2e99fa14a1ef79d02"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.1"
   recase:
     dependency: transitive
     description:
@@ -2023,6 +2111,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.9"
+  sdp_transform:
+    dependency: transitive
+    description:
+      name: sdp_transform
+      sha256: "73e412a5279a5c2de74001535208e20fff88f225c9a4571af0f7146202755e45"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.2"
   share_plus:
     dependency: "direct main"
     description:
@@ -2156,6 +2252,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.12"
+  slugify:
+    dependency: transitive
+    description:
+      name: slugify
+      sha256: b272501565cb28050cac2d96b7bf28a2d24c8dae359280361d124f3093d337c3
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   source_gen:
     dependency: transitive
     description:
@@ -2420,6 +2524,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0+1"
+  unorm_dart:
+    dependency: transitive
+    description:
+      name: unorm_dart
+      sha256: "5b35bff83fce4d76467641438f9e867dc9bcfdb8c1694854f230579d68cd8f4b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
   uri_parser:
     dependency: transitive
     description:
@@ -2636,6 +2748,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
+  webrtc_interface:
+    dependency: transitive
+    description:
+      name: webrtc_interface
+      sha256: "2efbd3e4e5ebeb2914253bcc51dafd3053c4b87b43f3076c74835a9deecbae3a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.2"
   wechat_assets_picker:
     dependency: "direct main"
     description:
