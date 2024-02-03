@@ -15,6 +15,7 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
+import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -35,6 +36,7 @@ void main() {
     final syncConfigMock = MockSyncConfigService();
     final mockVectorClockService = MockVectorClockService();
     final mockJournalDb = MockJournalDb();
+    final mockMatrixService = MockMatrixService();
 
     final mockConnectivityService = MockConnectivityService();
     when(() => mockConnectivityService.connectedStream).thenAnswer(
@@ -83,6 +85,7 @@ void main() {
         ..registerSingleton<VectorClockService>(mockVectorClockService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<SyncConfigService>(syncConfigMock)
+        ..registerSingleton<MatrixService>(mockMatrixService)
         ..registerSingleton<OutboxService>(OutboxService());
     });
 
@@ -94,6 +97,13 @@ void main() {
 
       when(() => mockJournalDb.getConfigFlag(any()))
           .thenAnswer((_) async => true);
+
+      when(() => mockJournalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => false);
+      registerFallbackValue(FakeSyncMessage());
+      when(() => mockMatrixService.sendMatrixMsg(any()))
+          .thenAnswer((_) async {});
+
       await getIt<OutboxService>().init();
     });
 
