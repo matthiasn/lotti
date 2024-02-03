@@ -81,6 +81,8 @@ class JournalDb extends _$JournalDb {
     final dbEntity = toDbEntity(journalEntity);
     await saveJournalEntityJson(journalEntity);
 
+    debugPrint('addJournalEntity $journalEntity');
+
     final exists = (await entityById(dbEntity.id)) != null;
     if (!exists) {
       return upsertJournalDbEntity(dbEntity);
@@ -148,6 +150,8 @@ class JournalDb extends _$JournalDb {
     final dbEntity = toDbEntity(updated).copyWith(
       updatedAt: DateTime.now(),
     );
+
+    debugPrint('updateJournalEntity $updated');
 
     final existingDbEntity = await entityById(dbEntity.id);
     if (existingDbEntity != null) {

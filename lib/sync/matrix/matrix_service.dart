@@ -1,8 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_links.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -64,7 +72,7 @@ class MatrixService {
       debugPrint('$e');
       _loggingDb.captureException(
         e,
-        domain: 'MATRIX',
+        domain: 'MATRIX_SERVICE',
         subDomain: 'login',
         stackTrace: stackTrace,
       );
@@ -112,6 +120,17 @@ class MatrixService {
         //   public: true,
         // );
 
+        try {
+          await processMessage(eventUpdate.plaintextBody);
+        } catch (exception, stackTrace) {
+          _loggingDb.captureException(
+            exception,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'listen',
+            stackTrace: stackTrace,
+          );
+        }
+
         final attachmentMimetype = eventUpdate.attachmentMimetype;
         if (attachmentMimetype.isNotEmpty) {
           debugPrint('attachmentMimetype: $attachmentMimetype');
@@ -131,7 +150,7 @@ class MatrixService {
       debugPrint('$e');
       _loggingDb.captureException(
         e,
-        domain: 'MATRIX',
+        domain: 'MATRIX_SERVICE',
         subDomain: 'listen',
         stackTrace: stackTrace,
       );
@@ -142,13 +161,65 @@ class MatrixService {
     try {
       const roomId = String.fromEnvironment('MATRIX_ROOM_ID');
       final room = client.getRoomById(roomId);
-      await room?.sendTextEvent(msg);
+      await room?.sendTextEvent(base64.encode(utf8.encode(msg)));
     } catch (e, stackTrace) {
       debugPrint('MATRIX: Error sending message: $e');
       _loggingDb.captureException(
         e,
-        domain: 'MATRIX',
+        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> processMessage(String message) async {
+    final journalDb = getIt<JournalDb>();
+    final loggingDb = getIt<LoggingDb>();
+
+    try {
+      final decoded = utf8.decode(base64.decode(message));
+
+      final syncMessage = SyncMessage.fromJson(
+        json.decode(decoded) as Map<String, dynamic>,
+      );
+
+      debugPrint(syncMessage.toString());
+
+      await syncMessage.when(
+        journalEntity: (
+          JournalEntity journalEntity,
+          SyncEntryStatus status,
+        ) async {
+          await saveJournalEntityJson(journalEntity);
+
+          if (status == SyncEntryStatus.update) {
+            await journalDb.updateJournalEntity(journalEntity);
+          } else {
+            await journalDb.addJournalEntity(journalEntity);
+          }
+        },
+        entryLink: (EntryLink entryLink, SyncEntryStatus _) {
+          journalDb.upsertEntryLink(entryLink);
+        },
+        entityDefinition: (
+          EntityDefinition entityDefinition,
+          SyncEntryStatus status,
+        ) {
+          journalDb.upsertEntityDefinition(entityDefinition);
+        },
+        tagEntity: (
+          TagEntity tagEntity,
+          SyncEntryStatus status,
+        ) {
+          journalDb.upsertTagEntity(tagEntity);
+        },
+      );
+    } catch (e, stackTrace) {
+      loggingDb.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'processMessage',
         stackTrace: stackTrace,
       );
     }
