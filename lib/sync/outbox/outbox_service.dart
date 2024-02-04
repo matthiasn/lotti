@@ -131,7 +131,7 @@ class OutboxService {
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     try {
       unawaited(
-        getIt<MatrixService>().sendMatrixMsg(json.encode(syncMessage)),
+        getIt<MatrixService>().sendMatrixMsg(syncMessage),
       );
 
       return;
