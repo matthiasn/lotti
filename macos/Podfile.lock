@@ -32,6 +32,7 @@ PODS:
     - FlutterMacOS
   - media_kit_native_event_loop (1.0.0):
     - FlutterMacOS
+  - OpenSSL-Universal (3.1.4000)
   - package_info_plus (0.0.1):
     - FlutterMacOS
   - path_provider_foundation (0.0.1):
@@ -92,6 +93,7 @@ DEPENDENCIES:
   - location (from `Flutter/ephemeral/.symlinks/plugins/location/macos`)
   - media_kit_libs_macos_audio (from `Flutter/ephemeral/.symlinks/plugins/media_kit_libs_macos_audio/macos`)
   - media_kit_native_event_loop (from `Flutter/ephemeral/.symlinks/plugins/media_kit_native_event_loop/macos`)
+  - OpenSSL-Universal
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
   - photo_manager (from `Flutter/ephemeral/.symlinks/plugins/photo_manager/macos`)
@@ -110,6 +112,7 @@ SPEC REPOS:
   trunk:
     - ffmpeg-kit-macos-https
     - HotKey
+    - OpenSSL-Universal
     - ReachabilitySwift
     - sqlite3
 
@@ -183,6 +186,7 @@ SPEC CHECKSUMS:
   location: 7cdb0665bd6577d382b0a343acdadbcb7f964775
   media_kit_libs_macos_audio: 3871782a4f3f84c77f04d7666c87800a781c24da
   media_kit_native_event_loop: 7321675377cb9ae8596a29bddf3a3d2b5e8792c5
+  OpenSSL-Universal: 0adf92f748c570f9911fdb3c11fd5f1cf304e8d1
   package_info_plus: 02d7a575e80f194102bef286361c6c326e4c29ce
   path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
   photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
@@ -199,6 +203,6 @@ SPEC CHECKSUMS:
   video_player_avfoundation: 02011213dab73ae3687df27ce441fbbcc82b5579
   window_manager: 3a1844359a6295ab1e47659b1a777e36773cd6e8
 
-PODFILE CHECKSUM: 0d353b18ff12f5d7cf17ff0e726ed751fc815029
+PODFILE CHECKSUM: 2ac34291407b655c7f9b7e15bcc9e13760f1605d
 
 COCOAPODS: 1.15.0
