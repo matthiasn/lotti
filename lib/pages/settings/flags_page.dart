@@ -29,6 +29,7 @@ class FlagsPage extends StatelessWidget {
           recordLocationFlag,
           enableSyncFlag,
           allowInvalidCertFlag,
+          enableMatrixFlag,
         };
 
         final filteredItems =
