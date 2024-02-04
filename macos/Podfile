@@ -32,7 +32,6 @@ target 'Runner' do
 
   flutter_install_all_macos_pods File.dirname(File.realpath(__FILE__))
   pod 'OpenSSL-Universal'
-  pod 'OLMKit'
 end
 
 post_install do |installer|

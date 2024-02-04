@@ -78,8 +78,6 @@
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		A87512A16BAFE7C799AAEE04 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		AD222ED42B6F1352003661C2 /* libcrypto.1.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcrypto.1.1.dylib; path = Runner/libcrypto.1.1.dylib; sourceTree = "<group>"; };
-		AD2C9ED22B50D5E00023FFD8 /* OLMKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OLMKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		AD2C9ED42B50D9490023FFD8 /* libolm.dylib.3.2.16 */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libolm.dylib.3.2.16; path = ../../olm/build/libolm.dylib.3.2.16; sourceTree = "<group>"; };
 		AD3F79942B41D994009867B5 /* LibWhisper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = LibWhisper.swift; path = ../../whisper.cpp/LibWhisper.swift; sourceTree = "<group>"; };
 		AD3F79972B41D9AA009867B5 /* ggml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ggml.c; path = "../../whisper.cpp/whisper.cpp-1.4.2/ggml.c"; sourceTree = "<group>"; };
 		AD3F79982B41D9AA009867B5 /* whisper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = whisper.h; path = "../../whisper.cpp/whisper.cpp-1.4.2/whisper.h"; sourceTree = "<group>"; };
@@ -88,7 +86,6 @@
 		AD3F79A32B41DA90009867B5 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "Runner-Bridging-Header.h"; path = "../../whisper.cpp/Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		AD3F79A42B41DAE9009867B5 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		AD4D50B4272DC22C00B0D18C /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
-		ADCA6A662B701F5A0050FD13 /* OLMKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OLMKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		BAE814E2540AB2A5F49FEB9F /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EE88E1714354055D8612F843 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -191,9 +188,6 @@
 		D73912EC22F37F3D000D13A0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				ADCA6A662B701F5A0050FD13 /* OLMKit.framework */,
-				AD2C9ED42B50D9490023FFD8 /* libolm.dylib.3.2.16 */,
-				AD2C9ED22B50D5E00023FFD8 /* OLMKit.framework */,
 				BAE814E2540AB2A5F49FEB9F /* Pods_Runner.framework */,
 			);
 			name = Frameworks;

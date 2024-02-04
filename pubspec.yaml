@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.424+2364
+version: 0.9.424+2365
 
 msix_config:
   display_name: LottiApp
@@ -76,7 +76,14 @@ dependencies:
   flutter_map: ^6.1.0
   flutter_markdown: ^0.6.18+3
   flutter_native_timezone: ^2.0.0
-  flutter_olm: ^1.4.1
+  # flutter_olm: ^1.4.1
+
+  flutter_olm:
+    git:
+      url: https://github.com/matthiasn/olm.git
+      path: flutter
+      ref: d1f4753
+
   flutter_openssl_crypto: ^0.3.0
   flutter_quill: ^9.2.1
   flutter_riverpod: ^2.4.9
