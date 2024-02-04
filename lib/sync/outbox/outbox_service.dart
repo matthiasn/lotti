@@ -130,11 +130,14 @@ class OutboxService {
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     try {
-      unawaited(
-        getIt<MatrixService>().sendMatrixMsg(syncMessage),
+      final enableMatrix = await getIt<JournalDb>().getConfigFlag(
+        enableMatrixFlag,
       );
 
-      return;
+      if (enableMatrix) {
+        unawaited(getIt<MatrixService>().sendMatrixMsg(syncMessage));
+        return;
+      }
 
       final vectorClockService = getIt<VectorClockService>();
       final hostHash = await vectorClockService.getHostHash();

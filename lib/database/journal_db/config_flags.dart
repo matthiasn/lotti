@@ -36,7 +36,13 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
-
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableMatrixFlag,
+      description: 'Enable Matrix Sync',
+      status: false,
+    ),
+  );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: recordLocationFlag,
