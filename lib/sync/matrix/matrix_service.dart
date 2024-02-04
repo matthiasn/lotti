@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -10,7 +11,9 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -149,11 +152,46 @@ class MatrixService {
     }
   }
 
-  Future<void> sendMatrixMsg(String msg) async {
+  Future<void> sendMatrixMsg(SyncMessage syncMessage) async {
     try {
+      final msg = json.encode(syncMessage);
       const roomId = String.fromEnvironment('MATRIX_ROOM_ID');
       final room = client.getRoomById(roomId);
       await room?.sendTextEvent(base64.encode(utf8.encode(msg)));
+
+      final docDir = getDocumentsDirectory();
+
+      if (syncMessage is SyncJournalEntity) {
+        final journalEntity = syncMessage.journalEntity;
+
+        await journalEntity.maybeMap(
+          journalAudio: (JournalAudio journalAudio) async {
+            if (syncMessage.status == SyncEntryStatus.initial) {
+              final path = AudioUtils.getAudioPath(journalAudio, docDir);
+              final bytes = await File(path).readAsBytes();
+              await room?.sendFileEvent(
+                MatrixFile(
+                  bytes: bytes,
+                  name: path,
+                ),
+              );
+            }
+          },
+          journalImage: (JournalImage journalImage) async {
+            if (syncMessage.status == SyncEntryStatus.initial) {
+              final path = getFullImagePath(journalImage);
+              final bytes = await File(path).readAsBytes();
+              await room?.sendFileEvent(
+                MatrixFile(
+                  bytes: bytes,
+                  name: path,
+                ),
+              );
+            }
+          },
+          orElse: () {},
+        );
+      }
     } catch (e, stackTrace) {
       debugPrint('MATRIX: Error sending message: $e');
       _loggingDb.captureException(
