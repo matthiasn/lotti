@@ -137,7 +137,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                         width: 40,
                         child: IconButton(
                           icon: const Icon(Icons.more_outlined),
-                          tooltip: localizations.journalLinkFromHint,
+                          tooltip: localizations.journalHeaderContract,
                           onPressed: () => setState(() => showAllIcons = false),
                         ),
                       ),
