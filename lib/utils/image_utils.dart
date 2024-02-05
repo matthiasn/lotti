@@ -22,7 +22,11 @@ String? getRelativeAssetPath(String? absolutePath) {
   return absolutePath?.split('Documents').last;
 }
 
+String getRelativeImagePath(JournalImage img) {
+  return '${img.data.imageDirectory}${img.data.imageFile}';
+}
+
 String getFullImagePath(JournalImage img) {
   final docDir = getDocumentsDirectory();
-  return '${docDir.path}${img.data.imageDirectory}${img.data.imageFile}';
+  return '${docDir.path}${getRelativeImagePath(img)}';
 }
