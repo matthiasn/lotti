@@ -36,6 +36,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable sync? (requires restart)',
     status: true,
   ),
+  const ConfigFlag(
+    name: enableMatrixFlag,
+    description: 'Enable Matrix Sync',
+    status: false,
+  ),
 };
 
 final expectedMacFlags = <ConfigFlag>{

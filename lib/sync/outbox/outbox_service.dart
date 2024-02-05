@@ -19,6 +19,7 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
+import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/outbox/messages.dart';
 import 'package:lotti/sync/outbox/outbox_service_isolate.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -129,6 +130,15 @@ class OutboxService {
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     try {
+      final enableMatrix = await getIt<JournalDb>().getConfigFlag(
+        enableMatrixFlag,
+      );
+
+      if (enableMatrix) {
+        unawaited(getIt<MatrixService>().sendMatrixMsg(syncMessage));
+        return;
+      }
+
       final vectorClockService = getIt<VectorClockService>();
       final hostHash = await vectorClockService.getHostHash();
       final host = await vectorClockService.getHost();
