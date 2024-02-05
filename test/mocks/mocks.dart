@@ -7,6 +7,7 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -28,6 +29,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/imap_client.dart';
+import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -159,3 +161,7 @@ class FakeMeasurementData extends Fake implements MeasurementData {}
 class FakeHabitCompletionData extends Fake implements HabitCompletionData {}
 
 class MockMaintenance extends Mock implements Maintenance {}
+
+class MockMatrixService extends Mock implements MatrixService {}
+
+class FakeSyncMessage extends Fake implements SyncMessage {}

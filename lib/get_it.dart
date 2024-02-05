@@ -25,6 +25,7 @@ import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/inbox/inbox_service.dart';
+import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 
 final getIt = GetIt.instance;
@@ -61,6 +62,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<SyncConfigService>(SyncConfigService())
     ..registerSingleton<TimeService>(TimeService())
     ..registerSingleton<OutboxService>(OutboxService())
+    ..registerSingleton<MatrixService>(MatrixService())
     ..registerSingleton<AiLogic>(AiLogic())
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
