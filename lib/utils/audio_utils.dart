@@ -9,8 +9,12 @@ class AudioUtils {
     return '${docDir.path}${j.data.audioDirectory}${j.data.audioFile}';
   }
 
+  static String getRelativeAudioPath(JournalAudio j) {
+    return '${j.data.audioDirectory}${j.data.audioFile}';
+  }
+
   static String getAudioPath(JournalAudio j, Directory docDir) {
-    return '${docDir.path}${j.data.audioDirectory}${j.data.audioFile}';
+    return '${docDir.path}${getRelativeAudioPath(j)}';
   }
 
   static Future<void> moveToTrash(JournalAudio journalDbAudio) async {

@@ -11,6 +11,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/sync/inbox/save_attachments.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -126,7 +127,15 @@ class MatrixService {
         // );
 
         try {
-          await processMessage(eventUpdate.plaintextBody);
+          final attachmentMimetype = eventUpdate.attachmentMimetype;
+          if (attachmentMimetype.isNotEmpty) {
+            final relativePath = eventUpdate.content['relativePath'];
+            final matrixFile = await eventUpdate.downloadAndDecryptAttachment();
+            final docDir = getDocumentsDirectory();
+            await writeToFile(matrixFile.bytes, '${docDir.path}$relativePath');
+          } else {
+            await processMessage(eventUpdate.plaintextBody);
+          }
         } catch (exception, stackTrace) {
           _loggingDb.captureException(
             exception,
@@ -134,11 +143,6 @@ class MatrixService {
             subDomain: 'listen',
             stackTrace: stackTrace,
           );
-        }
-
-        final attachmentMimetype = eventUpdate.attachmentMimetype;
-        if (attachmentMimetype.isNotEmpty) {
-          debugPrint('attachmentMimetype: $attachmentMimetype');
         }
       });
     } catch (e, stackTrace) {
@@ -167,25 +171,34 @@ class MatrixService {
         await journalEntity.maybeMap(
           journalAudio: (JournalAudio journalAudio) async {
             if (syncMessage.status == SyncEntryStatus.initial) {
-              final path = AudioUtils.getAudioPath(journalAudio, docDir);
-              final bytes = await File(path).readAsBytes();
+              final relativePath =
+                  AudioUtils.getRelativeAudioPath(journalAudio);
+              final fullPath = AudioUtils.getAudioPath(journalAudio, docDir);
+              final bytes = await File(fullPath).readAsBytes();
               await room?.sendFileEvent(
                 MatrixFile(
                   bytes: bytes,
-                  name: path,
+                  name: fullPath,
                 ),
+                extraContent: {
+                  'relativePath': relativePath,
+                },
               );
             }
           },
           journalImage: (JournalImage journalImage) async {
             if (syncMessage.status == SyncEntryStatus.initial) {
-              final path = getFullImagePath(journalImage);
-              final bytes = await File(path).readAsBytes();
+              final relativePath = getRelativeImagePath(journalImage);
+              final fullPath = getFullImagePath(journalImage);
+              final bytes = await File(fullPath).readAsBytes();
               await room?.sendFileEvent(
                 MatrixFile(
                   bytes: bytes,
-                  name: path,
+                  name: fullPath,
                 ),
+                extraContent: {
+                  'relativePath': relativePath,
+                },
               );
             }
           },
