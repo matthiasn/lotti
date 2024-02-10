@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -12,6 +13,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
+import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -264,5 +267,18 @@ class MatrixService {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  Future<MatrixConfig?> getMatrixConfig() async {
+    final configJson = await getIt<SecureStorage>().read(key: matrixConfigKey);
+    MatrixConfig? matrixConfig;
+
+    if (configJson != null) {
+      matrixConfig = MatrixConfig.fromJson(
+        json.decode(configJson) as Map<String, dynamic>,
+      );
+    }
+
+    return matrixConfig;
   }
 }
