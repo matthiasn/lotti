@@ -185,6 +185,7 @@
   "settingsMatrixSyncHomeServerLabel": "Homeserver",
   "settingsMatrixSyncPasswordLabel": "Password",
   "settingsMatrixSyncUserLabel": "User",
+  "settingsMatrixTitle": "Matrix Sync Settings",
   "settingsMeasurableAggregationLabel": "Default Aggregation Type (optional):",
   "settingsMeasurableDeleteTooltip": "Delete measurable type",
   "settingsMeasurableDescriptionLabel": "Description (optional):",

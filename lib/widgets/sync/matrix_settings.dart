@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
@@ -13,14 +12,15 @@ const matrixUserKey = 'user';
 const matrixPasswordKey = 'password';
 const matrixHomeServer = 'home_server';
 
-class MatrixSettings extends ConsumerStatefulWidget {
-  const MatrixSettings({super.key});
+class MatrixSettingsWidget extends ConsumerStatefulWidget {
+  const MatrixSettingsWidget({super.key});
 
   @override
-  ConsumerState<MatrixSettings> createState() => _MatrixSettingsState();
+  ConsumerState<MatrixSettingsWidget> createState() =>
+      _MatrixSettingsWidgetState();
 }
 
-class _MatrixSettingsState extends ConsumerState<MatrixSettings> {
+class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
   final _formKey = GlobalKey<FormBuilderState>();
   MatrixConfig? config;
 
@@ -54,9 +54,7 @@ class _MatrixSettingsState extends ConsumerState<MatrixSettings> {
           children: <Widget>[
             FormBuilderTextField(
               name: matrixHomeServer,
-              key: const Key('matrix_home_server_form_field'),
               initialValue: config?.homeServer,
-              validator: FormBuilderValidators.required(),
               decoration: inputDecoration(
                 labelText: localizations.settingsMatrixSyncHomeServerLabel,
                 themeData: Theme.of(context),
@@ -65,9 +63,7 @@ class _MatrixSettingsState extends ConsumerState<MatrixSettings> {
             const SizedBox(height: 20),
             FormBuilderTextField(
               name: matrixUserKey,
-              key: const Key('matrix_user_form_field'),
               initialValue: config?.user,
-              validator: FormBuilderValidators.required(),
               decoration: inputDecoration(
                 labelText: localizations.settingsMatrixSyncUserLabel,
                 themeData: Theme.of(context),
@@ -76,10 +72,8 @@ class _MatrixSettingsState extends ConsumerState<MatrixSettings> {
             const SizedBox(height: 20),
             FormBuilderTextField(
               name: matrixPasswordKey,
-              key: const Key('matrix_password_form_field'),
               initialValue: config?.password,
               obscureText: true,
-              validator: FormBuilderValidators.required(),
               decoration: inputDecoration(
                 labelText: localizations.settingsMatrixSyncPasswordLabel,
                 themeData: Theme.of(context),
