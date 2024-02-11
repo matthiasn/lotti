@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/sync/imap_config_utils.dart';
 
 const matrixUserKey = 'user';
 const matrixPasswordKey = 'password';
-const matrixHomeServer = 'home_server';
+const matrixHomeServerKey = 'home_server';
 
 class MatrixSettingsWidget extends ConsumerStatefulWidget {
   const MatrixSettingsWidget({super.key});
@@ -21,82 +21,120 @@ class MatrixSettingsWidget extends ConsumerStatefulWidget {
 }
 
 class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
+  final _matrixService = getIt<MatrixService>();
   final _formKey = GlobalKey<FormBuilderState>();
-  MatrixConfig? config;
-
-  void onChanged() {
-    final config = matrixConfigFromForm(_formKey);
-    debugPrint('config $config');
-  }
+  bool _dirty = false;
+  MatrixConfig? _previous;
 
   @override
   void initState() {
     super.initState();
+    _matrixService.getMatrixConfig().then((persisted) {
+      _previous = persisted;
 
-    getIt<MatrixService>().getMatrixConfig().then((value) {
-      setState(() {
-        config = value;
-      });
+      if (persisted != null) {
+        _formKey.currentState?.patchValue({
+          matrixHomeServerKey: persisted.homeServer,
+          matrixUserKey: persisted.user,
+          matrixPasswordKey: persisted.password,
+        });
+
+        setState(() => _dirty = false);
+      }
     });
+  }
+
+  void onFormChanged() {
+    _formKey.currentState?.save();
+    setState(() => _dirty = true);
+  }
+
+  Future<void> onSavePressed() async {
+    final currentState = _formKey.currentState;
+
+    if (currentState == null) {
+      return;
+    }
+
+    final formData = currentState.value;
+    currentState.save();
+
+    if (currentState.validate()) {
+      final config = MatrixConfig(
+        homeServer: formData[matrixHomeServerKey] as String? ??
+            _previous?.homeServer ??
+            '',
+        user: formData[matrixUserKey] as String? ?? _previous?.user ?? '',
+        password:
+            formData[matrixPasswordKey] as String? ?? _previous?.password ?? '',
+      );
+
+      await _matrixService.setMatrixConfig(config);
+      setState(() => _dirty = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    void maybePop() => Navigator.of(context).maybePop();
 
     return SingleChildScrollView(
       child: FormBuilder(
         key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        onChanged: onChanged,
+        autovalidateMode: AutovalidateMode.disabled,
+        onChanged: onFormChanged,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             FormBuilderTextField(
-              name: matrixHomeServer,
-              initialValue: config?.homeServer,
+              name: matrixHomeServerKey,
+              validator: FormBuilderValidators.required(),
               decoration: inputDecoration(
-                labelText: localizations.settingsMatrixSyncHomeServerLabel,
+                labelText: localizations.settingsMatrixHomeServerLabel,
                 themeData: Theme.of(context),
               ),
             ),
             const SizedBox(height: 20),
             FormBuilderTextField(
               name: matrixUserKey,
-              initialValue: config?.user,
+              validator: FormBuilderValidators.required(),
               decoration: inputDecoration(
-                labelText: localizations.settingsMatrixSyncUserLabel,
+                labelText: localizations.settingsMatrixUserLabel,
                 themeData: Theme.of(context),
               ),
             ),
             const SizedBox(height: 20),
             FormBuilderTextField(
               name: matrixPasswordKey,
-              initialValue: config?.password,
               obscureText: true,
+              validator: FormBuilderValidators.required(),
               decoration: inputDecoration(
-                labelText: localizations.settingsMatrixSyncPasswordLabel,
+                labelText: localizations.settingsMatrixPasswordLabel,
                 themeData: Theme.of(context),
               ),
             ),
+            if (_dirty)
+              Center(
+                child: TextButton(
+                  key: const Key('matrix_config_save'),
+                  onPressed: () {
+                    onSavePressed();
+                    maybePop();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      localizations.settingsMeasurableSaveLabel,
+                      style: saveButtonStyle(Theme.of(context)),
+                      semanticsLabel: 'Save Matrix Config',
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
-  }
-}
-
-MatrixConfig? matrixConfigFromForm(GlobalKey<FormBuilderState> formKey) {
-  formKey.currentState!.save();
-  if (formKey.currentState!.validate()) {
-    final formData = formKey.currentState?.value;
-
-    return MatrixConfig(
-      homeServer: getTrimmed(formData, 'home_server'),
-      user: getTrimmed(formData, matrixUserKey),
-      password: getTrimmed(formData, matrixPasswordKey),
-    );
-  } else {
-    return null;
   }
 }
