@@ -38,6 +38,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
           matrixHomeServerKey: persisted.homeServer,
           matrixUserKey: persisted.user,
           matrixPasswordKey: persisted.password,
+          matrixRoomIdKey: persisted.roomId,
         });
 
         setState(() => _dirty = false);
