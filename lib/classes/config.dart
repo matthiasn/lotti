@@ -18,6 +18,19 @@ class ImapConfig with _$ImapConfig {
 }
 
 @freezed
+class MatrixConfig with _$MatrixConfig {
+  const factory MatrixConfig({
+    required String homeServer,
+    required String user,
+    required String password,
+    required String roomId,
+  }) = _MatrixConfig;
+
+  factory MatrixConfig.fromJson(Map<String, dynamic> json) =>
+      _$MatrixConfigFromJson(json);
+}
+
+@freezed
 class SyncConfig with _$SyncConfig {
   const factory SyncConfig({
     required ImapConfig imapConfig,

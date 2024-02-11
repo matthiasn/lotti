@@ -24,6 +24,22 @@ Map<String, dynamic> _$$ImapConfigImplToJson(_$ImapConfigImpl instance) =>
       'port': instance.port,
     };
 
+_$MatrixConfigImpl _$$MatrixConfigImplFromJson(Map<String, dynamic> json) =>
+    _$MatrixConfigImpl(
+      homeServer: json['homeServer'] as String,
+      user: json['user'] as String,
+      password: json['password'] as String,
+      roomId: json['roomId'] as String,
+    );
+
+Map<String, dynamic> _$$MatrixConfigImplToJson(_$MatrixConfigImpl instance) =>
+    <String, dynamic>{
+      'homeServer': instance.homeServer,
+      'user': instance.user,
+      'password': instance.password,
+      'roomId': instance.roomId,
+    };
+
 _$SyncConfigImpl _$$SyncConfigImplFromJson(Map<String, dynamic> json) =>
     _$SyncConfigImpl(
       imapConfig:

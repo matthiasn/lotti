@@ -229,6 +229,201 @@ abstract class _ImapConfig implements ImapConfig {
       throw _privateConstructorUsedError;
 }
 
+MatrixConfig _$MatrixConfigFromJson(Map<String, dynamic> json) {
+  return _MatrixConfig.fromJson(json);
+}
+
+/// @nodoc
+mixin _$MatrixConfig {
+  String get homeServer => throw _privateConstructorUsedError;
+  String get user => throw _privateConstructorUsedError;
+  String get password => throw _privateConstructorUsedError;
+  String get roomId => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $MatrixConfigCopyWith<MatrixConfig> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $MatrixConfigCopyWith<$Res> {
+  factory $MatrixConfigCopyWith(
+          MatrixConfig value, $Res Function(MatrixConfig) then) =
+      _$MatrixConfigCopyWithImpl<$Res, MatrixConfig>;
+  @useResult
+  $Res call({String homeServer, String user, String password, String roomId});
+}
+
+/// @nodoc
+class _$MatrixConfigCopyWithImpl<$Res, $Val extends MatrixConfig>
+    implements $MatrixConfigCopyWith<$Res> {
+  _$MatrixConfigCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? homeServer = null,
+    Object? user = null,
+    Object? password = null,
+    Object? roomId = null,
+  }) {
+    return _then(_value.copyWith(
+      homeServer: null == homeServer
+          ? _value.homeServer
+          : homeServer // ignore: cast_nullable_to_non_nullable
+              as String,
+      user: null == user
+          ? _value.user
+          : user // ignore: cast_nullable_to_non_nullable
+              as String,
+      password: null == password
+          ? _value.password
+          : password // ignore: cast_nullable_to_non_nullable
+              as String,
+      roomId: null == roomId
+          ? _value.roomId
+          : roomId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$MatrixConfigImplCopyWith<$Res>
+    implements $MatrixConfigCopyWith<$Res> {
+  factory _$$MatrixConfigImplCopyWith(
+          _$MatrixConfigImpl value, $Res Function(_$MatrixConfigImpl) then) =
+      __$$MatrixConfigImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String homeServer, String user, String password, String roomId});
+}
+
+/// @nodoc
+class __$$MatrixConfigImplCopyWithImpl<$Res>
+    extends _$MatrixConfigCopyWithImpl<$Res, _$MatrixConfigImpl>
+    implements _$$MatrixConfigImplCopyWith<$Res> {
+  __$$MatrixConfigImplCopyWithImpl(
+      _$MatrixConfigImpl _value, $Res Function(_$MatrixConfigImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? homeServer = null,
+    Object? user = null,
+    Object? password = null,
+    Object? roomId = null,
+  }) {
+    return _then(_$MatrixConfigImpl(
+      homeServer: null == homeServer
+          ? _value.homeServer
+          : homeServer // ignore: cast_nullable_to_non_nullable
+              as String,
+      user: null == user
+          ? _value.user
+          : user // ignore: cast_nullable_to_non_nullable
+              as String,
+      password: null == password
+          ? _value.password
+          : password // ignore: cast_nullable_to_non_nullable
+              as String,
+      roomId: null == roomId
+          ? _value.roomId
+          : roomId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$MatrixConfigImpl implements _MatrixConfig {
+  const _$MatrixConfigImpl(
+      {required this.homeServer,
+      required this.user,
+      required this.password,
+      required this.roomId});
+
+  factory _$MatrixConfigImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MatrixConfigImplFromJson(json);
+
+  @override
+  final String homeServer;
+  @override
+  final String user;
+  @override
+  final String password;
+  @override
+  final String roomId;
+
+  @override
+  String toString() {
+    return 'MatrixConfig(homeServer: $homeServer, user: $user, password: $password, roomId: $roomId)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$MatrixConfigImpl &&
+            (identical(other.homeServer, homeServer) ||
+                other.homeServer == homeServer) &&
+            (identical(other.user, user) || other.user == user) &&
+            (identical(other.password, password) ||
+                other.password == password) &&
+            (identical(other.roomId, roomId) || other.roomId == roomId));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, homeServer, user, password, roomId);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$MatrixConfigImplCopyWith<_$MatrixConfigImpl> get copyWith =>
+      __$$MatrixConfigImplCopyWithImpl<_$MatrixConfigImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$MatrixConfigImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _MatrixConfig implements MatrixConfig {
+  const factory _MatrixConfig(
+      {required final String homeServer,
+      required final String user,
+      required final String password,
+      required final String roomId}) = _$MatrixConfigImpl;
+
+  factory _MatrixConfig.fromJson(Map<String, dynamic> json) =
+      _$MatrixConfigImpl.fromJson;
+
+  @override
+  String get homeServer;
+  @override
+  String get user;
+  @override
+  String get password;
+  @override
+  String get roomId;
+  @override
+  @JsonKey(ignore: true)
+  _$$MatrixConfigImplCopyWith<_$MatrixConfigImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 SyncConfig _$SyncConfigFromJson(Map<String, dynamic> json) {
   return _SyncConfig.fromJson(json);
 }
