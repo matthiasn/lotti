@@ -321,4 +321,11 @@ class MatrixService {
     await _client.logout();
     await login();
   }
+
+  Future<void> deleteMatrixConfig() async {
+    await getIt<SecureStorage>().delete(
+      key: matrixConfigKey,
+    );
+    await _client.logout();
+  }
 }

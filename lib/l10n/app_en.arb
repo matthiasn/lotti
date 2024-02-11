@@ -182,6 +182,7 @@
   "settingsHealthImportTitle": "Health Import",
   "settingsLogsTitle": "Logs",
   "settingsMaintenanceTitle": "Maintenance",
+  "settingsMatrixDeleteLabel": "Delete",
   "settingsMatrixHomeServerLabel": "Homeserver",
   "settingsMatrixPasswordLabel": "Password",
   "settingsMatrixRoomIdLabel": "Room ID",
