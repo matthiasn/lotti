@@ -24,28 +24,32 @@ import 'package:path_provider/path_provider.dart';
 const configNotFound = 'Could not find Matrix Config';
 
 class MatrixService {
-  MatrixService()
-      : _client = Client(
-          'lotti',
-          databaseBuilder: (_) async {
-            final dir = await getApplicationDocumentsDirectory();
-            final db = HiveCollectionsDatabase(
-              'lotti_sync',
-              '${dir.path}/matrix/',
-            );
-            await db.open();
-            return db;
-          },
-        ) {
+  MatrixService() : _client = createClient() {
     login().then((value) => printUnverified()).then((value) => listen());
   }
 
-  final Client _client;
+  Client _client;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   MatrixConfig? _matrixConfig;
 
+  static Client createClient() {
+    return Client(
+      'lotti',
+      databaseBuilder: (_) async {
+        final dir = await getApplicationDocumentsDirectory();
+        final db = HiveCollectionsDatabase(
+          'lotti_sync',
+          '${dir.path}/matrix/',
+        );
+        await db.open();
+        return db;
+      },
+    );
+  }
+
   Future<void> login() async {
     try {
+      _client = createClient();
       final matrixConfig = await getMatrixConfig();
 
       if (matrixConfig == null) {
@@ -313,12 +317,20 @@ class MatrixService {
     return matrixConfig;
   }
 
+  Future<void> logout() async {
+    if (_client.isLogged()) {
+      await _client.logout();
+    }
+  }
+
   Future<void> setMatrixConfig(MatrixConfig matrixConfig) async {
     await getIt<SecureStorage>().write(
       key: matrixConfigKey,
       value: jsonEncode(matrixConfig),
     );
-    await _client.logout();
+    _matrixConfig = matrixConfig;
+
+    await logout();
     await login();
   }
 
@@ -326,6 +338,7 @@ class MatrixService {
     await getIt<SecureStorage>().delete(
       key: matrixConfigKey,
     );
-    await _client.logout();
+    _matrixConfig = null;
+    await logout();
   }
 }

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -7,6 +10,9 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 const matrixUserKey = 'user';
 const matrixPasswordKey = 'password';
@@ -24,8 +30,11 @@ class MatrixSettingsWidget extends ConsumerStatefulWidget {
 class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
   final _matrixService = getIt<MatrixService>();
   final _formKey = GlobalKey<FormBuilderState>();
+  final GlobalKey _qrKey = GlobalKey(debugLabel: 'matrix_QR_key');
+
   bool _dirty = false;
   MatrixConfig? _previous;
+  QRViewController? controller;
 
   @override
   void initState() {
@@ -82,6 +91,22 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
     final localizations = AppLocalizations.of(context)!;
     void maybePop() => Navigator.of(context).maybePop();
 
+    final camDimension =
+        max(MediaQuery.of(context).size.width - 100, 300).toDouble();
+
+    void onQRViewCreated(QRViewController controller) {
+      this.controller = controller;
+      controller.scannedDataStream.listen((scanData) async {
+        final jsonString = scanData.code;
+        if (jsonString != null) {
+          final parsed = json.decode(jsonString) as Map<String, dynamic>;
+          final scannedConfig = MatrixConfig.fromJson(parsed);
+          await _matrixService.setMatrixConfig(scannedConfig);
+          maybePop();
+        }
+      });
+    }
+
     return SingleChildScrollView(
       child: FormBuilder(
         key: _formKey,
@@ -133,7 +158,13 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                 if (_previous != null)
                   TextButton(
                     key: const Key('matrix_config_delete'),
-                    onPressed: _matrixService.deleteMatrixConfig,
+                    onPressed: () async {
+                      await _matrixService.deleteMatrixConfig();
+                      setState(() {
+                        _dirty = false;
+                      });
+                      maybePop();
+                    },
                     child: Text(
                       localizations.settingsMatrixDeleteLabel,
                       style: saveButtonStyle(Theme.of(context)),
@@ -155,6 +186,31 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                   ),
               ],
             ),
+            const SizedBox(height: 40),
+            if (_previous != null && !_dirty)
+              Center(
+                child: ColoredBox(
+                  color: Colors.white,
+                  child: QrImageView(
+                    data: jsonEncode(_previous),
+                    size: 280,
+                    key: const Key('QrImage'),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 40),
+            if (isMobile && _previous == null && !_dirty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  height: camDimension,
+                  width: camDimension,
+                  child: QRView(
+                    key: _qrKey,
+                    onQRViewCreated: onQRViewCreated,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
