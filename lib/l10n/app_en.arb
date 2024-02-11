@@ -184,6 +184,7 @@
   "settingsMaintenanceTitle": "Maintenance",
   "settingsMatrixHomeServerLabel": "Homeserver",
   "settingsMatrixPasswordLabel": "Password",
+  "settingsMatrixRoomIdLabel": "Room ID",
   "settingsMatrixSaveLabel": "Save",
   "settingsMatrixTitle": "Matrix Sync Settings",
   "settingsMatrixUserLabel": "User",
