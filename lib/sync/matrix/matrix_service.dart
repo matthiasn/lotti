@@ -281,4 +281,11 @@ class MatrixService {
 
     return matrixConfig;
   }
+
+  Future<void> setMatrixConfig(MatrixConfig matrixConfig) async {
+    await getIt<SecureStorage>().write(
+      key: matrixConfigKey,
+      value: jsonEncode(matrixConfig),
+    );
+  }
 }
