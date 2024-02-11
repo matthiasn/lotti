@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -12,52 +13,71 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
+import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 
+const configNotFound = 'Could not find Matrix Config';
+
 class MatrixService {
-  MatrixService()
-      : client = Client(
-          'lotti',
-          databaseBuilder: (_) async {
-            final dir = await getApplicationDocumentsDirectory();
-            final db = HiveCollectionsDatabase(
-              'lotti_sync',
-              '${dir.path}/matrix/',
-            );
-            await db.open();
-            return db;
-          },
-        ) {
+  MatrixService() : _client = createClient() {
     login().then((value) => printUnverified()).then((value) => listen());
+  }
+
+  Client _client;
+  final LoggingDb _loggingDb = getIt<LoggingDb>();
+  MatrixConfig? _matrixConfig;
+
+  static Client createClient() {
+    return Client(
+      'lotti',
+      databaseBuilder: (_) async {
+        final dir = await getApplicationDocumentsDirectory();
+        final db = HiveCollectionsDatabase(
+          'lotti_sync',
+          '${dir.path}/matrix/',
+        );
+        await db.open();
+        return db;
+      },
+    );
   }
 
   Future<void> login() async {
     try {
-      const homeServer = String.fromEnvironment('MATRIX_HOME_SERVER');
-      const userName = String.fromEnvironment('MATRIX_USER');
-      const password = String.fromEnvironment('MATRIX_PASSWORD');
-      const roomId = String.fromEnvironment('MATRIX_ROOM_ID');
+      _client = createClient();
+      final matrixConfig = await getMatrixConfig();
 
-      await client.checkHomeserver(
-        Uri.parse(homeServer),
+      if (matrixConfig == null) {
+        _loggingDb.captureEvent(
+          configNotFound,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'login',
+        );
+
+        return;
+      }
+
+      await _client.checkHomeserver(
+        Uri.parse(matrixConfig.homeServer),
       );
 
-      await client.init(
+      await _client.init(
         waitForFirstSync: false,
         waitUntilLoadCompletedLoaded: false,
       );
 
       // TODO(unassigned): find non-deprecated solution
       // ignore: deprecated_member_use
-      if (client.loginState == LoginState.loggedOut) {
-        final loginResponse = await client.login(
+      if (_client.loginState == LoginState.loggedOut) {
+        final loginResponse = await _client.login(
           LoginType.mLoginPassword,
-          identifier: AuthenticationUserIdentifier(user: userName),
-          password: password,
+          identifier: AuthenticationUserIdentifier(user: matrixConfig.user),
+          password: matrixConfig.password,
         );
 
         debugPrint('MatrixService userId ${loginResponse.userId}');
@@ -66,7 +86,7 @@ class MatrixService {
         );
       }
 
-      final joinRes = await client.joinRoom(roomId).onError((
+      final joinRes = await _client.joinRoom(matrixConfig.roomId).onError((
         error,
         stackTrace,
       ) {
@@ -87,35 +107,42 @@ class MatrixService {
   }
 
   Future<void> loadArchive() async {
-    final rooms = await client.loadArchive();
+    final rooms = await _client.loadArchive();
     debugPrint('Matrix $rooms');
   }
 
   Future<void> printUnverified() async {
-    final unverified = client.unverifiedDevices;
+    final unverified = _client.unverifiedDevices;
     final keyVerification = await unverified.firstOrNull?.startVerification();
     debugPrint('Matrix keyVerification ${keyVerification?.qrCode}');
     debugPrint('Matrix unverified ${unverified.length} $unverified');
   }
 
-  final Client client;
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
-
   Future<void> listen() async {
     try {
-      client.onLoginStateChanged.stream.listen((LoginState loginState) {
+      _client.onLoginStateChanged.stream.listen((LoginState loginState) {
         debugPrint('LoginState: $loginState');
       });
 
-      client.onEvent.stream.listen((EventUpdate eventUpdate) {
+      _client.onEvent.stream.listen((EventUpdate eventUpdate) {
         //debugPrint('New event update! $eventUpdate');
       });
 
-      const roomId = String.fromEnvironment('MATRIX_ROOM_ID');
-      final room = client.getRoomById(roomId);
+      final roomId = _matrixConfig?.roomId;
+
+      if (roomId == null) {
+        _loggingDb.captureEvent(
+          configNotFound,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'listen',
+        );
+        return;
+      }
+
+      final room = _client.getRoomById(roomId);
       debugPrint('Matrix room $room');
 
-      client.onRoomState.stream.listen((Event eventUpdate) async {
+      _client.onRoomState.stream.listen((Event eventUpdate) async {
         // debugPrint(
         //   'MatrixService onRoomState.stream.listen plaintextBody: ${eventUpdate.plaintextBody}',
         // );
@@ -159,8 +186,18 @@ class MatrixService {
   Future<void> sendMatrixMsg(SyncMessage syncMessage) async {
     try {
       final msg = json.encode(syncMessage);
-      const roomId = String.fromEnvironment('MATRIX_ROOM_ID');
-      final room = client.getRoomById(roomId);
+      final roomId = _matrixConfig?.roomId;
+
+      if (roomId == null) {
+        _loggingDb.captureEvent(
+          configNotFound,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg',
+        );
+        return;
+      }
+
+      final room = _client.getRoomById(roomId);
       await room?.sendTextEvent(base64.encode(utf8.encode(msg)));
 
       final docDir = getDocumentsDirectory();
@@ -264,5 +301,44 @@ class MatrixService {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  Future<MatrixConfig?> getMatrixConfig() async {
+    final configJson = await getIt<SecureStorage>().read(key: matrixConfigKey);
+    MatrixConfig? matrixConfig;
+
+    if (configJson != null) {
+      matrixConfig = MatrixConfig.fromJson(
+        json.decode(configJson) as Map<String, dynamic>,
+      );
+    }
+
+    _matrixConfig = matrixConfig;
+    return matrixConfig;
+  }
+
+  Future<void> logout() async {
+    if (_client.isLogged()) {
+      await _client.logout();
+    }
+  }
+
+  Future<void> setMatrixConfig(MatrixConfig matrixConfig) async {
+    await getIt<SecureStorage>().write(
+      key: matrixConfigKey,
+      value: jsonEncode(matrixConfig),
+    );
+    _matrixConfig = matrixConfig;
+
+    await logout();
+    await login();
+  }
+
+  Future<void> deleteMatrixConfig() async {
+    await getIt<SecureStorage>().delete(
+      key: matrixConfigKey,
+    );
+    _matrixConfig = null;
+    await logout();
   }
 }
