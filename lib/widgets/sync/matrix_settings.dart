@@ -126,24 +126,35 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                 themeData: Theme.of(context),
               ),
             ),
-            if (_dirty)
-              Center(
-                child: TextButton(
-                  key: const Key('matrix_config_save'),
-                  onPressed: () {
-                    onSavePressed();
-                    maybePop();
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
+            const SizedBox(height: 40),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (_previous != null)
+                  TextButton(
+                    key: const Key('matrix_config_delete'),
+                    onPressed: _matrixService.deleteMatrixConfig,
                     child: Text(
-                      localizations.settingsMeasurableSaveLabel,
+                      localizations.settingsMatrixDeleteLabel,
+                      style: saveButtonStyle(Theme.of(context)),
+                      semanticsLabel: 'Delete Matrix Config',
+                    ),
+                  ),
+                if (_dirty)
+                  TextButton(
+                    key: const Key('matrix_config_save'),
+                    onPressed: () {
+                      onSavePressed();
+                      maybePop();
+                    },
+                    child: Text(
+                      localizations.settingsMatrixSaveLabel,
                       style: saveButtonStyle(Theme.of(context)),
                       semanticsLabel: 'Save Matrix Config',
                     ),
                   ),
-                ),
-              ),
+              ],
+            ),
           ],
         ),
       ),
