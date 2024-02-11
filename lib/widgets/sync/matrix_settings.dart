@@ -11,6 +11,7 @@ import 'package:lotti/themes/theme.dart';
 const matrixUserKey = 'user';
 const matrixPasswordKey = 'password';
 const matrixHomeServerKey = 'home_server';
+const matrixRoomIdKey = 'room_id';
 
 class MatrixSettingsWidget extends ConsumerStatefulWidget {
   const MatrixSettingsWidget({super.key});
@@ -67,6 +68,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
         user: formData[matrixUserKey] as String? ?? _previous?.user ?? '',
         password:
             formData[matrixPasswordKey] as String? ?? _previous?.password ?? '',
+        roomId: formData[matrixRoomIdKey] as String? ?? _previous?.roomId ?? '',
       );
 
       await _matrixService.setMatrixConfig(config);
@@ -111,6 +113,15 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
               validator: FormBuilderValidators.required(),
               decoration: inputDecoration(
                 labelText: localizations.settingsMatrixPasswordLabel,
+                themeData: Theme.of(context),
+              ),
+            ),
+            const SizedBox(height: 20),
+            FormBuilderTextField(
+              name: matrixRoomIdKey,
+              validator: FormBuilderValidators.required(),
+              decoration: inputDecoration(
+                labelText: localizations.settingsMatrixRoomIdLabel,
                 themeData: Theme.of(context),
               ),
             ),
