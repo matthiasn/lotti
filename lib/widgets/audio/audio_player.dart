@@ -214,7 +214,7 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Theme.of(context).colorScheme.outline.withOpacity(0.15),
+      color: Theme.of(context).colorScheme.primaryContainer,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: 15,
@@ -225,60 +225,57 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
                 onTap: toggleShow,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 7),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        dfShorter.format(widget.transcript.created),
-                        style: transcriptHeaderStyle,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        formatSeconds(widget.transcript.processingTime),
-                        style: transcriptHeaderStyle,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Lang: ${widget.transcript.detectedLanguage}',
-                        style: transcriptHeaderStyle,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        '${widget.transcript.library}, '
-                        ' ${widget.transcript.model}',
-                        style: transcriptHeaderStyle,
-                      ),
-                      const SizedBox(width: 10),
-                      Opacity(
-                        opacity: show ? 1 : 0,
-                        child: IconButton(
-                          onPressed: () {
-                            getIt<PersistenceLogic>().removeAudioTranscript(
-                              journalEntityId: widget.entryId,
-                              transcript: widget.transcript,
-                            );
-                          },
-                          icon: Icon(
-                            MdiIcons.trashCanOutline,
-                            size: fontSizeMedium,
-                          ),
-                        ),
-                      ),
-                      if (show)
-                        const Icon(
-                          Icons.keyboard_double_arrow_up_outlined,
-                          size: fontSizeMedium,
-                        )
-                      else
-                        const Icon(
-                          Icons.keyboard_double_arrow_down_outlined,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      dfShorter.format(widget.transcript.created),
+                      style: transcriptHeaderStyle,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      formatSeconds(widget.transcript.processingTime),
+                      style: transcriptHeaderStyle,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Lang: ${widget.transcript.detectedLanguage}',
+                      style: transcriptHeaderStyle,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '${widget.transcript.library}, '
+                      ' ${widget.transcript.model}',
+                      style: transcriptHeaderStyle,
+                    ),
+                    const SizedBox(width: 10),
+                    Opacity(
+                      opacity: show ? 1 : 0,
+                      child: IconButton(
+                        onPressed: () {
+                          getIt<PersistenceLogic>().removeAudioTranscript(
+                            journalEntityId: widget.entryId,
+                            transcript: widget.transcript,
+                          );
+                        },
+                        icon: Icon(
+                          MdiIcons.trashCanOutline,
                           size: fontSizeMedium,
                         ),
-                    ],
-                  ),
+                      ),
+                    ),
+                    if (show)
+                      const Icon(
+                        Icons.keyboard_double_arrow_up_outlined,
+                        size: fontSizeMedium,
+                      )
+                    else
+                      const Icon(
+                        Icons.keyboard_double_arrow_down_outlined,
+                        size: fontSizeMedium,
+                      ),
+                  ],
                 ),
               ),
             ),
