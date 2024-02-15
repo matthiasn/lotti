@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -5,7 +7,6 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
-import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:media_kit/media_kit.dart';
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
@@ -16,6 +17,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
             totalDuration: Duration.zero,
             progress: Duration.zero,
             pausedAt: Duration.zero,
+            showTranscriptsList: false,
             speed: 1,
           ),
         ) {
@@ -41,7 +43,8 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         status: AudioPlayerStatus.stopped,
         progress: Duration.zero,
         pausedAt: Duration.zero,
-        totalDuration: entryDuration(audioNote),
+        totalDuration: audioNote.data.duration,
+        showTranscriptsList: false,
         speed: 1,
         audioNote: audioNote,
       );
@@ -62,8 +65,16 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     try {
       await _audioPlayer.setRate(state.speed);
       await _audioPlayer.play();
-      await _audioPlayer.seek(state.pausedAt);
       emit(state.copyWith(status: AudioPlayerStatus.playing));
+
+      _audioPlayer.stream.completed.listen((completed) {
+        final duration = state.audioNote?.data.duration;
+        if (completed && duration != null) {
+          Timer(const Duration(milliseconds: 50), () {
+            emit(state.copyWith(progress: duration));
+          });
+        }
+      });
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
         exception,
@@ -129,6 +140,10 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  void toggleTranscriptsList() {
+    emit(state.copyWith(showTranscriptsList: !state.showTranscriptsList));
   }
 
   Future<void> pause() async {

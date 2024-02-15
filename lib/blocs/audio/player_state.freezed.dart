@@ -21,6 +21,7 @@ mixin _$AudioPlayerState {
   Duration get progress => throw _privateConstructorUsedError;
   Duration get pausedAt => throw _privateConstructorUsedError;
   double get speed => throw _privateConstructorUsedError;
+  bool get showTranscriptsList => throw _privateConstructorUsedError;
   JournalAudio? get audioNote => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -40,6 +41,7 @@ abstract class $AudioPlayerStateCopyWith<$Res> {
       Duration progress,
       Duration pausedAt,
       double speed,
+      bool showTranscriptsList,
       JournalAudio? audioNote});
 }
 
@@ -61,6 +63,7 @@ class _$AudioPlayerStateCopyWithImpl<$Res, $Val extends AudioPlayerState>
     Object? progress = null,
     Object? pausedAt = null,
     Object? speed = null,
+    Object? showTranscriptsList = null,
     Object? audioNote = freezed,
   }) {
     return _then(_value.copyWith(
@@ -84,6 +87,10 @@ class _$AudioPlayerStateCopyWithImpl<$Res, $Val extends AudioPlayerState>
           ? _value.speed
           : speed // ignore: cast_nullable_to_non_nullable
               as double,
+      showTranscriptsList: null == showTranscriptsList
+          ? _value.showTranscriptsList
+          : showTranscriptsList // ignore: cast_nullable_to_non_nullable
+              as bool,
       audioNote: freezed == audioNote
           ? _value.audioNote
           : audioNote // ignore: cast_nullable_to_non_nullable
@@ -106,6 +113,7 @@ abstract class _$$AudioPlayerStateImplCopyWith<$Res>
       Duration progress,
       Duration pausedAt,
       double speed,
+      bool showTranscriptsList,
       JournalAudio? audioNote});
 }
 
@@ -125,6 +133,7 @@ class __$$AudioPlayerStateImplCopyWithImpl<$Res>
     Object? progress = null,
     Object? pausedAt = null,
     Object? speed = null,
+    Object? showTranscriptsList = null,
     Object? audioNote = freezed,
   }) {
     return _then(_$AudioPlayerStateImpl(
@@ -148,6 +157,10 @@ class __$$AudioPlayerStateImplCopyWithImpl<$Res>
           ? _value.speed
           : speed // ignore: cast_nullable_to_non_nullable
               as double,
+      showTranscriptsList: null == showTranscriptsList
+          ? _value.showTranscriptsList
+          : showTranscriptsList // ignore: cast_nullable_to_non_nullable
+              as bool,
       audioNote: freezed == audioNote
           ? _value.audioNote
           : audioNote // ignore: cast_nullable_to_non_nullable
@@ -165,6 +178,7 @@ class _$AudioPlayerStateImpl implements _AudioPlayerState {
       required this.progress,
       required this.pausedAt,
       required this.speed,
+      required this.showTranscriptsList,
       this.audioNote});
 
   @override
@@ -178,11 +192,13 @@ class _$AudioPlayerStateImpl implements _AudioPlayerState {
   @override
   final double speed;
   @override
+  final bool showTranscriptsList;
+  @override
   final JournalAudio? audioNote;
 
   @override
   String toString() {
-    return 'AudioPlayerState(status: $status, totalDuration: $totalDuration, progress: $progress, pausedAt: $pausedAt, speed: $speed, audioNote: $audioNote)';
+    return 'AudioPlayerState(status: $status, totalDuration: $totalDuration, progress: $progress, pausedAt: $pausedAt, speed: $speed, showTranscriptsList: $showTranscriptsList, audioNote: $audioNote)';
   }
 
   @override
@@ -198,12 +214,21 @@ class _$AudioPlayerStateImpl implements _AudioPlayerState {
             (identical(other.pausedAt, pausedAt) ||
                 other.pausedAt == pausedAt) &&
             (identical(other.speed, speed) || other.speed == speed) &&
+            (identical(other.showTranscriptsList, showTranscriptsList) ||
+                other.showTranscriptsList == showTranscriptsList) &&
             const DeepCollectionEquality().equals(other.audioNote, audioNote));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, status, totalDuration, progress,
-      pausedAt, speed, const DeepCollectionEquality().hash(audioNote));
+  int get hashCode => Object.hash(
+      runtimeType,
+      status,
+      totalDuration,
+      progress,
+      pausedAt,
+      speed,
+      showTranscriptsList,
+      const DeepCollectionEquality().hash(audioNote));
 
   @JsonKey(ignore: true)
   @override
@@ -220,6 +245,7 @@ abstract class _AudioPlayerState implements AudioPlayerState {
       required final Duration progress,
       required final Duration pausedAt,
       required final double speed,
+      required final bool showTranscriptsList,
       final JournalAudio? audioNote}) = _$AudioPlayerStateImpl;
 
   @override
@@ -232,6 +258,8 @@ abstract class _AudioPlayerState implements AudioPlayerState {
   Duration get pausedAt;
   @override
   double get speed;
+  @override
+  bool get showTranscriptsList;
   @override
   JournalAudio? get audioNote;
   @override

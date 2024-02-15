@@ -137,6 +137,14 @@ class AudioPlayerWidget extends StatelessWidget {
                         ..emitState();
                     },
                   ),
+                if (transcripts?.isNotEmpty ?? false)
+                  IconButton(
+                    icon: const Icon(Icons.list),
+                    iconSize: 20,
+                    tooltip: 'Show Transcriptions',
+                    color: Theme.of(context).colorScheme.outline,
+                    onPressed: cubit.toggleTranscriptsList,
+                  ),
               ],
             ),
             Row(
@@ -161,7 +169,7 @@ class AudioPlayerWidget extends StatelessWidget {
                 ),
               ],
             ),
-            if (transcripts?.isNotEmpty ?? false)
+            if ((transcripts?.isNotEmpty ?? false) && state.showTranscriptsList)
               Column(
                 children: [
                   const SizedBox(height: 10),
