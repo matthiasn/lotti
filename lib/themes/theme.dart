@@ -1,6 +1,4 @@
 // ignore_for_file: equal_keys_in_map
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/colors.dart';
 

@@ -53,9 +53,12 @@ class _TaskFormState extends State<TaskForm> {
                 child: Column(
                   children: <Widget>[
                     const SizedBox(height: 10),
+                    // ignore: deprecated_member_use
                     RawKeyboardListener(
                       focusNode: FocusNode(),
+                      // ignore: deprecated_member_use
                       onKey: (RawKeyEvent event) {
+                        // ignore: deprecated_member_use
                         if (event.data.isMetaPressed &&
                             event.character == 's') {
                           save();
