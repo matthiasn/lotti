@@ -31,6 +31,7 @@ void main() {
       pausedAt: Duration.zero,
       speed: 1,
       audioNote: testAudioEntry,
+      showTranscriptsList: false,
     );
 
     testWidgets('controls are are displayed, paused state', (tester) async {
@@ -100,6 +101,7 @@ void main() {
         totalDuration: const Duration(minutes: 1),
         pausedAt: Duration.zero,
         speed: 1,
+        showTranscriptsList: false,
         audioNote: testAudioEntry,
       );
 
@@ -176,6 +178,7 @@ void main() {
         totalDuration: const Duration(minutes: 1),
         pausedAt: Duration.zero,
         speed: 1,
+        showTranscriptsList: false,
         audioNote: testAudioEntryWithTranscripts,
       );
 
