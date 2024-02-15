@@ -1,3 +1,4 @@
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 
@@ -172,6 +174,27 @@ class Maintenance {
         domain: 'MAINTENANCE',
         subDomain: 'recreateFts5',
       );
+    }
+  }
+
+  Future<void> transcribeAudioWithoutTranscript() async {
+    await createDbBackup(journalDbFileName);
+
+    final count = await _db.getJournalCount();
+    const pageSize = 100;
+    final pages = (count / pageSize).ceil();
+
+    for (var page = 0; page <= pages; page++) {
+      final dbEntities =
+          await _db.orderedAudioEntries(pageSize, page * pageSize).get();
+      final entries = entityStreamMapper(dbEntities);
+      for (final entry in entries) {
+        if (entry is JournalAudio) {
+          if (entry.data.transcripts?.isEmpty ?? true) {
+            await getIt<AsrService>().enqueue(entry: entry);
+          }
+        }
+      }
     }
   }
 }

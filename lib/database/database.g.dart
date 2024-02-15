@@ -4592,6 +4592,18 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalDbEntity> orderedAudioEntries(int limit, int offset) {
+    return customSelect(
+        'SELECT * FROM journal WHERE type = \'JournalAudio\' AND deleted = FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+        variables: [
+          Variable<int>(limit),
+          Variable<int>(offset)
+        ],
+        readsFrom: {
+          journal,
+        }).asyncMap(journal.mapFromRow);
+  }
+
   Selectable<JournalDbEntity> entriesFlaggedImport(int limit) {
     return customSelect(
         'SELECT * FROM journal WHERE deleted = FALSE AND flag = 1 ORDER BY date_from DESC LIMIT ?1',
