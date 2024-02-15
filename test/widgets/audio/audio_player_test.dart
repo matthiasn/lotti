@@ -178,7 +178,7 @@ void main() {
         totalDuration: const Duration(minutes: 1),
         pausedAt: Duration.zero,
         speed: 1,
-        showTranscriptsList: false,
+        showTranscriptsList: true,
         audioNote: testAudioEntryWithTranscripts,
       );
 
