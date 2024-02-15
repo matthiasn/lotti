@@ -13,6 +13,7 @@ class AudioPlayerState with _$AudioPlayerState {
     required Duration progress,
     required Duration pausedAt,
     required double speed,
+    required bool showTranscriptsList,
     JournalAudio? audioNote,
   }) = _AudioPlayerState;
 }
