@@ -188,6 +188,8 @@
   "settingsMatrixPasswordLabel": "Password",
   "settingsMatrixRoomIdLabel": "Room ID",
   "settingsMatrixListUnverifiedLabel": "List unverified devices",
+  "settingsMatrixStartVerificationLabel": "Start Verification",
+  "settingsMatrixAcceptVerificationLabel": "Accept Verification",
   "settingsMatrixLogout": "Logout",
   "settingsMatrixSaveLabel": "Save",
   "settingsMatrixTitle": "Matrix Sync Settings",
