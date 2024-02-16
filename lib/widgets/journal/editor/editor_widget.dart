@@ -40,10 +40,12 @@ class EditorWidget extends StatelessWidget {
         final focusNode = context.read<EntryCubit>().focusNode;
 
         void keyFormatter<T>(
+          // ignore: deprecated_member_use
           RawKeyEvent event,
           String char,
           Attribute<T> attribute,
         ) {
+          // ignore: deprecated_member_use
           if (event.data.isMetaPressed && event.character == char) {
             final attributes = controller.getSelectionStyle().attributes;
             final alreadySet = attributes.keys.toSet().contains(attribute.key);
@@ -65,14 +67,18 @@ class EditorWidget extends StatelessWidget {
           }
         }
 
+        // ignore: deprecated_member_use
         void saveViaKeyboard(RawKeyEvent event) {
+          // ignore: deprecated_member_use
           if (event.data.isMetaPressed && event.character == 's') {
             context.read<EntryCubit>().save();
           }
         }
 
+        // ignore: deprecated_member_use
         return RawKeyboardListener(
           focusNode: FocusNode(),
+          // ignore: deprecated_member_use
           onKey: (RawKeyEvent event) {
             keyFormatter(event, 'b', Attribute.bold);
             keyFormatter(event, 'i', Attribute.italic);
