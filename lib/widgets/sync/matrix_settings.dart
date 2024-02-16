@@ -11,6 +11,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:matrix/matrix.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -199,6 +201,18 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                 ),
               ),
             const SizedBox(height: 40),
+            Text('Device ID: ${_matrixService.getDeviceId()}'),
+            Text('Device Name: ${_matrixService.getDeviceName()}'),
+            const SizedBox(height: 40),
+            TextButton(
+              key: const Key('matrix_logout'),
+              onPressed: _matrixService.logout,
+              child: Text(
+                localizations.settingsMatrixLogout,
+                semanticsLabel: localizations.settingsMatrixLogout,
+              ),
+            ),
+            const SizedBox(height: 40),
             if (isMobile && _previous == null && !_dirty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
@@ -211,9 +225,79 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                   ),
                 ),
               ),
+            const UnverifiedDevices(),
           ],
         ),
       ),
+    );
+  }
+}
+
+class UnverifiedDevices extends StatefulWidget {
+  const UnverifiedDevices({super.key});
+
+  @override
+  State<UnverifiedDevices> createState() => _UnverifiedDevicesState();
+}
+
+class _UnverifiedDevicesState extends State<UnverifiedDevices> {
+  final _matrixService = getIt<MatrixService>();
+  List<DeviceKeys> unverifiedDevices = [];
+
+  @override
+  void initState() {
+    super.initState();
+    setState(() {
+      unverifiedDevices = _matrixService.getUnverified();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return Column(
+      children: [
+        TextButton(
+          key: const Key('matrix_list_unverified'),
+          onPressed: () {
+            setState(() {
+              unverifiedDevices = _matrixService.getUnverified();
+            });
+          },
+          child: Text(
+            localizations.settingsMatrixListUnverifiedLabel,
+            semanticsLabel: localizations.settingsMatrixListUnverifiedLabel,
+          ),
+        ),
+        ...unverifiedDevices.map(
+          (deviceKeys) => Card(
+            child: ListTile(
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    deviceKeys.deviceDisplayName ?? deviceKeys.deviceId ?? '',
+                  ),
+                  IconButton(
+                    padding: const EdgeInsets.all(10),
+                    icon: Semantics(
+                      label: 'Delete device',
+                      child: Icon(MdiIcons.trashCanOutline),
+                    ),
+                    onPressed: () => _matrixService.deleteDevice(deviceKeys),
+                  ),
+                ],
+              ),
+              subtitle: Column(
+                children: [
+                  Text(deviceKeys.userId),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

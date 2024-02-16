@@ -18,6 +18,7 @@ import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:matrix/encryption/key_manager.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -31,6 +32,7 @@ class MatrixService {
   Client _client;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   MatrixConfig? _matrixConfig;
+  LoginResponse? _loginResponse;
 
   static Client createClient() {
     return Client(
@@ -74,15 +76,18 @@ class MatrixService {
       // TODO(unassigned): find non-deprecated solution
       // ignore: deprecated_member_use
       if (_client.loginState == LoginState.loggedOut) {
-        final loginResponse = await _client.login(
+        final initialDeviceDisplayName = '${Platform.operatingSystem}'
+            ' ${DateTime.now().toIso8601String().substring(0, 16)}';
+        _loginResponse = await _client.login(
           LoginType.mLoginPassword,
           identifier: AuthenticationUserIdentifier(user: matrixConfig.user),
           password: matrixConfig.password,
+          initialDeviceDisplayName: initialDeviceDisplayName,
         );
 
-        debugPrint('MatrixService userId ${loginResponse.userId}');
+        debugPrint('MatrixService userId ${_loginResponse?.userId}');
         debugPrint(
-          'MatrixService loginResponse deviceId ${loginResponse.deviceId}',
+          'MatrixService loginResponse deviceId ${_loginResponse?.deviceId}',
         );
       }
 
@@ -118,6 +123,27 @@ class MatrixService {
     debugPrint('Matrix unverified ${unverified.length} $unverified');
   }
 
+  List<DeviceKeys> getUnverified() {
+    final unverified = _client.unverifiedDevices;
+    debugPrint('Matrix unverified ${unverified.length} $unverified');
+    return unverified;
+  }
+
+  Future<void> deleteDevice(DeviceKeys deviceKeys) async {
+    final deviceId = deviceKeys.deviceId;
+    if (deviceId != null) {
+      await _client.deleteDevice(deviceId, auth: AuthenticationData());
+    }
+  }
+
+  String? getDeviceId() {
+    return _client.deviceID;
+  }
+
+  String? getDeviceName() {
+    return _client.deviceName;
+  }
+
   Future<void> listen() async {
     try {
       _client.onLoginStateChanged.stream.listen((LoginState loginState) {
@@ -142,6 +168,10 @@ class MatrixService {
       final room = _client.getRoomById(roomId);
       debugPrint('Matrix room $room');
 
+      _client.onRoomKeyRequest.stream.listen((RoomKeyRequest roomKeyRequest) {
+        debugPrint('onRoomKeyRequest $roomKeyRequest');
+      });
+
       _client.onRoomState.stream.listen((Event eventUpdate) async {
         // debugPrint(
         //   'MatrixService onRoomState.stream.listen plaintextBody: ${eventUpdate.plaintextBody}',
@@ -152,6 +182,8 @@ class MatrixService {
         //   eventId: eventUpdate.eventId,
         //   public: true,
         // );
+
+        debugPrint('onRoomState $eventUpdate');
 
         try {
           final attachmentMimetype = eventUpdate.attachmentMimetype;

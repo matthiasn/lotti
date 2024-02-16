@@ -187,6 +187,8 @@
   "settingsMatrixHomeServerLabel": "Homeserver",
   "settingsMatrixPasswordLabel": "Password",
   "settingsMatrixRoomIdLabel": "Room ID",
+  "settingsMatrixListUnverifiedLabel": "List unverified devices",
+  "settingsMatrixLogout": "Logout",
   "settingsMatrixSaveLabel": "Save",
   "settingsMatrixTitle": "Matrix Sync Settings",
   "settingsMatrixUserLabel": "User",
