@@ -12,6 +12,7 @@ import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -242,13 +243,14 @@ class UnverifiedDevices extends StatefulWidget {
 
 class _UnverifiedDevicesState extends State<UnverifiedDevices> {
   final _matrixService = getIt<MatrixService>();
-  List<DeviceKeys> unverifiedDevices = [];
+  List<DeviceKeys> _unverifiedDevices = [];
+  List<KeyVerificationEmoji>? _emojis;
 
   @override
   void initState() {
     super.initState();
     setState(() {
-      unverifiedDevices = _matrixService.getUnverified();
+      _unverifiedDevices = _matrixService.getUnverified();
     });
   }
 
@@ -262,7 +264,7 @@ class _UnverifiedDevicesState extends State<UnverifiedDevices> {
           key: const Key('matrix_list_unverified'),
           onPressed: () {
             setState(() {
-              unverifiedDevices = _matrixService.getUnverified();
+              _unverifiedDevices = _matrixService.getUnverified();
             });
           },
           child: Text(
@@ -270,34 +272,98 @@ class _UnverifiedDevicesState extends State<UnverifiedDevices> {
             semanticsLabel: localizations.settingsMatrixListUnverifiedLabel,
           ),
         ),
-        ...unverifiedDevices.map(
-          (deviceKeys) => Card(
-            child: ListTile(
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    deviceKeys.deviceDisplayName ?? deviceKeys.deviceId ?? '',
-                  ),
-                  IconButton(
-                    padding: const EdgeInsets.all(10),
-                    icon: Semantics(
-                      label: 'Delete device',
-                      child: Icon(MdiIcons.trashCanOutline),
-                    ),
-                    onPressed: () => _matrixService.deleteDevice(deviceKeys),
-                  ),
-                ],
+        ..._unverifiedDevices.map(DeviceCard.new),
+      ],
+    );
+  }
+}
+
+class DeviceCard extends StatefulWidget {
+  const DeviceCard(
+    this.deviceKeys, {
+    super.key,
+  });
+
+  final DeviceKeys deviceKeys;
+
+  @override
+  State<DeviceCard> createState() => _DeviceCardState();
+}
+
+class _DeviceCardState extends State<DeviceCard> {
+  final _matrixService = getIt<MatrixService>();
+  List<KeyVerificationEmoji>? _emojis;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return Card(
+      child: ListTile(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              widget.deviceKeys.deviceDisplayName ??
+                  widget.deviceKeys.deviceId ??
+                  '',
+            ),
+            IconButton(
+              padding: const EdgeInsets.all(10),
+              icon: Semantics(
+                label: 'Delete device',
+                child: Icon(MdiIcons.trashCanOutline),
               ),
-              subtitle: Column(
-                children: [
-                  Text(deviceKeys.userId),
-                ],
+              onPressed: () => _matrixService.deleteDevice(widget.deviceKeys),
+            ),
+          ],
+        ),
+        subtitle: Column(
+          children: [
+            Text(widget.deviceKeys.userId),
+            TextButton(
+              key: const Key('matrix_start_verify'),
+              onPressed: () {
+                _matrixService.verifyDevice(widget.deviceKeys);
+              },
+              child: Text(
+                localizations.settingsMatrixStartVerificationLabel,
+                semanticsLabel:
+                    localizations.settingsMatrixStartVerificationLabel,
               ),
             ),
-          ),
+            TextButton(
+              key: const Key('matrix_list_verify2'),
+              onPressed: () async {
+                await _matrixService.continueVerification();
+              },
+              child: const Text(
+                'continue',
+              ),
+            ),
+            TextButton(
+              key: const Key('matrix_list_verify3'),
+              onPressed: () async {
+                final emojis = await _matrixService.acceptEmojiVerification();
+                setState(() {
+                  _emojis = emojis;
+                });
+              },
+              child: Text(
+                localizations.settingsMatrixAcceptVerificationLabel,
+                semanticsLabel:
+                    localizations.settingsMatrixAcceptVerificationLabel,
+              ),
+            ),
+            if (_emojis != null)
+              Row(
+                children: [
+                  ...?_emojis?.map((emoji) => Text(emoji.emoji)),
+                ],
+              ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

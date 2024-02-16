@@ -19,6 +19,7 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/encryption/key_manager.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -33,10 +34,17 @@ class MatrixService {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   MatrixConfig? _matrixConfig;
   LoginResponse? _loginResponse;
+  KeyVerification? _keyVerification;
 
   static Client createClient() {
     return Client(
       'lotti',
+      verificationMethods: {
+        KeyVerificationMethod.emoji,
+        KeyVerificationMethod.qrScan,
+        KeyVerificationMethod.qrShow,
+        KeyVerificationMethod.numbers,
+      },
       databaseBuilder: (_) async {
         final dir = await getApplicationDocumentsDirectory();
         final db = HiveCollectionsDatabase(
@@ -129,6 +137,26 @@ class MatrixService {
     return unverified;
   }
 
+  Future<QRCode?> verifyDevice(DeviceKeys deviceKeys) async {
+    _keyVerification = await deviceKeys.startVerification();
+    debugPrint('Matrix verification started: $_keyVerification');
+
+    return _keyVerification?.qrCode;
+  }
+
+  Future<void> continueVerification() async {
+    await _keyVerification?.continueVerification('m.sas.v1');
+  }
+
+  Future<List<KeyVerificationEmoji>?> acceptEmojiVerification() async {
+    //await _keyVerification?.acceptVerification();
+    // await _keyVerification?.continueVerification('m.sas.v1');
+    await _keyVerification?.acceptSas();
+    final emojis = _keyVerification?.sasEmojis;
+    debugPrint('Matrix verification emojis: $emojis');
+    return emojis;
+  }
+
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
     final deviceId = deviceKeys.deviceId;
     if (deviceId != null) {
@@ -152,6 +180,12 @@ class MatrixService {
 
       _client.onEvent.stream.listen((EventUpdate eventUpdate) {
         //debugPrint('New event update! $eventUpdate');
+      });
+
+      _client.onKeyVerificationRequest.stream
+          .listen((KeyVerification keyVerification) {
+        debugPrint('Key Verification Request $keyVerification');
+        debugPrint('Key Verification Request ${keyVerification.sasEmojis}');
       });
 
       final roomId = _matrixConfig?.roomId;
