@@ -193,6 +193,7 @@
   "settingsMatrixVerifyLabel": "Verify",
   "settingsMatrixVerifyConfirm": "Confirm on other device that the emojis below are displayed on both devices, in the same order:",
   "settingsMatrixAcceptVerificationLabel": "Accept Verification",
+  "settingsMatrixCancelVerificationLabel": "Cancel Verification",
   "settingsMatrixLogoutButtonLabel": "Logout",
   "settingsMatrixLoginButtonLabel": "Login",
   "settingsMatrixSaveLabel": "Save",

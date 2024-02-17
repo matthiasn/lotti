@@ -415,6 +415,10 @@ class _VerificationModalState extends State<VerificationModal> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
+    void closeModal() {
+      Navigator.of(context).pop();
+    }
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -495,6 +499,19 @@ class _VerificationModalState extends State<VerificationModal> {
               const SizedBox(height: 20),
               VerificationEmojisRow(_emojis?.take(4)),
               VerificationEmojisRow(_emojis?.skip(4)),
+              const SizedBox(height: 20),
+              OutlinedButton(
+                key: const Key('matrix_cancel_verification'),
+                onPressed: () async {
+                  await _matrixService.cancelVerification();
+                  closeModal();
+                },
+                child: Text(
+                  localizations.settingsMatrixCancelVerificationLabel,
+                  semanticsLabel:
+                      localizations.settingsMatrixCancelVerificationLabel,
+                ),
+              ),
               const SizedBox(height: 20),
             ],
           ],
