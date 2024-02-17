@@ -469,8 +469,8 @@ class _VerificationModalState extends State<VerificationModal> {
                     _verificationStep = VerificationStep.continued;
                   });
                 },
-                child: const Text(
-                  'continue',
+                child: Text(
+                  localizations.settingsMatrixContinueVerificationLabel,
                 ),
               ),
             if (_verificationStep == VerificationStep.continued)
