@@ -61,7 +61,6 @@ class MatrixService {
 
   Future<void> loginAndListen() async {
     await login();
-    await printUnverified();
     await listen();
   }
 
@@ -136,16 +135,8 @@ class MatrixService {
     debugPrint('Matrix $rooms');
   }
 
-  Future<void> printUnverified() async {
-    final unverified = _client.unverifiedDevices;
-    final keyVerification = await unverified.firstOrNull?.startVerification();
-    debugPrint('Matrix keyVerification ${keyVerification?.qrCode}');
-    debugPrint('Matrix unverified ${unverified.length} $unverified');
-  }
-
   List<DeviceKeys> getUnverified() {
     final unverified = _client.unverifiedDevices;
-    debugPrint('Matrix unverified ${unverified.length} $unverified');
     return unverified;
   }
 
@@ -162,6 +153,10 @@ class MatrixService {
     await _keyVerification?.acceptSas();
     final emojis = _keyVerification?.sasEmojis;
     return emojis;
+  }
+
+  Future<void> cancelVerification() async {
+    await _keyVerification?.cancel();
   }
 
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
