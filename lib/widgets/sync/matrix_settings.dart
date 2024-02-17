@@ -244,7 +244,6 @@ class UnverifiedDevices extends StatefulWidget {
 class _UnverifiedDevicesState extends State<UnverifiedDevices> {
   final _matrixService = getIt<MatrixService>();
   List<DeviceKeys> _unverifiedDevices = [];
-  List<KeyVerificationEmoji>? _emojis;
 
   @override
   void initState() {
