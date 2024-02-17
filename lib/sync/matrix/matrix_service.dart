@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -24,6 +25,7 @@ import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 
 const configNotFound = 'Could not find Matrix Config';
+const syncMessageType = 'com.lotti.sync.message';
 
 class MatrixService {
   MatrixService() : _client = createClient() {
@@ -88,8 +90,8 @@ class MatrixService {
       );
 
       if (!isLoggedIn()) {
-        final initialDeviceDisplayName = '${Platform.operatingSystem}'
-            ' ${DateTime.now().toIso8601String().substring(0, 16)}';
+        final initialDeviceDisplayName = await createDeviceName();
+
         _loginResponse = await _client.login(
           LoginType.mLoginPassword,
           identifier: AuthenticationUserIdentifier(user: matrixConfig.user),
@@ -147,11 +149,9 @@ class MatrixService {
     return unverified;
   }
 
-  Future<QRCode?> verifyDevice(DeviceKeys deviceKeys) async {
+  Future<void> verifyDevice(DeviceKeys deviceKeys) async {
     _keyVerification = await deviceKeys.startVerification();
     debugPrint('Matrix verification started: $_keyVerification');
-
-    return _keyVerification?.qrCode;
   }
 
   Future<void> continueVerification() async {
@@ -207,23 +207,30 @@ class MatrixService {
         return;
       }
 
-      final room = _client.getRoomById(roomId);
-      debugPrint('Matrix room $room');
-
       _client.onRoomKeyRequest.stream.listen((RoomKeyRequest roomKeyRequest) {
         debugPrint('onRoomKeyRequest $roomKeyRequest');
       });
 
       _client.onRoomState.stream.listen((Event eventUpdate) async {
-        debugPrint('onRoomState $eventUpdate');
-
         try {
           final attachmentMimetype = eventUpdate.attachmentMimetype;
           if (attachmentMimetype.isNotEmpty) {
             final relativePath = eventUpdate.content['relativePath'];
-            final matrixFile = await eventUpdate.downloadAndDecryptAttachment();
-            final docDir = getDocumentsDirectory();
-            await writeToFile(matrixFile.bytes, '${docDir.path}$relativePath');
+            if (relativePath != null) {
+              final matrixFile =
+                  await eventUpdate.downloadAndDecryptAttachment();
+              final docDir = getDocumentsDirectory();
+              await writeToFile(
+                matrixFile.bytes,
+                '${docDir.path}$relativePath',
+              );
+            } else {
+              _loggingDb.captureEvent(
+                'missing relativePath',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'writeToFile',
+              );
+            }
           } else {
             await processMessage(eventUpdate.plaintextBody);
           }
@@ -271,7 +278,10 @@ class MatrixService {
       }
 
       final room = _client.getRoomById(roomId);
-      await room?.sendTextEvent(base64.encode(utf8.encode(msg)));
+      await room?.sendTextEvent(
+        base64.encode(utf8.encode(msg)),
+        msgtype: syncMessageType,
+      );
 
       final docDir = getDocumentsDirectory();
 
@@ -413,5 +423,27 @@ class MatrixService {
     );
     _matrixConfig = null;
     await logout();
+  }
+
+  Future<String> createDeviceName() async {
+    final operatingSystem = Platform.operatingSystem;
+    var deviceName = operatingSystem;
+
+    final deviceInfo = DeviceInfoPlugin();
+    if (Platform.isIOS) {
+      final iosInfo = await deviceInfo.iosInfo;
+      deviceName = iosInfo.name;
+    }
+    if (Platform.isMacOS) {
+      final macOsInfo = await deviceInfo.macOsInfo;
+      deviceName = macOsInfo.computerName;
+    }
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      deviceName = androidInfo.host;
+    }
+
+    final dateHhMm = DateTime.now().toIso8601String().substring(0, 16);
+    return '$deviceName $dateHhMm';
   }
 }
