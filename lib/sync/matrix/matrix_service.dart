@@ -27,7 +27,7 @@ const configNotFound = 'Could not find Matrix Config';
 
 class MatrixService {
   MatrixService() : _client = createClient() {
-    login().then((value) => printUnverified()).then((value) => listen());
+    loginAndListen();
   }
 
   Client _client;
@@ -57,6 +57,12 @@ class MatrixService {
     );
   }
 
+  Future<void> loginAndListen() async {
+    await login();
+    await printUnverified();
+    await listen();
+  }
+
   Future<void> login() async {
     try {
       _client = createClient();
@@ -81,9 +87,7 @@ class MatrixService {
         waitUntilLoadCompletedLoaded: false,
       );
 
-      // TODO(unassigned): find non-deprecated solution
-      // ignore: deprecated_member_use
-      if (_client.loginState == LoginState.loggedOut) {
+      if (!isLoggedIn()) {
         final initialDeviceDisplayName = '${Platform.operatingSystem}'
             ' ${DateTime.now().toIso8601String().substring(0, 16)}';
         _loginResponse = await _client.login(
@@ -117,6 +121,12 @@ class MatrixService {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  bool isLoggedIn() {
+    // TODO(unassigned): find non-deprecated solution
+    // ignore: deprecated_member_use
+    return _client.loginState == LoginState.loggedIn;
   }
 
   Future<void> loadArchive() async {

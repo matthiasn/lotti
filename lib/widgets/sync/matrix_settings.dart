@@ -205,13 +205,36 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
             Text('Device ID: ${_matrixService.getDeviceId()}'),
             Text('Device Name: ${_matrixService.getDeviceName()}'),
             const SizedBox(height: 40),
-            TextButton(
-              key: const Key('matrix_logout'),
-              onPressed: _matrixService.logout,
-              child: Text(
-                localizations.settingsMatrixLogout,
-                semanticsLabel: localizations.settingsMatrixLogout,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (_matrixService.isLoggedIn())
+                  TextButton(
+                    key: const Key('matrix_logout'),
+                    onPressed: () {
+                      _matrixService.logout();
+                      maybePop();
+                    },
+                    child: Text(
+                      localizations.settingsMatrixLogoutButtonLabel,
+                      semanticsLabel:
+                          localizations.settingsMatrixLogoutButtonLabel,
+                    ),
+                  )
+                else
+                  TextButton(
+                    key: const Key('matrix_login'),
+                    onPressed: () {
+                      _matrixService.loginAndListen();
+                      maybePop();
+                    },
+                    child: Text(
+                      localizations.settingsMatrixLoginButtonLabel,
+                      semanticsLabel:
+                          localizations.settingsMatrixLoginButtonLabel,
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 40),
             if (isMobile && _previous == null && !_dirty)
