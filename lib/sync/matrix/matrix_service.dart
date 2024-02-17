@@ -45,7 +45,9 @@ class MatrixService {
         KeyVerificationMethod.qrScan,
         KeyVerificationMethod.qrShow,
         KeyVerificationMethod.numbers,
+        KeyVerificationMethod.reciprocate,
       },
+      shareKeysWithUnverifiedDevices: false,
       databaseBuilder: (_) async {
         final dir = await getApplicationDocumentsDirectory();
         final db = HiveCollectionsDatabase(
