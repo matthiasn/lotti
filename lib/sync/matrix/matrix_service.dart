@@ -19,7 +19,6 @@ import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:matrix/encryption/key_manager.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
@@ -180,10 +179,6 @@ class MatrixService {
         debugPrint('LoginState: $loginState');
       });
 
-      _client.onEvent.stream.listen((EventUpdate eventUpdate) {
-        //debugPrint('New event update! $eventUpdate');
-      });
-
       _client.onKeyVerificationRequest.stream
           .listen((KeyVerification keyVerification) {
         debugPrint('Key Verification Request $keyVerification');
@@ -200,10 +195,6 @@ class MatrixService {
         );
         return;
       }
-
-      _client.onRoomKeyRequest.stream.listen((RoomKeyRequest roomKeyRequest) {
-        debugPrint('onRoomKeyRequest $roomKeyRequest');
-      });
 
       _client.onRoomState.stream.listen((Event eventUpdate) async {
         try {
