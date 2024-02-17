@@ -149,8 +149,6 @@ class MatrixService {
   }
 
   Future<List<KeyVerificationEmoji>?> acceptEmojiVerification() async {
-    //await _keyVerification?.acceptVerification();
-    // await _keyVerification?.continueVerification('m.sas.v1');
     await _keyVerification?.acceptSas();
     final emojis = _keyVerification?.sasEmojis;
     debugPrint('Matrix verification emojis: $emojis');
@@ -207,16 +205,6 @@ class MatrixService {
       });
 
       _client.onRoomState.stream.listen((Event eventUpdate) async {
-        // debugPrint(
-        //   'MatrixService onRoomState.stream.listen plaintextBody: ${eventUpdate.plaintextBody}',
-        // );
-
-        // final t = await room?.getTimeline();
-        // await t?.setReadMarker(
-        //   eventId: eventUpdate.eventId,
-        //   public: true,
-        // );
-
         debugPrint('onRoomState $eventUpdate');
 
         try {
@@ -253,6 +241,15 @@ class MatrixService {
     try {
       final msg = json.encode(syncMessage);
       final roomId = _matrixConfig?.roomId;
+
+      if (_client.unverifiedDevices.isNotEmpty) {
+        _loggingDb.captureException(
+          'Unverified devices found',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg',
+        );
+        return;
+      }
 
       if (roomId == null) {
         _loggingDb.captureEvent(
