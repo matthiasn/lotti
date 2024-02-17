@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/sync/imap_config_status.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
@@ -209,7 +210,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 if (_matrixService.isLoggedIn())
-                  TextButton(
+                  OutlinedButton(
                     key: const Key('matrix_logout'),
                     onPressed: () {
                       _matrixService.logout();
@@ -222,7 +223,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                     ),
                   )
                 else
-                  TextButton(
+                  OutlinedButton(
                     key: const Key('matrix_login'),
                     onPressed: () {
                       _matrixService.loginAndListen();
@@ -249,7 +250,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                   ),
                 ),
               ),
-            const UnverifiedDevices(),
+            if (_matrixService.isLoggedIn()) const UnverifiedDevices(),
           ],
         ),
       ),
@@ -280,19 +281,38 @@ class _UnverifiedDevicesState extends State<UnverifiedDevices> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
+    if (_unverifiedDevices.isEmpty) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(localizations.settingsMatrixNoUnverifiedLabel),
+          const StatusIndicator(
+            Colors.greenAccent,
+            semanticsLabel: 'No unverified devices',
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
-        TextButton(
-          key: const Key('matrix_list_unverified'),
-          onPressed: () {
-            setState(() {
-              _unverifiedDevices = _matrixService.getUnverified();
-            });
-          },
-          child: Text(
-            localizations.settingsMatrixListUnverifiedLabel,
-            semanticsLabel: localizations.settingsMatrixListUnverifiedLabel,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              localizations.settingsMatrixListUnverifiedLabel,
+              semanticsLabel: localizations.settingsMatrixListUnverifiedLabel,
+            ),
+            IconButton(
+              key: const Key('matrix_list_unverified'),
+              onPressed: () {
+                setState(() {
+                  _unverifiedDevices = _matrixService.getUnverified();
+                });
+              },
+              icon: Icon(MdiIcons.refresh),
+            ),
+          ],
         ),
         ..._unverifiedDevices.map(DeviceCard.new),
       ],
@@ -314,7 +334,6 @@ class DeviceCard extends StatefulWidget {
 
 class _DeviceCardState extends State<DeviceCard> {
   final _matrixService = getIt<MatrixService>();
-  List<KeyVerificationEmoji>? _emojis;
 
   @override
   Widget build(BuildContext context) {
@@ -343,49 +362,182 @@ class _DeviceCardState extends State<DeviceCard> {
         subtitle: Column(
           children: [
             Text(widget.deviceKeys.userId),
-            TextButton(
-              key: const Key('matrix_start_verify'),
-              onPressed: () {
-                _matrixService.verifyDevice(widget.deviceKeys);
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: () async {
+                await showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) {
+                    return VerificationModal(widget.deviceKeys);
+                  },
+                );
               },
               child: Text(
-                localizations.settingsMatrixStartVerificationLabel,
-                semanticsLabel:
-                    localizations.settingsMatrixStartVerificationLabel,
+                localizations.settingsMatrixVerifyLabel,
+                semanticsLabel: localizations.settingsMatrixVerifyLabel,
               ),
             ),
-            TextButton(
-              key: const Key('matrix_list_verify2'),
-              onPressed: () async {
-                await _matrixService.continueVerification();
-              },
-              child: const Text(
-                'continue',
-              ),
-            ),
-            TextButton(
-              key: const Key('matrix_list_verify3'),
-              onPressed: () async {
-                final emojis = await _matrixService.acceptEmojiVerification();
-                setState(() {
-                  _emojis = emojis;
-                });
-              },
-              child: Text(
-                localizations.settingsMatrixAcceptVerificationLabel,
-                semanticsLabel:
-                    localizations.settingsMatrixAcceptVerificationLabel,
-              ),
-            ),
-            if (_emojis != null)
-              Row(
-                children: [
-                  ...?_emojis?.map((emoji) => Text(emoji.emoji)),
-                ],
-              ),
+            const SizedBox(height: 10),
           ],
         ),
       ),
+    );
+  }
+}
+
+enum VerificationStep {
+  initial,
+  started,
+  continued,
+  accepted,
+  emojisReceived,
+}
+
+class VerificationModal extends StatefulWidget {
+  const VerificationModal(
+    this.deviceKeys, {
+    super.key,
+  });
+
+  final DeviceKeys deviceKeys;
+
+  @override
+  State<VerificationModal> createState() => _VerificationModalState();
+}
+
+class _VerificationModalState extends State<VerificationModal> {
+  final _matrixService = getIt<MatrixService>();
+  List<KeyVerificationEmoji>? _emojis;
+  VerificationStep _verificationStep = VerificationStep.initial;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  widget.deviceKeys.deviceDisplayName ??
+                      widget.deviceKeys.deviceId ??
+                      '',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Opacity(
+              opacity: 0.5,
+              child: Text(
+                widget.deviceKeys.userId,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            const SizedBox(height: 20),
+            if (_verificationStep == VerificationStep.initial)
+              OutlinedButton(
+                key: const Key('matrix_start_verify'),
+                onPressed: () async {
+                  await _matrixService.verifyDevice(widget.deviceKeys);
+                  setState(() {
+                    _verificationStep = VerificationStep.started;
+                  });
+                },
+                child: Text(
+                  localizations.settingsMatrixStartVerificationLabel,
+                  semanticsLabel:
+                      localizations.settingsMatrixStartVerificationLabel,
+                ),
+              ),
+            if (_verificationStep == VerificationStep.started)
+              OutlinedButton(
+                key: const Key('matrix_continue_verify'),
+                onPressed: () async {
+                  await _matrixService.continueVerification();
+                  setState(() {
+                    _verificationStep = VerificationStep.continued;
+                  });
+                },
+                child: const Text(
+                  'continue',
+                ),
+              ),
+            if (_verificationStep == VerificationStep.continued)
+              OutlinedButton(
+                key: const Key('matrix_accept_verify'),
+                onPressed: () async {
+                  final emojis = await _matrixService.acceptEmojiVerification();
+                  setState(() {
+                    _emojis = emojis;
+                    _verificationStep = VerificationStep.emojisReceived;
+                  });
+                },
+                child: Text(
+                  localizations.settingsMatrixAcceptVerificationLabel,
+                  semanticsLabel:
+                      localizations.settingsMatrixAcceptVerificationLabel,
+                ),
+              ),
+            if (_emojis != null &&
+                _verificationStep == VerificationStep.emojisReceived) ...[
+              Text(
+                localizations.settingsMatrixVerifyConfirm,
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              VerificationEmojisRow(_emojis?.take(4)),
+              VerificationEmojisRow(_emojis?.skip(4)),
+              const SizedBox(height: 20),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class VerificationEmojisRow extends StatelessWidget {
+  const VerificationEmojisRow(
+    this.emojis, {
+    super.key,
+  });
+
+  final Iterable<KeyVerificationEmoji>? emojis;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ...?emojis?.map(
+          (emoji) => Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 6,
+            ),
+            child: Column(
+              children: [
+                Text(
+                  emoji.emoji,
+                  style: const TextStyle(fontSize: 40),
+                ),
+                Text(
+                  emoji.name,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

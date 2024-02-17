@@ -161,7 +161,6 @@ class MatrixService {
   Future<List<KeyVerificationEmoji>?> acceptEmojiVerification() async {
     await _keyVerification?.acceptSas();
     final emojis = _keyVerification?.sasEmojis;
-    debugPrint('Matrix verification emojis: $emojis');
     return emojis;
   }
 
