@@ -153,7 +153,6 @@ class JournalDb extends _$JournalDb {
     if (existingDbEntity != null) {
       final existing = fromDbEntity(existingDbEntity);
       final status = await detectConflict(existing, updated);
-      debugPrint('Conflict status: ${EnumToString.convertToString(status)}');
 
       if (status == VclockStatus.b_gt_a) {
         rowsAffected = await upsertJournalDbEntity(dbEntity);
