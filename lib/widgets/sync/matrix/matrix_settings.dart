@@ -160,6 +160,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                   OutlinedButton(
                     key: const Key('matrix_config_delete'),
                     onPressed: () async {
+                      await _matrixService.logout();
                       await _matrixService.deleteMatrixConfig();
                       setState(() {
                         _dirty = false;
