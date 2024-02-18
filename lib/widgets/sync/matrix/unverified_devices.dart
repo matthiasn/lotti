@@ -26,6 +26,12 @@ class _UnverifiedDevicesState extends State<UnverifiedDevices> {
     });
   }
 
+  void refreshList() {
+    setState(() {
+      _unverifiedDevices = _matrixService.getUnverified();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -54,16 +60,17 @@ class _UnverifiedDevicesState extends State<UnverifiedDevices> {
             ),
             IconButton(
               key: const Key('matrix_list_unverified'),
-              onPressed: () {
-                setState(() {
-                  _unverifiedDevices = _matrixService.getUnverified();
-                });
-              },
+              onPressed: refreshList,
               icon: Icon(MdiIcons.refresh),
             ),
           ],
         ),
-        ..._unverifiedDevices.map(DeviceCard.new),
+        ..._unverifiedDevices.map(
+          (deviceKeys) => DeviceCard(
+            deviceKeys,
+            refreshListCallback: refreshList,
+          ),
+        ),
       ],
     );
   }

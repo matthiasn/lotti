@@ -42,9 +42,6 @@ class MatrixService {
       'lotti',
       verificationMethods: {
         KeyVerificationMethod.emoji,
-        KeyVerificationMethod.qrScan,
-        KeyVerificationMethod.qrShow,
-        KeyVerificationMethod.numbers,
         KeyVerificationMethod.reciprocate,
       },
       shareKeysWithUnverifiedDevices: false,
@@ -141,9 +138,10 @@ class MatrixService {
     return unverified;
   }
 
-  Future<void> verifyDevice(DeviceKeys deviceKeys) async {
-    _keyVerification = await deviceKeys.startVerification();
-    debugPrint('Matrix verification started: $_keyVerification');
+  Future<KeyVerification> verifyDevice(DeviceKeys deviceKeys) async {
+    final keyVerification = await deviceKeys.startVerification();
+    _keyVerification = keyVerification;
+    return keyVerification;
   }
 
   Future<void> continueVerification() async {

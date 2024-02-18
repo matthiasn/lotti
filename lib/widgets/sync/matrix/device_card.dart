@@ -9,10 +9,12 @@ import 'package:matrix/matrix.dart';
 class DeviceCard extends StatefulWidget {
   const DeviceCard(
     this.deviceKeys, {
+    required this.refreshListCallback,
     super.key,
   });
 
   final DeviceKeys deviceKeys;
+  final VoidCallback refreshListCallback;
 
   @override
   State<DeviceCard> createState() => _DeviceCardState();
@@ -58,7 +60,7 @@ class _DeviceCardState extends State<DeviceCard> {
               ),
             ),
             const SizedBox(height: 10),
-            OutlinedButton(
+            RoundedFilledButton(
               onPressed: () async {
                 await showModalBottomSheet<void>(
                   context: context,
@@ -67,11 +69,9 @@ class _DeviceCardState extends State<DeviceCard> {
                     return VerificationModal(widget.deviceKeys);
                   },
                 );
+                widget.refreshListCallback();
               },
-              child: Text(
-                localizations.settingsMatrixVerifyLabel,
-                semanticsLabel: localizations.settingsMatrixVerifyLabel,
-              ),
+              labelText: localizations.settingsMatrixVerifyLabel,
             ),
             const SizedBox(height: 10),
           ],
