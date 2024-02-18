@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/sync/matrix/unverified_devices.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -156,7 +157,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 if (_previous != null)
-                  TextButton(
+                  OutlinedButton(
                     key: const Key('matrix_config_delete'),
                     onPressed: () async {
                       await _matrixService.deleteMatrixConfig();
@@ -167,12 +168,14 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                     },
                     child: Text(
                       localizations.settingsMatrixDeleteLabel,
-                      style: saveButtonStyle(Theme.of(context)),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                       semanticsLabel: 'Delete Matrix Config',
                     ),
                   ),
                 if (_dirty)
-                  TextButton(
+                  OutlinedButton(
                     key: const Key('matrix_config_save'),
                     onPressed: () {
                       onSavePressed();
@@ -180,7 +183,9 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                     },
                     child: Text(
                       localizations.settingsMatrixSaveLabel,
-                      style: saveButtonStyle(Theme.of(context)),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                       semanticsLabel: 'Save Matrix Config',
                     ),
                   ),
@@ -189,15 +194,55 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
             const SizedBox(height: 40),
             if (_previous != null && !_dirty)
               Center(
-                child: ColoredBox(
-                  color: Colors.white,
-                  child: QrImageView(
-                    data: jsonEncode(_previous),
-                    size: 280,
-                    key: const Key('QrImage'),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.all(8),
+                    child: QrImageView(
+                      data: jsonEncode(_previous),
+                      padding: EdgeInsets.zero,
+                      size: 280,
+                      key: const Key('QrImage'),
+                    ),
                   ),
                 ),
               ),
+            const SizedBox(height: 40),
+            Text('Device ID: ${_matrixService.getDeviceId()}'),
+            Text('Device Name: ${_matrixService.getDeviceName()}'),
+            const SizedBox(height: 40),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (_matrixService.isLoggedIn())
+                  OutlinedButton(
+                    key: const Key('matrix_logout'),
+                    onPressed: () {
+                      _matrixService.logout();
+                      maybePop();
+                    },
+                    child: Text(
+                      localizations.settingsMatrixLogoutButtonLabel,
+                      semanticsLabel:
+                          localizations.settingsMatrixLogoutButtonLabel,
+                    ),
+                  )
+                else
+                  OutlinedButton(
+                    key: const Key('matrix_login'),
+                    onPressed: () {
+                      _matrixService.loginAndListen();
+                      maybePop();
+                    },
+                    child: Text(
+                      localizations.settingsMatrixLoginButtonLabel,
+                      semanticsLabel:
+                          localizations.settingsMatrixLoginButtonLabel,
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 40),
             if (isMobile && _previous == null && !_dirty)
               ClipRRect(
@@ -211,6 +256,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                   ),
                 ),
               ),
+            if (_matrixService.isLoggedIn()) const UnverifiedDevices(),
           ],
         ),
       ),
