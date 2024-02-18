@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
-import 'package:lotti/widgets/sync/matrix_settings.dart';
+import 'package:lotti/widgets/sync/matrix/matrix_settings.dart';
 
 class MatrixSettingsPage extends StatelessWidget {
   const MatrixSettingsPage({super.key});

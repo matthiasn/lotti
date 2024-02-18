@@ -187,6 +187,28 @@
   "settingsMatrixHomeServerLabel": "Homeserver",
   "settingsMatrixPasswordLabel": "Password",
   "settingsMatrixRoomIdLabel": "Room ID",
+  "settingsMatrixListUnverifiedLabel": "Unverified devices",
+  "settingsMatrixNoUnverifiedLabel": "No unverified devices",
+  "settingsMatrixStartVerificationLabel": "Start Verification",
+  "settingsMatrixVerifyLabel": "Verify",
+  "settingsMatrixVerifyConfirm": "Confirm on other device that the emojis below are displayed on both devices, in the same order:",
+  "settingsMatrixAcceptVerificationLabel": "Other device shows emojis, continue",
+  "settingsMatrixCancelVerificationLabel": "Cancel Verification",
+  "settingsMatrixVerificationSuccessConfirm": "Got it",
+  "settingsMatrixVerificationSuccessLabel": "You've successfully verified {deviceName} ({deviceID})",
+  "@settingsMatrixVerificationSuccessLabel": {
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      },
+      "deviceID": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMatrixContinueVerificationLabel": "Accept on other device to continue",
+  "settingsMatrixLogoutButtonLabel": "Logout",
+  "settingsMatrixLoginButtonLabel": "Login",
   "settingsMatrixSaveLabel": "Save",
   "settingsMatrixTitle": "Matrix Sync Settings",
   "settingsMatrixUserLabel": "User",

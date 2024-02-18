@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -18,23 +19,32 @@ import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 
 const configNotFound = 'Could not find Matrix Config';
+const syncMessageType = 'com.lotti.sync.message';
 
 class MatrixService {
   MatrixService() : _client = createClient() {
-    login().then((value) => printUnverified()).then((value) => listen());
+    loginAndListen();
   }
 
   Client _client;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   MatrixConfig? _matrixConfig;
+  LoginResponse? _loginResponse;
+  KeyVerification? _keyVerification;
 
   static Client createClient() {
     return Client(
       'lotti',
+      verificationMethods: {
+        KeyVerificationMethod.emoji,
+        KeyVerificationMethod.reciprocate,
+      },
+      shareKeysWithUnverifiedDevices: false,
       databaseBuilder: (_) async {
         final dir = await getApplicationDocumentsDirectory();
         final db = HiveCollectionsDatabase(
@@ -45,6 +55,11 @@ class MatrixService {
         return db;
       },
     );
+  }
+
+  Future<void> loginAndListen() async {
+    await login();
+    await listen();
   }
 
   Future<void> login() async {
@@ -71,18 +86,19 @@ class MatrixService {
         waitUntilLoadCompletedLoaded: false,
       );
 
-      // TODO(unassigned): find non-deprecated solution
-      // ignore: deprecated_member_use
-      if (_client.loginState == LoginState.loggedOut) {
-        final loginResponse = await _client.login(
+      if (!isLoggedIn()) {
+        final initialDeviceDisplayName = await createDeviceName();
+
+        _loginResponse = await _client.login(
           LoginType.mLoginPassword,
           identifier: AuthenticationUserIdentifier(user: matrixConfig.user),
           password: matrixConfig.password,
+          initialDeviceDisplayName: initialDeviceDisplayName,
         );
 
-        debugPrint('MatrixService userId ${loginResponse.userId}');
+        debugPrint('MatrixService userId ${_loginResponse?.userId}');
         debugPrint(
-          'MatrixService loginResponse deviceId ${loginResponse.deviceId}',
+          'MatrixService loginResponse deviceId ${_loginResponse?.deviceId}',
         );
       }
 
@@ -106,16 +122,55 @@ class MatrixService {
     }
   }
 
+  bool isLoggedIn() {
+    // TODO(unassigned): find non-deprecated solution
+    // ignore: deprecated_member_use
+    return _client.loginState == LoginState.loggedIn;
+  }
+
   Future<void> loadArchive() async {
     final rooms = await _client.loadArchive();
     debugPrint('Matrix $rooms');
   }
 
-  Future<void> printUnverified() async {
+  List<DeviceKeys> getUnverified() {
     final unverified = _client.unverifiedDevices;
-    final keyVerification = await unverified.firstOrNull?.startVerification();
-    debugPrint('Matrix keyVerification ${keyVerification?.qrCode}');
-    debugPrint('Matrix unverified ${unverified.length} $unverified');
+    return unverified;
+  }
+
+  Future<KeyVerification> verifyDevice(DeviceKeys deviceKeys) async {
+    final keyVerification = await deviceKeys.startVerification();
+    _keyVerification = keyVerification;
+    return keyVerification;
+  }
+
+  Future<void> continueVerification() async {
+    await _keyVerification?.continueVerification('m.sas.v1');
+  }
+
+  Future<List<KeyVerificationEmoji>?> acceptEmojiVerification() async {
+    await _keyVerification?.acceptSas();
+    final emojis = _keyVerification?.sasEmojis;
+    return emojis;
+  }
+
+  Future<void> cancelVerification() async {
+    await _keyVerification?.cancel();
+  }
+
+  Future<void> deleteDevice(DeviceKeys deviceKeys) async {
+    final deviceId = deviceKeys.deviceId;
+    if (deviceId != null) {
+      await _client.deleteDevice(deviceId, auth: AuthenticationData());
+    }
+  }
+
+  String? getDeviceId() {
+    return _client.deviceID;
+  }
+
+  String? getDeviceName() {
+    return _client.deviceName;
   }
 
   Future<void> listen() async {
@@ -124,8 +179,10 @@ class MatrixService {
         debugPrint('LoginState: $loginState');
       });
 
-      _client.onEvent.stream.listen((EventUpdate eventUpdate) {
-        //debugPrint('New event update! $eventUpdate');
+      _client.onKeyVerificationRequest.stream
+          .listen((KeyVerification keyVerification) {
+        debugPrint('Key Verification Request $keyVerification');
+        debugPrint('Key Verification Request ${keyVerification.sasEmojis}');
       });
 
       final roomId = _matrixConfig?.roomId;
@@ -139,27 +196,26 @@ class MatrixService {
         return;
       }
 
-      final room = _client.getRoomById(roomId);
-      debugPrint('Matrix room $room');
-
       _client.onRoomState.stream.listen((Event eventUpdate) async {
-        // debugPrint(
-        //   'MatrixService onRoomState.stream.listen plaintextBody: ${eventUpdate.plaintextBody}',
-        // );
-
-        // final t = await room?.getTimeline();
-        // await t?.setReadMarker(
-        //   eventId: eventUpdate.eventId,
-        //   public: true,
-        // );
-
         try {
           final attachmentMimetype = eventUpdate.attachmentMimetype;
           if (attachmentMimetype.isNotEmpty) {
             final relativePath = eventUpdate.content['relativePath'];
-            final matrixFile = await eventUpdate.downloadAndDecryptAttachment();
-            final docDir = getDocumentsDirectory();
-            await writeToFile(matrixFile.bytes, '${docDir.path}$relativePath');
+            if (relativePath != null) {
+              final matrixFile =
+                  await eventUpdate.downloadAndDecryptAttachment();
+              final docDir = getDocumentsDirectory();
+              await writeToFile(
+                matrixFile.bytes,
+                '${docDir.path}$relativePath',
+              );
+            } else {
+              _loggingDb.captureEvent(
+                'missing relativePath',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'writeToFile',
+              );
+            }
           } else {
             await processMessage(eventUpdate.plaintextBody);
           }
@@ -188,6 +244,15 @@ class MatrixService {
       final msg = json.encode(syncMessage);
       final roomId = _matrixConfig?.roomId;
 
+      if (_client.unverifiedDevices.isNotEmpty) {
+        _loggingDb.captureException(
+          'Unverified devices found',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg',
+        );
+        return;
+      }
+
       if (roomId == null) {
         _loggingDb.captureEvent(
           configNotFound,
@@ -198,7 +263,10 @@ class MatrixService {
       }
 
       final room = _client.getRoomById(roomId);
-      await room?.sendTextEvent(base64.encode(utf8.encode(msg)));
+      await room?.sendTextEvent(
+        base64.encode(utf8.encode(msg)),
+        msgtype: syncMessageType,
+      );
 
       final docDir = getDocumentsDirectory();
 
@@ -340,5 +408,27 @@ class MatrixService {
     );
     _matrixConfig = null;
     await logout();
+  }
+
+  Future<String> createDeviceName() async {
+    final operatingSystem = Platform.operatingSystem;
+    var deviceName = operatingSystem;
+
+    final deviceInfo = DeviceInfoPlugin();
+    if (Platform.isIOS) {
+      final iosInfo = await deviceInfo.iosInfo;
+      deviceName = iosInfo.name;
+    }
+    if (Platform.isMacOS) {
+      final macOsInfo = await deviceInfo.macOsInfo;
+      deviceName = macOsInfo.computerName;
+    }
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      deviceName = androidInfo.host;
+    }
+
+    final dateHhMm = DateTime.now().toIso8601String().substring(0, 16);
+    return '$deviceName $dateHhMm';
   }
 }
