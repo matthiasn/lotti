@@ -75,3 +75,6 @@ screenshots
 
 whisper.cpp/*.zip
 whisper.cpp/whisper.cpp-*/
+
+# FVM Version Cache
+.fvm/
