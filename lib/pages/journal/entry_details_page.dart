@@ -66,7 +66,11 @@ class EntryDetailPage extends StatelessWidget {
                 LinkedEntriesWidget(item: item),
                 LinkedFromEntriesWidget(item: item),
               ],
-            ).animate().fadeIn(duration: const Duration(milliseconds: 250)),
+            ).animate().fadeIn(
+                  duration: const Duration(
+                    milliseconds: 100,
+                  ),
+                ),
           ),
         );
       },
