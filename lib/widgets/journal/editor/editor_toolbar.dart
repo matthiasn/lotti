@@ -12,7 +12,7 @@ class ToolbarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const duration = Duration(milliseconds: 800);
+    const duration = Duration(milliseconds: 400);
     const curve = Curves.easeInOutQuint;
     const height = 60.0;
 
