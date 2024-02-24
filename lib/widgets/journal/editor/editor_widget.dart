@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_dynamic_calls
 
+import 'dart:async';
+
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +10,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/editor/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor/editor_toolbar.dart';
 
@@ -73,6 +76,15 @@ class EditorWidget extends StatelessWidget {
           if (event.data.isMetaPressed && event.character == 's') {
             context.read<EntryCubit>().save();
           }
+        }
+
+        if (snapshot.isFocused && isMobile) {
+          Timer(const Duration(milliseconds: 100), () {
+            Scrollable.ensureVisible(
+              context,
+              duration: const Duration(milliseconds: 300),
+            );
+          });
         }
 
         // ignore: deprecated_member_use
