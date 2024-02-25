@@ -79,7 +79,7 @@ class EditorWidget extends StatelessWidget {
         }
 
         if (snapshot.isFocused && isMobile) {
-          Timer(const Duration(milliseconds: 100), () {
+          Timer(const Duration(milliseconds: 300), () {
             Scrollable.ensureVisible(
               context,
               duration: const Duration(milliseconds: 300),
