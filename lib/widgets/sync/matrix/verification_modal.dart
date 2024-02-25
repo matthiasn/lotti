@@ -88,7 +88,6 @@ class _VerificationModalState extends State<VerificationModal> {
     }
 
     Future<void> continueVerification() async {
-      await _matrixService.continueVerification();
       setState(() {
         _verificationStep = VerificationStep.continued;
       });

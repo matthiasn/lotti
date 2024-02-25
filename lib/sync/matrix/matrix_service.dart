@@ -52,6 +52,10 @@ class MatrixService {
   final StreamController<MatrixStats> messageCountsController =
       StreamController<MatrixStats>.broadcast();
 
+  KeyVerification? _incomingKeyVerification;
+  final _incomingKeyVerificationController =
+      StreamController<KeyVerification>.broadcast();
+
   static Client createClient() {
     return Client(
       'lotti',
@@ -183,13 +187,27 @@ class MatrixService {
     return keyVerification;
   }
 
-  Future<void> continueVerification() async {
-    await _keyVerification?.continueVerification('m.sas.v1');
+  Future<void> continueIncomingVerification() async {
+    debugPrint('continueIncomingVerification started');
+    await _incomingKeyVerification?.continueVerification('m.sas.v1');
+    debugPrint('continueIncomingVerification finished');
+  }
+
+  Future<void> acceptIncomingVerification() async {
+    await _incomingKeyVerification?.acceptVerification();
   }
 
   Future<List<KeyVerificationEmoji>?> acceptEmojiVerification() async {
     await _keyVerification?.acceptSas();
     final emojis = _keyVerification?.sasEmojis;
+    return emojis;
+  }
+
+  Future<List<KeyVerificationEmoji>?> acceptIncomingEmojiVerification() async {
+    debugPrint('acceptIncomingEmojiVerification started');
+    await _incomingKeyVerification?.acceptSas();
+    final emojis = _incomingKeyVerification?.sasEmojis;
+    debugPrint('acceptIncomingEmojiVerification $emojis');
     return emojis;
   }
 
@@ -212,16 +230,22 @@ class MatrixService {
     return _client.deviceName;
   }
 
+  Stream<KeyVerification> getIncomingKeyVerificationStream() {
+    return _incomingKeyVerificationController.stream;
+  }
+
   Future<void> listen() async {
     try {
       _client.onLoginStateChanged.stream.listen((LoginState loginState) {
         debugPrint('LoginState: $loginState');
       });
 
-      _client.onKeyVerificationRequest.stream
-          .listen((KeyVerification keyVerification) {
-        debugPrint('Key Verification Request $keyVerification');
-        keyVerification.acceptVerification();
+      _client.onKeyVerificationRequest.stream.listen((
+        KeyVerification keyVerification,
+      ) {
+        _incomingKeyVerification = keyVerification;
+        debugPrint('Key Verification Request from ${keyVerification.deviceId}');
+        _incomingKeyVerificationController.add(keyVerification);
       });
 
       final roomId = _matrixConfig?.roomId;

@@ -24,6 +24,7 @@ import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
+import 'package:lotti/widgets/sync/matrix/incoming_verification_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AppScreen extends StatefulWidget {
@@ -49,6 +50,7 @@ class _AppScreenState extends State<AppScreen> {
         return Scaffold(
           body: Stack(
             children: [
+              const IncomingVerificationWrapper(),
               IndexedStack(
                 index: index,
                 children: [
