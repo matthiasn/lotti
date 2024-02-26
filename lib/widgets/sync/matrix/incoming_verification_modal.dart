@@ -174,7 +174,6 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
                 backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,
                 onPressed: () async {
-                  await _matrixService.cancelVerification();
                   closeModal();
                 },
                 labelText: localizations.settingsMatrixCancelVerificationLabel,

@@ -1,0 +1,66 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
+
+class KeyVerificationRunner {
+  KeyVerificationRunner(
+    this.keyVerification, {
+    required this.controller,
+  }) {
+    lastStep = keyVerification.lastStep ?? '';
+    startedVerification = keyVerification.startedVerification;
+    lastStepHistory.add(lastStep);
+    controller.add(this);
+
+    _timer = Timer.periodic(
+      const Duration(milliseconds: 100),
+      (timer) {
+        final newLastStep = keyVerification.lastStep;
+        debugPrint('KeyVerificationRunner newLastStep: $newLastStep ');
+        if (newLastStep != null && newLastStep != lastStep) {
+          lastStep = newLastStep;
+          lastStepHistory.add(newLastStep);
+          debugPrint('KeyVerificationRunner newLastStep: $newLastStep ');
+          controller.add(this);
+
+          if (lastStep == 'm.key.verification.key') {
+            acceptEmojiVerification();
+          }
+
+          if (lastStep == 'm.key.verification.done') {
+            stopTimer();
+          }
+
+          if (lastStep == 'm.key.verification.cancel') {
+            stopTimer();
+          }
+        }
+      },
+    );
+  }
+
+  String lastStep = '';
+  bool? startedVerification;
+  List<String> lastStepHistory = [];
+  List<KeyVerificationEmoji>? emojis;
+  KeyVerification keyVerification;
+  StreamController<KeyVerificationRunner> controller;
+  Timer? _timer;
+
+  void stopTimer() {
+    _timer?.cancel();
+  }
+
+  Future<List<KeyVerificationEmoji>?> acceptEmojiVerification() async {
+    await keyVerification.acceptSas();
+    emojis = keyVerification.sasEmojis;
+    controller.add(this);
+    return emojis;
+  }
+
+  Future<void> cancelVerification() async {
+    await keyVerification.cancel();
+    stopTimer();
+  }
+}
