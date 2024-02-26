@@ -14,6 +14,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
+import 'package:lotti/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -37,7 +38,11 @@ class MatrixStats {
 }
 
 class MatrixService {
-  MatrixService() : _client = createClient() {
+  MatrixService()
+      : _client = createClient(),
+        _keyVerificationController =
+            StreamController<KeyVerificationRunner>.broadcast() {
+    keyVerificationStream = _keyVerificationController.stream;
     loginAndListen();
   }
 
@@ -45,12 +50,15 @@ class MatrixService {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   MatrixConfig? _matrixConfig;
   LoginResponse? _loginResponse;
-  KeyVerification? _keyVerification;
+
   final Map<String, int> messageCounts = {};
   int sentCount = 0;
 
   final StreamController<MatrixStats> messageCountsController =
       StreamController<MatrixStats>.broadcast();
+  KeyVerificationRunner? keyVerificationRunner;
+  final StreamController<KeyVerificationRunner> _keyVerificationController;
+  late final Stream<KeyVerificationRunner> keyVerificationStream;
 
   KeyVerification? _incomingKeyVerification;
   final _incomingKeyVerificationController =
@@ -181,10 +189,12 @@ class MatrixService {
     return unverified;
   }
 
-  Future<KeyVerification> verifyDevice(DeviceKeys deviceKeys) async {
+  Future<void> verifyDevice(DeviceKeys deviceKeys) async {
     final keyVerification = await deviceKeys.startVerification();
-    _keyVerification = keyVerification;
-    return keyVerification;
+    keyVerificationRunner = KeyVerificationRunner(
+      keyVerification,
+      controller: _keyVerificationController,
+    );
   }
 
   Future<void> continueIncomingVerification() async {
@@ -197,22 +207,12 @@ class MatrixService {
     await _incomingKeyVerification?.acceptVerification();
   }
 
-  Future<List<KeyVerificationEmoji>?> acceptEmojiVerification() async {
-    await _keyVerification?.acceptSas();
-    final emojis = _keyVerification?.sasEmojis;
-    return emojis;
-  }
-
   Future<List<KeyVerificationEmoji>?> acceptIncomingEmojiVerification() async {
     debugPrint('acceptIncomingEmojiVerification started');
     await _incomingKeyVerification?.acceptSas();
     final emojis = _incomingKeyVerification?.sasEmojis;
     debugPrint('acceptIncomingEmojiVerification $emojis');
     return emojis;
-  }
-
-  Future<void> cancelVerification() async {
-    await _keyVerification?.cancel();
   }
 
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {

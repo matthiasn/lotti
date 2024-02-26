@@ -212,6 +212,7 @@
     }
   },
   "settingsMatrixContinueVerificationLabel": "Accept on other device to continue",
+  "settingsMatrixVerificationCancelledLabel": "Cancelled on other device...",
   "settingsMatrixLogoutButtonLabel": "Logout",
   "settingsMatrixLoginButtonLabel": "Login",
   "settingsMatrixSaveLabel": "Save",

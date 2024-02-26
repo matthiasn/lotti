@@ -3,20 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/widgets/sync/matrix/verification_emojis_row.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
-
-enum VerificationStep {
-  initial,
-  started,
-  continued,
-  accepted,
-  emojisReceived,
-  verified,
-}
 
 class VerificationModal extends StatefulWidget {
   const VerificationModal(
@@ -32,31 +23,11 @@ class VerificationModal extends StatefulWidget {
 
 class _VerificationModalState extends State<VerificationModal> {
   final _matrixService = getIt<MatrixService>();
-  List<KeyVerificationEmoji>? _emojis;
-  VerificationStep _verificationStep = VerificationStep.initial;
-  KeyVerification? _keyVerification;
-  Timer? _timer;
-
-  void cancelTimer() {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  void periodicallyCheckAndRun({
-    required String eventType,
-    required VoidCallback voidCallback,
-  }) {
-    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (_keyVerification?.lastStep == eventType) {
-        cancelTimer();
-        voidCallback();
-      }
-    });
-  }
+  KeyVerificationRunner? _runner;
 
   @override
   void dispose() {
-    cancelTimer();
+    _runner?.stopTimer();
     super.dispose();
   }
 
@@ -64,151 +35,143 @@ class _VerificationModalState extends State<VerificationModal> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final pop = Navigator.of(context).pop;
+    void startVerification() => _matrixService.verifyDevice(widget.deviceKeys);
 
-    void closeModal() {
-      Navigator.of(context).pop();
-    }
+    return StreamBuilder<KeyVerificationRunner>(
+      stream: _matrixService.keyVerificationStream,
+      builder: (context, snapshot) {
+        final runner = snapshot.data;
+        _runner = runner;
+        final lastStep = runner?.lastStep;
+        final emojis = runner?.emojis;
+        final isLastStepKey = lastStep == 'm.key.verification.key';
+        final isLastStepMac = lastStep == 'm.key.verification.mac';
+        final isLastStepDone = lastStep == 'm.key.verification.done';
+        final isLastStepCancel = lastStep == 'm.key.verification.cancel';
 
-    Future<void> acceptEmojiVerification() async {
-      final emojis = await _matrixService.acceptEmojiVerification();
-      setState(() {
-        _emojis = emojis;
-        _verificationStep = VerificationStep.emojisReceived;
-      });
+        if (isLastStepCancel) {
+          Timer(const Duration(seconds: 10), pop);
+        }
 
-      periodicallyCheckAndRun(
-        eventType: 'm.key.verification.mac',
-        voidCallback: () {
-          setState(() {
-            _verificationStep = VerificationStep.verified;
-          });
-          Timer(const Duration(seconds: 30), pop);
-        },
-      );
-    }
+        if (isLastStepDone) {
+          Timer(const Duration(seconds: 10), pop);
+        }
 
-    Future<void> continueVerification() async {
-      setState(() {
-        _verificationStep = VerificationStep.continued;
-      });
-
-      periodicallyCheckAndRun(
-        eventType: 'm.key.verification.key',
-        voidCallback: acceptEmojiVerification,
-      );
-    }
-
-    Future<void> startVerification() async {
-      final keyVerification =
-          await _matrixService.verifyDevice(widget.deviceKeys);
-
-      setState(() {
-        _keyVerification = keyVerification;
-        _verificationStep = VerificationStep.started;
-      });
-
-      periodicallyCheckAndRun(
-        eventType: 'm.key.verification.ready',
-        voidCallback: continueVerification,
-      );
-    }
-
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Flexible(
-                  child: Text(
-                    widget.deviceKeys.deviceDisplayName ??
-                        widget.deviceKeys.deviceId ??
-                        '',
-                    style: Theme.of(context).textTheme.titleLarge,
-                    softWrap: true,
+                ...?runner?.lastStepHistory.map(
+                  (step) => Text(
+                    step,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Opacity(
-              opacity: 0.5,
-              child: Text(
-                widget.deviceKeys.userId,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-            const SizedBox(height: 20),
-            if (_verificationStep == VerificationStep.initial)
-              RoundedFilledButton(
-                key: const Key('matrix_start_verify'),
-                onPressed: startVerification,
-                labelText: localizations.settingsMatrixStartVerificationLabel,
-              ),
-            if (_verificationStep == VerificationStep.started)
-              Text(
-                localizations.settingsMatrixContinueVerificationLabel,
-              ),
-            if (_verificationStep == VerificationStep.continued)
-              RoundedFilledButton(
-                key: const Key('matrix_accept_verify'),
-                onPressed: acceptEmojiVerification,
-                labelText: localizations.settingsMatrixAcceptVerificationLabel,
-              ),
-            if (_emojis != null &&
-                _verificationStep == VerificationStep.emojisReceived) ...[
-              Text(
-                localizations.settingsMatrixVerifyConfirm,
-                style: Theme.of(context).textTheme.bodyLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              VerificationEmojisRow(_emojis?.take(4)),
-              VerificationEmojisRow(_emojis?.skip(4)),
-              const SizedBox(height: 20),
-              RoundedFilledButton(
-                key: const Key('matrix_cancel_verification'),
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
-                onPressed: () async {
-                  await _matrixService.cancelVerification();
-                  closeModal();
-                },
-                labelText: localizations.settingsMatrixCancelVerificationLabel,
-              ),
-              const SizedBox(height: 20),
-            ],
-            if (_verificationStep == VerificationStep.verified) ...[
-              Text(
-                localizations.settingsMatrixVerificationSuccessLabel(
-                  widget.deviceKeys.deviceDisplayName ?? '',
-                  widget.deviceKeys.deviceId ?? '',
+                const SizedBox(height: 10),
+                const Divider(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        widget.deviceKeys.deviceDisplayName ??
+                            widget.deviceKeys.deviceId ??
+                            '',
+                        style: Theme.of(context).textTheme.titleLarge,
+                        softWrap: true,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 20),
-              Icon(
-                MdiIcons.shieldCheck,
-                color: Colors.greenAccent,
-                size: 128,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
+                const SizedBox(height: 10),
+                Opacity(
+                  opacity: 0.5,
+                  child: Text(
+                    widget.deviceKeys.userId,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (runner == null)
                   RoundedFilledButton(
-                    onPressed: pop,
+                    key: const Key('matrix_start_verify'),
+                    onPressed: startVerification,
                     labelText:
-                        localizations.settingsMatrixVerificationSuccessConfirm,
+                        localizations.settingsMatrixStartVerificationLabel,
+                  ),
+                if (lastStep?.isEmpty ?? false)
+                  Text(
+                    localizations.settingsMatrixContinueVerificationLabel,
+                  ),
+                if (isLastStepCancel)
+                  Text(
+                    localizations.settingsMatrixVerificationCancelledLabel,
+                  ),
+                if (isLastStepKey && emojis == null)
+                  RoundedFilledButton(
+                    key: const Key('matrix_accept_verify'),
+                    onPressed: runner?.acceptEmojiVerification,
+                    labelText:
+                        localizations.settingsMatrixAcceptVerificationLabel,
+                  ),
+                if (isLastStepKey && emojis != null) ...[
+                  Text(
+                    localizations.settingsMatrixVerifyConfirm,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  VerificationEmojisRow(emojis.take(4)),
+                  VerificationEmojisRow(emojis.skip(4)),
+                  const SizedBox(height: 20),
+                  RoundedFilledButton(
+                    key: const Key('matrix_cancel_verification'),
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                    onPressed: () async {
+                      await runner?.cancelVerification();
+                      pop();
+                    },
+                    labelText:
+                        localizations.settingsMatrixCancelVerificationLabel,
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                if (isLastStepMac || isLastStepDone) ...[
+                  Text(
+                    localizations.settingsMatrixVerificationSuccessLabel(
+                      widget.deviceKeys.deviceDisplayName ?? '',
+                      widget.deviceKeys.deviceId ?? '',
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Icon(
+                    MdiIcons.shieldCheck,
+                    color: Colors.greenAccent,
+                    size: 128,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      RoundedFilledButton(
+                        onPressed: () {
+                          runner?.stopTimer();
+                          pop();
+                        },
+                        labelText: localizations
+                            .settingsMatrixVerificationSuccessConfirm,
+                      ),
+                    ],
                   ),
                 ],
-              ),
-            ],
-          ],
-        ),
-      ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -225,7 +188,7 @@ class RoundedFilledButton extends StatelessWidget {
 
   final Color backgroundColor;
   final Color foregroundColor;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final String labelText;
   final String? semanticsLabel;
 
