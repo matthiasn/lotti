@@ -5,6 +5,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
+import 'package:lotti/widgets/buttons/rounded_filled_button.dart';
 import 'package:lotti/widgets/sync/matrix/verification_emojis_row.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
@@ -31,11 +32,18 @@ class _VerificationModalState extends State<VerificationModal> {
     super.dispose();
   }
 
+  void startVerification() => _matrixService.verifyDevice(widget.deviceKeys);
+
+  @override
+  void initState() {
+    startVerification();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final pop = Navigator.of(context).pop;
-    void startVerification() => _matrixService.verifyDevice(widget.deviceKeys);
 
     return StreamBuilder<KeyVerificationRunner>(
       stream: _matrixService.keyVerificationStream,
@@ -172,41 +180,6 @@ class _VerificationModalState extends State<VerificationModal> {
           ),
         );
       },
-    );
-  }
-}
-
-class RoundedFilledButton extends StatelessWidget {
-  const RoundedFilledButton({
-    required this.onPressed,
-    required this.labelText,
-    this.backgroundColor = Colors.greenAccent,
-    this.foregroundColor = Colors.black87,
-    this.semanticsLabel,
-    super.key,
-  });
-
-  final Color backgroundColor;
-  final Color foregroundColor;
-  final VoidCallback? onPressed;
-  final String labelText;
-  final String? semanticsLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: backgroundColor,
-        foregroundColor: foregroundColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      child: Text(
-        labelText,
-        semanticsLabel: semanticsLabel,
-      ),
     );
   }
 }
