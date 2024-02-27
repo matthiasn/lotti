@@ -26,6 +26,16 @@ import 'package:path_provider/path_provider.dart';
 const configNotFound = 'Could not find Matrix Config';
 const syncMessageType = 'com.lotti.sync.message';
 
+class MatrixStats {
+  MatrixStats({
+    required this.sentCount,
+    required this.messageCounts,
+  });
+
+  int sentCount;
+  Map<String, int> messageCounts;
+}
+
 class MatrixService {
   MatrixService() : _client = createClient() {
     loginAndListen();
@@ -36,6 +46,11 @@ class MatrixService {
   MatrixConfig? _matrixConfig;
   LoginResponse? _loginResponse;
   KeyVerification? _keyVerification;
+  final Map<String, int> messageCounts = {};
+  int sentCount = 0;
+
+  final StreamController<MatrixStats> messageCountsController =
+      StreamController<MatrixStats>.broadcast();
 
   static Client createClient() {
     return Client(
@@ -77,8 +92,14 @@ class MatrixService {
         return;
       }
 
-      await _client.checkHomeserver(
+      final homeServerSummary = await _client.checkHomeserver(
         Uri.parse(matrixConfig.homeServer),
+      );
+
+      _loggingDb.captureEvent(
+        'checkHomeserver $homeServerSummary',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'login',
       );
 
       await _client.init(
@@ -97,16 +118,34 @@ class MatrixService {
         );
 
         debugPrint('MatrixService userId ${_loginResponse?.userId}');
+
+        _loggingDb.captureEvent(
+          'logged in, userId ${_loginResponse?.userId},'
+          ' deviceId  ${_loginResponse?.deviceId}',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'login',
+        );
+
         debugPrint(
           'MatrixService loginResponse deviceId ${_loginResponse?.deviceId}',
         );
       }
+
+      await loadArchive();
 
       final joinRes = await _client.joinRoom(matrixConfig.roomId).onError((
         error,
         stackTrace,
       ) {
         debugPrint('MatrixService join error $error');
+
+        _loggingDb.captureException(
+          error,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'login join',
+          stackTrace: stackTrace,
+        );
+
         return error.toString();
       });
 
@@ -182,7 +221,7 @@ class MatrixService {
       _client.onKeyVerificationRequest.stream
           .listen((KeyVerification keyVerification) {
         debugPrint('Key Verification Request $keyVerification');
-        debugPrint('Key Verification Request ${keyVerification.sasEmojis}');
+        keyVerification.acceptVerification();
       });
 
       final roomId = _matrixConfig?.roomId;
@@ -196,38 +235,78 @@ class MatrixService {
         return;
       }
 
-      _client.onRoomState.stream.listen((Event eventUpdate) async {
-        try {
-          final attachmentMimetype = eventUpdate.attachmentMimetype;
-          if (attachmentMimetype.isNotEmpty) {
-            final relativePath = eventUpdate.content['relativePath'];
-            if (relativePath != null) {
-              final matrixFile =
-                  await eventUpdate.downloadAndDecryptAttachment();
-              final docDir = getDocumentsDirectory();
-              await writeToFile(
-                matrixFile.bytes,
-                '${docDir.path}$relativePath',
-              );
+      _client.onRoomState.stream.listen(
+        (Event eventUpdate) async {
+          try {
+            messageCounts.update(
+              eventUpdate.messageType,
+              (value) => value + 1,
+              ifAbsent: () => 1,
+            );
+
+            messageCountsController.add(
+              MatrixStats(
+                messageCounts: messageCounts,
+                sentCount: sentCount,
+              ),
+            );
+
+            final attachmentMimetype = eventUpdate.attachmentMimetype;
+
+            _loggingDb.captureEvent(
+              'received ${eventUpdate.messageType}',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'listen',
+            );
+
+            if (attachmentMimetype.isNotEmpty) {
+              final relativePath = eventUpdate.content['relativePath'];
+
+              if (relativePath != null) {
+                _loggingDb.captureEvent(
+                  'downloading $relativePath',
+                  domain: 'MATRIX_SERVICE',
+                  subDomain: 'writeToFile',
+                );
+
+                final matrixFile =
+                    await eventUpdate.downloadAndDecryptAttachment();
+                final docDir = getDocumentsDirectory();
+                await writeToFile(
+                  matrixFile.bytes,
+                  '${docDir.path}$relativePath',
+                );
+              } else {
+                _loggingDb.captureEvent(
+                  'missing relativePath',
+                  domain: 'MATRIX_SERVICE',
+                  subDomain: 'writeToFile',
+                );
+              }
             } else {
-              _loggingDb.captureEvent(
-                'missing relativePath',
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'writeToFile',
-              );
+              await processMessage(eventUpdate.plaintextBody);
             }
-          } else {
-            await processMessage(eventUpdate.plaintextBody);
+          } catch (exception, stackTrace) {
+            _loggingDb.captureException(
+              exception,
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'listen',
+              stackTrace: stackTrace,
+            );
           }
-        } catch (exception, stackTrace) {
+        },
+        onError: (
+          Object e,
+          StackTrace stackTrace,
+        ) {
           _loggingDb.captureException(
-            exception,
+            e,
             domain: 'MATRIX_SERVICE',
             subDomain: 'listen',
             stackTrace: stackTrace,
           );
-        }
-      });
+        },
+      );
     } catch (e, stackTrace) {
       debugPrint('$e');
       _loggingDb.captureException(
@@ -263,9 +342,24 @@ class MatrixService {
       }
 
       final room = _client.getRoomById(roomId);
-      await room?.sendTextEvent(
+
+      _loggingDb.captureEvent(
+        'trying to send text message to $room',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      );
+
+      final eventId = await room?.sendTextEvent(
         base64.encode(utf8.encode(msg)),
         msgtype: syncMessageType,
+      );
+
+      sentCount = sentCount + 1;
+
+      _loggingDb.captureEvent(
+        'sent text message to $room with event ID $eventId',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
       );
 
       final docDir = getDocumentsDirectory();
@@ -280,7 +374,13 @@ class MatrixService {
                   AudioUtils.getRelativeAudioPath(journalAudio);
               final fullPath = AudioUtils.getAudioPath(journalAudio, docDir);
               final bytes = await File(fullPath).readAsBytes();
-              await room?.sendFileEvent(
+
+              _loggingDb.captureEvent(
+                'trying to send $relativePath file message to $room',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'sendMatrixMsg',
+              );
+              final eventId = await room?.sendFileEvent(
                 MatrixFile(
                   bytes: bytes,
                   name: fullPath,
@@ -289,6 +389,13 @@ class MatrixService {
                   'relativePath': relativePath,
                 },
               );
+              sentCount = sentCount + 1;
+
+              _loggingDb.captureEvent(
+                'sent $relativePath file message to $room, event ID $eventId',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'sendMatrixMsg',
+              );
             }
           },
           journalImage: (JournalImage journalImage) async {
@@ -296,7 +403,14 @@ class MatrixService {
               final relativePath = getRelativeImagePath(journalImage);
               final fullPath = getFullImagePath(journalImage);
               final bytes = await File(fullPath).readAsBytes();
-              await room?.sendFileEvent(
+
+              _loggingDb.captureEvent(
+                'trying to send $relativePath file message to $room',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'sendMatrixMsg',
+              );
+
+              final eventId = await room?.sendFileEvent(
                 MatrixFile(
                   bytes: bytes,
                   name: fullPath,
@@ -304,6 +418,20 @@ class MatrixService {
                 extraContent: {
                   'relativePath': relativePath,
                 },
+              );
+              sentCount = sentCount + 1;
+
+              messageCountsController.add(
+                MatrixStats(
+                  messageCounts: messageCounts,
+                  sentCount: sentCount,
+                ),
+              );
+
+              _loggingDb.captureEvent(
+                'sent $relativePath file message to $room, event ID $eventId',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'sendMatrixMsg',
               );
             }
           },
@@ -330,6 +458,12 @@ class MatrixService {
 
       final syncMessage = SyncMessage.fromJson(
         json.decode(decoded) as Map<String, dynamic>,
+      );
+
+      _loggingDb.captureEvent(
+        'processing ${syncMessage.runtimeType}',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'processMessage',
       );
 
       await syncMessage.when(

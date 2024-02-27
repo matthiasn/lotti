@@ -135,7 +135,7 @@ class OutboxService {
       );
 
       if (enableMatrix) {
-        unawaited(getIt<MatrixService>().sendMatrixMsg(syncMessage));
+        await getIt<MatrixService>().sendMatrixMsg(syncMessage);
         return;
       }
 
