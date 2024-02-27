@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/sync/matrix/incoming_stats.dart';
 import 'package:lotti/widgets/sync/matrix/unverified_devices.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -258,6 +259,8 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                 ),
               ),
             if (_matrixService.isLoggedIn()) const UnverifiedDevices(),
+            const SizedBox(height: 40),
+            const IncomingStats(),
           ],
         ),
       ),
