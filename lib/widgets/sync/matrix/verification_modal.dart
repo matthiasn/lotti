@@ -53,16 +53,18 @@ class _VerificationModalState extends State<VerificationModal> {
         final lastStep = runner?.lastStep;
         final emojis = runner?.emojis;
         final isLastStepKey = lastStep == 'm.key.verification.key';
-        final isLastStepMac = lastStep == 'm.key.verification.mac';
         final isLastStepDone = lastStep == 'm.key.verification.done';
         final isLastStepCancel = lastStep == 'm.key.verification.cancel';
 
+        final isDone =
+            isLastStepDone || (runner?.keyVerification.isDone ?? false);
+
         if (isLastStepCancel) {
-          Timer(const Duration(seconds: 10), pop);
+          Timer(const Duration(seconds: 30), pop);
         }
 
         if (isLastStepDone) {
-          Timer(const Duration(seconds: 10), pop);
+          Timer(const Duration(seconds: 30), pop);
         }
 
         return SingleChildScrollView(
@@ -124,7 +126,7 @@ class _VerificationModalState extends State<VerificationModal> {
                     labelText:
                         localizations.settingsMatrixAcceptVerificationLabel,
                   ),
-                if (isLastStepKey && emojis != null) ...[
+                if (!isDone && emojis != null) ...[
                   Text(
                     localizations.settingsMatrixVerifyConfirm,
                     style: Theme.of(context).textTheme.bodyLarge,
@@ -134,20 +136,29 @@ class _VerificationModalState extends State<VerificationModal> {
                   VerificationEmojisRow(emojis.take(4)),
                   VerificationEmojisRow(emojis.skip(4)),
                   const SizedBox(height: 20),
-                  RoundedFilledButton(
-                    key: const Key('matrix_cancel_verification'),
-                    backgroundColor: Colors.redAccent,
-                    foregroundColor: Colors.white,
-                    onPressed: () async {
-                      await runner?.cancelVerification();
-                      pop();
-                    },
-                    labelText:
-                        localizations.settingsMatrixCancelVerificationLabel,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      RoundedFilledButton(
+                        key: const Key('matrix_cancel_verification'),
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        onPressed: () async {
+                          await runner?.cancelVerification();
+                          pop();
+                        },
+                        labelText:
+                            localizations.settingsMatrixCancelVerificationLabel,
+                      ),
+                      RoundedFilledButton(
+                        onPressed: runner?.acceptEmojiVerification,
+                        labelText: 'They match',
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
                 ],
-                if (isLastStepMac || isLastStepDone) ...[
+                if (isDone) ...[
                   Text(
                     localizations.settingsMatrixVerificationSuccessLabel(
                       widget.deviceKeys.deviceDisplayName ?? '',

@@ -42,8 +42,19 @@ class MatrixService {
       : _client = createClient(),
         _keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
+    _incomingKeyVerificationRunnerController =
+        StreamController<KeyVerificationRunner>.broadcast(
+      onListen: publishIncomingRunnerState,
+    );
+
     keyVerificationStream = _keyVerificationController.stream;
+    incomingKeyVerificationStream =
+        _incomingKeyVerificationRunnerController.stream;
     loginAndListen();
+  }
+
+  void publishIncomingRunnerState() {
+    incomingKeyVerificationRunner?.publishState();
   }
 
   Client _client;
@@ -57,10 +68,13 @@ class MatrixService {
   final StreamController<MatrixStats> messageCountsController =
       StreamController<MatrixStats>.broadcast();
   KeyVerificationRunner? keyVerificationRunner;
+  KeyVerificationRunner? incomingKeyVerificationRunner;
   final StreamController<KeyVerificationRunner> _keyVerificationController;
+  late final StreamController<KeyVerificationRunner>
+      _incomingKeyVerificationRunnerController;
   late final Stream<KeyVerificationRunner> keyVerificationStream;
+  late final Stream<KeyVerificationRunner> incomingKeyVerificationStream;
 
-  KeyVerification? _incomingKeyVerification;
   final _incomingKeyVerificationController =
       StreamController<KeyVerification>.broadcast();
 
@@ -143,7 +157,9 @@ class MatrixService {
         );
       }
 
-      await loadArchive();
+      if (isLoggedIn()) {
+        await loadArchive();
+      }
 
       final joinRes = await _client.joinRoom(matrixConfig.roomId).onError((
         error,
@@ -197,24 +213,6 @@ class MatrixService {
     );
   }
 
-  Future<void> continueIncomingVerification() async {
-    debugPrint('continueIncomingVerification started');
-    await _incomingKeyVerification?.continueVerification('m.sas.v1');
-    debugPrint('continueIncomingVerification finished');
-  }
-
-  Future<void> acceptIncomingVerification() async {
-    await _incomingKeyVerification?.acceptVerification();
-  }
-
-  Future<List<KeyVerificationEmoji>?> acceptIncomingEmojiVerification() async {
-    debugPrint('acceptIncomingEmojiVerification started');
-    await _incomingKeyVerification?.acceptSas();
-    final emojis = _incomingKeyVerification?.sasEmojis;
-    debugPrint('acceptIncomingEmojiVerification $emojis');
-    return emojis;
-  }
-
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
     final deviceId = deviceKeys.deviceId;
     if (deviceId != null) {
@@ -243,7 +241,11 @@ class MatrixService {
       _client.onKeyVerificationRequest.stream.listen((
         KeyVerification keyVerification,
       ) {
-        _incomingKeyVerification = keyVerification;
+        incomingKeyVerificationRunner = KeyVerificationRunner(
+          keyVerification,
+          controller: _incomingKeyVerificationRunnerController,
+        );
+
         debugPrint('Key Verification Request from ${keyVerification.deviceId}');
         _incomingKeyVerificationController.add(keyVerification);
       });
