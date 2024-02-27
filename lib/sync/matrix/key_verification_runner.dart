@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:matrix/matrix.dart';
 
 class KeyVerificationRunner {
   KeyVerificationRunner(
@@ -11,25 +12,30 @@ class KeyVerificationRunner {
     lastStep = keyVerification.lastStep ?? '';
     startedVerification = keyVerification.startedVerification;
     lastStepHistory.add(lastStep);
-    controller.add(this);
+    publishState();
 
     _timer = Timer.periodic(
       const Duration(milliseconds: 100),
       (timer) {
         final newLastStep = keyVerification.lastStep;
-        debugPrint('KeyVerificationRunner newLastStep: $newLastStep ');
+        // debugPrint('KeyVerificationRunner newLastStep: $newLastStep ');
         if (newLastStep != null && newLastStep != lastStep) {
           lastStep = newLastStep;
           lastStepHistory.add(newLastStep);
           debugPrint('KeyVerificationRunner newLastStep: $newLastStep ');
-          controller.add(this);
+          publishState();
 
           if (lastStep == 'm.key.verification.key') {
-            acceptEmojiVerification();
+            //acceptEmojiVerification();
+            readEmojis();
           }
 
-          if (lastStep == 'm.key.verification.done') {
+          if (lastStep == EventTypes.KeyVerificationDone) {
             stopTimer();
+          }
+
+          if (lastStep == 'm.key.verification.mac') {
+            //keyVerification.acceptVerification();
           }
 
           if (lastStep == 'm.key.verification.cancel') {
@@ -52,11 +58,25 @@ class KeyVerificationRunner {
     _timer?.cancel();
   }
 
+  Future<void> acceptVerification() async {
+    await keyVerification.acceptVerification();
+  }
+
   Future<List<KeyVerificationEmoji>?> acceptEmojiVerification() async {
     await keyVerification.acceptSas();
     emojis = keyVerification.sasEmojis;
-    controller.add(this);
+    publishState();
     return emojis;
+  }
+
+  Future<List<KeyVerificationEmoji>?> readEmojis() async {
+    emojis = keyVerification.sasEmojis;
+    publishState();
+    return emojis;
+  }
+
+  void publishState() {
+    controller.add(this);
   }
 
   Future<void> cancelVerification() async {
