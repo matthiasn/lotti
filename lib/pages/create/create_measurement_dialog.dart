@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -32,8 +33,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
   DateTime measurementTime = DateTime.now();
 
   final hotkeyCmdS = HotKey(
-    KeyCode.keyS,
-    modifiers: [KeyModifier.meta],
+    key: LogicalKeyboardKey.keyS,
+    modifiers: [HotKeyModifier.meta],
     scope: HotKeyScope.inapp,
   );
 
