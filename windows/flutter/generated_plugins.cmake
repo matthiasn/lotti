@@ -5,7 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   flutter_secure_storage_windows
-  hotkey_manager
+  hotkey_manager_windows
   irondash_engine_context
   media_kit_libs_windows_audio
   permission_handler_windows
