@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
@@ -46,8 +47,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
     hotKeyManager.register(
       HotKey(
-        KeyCode.keyR,
-        modifiers: [KeyModifier.meta],
+        key: LogicalKeyboardKey.keyR,
+        modifiers: [HotKeyModifier.meta],
         scope: HotKeyScope.inapp,
       ),
       keyDownHandler: (hotKey) => refreshQuery(),
