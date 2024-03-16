@@ -117,10 +117,10 @@ packages:
     dependency: "direct main"
     description:
       name: beamer
-      sha256: "88e3e47aceebbc4cb781949493acb99ec4af7043ae6fab6739a4708c24270fee"
+      sha256: c32c5dea11c178fca271f2cce8f3bce4bc0ad761a2b69978573c4e75e991abf9
       url: "https://pub.dev"
     source: hosted
-    version: "1.6.0"
+    version: "1.6.1"
   beautiful_soup_dart:
     dependency: transitive
     description:
@@ -769,42 +769,50 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_image_compress
-      sha256: f159d2e8c4ed04b8e36994124fd4a5017a0f01e831ae3358c74095c340e9ae5e
+      sha256: "4edadb0ca2f957b85190e9c3aa728569b91b64b6e06e0eec5b622d47a8692ab2"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.0"
+    version: "2.2.0"
   flutter_image_compress_common:
     dependency: transitive
     description:
       name: flutter_image_compress_common
-      sha256: "0756440ddc647696ebc56f393be8c1055e81ef1c1f58986fb1f078af393637d8"
+      sha256: "7f79bc6c8a363063620b4e372fa86bc691e1cb28e58048cd38e030692fbd99ee"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.4"
+    version: "1.0.5"
   flutter_image_compress_macos:
     dependency: transitive
     description:
       name: flutter_image_compress_macos
-      sha256: fea1e3d71150d03373916b832c49b5c2f56c3e7e13da82a929274a2c6f88251e
+      sha256: "26df6385512e92b3789dc76b613b54b55c457a7f1532e59078b04bf189782d47"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.0.2"
+  flutter_image_compress_ohos:
+    dependency: transitive
+    description:
+      name: flutter_image_compress_ohos
+      sha256: "70360371698be994786e5dd2e364a6525b1c5a4f843bff8af9b8a2fbe808d8d8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   flutter_image_compress_platform_interface:
     dependency: transitive
     description:
       name: flutter_image_compress_platform_interface
-      sha256: "87d0964ae72ccab1cdfbc32f825ce6b57bf87fd3576a2842bf38189d392163b8"
+      sha256: "579cb3947fd4309103afe6442a01ca01e1e6f93dc53bb4cbd090e8ce34a41889"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.4"
+    version: "1.0.5"
   flutter_image_compress_web:
     dependency: transitive
     description:
       name: flutter_image_compress_web
-      sha256: "1c8cd505be95cb2e0573cdd9d236ac0ba39c166b8df06ef1823f2a17b60e1253"
+      sha256: f02fe352b17f82b72f481de45add240db062a2585850bea1667e82cc4cd6c311
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.4"
+    version: "0.1.4+1"
   flutter_keyboard_visibility:
     dependency: transitive
     description:
@@ -966,10 +974,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_riverpod
-      sha256: "4bce556b7ecbfea26109638d5237684538d4abc509d253e6c5c4c5733b360098"
+      sha256: "0f1974eff5bbe774bf1d870e406fc6f29e3d6f1c46bd9c58e7172ff68a785d7d"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.10"
+    version: "2.5.1"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1133,10 +1141,10 @@ packages:
     dependency: "direct main"
     description:
       name: google_fonts
-      sha256: "5b1726fee554d1cc9db1baef8061b126567ff0a1140a03ed7de936e62f2ab98b"
+      sha256: b1ac0fe2832c9cc95e5e88b57d627c5e68c223b9657f4b96e1487aa9098c7b82
       url: "https://pub.dev"
     source: hosted
-    version: "6.2.0"
+    version: "6.2.1"
   graphs:
     dependency: transitive
     description:
@@ -1555,10 +1563,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: aa9a7c641c5f99e7839c62c0461b279e5e9a3e803d400e57110f158ac28763d9
+      sha256: f829dd542f354e5073e3b43aaed3adc2829e762a9ec50a3f186ffd7dddc36d5e
       url: "https://pub.dev"
     source: hosted
-    version: "0.26.0"
+    version: "0.26.1"
   matrix_api_lite:
     dependency: transitive
     description:
@@ -2139,10 +2147,10 @@ packages:
     dependency: transitive
     description:
       name: riverpod
-      sha256: "548e2192eb7aeb826eb89387f814edb76594f3363e2c0bb99dd733d795ba3589"
+      sha256: f21b32ffd26a36555e501b04f4a5dca43ed59e16343f1a30c13632b2351dfa4d
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0"
+    version: "2.5.1"
   rxdart:
     dependency: "direct main"
     description:
@@ -2448,18 +2456,18 @@ packages:
     dependency: transitive
     description:
       name: super_clipboard
-      sha256: "15d25eb88df8e904e0c2ef77378c6010cc57bbfc0b6f91f2416d08fad5fcca92"
+      sha256: ea683cedf63d7d92731b53891a6baabf7d7e5b38ef10ab7a2ed145bd16af159c
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.5"
+    version: "0.8.9"
   super_native_extensions:
     dependency: transitive
     description:
       name: super_native_extensions
-      sha256: f96db6b137a0b135e43034289bb55ca6447b65225076036e81f97ebb6381ffeb
+      sha256: "9ebae48891159d3365d342d6d43abeb5b702758ed30d2b0cc6c125fa0ad577e3"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.5"
+    version: "0.8.9"
   sync_http:
     dependency: transitive
     description:
@@ -2902,4 +2910,4 @@ packages:
     version: "3.1.2"
 sdks:
   dart: ">=3.3.0 <4.0.0"
-  flutter: ">=3.19.0"
+  flutter: ">=3.19.2"
