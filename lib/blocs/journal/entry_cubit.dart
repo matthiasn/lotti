@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -45,9 +46,34 @@ class EntryCubit extends Cubit<EntryState> {
       formKey = GlobalKey<FormBuilderState>();
     }
 
+    final saveHotKey = HotKey(
+      key: LogicalKeyboardKey.keyS,
+      modifiers: [HotKeyModifier.meta],
+      scope: HotKeyScope.inapp,
+    );
+
     focusNode.addListener(() {
-      _isFocused = true;
+      _isFocused = focusNode.hasFocus;
+      if (_isFocused) {
+        hotKeyManager.register(
+          saveHotKey,
+          keyDownHandler: (hotKey) => save(),
+        );
+      } else {
+        hotKeyManager.unregister(saveHotKey);
+      }
       emitState();
+    });
+
+    taskTitleFocusNode.addListener(() {
+      if (taskTitleFocusNode.hasFocus) {
+        hotKeyManager.register(
+          saveHotKey,
+          keyDownHandler: (hotKey) => save(),
+        );
+      } else {
+        hotKeyManager.unregister(saveHotKey);
+      }
     });
 
     try {
@@ -107,6 +133,7 @@ class EntryCubit extends Cubit<EntryState> {
   late final Stream<JournalEntity?> _entryStream;
   late final StreamSubscription<JournalEntity?> _entryStreamSubscription;
   final FocusNode focusNode = FocusNode();
+  final FocusNode taskTitleFocusNode = FocusNode();
   final EditorStateService _editorStateService = getIt<EditorStateService>();
   final JournalDb _journalDb = getIt<JournalDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
