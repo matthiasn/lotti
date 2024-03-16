@@ -42,42 +42,6 @@ class EditorWidget extends StatelessWidget {
         final controller = context.read<EntryCubit>().controller;
         final focusNode = context.read<EntryCubit>().focusNode;
 
-        void keyFormatter<T>(
-          // ignore: deprecated_member_use
-          RawKeyEvent event,
-          String char,
-          Attribute<T> attribute,
-        ) {
-          // ignore: deprecated_member_use
-          if (event.data.isMetaPressed && event.character == char) {
-            final attributes = controller.getSelectionStyle().attributes;
-            final alreadySet = attributes.keys.toSet().contains(attribute.key);
-            final selection = controller.selection;
-
-            if (alreadySet) {
-              controller.formatText(
-                selection.baseOffset,
-                selection.extentOffset - selection.baseOffset,
-                Attribute.clone(attribute, null),
-              );
-            } else {
-              controller.formatText(
-                selection.baseOffset,
-                selection.extentOffset - selection.baseOffset,
-                attribute,
-              );
-            }
-          }
-        }
-
-        // ignore: deprecated_member_use
-        void saveViaKeyboard(RawKeyEvent event) {
-          // ignore: deprecated_member_use
-          if (event.data.isMetaPressed && event.character == 's') {
-            context.read<EntryCubit>().save();
-          }
-        }
-
         if (snapshot.isFocused && isMobile) {
           Timer(const Duration(milliseconds: 300), () {
             Scrollable.ensureVisible(
@@ -87,59 +51,48 @@ class EditorWidget extends StatelessWidget {
           });
         }
 
-        // ignore: deprecated_member_use
-        return RawKeyboardListener(
-          focusNode: FocusNode(),
-          // ignore: deprecated_member_use
-          onKey: (RawKeyEvent event) {
-            keyFormatter(event, 'b', Attribute.bold);
-            keyFormatter(event, 'i', Attribute.italic);
-            saveViaKeyboard(event);
-          },
-          child: Card(
-            color: Theme.of(context).colorScheme.surface.brighten(),
-            elevation: 0,
-            clipBehavior: Clip.hardEdge,
-            shape: const RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.all(Radius.circular(inputBorderRadius)),
-              side: BorderSide(),
+        return Card(
+          color: Theme.of(context).colorScheme.surface.brighten(),
+          elevation: 0,
+          clipBehavior: Clip.hardEdge,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(inputBorderRadius)),
+            side: BorderSide(),
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: maxHeight,
             ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: maxHeight,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (snapshot.isFocused)
-                    ToolbarWidget(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (snapshot.isFocused)
+                  ToolbarWidget(
+                    controller: controller,
+                  ),
+                Flexible(
+                  child: QuillEditor(
+                    scrollController: ScrollController(),
+                    focusNode: focusNode,
+                    configurations: QuillEditorConfigurations(
+                      autoFocus: autoFocus,
+                      minHeight: minHeight,
+                      placeholder: localizations.editorPlaceholder,
+                      padding: EdgeInsets.only(
+                        top: 8,
+                        bottom: 16,
+                        left: padding,
+                        right: padding,
+                      ),
+                      keyboardAppearance: Theme.of(context).brightness,
+                      customStyles: customEditorStyles(
+                        themeData: Theme.of(context),
+                      ),
                       controller: controller,
                     ),
-                  Flexible(
-                    child: QuillEditor(
-                      scrollController: ScrollController(),
-                      focusNode: focusNode,
-                      configurations: QuillEditorConfigurations(
-                        autoFocus: autoFocus,
-                        minHeight: minHeight,
-                        placeholder: localizations.editorPlaceholder,
-                        padding: EdgeInsets.only(
-                          top: 8,
-                          bottom: 16,
-                          left: padding,
-                          right: padding,
-                        ),
-                        keyboardAppearance: Theme.of(context).brightness,
-                        customStyles: customEditorStyles(
-                          themeData: Theme.of(context),
-                        ),
-                        controller: controller,
-                      ),
-                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
