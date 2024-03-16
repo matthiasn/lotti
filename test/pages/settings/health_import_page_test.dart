@@ -93,7 +93,6 @@ void main() {
       ).called(1);
 
       await tester.tap(heartRateButtonFinder);
-      await tester.scrollUntilVisible(workoutButtonFinder, 30);
       await tester.tap(bpButtonFinder);
       await tester.tap(bodyButtonFinder);
       await tester.tap(workoutButtonFinder);

@@ -182,6 +182,8 @@
   "settingsHabitsStoryLabel": "Habit completion story",
   "settingsHabitsTitle": "Habits",
   "settingsHealthImportTitle": "Health Import",
+  "settingsHealthImportFromDate": "Start",
+  "settingsHealthImportToDate": "End",
   "settingsLogsTitle": "Logs",
   "settingsMaintenanceTitle": "Maintenance",
   "settingsMatrixDeleteLabel": "Delete",
