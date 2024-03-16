@@ -53,8 +53,8 @@ class EntryCubit extends Cubit<EntryState> {
     );
 
     focusNode.addListener(() {
-      _isFocused = focusNode.hasFocus;
-      if (_isFocused) {
+      _isFocused = true;
+      if (focusNode.hasFocus) {
         hotKeyManager.register(
           saveHotKey,
           keyDownHandler: (hotKey) => save(),
