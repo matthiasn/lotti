@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_fadein/flutter_fadein.dart';
-import 'package:lotti/utils/platform.dart';
 
 class Button extends StatelessWidget {
   const Button(
@@ -63,9 +62,9 @@ class RoundedButton extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(100),
         ),
-        padding: EdgeInsets.symmetric(
-          vertical: isMobile ? 20 : 30,
-          horizontal: isMobile ? 30 : 45,
+        padding: const EdgeInsets.symmetric(
+          vertical: 10,
+          horizontal: 20,
         ),
       ),
       child: Text(label),
