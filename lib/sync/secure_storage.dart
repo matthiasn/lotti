@@ -1,4 +1,3 @@
-import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStorage {
@@ -23,17 +22,12 @@ class SecureStorage {
   }
 
   Future<void> writeValue(String key, String value) async {
+    await delete(key: key);
     _state[key] = value;
-    EasyDebounce.debounce(
-      'writeValue-$key',
-      const Duration(seconds: 1),
-      () async {
-        await _storage.write(
-          key: key,
-          value: _state[key],
-          iOptions: IOSOptions.defaultOptions,
-        );
-      },
+    await _storage.write(
+      key: key,
+      value: _state[key],
+      iOptions: IOSOptions.defaultOptions,
     );
   }
 
