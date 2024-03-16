@@ -1,16 +1,11 @@
-// ignore_for_file: avoid_dynamic_calls
-
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intersperse/intersperse.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
-import 'package:lotti/themes/colors.dart';
+import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
-import 'package:syncfusion_flutter_datepicker/datepicker.dart';
-import 'package:tinycolor2/tinycolor2.dart';
-
-const spaceBetweenButtons = 10.0;
 
 class HealthImportPage extends StatefulWidget {
   const HealthImportPage({super.key});
@@ -30,15 +25,6 @@ class _HealthImportPageState extends State<HealthImportPage> {
     super.initState();
   }
 
-  void _onSelectionChanged(DateRangePickerSelectionChangedArgs args) {
-    setState(() {
-      if (args.value is PickerDateRange) {
-        _dateFrom = args.value.startDate as DateTime;
-        _dateTo = (args.value.endDate ?? args.value.startDate) as DateTime;
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -46,83 +32,94 @@ class _HealthImportPageState extends State<HealthImportPage> {
     return SliverBoxAdapterPage(
       title: localizations.settingsHealthImportTitle,
       showBackButton: true,
-      child: Column(
-        children: <Widget>[
-          SfDateRangePicker(
-            backgroundColor: cardColor.lighten(40),
-            onSelectionChanged: _onSelectionChanged,
-            enableMultiView: true,
-            selectionMode: DateRangePickerSelectionMode.range,
-            initialSelectedRange: PickerDateRange(
-              _dateFrom,
-              _dateTo,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: <Widget>[
+            DateTimeField(
+              dateTime: _dateFrom,
+              labelText: localizations.settingsHealthImportFromDate,
+              setDateTime: (DateTime value) {
+                setState(() {
+                  _dateFrom = value;
+                });
+              },
+              mode: CupertinoDatePickerMode.date,
             ),
-          ),
-          const SizedBox(height: 20),
-          RoundedButton(
-            'Import Activity Data',
-            onPressed: () {
-              _healthImport.getActivityHealthData(
-                dateFrom: _dateFrom,
-                dateTo: _dateTo,
-              );
-            },
-          ),
-          const SizedBox(height: spaceBetweenButtons),
-          RoundedButton(
-            'Import Sleep Data',
-            onPressed: () {
-              _healthImport.fetchHealthData(
-                dateFrom: _dateFrom,
-                dateTo: _dateTo,
-                types: sleepTypes,
-              );
-            },
-          ),
-          const SizedBox(height: spaceBetweenButtons),
-          RoundedButton(
-            'Import Heart Rate Data',
-            onPressed: () {
-              _healthImport.fetchHealthData(
-                dateFrom: _dateFrom,
-                dateTo: _dateTo,
-                types: heartRateTypes,
-              );
-            },
-          ),
-          const SizedBox(height: spaceBetweenButtons),
-          RoundedButton(
-            'Import Blood Pressure Data',
-            onPressed: () {
-              _healthImport.fetchHealthData(
-                dateFrom: _dateFrom,
-                dateTo: _dateTo,
-                types: bpTypes,
-              );
-            },
-          ),
-          const SizedBox(height: spaceBetweenButtons),
-          RoundedButton(
-            'Import Body Measurement Data',
-            onPressed: () {
-              _healthImport.fetchHealthData(
-                dateFrom: _dateFrom,
-                dateTo: _dateTo,
-                types: bodyMeasurementTypes,
-              );
-            },
-          ),
-          const SizedBox(height: spaceBetweenButtons),
-          RoundedButton(
-            'Import Workout Data',
-            onPressed: () {
-              _healthImport.getWorkoutsHealthData(
-                dateFrom: _dateFrom,
-                dateTo: _dateTo,
-              );
-            },
-          ),
-        ],
+            const SizedBox(height: 20),
+            DateTimeField(
+              dateTime: _dateTo,
+              labelText: localizations.settingsHealthImportToDate,
+              setDateTime: (DateTime value) {
+                setState(() {
+                  _dateTo = value;
+                });
+              },
+              mode: CupertinoDatePickerMode.date,
+            ),
+            const SizedBox(height: 20),
+            ...<Widget>[
+              RoundedButton(
+                'Import Activity Data',
+                onPressed: () {
+                  _healthImport.getActivityHealthData(
+                    dateFrom: _dateFrom,
+                    dateTo: _dateTo,
+                  );
+                },
+              ),
+              RoundedButton(
+                'Import Sleep Data',
+                onPressed: () {
+                  _healthImport.fetchHealthData(
+                    dateFrom: _dateFrom,
+                    dateTo: _dateTo,
+                    types: sleepTypes,
+                  );
+                },
+              ),
+              RoundedButton(
+                'Import Heart Rate Data',
+                onPressed: () {
+                  _healthImport.fetchHealthData(
+                    dateFrom: _dateFrom,
+                    dateTo: _dateTo,
+                    types: heartRateTypes,
+                  );
+                },
+              ),
+              RoundedButton(
+                'Import Blood Pressure Data',
+                onPressed: () {
+                  _healthImport.fetchHealthData(
+                    dateFrom: _dateFrom,
+                    dateTo: _dateTo,
+                    types: bpTypes,
+                  );
+                },
+              ),
+              RoundedButton(
+                'Import Body Measurement Data',
+                onPressed: () {
+                  _healthImport.fetchHealthData(
+                    dateFrom: _dateFrom,
+                    dateTo: _dateTo,
+                    types: bodyMeasurementTypes,
+                  );
+                },
+              ),
+              RoundedButton(
+                'Import Workout Data',
+                onPressed: () {
+                  _healthImport.getWorkoutsHealthData(
+                    dateFrom: _dateFrom,
+                    dateTo: _dateTo,
+                  );
+                },
+              ),
+            ].intersperse(const SizedBox(height: 5)),
+          ],
+        ),
       ),
     );
   }
