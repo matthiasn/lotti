@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
@@ -195,6 +196,26 @@ class MatrixService {
     return _client.loginState == LoginState.loggedIn;
   }
 
+  Future<String> createRoom() async {
+    final name = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
+    final roomId = await _client.createRoom(
+      visibility: Visibility.private,
+      name: name,
+    );
+
+    debugPrint('>>> createRoom $roomId');
+    final room = _client.getRoomById(roomId);
+    debugPrint('>>> createRoom ${room?.name}'
+        ' ${room?.encrypted}');
+
+    await room?.enableEncryption();
+
+    debugPrint('>>> createRoom ${room?.name}'
+        ' ${room?.encrypted}');
+
+    return roomId;
+  }
+
   Future<void> loadArchive() async {
     final rooms = await _client.loadArchive();
     debugPrint('Matrix $rooms');
@@ -264,6 +285,11 @@ class MatrixService {
       _client.onRoomState.stream.listen(
         (Event eventUpdate) async {
           try {
+            debugPrint('>>> onRoomState ${eventUpdate.messageType} '
+                '${eventUpdate.plaintextBody} '
+                '${eventUpdate.text} '
+                '${jsonEncode(eventUpdate.toJson())} ');
+
             messageCounts.update(
               eventUpdate.messageType,
               (value) => value + 1,
