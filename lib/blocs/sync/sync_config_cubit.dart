@@ -23,7 +23,7 @@ class SyncConfigCubit extends Cubit<SyncConfigState> {
     }
 
     if (testOnNetworkChange) {
-      Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      Connectivity().onConnectivityChanged.listen((result) {
         testConnection();
       });
     }
