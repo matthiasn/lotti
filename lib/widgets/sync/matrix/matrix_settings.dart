@@ -41,7 +41,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
   @override
   void initState() {
     super.initState();
-    _matrixService.getMatrixConfig().then((persisted) {
+    _matrixService.loadMatrixConfig().then((persisted) {
       _previous = persisted;
 
       if (persisted != null) {
