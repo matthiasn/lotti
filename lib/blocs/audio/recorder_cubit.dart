@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/classes/audio_note.dart';
@@ -9,7 +10,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:record/record.dart';
 
 AudioRecorderState initialState = AudioRecorderState(
@@ -37,7 +37,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     });
   }
 
-  final _audioRecorder = Record();
+  final _audioRecorder = AudioRecorder();
   StreamSubscription<Amplitude>? _amplitudeSub;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
@@ -62,7 +62,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           final day = DateFormat('yyyy-MM-dd').format(created);
           final relativePath = '/audio/$day/';
           final directory = await createAssetDirectory(relativePath);
-          final filePath = '${isMacOS ? 'file://' : ''}$directory$fileName';
+          final filePath = '$directory$fileName';
 
           _audioNote = AudioNote(
             createdAt: created,
@@ -72,7 +72,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           );
 
           await _audioRecorder.start(
-            samplingRate: 48000,
+            const RecordConfig(sampleRate: 48000),
             path: filePath,
           );
         }
@@ -93,7 +93,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   Future<void> stop() async {
     try {
-      await _audioRecorder.stop();
+      debugPrint('stop recording');
+
+      final foo = await _audioRecorder.stop();
+      debugPrint('stop $foo');
       _audioNote = _audioNote?.copyWith(duration: state.progress);
       emit(initialState);
 
