@@ -42,6 +42,12 @@ class AsrService {
     running = true;
     final audioFilePath = await AudioUtils.getFullAudioPath(entry);
 
+    getIt<LoggingDb>().captureEvent(
+      'transcribing $audioFilePath',
+      domain: 'ASR',
+      subDomain: 'transcribe',
+    );
+
     final start = DateTime.now();
     final docDir = await getApplicationDocumentsDirectory();
     final modelFile = 'ggml-$model.bin';
