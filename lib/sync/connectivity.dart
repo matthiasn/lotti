@@ -10,13 +10,15 @@ class ConnectivityService {
     _broadcastStream = _controller.stream.asBroadcastStream();
 
     Connectivity().onConnectivityChanged.listen(
-      (ConnectivityResult result) {
+      (result) {
         debugPrint('Connectivity onConnectivityChanged $result');
         getIt<LoggingDb>().captureEvent(
           'onConnectivityChanged $result',
           domain: 'CONNECTIVITY',
         );
-        _controller.add(result != ConnectivityResult.none);
+        _controller.add(
+          result.isNotEmpty && result.first != ConnectivityResult.none,
+        );
       },
       onError: (Object error, Object stacktrace) {
         getIt<LoggingDb>().captureException(
@@ -33,7 +35,7 @@ class ConnectivityService {
 
   Future<bool> isConnected() async {
     final status = await Connectivity().checkConnectivity();
-    return status != ConnectivityResult.none;
+    return status.isNotEmpty && status.first != ConnectivityResult.none;
   }
 
   Stream<bool> get connectedStream {
