@@ -39,7 +39,7 @@ class MatrixStats {
 }
 
 class MatrixService {
-  MatrixService()
+  MatrixService({this.matrixConfig})
       : _client = createClient(),
         _keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
@@ -60,7 +60,7 @@ class MatrixService {
 
   Client _client;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
-  MatrixConfig? _matrixConfig;
+  MatrixConfig? matrixConfig;
   LoginResponse? _loginResponse;
 
   final Map<String, int> messageCounts = {};
@@ -100,6 +100,7 @@ class MatrixService {
   }
 
   Future<void> loginAndListen() async {
+    await loadMatrixConfig();
     await login();
     await listen();
   }
@@ -107,7 +108,7 @@ class MatrixService {
   Future<void> login() async {
     try {
       _client = createClient();
-      final matrixConfig = await getMatrixConfig();
+      final matrixConfig = this.matrixConfig;
 
       if (matrixConfig == null) {
         _loggingDb.captureEvent(
@@ -271,7 +272,7 @@ class MatrixService {
         _incomingKeyVerificationController.add(keyVerification);
       });
 
-      final roomId = _matrixConfig?.roomId;
+      final roomId = matrixConfig?.roomId;
 
       if (roomId == null) {
         _loggingDb.captureEvent(
@@ -373,7 +374,7 @@ class MatrixService {
   Future<void> sendMatrixMsg(SyncMessage syncMessage) async {
     try {
       final msg = json.encode(syncMessage);
-      final roomId = _matrixConfig?.roomId;
+      final roomId = matrixConfig?.roomId;
 
       if (_client.unverifiedDevices.isNotEmpty) {
         _loggingDb.captureException(
@@ -557,17 +558,16 @@ class MatrixService {
     }
   }
 
-  Future<MatrixConfig?> getMatrixConfig() async {
+  Future<MatrixConfig?> loadMatrixConfig() async {
+    if (matrixConfig != null) {
+      return matrixConfig;
+    }
     final configJson = await getIt<SecureStorage>().read(key: matrixConfigKey);
-    MatrixConfig? matrixConfig;
-
     if (configJson != null) {
       matrixConfig = MatrixConfig.fromJson(
         json.decode(configJson) as Map<String, dynamic>,
       );
     }
-
-    _matrixConfig = matrixConfig;
     return matrixConfig;
   }
 
@@ -577,12 +577,12 @@ class MatrixService {
     }
   }
 
-  Future<void> setMatrixConfig(MatrixConfig matrixConfig) async {
+  Future<void> setMatrixConfig(MatrixConfig config) async {
     await getIt<SecureStorage>().write(
       key: matrixConfigKey,
       value: jsonEncode(matrixConfig),
     );
-    _matrixConfig = matrixConfig;
+    matrixConfig = config;
 
     await logout();
     await login();
@@ -592,7 +592,7 @@ class MatrixService {
     await getIt<SecureStorage>().delete(
       key: matrixConfigKey,
     );
-    _matrixConfig = null;
+    matrixConfig = null;
     await logout();
   }
 
