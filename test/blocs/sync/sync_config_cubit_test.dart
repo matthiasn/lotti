@@ -9,6 +9,7 @@ import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../mocks/mocks.dart';
 import '../../mocks/sync_config_test_mocks.dart';
 import '../../test_data/sync_config_test_data.dart';
 

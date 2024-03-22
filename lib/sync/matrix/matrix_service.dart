@@ -51,7 +51,6 @@ class MatrixService {
     keyVerificationStream = _keyVerificationController.stream;
     incomingKeyVerificationStream =
         _incomingKeyVerificationRunnerController.stream;
-    loginAndListen();
   }
 
   void publishIncomingRunnerState() {
@@ -163,23 +162,26 @@ class MatrixService {
         await loadArchive();
       }
 
-      final joinRes = await _client.joinRoom(matrixConfig.roomId).onError((
-        error,
-        stackTrace,
-      ) {
-        debugPrint('MatrixService join error $error');
+      final roomId = matrixConfig.roomId;
 
-        _loggingDb.captureException(
+      if (roomId != null) {
+        final joinRes = await _client.joinRoom(roomId).onError((
           error,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'login join',
-          stackTrace: stackTrace,
-        );
+          stackTrace,
+        ) {
+          debugPrint('MatrixService join error $error');
 
-        return error.toString();
-      });
+          _loggingDb.captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'login join',
+            stackTrace: stackTrace,
+          );
 
-      debugPrint('MatrixService joinRes $joinRes');
+          return error.toString();
+        });
+        debugPrint('MatrixService joinRes $joinRes');
+      }
     } catch (e, stackTrace) {
       debugPrint('$e');
       _loggingDb.captureException(
@@ -203,18 +205,15 @@ class MatrixService {
       visibility: Visibility.private,
       name: name,
     );
-
-    debugPrint('>>> createRoom $roomId');
+    await loadArchive();
     final room = _client.getRoomById(roomId);
-    debugPrint('>>> createRoom ${room?.name}'
-        ' ${room?.encrypted}');
-
     await room?.enableEncryption();
-
-    debugPrint('>>> createRoom ${room?.name}'
-        ' ${room?.encrypted}');
-
     return roomId;
+  }
+
+  Room? getRoom(String roomId) {
+    final room = _client.getRoomById(roomId);
+    return room;
   }
 
   Future<void> loadArchive() async {
