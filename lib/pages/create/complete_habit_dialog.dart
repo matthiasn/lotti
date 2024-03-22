@@ -85,16 +85,20 @@ class _HabitDialogState extends State<HabitDialog> {
             ? endOfDay()
             : DateTime.now();
 
-    hotKeyManager.register(
-      hotkeyCmdS,
-      keyDownHandler: (hotKey) => saveHabit(HabitCompletionType.success),
-    );
+    if (isDesktop) {
+      hotKeyManager.register(
+        hotkeyCmdS,
+        keyDownHandler: (hotKey) => saveHabit(HabitCompletionType.success),
+      );
+    }
   }
 
   @override
   void dispose() {
     super.dispose();
-    hotKeyManager.unregister(hotkeyCmdS);
+    if (isDesktop) {
+      hotKeyManager.unregister(hotkeyCmdS);
+    }
   }
 
   bool validate() {

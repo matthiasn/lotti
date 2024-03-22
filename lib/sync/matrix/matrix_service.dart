@@ -290,8 +290,9 @@ class MatrixService {
                 '${eventUpdate.text} '
                 '${jsonEncode(eventUpdate.toJson())} ');
 
+            final eventType = eventUpdate.type;
             messageCounts.update(
-              eventUpdate.messageType,
+              eventType,
               (value) => value + 1,
               ifAbsent: () => 1,
             );
