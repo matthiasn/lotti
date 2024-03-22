@@ -8,7 +8,6 @@ import 'package:lotti/sync/secure_storage.dart';
 
 import '../test/helpers/path_provider.dart';
 import '../test/mocks/mocks.dart';
-import '../test/utils/env.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,10 +33,10 @@ void main() {
     tearDown(() async {});
 
     test('Create room', () async {
-      final config = MatrixConfig(
-        homeServer: await getEnv('MATRIX_HOME_SERVER'),
-        user: await getEnv('MATRIX_USER'),
-        password: await getEnv('MATRIX_PASSWORD'),
+      const config = MatrixConfig(
+        homeServer: 'http://localhost:8008',
+        user: '@lotti-test:localhost',
+        password: 'Secret123@',
       );
       final matrixService = MatrixService(matrixConfig: config);
       await matrixService.loginAndListen();
