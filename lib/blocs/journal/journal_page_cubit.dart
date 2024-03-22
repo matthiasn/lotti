@@ -8,6 +8,7 @@ import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/platform.dart';
 
 class JournalPageCubit extends Cubit<JournalPageState> {
   JournalPageCubit({required this.showTasks})
@@ -45,14 +46,16 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
     state.pagingController.addPageRequestListener(_fetchPage);
 
-    hotKeyManager.register(
-      HotKey(
-        key: LogicalKeyboardKey.keyR,
-        modifiers: [HotKeyModifier.meta],
-        scope: HotKeyScope.inapp,
-      ),
-      keyDownHandler: (hotKey) => refreshQuery(),
-    );
+    if (isDesktop) {
+      hotKeyManager.register(
+        HotKey(
+          key: LogicalKeyboardKey.keyR,
+          modifiers: [HotKeyModifier.meta],
+          scope: HotKeyScope.inapp,
+        ),
+        keyDownHandler: (hotKey) => refreshQuery(),
+      );
+    }
 
     if (showTasks) {
       _db.watchTasks(
