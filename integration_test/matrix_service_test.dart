@@ -32,14 +32,14 @@ void main() {
 
     tearDown(() async {});
 
-    test('Create room', () async {
+    test('Create room & join', () async {
       const config = MatrixConfig(
         homeServer: 'http://localhost:8008',
         user: '@lotti-test:localhost',
         password: 'Secret123@',
       );
       final matrixService = MatrixService(matrixConfig: config);
-      await matrixService.loginAndListen();
+      await matrixService.login();
 
       final roomId = await matrixService.createRoom();
       debugPrint('Room created: $roomId');
@@ -47,7 +47,13 @@ void main() {
       final room = matrixService.getRoom(roomId);
       debugPrint('Room created: $room');
 
-      expect(roomId, isNotEmpty);
+      expect(
+        roomId,
+        isNotEmpty,
+      );
+
+      final joinRes = await matrixService.joinRoom(roomId);
+      debugPrint('Room joined: $joinRes');
     });
   });
 }
