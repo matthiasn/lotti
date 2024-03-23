@@ -41,7 +41,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
   @override
   void initState() {
     super.initState();
-    _matrixService.getMatrixConfig().then((persisted) {
+    _matrixService.loadMatrixConfig().then((persisted) {
       _previous = persisted;
 
       if (persisted != null) {
@@ -261,6 +261,13 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
             if (_matrixService.isLoggedIn()) const UnverifiedDevices(),
             const SizedBox(height: 40),
             const IncomingStats(),
+            OutlinedButton(
+              key: const Key('matrix_create_room'),
+              onPressed: () async {
+                await _matrixService.createRoom();
+              },
+              child: const Text('Create room'),
+            ),
           ],
         ),
       ),

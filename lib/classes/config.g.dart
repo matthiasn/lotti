@@ -29,7 +29,7 @@ _$MatrixConfigImpl _$$MatrixConfigImplFromJson(Map<String, dynamic> json) =>
       homeServer: json['homeServer'] as String,
       user: json['user'] as String,
       password: json['password'] as String,
-      roomId: json['roomId'] as String,
+      roomId: json['roomId'] as String?,
     );
 
 Map<String, dynamic> _$$MatrixConfigImplToJson(_$MatrixConfigImpl instance) =>

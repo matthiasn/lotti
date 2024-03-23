@@ -23,7 +23,7 @@ class MatrixConfig with _$MatrixConfig {
     required String homeServer,
     required String user,
     required String password,
-    required String roomId,
+    String? roomId,
   }) = _MatrixConfig;
 
   factory MatrixConfig.fromJson(Map<String, dynamic> json) =>
