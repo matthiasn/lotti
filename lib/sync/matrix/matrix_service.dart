@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
@@ -38,7 +39,7 @@ class MatrixStats {
 }
 
 class MatrixService {
-  MatrixService()
+  MatrixService({this.matrixConfig})
       : _client = createClient(),
         _keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
@@ -50,7 +51,6 @@ class MatrixService {
     keyVerificationStream = _keyVerificationController.stream;
     incomingKeyVerificationStream =
         _incomingKeyVerificationRunnerController.stream;
-    loginAndListen();
   }
 
   void publishIncomingRunnerState() {
@@ -59,7 +59,7 @@ class MatrixService {
 
   Client _client;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
-  MatrixConfig? _matrixConfig;
+  MatrixConfig? matrixConfig;
   LoginResponse? _loginResponse;
 
   final Map<String, int> messageCounts = {};
@@ -99,6 +99,7 @@ class MatrixService {
   }
 
   Future<void> loginAndListen() async {
+    await loadMatrixConfig();
     await login();
     await listen();
   }
@@ -106,7 +107,7 @@ class MatrixService {
   Future<void> login() async {
     try {
       _client = createClient();
-      final matrixConfig = await getMatrixConfig();
+      final matrixConfig = this.matrixConfig;
 
       if (matrixConfig == null) {
         _loggingDb.captureEvent(
@@ -161,23 +162,26 @@ class MatrixService {
         await loadArchive();
       }
 
-      final joinRes = await _client.joinRoom(matrixConfig.roomId).onError((
-        error,
-        stackTrace,
-      ) {
-        debugPrint('MatrixService join error $error');
+      final roomId = matrixConfig.roomId;
 
-        _loggingDb.captureException(
+      if (roomId != null) {
+        final joinRes = await _client.joinRoom(roomId).onError((
           error,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'login join',
-          stackTrace: stackTrace,
-        );
+          stackTrace,
+        ) {
+          debugPrint('MatrixService join error $error');
 
-        return error.toString();
-      });
+          _loggingDb.captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'login join',
+            stackTrace: stackTrace,
+          );
 
-      debugPrint('MatrixService joinRes $joinRes');
+          return error.toString();
+        });
+        debugPrint('MatrixService joinRes $joinRes');
+      }
     } catch (e, stackTrace) {
       debugPrint('$e');
       _loggingDb.captureException(
@@ -193,6 +197,23 @@ class MatrixService {
     // TODO(unassigned): find non-deprecated solution
     // ignore: deprecated_member_use
     return _client.loginState == LoginState.loggedIn;
+  }
+
+  Future<String> createRoom() async {
+    final name = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
+    final roomId = await _client.createRoom(
+      visibility: Visibility.private,
+      name: name,
+    );
+    await loadArchive();
+    final room = _client.getRoomById(roomId);
+    await room?.enableEncryption();
+    return roomId;
+  }
+
+  Room? getRoom(String roomId) {
+    final room = _client.getRoomById(roomId);
+    return room;
   }
 
   Future<void> loadArchive() async {
@@ -250,7 +271,7 @@ class MatrixService {
         _incomingKeyVerificationController.add(keyVerification);
       });
 
-      final roomId = _matrixConfig?.roomId;
+      final roomId = matrixConfig?.roomId;
 
       if (roomId == null) {
         _loggingDb.captureEvent(
@@ -264,8 +285,14 @@ class MatrixService {
       _client.onRoomState.stream.listen(
         (Event eventUpdate) async {
           try {
+            debugPrint('>>> onRoomState ${eventUpdate.messageType} '
+                '${eventUpdate.plaintextBody} '
+                '${eventUpdate.text} '
+                '${jsonEncode(eventUpdate.toJson())} ');
+
+            final eventType = eventUpdate.type;
             messageCounts.update(
-              eventUpdate.messageType,
+              eventType,
               (value) => value + 1,
               ifAbsent: () => 1,
             );
@@ -347,7 +374,7 @@ class MatrixService {
   Future<void> sendMatrixMsg(SyncMessage syncMessage) async {
     try {
       final msg = json.encode(syncMessage);
-      final roomId = _matrixConfig?.roomId;
+      final roomId = matrixConfig?.roomId;
 
       if (_client.unverifiedDevices.isNotEmpty) {
         _loggingDb.captureException(
@@ -531,17 +558,16 @@ class MatrixService {
     }
   }
 
-  Future<MatrixConfig?> getMatrixConfig() async {
+  Future<MatrixConfig?> loadMatrixConfig() async {
+    if (matrixConfig != null) {
+      return matrixConfig;
+    }
     final configJson = await getIt<SecureStorage>().read(key: matrixConfigKey);
-    MatrixConfig? matrixConfig;
-
     if (configJson != null) {
       matrixConfig = MatrixConfig.fromJson(
         json.decode(configJson) as Map<String, dynamic>,
       );
     }
-
-    _matrixConfig = matrixConfig;
     return matrixConfig;
   }
 
@@ -551,12 +577,12 @@ class MatrixService {
     }
   }
 
-  Future<void> setMatrixConfig(MatrixConfig matrixConfig) async {
+  Future<void> setMatrixConfig(MatrixConfig config) async {
     await getIt<SecureStorage>().write(
       key: matrixConfigKey,
       value: jsonEncode(matrixConfig),
     );
-    _matrixConfig = matrixConfig;
+    matrixConfig = config;
 
     await logout();
     await login();
@@ -566,7 +592,7 @@ class MatrixService {
     await getIt<SecureStorage>().delete(
       key: matrixConfigKey,
     );
-    _matrixConfig = null;
+    matrixConfig = null;
     await logout();
   }
 

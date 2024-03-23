@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/isolate.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/common.dart';
@@ -72,6 +74,8 @@ Future<void> registerSingletons() async {
     ..registerSingleton<NotificationService>(NotificationService())
     ..registerSingleton<Maintenance>(Maintenance())
     ..registerSingleton<NavService>(NavService());
+
+  unawaited(getIt<MatrixService>().loginAndListen());
 
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
 }

@@ -54,25 +54,29 @@ class EntryCubit extends Cubit<EntryState> {
 
     focusNode.addListener(() {
       _isFocused = true;
-      if (focusNode.hasFocus) {
-        hotKeyManager.register(
-          saveHotKey,
-          keyDownHandler: (hotKey) => save(),
-        );
-      } else {
-        hotKeyManager.unregister(saveHotKey);
+      if (isDesktop) {
+        if (focusNode.hasFocus) {
+          hotKeyManager.register(
+            saveHotKey,
+            keyDownHandler: (hotKey) => save(),
+          );
+        } else {
+          hotKeyManager.unregister(saveHotKey);
+        }
       }
       emitState();
     });
 
     taskTitleFocusNode.addListener(() {
-      if (taskTitleFocusNode.hasFocus) {
-        hotKeyManager.register(
-          saveHotKey,
-          keyDownHandler: (hotKey) => save(),
-        );
-      } else {
-        hotKeyManager.unregister(saveHotKey);
+      if (isDesktop) {
+        if (taskTitleFocusNode.hasFocus) {
+          hotKeyManager.register(
+            saveHotKey,
+            keyDownHandler: (hotKey) => save(),
+          );
+        } else {
+          hotKeyManager.unregister(saveHotKey);
+        }
       }
     });
 
