@@ -193,6 +193,37 @@ class MatrixService {
     }
   }
 
+  Future<String> joinRoom(String roomId) async {
+    try {
+      final joinRes = await _client.joinRoom(roomId).onError((
+        error,
+        stackTrace,
+      ) {
+        debugPrint('MatrixService join error $error');
+
+        _loggingDb.captureException(
+          error,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'joinRoom',
+          stackTrace: stackTrace,
+        );
+
+        return error.toString();
+      });
+      debugPrint('MatrixService joinRes $joinRes');
+      return joinRes;
+    } catch (e, stackTrace) {
+      debugPrint('$e');
+      _loggingDb.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'joinRoom',
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   bool isLoggedIn() {
     // TODO(unassigned): find non-deprecated solution
     // ignore: deprecated_member_use
