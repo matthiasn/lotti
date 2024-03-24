@@ -49,62 +49,63 @@ void main() {
         user: '@$testUserName:localhost',
         password: '?Secret123@!',
       );
-      debugPrint('--- Alice goes live');
-      final alice = MatrixService(
+      debugPrint('\n--- AliceDevice goes live');
+      final aliceDevice = MatrixService(
         matrixConfig: config,
-        hiveDbName: 'Alice',
-        deviceDisplayName: 'Alice',
+        hiveDbName: 'AliceDevice',
+        deviceDisplayName: 'AliceDevice',
       );
 
-      await alice.login();
-      await alice.listen();
+      await aliceDevice.login();
+      await aliceDevice.listen();
 
       debugPrint(
-        'Alice - deviceId: ${alice.client.deviceID}',
+        'AliceDevice - deviceId: ${aliceDevice.client.deviceID}',
       );
 
-      final roomId = await alice.createRoom();
-      debugPrint('Alice - room created: $roomId');
+      final roomId = await aliceDevice.createRoom();
+      debugPrint('AliceDevice - room created: $roomId');
 
       expect(roomId, isNotEmpty);
 
       await Future<void>.delayed(const Duration(seconds: 1));
 
-      final joinRes = await alice.joinRoom(roomId);
-      debugPrint('Alice - room joined: $joinRes');
+      final joinRes = await aliceDevice.joinRoom(roomId);
+      debugPrint('AliceDevice - room joined: $joinRes');
 
       await Future<void>.delayed(const Duration(seconds: 1));
 
-      debugPrint('--- Bob goes live');
-      final bob = MatrixService(
+      debugPrint('\n--- BobDevice goes live');
+      final bobDevice = MatrixService(
         matrixConfig: config,
-        hiveDbName: 'Bob',
-        deviceDisplayName: 'Alice',
+        hiveDbName: 'BobDevice',
+        deviceDisplayName: 'BobDevice',
       );
 
-      await bob.login();
-      await bob.listen();
-      debugPrint('Bob - deviceId: ${bob.client.deviceID}');
+      await bobDevice.login();
+      await bobDevice.listen();
+      debugPrint('BobDevice - deviceId: ${bobDevice.client.deviceID}');
 
-      final joinRes2 = await bob.joinRoom(roomId);
-      debugPrint('Bob - room joined: $joinRes2');
+      final joinRes2 = await bobDevice.joinRoom(roomId);
+      debugPrint('BobDevice - room joined: $joinRes2');
 
       await Future<void>.delayed(const Duration(seconds: 1));
 
-      final unverifiedAlice = alice.getUnverified();
-      final unverifiedBob = bob.getUnverified();
+      final unverifiedAlice = aliceDevice.getUnverified();
+      final unverifiedBob = bobDevice.getUnverified();
 
-      debugPrint('Alice - unverified: $unverifiedAlice');
-      debugPrint('Bob - unverified: $unverifiedBob');
+      debugPrint('AliceDevice - unverified: $unverifiedAlice');
+      debugPrint('BobDevice - unverified: $unverifiedBob');
 
       expect(unverifiedAlice.length, 1);
       expect(unverifiedBob.length, 1);
 
-      final outgoingKeyVerificationStream = alice.keyVerificationStream;
+      final outgoingKeyVerificationStream = aliceDevice.keyVerificationStream;
       final incomingKeyVerificationRunnerStream =
-          bob.incomingKeyVerificationRunnerStream;
+          bobDevice.incomingKeyVerificationRunnerStream;
 
-      await alice.verifyDevice(unverifiedAlice.first);
+      debugPrint('\n--- AliceDevice verifies BobDevice');
+      await aliceDevice.verifyDevice(unverifiedAlice.first);
 
       var emojisFromBob = '';
       var emojisFromAlice = '';
@@ -112,23 +113,37 @@ void main() {
       unawaited(
         incomingKeyVerificationRunnerStream.forEach((runner) async {
           debugPrint(
-              'Bob - incoming verification runner step: ${runner.lastStep}');
+            'BobDevice - incoming verification runner step: ${runner.lastStep}',
+          );
           if (runner.lastStep == 'm.key.verification.request') {
             await runner.acceptVerification();
           }
           if (runner.lastStep == 'm.key.verification.key') {
             emojisFromAlice = extractEmojiString(runner.emojis);
-            debugPrint('Bob received emojis: $emojisFromAlice');
+            debugPrint('BobDevice received emojis: $emojisFromAlice');
+
+            await Future<void>.delayed(const Duration(seconds: 1));
+            if (emojisFromAlice == emojisFromBob &&
+                emojisFromAlice.isNotEmpty) {
+              await runner.acceptEmojiVerification();
+            }
           }
         }),
       );
 
       unawaited(
-        outgoingKeyVerificationStream.forEach((runner) {
-          debugPrint('Alice - outgoing verification step: ${runner.lastStep}');
+        outgoingKeyVerificationStream.forEach((runner) async {
+          debugPrint(
+            'AliceDevice - outgoing verification step: ${runner.lastStep}',
+          );
           if (runner.lastStep == 'm.key.verification.key') {
             emojisFromBob = extractEmojiString(runner.emojis);
-            debugPrint('Alice received emojis: $emojisFromBob');
+            debugPrint('AliceDevice received emojis: $emojisFromBob');
+
+            await Future<void>.delayed(const Duration(seconds: 1));
+            if (emojisFromAlice == emojisFromBob && emojisFromBob.isNotEmpty) {
+              await runner.acceptEmojiVerification();
+            }
           }
         }),
       );
@@ -139,9 +154,15 @@ void main() {
       expect(emojisFromBob, isNotEmpty);
       expect(emojisFromAlice, emojisFromAlice);
 
-      debugPrint('--- Logging out Alice and Bob');
-      await alice.logout();
-      await bob.logout();
+      debugPrint(
+        '\n--- AliceDevice and BobDevice both have no unverified devices',
+      );
+      expect(aliceDevice.getUnverified(), isEmpty);
+      expect(bobDevice.getUnverified(), isEmpty);
+
+      debugPrint('\n--- Logging out AliceDevice and BobDevice');
+      await aliceDevice.logout();
+      await bobDevice.logout();
     });
   });
 }
@@ -150,7 +171,7 @@ String extractEmojiString(Iterable<KeyVerificationEmoji>? emojis) {
   final buffer = StringBuffer();
   if (emojis != null) {
     for (final emoji in emojis) {
-      buffer.write(emoji.emoji);
+      buffer.write('${emoji.emoji} ');
     }
   }
   return buffer.toString();
