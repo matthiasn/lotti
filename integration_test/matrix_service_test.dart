@@ -35,25 +35,51 @@ void main() {
     test('Create room & join', () async {
       const config = MatrixConfig(
         homeServer: 'http://localhost:8008',
-        user: '@lotti-test:localhost',
-        password: 'Secret123@',
+        user: '@lotti-test2:localhost',
+        password: '?Secret123@!',
       );
-      final matrixService = MatrixService(matrixConfig: config);
-      await matrixService.login();
-
-      final roomId = await matrixService.createRoom();
-      debugPrint('Room created: $roomId');
-
-      final room = matrixService.getRoom(roomId);
-      debugPrint('Room created: $room');
-
-      expect(
-        roomId,
-        isNotEmpty,
+      final matrixService1 = MatrixService(
+        matrixConfig: config,
+        hiveDbName: 'Alice',
+      );
+      await matrixService1.login();
+      debugPrint(
+        'MatrixService 1 - deviceId: ${matrixService1.client.deviceID}',
       );
 
-      final joinRes = await matrixService.joinRoom(roomId);
-      debugPrint('Room joined: $joinRes');
+      final roomId = await matrixService1.createRoom();
+      debugPrint('MatrixService 1 - room created: $roomId');
+
+      expect(roomId, isNotEmpty);
+
+      final joinRes = await matrixService1.joinRoom(roomId);
+      debugPrint('MatrixService 1 - room joined: $joinRes');
+
+      final matrixService2 = MatrixService(
+        matrixConfig: config,
+        hiveDbName: 'Bob',
+      );
+      await matrixService2.login();
+      debugPrint(
+        'MatrixService 2 - deviceId: ${matrixService2.client.deviceID}',
+      );
+
+      final joinRes2 = await matrixService2.joinRoom(roomId);
+      debugPrint('MatrixService 2 - room joined: $joinRes2');
+
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      final unverified1 = matrixService1.getUnverified();
+      final unverified2 = matrixService2.getUnverified();
+
+      debugPrint('MatrixService 1 - unverified: $unverified1');
+      debugPrint('MatrixService 2 - unverified: $unverified2');
+
+      expect(unverified1.length, 1);
+      expect(unverified2.length, 1);
+
+      await matrixService1.logout();
+      await matrixService2.logout();
     });
   });
 }
