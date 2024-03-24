@@ -2,7 +2,7 @@
 
 # Create user name
 uuid=$(uuidgen)
-TEST_USER=a="$(tr '[:upper:]' '[:lower:]' <<< "$uuid")"
+TEST_USER="$(tr '[:upper:]' '[:lower:]' <<< "$uuid")"
 
 # Go to dendrite docker directory that contains config and keys
 cd ../dendrite/build/docker/config || exit

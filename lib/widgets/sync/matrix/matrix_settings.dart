@@ -211,8 +211,8 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                 ),
               ),
             const SizedBox(height: 40),
-            Text('Device ID: ${_matrixService.getDeviceId()}'),
-            Text('Device Name: ${_matrixService.getDeviceName()}'),
+            Text('Device ID: ${_matrixService.deviceId}'),
+            Text('Device Name: ${_matrixService.deviceName}'),
             const SizedBox(height: 40),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

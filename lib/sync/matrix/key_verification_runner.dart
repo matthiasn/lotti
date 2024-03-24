@@ -8,6 +8,7 @@ class KeyVerificationRunner {
   KeyVerificationRunner(
     this.keyVerification, {
     required this.controller,
+    required this.name,
   }) {
     lastStep = keyVerification.lastStep ?? '';
     startedVerification = keyVerification.startedVerification;
@@ -18,15 +19,12 @@ class KeyVerificationRunner {
       const Duration(milliseconds: 100),
       (timer) {
         final newLastStep = keyVerification.lastStep;
-        // debugPrint('KeyVerificationRunner newLastStep: $newLastStep ');
         if (newLastStep != null && newLastStep != lastStep) {
           lastStep = newLastStep;
           lastStepHistory.add(newLastStep);
-          debugPrint('KeyVerificationRunner newLastStep: $newLastStep ');
-          publishState();
+          debugPrint('$name newLastStep: $newLastStep ');
 
           if (lastStep == 'm.key.verification.key') {
-            //acceptEmojiVerification();
             readEmojis();
           }
 
@@ -41,11 +39,14 @@ class KeyVerificationRunner {
           if (lastStep == 'm.key.verification.cancel') {
             stopTimer();
           }
+
+          publishState();
         }
       },
     );
   }
 
+  String name;
   String lastStep = '';
   bool? startedVerification;
   List<String> lastStepHistory = [];
@@ -69,10 +70,8 @@ class KeyVerificationRunner {
     return emojis;
   }
 
-  Future<List<KeyVerificationEmoji>?> readEmojis() async {
+  void readEmojis() {
     emojis = keyVerification.sasEmojis;
-    publishState();
-    return emojis;
   }
 
   void publishState() {
