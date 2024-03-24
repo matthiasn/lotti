@@ -149,17 +149,11 @@ class MatrixService {
           initialDeviceDisplayName: initialDeviceDisplayName,
         );
 
-        debugPrint('MatrixService userId ${_loginResponse?.userId}');
-
         _loggingDb.captureEvent(
           'logged in, userId ${_loginResponse?.userId},'
           ' deviceId  ${_loginResponse?.deviceId}',
           domain: 'MATRIX_SERVICE',
           subDomain: 'login',
-        );
-
-        debugPrint(
-          'MatrixService loginResponse deviceId ${_loginResponse?.deviceId}',
         );
       }
 
