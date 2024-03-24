@@ -22,7 +22,7 @@ class KeyVerificationRunner {
         if (newLastStep != null && newLastStep != lastStep) {
           lastStep = newLastStep;
           lastStepHistory.add(newLastStep);
-          debugPrint('$name newLastStep: $newLastStep ');
+          debugPrint('$name newLastStep: $newLastStep');
 
           if (lastStep == 'm.key.verification.key') {
             readEmojis();
@@ -30,10 +30,6 @@ class KeyVerificationRunner {
 
           if (lastStep == EventTypes.KeyVerificationDone) {
             stopTimer();
-          }
-
-          if (lastStep == 'm.key.verification.mac') {
-            //keyVerification.acceptVerification();
           }
 
           if (lastStep == 'm.key.verification.cancel') {
@@ -63,11 +59,8 @@ class KeyVerificationRunner {
     await keyVerification.acceptVerification();
   }
 
-  Future<List<KeyVerificationEmoji>?> acceptEmojiVerification() async {
+  Future<void> acceptEmojiVerification() async {
     await keyVerification.acceptSas();
-    emojis = keyVerification.sasEmojis;
-    publishState();
-    return emojis;
   }
 
   void readEmojis() {
