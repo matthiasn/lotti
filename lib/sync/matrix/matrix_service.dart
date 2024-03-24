@@ -39,10 +39,12 @@ class MatrixStats {
 }
 
 class MatrixService {
-  MatrixService({this.matrixConfig})
-      : _client = createClient(),
-        _keyVerificationController =
+  MatrixService({
+    this.matrixConfig,
+    String? hiveDbName,
+  }) : _keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
+    _client = createClient(hiveDbName: hiveDbName);
     _incomingKeyVerificationRunnerController =
         StreamController<KeyVerificationRunner>.broadcast(
       onListen: publishIncomingRunnerState,
@@ -57,7 +59,7 @@ class MatrixService {
     incomingKeyVerificationRunner?.publishState();
   }
 
-  Client _client;
+  late final Client _client;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   MatrixConfig? matrixConfig;
   LoginResponse? _loginResponse;
@@ -78,7 +80,9 @@ class MatrixService {
   final _incomingKeyVerificationController =
       StreamController<KeyVerification>.broadcast();
 
-  static Client createClient() {
+  Client createClient({
+    String? hiveDbName,
+  }) {
     return Client(
       'lotti',
       verificationMethods: {
@@ -88,10 +92,8 @@ class MatrixService {
       shareKeysWithUnverifiedDevices: false,
       databaseBuilder: (_) async {
         final dir = await getApplicationDocumentsDirectory();
-        final db = HiveCollectionsDatabase(
-          'lotti_sync',
-          '${dir.path}/matrix/',
-        );
+        final path = '${dir.path}/matrix/';
+        final db = HiveCollectionsDatabase(hiveDbName ?? 'lotti_sync', path);
         await db.open();
         return db;
       },
@@ -104,9 +106,12 @@ class MatrixService {
     await listen();
   }
 
+  Client get client {
+    return _client;
+  }
+
   Future<void> login() async {
     try {
-      _client = createClient();
       final matrixConfig = this.matrixConfig;
 
       if (matrixConfig == null) {
@@ -135,7 +140,7 @@ class MatrixService {
       );
 
       if (!isLoggedIn()) {
-        final initialDeviceDisplayName = await createDeviceName();
+        final initialDeviceDisplayName = await createMatrixDeviceName();
 
         _loginResponse = await _client.login(
           LoginType.mLoginPassword,
@@ -144,17 +149,11 @@ class MatrixService {
           initialDeviceDisplayName: initialDeviceDisplayName,
         );
 
-        debugPrint('MatrixService userId ${_loginResponse?.userId}');
-
         _loggingDb.captureEvent(
           'logged in, userId ${_loginResponse?.userId},'
           ' deviceId  ${_loginResponse?.deviceId}',
           domain: 'MATRIX_SERVICE',
           subDomain: 'login',
-        );
-
-        debugPrint(
-          'MatrixService loginResponse deviceId ${_loginResponse?.deviceId}',
         );
       }
 
@@ -165,22 +164,7 @@ class MatrixService {
       final roomId = matrixConfig.roomId;
 
       if (roomId != null) {
-        final joinRes = await _client.joinRoom(roomId).onError((
-          error,
-          stackTrace,
-        ) {
-          debugPrint('MatrixService join error $error');
-
-          _loggingDb.captureException(
-            error,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'login join',
-            stackTrace: stackTrace,
-          );
-
-          return error.toString();
-        });
-        debugPrint('MatrixService joinRes $joinRes');
+        await joinRoom(roomId);
       }
     } catch (e, stackTrace) {
       debugPrint('$e');
@@ -190,6 +174,36 @@ class MatrixService {
         subDomain: 'login',
         stackTrace: stackTrace,
       );
+    }
+  }
+
+  Future<String> joinRoom(String roomId) async {
+    try {
+      final joinRes = await _client.joinRoom(roomId).onError((
+        error,
+        stackTrace,
+      ) {
+        debugPrint('MatrixService join error $error');
+
+        _loggingDb.captureException(
+          error,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'joinRoom',
+          stackTrace: stackTrace,
+        );
+
+        return error.toString();
+      });
+      return joinRes;
+    } catch (e, stackTrace) {
+      debugPrint('$e');
+      _loggingDb.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'joinRoom',
+        stackTrace: stackTrace,
+      );
+      rethrow;
     }
   }
 
@@ -596,7 +610,7 @@ class MatrixService {
     await logout();
   }
 
-  Future<String> createDeviceName() async {
+  Future<String> createMatrixDeviceName() async {
     final operatingSystem = Platform.operatingSystem;
     var deviceName = operatingSystem;
 
@@ -615,6 +629,6 @@ class MatrixService {
     }
 
     final dateHhMm = DateTime.now().toIso8601String().substring(0, 16);
-    return '$deviceName $dateHhMm';
+    return '$deviceName $dateHhMm ${uuid.v1().substring(0, 4)}';
   }
 }
