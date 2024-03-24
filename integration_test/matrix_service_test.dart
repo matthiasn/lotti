@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
@@ -15,6 +17,13 @@ void main() {
   group('MatrixService Tests', () {
     final mockLoggingDb = MockLoggingDb();
     final secureStorageMock = MockSecureStorage();
+    const testUserEnv = 'TEST_USER';
+
+    if (!const bool.hasEnvironment(testUserEnv)) {
+      debugPrint('TEST_USER not defined!!! Run via run_matrix_tests.sh');
+      exit(1);
+    }
+    const testUserName = String.fromEnvironment(testUserEnv);
 
     setUpAll(() async {
       setFakeDocumentsPath();
@@ -35,7 +44,7 @@ void main() {
     test('Create room & join', () async {
       const config = MatrixConfig(
         homeServer: 'http://localhost:8008',
-        user: '@lotti-test2:localhost',
+        user: '@$testUserName:localhost',
         password: '?Secret123@!',
       );
       final matrixService1 = MatrixService(
@@ -67,7 +76,7 @@ void main() {
       final joinRes2 = await matrixService2.joinRoom(roomId);
       debugPrint('MatrixService 2 - room joined: $joinRes2');
 
-      await Future<void>.delayed(const Duration(seconds: 2));
+      await Future<void>.delayed(const Duration(seconds: 1));
 
       final unverified1 = matrixService1.getUnverified();
       final unverified2 = matrixService2.getUnverified();
