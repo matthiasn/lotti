@@ -44,7 +44,7 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
         'device name not found';
 
     return StreamBuilder<KeyVerificationRunner>(
-      stream: _matrixService.incomingKeyVerificationStream,
+      stream: _matrixService.incomingKeyVerificationRunnerStream,
       builder: (context, snapshot) {
         final runner = snapshot.data;
         final lastStep = runner?.lastStep;
