@@ -8,7 +8,7 @@ TEST_USER="$(tr '[:upper:]' '[:lower:]' <<< "$uuid")"
 cd ../dendrite/build/docker/config || exit
 
 # Create user using the create-account binary in dendrite build
-../../../bin/create-account -config dendrite.yaml -username "$TEST_USER" -password "?Secret123@!"
+../../../bin/create-account -config dendrite.yaml -username "$TEST_USER" -admin -password "?Secret123@!"
 cd - > /dev/null || exit
 
 fvm flutter test integration_test/matrix_service_test.dart --dart-define=TEST_USER="$TEST_USER"

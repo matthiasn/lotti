@@ -12,7 +12,6 @@ class KeyVerificationRunner {
   }) {
     lastStep = keyVerification.lastStep ?? '';
     startedVerification = keyVerification.startedVerification;
-    lastStepHistory.add(lastStep);
     publishState();
 
     _timer = Timer.periodic(
@@ -21,7 +20,6 @@ class KeyVerificationRunner {
         final newLastStep = keyVerification.lastStep;
         if (newLastStep != null && newLastStep != lastStep) {
           lastStep = newLastStep;
-          lastStepHistory.add(newLastStep);
           debugPrint('$name newLastStep: $newLastStep');
 
           if (lastStep == 'm.key.verification.key') {
@@ -45,7 +43,6 @@ class KeyVerificationRunner {
   String name;
   String lastStep = '';
   bool? startedVerification;
-  List<String> lastStepHistory = [];
   List<KeyVerificationEmoji>? emojis;
   KeyVerification keyVerification;
   StreamController<KeyVerificationRunner> controller;

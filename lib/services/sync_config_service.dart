@@ -73,7 +73,10 @@ class SyncConfigService {
 
   Future<void> setImapConfig(ImapConfig imapConfig) async {
     final json = jsonEncode(imapConfig);
-    await getIt<SecureStorage>().write(key: imapConfigKey, value: json);
+    await getIt<SecureStorage>().write(
+      key: imapConfigKey,
+      value: json,
+    );
   }
 
   Future<bool> testConnection(SyncConfig syncConfig) async {
