@@ -44,7 +44,7 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
         'device name not found';
 
     return StreamBuilder<KeyVerificationRunner>(
-      stream: _matrixService.incomingKeyVerificationStream,
+      stream: _matrixService.incomingKeyVerificationRunnerStream,
       builder: (context, snapshot) {
         final runner = snapshot.data;
         final lastStep = runner?.lastStep;
@@ -60,14 +60,6 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ...?runner?.lastStepHistory.map(
-                  (step) => Text(
-                    step,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Divider(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
