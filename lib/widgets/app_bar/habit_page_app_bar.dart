@@ -20,63 +20,65 @@ class HabitsSliverAppBar extends StatelessWidget {
         final cubit = context.read<HabitsCubit>();
 
         return SliverAppBar(
-          expandedHeight: 250,
           primary: false,
-          title: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                HabitStatusSegmentedControl(
-                  filter: state.displayFilter,
-                  onValueChanged: cubit.setDisplayFilter,
-                ),
-                const SizedBox(width: 10),
-                const HabitsFilter(),
-                IconButton(
-                  onPressed: cubit.toggleShowSearch,
-                  icon: Icon(
-                    Icons.search,
-                    color: state.showSearch
-                        ? Theme.of(context).primaryColor
-                        : Theme.of(context).colorScheme.outline,
-                  ),
-                ),
-                IconButton(
-                  onPressed: cubit.toggleShowTimeSpan,
-                  icon: Icon(
-                    Icons.calendar_month,
-                    color: state.showTimeSpan
-                        ? Theme.of(context).primaryColor
-                        : Theme.of(context).colorScheme.outline,
-                  ),
-                ),
-                SettingsButton(
-                  state.searchString.isNotEmpty
-                      ? '/settings/habits/search/${state.searchString}'
-                      : '/settings/habits',
-                ),
-                if (state.minY > 20)
-                  IconButton(
-                    onPressed: cubit.toggleZeroBased,
-                    icon: Icon(
-                      state.zeroBased
-                          ? MdiIcons.unfoldLessHorizontal
-                          : MdiIcons.unfoldMoreHorizontal,
-                      color: Theme.of(context).colorScheme.outline,
+          toolbarHeight: 240,
+          title: Column(
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    HabitStatusSegmentedControl(
+                      filter: state.displayFilter,
+                      onValueChanged: cubit.setDisplayFilter,
                     ),
-                  ),
-              ],
-            ),
+                    const SizedBox(width: 10),
+                    const HabitsFilter(),
+                    IconButton(
+                      onPressed: cubit.toggleShowSearch,
+                      icon: Icon(
+                        Icons.search,
+                        color: state.showSearch
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: cubit.toggleShowTimeSpan,
+                      icon: Icon(
+                        Icons.calendar_month,
+                        color: state.showTimeSpan
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                    SettingsButton(
+                      state.searchString.isNotEmpty
+                          ? '/settings/habits/search/${state.searchString}'
+                          : '/settings/habits',
+                    ),
+                    if (state.minY > 20)
+                      IconButton(
+                        onPressed: cubit.toggleZeroBased,
+                        icon: Icon(
+                          state.zeroBased
+                              ? MdiIcons.unfoldLessHorizontal
+                              : MdiIcons.unfoldMoreHorizontal,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(top: 10),
+                child: HabitCompletionRateChart(),
+              ),
+            ],
           ),
           pinned: true,
           automaticallyImplyLeading: false,
-          flexibleSpace: const FlexibleSpaceBar(
-            background: Padding(
-              padding: EdgeInsets.only(top: 70),
-              child: HabitCompletionRateChart(),
-            ),
-          ),
         );
       },
     );
