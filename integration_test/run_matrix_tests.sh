@@ -11,4 +11,4 @@ cd ../dendrite/build/docker/config || exit
 ../../../bin/create-account -config dendrite.yaml -username "$TEST_USER" -admin -password "?Secret123@!"
 cd - > /dev/null || exit
 
-fvm flutter test integration_test/matrix_service_test.dart --dart-define=TEST_USER="$TEST_USER"
+fvm flutter test integration_test/matrix_service_test.dart --dart-define=TEST_USER="@$TEST_USER:localhost"
