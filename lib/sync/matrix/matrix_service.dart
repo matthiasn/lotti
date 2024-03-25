@@ -597,14 +597,11 @@ class MatrixService {
   }
 
   Future<void> setMatrixConfig(MatrixConfig config) async {
+    matrixConfig = config;
     await getIt<SecureStorage>().write(
       key: matrixConfigKey,
-      value: jsonEncode(matrixConfig),
+      value: jsonEncode(config),
     );
-    matrixConfig = config;
-
-    await logout();
-    await login();
   }
 
   Future<void> deleteMatrixConfig() async {

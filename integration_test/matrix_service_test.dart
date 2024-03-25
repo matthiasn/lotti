@@ -16,6 +16,7 @@ import '../test/mocks/mocks.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // description and how to run in https://github.com/matthiasn/lotti/pull/1695
   group('MatrixService Tests', () {
     final mockLoggingDb = MockLoggingDb();
     final secureStorageMock = MockSecureStorage();

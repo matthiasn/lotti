@@ -73,14 +73,6 @@ class _VerificationModalState extends State<VerificationModal> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ...?runner?.lastStepHistory.map(
-                  (step) => Text(
-                    step,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Divider(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
