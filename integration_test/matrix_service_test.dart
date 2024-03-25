@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
 
 import '../test/helpers/path_provider.dart';
 import '../test/mocks/mocks.dart';
@@ -14,6 +16,7 @@ import '../test/mocks/mocks.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // description and how to run in https://github.com/matthiasn/lotti/pull/1695
   group('MatrixService Tests', () {
     final mockLoggingDb = MockLoggingDb();
     final secureStorageMock = MockSecureStorage();
@@ -47,48 +50,130 @@ void main() {
         user: '@$testUserName:localhost',
         password: '?Secret123@!',
       );
-      final matrixService1 = MatrixService(
+      debugPrint('\n--- AliceDevice goes live');
+      final aliceDevice = MatrixService(
         matrixConfig: config,
-        hiveDbName: 'Alice',
-      );
-      await matrixService1.login();
-      debugPrint(
-        'MatrixService 1 - deviceId: ${matrixService1.client.deviceID}',
+        hiveDbName: 'AliceDevice',
+        deviceDisplayName: 'AliceDevice',
       );
 
-      final roomId = await matrixService1.createRoom();
-      debugPrint('MatrixService 1 - room created: $roomId');
+      await aliceDevice.login();
+      await aliceDevice.listen();
+
+      debugPrint(
+        'AliceDevice - deviceId: ${aliceDevice.client.deviceID}',
+      );
+
+      final roomId = await aliceDevice.createRoom();
+      debugPrint('AliceDevice - room created: $roomId');
 
       expect(roomId, isNotEmpty);
 
-      final joinRes = await matrixService1.joinRoom(roomId);
-      debugPrint('MatrixService 1 - room joined: $joinRes');
+      await Future<void>.delayed(const Duration(seconds: 1));
 
-      final matrixService2 = MatrixService(
-        matrixConfig: config,
-        hiveDbName: 'Bob',
-      );
-      await matrixService2.login();
-      debugPrint(
-        'MatrixService 2 - deviceId: ${matrixService2.client.deviceID}',
-      );
-
-      final joinRes2 = await matrixService2.joinRoom(roomId);
-      debugPrint('MatrixService 2 - room joined: $joinRes2');
+      final joinRes = await aliceDevice.joinRoom(roomId);
+      debugPrint('AliceDevice - room joined: $joinRes');
 
       await Future<void>.delayed(const Duration(seconds: 1));
 
-      final unverified1 = matrixService1.getUnverified();
-      final unverified2 = matrixService2.getUnverified();
+      debugPrint('\n--- BobDevice goes live');
+      final bobDevice = MatrixService(
+        matrixConfig: config,
+        hiveDbName: 'BobDevice',
+        deviceDisplayName: 'BobDevice',
+      );
 
-      debugPrint('MatrixService 1 - unverified: $unverified1');
-      debugPrint('MatrixService 2 - unverified: $unverified2');
+      await bobDevice.login();
+      await bobDevice.listen();
+      debugPrint('BobDevice - deviceId: ${bobDevice.client.deviceID}');
 
-      expect(unverified1.length, 1);
-      expect(unverified2.length, 1);
+      final joinRes2 = await bobDevice.joinRoom(roomId);
+      debugPrint('BobDevice - room joined: $joinRes2');
 
-      await matrixService1.logout();
-      await matrixService2.logout();
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      final unverifiedAlice = aliceDevice.getUnverified();
+      final unverifiedBob = bobDevice.getUnverified();
+
+      debugPrint('AliceDevice - unverified: $unverifiedAlice');
+      debugPrint('BobDevice - unverified: $unverifiedBob');
+
+      expect(unverifiedAlice.length, 1);
+      expect(unverifiedBob.length, 1);
+
+      final outgoingKeyVerificationStream = aliceDevice.keyVerificationStream;
+      final incomingKeyVerificationRunnerStream =
+          bobDevice.incomingKeyVerificationRunnerStream;
+
+      debugPrint('\n--- AliceDevice verifies BobDevice');
+      await aliceDevice.verifyDevice(unverifiedAlice.first);
+
+      var emojisFromBob = '';
+      var emojisFromAlice = '';
+
+      unawaited(
+        incomingKeyVerificationRunnerStream.forEach((runner) async {
+          debugPrint(
+            'BobDevice - incoming verification runner step: ${runner.lastStep}',
+          );
+          if (runner.lastStep == 'm.key.verification.request') {
+            await runner.acceptVerification();
+          }
+          if (runner.lastStep == 'm.key.verification.key') {
+            emojisFromAlice = extractEmojiString(runner.emojis);
+            debugPrint('BobDevice received emojis: $emojisFromAlice');
+
+            await Future<void>.delayed(const Duration(seconds: 1));
+            if (emojisFromAlice == emojisFromBob &&
+                emojisFromAlice.isNotEmpty) {
+              await runner.acceptEmojiVerification();
+            }
+          }
+        }),
+      );
+
+      unawaited(
+        outgoingKeyVerificationStream.forEach((runner) async {
+          debugPrint(
+            'AliceDevice - outgoing verification step: ${runner.lastStep}',
+          );
+          if (runner.lastStep == 'm.key.verification.key') {
+            emojisFromBob = extractEmojiString(runner.emojis);
+            debugPrint('AliceDevice received emojis: $emojisFromBob');
+
+            await Future<void>.delayed(const Duration(seconds: 1));
+            if (emojisFromAlice == emojisFromBob && emojisFromBob.isNotEmpty) {
+              await runner.acceptEmojiVerification();
+            }
+          }
+        }),
+      );
+
+      await Future<void>.delayed(const Duration(seconds: 5));
+
+      expect(emojisFromAlice, isNotEmpty);
+      expect(emojisFromBob, isNotEmpty);
+      expect(emojisFromAlice, emojisFromAlice);
+
+      debugPrint(
+        '\n--- AliceDevice and BobDevice both have no unverified devices',
+      );
+      expect(aliceDevice.getUnverified(), isEmpty);
+      expect(bobDevice.getUnverified(), isEmpty);
+
+      debugPrint('\n--- Logging out AliceDevice and BobDevice');
+      await aliceDevice.logout();
+      await bobDevice.logout();
     });
   });
+}
+
+String extractEmojiString(Iterable<KeyVerificationEmoji>? emojis) {
+  final buffer = StringBuffer();
+  if (emojis != null) {
+    for (final emoji in emojis) {
+      buffer.write('${emoji.emoji} ');
+    }
+  }
+  return buffer.toString();
 }

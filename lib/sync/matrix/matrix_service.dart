@@ -41,6 +41,7 @@ class MatrixStats {
 class MatrixService {
   MatrixService({
     this.matrixConfig,
+    this.deviceDisplayName,
     String? hiveDbName,
   }) : _keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
@@ -51,7 +52,7 @@ class MatrixService {
     );
 
     keyVerificationStream = _keyVerificationController.stream;
-    incomingKeyVerificationStream =
+    incomingKeyVerificationRunnerStream =
         _incomingKeyVerificationRunnerController.stream;
   }
 
@@ -59,6 +60,7 @@ class MatrixService {
     incomingKeyVerificationRunner?.publishState();
   }
 
+  final String? deviceDisplayName;
   late final Client _client;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   MatrixConfig? matrixConfig;
@@ -75,7 +77,7 @@ class MatrixService {
   late final StreamController<KeyVerificationRunner>
       _incomingKeyVerificationRunnerController;
   late final Stream<KeyVerificationRunner> keyVerificationStream;
-  late final Stream<KeyVerificationRunner> incomingKeyVerificationStream;
+  late final Stream<KeyVerificationRunner> incomingKeyVerificationRunnerStream;
 
   final _incomingKeyVerificationController =
       StreamController<KeyVerification>.broadcast();
@@ -140,7 +142,8 @@ class MatrixService {
       );
 
       if (!isLoggedIn()) {
-        final initialDeviceDisplayName = await createMatrixDeviceName();
+        final initialDeviceDisplayName =
+            deviceDisplayName ?? await createMatrixDeviceName();
 
         _loginResponse = await _client.login(
           LoginType.mLoginPassword,
@@ -245,6 +248,7 @@ class MatrixService {
     keyVerificationRunner = KeyVerificationRunner(
       keyVerification,
       controller: _keyVerificationController,
+      name: 'Outgoing KeyVerificationRunner',
     );
   }
 
@@ -255,11 +259,11 @@ class MatrixService {
     }
   }
 
-  String? getDeviceId() {
+  String? get deviceId {
     return _client.deviceID;
   }
 
-  String? getDeviceName() {
+  String? get deviceName {
     return _client.deviceName;
   }
 
@@ -279,6 +283,7 @@ class MatrixService {
         incomingKeyVerificationRunner = KeyVerificationRunner(
           keyVerification,
           controller: _incomingKeyVerificationRunnerController,
+          name: 'Incoming KeyVerificationRunner',
         );
 
         debugPrint('Key Verification Request from ${keyVerification.deviceId}');
@@ -592,14 +597,11 @@ class MatrixService {
   }
 
   Future<void> setMatrixConfig(MatrixConfig config) async {
+    matrixConfig = config;
     await getIt<SecureStorage>().write(
       key: matrixConfigKey,
-      value: jsonEncode(matrixConfig),
+      value: jsonEncode(config),
     );
-    matrixConfig = config;
-
-    await logout();
-    await login();
   }
 
   Future<void> deleteMatrixConfig() async {

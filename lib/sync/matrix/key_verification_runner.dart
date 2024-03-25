@@ -8,25 +8,21 @@ class KeyVerificationRunner {
   KeyVerificationRunner(
     this.keyVerification, {
     required this.controller,
+    required this.name,
   }) {
     lastStep = keyVerification.lastStep ?? '';
     startedVerification = keyVerification.startedVerification;
-    lastStepHistory.add(lastStep);
     publishState();
 
     _timer = Timer.periodic(
       const Duration(milliseconds: 100),
       (timer) {
         final newLastStep = keyVerification.lastStep;
-        // debugPrint('KeyVerificationRunner newLastStep: $newLastStep ');
         if (newLastStep != null && newLastStep != lastStep) {
           lastStep = newLastStep;
-          lastStepHistory.add(newLastStep);
-          debugPrint('KeyVerificationRunner newLastStep: $newLastStep ');
-          publishState();
+          debugPrint('$name newLastStep: $newLastStep');
 
           if (lastStep == 'm.key.verification.key') {
-            //acceptEmojiVerification();
             readEmojis();
           }
 
@@ -34,21 +30,19 @@ class KeyVerificationRunner {
             stopTimer();
           }
 
-          if (lastStep == 'm.key.verification.mac') {
-            //keyVerification.acceptVerification();
-          }
-
           if (lastStep == 'm.key.verification.cancel') {
             stopTimer();
           }
+
+          publishState();
         }
       },
     );
   }
 
+  String name;
   String lastStep = '';
   bool? startedVerification;
-  List<String> lastStepHistory = [];
   List<KeyVerificationEmoji>? emojis;
   KeyVerification keyVerification;
   StreamController<KeyVerificationRunner> controller;
@@ -62,17 +56,12 @@ class KeyVerificationRunner {
     await keyVerification.acceptVerification();
   }
 
-  Future<List<KeyVerificationEmoji>?> acceptEmojiVerification() async {
+  Future<void> acceptEmojiVerification() async {
     await keyVerification.acceptSas();
-    emojis = keyVerification.sasEmojis;
-    publishState();
-    return emojis;
   }
 
-  Future<List<KeyVerificationEmoji>?> readEmojis() async {
+  void readEmojis() {
     emojis = keyVerification.sasEmojis;
-    publishState();
-    return emojis;
   }
 
   void publishState() {
