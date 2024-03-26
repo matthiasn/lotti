@@ -4,8 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:quiver/collection.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class TaskStatusFilter extends StatelessWidget {
   const TaskStatusFilter({super.key});
@@ -14,18 +17,19 @@ class TaskStatusFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              const SizedBox(width: 5),
-              ...snapshot.taskStatuses.map(
-                TaskStatusChip.new,
+        return Wrap(
+          runSpacing: 10,
+          spacing: 5,
+          children: [
+            ...snapshot.taskStatuses.map(
+              (status) => TaskStatusChip(
+                status,
+                onlySelected: false,
               ),
-              const TaskStatusAllChip(),
-              const SizedBox(width: 5),
-            ],
-          ),
+            ),
+            const TaskStatusAllChip(),
+            const SizedBox(width: 5),
+          ],
         );
       },
     );
@@ -80,10 +84,12 @@ class TaskListToggle extends StatelessWidget {
 class TaskStatusChip extends StatelessWidget {
   const TaskStatusChip(
     this.status, {
+    required this.onlySelected,
     super.key,
   });
 
   final String status;
+  final bool onlySelected;
 
   @override
   Widget build(BuildContext context) {
@@ -113,11 +119,29 @@ class TaskStatusChip extends StatelessWidget {
           HapticFeedback.heavyImpact();
         }
 
+        final isSelected = snapshot.selectedTaskStatuses.contains(status);
+
+        if (onlySelected && !isSelected) {
+          return const SizedBox.shrink();
+        }
+
+        final backgroundColor = switch (status) {
+          'OPEN' => Colors.orange,
+          'GROOMED' => Colors.lightGreenAccent,
+          'IN PROGRESS' => Colors.blue,
+          'BLOCKED' => Colors.red,
+          'ON HOLD' => Colors.red,
+          'DONE' => Colors.green,
+          'REJECTED' => Colors.red,
+          String() => Colors.grey,
+        };
+
         return FilterChoiceChip(
           label: '${localizationLookup[status]}',
-          isSelected: snapshot.selectedTaskStatuses.contains(status),
+          isSelected: isSelected,
           onTap: onTap,
           onLongPress: onLongPress,
+          selectedColor: backgroundColor,
         );
       },
     );
@@ -152,9 +176,105 @@ class TaskStatusAllChip extends StatelessWidget {
         return FilterChoiceChip(
           label: localizations.taskStatusAll,
           isSelected: isSelected,
+          selectedColor: Theme.of(context).colorScheme.secondary,
           onTap: onTap,
         );
       },
+    );
+  }
+}
+
+const double _pagePadding = 16;
+const double _pageBreakpoint = 768;
+
+class TaskFilterIcon extends StatelessWidget {
+  const TaskFilterIcon({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final pageIndexNotifier = ValueNotifier(0);
+
+    SliverWoltModalSheetPage page1(
+      BuildContext modalSheetContext,
+      TextTheme textTheme,
+    ) {
+      return WoltModalSheetPage(
+        hasSabGradient: false,
+        topBarTitle: Text('Tasks Filter', style: textTheme.titleSmall),
+        isTopBarLayerAlwaysVisible: true,
+        trailingNavBarWidget: IconButton(
+          padding: const EdgeInsets.all(_pagePadding),
+          icon: const Icon(Icons.close),
+          onPressed: Navigator.of(modalSheetContext).pop,
+        ),
+        child: const Padding(
+          padding: EdgeInsets.only(
+            bottom: 30,
+            left: 10,
+            top: 10,
+            right: 10,
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  JournalFilter(),
+                  SizedBox(width: 10),
+                  TaskListToggle(),
+                ],
+              ),
+              SizedBox(height: 10),
+              TaskStatusFilter(),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 30),
+      child: IconButton(
+        onPressed: () {
+          WoltModalSheet.show<void>(
+            pageIndexNotifier: pageIndexNotifier,
+            context: context,
+            pageListBuilder: (modalSheetContext) {
+              final textTheme = Theme.of(context).textTheme;
+              return [
+                page1(modalSheetContext, textTheme),
+              ];
+            },
+            decorator: (child) {
+              return MultiBlocProvider(
+                providers: [
+                  BlocProvider.value(
+                    value: context.read<JournalPageCubit>(),
+                  ),
+                ],
+                child: child,
+              );
+            },
+            modalTypeBuilder: (context) {
+              final size = MediaQuery.of(context).size.width;
+              if (size < _pageBreakpoint) {
+                return WoltModalType.bottomSheet;
+              } else {
+                return WoltModalType.dialog;
+              }
+            },
+            onModalDismissedWithBarrierTap: () {
+              debugPrint('Closed modal sheet with barrier tap');
+              Navigator.of(context).pop();
+            },
+            maxDialogWidth: 560,
+            minDialogWidth: 400,
+            minPageHeight: 0,
+            maxPageHeight: 0.9,
+          );
+        },
+        icon: Icon(MdiIcons.filterVariant),
+      ),
     );
   }
 }

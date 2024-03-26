@@ -8,12 +8,14 @@ class FilterChoiceChip extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.selectedColor,
     this.onLongPress,
     super.key,
   });
 
   final String label;
   final bool isSelected;
+  final Color? selectedColor;
   final void Function() onTap;
   final void Function()? onLongPress;
 
@@ -29,9 +31,11 @@ class FilterChoiceChip extends StatelessWidget {
             horizontal: horizontalChipMargin,
           ),
           child: Chip(
-            side: isSelected
-                ? BorderSide.none
-                : BorderSide(color: Theme.of(context).colorScheme.secondary),
+            side: BorderSide(
+              color: isSelected
+                  ? selectedColor ?? Colors.grey
+                  : Theme.of(context).colorScheme.secondary,
+            ),
             label: Text(
               label,
               style: choiceChipTextStyle(
@@ -40,8 +44,9 @@ class FilterChoiceChip extends StatelessWidget {
               ),
             ),
             visualDensity: VisualDensity.compact,
-            backgroundColor:
-                isSelected ? Theme.of(context).colorScheme.secondary : null,
+            backgroundColor: isSelected
+                ? selectedColor ?? Theme.of(context).colorScheme.secondary
+                : null,
           ),
         ),
       ),
