@@ -36,7 +36,7 @@ class _SearchWidgetState extends State<SearchWidget> {
       child: Container(
         margin: widget.margin,
         height: 53,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.only(left: 10),
         child: SearchBar(
           controller: controller,
           hintText: widget.hintText ?? localizations.searchHint,

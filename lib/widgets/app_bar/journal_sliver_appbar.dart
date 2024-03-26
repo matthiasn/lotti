@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:lotti/widgets/search/task_status_filter.dart';
@@ -18,35 +17,34 @@ class JournalSliverAppBar extends StatelessWidget {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
+        final showTasks = snapshot.showTasks;
 
         return SliverAppBar(
-          expandedHeight: 200,
-          flexibleSpace: FlexibleSpaceBar(
-            background: Padding(
-              padding: EdgeInsets.only(top: isIOS ? 30 : 0),
-              child: Column(
+          expandedHeight: showTasks ? null : 230,
+          pinned: true,
+          toolbarHeight: showTasks ? 100 : 200,
+          title: Column(
+            children: [
+              const SizedBox(height: 10),
+              Row(
                 children: [
-                  SearchWidget(
-                    margin: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 40,
+                  Flexible(
+                    child: SearchWidget(
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 40,
+                      ),
+                      text: snapshot.match,
+                      onChanged: cubit.setSearchString,
                     ),
-                    text: snapshot.match,
-                    onChanged: cubit.setSearchString,
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const JournalFilter(),
-                      if (snapshot.showTasks) const TaskListToggle(),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  if (!snapshot.showTasks) const EntryTypeFilter(),
-                  if (snapshot.showTasks) const TaskStatusFilter(),
+                  if (showTasks) const TaskFilterIcon(),
                 ],
               ),
-            ),
+              if (!showTasks) const JournalFilter(),
+              const SizedBox(height: 10),
+              if (!showTasks) const EntryTypeFilter(),
+            ],
           ),
         );
       },

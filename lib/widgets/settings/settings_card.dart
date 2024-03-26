@@ -30,13 +30,10 @@ class SettingsCard extends StatelessWidget {
     return Card(
       child: ListTile(
         contentPadding: contentPadding,
-        title: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Text(
-            title,
-            style: settingsCardTextStyle,
-            semanticsLabel: semanticsLabel,
-          ),
+        title: Text(
+          title,
+          style: settingsCardTextStyle,
+          semanticsLabel: semanticsLabel,
         ),
         subtitle: subtitle,
         leading: leading,
