@@ -13,16 +13,14 @@ class EntryTypeFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              const SizedBox(width: 5),
-              ...entryTypes.map(EntryTypeChip.new),
-              const EntryTypeAllChip(),
-              const SizedBox(width: 5),
-            ],
-          ),
+        return Wrap(
+          runSpacing: 10,
+          spacing: 5,
+          children: [
+            ...entryTypes.map(EntryTypeChip.new),
+            const EntryTypeAllChip(),
+            const SizedBox(width: 5),
+          ],
         );
       },
     );
