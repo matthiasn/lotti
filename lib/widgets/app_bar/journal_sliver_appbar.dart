@@ -6,6 +6,8 @@ import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 import 'package:lotti/widgets/search/task_status_filter.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class JournalSliverAppBar extends StatelessWidget {
   const JournalSliverAppBar({
@@ -20,9 +22,8 @@ class JournalSliverAppBar extends StatelessWidget {
         final showTasks = snapshot.showTasks;
 
         return SliverAppBar(
-          expandedHeight: showTasks ? null : 230,
           pinned: true,
-          toolbarHeight: showTasks ? 100 : 200,
+          toolbarHeight: 100,
           title: Column(
             children: [
               const SizedBox(height: 10),
@@ -39,11 +40,9 @@ class JournalSliverAppBar extends StatelessWidget {
                     ),
                   ),
                   if (showTasks) const TaskFilterIcon(),
+                  if (!showTasks) const JournalFilterIcon(),
                 ],
               ),
-              if (!showTasks) const JournalFilter(),
-              const SizedBox(height: 10),
-              if (!showTasks) const EntryTypeFilter(),
             ],
           ),
         );
@@ -114,6 +113,94 @@ class JournalFilter extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+const double _pagePadding = 16;
+const double _pageBreakpoint = 768;
+
+class JournalFilterIcon extends StatelessWidget {
+  const JournalFilterIcon({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final pageIndexNotifier = ValueNotifier(0);
+
+    SliverWoltModalSheetPage page1(
+      BuildContext modalSheetContext,
+      TextTheme textTheme,
+    ) {
+      return WoltModalSheetPage(
+        hasSabGradient: false,
+        topBarTitle: Text('Entries Filter', style: textTheme.titleSmall),
+        isTopBarLayerAlwaysVisible: true,
+        trailingNavBarWidget: IconButton(
+          padding: const EdgeInsets.all(_pagePadding),
+          icon: const Icon(Icons.close),
+          onPressed: Navigator.of(modalSheetContext).pop,
+        ),
+        child: const Padding(
+          padding: EdgeInsets.only(
+            bottom: 30,
+            left: 10,
+            top: 10,
+            right: 10,
+          ),
+          child: Column(
+            children: [
+              JournalFilter(),
+              SizedBox(height: 10),
+              EntryTypeFilter(),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 30),
+      child: IconButton(
+        onPressed: () {
+          WoltModalSheet.show<void>(
+            pageIndexNotifier: pageIndexNotifier,
+            context: context,
+            pageListBuilder: (modalSheetContext) {
+              final textTheme = Theme.of(context).textTheme;
+              return [
+                page1(modalSheetContext, textTheme),
+              ];
+            },
+            decorator: (child) {
+              return MultiBlocProvider(
+                providers: [
+                  BlocProvider.value(
+                    value: context.read<JournalPageCubit>(),
+                  ),
+                ],
+                child: child,
+              );
+            },
+            modalTypeBuilder: (context) {
+              final size = MediaQuery.of(context).size.width;
+              if (size < _pageBreakpoint) {
+                return WoltModalType.bottomSheet;
+              } else {
+                return WoltModalType.dialog;
+              }
+            },
+            onModalDismissedWithBarrierTap: () {
+              debugPrint('Closed modal sheet with barrier tap');
+              Navigator.of(context).pop();
+            },
+            maxDialogWidth: 560,
+            minDialogWidth: 400,
+            minPageHeight: 0,
+            maxPageHeight: 0.9,
+          );
+        },
+        icon: Icon(MdiIcons.filterVariant),
+      ),
     );
   }
 }
