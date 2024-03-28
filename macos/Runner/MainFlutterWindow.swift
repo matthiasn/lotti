@@ -1,5 +1,7 @@
 import Cocoa
 import FlutterMacOS
+import WhisperKit
+
 
 import IOKit
 
@@ -18,9 +20,11 @@ class MainFlutterWindow: NSWindow {
             switch call.method {
             case "transcribe":
                 guard let args = call.arguments as? [String: Any] else { return }
+                let audioFilePath = args["audioFilePath"] as! String
                 Task {
-                    let text = await transcribe(args: args)
-                    result(text)
+                    let pipe = try? await WhisperKit(model: "large-v3")
+                    let transcription = try? await pipe!.transcribe(audioPath: audioFilePath)?.text
+                    result(transcription)
                 }
             case "detectLanguage":
                 guard let args = call.arguments as? [String: Any] else { return }
