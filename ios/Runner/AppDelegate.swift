@@ -26,7 +26,7 @@ import WhisperKit
                 let audioFilePath = args["audioFilePath"] as! String
                 
                 Task {
-                    let pipe = try? await WhisperKit(model: "large-v3")
+                    let pipe = try? await WhisperKit(model: "small")
 
                     let transcription = try? await pipe!.transcribe(
                         audioPath: audioFilePath,
