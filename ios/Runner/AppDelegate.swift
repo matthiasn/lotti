@@ -24,23 +24,21 @@ import WhisperKit
             case "transcribe":
                 guard let args = call.arguments as? [String: Any] else { return }
                 let audioFilePath = args["audioFilePath"] as! String
-                let language = args["language"] as! String
                 
                 Task {
-                    let pipe = try? await WhisperKit()
+                    let pipe = try? await WhisperKit(model: "large-v3")
+
                     let transcription = try? await pipe!.transcribe(
                         audioPath: audioFilePath,
                         decodeOptions: DecodingOptions(
                             task: DecodingTask.transcribe,
-                            language: language
-                    ))?.text
-                    result(transcription)
-                }
-            case "detectLanguage":
-                guard let args = call.arguments as? [String: Any] else { return }
-                Task {
-                    let lang =  await detectLanguage( args: args)
-                    result(lang)
+                            usePrefillPrompt: false
+                        ))
+                    
+                    let text = transcription?.text
+                    let language = transcription?.language
+                    
+                    result(text)
                 }
             default:
                 result(FlutterMethodNotImplemented)
