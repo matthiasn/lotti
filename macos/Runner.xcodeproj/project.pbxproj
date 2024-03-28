@@ -16,6 +16,9 @@
 			dependencies = (
 			);
 			name = "Flutter Assemble";
+			packageProductDependencies = (
+				ADFF305F2BB4EF3100B8F8C8 /* WhisperKit */,
+			);
 			productName = FLX;
 		};
 /* End PBXAggregateTarget section */
@@ -34,6 +37,7 @@
 		AD3F79962B41D994009867B5 /* LibWhisper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD3F79942B41D994009867B5 /* LibWhisper.swift */; };
 		AD3F799B2B41D9AA009867B5 /* ggml.c in Sources */ = {isa = PBXBuildFile; fileRef = AD3F79972B41D9AA009867B5 /* ggml.c */; };
 		AD3F799C2B41D9AA009867B5 /* whisper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD3F79992B41D9AA009867B5 /* whisper.cpp */; };
+		ADFF30612BB4F39E00B8F8C8 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = ADFF30602BB4F39E00B8F8C8 /* WhisperKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -99,6 +103,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ADFF30612BB4F39E00B8F8C8 /* WhisperKit in Frameworks */,
 				AD2C9ED82B50E0240023FFD8 /* libolm.3.dylib in Frameworks */,
 				7E2335674AA28E31A7EEBE87 /* Pods_Runner.framework in Frameworks */,
 				AD222ED52B6F1352003661C2 /* libcrypto.1.1.dylib in Frameworks */,
@@ -230,6 +235,9 @@
 				33CC11202044C79F0003C045 /* PBXTargetDependency */,
 			);
 			name = Runner;
+			packageProductDependencies = (
+				ADFF30602BB4F39E00B8F8C8 /* WhisperKit */,
+			);
 			productName = Runner;
 			productReference = 33CC10ED2044A3C60003C045 /* LottiDev.app */;
 			productType = "com.apple.product-type.application";
@@ -268,6 +276,9 @@
 				Base,
 			);
 			mainGroup = 33CC10E42044A3C60003C045;
+			packageReferences = (
+				ADFF305C2BB4EC9700B8F8C8 /* XCRemoteSwiftPackageReference "whisperkit" */,
+			);
 			productRefGroup = 33CC10EE2044A3C60003C045 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -473,7 +484,7 @@
 					"$(PROJECT_DIR)/Runner",
 					"$(PROJECT_DIR)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.5;
 				OTHER_CFLAGS = (
 					"-O3",
 					"-DNDEBUG",
@@ -614,7 +625,7 @@
 					"$(PROJECT_DIR)/Runner",
 					"$(PROJECT_DIR)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.5;
 				OTHER_CFLAGS = (
 					"-O3",
 					"-DNDEBUG",
@@ -649,7 +660,7 @@
 					"$(PROJECT_DIR)/Runner",
 					"$(PROJECT_DIR)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.5;
 				OTHER_CFLAGS = (
 					"-O3",
 					"-DNDEBUG",
@@ -715,6 +726,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		ADFF305C2BB4EC9700B8F8C8 /* XCRemoteSwiftPackageReference "whisperkit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/whisperkit";
+			requirement = {
+				kind = exactVersion;
+				version = 0.4.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		ADFF305F2BB4EF3100B8F8C8 /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ADFF305C2BB4EC9700B8F8C8 /* XCRemoteSwiftPackageReference "whisperkit" */;
+			productName = WhisperKit;
+		};
+		ADFF30602BB4F39E00B8F8C8 /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ADFF305C2BB4EC9700B8F8C8 /* XCRemoteSwiftPackageReference "whisperkit" */;
+			productName = WhisperKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 33CC10E52044A3C60003C045 /* Project object */;
 }
