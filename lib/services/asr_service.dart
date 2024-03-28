@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
@@ -70,12 +71,13 @@ class AsrService {
           },
         );
         final finish = DateTime.now();
+        final model = Platform.isIOS ? 'small' : 'large-v3';
 
         if (result != null) {
           final transcript = AudioTranscript(
             created: DateTime.now(),
             library: 'WhisperKit',
-            model: '-',
+            model: model,
             detectedLanguage: '-',
             transcript: result.trim(),
             processingTime: finish.difference(start),
