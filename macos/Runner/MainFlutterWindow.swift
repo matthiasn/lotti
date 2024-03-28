@@ -21,9 +21,18 @@ class MainFlutterWindow: NSWindow {
             case "transcribe":
                 guard let args = call.arguments as? [String: Any] else { return }
                 let audioFilePath = args["audioFilePath"] as! String
+                let language = args["language"] as! String
+
                 Task {
                     let pipe = try? await WhisperKit(model: "large-v3")
-                    let transcription = try? await pipe!.transcribe(audioPath: audioFilePath)?.text
+        
+                    let transcription = try? await pipe!.transcribe(
+                        audioPath: audioFilePath,
+                        decodeOptions: DecodingOptions(
+                            task: DecodingTask.transcribe,
+                            language: language
+                    ))?.text
+                    
                     result(transcription)
                 }
             case "detectLanguage":
