@@ -18,6 +18,9 @@ import WhisperKit
         let transcriptionChannel = FlutterMethodChannel(
             name: "lotti/transcribe",
             binaryMessenger: controller.binaryMessenger)
+
+        let model = "small"
+        var pipe: WhisperKit?
         
         transcriptionChannel.setMethodCallHandler { (call, result) in
             switch call.method {
@@ -26,7 +29,9 @@ import WhisperKit
                 let audioFilePath = args["audioFilePath"] as! String
                 
                 Task {
-                    let pipe = try? await WhisperKit(model: "small")
+                    if (pipe == nil) {
+                        pipe = try? await WhisperKit(model: model, verbose: true)
+                     }
 
                     let transcription = try? await pipe!.transcribe(
                         audioPath: audioFilePath,
@@ -37,8 +42,9 @@ import WhisperKit
                     
                     let text = transcription?.text
                     let language = transcription?.language
-                    
-                    result(text)
+
+                    let data = [language, model, text]
+                    result(data)
                 }
             default:
                 result(FlutterMethodNotImplemented)
