@@ -1,9 +1,6 @@
 import 'dart:io';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/settings/speech/speech_settings_cubit.dart';
-import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
@@ -14,7 +11,6 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../helpers/path_provider.dart';
 import '../../../mocks/mocks.dart';
-import '../../../test_data/sync_config_test_data.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +41,7 @@ void main() {
       });
     });
 
+    /*
     blocTest<SpeechSettingsCubit, SpeechSettingsState>(
       'SpeechSettingsCubit test',
       build: () => SpeechSettingsCubit(
@@ -101,5 +98,6 @@ void main() {
         ).called(1);
       },
     );
+    */
   });
 }

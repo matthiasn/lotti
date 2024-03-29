@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:io';
 
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
@@ -63,7 +62,7 @@ class AsrService {
 
     if (ReturnCode.isSuccess(returnCode)) {
       try {
-        final result = await platform.invokeMethod<String>(
+        final result = await platform.invokeMethod(
           'transcribe',
           {
             'audioFilePath': wavPath,
@@ -71,22 +70,24 @@ class AsrService {
           },
         );
         final finish = DateTime.now();
-        final model = Platform.isIOS ? 'small' : 'large-v3';
 
         if (result != null) {
-          final transcript = AudioTranscript(
-            created: DateTime.now(),
-            library: 'WhisperKit',
-            model: model,
-            detectedLanguage: '-',
-            transcript: result.trim(),
-            processingTime: finish.difference(start),
-          );
+          if (result is List<dynamic>) {
+            final [language, model, text] = result.cast<String>();
+            final transcript = AudioTranscript(
+              created: DateTime.now(),
+              library: 'WhisperKit',
+              model: model,
+              detectedLanguage: language,
+              transcript: text.trim(),
+              processingTime: finish.difference(start),
+            );
 
-          await getIt<PersistenceLogic>().addAudioTranscript(
-            journalEntityId: entry.meta.id,
-            transcript: transcript,
-          );
+            await getIt<PersistenceLogic>().addAudioTranscript(
+              journalEntityId: entry.meta.id,
+              transcript: transcript,
+            );
+          }
         }
       } on PlatformException catch (e) {
         debugPrint('transcribe exception: $e');
