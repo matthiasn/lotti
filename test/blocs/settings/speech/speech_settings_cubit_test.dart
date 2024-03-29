@@ -31,7 +31,7 @@ void main() {
       final whisperDir = await Directory(p.join(docDir.path, 'whisper'))
           .create(recursive: true);
 
-      final testModel = await File(p.join(whisperDir.path, 'ggml-tiny.bin'))
+      final testModel = await File(p.join(whisperDir.path, 'ggml-small.bin'))
           .create(recursive: true);
       await testModel.writeAsString('foo');
 
@@ -49,50 +49,44 @@ void main() {
       ),
       setUp: () {},
       act: (c) async {
-        await c.downloadModel('tiny.en');
-        await c.selectModel('tiny.en');
+        await c.downloadModel('small');
+        await c.selectModel('small');
       },
       wait: defaultWait,
       expect: () => <SpeechSettingsState>[
         SpeechSettingsState(
           availableModels: availableModels,
           downloadProgress: <String, double>{
-            'tiny.en': 0.0,
-            'tiny': 1.0,
-            'base.en': 0.0,
-            'base': 0.0,
-            'small.en': 0.0,
-            'small': 0.0,
-            'medium.en': 0.0,
-            'medium': 0.0,
+            'large-v3': 0.0,
+            'large-v2_949MB': 0.0,
+            'distil-large-v3_594MB': 0.0,
+            'distil-large-v3_turbo_600MB': 0.0,
+            'small': 1.0,
           },
           downloadedModelSizes: <String, double>{
-            'tiny': 0.00000286102294921875,
+            'small': 0.00000286102294921875,
           },
           selectedModel: '',
         ),
         SpeechSettingsState(
           availableModels: availableModels,
           downloadProgress: <String, double>{
-            'tiny.en': 0.0,
-            'tiny': 1.0,
-            'base.en': 0.0,
-            'base': 0.0,
-            'small.en': 0.0,
-            'small': 0.0,
-            'medium.en': 0.0,
-            'medium': 0.0,
+            'large-v3': 0.0,
+            'large-v2_949MB': 0.0,
+            'distil-large-v3_594MB': 0.0,
+            'distil-large-v3_turbo_600MB': 0.0,
+            'small': 1.0,
           },
           downloadedModelSizes: <String, double>{
-            'tiny': 0.00000286102294921875,
+            'small': 0.00000286102294921875,
           },
-          selectedModel: 'tiny.en',
+          selectedModel: 'small',
         ),
       ],
       verify: (c) {
         verify(
           () => mockDownloadManager.addDownload(
-            'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin',
+            'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin',
             any(),
           ),
         ).called(1);
