@@ -19,8 +19,6 @@ import WhisperKit
             name: "lotti/transcribe",
             binaryMessenger: controller.binaryMessenger)
 
-        let model = "small"
-        var pipe: WhisperKit?
         
         transcriptionChannel.setMethodCallHandler { (call, result) in
             switch call.method {
@@ -29,9 +27,8 @@ import WhisperKit
                 let audioFilePath = args["audioFilePath"] as! String
                 
                 Task {
-                    if (pipe == nil) {
-                        pipe = try? await WhisperKit(model: model, verbose: true)
-                     }
+                    let model = "small"
+                    let pipe = try? await WhisperKit(model: model, verbose: true)
 
                     let transcription = try? await pipe!.transcribe(
                         audioPath: audioFilePath,
