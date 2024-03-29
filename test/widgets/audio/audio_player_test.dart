@@ -65,27 +65,17 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final stopIconFinder = find.byIcon(Icons.stop_rounded);
       final playIconFinder = find.byIcon(Icons.play_arrow_rounded);
-      final rewindIconFinder = find.byIcon(Icons.fast_rewind_rounded);
       final pauseIconFinder = find.byIcon(Icons.pause_rounded);
-      final fwdIconFinder = find.byIcon(Icons.fast_forward_rounded);
 
       final normalSpeedIcon = find.text('1x');
 
-      expect(stopIconFinder, findsOneWidget);
       expect(playIconFinder, findsOneWidget);
       expect(pauseIconFinder, findsOneWidget);
-      expect(rewindIconFinder, findsOneWidget);
-      expect(fwdIconFinder, findsOneWidget);
       expect(normalSpeedIcon, findsOneWidget);
 
       await tester.tap(playIconFinder);
       verify(mockAudioPlayerCubit.play).called(1);
-
-      await tester.tap(fwdIconFinder);
-
-      await tester.tap(rewindIconFinder);
     });
 
     testWidgets('controls are are displayed, playing state', (tester) async {

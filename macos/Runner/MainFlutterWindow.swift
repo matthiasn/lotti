@@ -25,7 +25,7 @@ class MainFlutterWindow: NSWindow {
                 
                 Task {
                     let model = "large-v3"
-                    let pipe = try? await WhisperKit(model: model, verbose: true)
+                    let pipe = try? await WhisperKit(model: model, verbose: true, prewarm: true)
                     
                     let transcription = try? await pipe!.transcribe(
                         audioPath: audioFilePath,

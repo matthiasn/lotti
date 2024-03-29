@@ -28,7 +28,7 @@ import WhisperKit
                 
                 Task {
                     let model = "small"
-                    let pipe = try? await WhisperKit(model: model, verbose: true)
+                    let pipe = try? await WhisperKit(model: model, verbose: true, prewarm: true)
 
                     let transcription = try? await pipe!.transcribe(
                         audioPath: audioFilePath,
