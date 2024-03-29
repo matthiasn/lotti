@@ -16,6 +16,9 @@ class MainFlutterWindow: NSWindow {
             name: "lotti/transcribe",
             binaryMessenger: flutterViewController.engine.binaryMessenger)
         
+        let model = "large-v3"
+        var pipe: WhisperKit?
+        
         transcriptionChannel.setMethodCallHandler { (call, result) in
             switch call.method {
             case "transcribe":
@@ -23,7 +26,9 @@ class MainFlutterWindow: NSWindow {
                 let audioFilePath = args["audioFilePath"] as! String
                 
                 Task {
-                    let pipe = try? await WhisperKit(model: "large-v3")
+                    if (pipe == nil) {
+                        pipe = try? await WhisperKit(model: model, verbose: true)
+                    }
                     
                     let transcription = try? await pipe!.transcribe(
                         audioPath: audioFilePath,
@@ -34,8 +39,9 @@ class MainFlutterWindow: NSWindow {
                     
                     let text = transcription?.text
                     let language = transcription?.language
-                    
-                    result(text)
+
+                    let data = [language, model, text]
+                    result(data)
                 }
             default:
                 result(FlutterMethodNotImplemented)
