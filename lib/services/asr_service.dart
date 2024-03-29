@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
@@ -51,7 +52,6 @@ class AsrService {
     final start = DateTime.now();
     final docDir = await getApplicationDocumentsDirectory();
     final modelFile = 'ggml-$model.bin';
-    final englishOnlyModel = model.endsWith('.en');
     final modelPath = p.join(docDir.path, 'whisper', modelFile);
 
     final wavPath = audioFilePath.replaceAll('.aac', '.wav');
@@ -60,44 +60,25 @@ class AsrService {
     );
 
     final returnCode = await session.getReturnCode();
-    String? detectedLanguage;
 
     if (ReturnCode.isSuccess(returnCode)) {
       try {
-        if (!englishOnlyModel) {
-          detectedLanguage = await platform.invokeMethod<String>(
-            'detectLanguage',
-            {
-              'audioFilePath': wavPath,
-              'modelPath': modelPath,
-            },
-          );
-
-          getIt<LoggingDb>().captureEvent(
-            detectedLanguage,
-            domain: 'ASR',
-            subDomain: 'detectLanguage',
-          );
-        }
-
-        final language = detectedLanguage ?? 'en';
-
         final result = await platform.invokeMethod<String>(
           'transcribe',
           {
             'audioFilePath': wavPath,
             'modelPath': modelPath,
-            'language': language,
           },
         );
         final finish = DateTime.now();
+        final model = Platform.isIOS ? 'small' : 'large-v3';
 
         if (result != null) {
           final transcript = AudioTranscript(
             created: DateTime.now(),
-            library: 'whisper-1.4.2',
+            library: 'WhisperKit',
             model: model,
-            detectedLanguage: language,
+            detectedLanguage: '-',
             transcript: result.trim(),
             processingTime: finish.difference(start),
           );
