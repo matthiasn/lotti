@@ -7,6 +7,7 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
+import 'package:lotti/widgets/settings/speech/whisper_model_card.dart';
 
 class SpeechSettingsPage extends StatelessWidget {
   const SpeechSettingsPage({super.key});
@@ -24,7 +25,7 @@ class SpeechSettingsPage extends StatelessWidget {
             showBackButton: true,
             child: Column(
               children: [
-                //...snapshot.availableModels.map(WhisperModelCard.new),
+                ...snapshot.availableModels.map(WhisperModelCard.new),
                 const SizedBox(height: 30),
                 SettingsCard(
                   title:
