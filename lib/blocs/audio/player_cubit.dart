@@ -92,25 +92,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     await _asrService.enqueue(entry: state.audioNote!);
   }
 
-  Future<void> stopPlay() async {
-    try {
-      await _audioPlayer.pause();
-      await _audioPlayer.seek(Duration.zero);
-      emit(
-        state.copyWith(
-          status: AudioPlayerStatus.stopped,
-          progress: Duration.zero,
-        ),
-      );
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'player_cubit',
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
   Future<void> seek(Duration newPosition) async {
     try {
       await _audioPlayer.seek(newPosition);
@@ -153,46 +134,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         state.copyWith(
           status: AudioPlayerStatus.paused,
           pausedAt: state.progress,
-        ),
-      );
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'player_cubit',
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  Future<void> fwd() async {
-    try {
-      final newPosition =
-          Duration(milliseconds: state.progress.inMilliseconds + 15000);
-      await _audioPlayer.seek(newPosition);
-      emit(
-        state.copyWith(
-          progress: newPosition,
-          pausedAt: newPosition,
-        ),
-      );
-    } catch (exception, stackTrace) {
-      _loggingDb.captureException(
-        exception,
-        domain: 'player_cubit',
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  Future<void> rew() async {
-    try {
-      final newPosition =
-          Duration(milliseconds: state.progress.inMilliseconds - 15000);
-      await _audioPlayer.seek(newPosition);
-      emit(
-        state.copyWith(
-          progress: newPosition,
-          pausedAt: newPosition,
         ),
       );
     } catch (exception, stackTrace) {
