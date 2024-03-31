@@ -74,32 +74,11 @@ class AudioPlayerWidget extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       IconButton(
-                        icon: const Icon(Icons.fast_rewind_rounded),
-                        iconSize: 32,
-                        tooltip: 'Rewind 15s',
-                        color: Theme.of(context).colorScheme.outline,
-                        onPressed: cubit.rew,
-                      ),
-                      IconButton(
                         icon: const Icon(Icons.pause_rounded),
                         iconSize: 32,
                         tooltip: 'Pause',
                         color: Theme.of(context).colorScheme.outline,
                         onPressed: cubit.pause,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.fast_forward_rounded),
-                        iconSize: 32,
-                        tooltip: 'Fast forward 15s',
-                        color: Theme.of(context).colorScheme.outline,
-                        onPressed: cubit.fwd,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.stop_rounded),
-                        iconSize: 32,
-                        tooltip: 'Stop',
-                        color: Theme.of(context).colorScheme.outline,
-                        onPressed: cubit.stopPlay,
                       ),
                       IconButton(
                         icon: Text(
