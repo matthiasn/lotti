@@ -197,10 +197,10 @@ packages:
     dependency: "direct dev"
     description:
       name: build_runner
-      sha256: "581bacf68f89ec8792f5e5a0b2c4decd1c948e97ce659dc783688c8a88fbec21"
+      sha256: "3ac61a79bfb6f6cc11f693591063a7f19a7af628dc52f141743edac5c16e8c22"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.8"
+    version: "2.4.9"
   build_runner_core:
     dependency: transitive
     description:
@@ -429,10 +429,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: ceea8d1ad95081600f5f39d34044c0381ce691613017ffcb8a08fbb1e732ea62
+      sha256: fe4266508934a4225ede90347a377636eea8bbee8b4a17a17e4bdd8bb9edd3ed
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.4"
+    version: "9.3.5"
   dart_style:
     dependency: "direct dev"
     description:
@@ -486,10 +486,10 @@ packages:
     dependency: transitive
     description:
       name: dio
-      sha256: "50fec96118958b97c727d0d8f67255d3683f16cc1f90d9bc917b5d4fe3abeca9"
+      sha256: "0978e9a3e45305a80a7210dbeaf79d6ee8bee33f70c8e542dc654c952070217f"
       url: "https://pub.dev"
     source: hosted
-    version: "5.4.2"
+    version: "5.4.2+1"
   drift:
     dependency: "direct main"
     description:
@@ -974,10 +974,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "6f9dbc941ee788f32b22df68f4fb41a856c9667d73374a8545efc703e8b32ff9"
+      sha256: f8bfe2cfcace3a5b7bc2a40d1a9feb3fefb999ddf88a612d4bb5997ce052e7f3
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.4"
+    version: "9.3.5"
   flutter_riverpod:
     dependency: "direct main"
     description:
@@ -1182,10 +1182,10 @@ packages:
     dependency: "direct main"
     description:
       name: hotkey_manager
-      sha256: fb4b976ce7f4240bf75c2be807d2e4bf9e1d73ad379187db2c96a11219efe707
+      sha256: c3c497b784c7538eb67bb1c9df0446d9ba65af76e6758677dde5ecc730d44d21
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
+    version: "0.2.2"
   hotkey_manager_linux:
     dependency: transitive
     description:
@@ -1427,10 +1427,10 @@ packages:
     dependency: "direct main"
     description:
       name: latlong2
-      sha256: "18712164760cee655bc790122b0fd8f3d5b3c36da2cb7bf94b68a197fbb0811b"
+      sha256: "98227922caf49e6056f91b6c56945ea1c7b166f28ffcd5fb8e72fc0b453cc8fe"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.0"
+    version: "0.9.1"
   leak_tracker:
     dependency: transitive
     description:
@@ -1835,10 +1835,10 @@ packages:
     dependency: "direct main"
     description:
       name: permission_handler
-      sha256: "74e962b7fad7ff75959161bb2c0ad8fe7f2568ee82621c9c2660b751146bfe44"
+      sha256: "18bf33f7fefbd812f37e72091a15575e72d5318854877e0e4035a24ac1113ecb"
       url: "https://pub.dev"
     source: hosted
-    version: "11.3.0"
+    version: "11.3.1"
   permission_handler_android:
     dependency: transitive
     description:
@@ -1867,10 +1867,10 @@ packages:
     dependency: transitive
     description:
       name: permission_handler_platform_interface
-      sha256: "23dfba8447c076ab5be3dee9ceb66aad345c4a648f0cac292c77b1eb0e800b78"
+      sha256: "48d4fcf201a1dad93ee869ab0d4101d084f49136ec82a8a06ed9cfeacab9fd20"
       url: "https://pub.dev"
     source: hosted
-    version: "4.2.0"
+    version: "4.2.1"
   permission_handler_windows:
     dependency: transitive
     description:
@@ -2856,10 +2856,10 @@ packages:
     dependency: transitive
     description:
       name: win32
-      sha256: "8cb58b45c47dcb42ab3651533626161d6b67a2921917d8d429791f76972b3480"
+      sha256: "0a989dc7ca2bb51eac91e8fd00851297cfffd641aa7538b165c62637ca0eaa4a"
       url: "https://pub.dev"
     source: hosted
-    version: "5.3.0"
+    version: "5.4.0"
   win32_registry:
     dependency: transitive
     description:
