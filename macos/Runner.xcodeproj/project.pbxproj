@@ -33,6 +33,7 @@
 		AD222ED62B6F135D003661C2 /* libcrypto.1.1.dylib in Bundle Framework */ = {isa = PBXBuildFile; fileRef = AD222ED42B6F1352003661C2 /* libcrypto.1.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		AD2C9ED82B50E0240023FFD8 /* libolm.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */; settings = {ATTRIBUTES = (Weak, ); }; };
 		AD2C9ED92B50E0EA0023FFD8 /* libolm.3.dylib in Bundle Framework */ = {isa = PBXBuildFile; fileRef = AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		AD419F712BBA10E2004398EB /* llmfarm_core in Frameworks */ = {isa = PBXBuildFile; productRef = AD419F702BBA10E2004398EB /* llmfarm_core */; };
 		AD5DF1332BB6ECBD00D6BA2E /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = AD5DF1322BB6ECBD00D6BA2E /* WhisperKit */; };
 /* End PBXBuildFile section */
 
@@ -96,6 +97,7 @@
 				AD2C9ED82B50E0240023FFD8 /* libolm.3.dylib in Frameworks */,
 				7E2335674AA28E31A7EEBE87 /* Pods_Runner.framework in Frameworks */,
 				AD222ED52B6F1352003661C2 /* libcrypto.1.1.dylib in Frameworks */,
+				AD419F712BBA10E2004398EB /* llmfarm_core in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -211,6 +213,7 @@
 			name = Runner;
 			packageProductDependencies = (
 				AD5DF1322BB6ECBD00D6BA2E /* WhisperKit */,
+				AD419F702BBA10E2004398EB /* llmfarm_core */,
 			);
 			productName = Runner;
 			productReference = 33CC10ED2044A3C60003C045 /* LottiDev.app */;
@@ -252,6 +255,7 @@
 			mainGroup = 33CC10E42044A3C60003C045;
 			packageReferences = (
 				AD5DF1312BB6ECBD00D6BA2E /* XCRemoteSwiftPackageReference "whisperkit" */,
+				AD419F6F2BBA10E2004398EB /* XCRemoteSwiftPackageReference "llmfarm_core" */,
 			);
 			productRefGroup = 33CC10EE2044A3C60003C045 /* Products */;
 			projectDirPath = "";
@@ -699,6 +703,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		AD419F6F2BBA10E2004398EB /* XCRemoteSwiftPackageReference "llmfarm_core" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/guinmoon/llmfarm_core.swift";
+			requirement = {
+				kind = revision;
+				revision = f70a55312ed94db064d902c1d5ceef3bb2dc44d9;
+			};
+		};
 		AD5DF1312BB6ECBD00D6BA2E /* XCRemoteSwiftPackageReference "whisperkit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/argmaxinc/whisperkit";
@@ -710,6 +722,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		AD419F702BBA10E2004398EB /* llmfarm_core */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AD419F6F2BBA10E2004398EB /* XCRemoteSwiftPackageReference "llmfarm_core" */;
+			productName = llmfarm_core;
+		};
 		AD5DF1322BB6ECBD00D6BA2E /* WhisperKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AD5DF1312BB6ECBD00D6BA2E /* XCRemoteSwiftPackageReference "whisperkit" */;
