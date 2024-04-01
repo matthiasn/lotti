@@ -17,6 +17,28 @@ import 'package:path_provider/path_provider.dart';
 class AsrService {
   AsrService() {
     _loadSelectedModel();
+    eventChannel.receiveBroadcastStream().listen(
+          _onEvent,
+          onError: _onError,
+        );
+  }
+
+  void _onEvent(Object? event) {
+    if (event != null && event is List<dynamic>) {
+      if (event.length == 2) {
+        final [text, pipelineStart] = event.cast<String>();
+        final cleaned = text.replaceAll(RegExp('<.*?>+'), '');
+        debugPrint('>>> $pipelineStart $cleaned');
+      }
+    }
+  }
+
+  void _onError(Object error) {
+    debugPrint(error.toString());
+    captureException(
+      error,
+      subdomain: 'Progress Channel',
+    );
   }
 
   Future<void> _start() async {
@@ -33,7 +55,10 @@ class AsrService {
     }
   }
 
-  static const platform = MethodChannel('lotti/transcribe');
+  static const MethodChannel methodChannel = MethodChannel('lotti/transcribe');
+  static const EventChannel eventChannel =
+      EventChannel('lotti/transcribe-progress');
+
   String model = 'base';
   final queue = Queue<JournalAudio>();
   bool running = false;
@@ -62,7 +87,7 @@ class AsrService {
 
     if (ReturnCode.isSuccess(returnCode)) {
       try {
-        final result = await platform.invokeMethod(
+        final result = await methodChannel.invokeMethod(
           'transcribe',
           {
             'audioFilePath': wavPath,
@@ -71,8 +96,8 @@ class AsrService {
         );
         final finish = DateTime.now();
 
-        if (result != null) {
-          if (result is List<dynamic>) {
+        if (result != null && result is List<dynamic>) {
+          if (result.length == 3) {
             final [language, model, text] = result.cast<String>();
             final transcript = AudioTranscript(
               created: DateTime.now(),
@@ -87,15 +112,26 @@ class AsrService {
               journalEntityId: entry.meta.id,
               transcript: transcript,
             );
+          } else {
+            captureException(
+              result,
+              subdomain: 'Parse response length',
+            );
           }
         }
       } on PlatformException catch (e) {
-        debugPrint('transcribe exception: $e');
+        captureException(e);
       }
     } else if (ReturnCode.isCancel(returnCode)) {
-      debugPrint('FFmpegKit cancelled');
+      captureException(
+        returnCode,
+        subdomain: 'FFmpegKit cancelled',
+      );
     } else {
-      debugPrint('FFmpegKit errored');
+      captureException(
+        returnCode,
+        subdomain: 'FFmpegKit error',
+      );
     }
     running = false;
   }
@@ -105,5 +141,16 @@ class AsrService {
     if (!running) {
       unawaited(_start());
     }
+  }
+
+  void captureException(
+    dynamic exception, {
+    String subdomain = 'transcribe',
+  }) {
+    getIt<LoggingDb>().captureException(
+      exception,
+      domain: 'ASR',
+      subDomain: subdomain,
+    );
   }
 }

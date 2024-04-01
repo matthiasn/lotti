@@ -1,24 +1,28 @@
-//
-//  whisper.swift
-//  Runner
-//
-//  Created by mn on 01.04.24.
-//
-
 import Foundation
 import FlutterMacOS
 import WhisperKit
 
 public class WhisperKitRunner: NSObject, FlutterStreamHandler {
+    let transcriptionChannelName = "lotti/transcribe"
+    let transcriptionProgressChannelName = "lotti/transcribe-progress"
+    let model = "large-v3"
+    
     private var eventSink: FlutterEventSink?
     private let transcriptionChannel: FlutterMethodChannel
-
-    init(flutterViewController: FlutterViewController) {
+    private let transcriptionProgressChannel: FlutterEventChannel
+    
+    private var whisperKit: WhisperKit?
+    
+    init(flutterEngine: FlutterEngine) {
         transcriptionChannel = FlutterMethodChannel(
-            name: "lotti/transcribe",
-            binaryMessenger: flutterViewController.engine.binaryMessenger)
+            name: transcriptionChannelName,
+            binaryMessenger: flutterEngine.binaryMessenger)
+        
+        transcriptionProgressChannel = FlutterEventChannel(name: transcriptionProgressChannelName,
+                                                           binaryMessenger: flutterEngine.binaryMessenger)
+        
         super.init()
-
+        
         transcriptionChannel.setMethodCallHandler { (call, result) in
             switch call.method {
             case "transcribe":
@@ -26,35 +30,43 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
                 let audioFilePath = args["audioFilePath"] as! String
                 
                 Task {
-                    let model = "large-v3"
-                    let pipe = try? await WhisperKit(model: model, verbose: true, prewarm: true)
+                    if (self.whisperKit == nil) {
+                        self.whisperKit = try? await WhisperKit(model: self.model,
+                                                                verbose: true,
+                                                                prewarm: true)
+                    }
                     
-                    let transcription = try? await pipe!.transcribe(
+                    let transcription = try? await self.whisperKit!.transcribe(
                         audioPath: audioFilePath,
                         decodeOptions: DecodingOptions(
                             task: DecodingTask.transcribe,
                             usePrefillPrompt: false
                         ),
-                        callback: { progress in
-                            print("\n---")
-                            print(progress)
-                            print("\n")
-                            print(progress.text)
-                            print("\n")
-                            return nil
-                        }
+                        callback: self.sendTranscriptionProgressEvent
                     )
                     
                     let text = transcription?.text
                     let language = transcription?.language
                     
-                    let data = [language, model, text]
+                    let data = [language, self.model, text]
                     result(data)
                 }
             default:
                 result(FlutterMethodNotImplemented)
             }
         }
+        
+        transcriptionProgressChannel.setStreamHandler(self)
+    }
+    
+    private func sendTranscriptionProgressEvent(progress: TranscriptionProgress)->Bool? {
+        guard let eventSink = eventSink else {
+            return nil
+        }
+        
+        eventSink([progress.text,
+                   progress.timings.pipelineStart.formatted()])
+        return nil
     }
     
     public func onListen(withArguments arguments: Any?,

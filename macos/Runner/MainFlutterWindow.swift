@@ -1,7 +1,5 @@
 import Cocoa
 import FlutterMacOS
-
-
 import IOKit
 
 class MainFlutterWindow: NSWindow {
@@ -10,10 +8,11 @@ class MainFlutterWindow: NSWindow {
         let windowFrame = self.frame
         self.contentViewController = flutterViewController
         self.setFrame(windowFrame, display: true)
-        let whisperKitRunner = WhisperKitRunner(flutterViewController: flutterViewController)
         
         RegisterGeneratedPlugins(registry: flutterViewController)
         
         super.awakeFromNib()
+        
+        let _ = WhisperKitRunner(flutterEngine: flutterViewController.engine)
     }
 }
