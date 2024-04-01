@@ -12,13 +12,15 @@ class TranscriptionProgressModalContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final asrService = getIt<AsrService>();
 
-    return StreamBuilder<String>(
+    return StreamBuilder<(String, TranscriptionStatus)>(
       stream: asrService.progressController.stream,
       builder: (context, snapshot) {
-        final text = snapshot.data ?? '';
+        final text = snapshot.data?.$1 ?? '';
+        final status = snapshot.data?.$2;
 
-        if (text == 'ASR_COMPLETED') {
-          Navigator.of(context).pop();
+        if (status == TranscriptionStatus.done) {
+          Future<void>.delayed(const Duration(seconds: 3))
+              .then((value) => Navigator.of(context).pop());
         }
 
         return ConstrainedBox(
