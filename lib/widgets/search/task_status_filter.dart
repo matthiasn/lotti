@@ -5,6 +5,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
+import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:quiver/collection.dart';
@@ -184,9 +185,6 @@ class TaskStatusAllChip extends StatelessWidget {
   }
 }
 
-const double _pagePadding = 16;
-const double _pageBreakpoint = 768;
-
 class TaskFilterIcon extends StatelessWidget {
   const TaskFilterIcon({super.key});
 
@@ -203,7 +201,7 @@ class TaskFilterIcon extends StatelessWidget {
         topBarTitle: Text('Tasks Filter', style: textTheme.titleSmall),
         isTopBarLayerAlwaysVisible: true,
         trailingNavBarWidget: IconButton(
-          padding: const EdgeInsets.all(_pagePadding),
+          padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
           icon: const Icon(Icons.close),
           onPressed: Navigator.of(modalSheetContext).pop,
         ),
@@ -257,20 +255,19 @@ class TaskFilterIcon extends StatelessWidget {
             },
             modalTypeBuilder: (context) {
               final size = MediaQuery.of(context).size.width;
-              if (size < _pageBreakpoint) {
+              if (size < WoltModalConfig.pageBreakpoint) {
                 return WoltModalType.bottomSheet;
               } else {
                 return WoltModalType.dialog;
               }
             },
             onModalDismissedWithBarrierTap: () {
-              debugPrint('Closed modal sheet with barrier tap');
               Navigator.of(context).pop();
             },
-            maxDialogWidth: 560,
-            minDialogWidth: 400,
-            minPageHeight: 0,
-            maxPageHeight: 0.9,
+            maxDialogWidth: WoltModalConfig.maxDialogWidth,
+            minDialogWidth: WoltModalConfig.minDialogWidth,
+            minPageHeight: WoltModalConfig.minPageHeight,
+            maxPageHeight: WoltModalConfig.maxPageHeight,
           );
         },
         icon: Icon(MdiIcons.filterVariant),

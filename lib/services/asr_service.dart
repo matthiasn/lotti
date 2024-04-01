@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:collection/collection.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/cupertino.dart';
@@ -23,14 +24,32 @@ class AsrService {
         );
   }
 
+  final progressMap = <String, String>{};
+  final progressController = StreamController<String>.broadcast();
+
   void _onEvent(Object? event) {
     if (event != null && event is List<dynamic>) {
       if (event.length == 2) {
         final [text, pipelineStart] = event.cast<String>();
-        final cleaned = text.replaceAll(RegExp('<.*?>+'), '');
-        debugPrint('>>> $pipelineStart $cleaned');
+
+        if (pipelineStart.isEmpty) {
+          progressController.add(text);
+        } else {
+          final cleaned = text.replaceAll(RegExp('<.*?>+'), '');
+          progressMap[pipelineStart] = cleaned;
+          _publishProgress();
+        }
       }
     }
+  }
+
+  void _publishProgress() {
+    final text = progressMap.entries
+        .sorted((e1, e2) => e1.key.compareTo(e2.key))
+        .map((e) => e.value)
+        .join();
+    debugPrint('>>> $text');
+    progressController.add(text);
   }
 
   void _onError(Object error) {
@@ -43,6 +62,7 @@ class AsrService {
 
   Future<void> _start() async {
     while (queue.isNotEmpty) {
+      progressMap.clear();
       await _transcribe(entry: queue.removeFirst());
     }
   }

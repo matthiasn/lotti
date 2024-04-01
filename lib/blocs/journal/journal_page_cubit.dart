@@ -64,6 +64,10 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       ).listen((event) {
         refreshQuery();
       });
+    } else {
+      _db.watchJournalCount().listen((event) {
+        refreshQuery();
+      });
     }
   }
 
