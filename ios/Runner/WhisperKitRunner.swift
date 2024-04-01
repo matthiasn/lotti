@@ -28,13 +28,15 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
             case "transcribe":
                 guard let args = call.arguments as? [String: Any] else { return }
                 let audioFilePath = args["audioFilePath"] as! String
-                
+
+                if (self.whisperKit == nil) {
+                    if (self.eventSink != nil) {
+                        self.eventSink!(["Initializing model...", ""])
+                    }
+                }
+
                 Task {
                     if (self.whisperKit == nil) {
-                        if (self.eventSink != nil) {
-                            self.eventSink!(["initializing model...", ""])
-                        }
-                        
                         self.whisperKit = try? await WhisperKit(model: self.model,
                                                                 verbose: true,
                                                                 prewarm: true)
@@ -63,7 +65,7 @@ public class WhisperKitRunner: NSObject, FlutterStreamHandler {
         transcriptionProgressChannel.setStreamHandler(self)
     }
     
-    private func sendTranscriptionProgressEvent(progress: TranscriptionProgress)->Bool? {
+    private func sendTranscriptionProgressEvent(progress: TranscriptionProgress) -> Bool? {
         guard let eventSink = eventSink else {
             return nil
         }

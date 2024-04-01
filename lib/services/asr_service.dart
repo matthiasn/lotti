@@ -163,11 +163,13 @@ class AsrService {
     running = false;
   }
 
-  Future<void> enqueue({required JournalAudio entry}) async {
+  Future<bool> enqueue({required JournalAudio entry}) async {
+    final isQueueEmpty = queue.isEmpty;
     queue.add(entry);
     if (!running) {
       unawaited(_start());
     }
+    return isQueueEmpty;
   }
 
   void captureException(
