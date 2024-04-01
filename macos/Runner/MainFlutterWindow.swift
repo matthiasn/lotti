@@ -13,6 +13,6 @@ class MainFlutterWindow: NSWindow {
         
         super.awakeFromNib()
         
-        let _ = WhisperKitRunner(flutterEngine: flutterViewController.engine)
+        let _ = WhisperKitRunner(binaryMessenger: flutterViewController.engine.binaryMessenger)
     }
 }

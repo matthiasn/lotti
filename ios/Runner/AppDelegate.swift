@@ -14,39 +14,7 @@ import WhisperKit
         }
         
         let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-        
-        let transcriptionChannel = FlutterMethodChannel(
-            name: "lotti/transcribe",
-            binaryMessenger: controller.binaryMessenger)
-
-        
-        transcriptionChannel.setMethodCallHandler { (call, result) in
-            switch call.method {
-            case "transcribe":
-                guard let args = call.arguments as? [String: Any] else { return }
-                let audioFilePath = args["audioFilePath"] as! String
-                
-                Task {
-                    let model = "small"
-                    let pipe = try? await WhisperKit(model: model, verbose: true, prewarm: true)
-
-                    let transcription = try? await pipe!.transcribe(
-                        audioPath: audioFilePath,
-                        decodeOptions: DecodingOptions(
-                            task: DecodingTask.transcribe,
-                            usePrefillPrompt: false
-                        ))
-                    
-                    let text = transcription?.text
-                    let language = transcription?.language
-
-                    let data = [language, model, text]
-                    result(data)
-                }
-            default:
-                result(FlutterMethodNotImplemented)
-            }
-        }
+        let _ = WhisperKitRunner(binaryMessenger: controller.binaryMessenger)
         
         GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
