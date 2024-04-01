@@ -8,7 +8,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
@@ -25,7 +24,6 @@ class InboxService {
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
   final FgBgService _fgBgService = getIt<FgBgService>();
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final VectorClockService _vectorClockService = getIt<VectorClockService>();
   late final StreamSubscription<FGBGType> fgBgSubscription;
   SendPort? _sendPort;

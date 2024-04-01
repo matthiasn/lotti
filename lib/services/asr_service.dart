@@ -25,7 +25,8 @@ class AsrService {
   }
 
   final progressMap = <String, String>{};
-  final progressController = StreamController<String>.broadcast();
+  final progressController =
+      StreamController<(String, TranscriptionStatus)>.broadcast();
 
   void _onEvent(Object? event) {
     if (event != null && event is List<dynamic>) {
@@ -33,7 +34,7 @@ class AsrService {
         final [text, pipelineStart] = event.cast<String>();
 
         if (pipelineStart.isEmpty) {
-          progressController.add(text);
+          progressController.add((text, TranscriptionStatus.initializing));
         } else {
           final cleaned = text.replaceAll(RegExp('<.*?>+'), '');
           progressMap[pipelineStart] = cleaned;
@@ -48,7 +49,7 @@ class AsrService {
         .sorted((e1, e2) => e1.key.compareTo(e2.key))
         .map((e) => e.value)
         .join();
-    progressController.add(text);
+    progressController.add((text, TranscriptionStatus.inProgress));
   }
 
   void _onError(Object error) {
@@ -117,12 +118,17 @@ class AsrService {
 
         if (result != null && result is List<dynamic>) {
           if (result.length == 3) {
-            final [language, model, text] = result.cast<String>();
+            final [language, model, text] = result.cast<String?>();
+
+            if (text == null) {
+              return;
+            }
+
             final transcript = AudioTranscript(
               created: DateTime.now(),
               library: 'WhisperKit',
-              model: model,
-              detectedLanguage: language,
+              model: model ?? '-',
+              detectedLanguage: language ?? '-',
               transcript: text.trim(),
               processingTime: finish.difference(start),
             );
@@ -132,7 +138,7 @@ class AsrService {
               transcript: transcript,
             );
 
-            progressController.add('ASR_COMPLETED');
+            progressController.add((text, TranscriptionStatus.done));
           } else {
             captureException(
               result,
@@ -174,4 +180,10 @@ class AsrService {
       subDomain: subdomain,
     );
   }
+}
+
+enum TranscriptionStatus {
+  initializing,
+  inProgress,
+  done,
 }
