@@ -16,6 +16,11 @@ class TranscriptionProgressModalContent extends StatelessWidget {
       stream: asrService.progressController.stream,
       builder: (context, snapshot) {
         final text = snapshot.data ?? '';
+
+        if (text == 'ASR_COMPLETED') {
+          Navigator.of(context).pop();
+        }
+
         return ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 100),
           child: Padding(
