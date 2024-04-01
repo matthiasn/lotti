@@ -65,7 +65,7 @@ DefaultStyles customEditorStyles({
         color: textColor,
       ),
       const VerticalSpacing(4, 0),
-      const VerticalSpacing(0, 0),
+      const VerticalSpacing(0, 4),
       null,
       null,
     ),
