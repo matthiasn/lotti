@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/audio/transcription_progress_modal.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -107,7 +108,13 @@ class AudioPlayerWidget extends StatelessWidget {
                     color: Theme.of(context).colorScheme.outline,
                     onPressed: () async {
                       await cubit.setAudioNote(journalAudio);
-                      await cubit.transcribe();
+                      final isQueueEmpty = await cubit.transcribe();
+
+                      if (isQueueEmpty) {
+                        if (!context.mounted) return;
+                        await TranscriptionProgressModal.show(context);
+                      }
+
                       await Future<void>.delayed(
                         const Duration(milliseconds: 100),
                       );

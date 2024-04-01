@@ -84,12 +84,12 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     }
   }
 
-  Future<void> transcribe() async {
+  Future<bool> transcribe() async {
     if (state.audioNote == null) {
-      return;
+      return false;
     }
 
-    await _asrService.enqueue(entry: state.audioNote!);
+    return _asrService.enqueue(entry: state.audioNote!);
   }
 
   Future<void> seek(Duration newPosition) async {
