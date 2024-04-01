@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/create/record_audio_page.dart';
 import 'package:mocktail/mocktail.dart';
@@ -15,7 +16,15 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('AudioRecorderWidget Widget Tests - ', () {
-    setUp(() {
+    final mockJournalDb = MockJournalDb();
+
+    setUp(() async {
+      getIt.registerSingleton<JournalDb>(mockJournalDb);
+
+      when(
+        () => mockJournalDb.getConfigFlag(any()),
+      ).thenAnswer((_) async => true);
+
       VisibilityDetectorController.instance.updateInterval = Duration.zero;
     });
     tearDown(getIt.reset);

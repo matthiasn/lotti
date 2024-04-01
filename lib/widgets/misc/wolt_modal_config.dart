@@ -1,0 +1,8 @@
+class WoltModalConfig {
+  static const pageBreakpoint = 768;
+  static const pagePadding = 16.0;
+  static const maxDialogWidth = 560.0;
+  static const minDialogWidth = 400.0;
+  static const minPageHeight = 0.0;
+  static const maxPageHeight = 0.9;
+}
