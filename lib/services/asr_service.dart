@@ -48,7 +48,6 @@ class AsrService {
         .sorted((e1, e2) => e1.key.compareTo(e2.key))
         .map((e) => e.value)
         .join();
-    debugPrint('>>> $text');
     progressController.add(text);
   }
 
@@ -132,6 +131,8 @@ class AsrService {
               journalEntityId: entry.meta.id,
               transcript: transcript,
             );
+
+            progressController.add('ASR_COMPLETED');
           } else {
             captureException(
               result,
