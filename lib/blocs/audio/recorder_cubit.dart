@@ -8,7 +8,6 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart';
 
@@ -106,8 +105,6 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           linkedId: _linkedId,
         );
         _linkedId = null;
-
-        getIt<NavService>().beamBack();
       }
     } catch (exception, stackTrace) {
       _loggingDb.captureException(

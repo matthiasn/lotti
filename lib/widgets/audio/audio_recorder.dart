@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/audio/transcription_progress_modal.dart';
 import 'package:lotti/widgets/audio/vu_meter.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -25,6 +30,21 @@ class AudioRecorderWidget extends StatelessWidget {
     return BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
       builder: (context, state) {
         final cubit = context.read<AudioRecorderCubit>();
+
+        Future<void> stop() async {
+          await cubit.stop();
+
+          final autoTranscribe = await getIt<JournalDb>().getConfigFlag(
+            autoTranscribeFlag,
+          );
+
+          if (autoTranscribe) {
+            if (!context.mounted) return;
+            await TranscriptionProgressModal.show(context);
+          }
+
+          getIt<NavService>().beamBack();
+        }
 
         return VisibilityDetector(
           key: const Key('audio_Recorder'),
@@ -82,7 +102,7 @@ class AudioRecorderWidget extends StatelessWidget {
                     ),
                     iconSize: iconSize,
                     tooltip: 'Stop',
-                    onPressed: cubit.stop,
+                    onPressed: stop,
                   ),
                 ],
               ),

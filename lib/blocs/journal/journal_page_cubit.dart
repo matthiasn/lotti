@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -64,6 +65,12 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       ).listen((event) {
         refreshQuery();
       });
+    } else {
+      if (!kDebugMode) {
+        _db.watchJournalCount().listen((event) {
+          refreshQuery();
+        });
+      }
     }
   }
 

@@ -33,6 +33,7 @@
 		AD222ED62B6F135D003661C2 /* libcrypto.1.1.dylib in Bundle Framework */ = {isa = PBXBuildFile; fileRef = AD222ED42B6F1352003661C2 /* libcrypto.1.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		AD2C9ED82B50E0240023FFD8 /* libolm.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */; settings = {ATTRIBUTES = (Weak, ); }; };
 		AD2C9ED92B50E0EA0023FFD8 /* libolm.3.dylib in Bundle Framework */ = {isa = PBXBuildFile; fileRef = AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		AD419F752BBAD620004398EB /* WhisperKitRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD419F742BBAD620004398EB /* WhisperKitRunner.swift */; };
 		AD5DF1332BB6ECBD00D6BA2E /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = AD5DF1322BB6ECBD00D6BA2E /* WhisperKit */; };
 /* End PBXBuildFile section */
 
@@ -82,6 +83,7 @@
 		A87512A16BAFE7C799AAEE04 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		AD222ED42B6F1352003661C2 /* libcrypto.1.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcrypto.1.1.dylib; sourceTree = "<group>"; };
 		AD2C9ED62B50DEE90023FFD8 /* libolm.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libolm.3.dylib; sourceTree = "<group>"; };
+		AD419F742BBAD620004398EB /* WhisperKitRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitRunner.swift; sourceTree = "<group>"; };
 		AD4D50B4272DC22C00B0D18C /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
 		BAE814E2540AB2A5F49FEB9F /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EE88E1714354055D8612F843 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
@@ -164,6 +166,7 @@
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
 				33BA886A226E78AF003329D5 /* Configs */,
+				AD419F742BBAD620004398EB /* WhisperKitRunner.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -361,6 +364,7 @@
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
+				AD419F752BBAD620004398EB /* WhisperKitRunner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

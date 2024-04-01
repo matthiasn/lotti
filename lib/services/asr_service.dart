@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:collection/collection.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/cupertino.dart';
@@ -17,10 +18,51 @@ import 'package:path_provider/path_provider.dart';
 class AsrService {
   AsrService() {
     _loadSelectedModel();
+    eventChannel.receiveBroadcastStream().listen(
+          _onEvent,
+          onError: _onError,
+        );
+  }
+
+  final progressMap = <String, String>{};
+  final progressController =
+      StreamController<(String, TranscriptionStatus)>.broadcast();
+
+  void _onEvent(Object? event) {
+    if (event != null && event is List<dynamic>) {
+      if (event.length == 2) {
+        final [text, pipelineStart] = event.cast<String>();
+
+        if (pipelineStart.isEmpty) {
+          progressController.add((text, TranscriptionStatus.initializing));
+        } else {
+          final cleaned = text.replaceAll(RegExp('<.*?>+'), '');
+          progressMap[pipelineStart] = cleaned;
+          _publishProgress();
+        }
+      }
+    }
+  }
+
+  void _publishProgress() {
+    final text = progressMap.entries
+        .sorted((e1, e2) => e1.key.compareTo(e2.key))
+        .map((e) => e.value)
+        .join();
+    progressController.add((text, TranscriptionStatus.inProgress));
+  }
+
+  void _onError(Object error) {
+    debugPrint(error.toString());
+    captureException(
+      error,
+      subdomain: 'Progress Channel',
+    );
   }
 
   Future<void> _start() async {
     while (queue.isNotEmpty) {
+      progressMap.clear();
       await _transcribe(entry: queue.removeFirst());
     }
   }
@@ -33,7 +75,10 @@ class AsrService {
     }
   }
 
-  static const platform = MethodChannel('lotti/transcribe');
+  static const MethodChannel methodChannel = MethodChannel('lotti/transcribe');
+  static const EventChannel eventChannel =
+      EventChannel('lotti/transcribe-progress');
+
   String model = 'base';
   final queue = Queue<JournalAudio>();
   bool running = false;
@@ -62,7 +107,7 @@ class AsrService {
 
     if (ReturnCode.isSuccess(returnCode)) {
       try {
-        final result = await platform.invokeMethod(
+        final result = await methodChannel.invokeMethod(
           'transcribe',
           {
             'audioFilePath': wavPath,
@@ -71,14 +116,19 @@ class AsrService {
         );
         final finish = DateTime.now();
 
-        if (result != null) {
-          if (result is List<dynamic>) {
-            final [language, model, text] = result.cast<String>();
+        if (result != null && result is List<dynamic>) {
+          if (result.length == 3) {
+            final [language, model, text] = result.cast<String?>();
+
+            if (text == null) {
+              return;
+            }
+
             final transcript = AudioTranscript(
               created: DateTime.now(),
               library: 'WhisperKit',
-              model: model,
-              detectedLanguage: language,
+              model: model ?? '-',
+              detectedLanguage: language ?? '-',
               transcript: text.trim(),
               processingTime: finish.difference(start),
             );
@@ -87,15 +137,28 @@ class AsrService {
               journalEntityId: entry.meta.id,
               transcript: transcript,
             );
+
+            progressController.add((text, TranscriptionStatus.done));
+          } else {
+            captureException(
+              result,
+              subdomain: 'Parse response length',
+            );
           }
         }
       } on PlatformException catch (e) {
-        debugPrint('transcribe exception: $e');
+        captureException(e);
       }
     } else if (ReturnCode.isCancel(returnCode)) {
-      debugPrint('FFmpegKit cancelled');
+      captureException(
+        returnCode,
+        subdomain: 'FFmpegKit cancelled',
+      );
     } else {
-      debugPrint('FFmpegKit errored');
+      captureException(
+        returnCode,
+        subdomain: 'FFmpegKit error',
+      );
     }
     running = false;
   }
@@ -106,4 +169,21 @@ class AsrService {
       unawaited(_start());
     }
   }
+
+  void captureException(
+    dynamic exception, {
+    String subdomain = 'transcribe',
+  }) {
+    getIt<LoggingDb>().captureException(
+      exception,
+      domain: 'ASR',
+      subDomain: subdomain,
+    );
+  }
+}
+
+enum TranscriptionStatus {
+  initializing,
+  inProgress,
+  done,
 }
