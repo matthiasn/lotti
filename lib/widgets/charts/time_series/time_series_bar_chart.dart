@@ -9,6 +9,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/time_series/utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 class TimeSeriesBarChart extends StatelessWidget {
   const TimeSeriesBarChart({
@@ -120,7 +121,8 @@ class TimeSeriesBarChart extends StatelessWidget {
                 horizontal: 8,
                 vertical: 3,
               ),
-              tooltipBgColor: Colors.grey.shade600,
+              getTooltipColor: (_) =>
+                  Theme.of(context).primaryColor.desaturate(),
               tooltipRoundedRadius: 8,
               getTooltipItem: (groupData, timestamp, rodData, foo) {
                 final formatted = valueInHours

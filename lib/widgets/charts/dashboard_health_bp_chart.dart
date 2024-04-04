@@ -94,7 +94,8 @@ class DashboardHealthBpChart extends StatelessWidget {
                       horizontal: 8,
                       vertical: 3,
                     ),
-                    tooltipBgColor: Theme.of(context).primaryColor.desaturate(),
+                    getTooltipColor: (_) =>
+                        Theme.of(context).primaryColor.desaturate(),
                     tooltipRoundedRadius: 8,
                     getTooltipItems: (List<LineBarSpot> spots) {
                       return spots.map((spot) {
