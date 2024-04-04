@@ -21,16 +21,25 @@ void main() {
   group('MatrixService Tests', () {
     final mockLoggingDb = MockLoggingDb();
     final secureStorageMock = MockSecureStorage();
-    const testUserEnv = 'TEST_USER';
+    const testUserEnv1 = 'TEST_USER1';
+    const testUserEnv2 = 'TEST_USER2';
     const testServerEnv = 'TEST_SERVER';
     const testPasswordEnv = 'TEST_PASSWORD';
     const testSlowNetworkEnv = 'SLOW_NETWORK';
 
-    if (!const bool.hasEnvironment(testUserEnv)) {
-      debugPrint('TEST_USER not defined!!! Run via run_matrix_tests.sh');
+    if (!const bool.hasEnvironment(testUserEnv1)) {
+      debugPrint('TEST_USER1 not defined!!! Run via run_matrix_tests.sh');
       exit(1);
     }
-    const testUserName = String.fromEnvironment(testUserEnv);
+
+    if (!const bool.hasEnvironment(testUserEnv2)) {
+      debugPrint('TEST_USER2 not defined!!! Run via run_matrix_tests.sh');
+      exit(1);
+    }
+
+    const testUserName1 = String.fromEnvironment(testUserEnv1);
+    const testUserName2 = String.fromEnvironment(testUserEnv1);
+
     const testHomeServer = bool.hasEnvironment(testServerEnv)
         ? String.fromEnvironment(testServerEnv)
         : 'http://localhost:8008';
@@ -38,9 +47,15 @@ void main() {
         ? String.fromEnvironment(testPasswordEnv)
         : '?Secret123@!';
 
-    const config = MatrixConfig(
+    const config1 = MatrixConfig(
       homeServer: testHomeServer,
-      user: testUserName,
+      user: testUserName1,
+      password: testPassword,
+    );
+
+    const config2 = MatrixConfig(
+      homeServer: testHomeServer,
+      user: testUserName2,
       password: testPassword,
     );
 
@@ -67,7 +82,7 @@ void main() {
       () async {
         debugPrint('\n--- AliceDevice goes live');
         final aliceDevice = MatrixService(
-          matrixConfig: config,
+          matrixConfig: config1,
           hiveDbName: 'AliceDevice',
           deviceDisplayName: 'AliceDevice',
         );
@@ -89,7 +104,7 @@ void main() {
 
         debugPrint('\n--- BobDevice goes live');
         final bobDevice = MatrixService(
-          matrixConfig: config,
+          matrixConfig: config2,
           hiveDbName: 'BobDevice',
           deviceDisplayName: 'BobDevice',
         );
@@ -101,14 +116,18 @@ void main() {
         final joinRes2 = await bobDevice.joinRoom(roomId);
         debugPrint('BobDevice - room joined: $joinRes2');
 
+        await Future<void>.delayed(
+          const Duration(seconds: 1 * delayFactor),
+        );
+
         await waitUntil(() => aliceDevice.getUnverified().length == 1);
         await waitUntil(() => bobDevice.getUnverified().length == 1);
 
         final unverifiedAlice = aliceDevice.getUnverified();
         final unverifiedBob = bobDevice.getUnverified();
 
-        debugPrint('AliceDevice - unverified: $unverifiedAlice');
-        debugPrint('BobDevice - unverified: $unverifiedBob');
+        debugPrint('\nAliceDevice - unverified: $unverifiedAlice');
+        debugPrint('\nBobDevice - unverified: $unverifiedBob');
 
         expect(unverifiedAlice.length, 1);
         expect(unverifiedBob.length, 1);
