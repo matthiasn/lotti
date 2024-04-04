@@ -86,7 +86,7 @@ class MatrixService {
     String? hiveDbName,
   }) {
     return Client(
-      'lotti',
+      deviceDisplayName ?? 'lotti',
       verificationMethods: {
         KeyVerificationMethod.emoji,
         KeyVerificationMethod.reciprocate,
