@@ -23,10 +23,22 @@ successfully. Also see [PR #1695](https://github.com/matthiasn/lotti/pull/1695) 
 
 ## Testing with simulated bad network
 
-Install [comcast](https://github.com/tylertreat/Comcast), e.g.:
+Install [toxiproxy](https://github.com/Shopify/toxiproxy) and run server:
 
 ````shell
-    $ GOBIN=~/bin/ go install github.com/tylertreat/comcast@latest
+    $ toxiproxy-server
 ````
 
- To be continued.
+In separate shell:
+
+````shell
+    $ toxiproxy-cli create -l localhost:18008 -u localhost:8008 dendrite-proxy
+    $ toxiproxy-cli toxic add -t latency -a latency=1000 dendrite-proxy
+    $ toxiproxy-cli toxic add -t bandwidth -a rate=100 dendrite-proxy
+````
+
+Run the test script against `toxiproxy`;
+
+````shell
+    $ SLOW_NETWORK=true ./integration_test/run_matrix_tests.sh
+````

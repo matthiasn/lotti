@@ -80,3 +80,4 @@ whisper.cpp/whisper.cpp-*/
 .fvm/
 
 integration_test/dendrite/config/jetstream/
+integration_test/dendrite/config/logs/
