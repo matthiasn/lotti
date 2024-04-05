@@ -27,6 +27,8 @@ void main() {
     const testPasswordEnv = 'TEST_PASSWORD';
     const testSlowNetworkEnv = 'SLOW_NETWORK';
 
+    const testSlowNetwork = bool.fromEnvironment(testSlowNetworkEnv);
+
     if (!const bool.hasEnvironment(testUserEnv1)) {
       debugPrint('TEST_USER1 not defined!!! Run via run_matrix_tests.sh');
       exit(1);
@@ -42,7 +44,9 @@ void main() {
 
     const testHomeServer = bool.hasEnvironment(testServerEnv)
         ? String.fromEnvironment(testServerEnv)
-        : 'http://localhost:8008';
+        : testSlowNetwork
+            ? 'http://localhost:18008'
+            : 'http://localhost:8008';
     const testPassword = bool.hasEnvironment(testPasswordEnv)
         ? String.fromEnvironment(testPasswordEnv)
         : '?Secret123@!';
@@ -59,7 +63,7 @@ void main() {
       password: testPassword,
     );
 
-    const delayFactor = bool.hasEnvironment(testSlowNetworkEnv) ? 10 : 1;
+    const delayFactor = bool.hasEnvironment(testSlowNetworkEnv) ? 5 : 1;
 
     setUpAll(() async {
       setFakeDocumentsPath();
