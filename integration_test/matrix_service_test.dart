@@ -49,7 +49,7 @@ void main() {
             : 'http://localhost:8008';
     const testPassword = bool.hasEnvironment(testPasswordEnv)
         ? String.fromEnvironment(testPasswordEnv)
-        : '?Secret123@!';
+        : '?Secret123@';
 
     const config1 = MatrixConfig(
       homeServer: testHomeServer,

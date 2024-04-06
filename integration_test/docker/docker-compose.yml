@@ -1,5 +1,3 @@
-version: "3.4"
-
 services:
   postgres:
     hostname: postgres
@@ -21,8 +19,8 @@ services:
     networks:
       - internal
 
-  monolith:
-    hostname: monolith
+  dendrite:
+    hostname: dendrite
     image: matrixdotorg/dendrite-monolith:latest
     command: -really-enable-open-registration
     ports:
@@ -41,6 +39,17 @@ services:
     networks:
       - internal
     restart: unless-stopped
+
+  toxiproxy:
+    hostname: toxiproxy
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    depends_on:
+      - dendrite
+    ports:
+      - 18008:18008
+      - 8474:8474
+    networks:
+      - internal
 
 networks:
   internal:
