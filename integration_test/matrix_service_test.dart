@@ -29,6 +29,10 @@ void main() {
 
     const testSlowNetwork = bool.fromEnvironment(testSlowNetworkEnv);
 
+    if (testSlowNetwork) {
+      debugPrint('Testing with degraded network.');
+    }
+
     if (!const bool.hasEnvironment(testUserEnv1)) {
       debugPrint('TEST_USER1 not defined!!! Run via run_matrix_tests.sh');
       exit(1);
@@ -63,7 +67,7 @@ void main() {
       password: testPassword,
     );
 
-    const delayFactor = bool.hasEnvironment(testSlowNetworkEnv) ? 5 : 1;
+    const delayFactor = testSlowNetwork ? 5 : 1;
 
     setUpAll(() async {
       setFakeDocumentsPath();
