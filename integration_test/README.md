@@ -39,7 +39,7 @@ Run the test script against `toxiproxy`;
     $ SLOW_NETWORK=true ./run_matrix_tests.sh
 ````
 
-With the simulated bad network (with added 1000 ms latency and throttled to 100 KB/s), the tests 
+With the simulated bad network (with added 500 ms latency and throttled to 100 KB/s), the tests 
 should still complete successfully, it'll just take a bit longer. For example on an M1 Max, it
 typically takes around 1m 25s with the bad network simulation, and around 50s with non-degraded
 network.
