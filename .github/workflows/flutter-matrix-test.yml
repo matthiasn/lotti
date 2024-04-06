@@ -26,6 +26,10 @@ jobs:
           cwd: "integration_test/docker"
       - name: Run Matrix integration test
         uses: GabrielBB/xvfb-action@v1.6
+        env:
+          SLOW_NETWORK: true
         with:
           working-directory: ./integration_test
-          run: ./run_matrix_tests.sh
+          run: |
+            ./setup_toxiproxy_docker.sh
+            ./run_matrix_tests.sh
