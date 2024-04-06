@@ -1,19 +1,23 @@
 # Integration test for Matrix sync
 
-Clone [dendrite](https://github.com/matrix-org/dendrite) into a sibling directory,
-e.g. `~/github/dendrite`. Build it, we need the executable in order to create users for the test.
+For the Matrix integration tests, there's a [Docker Compose](https://docs.docker.com/compose/) setup
+that starts the following services:
 
-Run dendrite in a separate shell:
+- [dendrite](https://github.com/matrix-org/dendrite): the Matrix homeserver we use in the test
+- [postgres](https://hub.docker.com/_/postgres/): a PostgreSQL server used by dendrite
+- [toxiproxy](https://github.com/Shopify/toxiproxy): a TCP proxy for simulating bad networks
+
+Run the docker containers in a separate shell:
 
 ```shell
-    $ cd integration_test/dendrite/
+    $ cd docker
     $ docker-compose up
 ```
 
 Run the test script:
 
 ````shell
-    $ ./integration_test/run_matrix_tests.sh
+    $ ./run_matrix_tests.sh
 ````
 
 The test script will create two users and then run a Flutter integration test that instantiates two
@@ -23,22 +27,19 @@ successfully. Also see [PR #1695](https://github.com/matthiasn/lotti/pull/1695) 
 
 ## Testing with simulated bad network
 
-Install [toxiproxy](https://github.com/Shopify/toxiproxy) and run server:
+Set up the toxiproxy server running in the docker compose environment:
 
 ````shell
-    $ toxiproxy-server
-````
-
-In separate shell:
-
-````shell
-    $ toxiproxy-cli create -l localhost:18008 -u localhost:8008 dendrite-proxy
-    $ toxiproxy-cli toxic add -t latency -a latency=1000 dendrite-proxy
-    $ toxiproxy-cli toxic add -t bandwidth -a rate=100 dendrite-proxy
+    $ ./setup_toxiproxy_docker.sh
 ````
 
 Run the test script against `toxiproxy`;
 
 ````shell
-    $ SLOW_NETWORK=true ./integration_test/run_matrix_tests.sh
+    $ SLOW_NETWORK=true ./run_matrix_tests.sh
 ````
+
+With the simulated bad network (with added 1000 ms latency and throttled to 100 KB/s), the tests 
+should still complete successfully, it'll just take a bit longer. For example on an M1 Max, it
+typically takes around 1m 25s with the bad network simulation, and around 50s with non-degraded
+network.
