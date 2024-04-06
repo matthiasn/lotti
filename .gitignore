@@ -79,5 +79,5 @@ whisper.cpp/whisper.cpp-*/
 # FVM Version Cache
 .fvm/
 
-integration_test/dendrite/config/jetstream/
-integration_test/dendrite/config/logs/
+integration_test/docker/config/jetstream/
+integration_test/docker/config/logs/
