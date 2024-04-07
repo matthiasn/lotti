@@ -4,18 +4,14 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/entry_links.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
 import 'package:lotti/sync/matrix/client.dart';
 import 'package:lotti/sync/matrix/consts.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/sync/matrix/process_message.dart';
 import 'package:lotti/sync/matrix/send_message.dart';
 import 'package:lotti/sync/matrix/stats.dart';
 import 'package:lotti/sync/secure_storage.dart';
@@ -330,7 +326,7 @@ class MatrixService {
                 );
               }
             } else {
-              await processMessage(eventUpdate.plaintextBody);
+              await processMatrixMessage(eventUpdate.plaintextBody);
             }
           } catch (exception, stackTrace) {
             _loggingDb.captureException(
@@ -386,62 +382,6 @@ class MatrixService {
       incrementSentCount: incrementSentCount,
       myRoomId: myRoomId,
     );
-  }
-
-  Future<void> processMessage(String message) async {
-    final journalDb = getIt<JournalDb>();
-    final loggingDb = getIt<LoggingDb>();
-
-    try {
-      final decoded = utf8.decode(base64.decode(message));
-
-      final syncMessage = SyncMessage.fromJson(
-        json.decode(decoded) as Map<String, dynamic>,
-      );
-
-      _loggingDb.captureEvent(
-        'processing ${syncMessage.runtimeType}',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'processMessage',
-      );
-
-      await syncMessage.when(
-        journalEntity: (
-          JournalEntity journalEntity,
-          SyncEntryStatus status,
-        ) async {
-          await saveJournalEntityJson(journalEntity);
-
-          if (status == SyncEntryStatus.update) {
-            await journalDb.updateJournalEntity(journalEntity);
-          } else {
-            await journalDb.addJournalEntity(journalEntity);
-          }
-        },
-        entryLink: (EntryLink entryLink, SyncEntryStatus _) {
-          journalDb.upsertEntryLink(entryLink);
-        },
-        entityDefinition: (
-          EntityDefinition entityDefinition,
-          SyncEntryStatus status,
-        ) {
-          journalDb.upsertEntityDefinition(entityDefinition);
-        },
-        tagEntity: (
-          TagEntity tagEntity,
-          SyncEntryStatus status,
-        ) {
-          journalDb.upsertTagEntity(tagEntity);
-        },
-      );
-    } catch (e, stackTrace) {
-      loggingDb.captureException(
-        e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'processMessage',
-        stackTrace: stackTrace,
-      );
-    }
   }
 
   Future<MatrixConfig?> loadMatrixConfig() async {
