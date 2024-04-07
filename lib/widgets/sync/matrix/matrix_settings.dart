@@ -41,7 +41,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
   @override
   void initState() {
     super.initState();
-    _matrixService.loadMatrixConfig().then((persisted) {
+    _matrixService.loadConfig().then((persisted) {
       _previous = persisted;
 
       if (persisted != null) {
@@ -83,7 +83,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
         roomId: formData[matrixRoomIdKey] as String? ?? _previous?.roomId ?? '',
       );
 
-      await _matrixService.setMatrixConfig(config);
+      await _matrixService.setConfig(config);
       setState(() => _dirty = false);
     }
   }
@@ -103,7 +103,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
         if (jsonString != null) {
           final parsed = json.decode(jsonString) as Map<String, dynamic>;
           final scannedConfig = MatrixConfig.fromJson(parsed);
-          await _matrixService.setMatrixConfig(scannedConfig);
+          await _matrixService.setConfig(scannedConfig);
           maybePop();
         }
       });
@@ -162,7 +162,7 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
                     key: const Key('matrix_config_delete'),
                     onPressed: () async {
                       await _matrixService.logout();
-                      await _matrixService.deleteMatrixConfig();
+                      await _matrixService.deleteConfig();
                       setState(() {
                         _dirty = false;
                       });
