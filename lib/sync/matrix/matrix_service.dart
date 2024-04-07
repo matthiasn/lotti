@@ -12,6 +12,7 @@ import 'package:lotti/sync/matrix/client.dart';
 import 'package:lotti/sync/matrix/consts.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/sync/matrix/process_message.dart';
+import 'package:lotti/sync/matrix/room.dart';
 import 'package:lotti/sync/matrix/send_message.dart';
 import 'package:lotti/sync/matrix/stats.dart';
 import 'package:lotti/sync/secure_storage.dart';
@@ -124,10 +125,6 @@ class MatrixService {
         );
       }
 
-      if (isLoggedIn()) {
-        await loadArchive();
-      }
-
       final roomId = matrixConfig.roomId;
 
       if (roomId != null) {
@@ -144,37 +141,14 @@ class MatrixService {
     }
   }
 
-  Future<String> joinRoom(String roomId) async {
-    try {
-      final joinRes = await _client.joinRoom(roomId).onError((
-        error,
-        stackTrace,
-      ) {
-        debugPrint('MatrixService join error $error');
-
-        _loggingDb.captureException(
-          error,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'joinRoom',
-          stackTrace: stackTrace,
-        );
-
-        return error.toString();
-      });
-      syncRoom = _client.getRoomById(joinRes);
-      syncRoomId = joinRes;
-
-      return joinRes;
-    } catch (e, stackTrace) {
-      debugPrint('$e');
-      _loggingDb.captureException(
-        e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'joinRoom',
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
+  Future<String?> joinRoom(String roomId) async {
+    final (joinRes, room, err) = await joinMatrixRoom(
+      roomId: roomId,
+      client: _client,
+    );
+    syncRoom = room;
+    syncRoomId = joinRes;
+    return joinRes ?? err;
   }
 
   bool isLoggedIn() {
@@ -194,7 +168,6 @@ class MatrixService {
       visibility: Visibility.private,
       name: name,
     );
-    await loadArchive();
     final room = _client.getRoomById(roomId);
     await room?.enableEncryption();
     return roomId;
@@ -203,11 +176,6 @@ class MatrixService {
   Room? getRoom(String roomId) {
     final room = _client.getRoomById(roomId);
     return room;
-  }
-
-  Future<void> loadArchive() async {
-    final rooms = await _client.loadArchive();
-    debugPrint('Matrix $rooms');
   }
 
   List<DeviceKeys> getUnverified() {
