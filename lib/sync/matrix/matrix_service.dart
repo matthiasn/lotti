@@ -87,6 +87,13 @@ class MatrixService {
     return timeline?.events;
   }
 
+  Future<Timeline?> getTimeline(VoidCallback onNewEvent) async {
+    final timeline = await syncRoom?.getTimeline(
+      onNewEvent: onNewEvent,
+    );
+    return timeline;
+  }
+
   Future<String> createRoom() => createMatrixRoom(client: _client);
 
   List<DeviceKeys> getUnverified() => _client.unverifiedDevices;
@@ -110,7 +117,7 @@ class MatrixService {
     return incomingKeyVerificationController.stream;
   }
 
-  Future<void> startKeyVerificationListener() async =>
+  Future<void> startKeyVerificationListener() =>
       listenForKeyVerificationRequests(service: this);
 
   Future<void> listen() async {

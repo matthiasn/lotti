@@ -15,6 +15,7 @@ import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -226,6 +227,15 @@ void main() {
         expect(aliceDevice.getUnverified(), isEmpty);
         expect(bobDevice.getUnverified(), isEmpty);
 
+        Timeline? bobsTimeline;
+        bobsTimeline = await bobDevice.getTimeline(() {
+          debugPrint(
+            '>>> bobsTimeline onNewEvent ${bobsTimeline?.events.length}',
+          );
+
+          debugPrint(bobsTimeline?.events.toString());
+        });
+
         await Future<void>.delayed(
           const Duration(seconds: defaultDelay * delayFactor),
         );
@@ -253,12 +263,24 @@ void main() {
           myRoomId: roomId,
         );
 
+        await bobDevice.logout();
+
+        await aliceDevice.sendMatrixMsg(
+          SyncMessage.journalEntity(
+            journalEntity: testEntry1,
+            status: SyncEntryStatus.initial,
+          ),
+          myRoomId: roomId,
+        );
+
+        await bobDevice.login();
+
         await Future<void>.delayed(
           const Duration(seconds: defaultDelay * delayFactor),
         );
 
         final bobsTimelineEvents = await bobDevice.getTimelineEvents();
-        expect(bobsTimelineEvents?.length, 8);
+        expect(bobsTimelineEvents?.length, 9);
 
         debugPrint('\n--- Logging out AliceDevice and BobDevice');
         await aliceDevice.logout();
