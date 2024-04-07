@@ -9,9 +9,10 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:path_provider/path_provider.dart';
 
-import '../test/helpers/path_provider.dart';
 import '../test/mocks/mocks.dart';
 
 void main() {
@@ -67,13 +68,18 @@ void main() {
       password: testPassword,
     );
 
-    const delayFactor = testSlowNetwork ? 5 : 1;
+    const defaultDelay = 1;
+    const delayFactor = testSlowNetwork ? 3 : 1;
 
     setUpAll(() async {
-      setFakeDocumentsPath();
+      final tmpDir = await getTemporaryDirectory();
+      final docDir = Directory('${tmpDir.path}/${uuid.v1()}')
+        ..createSync(recursive: true);
+      debugPrint('Created temporary docDir ${docDir.path}');
 
       getIt
         ..registerSingleton<LoggingDb>(mockLoggingDb)
+        ..registerSingleton<Directory>(docDir)
         ..registerSingleton<SecureStorage>(secureStorageMock);
     });
 
@@ -125,7 +131,7 @@ void main() {
         debugPrint('BobDevice - room joined: $joinRes2');
 
         await Future<void>.delayed(
-          const Duration(seconds: 1 * delayFactor),
+          const Duration(seconds: defaultDelay * delayFactor),
         );
 
         await waitUntil(() => aliceDevice.getUnverified().length == 1);
@@ -144,8 +150,16 @@ void main() {
         final incomingKeyVerificationRunnerStream =
             bobDevice.incomingKeyVerificationRunnerStream;
 
+        await Future<void>.delayed(
+          const Duration(seconds: defaultDelay * delayFactor),
+        );
+
         debugPrint('\n--- AliceDevice verifies BobDevice');
         await aliceDevice.verifyDevice(unverifiedAlice.first);
+
+        await Future<void>.delayed(
+          const Duration(seconds: defaultDelay * delayFactor),
+        );
 
         var emojisFromBob = '';
         var emojisFromAlice = '';
@@ -211,7 +225,7 @@ void main() {
         expect(bobDevice.getUnverified(), isEmpty);
 
         await Future<void>.delayed(
-          const Duration(seconds: 1 * delayFactor),
+          const Duration(seconds: defaultDelay * delayFactor),
         );
 
         debugPrint('\n--- Logging out AliceDevice and BobDevice');
