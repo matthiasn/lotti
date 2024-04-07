@@ -64,6 +64,8 @@ class MatrixService {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   MatrixConfig? matrixConfig;
   LoginResponse? _loginResponse;
+  String? syncRoomId;
+  Room? syncRoom;
 
   final Map<String, int> messageCounts = {};
   int sentCount = 0;
@@ -196,6 +198,9 @@ class MatrixService {
 
         return error.toString();
       });
+      syncRoom = _client.getRoomById(joinRes);
+      syncRoomId = joinRes;
+
       return joinRes;
     } catch (e, stackTrace) {
       debugPrint('$e');
@@ -213,6 +218,11 @@ class MatrixService {
     // TODO(unassigned): find non-deprecated solution
     // ignore: deprecated_member_use
     return _client.loginState == LoginState.loggedIn;
+  }
+
+  Future<List<Event>?> getTimelineEvents() async {
+    final timeline = await syncRoom?.getTimeline();
+    return timeline?.events;
   }
 
   Future<String> createRoom() async {
@@ -289,9 +299,7 @@ class MatrixService {
         _incomingKeyVerificationController.add(keyVerification);
       });
 
-      final roomId = matrixConfig?.roomId;
-
-      if (roomId == null) {
+      if (syncRoomId == null) {
         _loggingDb.captureEvent(
           configNotFound,
           domain: 'MATRIX_SERVICE',
@@ -389,10 +397,13 @@ class MatrixService {
     }
   }
 
-  Future<void> sendMatrixMsg(SyncMessage syncMessage) async {
+  Future<void> sendMatrixMsg(
+    SyncMessage syncMessage, {
+    String? myRoomId,
+  }) async {
     try {
       final msg = json.encode(syncMessage);
-      final roomId = matrixConfig?.roomId;
+      final roomId = myRoomId ?? matrixConfig?.roomId;
 
       if (_client.unverifiedDevices.isNotEmpty) {
         _loggingDb.captureException(
@@ -412,15 +423,13 @@ class MatrixService {
         return;
       }
 
-      final room = _client.getRoomById(roomId);
-
       _loggingDb.captureEvent(
-        'trying to send text message to $room',
+        'trying to send text message to $syncRoom',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
 
-      final eventId = await room?.sendTextEvent(
+      final eventId = await syncRoom?.sendTextEvent(
         base64.encode(utf8.encode(msg)),
         msgtype: syncMessageType,
       );
@@ -428,7 +437,7 @@ class MatrixService {
       sentCount = sentCount + 1;
 
       _loggingDb.captureEvent(
-        'sent text message to $room with event ID $eventId',
+        'sent text message to $syncRoom with event ID $eventId',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
@@ -447,11 +456,11 @@ class MatrixService {
               final bytes = await File(fullPath).readAsBytes();
 
               _loggingDb.captureEvent(
-                'trying to send $relativePath file message to $room',
+                'trying to send $relativePath file message to $syncRoom',
                 domain: 'MATRIX_SERVICE',
                 subDomain: 'sendMatrixMsg',
               );
-              final eventId = await room?.sendFileEvent(
+              final eventId = await syncRoom?.sendFileEvent(
                 MatrixFile(
                   bytes: bytes,
                   name: fullPath,
@@ -463,7 +472,7 @@ class MatrixService {
               sentCount = sentCount + 1;
 
               _loggingDb.captureEvent(
-                'sent $relativePath file message to $room, event ID $eventId',
+                'sent $relativePath file message to $syncRoom, event ID $eventId',
                 domain: 'MATRIX_SERVICE',
                 subDomain: 'sendMatrixMsg',
               );
@@ -476,12 +485,12 @@ class MatrixService {
               final bytes = await File(fullPath).readAsBytes();
 
               _loggingDb.captureEvent(
-                'trying to send $relativePath file message to $room',
+                'trying to send $relativePath file message to $syncRoom',
                 domain: 'MATRIX_SERVICE',
                 subDomain: 'sendMatrixMsg',
               );
 
-              final eventId = await room?.sendFileEvent(
+              final eventId = await syncRoom?.sendFileEvent(
                 MatrixFile(
                   bytes: bytes,
                   name: fullPath,
@@ -500,7 +509,7 @@ class MatrixService {
               );
 
               _loggingDb.captureEvent(
-                'sent $relativePath file message to $room, event ID $eventId',
+                'sent $relativePath file message to $syncRoom, event ID $eventId',
                 domain: 'MATRIX_SERVICE',
                 subDomain: 'sendMatrixMsg',
               );
