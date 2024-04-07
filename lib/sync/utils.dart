@@ -6,7 +6,6 @@ const String nextAvailableCounterKey = 'VC_NEXT_AVAILABLE_COUNTER';
 
 const String sharedSecretKey = 'sharedSecret';
 const String imapConfigKey = 'imapConfig';
-const String matrixConfigKey = 'MATRIX_CONFIG';
 const String lastReadUidKey = 'LAST_READ_UID';
 
 bool validSubject(String subject) {

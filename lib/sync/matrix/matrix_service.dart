@@ -8,14 +8,13 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
 import 'package:lotti/sync/matrix/client.dart';
+import 'package:lotti/sync/matrix/config.dart';
 import 'package:lotti/sync/matrix/consts.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/sync/matrix/process_message.dart';
 import 'package:lotti/sync/matrix/room.dart';
 import 'package:lotti/sync/matrix/send_message.dart';
 import 'package:lotti/sync/matrix/stats.dart';
-import 'package:lotti/sync/secure_storage.dart';
-import 'package:lotti/sync/utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -67,7 +66,7 @@ class MatrixService {
       StreamController<KeyVerification>.broadcast();
 
   Future<void> loginAndListen() async {
-    await loadMatrixConfig();
+    await loadConfig();
     await login();
     await listen();
   }
@@ -228,38 +227,14 @@ class MatrixService {
         myRoomId: myRoomId,
       );
 
-  Future<MatrixConfig?> loadMatrixConfig() async {
-    if (matrixConfig != null) {
-      return matrixConfig;
-    }
-    final configJson = await getIt<SecureStorage>().read(key: matrixConfigKey);
-    if (configJson != null) {
-      matrixConfig = MatrixConfig.fromJson(
-        json.decode(configJson) as Map<String, dynamic>,
-      );
-    }
-    return matrixConfig;
-  }
-
   Future<void> logout() async {
     if (_client.isLogged()) {
       await _client.logout();
     }
   }
 
-  Future<void> setMatrixConfig(MatrixConfig config) async {
-    matrixConfig = config;
-    await getIt<SecureStorage>().write(
-      key: matrixConfigKey,
-      value: jsonEncode(config),
-    );
-  }
-
-  Future<void> deleteMatrixConfig() async {
-    await getIt<SecureStorage>().delete(
-      key: matrixConfigKey,
-    );
-    matrixConfig = null;
-    await logout();
-  }
+  Future<MatrixConfig?> loadConfig() => loadMatrixConfig(service: this);
+  Future<void> deleteConfig() => deleteMatrixConfig(service: this);
+  Future<void> setConfig(MatrixConfig config) =>
+      setMatrixConfig(config, service: this);
 }
