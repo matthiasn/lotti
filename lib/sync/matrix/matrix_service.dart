@@ -46,7 +46,7 @@ class MatrixService {
   late final Client _client;
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   MatrixConfig? matrixConfig;
-  LoginResponse? _loginResponse;
+  LoginResponse? loginResponse;
   String? syncRoomId;
   Room? syncRoom;
 
@@ -72,74 +72,8 @@ class MatrixService {
     await listen();
   }
 
-  Client get client {
-    return _client;
-  }
-
-  Future<void> login() async {
-    try {
-      final matrixConfig = this.matrixConfig;
-
-      if (matrixConfig == null) {
-        _loggingDb.captureEvent(
-          configNotFound,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'login',
-        );
-
-        return;
-      }
-
-      final homeServerSummary = await _client.checkHomeserver(
-        Uri.parse(matrixConfig.homeServer),
-      );
-
-      _loggingDb.captureEvent(
-        'checkHomeserver $homeServerSummary',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'login',
-      );
-
-      await _client.init(
-        waitForFirstSync: false,
-        waitUntilLoadCompletedLoaded: false,
-      );
-
-      if (!isLoggedIn()) {
-        final initialDeviceDisplayName =
-            deviceDisplayName ?? await createMatrixDeviceName();
-
-        _loginResponse = await _client.login(
-          LoginType.mLoginPassword,
-          identifier: AuthenticationUserIdentifier(user: matrixConfig.user),
-          password: matrixConfig.password,
-          initialDeviceDisplayName: initialDeviceDisplayName,
-        );
-
-        _loggingDb.captureEvent(
-          'logged in, userId ${_loginResponse?.userId},'
-          ' deviceId  ${_loginResponse?.deviceId}',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'login',
-        );
-      }
-
-      final roomId = matrixConfig.roomId;
-
-      if (roomId != null) {
-        await joinRoom(roomId);
-      }
-    } catch (e, stackTrace) {
-      debugPrint('$e');
-      _loggingDb.captureException(
-        e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'login',
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
+  Client get client => _client;
+  Future<void> login() => matrixLogin(service: this);
   Future<String?> joinRoom(String roomId) =>
       joinMatrixRoom(roomId: roomId, service: this);
 
