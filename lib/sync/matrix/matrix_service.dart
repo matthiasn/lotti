@@ -15,27 +15,15 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
+import 'package:lotti/sync/matrix/consts.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/sync/matrix/send_message.dart';
+import 'package:lotti/sync/matrix/stats.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/utils.dart';
-import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
-
-const configNotFound = 'Could not find Matrix Config';
-const syncMessageType = 'com.lotti.sync.message';
-
-class MatrixStats {
-  MatrixStats({
-    required this.sentCount,
-    required this.messageCounts,
-  });
-
-  int sentCount;
-  Map<String, int> messageCounts;
-}
 
 class MatrixService {
   MatrixService({
@@ -397,136 +385,155 @@ class MatrixService {
     }
   }
 
+  void incrementSentCount() {
+    sentCount = sentCount + 1;
+    messageCountsController.add(
+      MatrixStats(
+        messageCounts: messageCounts,
+        sentCount: sentCount,
+      ),
+    );
+  }
+
   Future<void> sendMatrixMsg(
     SyncMessage syncMessage, {
     String? myRoomId,
   }) async {
-    try {
-      final msg = json.encode(syncMessage);
-      final roomId = myRoomId ?? matrixConfig?.roomId;
+    await sendMessage(
+      syncMessage,
+      client: _client,
+      syncRoom: syncRoom,
+      matrixConfig: matrixConfig,
+      incrementSentCount: incrementSentCount,
+      myRoomId: myRoomId,
+    );
 
-      if (_client.unverifiedDevices.isNotEmpty) {
-        _loggingDb.captureException(
-          'Unverified devices found',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'sendMatrixMsg',
-        );
-        return;
-      }
-
-      if (roomId == null) {
-        _loggingDb.captureEvent(
-          configNotFound,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'sendMatrixMsg',
-        );
-        return;
-      }
-
-      _loggingDb.captureEvent(
-        'trying to send text message to $syncRoom',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
-      );
-
-      final eventId = await syncRoom?.sendTextEvent(
-        base64.encode(utf8.encode(msg)),
-        msgtype: syncMessageType,
-      );
-
-      sentCount = sentCount + 1;
-
-      _loggingDb.captureEvent(
-        'sent text message to $syncRoom with event ID $eventId',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
-      );
-
-      final docDir = getDocumentsDirectory();
-
-      if (syncMessage is SyncJournalEntity) {
-        final journalEntity = syncMessage.journalEntity;
-
-        await journalEntity.maybeMap(
-          journalAudio: (JournalAudio journalAudio) async {
-            if (syncMessage.status == SyncEntryStatus.initial) {
-              final relativePath =
-                  AudioUtils.getRelativeAudioPath(journalAudio);
-              final fullPath = AudioUtils.getAudioPath(journalAudio, docDir);
-              final bytes = await File(fullPath).readAsBytes();
-
-              _loggingDb.captureEvent(
-                'trying to send $relativePath file message to $syncRoom',
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'sendMatrixMsg',
-              );
-              final eventId = await syncRoom?.sendFileEvent(
-                MatrixFile(
-                  bytes: bytes,
-                  name: fullPath,
-                ),
-                extraContent: {
-                  'relativePath': relativePath,
-                },
-              );
-              sentCount = sentCount + 1;
-
-              _loggingDb.captureEvent(
-                'sent $relativePath file message to $syncRoom, event ID $eventId',
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'sendMatrixMsg',
-              );
-            }
-          },
-          journalImage: (JournalImage journalImage) async {
-            if (syncMessage.status == SyncEntryStatus.initial) {
-              final relativePath = getRelativeImagePath(journalImage);
-              final fullPath = getFullImagePath(journalImage);
-              final bytes = await File(fullPath).readAsBytes();
-
-              _loggingDb.captureEvent(
-                'trying to send $relativePath file message to $syncRoom',
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'sendMatrixMsg',
-              );
-
-              final eventId = await syncRoom?.sendFileEvent(
-                MatrixFile(
-                  bytes: bytes,
-                  name: fullPath,
-                ),
-                extraContent: {
-                  'relativePath': relativePath,
-                },
-              );
-              sentCount = sentCount + 1;
-
-              messageCountsController.add(
-                MatrixStats(
-                  messageCounts: messageCounts,
-                  sentCount: sentCount,
-                ),
-              );
-
-              _loggingDb.captureEvent(
-                'sent $relativePath file message to $syncRoom, event ID $eventId',
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'sendMatrixMsg',
-              );
-            }
-          },
-          orElse: () {},
-        );
-      }
-    } catch (e, stackTrace) {
-      debugPrint('MATRIX: Error sending message: $e');
-      _loggingDb.captureException(
-        e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
-        stackTrace: stackTrace,
-      );
-    }
+    // try {
+    //   final msg = json.encode(syncMessage);
+    //   final roomId = myRoomId ?? matrixConfig?.roomId;
+    //
+    //   if (_client.unverifiedDevices.isNotEmpty) {
+    //     _loggingDb.captureException(
+    //       'Unverified devices found',
+    //       domain: 'MATRIX_SERVICE',
+    //       subDomain: 'sendMatrixMsg',
+    //     );
+    //     return;
+    //   }
+    //
+    //   if (roomId == null) {
+    //     _loggingDb.captureEvent(
+    //       configNotFound,
+    //       domain: 'MATRIX_SERVICE',
+    //       subDomain: 'sendMatrixMsg',
+    //     );
+    //     return;
+    //   }
+    //
+    //   _loggingDb.captureEvent(
+    //     'trying to send text message to $syncRoom',
+    //     domain: 'MATRIX_SERVICE',
+    //     subDomain: 'sendMatrixMsg',
+    //   );
+    //
+    //   final eventId = await syncRoom?.sendTextEvent(
+    //     base64.encode(utf8.encode(msg)),
+    //     msgtype: syncMessageType,
+    //   );
+    //
+    //   sentCount = sentCount + 1;
+    //
+    //   _loggingDb.captureEvent(
+    //     'sent text message to $syncRoom with event ID $eventId',
+    //     domain: 'MATRIX_SERVICE',
+    //     subDomain: 'sendMatrixMsg',
+    //   );
+    //
+    //   final docDir = getDocumentsDirectory();
+    //
+    //   if (syncMessage is SyncJournalEntity) {
+    //     final journalEntity = syncMessage.journalEntity;
+    //
+    //     await journalEntity.maybeMap(
+    //       journalAudio: (JournalAudio journalAudio) async {
+    //         if (syncMessage.status == SyncEntryStatus.initial) {
+    //           final relativePath =
+    //               AudioUtils.getRelativeAudioPath(journalAudio);
+    //           final fullPath = AudioUtils.getAudioPath(journalAudio, docDir);
+    //           final bytes = await File(fullPath).readAsBytes();
+    //
+    //           _loggingDb.captureEvent(
+    //             'trying to send $relativePath file message to $syncRoom',
+    //             domain: 'MATRIX_SERVICE',
+    //             subDomain: 'sendMatrixMsg',
+    //           );
+    //           final eventId = await syncRoom?.sendFileEvent(
+    //             MatrixFile(
+    //               bytes: bytes,
+    //               name: fullPath,
+    //             ),
+    //             extraContent: {
+    //               'relativePath': relativePath,
+    //             },
+    //           );
+    //           sentCount = sentCount + 1;
+    //
+    //           _loggingDb.captureEvent(
+    //             'sent $relativePath file message to $syncRoom, event ID $eventId',
+    //             domain: 'MATRIX_SERVICE',
+    //             subDomain: 'sendMatrixMsg',
+    //           );
+    //         }
+    //       },
+    //       journalImage: (JournalImage journalImage) async {
+    //         if (syncMessage.status == SyncEntryStatus.initial) {
+    //           final relativePath = getRelativeImagePath(journalImage);
+    //           final fullPath = getFullImagePath(journalImage);
+    //           final bytes = await File(fullPath).readAsBytes();
+    //
+    //           _loggingDb.captureEvent(
+    //             'trying to send $relativePath file message to $syncRoom',
+    //             domain: 'MATRIX_SERVICE',
+    //             subDomain: 'sendMatrixMsg',
+    //           );
+    //
+    //           final eventId = await syncRoom?.sendFileEvent(
+    //             MatrixFile(
+    //               bytes: bytes,
+    //               name: fullPath,
+    //             ),
+    //             extraContent: {
+    //               'relativePath': relativePath,
+    //             },
+    //           );
+    //           sentCount = sentCount + 1;
+    //
+    //           messageCountsController.add(
+    //             MatrixStats(
+    //               messageCounts: messageCounts,
+    //               sentCount: sentCount,
+    //             ),
+    //           );
+    //
+    //           _loggingDb.captureEvent(
+    //             'sent $relativePath file message to $syncRoom, event ID $eventId',
+    //             domain: 'MATRIX_SERVICE',
+    //             subDomain: 'sendMatrixMsg',
+    //           );
+    //         }
+    //       },
+    //       orElse: () {},
+    //     );
+    //   }
+    // } catch (e, stackTrace) {
+    //   debugPrint('MATRIX: Error sending message: $e');
+    //   _loggingDb.captureException(
+    //     e,
+    //     domain: 'MATRIX_SERVICE',
+    //     subDomain: 'sendMatrixMsg',
+    //     stackTrace: stackTrace,
+    //   );
+    // }
   }
 
   Future<void> processMessage(String message) async {
