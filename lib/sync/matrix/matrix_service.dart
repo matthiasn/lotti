@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -26,17 +25,17 @@ class MatrixService {
     this.matrixConfig,
     this.deviceDisplayName,
     String? hiveDbName,
-  }) : _keyVerificationController =
+  }) : keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
     _client = createMatrixClient(hiveDbName: hiveDbName);
-    _incomingKeyVerificationRunnerController =
+    incomingKeyVerificationRunnerController =
         StreamController<KeyVerificationRunner>.broadcast(
       onListen: publishIncomingRunnerState,
     );
 
-    keyVerificationStream = _keyVerificationController.stream;
+    keyVerificationStream = keyVerificationController.stream;
     incomingKeyVerificationRunnerStream =
-        _incomingKeyVerificationRunnerController.stream;
+        incomingKeyVerificationRunnerController.stream;
   }
 
   void publishIncomingRunnerState() {
@@ -58,13 +57,13 @@ class MatrixService {
       StreamController<MatrixStats>.broadcast();
   KeyVerificationRunner? keyVerificationRunner;
   KeyVerificationRunner? incomingKeyVerificationRunner;
-  final StreamController<KeyVerificationRunner> _keyVerificationController;
+  final StreamController<KeyVerificationRunner> keyVerificationController;
   late final StreamController<KeyVerificationRunner>
-      _incomingKeyVerificationRunnerController;
+      incomingKeyVerificationRunnerController;
   late final Stream<KeyVerificationRunner> keyVerificationStream;
   late final Stream<KeyVerificationRunner> incomingKeyVerificationRunnerStream;
 
-  final _incomingKeyVerificationController =
+  final incomingKeyVerificationController =
       StreamController<KeyVerification>.broadcast();
 
   Future<void> loginAndListen() async {
@@ -141,15 +140,8 @@ class MatrixService {
     }
   }
 
-  Future<String?> joinRoom(String roomId) async {
-    final (joinRes, room, err) = await joinMatrixRoom(
-      roomId: roomId,
-      client: _client,
-    );
-    syncRoom = room;
-    syncRoomId = joinRes;
-    return joinRes ?? err;
-  }
+  Future<String?> joinRoom(String roomId) =>
+      joinMatrixRoom(roomId: roomId, service: this);
 
   bool isLoggedIn() {
     // TODO(unassigned): find non-deprecated solution
@@ -162,35 +154,14 @@ class MatrixService {
     return timeline?.events;
   }
 
-  Future<String> createRoom() async {
-    final name = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
-    final roomId = await _client.createRoom(
-      visibility: Visibility.private,
-      name: name,
-    );
-    final room = _client.getRoomById(roomId);
-    await room?.enableEncryption();
-    return roomId;
-  }
+  Future<String> createRoom() => createMatrixRoom(client: _client);
 
-  Room? getRoom(String roomId) {
-    final room = _client.getRoomById(roomId);
-    return room;
-  }
+  List<DeviceKeys> getUnverified() => _client.unverifiedDevices;
 
-  List<DeviceKeys> getUnverified() {
-    final unverified = _client.unverifiedDevices;
-    return unverified;
-  }
-
-  Future<void> verifyDevice(DeviceKeys deviceKeys) async {
-    final keyVerification = await deviceKeys.startVerification();
-    keyVerificationRunner = KeyVerificationRunner(
-      keyVerification,
-      controller: _keyVerificationController,
-      name: 'Outgoing KeyVerificationRunner',
-    );
-  }
+  Future<void> verifyDevice(DeviceKeys deviceKeys) => verifyMatrixDevice(
+        deviceKeys: deviceKeys,
+        service: this,
+      );
 
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
     final deviceId = deviceKeys.deviceId;
@@ -199,35 +170,20 @@ class MatrixService {
     }
   }
 
-  String? get deviceId {
-    return _client.deviceID;
-  }
-
-  String? get deviceName {
-    return _client.deviceName;
-  }
+  String? get deviceId => _client.deviceID;
+  String? get deviceName => _client.deviceName;
 
   Stream<KeyVerification> getIncomingKeyVerificationStream() {
-    return _incomingKeyVerificationController.stream;
+    return incomingKeyVerificationController.stream;
   }
+
+  Future<void> startKeyVerificationListener() async =>
+      listenForKeyVerificationRequests(service: this);
 
   Future<void> listen() async {
     try {
       _client.onLoginStateChanged.stream.listen((LoginState loginState) {
         debugPrint('LoginState: $loginState');
-      });
-
-      _client.onKeyVerificationRequest.stream.listen((
-        KeyVerification keyVerification,
-      ) {
-        incomingKeyVerificationRunner = KeyVerificationRunner(
-          keyVerification,
-          controller: _incomingKeyVerificationRunnerController,
-          name: 'Incoming KeyVerificationRunner',
-        );
-
-        debugPrint('Key Verification Request from ${keyVerification.deviceId}');
-        _incomingKeyVerificationController.add(keyVerification);
       });
 
       if (syncRoomId == null) {
@@ -328,29 +284,15 @@ class MatrixService {
     }
   }
 
-  void incrementSentCount() {
-    sentCount = sentCount + 1;
-    messageCountsController.add(
-      MatrixStats(
-        messageCounts: messageCounts,
-        sentCount: sentCount,
-      ),
-    );
-  }
-
   Future<void> sendMatrixMsg(
     SyncMessage syncMessage, {
     String? myRoomId,
-  }) async {
-    await sendMessage(
-      syncMessage,
-      client: _client,
-      syncRoom: syncRoom,
-      matrixConfig: matrixConfig,
-      incrementSentCount: incrementSentCount,
-      myRoomId: myRoomId,
-    );
-  }
+  }) =>
+      sendMessage(
+        syncMessage,
+        service: this,
+        myRoomId: myRoomId,
+      );
 
   Future<MatrixConfig?> loadMatrixConfig() async {
     if (matrixConfig != null) {

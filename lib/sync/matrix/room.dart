@@ -1,16 +1,18 @@
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:matrix/matrix.dart';
 
-Future<(String?, Room?, String?)> joinMatrixRoom({
+Future<String?> joinMatrixRoom({
   required String roomId,
-  required Client client,
+  required MatrixService service,
 }) async {
   final loggingDb = getIt<LoggingDb>();
 
   try {
-    final joinRes = await client.joinRoom(roomId).onError((
+    final joinRes = await service.client.joinRoom(roomId).onError((
       error,
       stackTrace,
     ) {
@@ -25,9 +27,13 @@ Future<(String?, Room?, String?)> joinMatrixRoom({
 
       return error.toString();
     });
-    final syncRoom = client.getRoomById(joinRes);
+    final syncRoom = service.client.getRoomById(joinRes);
 
-    return (joinRes, syncRoom, null);
+    service
+      ..syncRoom = syncRoom
+      ..syncRoomId = joinRes;
+
+    return joinRes;
   } catch (e, stackTrace) {
     debugPrint('$e');
     loggingDb.captureException(
@@ -38,4 +44,17 @@ Future<(String?, Room?, String?)> joinMatrixRoom({
     );
     rethrow;
   }
+}
+
+Future<String> createMatrixRoom({
+  required Client client,
+}) async {
+  final name = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
+  final roomId = await client.createRoom(
+    visibility: Visibility.private,
+    name: name,
+  );
+  final room = client.getRoomById(roomId);
+  await room?.enableEncryption();
+  return roomId;
 }

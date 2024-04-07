@@ -107,7 +107,7 @@ void main() {
         );
 
         await aliceDevice.login();
-        await aliceDevice.listen();
+        await aliceDevice.startKeyVerificationListener();
         debugPrint('AliceDevice - deviceId: ${aliceDevice.client.deviceID}');
 
         final roomId = await aliceDevice.createRoom();
@@ -126,7 +126,7 @@ void main() {
         );
 
         await bobDevice.login();
-        await bobDevice.listen();
+        await bobDevice.startKeyVerificationListener();
         debugPrint('BobDevice - deviceId: ${bobDevice.client.deviceID}');
 
         final joinRes2 = await bobDevice.joinRoom(roomId);
@@ -273,7 +273,7 @@ String extractEmojiString(Iterable<KeyVerificationEmoji>? emojis) {
   final buffer = StringBuffer();
   if (emojis != null) {
     for (final emoji in emojis) {
-      buffer.write('${emoji.emoji} ');
+      buffer.write(' ${emoji.emoji}  ');
     }
   }
   return buffer.toString();
