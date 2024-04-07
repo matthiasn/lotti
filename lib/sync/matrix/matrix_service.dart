@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/config.dart';
@@ -15,6 +13,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
+import 'package:lotti/sync/matrix/client.dart';
 import 'package:lotti/sync/matrix/consts.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/sync/matrix/send_message.dart';
@@ -32,7 +31,7 @@ class MatrixService {
     String? hiveDbName,
   }) : _keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast() {
-    _client = createClient(hiveDbName: hiveDbName);
+    _client = createMatrixClient(hiveDbName: hiveDbName);
     _incomingKeyVerificationRunnerController =
         StreamController<KeyVerificationRunner>.broadcast(
       onListen: publishIncomingRunnerState,
@@ -70,26 +69,6 @@ class MatrixService {
 
   final _incomingKeyVerificationController =
       StreamController<KeyVerification>.broadcast();
-
-  Client createClient({
-    String? hiveDbName,
-  }) {
-    return Client(
-      deviceDisplayName ?? 'lotti',
-      verificationMethods: {
-        KeyVerificationMethod.emoji,
-        KeyVerificationMethod.reciprocate,
-      },
-      shareKeysWithUnverifiedDevices: false,
-      databaseBuilder: (_) async {
-        final docDir = getIt<Directory>();
-        final path = '${docDir.path}/matrix/';
-        final db = HiveCollectionsDatabase(hiveDbName ?? 'lotti_sync', path);
-        await db.open();
-        return db;
-      },
-    );
-  }
 
   Future<void> loginAndListen() async {
     await loadMatrixConfig();
@@ -407,133 +386,6 @@ class MatrixService {
       incrementSentCount: incrementSentCount,
       myRoomId: myRoomId,
     );
-
-    // try {
-    //   final msg = json.encode(syncMessage);
-    //   final roomId = myRoomId ?? matrixConfig?.roomId;
-    //
-    //   if (_client.unverifiedDevices.isNotEmpty) {
-    //     _loggingDb.captureException(
-    //       'Unverified devices found',
-    //       domain: 'MATRIX_SERVICE',
-    //       subDomain: 'sendMatrixMsg',
-    //     );
-    //     return;
-    //   }
-    //
-    //   if (roomId == null) {
-    //     _loggingDb.captureEvent(
-    //       configNotFound,
-    //       domain: 'MATRIX_SERVICE',
-    //       subDomain: 'sendMatrixMsg',
-    //     );
-    //     return;
-    //   }
-    //
-    //   _loggingDb.captureEvent(
-    //     'trying to send text message to $syncRoom',
-    //     domain: 'MATRIX_SERVICE',
-    //     subDomain: 'sendMatrixMsg',
-    //   );
-    //
-    //   final eventId = await syncRoom?.sendTextEvent(
-    //     base64.encode(utf8.encode(msg)),
-    //     msgtype: syncMessageType,
-    //   );
-    //
-    //   sentCount = sentCount + 1;
-    //
-    //   _loggingDb.captureEvent(
-    //     'sent text message to $syncRoom with event ID $eventId',
-    //     domain: 'MATRIX_SERVICE',
-    //     subDomain: 'sendMatrixMsg',
-    //   );
-    //
-    //   final docDir = getDocumentsDirectory();
-    //
-    //   if (syncMessage is SyncJournalEntity) {
-    //     final journalEntity = syncMessage.journalEntity;
-    //
-    //     await journalEntity.maybeMap(
-    //       journalAudio: (JournalAudio journalAudio) async {
-    //         if (syncMessage.status == SyncEntryStatus.initial) {
-    //           final relativePath =
-    //               AudioUtils.getRelativeAudioPath(journalAudio);
-    //           final fullPath = AudioUtils.getAudioPath(journalAudio, docDir);
-    //           final bytes = await File(fullPath).readAsBytes();
-    //
-    //           _loggingDb.captureEvent(
-    //             'trying to send $relativePath file message to $syncRoom',
-    //             domain: 'MATRIX_SERVICE',
-    //             subDomain: 'sendMatrixMsg',
-    //           );
-    //           final eventId = await syncRoom?.sendFileEvent(
-    //             MatrixFile(
-    //               bytes: bytes,
-    //               name: fullPath,
-    //             ),
-    //             extraContent: {
-    //               'relativePath': relativePath,
-    //             },
-    //           );
-    //           sentCount = sentCount + 1;
-    //
-    //           _loggingDb.captureEvent(
-    //             'sent $relativePath file message to $syncRoom, event ID $eventId',
-    //             domain: 'MATRIX_SERVICE',
-    //             subDomain: 'sendMatrixMsg',
-    //           );
-    //         }
-    //       },
-    //       journalImage: (JournalImage journalImage) async {
-    //         if (syncMessage.status == SyncEntryStatus.initial) {
-    //           final relativePath = getRelativeImagePath(journalImage);
-    //           final fullPath = getFullImagePath(journalImage);
-    //           final bytes = await File(fullPath).readAsBytes();
-    //
-    //           _loggingDb.captureEvent(
-    //             'trying to send $relativePath file message to $syncRoom',
-    //             domain: 'MATRIX_SERVICE',
-    //             subDomain: 'sendMatrixMsg',
-    //           );
-    //
-    //           final eventId = await syncRoom?.sendFileEvent(
-    //             MatrixFile(
-    //               bytes: bytes,
-    //               name: fullPath,
-    //             ),
-    //             extraContent: {
-    //               'relativePath': relativePath,
-    //             },
-    //           );
-    //           sentCount = sentCount + 1;
-    //
-    //           messageCountsController.add(
-    //             MatrixStats(
-    //               messageCounts: messageCounts,
-    //               sentCount: sentCount,
-    //             ),
-    //           );
-    //
-    //           _loggingDb.captureEvent(
-    //             'sent $relativePath file message to $syncRoom, event ID $eventId',
-    //             domain: 'MATRIX_SERVICE',
-    //             subDomain: 'sendMatrixMsg',
-    //           );
-    //         }
-    //       },
-    //       orElse: () {},
-    //     );
-    //   }
-    // } catch (e, stackTrace) {
-    //   debugPrint('MATRIX: Error sending message: $e');
-    //   _loggingDb.captureException(
-    //     e,
-    //     domain: 'MATRIX_SERVICE',
-    //     subDomain: 'sendMatrixMsg',
-    //     stackTrace: stackTrace,
-    //   );
-    // }
   }
 
   Future<void> processMessage(String message) async {
@@ -625,27 +477,5 @@ class MatrixService {
     );
     matrixConfig = null;
     await logout();
-  }
-
-  Future<String> createMatrixDeviceName() async {
-    final operatingSystem = Platform.operatingSystem;
-    var deviceName = operatingSystem;
-
-    final deviceInfo = DeviceInfoPlugin();
-    if (Platform.isIOS) {
-      final iosInfo = await deviceInfo.iosInfo;
-      deviceName = iosInfo.name;
-    }
-    if (Platform.isMacOS) {
-      final macOsInfo = await deviceInfo.macOsInfo;
-      deviceName = macOsInfo.computerName;
-    }
-    if (Platform.isAndroid) {
-      final androidInfo = await deviceInfo.androidInfo;
-      deviceName = androidInfo.host;
-    }
-
-    final dateHhMm = DateTime.now().toIso8601String().substring(0, 16);
-    return '$deviceName $dateHhMm ${uuid.v1().substring(0, 4)}';
   }
 }
