@@ -5,13 +5,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
+import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../test/mocks/mocks.dart';
 
@@ -69,7 +74,7 @@ void main() {
     );
 
     const defaultDelay = 1;
-    const delayFactor = testSlowNetwork ? 3 : 1;
+    const delayFactor = testSlowNetwork ? 5 : 1;
 
     setUpAll(() async {
       final tmpDir = await getTemporaryDirectory();
@@ -102,11 +107,8 @@ void main() {
         );
 
         await aliceDevice.login();
-        await aliceDevice.listen();
-
-        debugPrint(
-          'AliceDevice - deviceId: ${aliceDevice.client.deviceID}',
-        );
+        await aliceDevice.startKeyVerificationListener();
+        debugPrint('AliceDevice - deviceId: ${aliceDevice.client.deviceID}');
 
         final roomId = await aliceDevice.createRoom();
         debugPrint('AliceDevice - room created: $roomId');
@@ -124,7 +126,7 @@ void main() {
         );
 
         await bobDevice.login();
-        await bobDevice.listen();
+        await bobDevice.startKeyVerificationListener();
         debugPrint('BobDevice - deviceId: ${bobDevice.client.deviceID}');
 
         final joinRes2 = await bobDevice.joinRoom(roomId);
@@ -228,6 +230,36 @@ void main() {
           const Duration(seconds: defaultDelay * delayFactor),
         );
 
+        final testEntry1 = JournalEntry(
+          meta: Metadata(
+            id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
+            createdAt: DateTime(2024, 4, 6, 13),
+            dateFrom: DateTime(2024, 4, 6, 13),
+            dateTo: DateTime(2024, 4, 6, 14),
+            updatedAt: DateTime(2024, 4, 6, 13),
+            starred: true,
+            vectorClock: const VectorClock({'a': 11}),
+          ),
+          entryText: EntryText(
+            plainText: const Uuid().v1(),
+          ),
+        );
+
+        await aliceDevice.sendMatrixMsg(
+          SyncMessage.journalEntity(
+            journalEntity: testEntry1,
+            status: SyncEntryStatus.initial,
+          ),
+          myRoomId: roomId,
+        );
+
+        await Future<void>.delayed(
+          const Duration(seconds: defaultDelay * delayFactor),
+        );
+
+        final bobsTimelineEvents = await bobDevice.getTimelineEvents();
+        expect(bobsTimelineEvents?.length, 8);
+
         debugPrint('\n--- Logging out AliceDevice and BobDevice');
         await aliceDevice.logout();
         await bobDevice.logout();
@@ -241,7 +273,7 @@ String extractEmojiString(Iterable<KeyVerificationEmoji>? emojis) {
   final buffer = StringBuffer();
   if (emojis != null) {
     for (final emoji in emojis) {
-      buffer.write('${emoji.emoji} ');
+      buffer.write(' ${emoji.emoji}  ');
     }
   }
   return buffer.toString();
