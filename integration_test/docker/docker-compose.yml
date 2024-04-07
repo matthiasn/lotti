@@ -21,7 +21,7 @@ services:
 
   dendrite:
     hostname: dendrite
-    image: matrixdotorg/dendrite-monolith:latest
+    image: matrixdotorg/dendrite-monolith:v0.13.6
     command: -really-enable-open-registration
     ports:
       - 8008:8008
