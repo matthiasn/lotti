@@ -107,10 +107,8 @@ void main() {
         );
 
         await aliceDevice.login();
-
-        debugPrint(
-          'AliceDevice - deviceId: ${aliceDevice.client.deviceID}',
-        );
+        await aliceDevice.listen();
+        debugPrint('AliceDevice - deviceId: ${aliceDevice.client.deviceID}');
 
         final roomId = await aliceDevice.createRoom();
         debugPrint('AliceDevice - room created: $roomId');
@@ -119,7 +117,6 @@ void main() {
 
         final joinRes = await aliceDevice.joinRoom(roomId);
         debugPrint('AliceDevice - room joined: $joinRes');
-        await aliceDevice.listen();
 
         debugPrint('\n--- BobDevice goes live');
         final bobDevice = MatrixService(
@@ -129,10 +126,11 @@ void main() {
         );
 
         await bobDevice.login();
+        await bobDevice.listen();
         debugPrint('BobDevice - deviceId: ${bobDevice.client.deviceID}');
+
         final joinRes2 = await bobDevice.joinRoom(roomId);
         debugPrint('BobDevice - room joined: $joinRes2');
-        await bobDevice.listen();
 
         await Future<void>.delayed(
           const Duration(seconds: defaultDelay * delayFactor),
@@ -260,7 +258,7 @@ void main() {
         );
 
         final bobsTimelineEvents = await bobDevice.getTimelineEvents();
-        expect(bobsTimelineEvents?.length, 1);
+        expect(bobsTimelineEvents?.length, 8);
 
         debugPrint('\n--- Logging out AliceDevice and BobDevice');
         await aliceDevice.logout();

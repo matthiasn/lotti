@@ -74,7 +74,6 @@ class LoggingDb extends _$LoggingDb {
     InsightLevel level = InsightLevel.info,
     InsightType type = InsightType.log,
   }) {
-    debugPrint('EVENT $domain $subDomain $event');
     unawaited(
       _captureEventAsync(
         event,
