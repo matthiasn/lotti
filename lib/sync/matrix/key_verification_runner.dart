@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
@@ -72,4 +75,45 @@ class KeyVerificationRunner {
     await keyVerification.cancel();
     stopTimer();
   }
+}
+
+Future<void> listenForKeyVerificationRequests({
+  required MatrixService service,
+}) async {
+  final loggingDb = getIt<LoggingDb>();
+
+  try {
+    service.client.onKeyVerificationRequest.stream.listen((
+      KeyVerification keyVerification,
+    ) {
+      service.incomingKeyVerificationRunner = KeyVerificationRunner(
+        keyVerification,
+        controller: service.incomingKeyVerificationRunnerController,
+        name: 'Incoming KeyVerificationRunner',
+      );
+
+      debugPrint('Key Verification Request from ${keyVerification.deviceId}');
+      service.incomingKeyVerificationController.add(keyVerification);
+    });
+  } catch (e, stackTrace) {
+    debugPrint('$e');
+    loggingDb.captureException(
+      e,
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'listen',
+      stackTrace: stackTrace,
+    );
+  }
+}
+
+Future<void> verifyMatrixDevice({
+  required DeviceKeys deviceKeys,
+  required MatrixService service,
+}) async {
+  final keyVerification = await deviceKeys.startVerification();
+  service.keyVerificationRunner = KeyVerificationRunner(
+    keyVerification,
+    controller: service.keyVerificationController,
+    name: 'Outgoing KeyVerificationRunner',
+  );
 }
