@@ -23,7 +23,6 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
-import 'package:path_provider/path_provider.dart';
 
 const configNotFound = 'Could not find Matrix Config';
 const syncMessageType = 'com.lotti.sync.message';
@@ -93,8 +92,8 @@ class MatrixService {
       },
       shareKeysWithUnverifiedDevices: false,
       databaseBuilder: (_) async {
-        final dir = await getApplicationDocumentsDirectory();
-        final path = '${dir.path}/matrix/';
+        final docDir = getIt<Directory>();
+        final path = '${docDir.path}/matrix/';
         final db = HiveCollectionsDatabase(hiveDbName ?? 'lotti_sync', path);
         await db.open();
         return db;
