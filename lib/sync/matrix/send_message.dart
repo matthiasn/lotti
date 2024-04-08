@@ -64,6 +64,8 @@ Future<void> sendMessage(
     final eventId = await syncRoom?.sendTextEvent(
       base64.encode(utf8.encode(msg)),
       msgtype: syncMessageType,
+      parseCommands: false,
+      parseMarkdown: false,
     );
 
     incrementSentCount();
