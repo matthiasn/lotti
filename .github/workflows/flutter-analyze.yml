@@ -22,4 +22,4 @@ jobs:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
       - name: Run Flutter Analyze
-        run: make clean_analyze
+        run: flutter analyze
