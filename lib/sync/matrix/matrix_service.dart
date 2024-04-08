@@ -256,6 +256,12 @@ class MatrixService {
     }
   }
 
+  Future<void> disposeClient() async {
+    if (_client.isLogged()) {
+      await _client.dispose();
+    }
+  }
+
   Future<MatrixConfig?> loadConfig() => loadMatrixConfig(service: this);
   Future<void> deleteConfig() => deleteMatrixConfig(service: this);
   Future<void> setConfig(MatrixConfig config) =>

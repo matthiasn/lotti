@@ -20,6 +20,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../test/mocks/mocks.dart';
+import '../test/utils/utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -83,9 +84,9 @@ void main() {
       debugPrint('Created temporary docDir ${docDir.path}');
 
       getIt
+        ..registerSingleton<Directory>(docDir)
         ..registerSingleton<LoggingDb>(LoggingDb())
         ..registerSingleton<JournalDb>(JournalDb())
-        ..registerSingleton<Directory>(docDir)
         ..registerSingleton<SecureStorage>(secureStorageMock);
     });
 
@@ -118,6 +119,7 @@ void main() {
 
         final joinRes = await aliceDevice.joinRoom(roomId);
         debugPrint('AliceDevice - room joined: $joinRes');
+        await aliceDevice.listenToTimeline();
 
         debugPrint('\n--- BobDevice goes live');
         final bobDevice = MatrixService(
@@ -132,10 +134,8 @@ void main() {
 
         final joinRes2 = await bobDevice.joinRoom(roomId);
         debugPrint('BobDevice - room joined: $joinRes2');
-
-        await Future<void>.delayed(
-          const Duration(seconds: defaultDelay * delayFactor),
-        );
+        await bobDevice.listenToTimeline();
+        await waitSeconds(defaultDelay * delayFactor);
 
         await waitUntil(() => aliceDevice.getUnverified().length == 1);
         await waitUntil(() => bobDevice.getUnverified().length == 1);
@@ -153,16 +153,12 @@ void main() {
         final incomingKeyVerificationRunnerStream =
             bobDevice.incomingKeyVerificationRunnerStream;
 
-        await Future<void>.delayed(
-          const Duration(seconds: defaultDelay * delayFactor),
-        );
+        await waitSeconds(defaultDelay * delayFactor);
 
         debugPrint('\n--- AliceDevice verifies BobDevice');
         await aliceDevice.verifyDevice(unverifiedAlice.first);
 
-        await Future<void>.delayed(
-          const Duration(seconds: defaultDelay * delayFactor),
-        );
+        await waitSeconds(defaultDelay * delayFactor);
 
         var emojisFromBob = '';
         var emojisFromAlice = '';
@@ -227,71 +223,74 @@ void main() {
         expect(aliceDevice.getUnverified(), isEmpty);
         expect(bobDevice.getUnverified(), isEmpty);
 
-        await Future<void>.delayed(
-          const Duration(seconds: defaultDelay * delayFactor),
+        await waitSeconds(defaultDelay * delayFactor);
+
+        Future<void> sendTestMessage(
+          int index, {
+          required MatrixService device,
+          required String deviceName,
+        }) async {
+          final id = const Uuid().v1();
+          final now = DateTime.now();
+
+          await device.sendMatrixMsg(
+            SyncMessage.journalEntity(
+              journalEntity: JournalEntry(
+                meta: Metadata(
+                  id: id,
+                  createdAt: now,
+                  dateFrom: now,
+                  dateTo: now,
+                  updatedAt: now,
+                  starred: true,
+                  vectorClock: VectorClock({deviceName: index}),
+                ),
+                entryText: EntryText(
+                  plainText: 'Test $deviceName #$index - $now',
+                ),
+              ),
+              status: SyncEntryStatus.initial,
+            ),
+            myRoomId: roomId,
+          );
+        }
+
+        const n = testSlowNetwork ? 25 : 250;
+
+        debugPrint('\n--- AliceDevice sends $n message');
+        for (var i = 0; i < n; i++) {
+          await sendTestMessage(
+            i,
+            device: aliceDevice,
+            deviceName: 'aliceDevice',
+          );
+        }
+
+        final journalDb = getIt<JournalDb>();
+        await waitUntilAsync(
+          () async => await journalDb.getJournalCount() == n,
         );
 
-        await bobDevice.listenToTimeline();
+        debugPrint('\n--- BobDevice sends $n message');
+        for (var i = 0; i < n; i++) {
+          await sendTestMessage(
+            i,
+            device: bobDevice,
+            deviceName: 'bobDevice',
+          );
+        }
 
-        final testEntry1 = JournalEntry(
-          meta: Metadata(
-            id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
-            createdAt: DateTime(2024, 4, 6, 13),
-            dateFrom: DateTime(2024, 4, 6, 13),
-            dateTo: DateTime(2024, 4, 6, 14),
-            updatedAt: DateTime(2024, 4, 6, 13),
-            starred: true,
-            vectorClock: const VectorClock({'a': 11}),
-          ),
-          entryText: EntryText(
-            plainText: const Uuid().v1(),
-          ),
+        await waitUntilAsync(
+          () async => await journalDb.getJournalCount() == 2 * n,
         );
 
-        await aliceDevice.sendMatrixMsg(
-          SyncMessage.journalEntity(
-            journalEntity: testEntry1,
-            status: SyncEntryStatus.initial,
-          ),
-          myRoomId: roomId,
-        );
-
-        await Future<void>.delayed(
-          const Duration(seconds: 10 * delayFactor),
-        );
-
-        final testEntry2 = JournalEntry(
-          meta: Metadata(
-            id: '32ea936e-dfc6-43bd-8722-d816c35eb491',
-            createdAt: DateTime(2024, 4, 6, 13),
-            dateFrom: DateTime(2024, 4, 6, 13),
-            dateTo: DateTime(2024, 4, 6, 14),
-            updatedAt: DateTime(2024, 4, 6, 13),
-            starred: true,
-            vectorClock: const VectorClock({'a': 11}),
-          ),
-          entryText: EntryText(
-            plainText: const Uuid().v1(),
-          ),
-        );
-
-        await aliceDevice.sendMatrixMsg(
-          SyncMessage.journalEntity(
-            journalEntity: testEntry2,
-            status: SyncEntryStatus.initial,
-          ),
-          myRoomId: roomId,
-        );
-
-        await Future<void>.delayed(
-          const Duration(seconds: defaultDelay * delayFactor),
-        );
-
-        // final bobsTimelineEvents = await bobDevice.getTimelineEvents();
-        // expect(bobsTimelineEvents?.length, 9);
+        final persistedEntriesCount = await journalDb.getJournalCount();
+        expect(persistedEntriesCount, 2 * n);
+        debugPrint('Persisted messages total: $persistedEntriesCount');
 
         debugPrint('\n--- Logging out AliceDevice and BobDevice');
         await aliceDevice.logout();
+        await waitSeconds(defaultDelay * delayFactor);
         await bobDevice.logout();
       },
       timeout: const Timeout(Duration(minutes: 10)),
@@ -307,12 +306,4 @@ String extractEmojiString(Iterable<KeyVerificationEmoji>? emojis) {
     }
   }
   return buffer.toString();
-}
-
-Future<void> waitUntil(
-  bool Function() condition,
-) async {
-  while (!condition()) {
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-  }
 }

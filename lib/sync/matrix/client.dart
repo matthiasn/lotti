@@ -21,6 +21,7 @@ Client createMatrixClient({
       KeyVerificationMethod.reciprocate,
     },
     shareKeysWithUnverifiedDevices: false,
+    sendMessageTimeoutSeconds: 120,
     databaseBuilder: (_) async {
       final docDir = getIt<Directory>();
       final path = '${docDir.path}/matrix/';

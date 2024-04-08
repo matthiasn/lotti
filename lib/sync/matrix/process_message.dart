@@ -33,12 +33,7 @@ Future<void> processMatrixMessage(String message) async {
         SyncEntryStatus status,
       ) async {
         await saveJournalEntityJson(journalEntity);
-
-        if (status == SyncEntryStatus.update) {
-          await journalDb.updateJournalEntity(journalEntity);
-        } else {
-          await journalDb.addJournalEntity(journalEntity);
-        }
+        await journalDb.updateJournalEntity(journalEntity);
       },
       entryLink: (EntryLink entryLink, SyncEntryStatus _) {
         journalDb.upsertEntryLink(entryLink);
