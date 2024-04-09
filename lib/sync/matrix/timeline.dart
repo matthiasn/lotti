@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/consts.dart';
@@ -52,6 +53,7 @@ Future<void> listenToTimelineEvents({
 
 Future<void> processNewTimelineEvents({
   required MatrixService service,
+  JournalDb? overriddenJournalDb,
 }) async {
   final loggingDb = getIt<LoggingDb>();
 
@@ -79,7 +81,10 @@ Future<void> processNewTimelineEvents({
       await service.client.sync();
       final eventId = event.eventId;
       if (event.messageType == syncMessageType) {
-        await processMatrixMessage(event.text);
+        await processMatrixMessage(
+          event.text,
+          overriddenJournalDb: overriddenJournalDb,
+        );
       }
 
       try {

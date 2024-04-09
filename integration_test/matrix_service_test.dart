@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,6 +34,11 @@ void main() {
     const testServerEnv = 'TEST_SERVER';
     const testPasswordEnv = 'TEST_PASSWORD';
     const testSlowNetworkEnv = 'SLOW_NETWORK';
+
+    // create separate databases for each simulated device & suppress warning
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    final aliceDb = JournalDb(overriddenFilename: 'alice_db.sqlite');
+    final bobDb = JournalDb(overriddenFilename: 'bob_db.sqlite');
 
     const testSlowNetwork = bool.fromEnvironment(testSlowNetworkEnv);
 
@@ -86,7 +92,6 @@ void main() {
       getIt
         ..registerSingleton<Directory>(docDir)
         ..registerSingleton<LoggingDb>(LoggingDb())
-        ..registerSingleton<JournalDb>(JournalDb())
         ..registerSingleton<SecureStorage>(secureStorageMock);
     });
 
@@ -106,6 +111,7 @@ void main() {
           matrixConfig: config1,
           hiveDbName: 'AliceDevice',
           deviceDisplayName: 'AliceDevice',
+          overriddenJournalDb: aliceDb,
         );
 
         await aliceDevice.login();
@@ -126,6 +132,7 @@ void main() {
           matrixConfig: config2,
           hiveDbName: 'BobDevice',
           deviceDisplayName: 'BobDevice',
+          overriddenJournalDb: bobDb,
         );
 
         await bobDevice.login();
@@ -255,7 +262,7 @@ void main() {
           );
         }
 
-        const n = testSlowNetwork ? 25 : 250;
+        const n = testSlowNetwork ? 50 : 500;
 
         debugPrint('\n--- AliceDevice sends $n message');
         for (var i = 0; i < n; i++) {
@@ -265,11 +272,6 @@ void main() {
             deviceName: 'aliceDevice',
           );
         }
-
-        final journalDb = getIt<JournalDb>();
-        await waitUntilAsync(
-          () async => await journalDb.getJournalCount() == n,
-        );
 
         debugPrint('\n--- BobDevice sends $n message');
         for (var i = 0; i < n; i++) {
@@ -281,14 +283,23 @@ void main() {
         }
 
         await waitUntilAsync(
-          () async => await journalDb.getJournalCount() == 2 * n,
+          () async => await aliceDb.getJournalCount() == 2 * n,
         );
+        debugPrint('\n--- AliceDevice finished receiving messages');
+        final aliceEntriesCount = await aliceDb.getJournalCount();
+        expect(aliceEntriesCount, 2 * n);
+        debugPrint('AliceDevice persisted entries: $aliceEntriesCount');
 
-        final persistedEntriesCount = await journalDb.getJournalCount();
-        expect(persistedEntriesCount, 2 * n);
-        debugPrint('Persisted messages total: $persistedEntriesCount');
+        await waitUntilAsync(
+          () async => await bobDb.getJournalCount() == 2 * n,
+        );
+        debugPrint('\n--- BobDevice finished receiving messages');
+        final bobEntriesCount = await bobDb.getJournalCount();
+        expect(bobEntriesCount, 2 * n);
+        debugPrint('BobDevice persisted entries: $bobEntriesCount');
 
         debugPrint('\n--- Logging out AliceDevice and BobDevice');
+
         await aliceDevice.logout();
         await waitSeconds(defaultDelay * delayFactor);
         await bobDevice.logout();
