@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/client_runner.dart';
@@ -26,12 +27,16 @@ class MatrixService {
     this.matrixConfig,
     this.deviceDisplayName,
     String? hiveDbName,
+    JournalDb? overriddenJournalDb,
   })  : keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast(),
         _client = createMatrixClient(hiveDbName: hiveDbName) {
     clientRunner = ClientRunner<void>(
       callback: (event) async {
-        await processNewTimelineEvents(service: this);
+        await processNewTimelineEvents(
+          service: this,
+          overriddenJournalDb: overriddenJournalDb,
+        );
       },
     );
 

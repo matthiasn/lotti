@@ -31,10 +31,12 @@ enum ConflictStatus {
   include: {'database.drift'},
 )
 class JournalDb extends _$JournalDb {
-  JournalDb({this.inMemoryDatabase = false})
-      : super(
+  JournalDb({
+    this.inMemoryDatabase = false,
+    String? overriddenFilename,
+  }) : super(
           openDbConnection(
-            journalDbFileName,
+            overriddenFilename ?? journalDbFileName,
             inMemoryDatabase: inMemoryDatabase,
           ),
         );

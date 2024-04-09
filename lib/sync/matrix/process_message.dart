@@ -10,8 +10,11 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
 
-Future<void> processMatrixMessage(String message) async {
-  final journalDb = getIt<JournalDb>();
+Future<void> processMatrixMessage(
+  String message, {
+  JournalDb? overriddenJournalDb,
+}) async {
+  final journalDb = overriddenJournalDb ?? getIt<JournalDb>();
   final loggingDb = getIt<LoggingDb>();
 
   try {
