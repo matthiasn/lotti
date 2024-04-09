@@ -60,6 +60,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     task: task,
     taskStatus: taskStatus,
     dateTo: entity.meta.dateTo,
+    plainText: entity.entryText?.plainText,
     type: entity.map(
       journalEntry: (_) => 'JournalEntry',
       journalImage: (_) => 'JournalImage',

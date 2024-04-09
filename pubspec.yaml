@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.445+2434
+version: 0.9.445+2435
 
 msix_config:
   display_name: LottiApp
@@ -110,7 +110,13 @@ dependencies:
   location: ^6.0.1
   lottie: ^3.0.0
   material_design_icons_flutter: ^7.0.7096
+
   matrix: ^0.26.0
+#  matrix:
+#    git:
+#      url: https://github.com/matthiasn/matrix-dart-sdk
+#      ref: 1816235c
+
   media_kit: ^1.0.2
   media_kit_libs_android_audio: ^1.0.3
   media_kit_libs_ios_audio: ^1.0.4

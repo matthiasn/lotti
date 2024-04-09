@@ -10,7 +10,6 @@ endif
 IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
 IOS_EXPORT_PATH = ./build/ios/export
 MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
-WHISPER_CPP_VERSION = 1.4.2
 MACOS_EXPORT_PATH = ./build/macos/export
 LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 
@@ -71,10 +70,6 @@ coverage_report:
 .PHONY: coverage
 coverage: test coverage_report
 
-.PHONY: check-null-safety
-check-null-safety:
-	$(FLUTTER_CMD) pub outdated --mode=null-safety
-
 .PHONY: build_runner
 build_runner: deps
 	dart run build_runner build --delete-conflicting-outputs
@@ -86,10 +81,6 @@ watch: l10n
 .PHONY: activate_fluttium
 activate_fluttium:
 	$(FLUTTER_CMD) pub global activate fluttium_cli
-
-.PHONY: fluttium
-fluttium: get_whisper_cpp
-	fluttium test test_flows/habit_flow.yaml -d macOS --reporter expanded
 
 .PHONY: fluttium_linux
 fluttium_linux:
@@ -121,7 +112,7 @@ bundle:
 #######################################
 
 .PHONY: ios_build_ipa
-ios_build_ipa: get_whisper_cpp
+ios_build_ipa:
 	$(FLUTTER_CMD) build ipa
 
 .PHONY: ios_build
@@ -163,7 +154,7 @@ ios_upload:
 ios: ios_build ios_fastlane_build ios_fastlane_upload
 
 .PHONY: macos_build_flutter
-macos_build_flutter: get_whisper_cpp
+macos_build_flutter:
 	$(FLUTTER_CMD) build macos
 
 .PHONY: macos_build
@@ -190,12 +181,6 @@ macos_upload:
 .PHONY: macos_open
 macos_open: macos_build macos_archive
 	open $(MACOS_ARCHIVE_PATH)
-
-.PHONY: get_whisper_cpp
-get_whisper_cpp:
-	cd whisper.cpp/ && \
-	wget -nc https://github.com/ggerganov/whisper.cpp/archive/refs/tags/v$(WHISPER_CPP_VERSION).zip && \
-	unzip -n v$(WHISPER_CPP_VERSION).zip
 
 .PHONY: macos_fastlane_build
 macos_fastlane_build:
@@ -262,12 +247,3 @@ icons:
 
 .PHONY: clean_test
 clean_test: clean deps build_runner l10n test
-
-.PHONY: clean_build_analyze
-clean_build_analyze: clean deps l10n build_runner analyze
-
-.PHONY: clean_analyze
-clean_analyze: clean deps l10n analyze
-
-.PHONY: clean_integration_test
-clean_integration_test: clean deps build_runner integration_test
