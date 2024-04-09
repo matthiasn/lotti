@@ -10,8 +10,11 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
 
-Future<void> processMatrixMessage(String message) async {
-  final journalDb = getIt<JournalDb>();
+Future<void> processMatrixMessage(
+  String message, {
+  JournalDb? overriddenJournalDb,
+}) async {
+  final journalDb = overriddenJournalDb ?? getIt<JournalDb>();
   final loggingDb = getIt<LoggingDb>();
 
   try {
@@ -33,12 +36,7 @@ Future<void> processMatrixMessage(String message) async {
         SyncEntryStatus status,
       ) async {
         await saveJournalEntityJson(journalEntity);
-
-        if (status == SyncEntryStatus.update) {
-          await journalDb.updateJournalEntity(journalEntity);
-        } else {
-          await journalDb.addJournalEntity(journalEntity);
-        }
+        await journalDb.updateJournalEntity(journalEntity);
       },
       entryLink: (EntryLink entryLink, SyncEntryStatus _) {
         journalDb.upsertEntryLink(entryLink);

@@ -4,8 +4,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/inbox/save_attachments.dart';
 import 'package:lotti/sync/matrix/client.dart';
 import 'package:lotti/sync/matrix/config.dart';
@@ -15,6 +17,7 @@ import 'package:lotti/sync/matrix/process_message.dart';
 import 'package:lotti/sync/matrix/room.dart';
 import 'package:lotti/sync/matrix/send_message.dart';
 import 'package:lotti/sync/matrix/stats.dart';
+import 'package:lotti/sync/matrix/timeline.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -24,9 +27,19 @@ class MatrixService {
     this.matrixConfig,
     this.deviceDisplayName,
     String? hiveDbName,
-  }) : keyVerificationController =
-            StreamController<KeyVerificationRunner>.broadcast() {
-    _client = createMatrixClient(hiveDbName: hiveDbName);
+    JournalDb? overriddenJournalDb,
+  })  : keyVerificationController =
+            StreamController<KeyVerificationRunner>.broadcast(),
+        _client = createMatrixClient(hiveDbName: hiveDbName) {
+    clientRunner = ClientRunner<void>(
+      callback: (event) async {
+        await processNewTimelineEvents(
+          service: this,
+          overriddenJournalDb: overriddenJournalDb,
+        );
+      },
+    );
+
     incomingKeyVerificationRunnerController =
         StreamController<KeyVerificationRunner>.broadcast(
       onListen: publishIncomingRunnerState,
@@ -48,6 +61,10 @@ class MatrixService {
   LoginResponse? loginResponse;
   String? syncRoomId;
   Room? syncRoom;
+  Timeline? timeline;
+  String? lastReadEventContextId;
+
+  late final ClientRunner<void> clientRunner;
 
   final Map<String, int> messageCounts = {};
   int sentCount = 0;
@@ -82,9 +99,20 @@ class MatrixService {
     return _client.loginState == LoginState.loggedIn;
   }
 
+  Future<void> listenToTimeline() async {
+    await listenToTimelineEvents(service: this);
+  }
+
   Future<List<Event>?> getTimelineEvents() async {
     final timeline = await syncRoom?.getTimeline();
     return timeline?.events;
+  }
+
+  Future<Timeline?> getTimeline(VoidCallback onNewEvent) async {
+    final timeline = await syncRoom?.getTimeline(
+      onNewEvent: onNewEvent,
+    );
+    return timeline;
   }
 
   Future<String> createRoom() => createMatrixRoom(client: _client);
@@ -110,7 +138,7 @@ class MatrixService {
     return incomingKeyVerificationController.stream;
   }
 
-  Future<void> startKeyVerificationListener() async =>
+  Future<void> startKeyVerificationListener() =>
       listenForKeyVerificationRequests(service: this);
 
   Future<void> listen() async {
@@ -230,6 +258,12 @@ class MatrixService {
   Future<void> logout() async {
     if (_client.isLogged()) {
       await _client.logout();
+    }
+  }
+
+  Future<void> disposeClient() async {
+    if (_client.isLogged()) {
+      await _client.dispose();
     }
   }
 

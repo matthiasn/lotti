@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
@@ -19,19 +21,24 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../test/mocks/mocks.dart';
+import '../test/utils/utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // description and how to run in https://github.com/matthiasn/lotti/pull/1695
   group('MatrixService Tests', () {
-    final mockLoggingDb = MockLoggingDb();
     final secureStorageMock = MockSecureStorage();
     const testUserEnv1 = 'TEST_USER1';
     const testUserEnv2 = 'TEST_USER2';
     const testServerEnv = 'TEST_SERVER';
     const testPasswordEnv = 'TEST_PASSWORD';
     const testSlowNetworkEnv = 'SLOW_NETWORK';
+
+    // create separate databases for each simulated device & suppress warning
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    final aliceDb = JournalDb(overriddenFilename: 'alice_db.sqlite');
+    final bobDb = JournalDb(overriddenFilename: 'bob_db.sqlite');
 
     const testSlowNetwork = bool.fromEnvironment(testSlowNetworkEnv);
 
@@ -83,8 +90,8 @@ void main() {
       debugPrint('Created temporary docDir ${docDir.path}');
 
       getIt
-        ..registerSingleton<LoggingDb>(mockLoggingDb)
         ..registerSingleton<Directory>(docDir)
+        ..registerSingleton<LoggingDb>(LoggingDb())
         ..registerSingleton<SecureStorage>(secureStorageMock);
     });
 
@@ -104,6 +111,7 @@ void main() {
           matrixConfig: config1,
           hiveDbName: 'AliceDevice',
           deviceDisplayName: 'AliceDevice',
+          overriddenJournalDb: aliceDb,
         );
 
         await aliceDevice.login();
@@ -117,12 +125,14 @@ void main() {
 
         final joinRes = await aliceDevice.joinRoom(roomId);
         debugPrint('AliceDevice - room joined: $joinRes');
+        await aliceDevice.listenToTimeline();
 
         debugPrint('\n--- BobDevice goes live');
         final bobDevice = MatrixService(
           matrixConfig: config2,
           hiveDbName: 'BobDevice',
           deviceDisplayName: 'BobDevice',
+          overriddenJournalDb: bobDb,
         );
 
         await bobDevice.login();
@@ -131,10 +141,8 @@ void main() {
 
         final joinRes2 = await bobDevice.joinRoom(roomId);
         debugPrint('BobDevice - room joined: $joinRes2');
-
-        await Future<void>.delayed(
-          const Duration(seconds: defaultDelay * delayFactor),
-        );
+        await bobDevice.listenToTimeline();
+        await waitSeconds(defaultDelay * delayFactor);
 
         await waitUntil(() => aliceDevice.getUnverified().length == 1);
         await waitUntil(() => bobDevice.getUnverified().length == 1);
@@ -152,16 +160,12 @@ void main() {
         final incomingKeyVerificationRunnerStream =
             bobDevice.incomingKeyVerificationRunnerStream;
 
-        await Future<void>.delayed(
-          const Duration(seconds: defaultDelay * delayFactor),
-        );
+        await waitSeconds(defaultDelay * delayFactor);
 
         debugPrint('\n--- AliceDevice verifies BobDevice');
         await aliceDevice.verifyDevice(unverifiedAlice.first);
 
-        await Future<void>.delayed(
-          const Duration(seconds: defaultDelay * delayFactor),
-        );
+        await waitSeconds(defaultDelay * delayFactor);
 
         var emojisFromBob = '';
         var emojisFromAlice = '';
@@ -226,45 +230,81 @@ void main() {
         expect(aliceDevice.getUnverified(), isEmpty);
         expect(bobDevice.getUnverified(), isEmpty);
 
-        await Future<void>.delayed(
-          const Duration(seconds: defaultDelay * delayFactor),
-        );
+        await waitSeconds(defaultDelay * delayFactor);
 
-        final testEntry1 = JournalEntry(
-          meta: Metadata(
-            id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
-            createdAt: DateTime(2024, 4, 6, 13),
-            dateFrom: DateTime(2024, 4, 6, 13),
-            dateTo: DateTime(2024, 4, 6, 14),
-            updatedAt: DateTime(2024, 4, 6, 13),
-            starred: true,
-            vectorClock: const VectorClock({'a': 11}),
-          ),
-          entryText: EntryText(
-            plainText: const Uuid().v1(),
-          ),
-        );
+        Future<void> sendTestMessage(
+          int index, {
+          required MatrixService device,
+          required String deviceName,
+        }) async {
+          final id = const Uuid().v1();
+          final now = DateTime.now();
 
-        await aliceDevice.sendMatrixMsg(
-          SyncMessage.journalEntity(
-            journalEntity: testEntry1,
-            status: SyncEntryStatus.initial,
-          ),
-          myRoomId: roomId,
-        );
+          await device.sendMatrixMsg(
+            SyncMessage.journalEntity(
+              journalEntity: JournalEntry(
+                meta: Metadata(
+                  id: id,
+                  createdAt: now,
+                  dateFrom: now,
+                  dateTo: now,
+                  updatedAt: now,
+                  starred: true,
+                  vectorClock: VectorClock({deviceName: index}),
+                ),
+                entryText: EntryText(
+                  plainText: 'Test $deviceName #$index - $now',
+                ),
+              ),
+              status: SyncEntryStatus.initial,
+            ),
+            myRoomId: roomId,
+          );
+        }
 
-        await Future<void>.delayed(
-          const Duration(seconds: defaultDelay * delayFactor),
-        );
+        const n = testSlowNetwork ? 10 : 100;
 
-        final bobsTimelineEvents = await bobDevice.getTimelineEvents();
-        expect(bobsTimelineEvents?.length, 8);
+        debugPrint('\n--- AliceDevice sends $n message');
+        for (var i = 0; i < n; i++) {
+          await sendTestMessage(
+            i,
+            device: aliceDevice,
+            deviceName: 'aliceDevice',
+          );
+        }
+
+        debugPrint('\n--- BobDevice sends $n message');
+        for (var i = 0; i < n; i++) {
+          await sendTestMessage(
+            i,
+            device: bobDevice,
+            deviceName: 'bobDevice',
+          );
+        }
+
+        await waitUntilAsync(
+          () async => await aliceDb.getJournalCount() == 2 * n,
+        );
+        debugPrint('\n--- AliceDevice finished receiving messages');
+        final aliceEntriesCount = await aliceDb.getJournalCount();
+        expect(aliceEntriesCount, 2 * n);
+        debugPrint('AliceDevice persisted entries: $aliceEntriesCount');
+
+        await waitUntilAsync(
+          () async => await bobDb.getJournalCount() == 2 * n,
+        );
+        debugPrint('\n--- BobDevice finished receiving messages');
+        final bobEntriesCount = await bobDb.getJournalCount();
+        expect(bobEntriesCount, 2 * n);
+        debugPrint('BobDevice persisted entries: $bobEntriesCount');
 
         debugPrint('\n--- Logging out AliceDevice and BobDevice');
+
         await aliceDevice.logout();
+        await waitSeconds(defaultDelay * delayFactor);
         await bobDevice.logout();
       },
-      timeout: const Timeout(Duration(minutes: 10)),
+      timeout: const Timeout(Duration(minutes: 15)),
     );
   });
 }
@@ -277,12 +317,4 @@ String extractEmojiString(Iterable<KeyVerificationEmoji>? emojis) {
     }
   }
   return buffer.toString();
-}
-
-Future<void> waitUntil(
-  bool Function() condition,
-) async {
-  while (!condition()) {
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-  }
 }
