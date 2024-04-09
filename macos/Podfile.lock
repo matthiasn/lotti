@@ -2,7 +2,6 @@ PODS:
   - connectivity_plus (0.0.1):
     - Flutter
     - FlutterMacOS
-    - ReachabilitySwift
   - device_info_plus (0.0.1):
     - FlutterMacOS
   - ffmpeg-kit-macos-https (6.0)
@@ -42,7 +41,6 @@ PODS:
   - photo_manager (2.0.0):
     - Flutter
     - FlutterMacOS
-  - ReachabilitySwift (5.2.1)
   - record_darwin (1.0.0):
     - Flutter
     - FlutterMacOS
@@ -115,7 +113,6 @@ SPEC REPOS:
     - ffmpeg-kit-macos-https
     - HotKey
     - OpenSSL-Universal
-    - ReachabilitySwift
     - sqlite3
 
 EXTERNAL SOURCES:
@@ -173,7 +170,7 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
-  connectivity_plus: e2dad488011aeb593e219360e804c43cc1af5770
+  connectivity_plus: ddd7f30999e1faaef5967c23d5b6d503d10434db
   device_info_plus: ce1b7762849d3ec103d0e0517299f2db7ad60720
   ffmpeg-kit-macos-https: 60de703db964ccca7fd0d4d1611f4c102a8139cc
   ffmpeg_kit_flutter: 5bd75928cf88ec177cea410b027681e4bfe09452
@@ -192,7 +189,6 @@ SPEC CHECKSUMS:
   package_info_plus: fa739dd842b393193c5ca93c26798dff6e3d0e0c
   path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
   photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
-  ReachabilitySwift: 5ae15e16814b5f9ef568963fb2c87aeb49158c66
   record_darwin: 1f6619f2abac4d1ca91d3eeab038c980d76f1517
   screen_retriever: 59634572a57080243dd1bf715e55b6c54f241a38
   share_plus: 36537c04ce0c3e3f5bd297ce4318b6d5ee5fd6cf
