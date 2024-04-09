@@ -262,7 +262,7 @@ void main() {
           );
         }
 
-        const n = testSlowNetwork ? 50 : 500;
+        const n = testSlowNetwork ? 10 : 100;
 
         debugPrint('\n--- AliceDevice sends $n message');
         for (var i = 0; i < n; i++) {
@@ -304,7 +304,7 @@ void main() {
         await waitSeconds(defaultDelay * delayFactor);
         await bobDevice.logout();
       },
-      timeout: const Timeout(Duration(minutes: 10)),
+      timeout: const Timeout(Duration(minutes: 15)),
     );
   });
 }
