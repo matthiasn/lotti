@@ -31,6 +31,7 @@ void main() {
     final secureStorageMock = MockSecureStorage();
     const testUserEnv1 = 'TEST_USER1';
     const testUserEnv2 = 'TEST_USER2';
+    const testUserEnv3 = 'TEST_USER3';
     const testServerEnv = 'TEST_SERVER';
     const testPasswordEnv = 'TEST_PASSWORD';
     const testSlowNetworkEnv = 'SLOW_NETWORK';
@@ -39,6 +40,7 @@ void main() {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     final aliceDb = JournalDb(overriddenFilename: 'alice_db.sqlite');
     final bobDb = JournalDb(overriddenFilename: 'bob_db.sqlite');
+    final carolDb = JournalDb(overriddenFilename: 'carol_db.sqlite');
 
     const testSlowNetwork = bool.fromEnvironment(testSlowNetworkEnv);
 
@@ -56,8 +58,15 @@ void main() {
       exit(1);
     }
 
+    if (!const bool.hasEnvironment(testUserEnv3)) {
+      debugPrint('TEST_USER3 not defined!!! Run via run_matrix_tests.sh');
+      exit(1);
+    }
+
     const testUserName1 = String.fromEnvironment(testUserEnv1);
+    // TODO: multi-user setup
     const testUserName2 = String.fromEnvironment(testUserEnv1);
+    const testUserName3 = String.fromEnvironment(testUserEnv1);
 
     const testHomeServer = bool.hasEnvironment(testServerEnv)
         ? String.fromEnvironment(testServerEnv)
@@ -77,6 +86,12 @@ void main() {
     const config2 = MatrixConfig(
       homeServer: testHomeServer,
       user: testUserName2,
+      password: testPassword,
+    );
+
+    const config3 = MatrixConfig(
+      homeServer: testHomeServer,
+      user: testUserName3,
       password: testPassword,
     );
 
@@ -156,10 +171,6 @@ void main() {
         expect(unverifiedAlice.length, 1);
         expect(unverifiedBob.length, 1);
 
-        final outgoingKeyVerificationStream = aliceDevice.keyVerificationStream;
-        final incomingKeyVerificationRunnerStream =
-            bobDevice.incomingKeyVerificationRunnerStream;
-
         await waitSeconds(defaultDelay * delayFactor);
 
         debugPrint('\n--- AliceDevice verifies BobDevice');
@@ -167,11 +178,11 @@ void main() {
 
         await waitSeconds(defaultDelay * delayFactor);
 
-        var emojisFromBob = '';
-        var emojisFromAlice = '';
+        var emojisFromBobForAlice = '';
+        var emojisFromAliceForBob = '';
 
         unawaited(
-          incomingKeyVerificationRunnerStream.forEach((runner) async {
+          bobDevice.incomingKeyVerificationRunnerStream.forEach((runner) async {
             debugPrint(
               'BobDevice - incoming verification runner step: ${runner.lastStep}',
             );
@@ -179,13 +190,13 @@ void main() {
               await runner.acceptVerification();
             }
             if (runner.lastStep == 'm.key.verification.key') {
-              emojisFromAlice = extractEmojiString(runner.emojis);
-              debugPrint('BobDevice received emojis: $emojisFromAlice');
+              emojisFromAliceForBob = extractEmojiString(runner.emojis);
+              debugPrint('BobDevice received emojis: $emojisFromAliceForBob');
 
               await waitUntil(
                 () =>
-                    emojisFromAlice == emojisFromBob &&
-                    emojisFromAlice.isNotEmpty,
+                    emojisFromAliceForBob == emojisFromBobForAlice &&
+                    emojisFromAliceForBob.isNotEmpty,
               );
 
               await runner.acceptEmojiVerification();
@@ -194,18 +205,18 @@ void main() {
         );
 
         unawaited(
-          outgoingKeyVerificationStream.forEach((runner) async {
+          aliceDevice.keyVerificationStream.forEach((runner) async {
             debugPrint(
               'AliceDevice - outgoing verification step: ${runner.lastStep}',
             );
             if (runner.lastStep == 'm.key.verification.key') {
-              emojisFromBob = extractEmojiString(runner.emojis);
-              debugPrint('AliceDevice received emojis: $emojisFromBob');
+              emojisFromBobForAlice = extractEmojiString(runner.emojis);
+              debugPrint('AliceDevice received emojis: $emojisFromBobForAlice');
 
               await waitUntil(
                 () =>
-                    emojisFromAlice == emojisFromBob &&
-                    emojisFromBob.isNotEmpty,
+                    emojisFromAliceForBob == emojisFromBobForAlice &&
+                    emojisFromBobForAlice.isNotEmpty,
               );
 
               await runner.acceptEmojiVerification();
@@ -213,12 +224,12 @@ void main() {
           }),
         );
 
-        await waitUntil(() => emojisFromAlice.isNotEmpty);
-        await waitUntil(() => emojisFromBob.isNotEmpty);
+        await waitUntil(() => emojisFromAliceForBob.isNotEmpty);
+        await waitUntil(() => emojisFromBobForAlice.isNotEmpty);
 
-        expect(emojisFromAlice, isNotEmpty);
-        expect(emojisFromBob, isNotEmpty);
-        expect(emojisFromAlice, emojisFromAlice);
+        expect(emojisFromAliceForBob, isNotEmpty);
+        expect(emojisFromBobForAlice, isNotEmpty);
+        expect(emojisFromAliceForBob, emojisFromBobForAlice);
 
         debugPrint(
           '\n--- AliceDevice and BobDevice both have no unverified devices',
@@ -231,6 +242,111 @@ void main() {
         expect(bobDevice.getUnverified(), isEmpty);
 
         await waitSeconds(defaultDelay * delayFactor);
+
+        debugPrint('\n--- CarolDevice goes live');
+        final carolDevice = MatrixService(
+          matrixConfig: config3,
+          hiveDbName: 'CarolDevice',
+          deviceDisplayName: 'CarolDevice',
+          overriddenJournalDb: carolDb,
+        );
+
+        await carolDevice.login();
+        await carolDevice.startKeyVerificationListener();
+        debugPrint('CarolDevice - deviceId: ${bobDevice.client.deviceID}');
+
+        final joinResCarol = await carolDevice.joinRoom(roomId);
+        debugPrint('CarolDevice - room joined: $joinResCarol');
+        await carolDevice.listenToTimeline();
+        await waitSeconds(defaultDelay * delayFactor);
+
+        await waitUntil(() => carolDevice.getUnverified().length == 2);
+        final unverifiedCarol = carolDevice.getUnverified();
+
+        debugPrint('\nCarolDevice - unverified: $unverifiedCarol');
+        expect(unverifiedCarol.length, 2);
+
+        var emojisFromCarolForBob = '';
+        var emojisFromBobForCarol = '';
+
+        unawaited(
+          carolDevice.incomingKeyVerificationRunnerStream
+              .forEach((runner) async {
+            debugPrint(
+              'CarolDevice - incoming verification runner step: ${runner.lastStep}',
+            );
+            if (runner.lastStep == 'm.key.verification.request') {
+              await runner.acceptVerification();
+            }
+            if (runner.lastStep == 'm.key.verification.key') {
+              emojisFromBobForCarol = extractEmojiString(runner.emojis);
+              debugPrint('CarolDevice received emojis: $emojisFromBobForCarol');
+
+              await waitUntil(
+                () =>
+                    emojisFromBobForCarol == emojisFromCarolForBob &&
+                    emojisFromBobForCarol.isNotEmpty,
+              );
+
+              await runner.acceptEmojiVerification();
+            }
+          }),
+        );
+
+        unawaited(
+          bobDevice.keyVerificationStream.forEach((runner) async {
+            debugPrint(
+              'BobDevice - outgoing verification step: ${runner.lastStep}',
+            );
+            if (runner.lastStep == 'm.key.verification.key') {
+              emojisFromCarolForBob = extractEmojiString(runner.emojis);
+              debugPrint('Bob received emojis: $emojisFromCarolForBob');
+
+              await waitUntil(
+                () =>
+                    emojisFromBobForCarol == emojisFromCarolForBob &&
+                    emojisFromCarolForBob.isNotEmpty,
+              );
+
+              await runner.acceptEmojiVerification();
+            }
+          }),
+        );
+
+        final unverifiedBob2 = bobDevice.getUnverified();
+
+        debugPrint('\nBobDevice - unverified: $unverifiedBob2');
+        expect(unverifiedBob2.length, 1);
+
+        debugPrint('\n--- BobDevice verifies CarolDevice');
+        await bobDevice.verifyDevice(unverifiedBob2.first);
+
+        await waitUntil(() => emojisFromBobForCarol.isNotEmpty);
+        await waitUntil(() => emojisFromCarolForBob.isNotEmpty);
+
+        expect(emojisFromBobForCarol, isNotEmpty);
+        expect(emojisFromCarolForBob, isNotEmpty);
+        expect(emojisFromBobForCarol, emojisFromCarolForBob);
+
+        debugPrint(
+          '\nAliceDevice - unverified: ${aliceDevice.getUnverified()}',
+        );
+        debugPrint('\nBobDevice - unverified: ${bobDevice.getUnverified()}');
+        debugPrint(
+          '\nCarolDevice - unverified: ${carolDevice.getUnverified()}',
+        );
+
+        await waitUntil(() => aliceDevice.getUnverified().isEmpty);
+        await waitUntil(() => bobDevice.getUnverified().isEmpty);
+        await waitUntil(() => carolDevice.getUnverified().isEmpty);
+
+        expect(aliceDevice.getUnverified(), isEmpty);
+        expect(bobDevice.getUnverified(), isEmpty);
+        expect(carolDevice.getUnverified(), isEmpty);
+
+        debugPrint(
+          '\n--- AliceDevice, BobDevice, and CarolDevice have no unverified devices',
+        );
 
         Future<void> sendTestMessage(
           int index, {

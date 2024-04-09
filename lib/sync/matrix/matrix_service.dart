@@ -103,18 +103,6 @@ class MatrixService {
     await listenToTimelineEvents(service: this);
   }
 
-  Future<List<Event>?> getTimelineEvents() async {
-    final timeline = await syncRoom?.getTimeline();
-    return timeline?.events;
-  }
-
-  Future<Timeline?> getTimeline(VoidCallback onNewEvent) async {
-    final timeline = await syncRoom?.getTimeline(
-      onNewEvent: onNewEvent,
-    );
-    return timeline;
-  }
-
   Future<String> createRoom() => createMatrixRoom(client: _client);
 
   List<DeviceKeys> getUnverified() => _client.unverifiedDevices;
