@@ -5,6 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/consts.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/matrix/process_message.dart';
+import 'package:lotti/sync/matrix/save_attachment.dart';
 import 'package:lotti/utils/list_extension.dart';
 import 'package:matrix/matrix.dart';
 
@@ -80,6 +81,7 @@ Future<void> processNewTimelineEvents({
     for (final event in newEvents) {
       await service.client.sync();
       final eventId = event.eventId;
+
       if (event.messageType == syncMessageType) {
         await processMatrixMessage(
           event.text,
@@ -87,12 +89,13 @@ Future<void> processNewTimelineEvents({
         );
       }
 
+      await saveAttachment(event);
+
       try {
-        await timeline.setReadMarker(eventId: eventId);
-        await service.syncRoom?.setReadMarker(eventId);
         if (eventId.startsWith(r'$')) {
           service.lastReadEventContextId = eventId;
         }
+        await timeline.setReadMarker(eventId: eventId);
       } catch (e) {
         debugPrint('$e');
       }
