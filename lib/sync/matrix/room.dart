@@ -48,21 +48,23 @@ Future<String?> joinMatrixRoom({
 
 Future<String> createMatrixRoom({
   required Client client,
+  List<String>? invite,
 }) async {
   final name = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
   final roomId = await client.createRoom(
     visibility: Visibility.private,
     name: name,
+    invite: invite,
+    preset: CreateRoomPreset.trustedPrivateChat,
   );
   final room = client.getRoomById(roomId);
   await room?.enableEncryption();
   return roomId;
 }
 
-Future<Uri?> invite({
+Future<void> inviteToMatrixRoom({
   required MatrixService service,
+  required String userId,
 }) async {
-  final inviteLink = await service.syncRoom?.matrixToInviteLink();
-  debugPrint('inviteLink $inviteLink');
-  return inviteLink;
+  await service.syncRoom?.invite(userId);
 }

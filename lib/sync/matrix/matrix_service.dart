@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
@@ -100,7 +101,31 @@ class MatrixService {
     await listenToTimelineEvents(service: this);
   }
 
-  Future<String> createRoom() => createMatrixRoom(client: _client);
+  Future<String> createRoom({
+    List<String>? invite,
+  }) =>
+      createMatrixRoom(
+        client: _client,
+        invite: invite,
+      );
+
+  Future<void> inviteToSyncRoom({
+    required String userId,
+  }) =>
+      inviteToMatrixRoom(
+        service: this,
+        userId: userId,
+      );
+
+  DeviceKeys? findUnverified() {
+    return client.userDeviceKeys.values
+        .firstWhereOrNull(
+          (item) => item.deviceKeys.values.firstOrNull?.verified == false,
+        )
+        ?.deviceKeys
+        .values
+        .firstOrNull;
+  }
 
   List<DeviceKeys> getUnverified() => _client.unverifiedDevices;
 

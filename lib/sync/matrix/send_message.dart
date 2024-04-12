@@ -37,7 +37,7 @@ Future<void> sendMessage(
       );
     }
 
-    if (service.client.unverifiedDevices.isNotEmpty) {
+    if (service.findUnverified() != null) {
       loggingDb.captureException(
         'Unverified devices found',
         domain: 'MATRIX_SERVICE',
