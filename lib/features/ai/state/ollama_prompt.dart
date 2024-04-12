@@ -36,7 +36,7 @@ class AiResponse extends Notifier<String> {
     final prompt = PromptValue.string(promptText);
 
     await llm.stream(prompt).forEach((res) {
-      state += res.firstOutputAsString;
+      state += res.outputAsString;
     });
 
     await getIt<PersistenceLogic>().createTextEntry(
