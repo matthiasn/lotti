@@ -135,7 +135,8 @@ void main() {
         final joinRes = await aliceDevice.joinRoom(roomId);
         debugPrint('AliceDevice - room joined: $joinRes');
         debugPrint(
-            'AliceDevice - room encrypted: ${aliceDevice.syncRoom?.encrypted}');
+          'AliceDevice - room encrypted: ${aliceDevice.syncRoom?.encrypted}',
+        );
         await aliceDevice.listenToTimeline();
 
         debugPrint('\n--- BobDevice goes live');
