@@ -9,13 +9,15 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:matrix/matrix.dart';
 
 Future<void> processMatrixMessage(
-  String message, {
+  Event event, {
   JournalDb? overriddenJournalDb,
 }) async {
   final journalDb = overriddenJournalDb ?? getIt<JournalDb>();
   final loggingDb = getIt<LoggingDb>();
+  final message = event.text;
 
   try {
     final decoded = utf8.decode(base64.decode(message));
@@ -25,7 +27,7 @@ Future<void> processMatrixMessage(
     );
 
     loggingDb.captureEvent(
-      'processing ${syncMessage.runtimeType}',
+      'processing ${event.originServerTs} ${event.eventId}',
       domain: 'MATRIX_SERVICE',
       subDomain: 'processMessage',
     );

@@ -58,3 +58,11 @@ Future<String> createMatrixRoom({
   await room?.enableEncryption();
   return roomId;
 }
+
+Future<Uri?> invite({
+  required MatrixService service,
+}) async {
+  final inviteLink = await service.syncRoom?.matrixToInviteLink();
+  debugPrint('inviteLink $inviteLink');
+  return inviteLink;
+}

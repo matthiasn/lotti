@@ -14,6 +14,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -131,6 +132,8 @@ class MockConnectivityService extends Mock implements ConnectivityService {}
 class MockAiLogic extends Mock implements AiLogic {}
 
 class MockImapClientManager extends Mock implements ImapClientManager {}
+
+class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockFgBgService extends Mock implements FgBgService {}
 
