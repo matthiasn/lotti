@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,7 +38,7 @@ void main() {
     const testSlowNetworkEnv = 'SLOW_NETWORK';
 
     // create separate databases for each simulated device & suppress warning
-    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    drift.driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     final aliceDb = JournalDb(overriddenFilename: 'alice_db.sqlite');
     final bobDb = JournalDb(overriddenFilename: 'bob_db.sqlite');
 
@@ -58,8 +58,8 @@ void main() {
       exit(1);
     }
 
-    const testUserName1 = String.fromEnvironment(testUserEnv1);
-    const testUserName2 = String.fromEnvironment(testUserEnv1);
+    const aliceUserName = String.fromEnvironment(testUserEnv1);
+    const bobUserName = String.fromEnvironment(testUserEnv2);
 
     const testHomeServer = bool.hasEnvironment(testServerEnv)
         ? String.fromEnvironment(testServerEnv)
@@ -72,13 +72,13 @@ void main() {
 
     const config1 = MatrixConfig(
       homeServer: testHomeServer,
-      user: testUserName1,
+      user: aliceUserName,
       password: testPassword,
     );
 
     const config2 = MatrixConfig(
       homeServer: testHomeServer,
-      user: testUserName2,
+      user: bobUserName,
       password: testPassword,
     );
 
@@ -127,7 +127,10 @@ void main() {
         await aliceDevice.startKeyVerificationListener();
         debugPrint('AliceDevice - deviceId: ${aliceDevice.client.deviceID}');
 
-        final roomId = await aliceDevice.createRoom();
+        final roomId = await aliceDevice.createRoom(
+            //invite: [bobUserName],
+            );
+
         debugPrint('AliceDevice - room created: $roomId');
 
         expect(roomId, isNotEmpty);
@@ -138,6 +141,8 @@ void main() {
           'AliceDevice - room encrypted: ${aliceDevice.syncRoom?.encrypted}',
         );
         await aliceDevice.listenToTimeline();
+
+        await aliceDevice.inviteToSyncRoom(userId: bobUserName);
 
         debugPrint('\n--- BobDevice goes live');
         final bobDevice = MatrixService(
@@ -156,28 +161,50 @@ void main() {
         await bobDevice.listenToTimeline();
         await waitSeconds(defaultDelay * delayFactor);
 
-        await waitUntil(() => aliceDevice.getUnverified().length == 1);
-        await waitUntil(() => bobDevice.getUnverified().length == 1);
+        final aliceUserDeviceKeys = aliceDevice.client.userDeviceKeys;
+        final bobUserDeviceKeys = bobDevice.client.userDeviceKeys;
 
-        final unverifiedAlice = aliceDevice.getUnverified();
-        final unverifiedBob = bobDevice.getUnverified();
+        for (final deviceKey in aliceUserDeviceKeys.keys) {
+          final value = aliceUserDeviceKeys[deviceKey];
+          debugPrint(
+            'aliceDevice $deviceKey ${value?.verified}',
+          );
+          value?.deviceKeys.values.forEach((element) {
+            debugPrint(
+              '>>> ${element.deviceId} ${element.deviceDisplayName} verified: ${element.verified} ',
+            );
+          });
+        }
+
+        for (final deviceKey in bobUserDeviceKeys.keys) {
+          final value = bobUserDeviceKeys[deviceKey];
+          debugPrint(
+            'bobDevice $deviceKey ${value?.verified}',
+          );
+          value?.deviceKeys.values.forEach((element) {
+            debugPrint(
+              '>>> ${element.deviceId} ${element.deviceDisplayName} verified: ${element.verified} ',
+            );
+          });
+        }
+
+        await waitUntil(() => aliceDevice.findUnverified() != null);
+        await waitUntil(() => bobDevice.findUnverified() != null);
+
+        final unverifiedAlice = aliceDevice.findUnverified();
+        final unverifiedBob = bobDevice.findUnverified();
 
         debugPrint('\nAliceDevice - unverified: $unverifiedAlice');
         debugPrint('\nBobDevice - unverified: $unverifiedBob');
 
-        expect(unverifiedAlice.length, 1);
-        expect(unverifiedBob.length, 1);
+        expect(unverifiedAlice, isNotNull);
+        expect(unverifiedBob, isNotNull);
 
         final outgoingKeyVerificationStream = aliceDevice.keyVerificationStream;
         final incomingKeyVerificationRunnerStream =
             bobDevice.incomingKeyVerificationRunnerStream;
 
-        await waitSeconds(defaultDelay * delayFactor);
-
-        debugPrint('\n--- AliceDevice verifies BobDevice');
-        await aliceDevice.verifyDevice(unverifiedAlice.first);
-
-        await waitSeconds(defaultDelay * delayFactor);
+        await waitSeconds(defaultDelay * 2 * delayFactor);
 
         var emojisFromBob = '';
         var emojisFromAlice = '';
@@ -225,6 +252,11 @@ void main() {
           }),
         );
 
+        await waitSeconds(defaultDelay * delayFactor);
+
+        debugPrint('\n--- AliceDevice verifies BobDevice');
+        await aliceDevice.verifyDevice(unverifiedAlice!);
+
         await waitUntil(() => emojisFromAlice.isNotEmpty);
         await waitUntil(() => emojisFromBob.isNotEmpty);
 
@@ -236,11 +268,11 @@ void main() {
           '\n--- AliceDevice and BobDevice both have no unverified devices',
         );
 
-        await waitUntil(() => aliceDevice.getUnverified().isEmpty);
-        await waitUntil(() => bobDevice.getUnverified().isEmpty);
+        await waitUntil(() => aliceDevice.findUnverified() == null);
+        await waitUntil(() => bobDevice.findUnverified() == null);
 
-        expect(aliceDevice.getUnverified(), isEmpty);
-        expect(bobDevice.getUnverified(), isEmpty);
+        expect(aliceDevice.findUnverified(), isNull);
+        expect(bobDevice.findUnverified(), isNull);
 
         await waitSeconds(defaultDelay * delayFactor);
 
