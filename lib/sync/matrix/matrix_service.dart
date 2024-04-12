@@ -7,6 +7,7 @@ import 'package:lotti/sync/client_runner.dart';
 import 'package:lotti/sync/matrix/client.dart';
 import 'package:lotti/sync/matrix/config.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/sync/matrix/last_read.dart';
 import 'package:lotti/sync/matrix/room.dart';
 import 'package:lotti/sync/matrix/send_message.dart';
 import 'package:lotti/sync/matrix/stats.dart';
@@ -30,6 +31,10 @@ class MatrixService {
           overriddenJournalDb: overriddenJournalDb,
         );
       },
+    );
+
+    getLastReadMatrixEventId().then(
+      (value) => lastReadEventContextId = value,
     );
 
     incomingKeyVerificationRunnerController =

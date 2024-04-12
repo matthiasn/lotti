@@ -3,6 +3,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/consts.dart';
+import 'package:lotti/sync/matrix/last_read.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/matrix/process_message.dart';
 import 'package:lotti/sync/matrix/save_attachment.dart';
@@ -73,10 +74,11 @@ Future<void> processNewTimelineEvents({
       return;
     }
 
-    final events = List<Event>.from(timeline.chunk.events.reversed);
-    final (_, _, after) =
-        events.partition((event) => event.eventId == lastReadEventContextId);
-    final newEvents = after ?? events;
+    final events = List<Event>.from(timeline.events.reversed);
+    final (_, _, eventsAfter) = events.partition(
+      (event) => event.eventId == lastReadEventContextId,
+    );
+    final newEvents = eventsAfter ?? events;
 
     for (final event in newEvents) {
       await service.client.sync();
@@ -84,7 +86,7 @@ Future<void> processNewTimelineEvents({
 
       if (event.messageType == syncMessageType) {
         await processMatrixMessage(
-          event.text,
+          event,
           overriddenJournalDb: overriddenJournalDb,
         );
       }
@@ -95,7 +97,9 @@ Future<void> processNewTimelineEvents({
         if (eventId.startsWith(r'$')) {
           service.lastReadEventContextId = eventId;
         }
+
         await timeline.setReadMarker(eventId: eventId);
+        await setLastReadMatrixEventId(eventId);
       } catch (e) {
         debugPrint('$e');
       }
