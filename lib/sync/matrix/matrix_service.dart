@@ -1,24 +1,17 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/client_runner.dart';
-import 'package:lotti/sync/inbox/save_attachments.dart';
 import 'package:lotti/sync/matrix/client.dart';
 import 'package:lotti/sync/matrix/config.dart';
-import 'package:lotti/sync/matrix/consts.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
-import 'package:lotti/sync/matrix/process_message.dart';
+import 'package:lotti/sync/matrix/last_read.dart';
 import 'package:lotti/sync/matrix/room.dart';
 import 'package:lotti/sync/matrix/send_message.dart';
 import 'package:lotti/sync/matrix/stats.dart';
 import 'package:lotti/sync/matrix/timeline.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
@@ -40,6 +33,10 @@ class MatrixService {
       },
     );
 
+    getLastReadMatrixEventId().then(
+      (value) => lastReadEventContextId = value,
+    );
+
     incomingKeyVerificationRunnerController =
         StreamController<KeyVerificationRunner>.broadcast(
       onListen: publishIncomingRunnerState,
@@ -56,7 +53,6 @@ class MatrixService {
 
   final String? deviceDisplayName;
   late final Client _client;
-  final LoggingDb _loggingDb = getIt<LoggingDb>();
   MatrixConfig? matrixConfig;
   LoginResponse? loginResponse;
   String? syncRoomId;
@@ -85,7 +81,8 @@ class MatrixService {
   Future<void> loginAndListen() async {
     await loadConfig();
     await login();
-    await listen();
+    await startKeyVerificationListener();
+    await listenToTimeline();
   }
 
   Client get client => _client;
@@ -101,18 +98,6 @@ class MatrixService {
 
   Future<void> listenToTimeline() async {
     await listenToTimelineEvents(service: this);
-  }
-
-  Future<List<Event>?> getTimelineEvents() async {
-    final timeline = await syncRoom?.getTimeline();
-    return timeline?.events;
-  }
-
-  Future<Timeline?> getTimeline(VoidCallback onNewEvent) async {
-    final timeline = await syncRoom?.getTimeline(
-      onNewEvent: onNewEvent,
-    );
-    return timeline;
   }
 
   Future<String> createRoom() => createMatrixRoom(client: _client);
@@ -140,110 +125,6 @@ class MatrixService {
 
   Future<void> startKeyVerificationListener() =>
       listenForKeyVerificationRequests(service: this);
-
-  Future<void> listen() async {
-    try {
-      _client.onLoginStateChanged.stream.listen((LoginState loginState) {
-        debugPrint('LoginState: $loginState');
-      });
-
-      if (syncRoomId == null) {
-        _loggingDb.captureEvent(
-          configNotFound,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'listen',
-        );
-        return;
-      }
-
-      _client.onRoomState.stream.listen(
-        (Event eventUpdate) async {
-          try {
-            debugPrint('>>> onRoomState ${eventUpdate.messageType} '
-                '${eventUpdate.plaintextBody} '
-                '${eventUpdate.text} '
-                '${jsonEncode(eventUpdate.toJson())} ');
-
-            final eventType = eventUpdate.type;
-            messageCounts.update(
-              eventType,
-              (value) => value + 1,
-              ifAbsent: () => 1,
-            );
-
-            messageCountsController.add(
-              MatrixStats(
-                messageCounts: messageCounts,
-                sentCount: sentCount,
-              ),
-            );
-
-            final attachmentMimetype = eventUpdate.attachmentMimetype;
-
-            _loggingDb.captureEvent(
-              'received ${eventUpdate.messageType}',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'listen',
-            );
-
-            if (attachmentMimetype.isNotEmpty) {
-              final relativePath = eventUpdate.content['relativePath'];
-
-              if (relativePath != null) {
-                _loggingDb.captureEvent(
-                  'downloading $relativePath',
-                  domain: 'MATRIX_SERVICE',
-                  subDomain: 'writeToFile',
-                );
-
-                final matrixFile =
-                    await eventUpdate.downloadAndDecryptAttachment();
-                final docDir = getDocumentsDirectory();
-                await writeToFile(
-                  matrixFile.bytes,
-                  '${docDir.path}$relativePath',
-                );
-              } else {
-                _loggingDb.captureEvent(
-                  'missing relativePath',
-                  domain: 'MATRIX_SERVICE',
-                  subDomain: 'writeToFile',
-                );
-              }
-            } else {
-              await processMatrixMessage(eventUpdate.plaintextBody);
-            }
-          } catch (exception, stackTrace) {
-            _loggingDb.captureException(
-              exception,
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'listen',
-              stackTrace: stackTrace,
-            );
-          }
-        },
-        onError: (
-          Object e,
-          StackTrace stackTrace,
-        ) {
-          _loggingDb.captureException(
-            e,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'listen',
-            stackTrace: stackTrace,
-          );
-        },
-      );
-    } catch (e, stackTrace) {
-      debugPrint('$e');
-      _loggingDb.captureException(
-        e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'listen',
-        stackTrace: stackTrace,
-      );
-    }
-  }
 
   Future<void> sendMatrixMsg(
     SyncMessage syncMessage, {

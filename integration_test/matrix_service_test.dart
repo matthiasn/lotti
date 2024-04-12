@@ -11,12 +11,14 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -89,10 +91,17 @@ void main() {
         ..createSync(recursive: true);
       debugPrint('Created temporary docDir ${docDir.path}');
 
+      final mockSettingsDb = MockSettingsDb();
+
       getIt
         ..registerSingleton<Directory>(docDir)
         ..registerSingleton<LoggingDb>(LoggingDb())
+        ..registerSingleton<SettingsDb>(mockSettingsDb)
         ..registerSingleton<SecureStorage>(secureStorageMock);
+
+      when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
+      when(() => mockSettingsDb.saveSettingsItem(any(), any()))
+          .thenAnswer((_) async => 0);
     });
 
     setUp(() {});
@@ -125,6 +134,9 @@ void main() {
 
         final joinRes = await aliceDevice.joinRoom(roomId);
         debugPrint('AliceDevice - room joined: $joinRes');
+        debugPrint(
+          'AliceDevice - room encrypted: ${aliceDevice.syncRoom?.encrypted}',
+        );
         await aliceDevice.listenToTimeline();
 
         debugPrint('\n--- BobDevice goes live');

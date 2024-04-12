@@ -79,6 +79,10 @@ class MaintenancePage extends StatelessWidget {
                 onTap: () => getIt<Maintenance>().recreateFts5(),
               ),
               SettingsCard(
+                title: localizations.maintenanceReSync1K,
+                onTap: () => getIt<Maintenance>().reSyncLastMessages(1000),
+              ),
+              SettingsCard(
                 title: localizations.maintenanceReSync10K,
                 onTap: () => getIt<Maintenance>().reSyncLastMessages(10000),
               ),
