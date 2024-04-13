@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
+import 'package:lotti/sync/ui/matrix_settings_modal.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -31,6 +32,7 @@ class AdvancedSettingsPage extends StatelessWidget {
               title: localizations.settingsMatrixTitle,
               path: '/settings/advanced/matrix_settings',
             ),
+            const MatrixSettingsCard(),
             SettingsNavCard(
               trailing: OutboxBadgeIcon(
                 icon: SettingsIcon(MdiIcons.mailboxOutline),
