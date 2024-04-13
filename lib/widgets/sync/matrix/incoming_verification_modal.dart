@@ -34,7 +34,7 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
       Navigator.of(context).pop();
     }
 
-    final unverifiedDevices = _matrixService.getUnverified();
+    final unverifiedDevices = _matrixService.getUnverifiedDevices();
     final requestingDevice = unverifiedDevices.firstWhereOrNull(
       (deviceKeys) => deviceKeys.deviceId == widget.keyVerification.deviceId,
     );

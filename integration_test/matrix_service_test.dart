@@ -127,9 +127,7 @@ void main() {
         await aliceDevice.startKeyVerificationListener();
         debugPrint('AliceDevice - deviceId: ${aliceDevice.client.deviceID}');
 
-        final roomId = await aliceDevice.createRoom(
-            //invite: [bobUserName],
-            );
+        final roomId = await aliceDevice.createRoom();
 
         debugPrint('AliceDevice - room created: $roomId');
 
@@ -188,11 +186,11 @@ void main() {
           });
         }
 
-        await waitUntil(() => aliceDevice.findUnverified() != null);
-        await waitUntil(() => bobDevice.findUnverified() != null);
+        await waitUntil(() => aliceDevice.getUnverifiedDevices().isNotEmpty);
+        await waitUntil(() => bobDevice.getUnverifiedDevices().isNotEmpty);
 
-        final unverifiedAlice = aliceDevice.findUnverified();
-        final unverifiedBob = bobDevice.findUnverified();
+        final unverifiedAlice = aliceDevice.getUnverifiedDevices();
+        final unverifiedBob = bobDevice.getUnverifiedDevices();
 
         debugPrint('\nAliceDevice - unverified: $unverifiedAlice');
         debugPrint('\nBobDevice - unverified: $unverifiedBob');
@@ -255,7 +253,7 @@ void main() {
         await waitSeconds(defaultDelay * delayFactor);
 
         debugPrint('\n--- AliceDevice verifies BobDevice');
-        await aliceDevice.verifyDevice(unverifiedAlice!);
+        await aliceDevice.verifyDevice(unverifiedAlice.first);
 
         await waitUntil(() => emojisFromAlice.isNotEmpty);
         await waitUntil(() => emojisFromBob.isNotEmpty);
@@ -268,11 +266,11 @@ void main() {
           '\n--- AliceDevice and BobDevice both have no unverified devices',
         );
 
-        await waitUntil(() => aliceDevice.findUnverified() == null);
-        await waitUntil(() => bobDevice.findUnverified() == null);
+        await waitUntil(() => aliceDevice.getUnverifiedDevices().isEmpty);
+        await waitUntil(() => bobDevice.getUnverifiedDevices().isEmpty);
 
-        expect(aliceDevice.findUnverified(), isNull);
-        expect(bobDevice.findUnverified(), isNull);
+        expect(aliceDevice.getUnverifiedDevices(), isEmpty);
+        expect(bobDevice.getUnverifiedDevices(), isEmpty);
 
         await waitSeconds(defaultDelay * delayFactor);
 

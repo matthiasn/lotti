@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
@@ -117,17 +116,19 @@ class MatrixService {
         userId: userId,
       );
 
-  DeviceKeys? findUnverified() {
-    return client.userDeviceKeys.values
-        .firstWhereOrNull(
-          (item) => item.deviceKeys.values.firstOrNull?.verified == false,
-        )
-        ?.deviceKeys
-        .values
-        .firstOrNull;
-  }
+  List<DeviceKeys> getUnverifiedDevices() {
+    final unverifiedDevices = <DeviceKeys>[];
 
-  List<DeviceKeys> getUnverified() => _client.unverifiedDevices;
+    for (final deviceKeysList in client.userDeviceKeys.values) {
+      for (final deviceKeys in deviceKeysList.deviceKeys.values) {
+        if (!deviceKeys.verified) {
+          unverifiedDevices.add(deviceKeys);
+        }
+      }
+    }
+
+    return unverifiedDevices;
+  }
 
   Future<void> verifyDevice(DeviceKeys deviceKeys) => verifyMatrixDevice(
         deviceKeys: deviceKeys,

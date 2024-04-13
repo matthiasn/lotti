@@ -22,13 +22,13 @@ class _UnverifiedDevicesState extends State<UnverifiedDevices> {
   void initState() {
     super.initState();
     setState(() {
-      _unverifiedDevices = _matrixService.getUnverified();
+      _unverifiedDevices = _matrixService.getUnverifiedDevices();
     });
   }
 
   void refreshList() {
     setState(() {
-      _unverifiedDevices = _matrixService.getUnverified();
+      _unverifiedDevices = _matrixService.getUnverifiedDevices();
     });
   }
 
