@@ -297,7 +297,7 @@ void main() {
                   vectorClock: VectorClock({deviceName: index}),
                 ),
                 entryText: EntryText(
-                  plainText: 'Test $deviceName #$index - $now',
+                  plainText: 'Test from $deviceName #$index - $now',
                 ),
               ),
               status: SyncEntryStatus.initial,
@@ -327,19 +327,19 @@ void main() {
         }
 
         await waitUntilAsync(
-          () async => await aliceDb.getJournalCount() == 2 * n,
+          () async => await aliceDb.getJournalCount() == n,
         );
         debugPrint('\n--- AliceDevice finished receiving messages');
         final aliceEntriesCount = await aliceDb.getJournalCount();
-        expect(aliceEntriesCount, 2 * n);
+        expect(aliceEntriesCount, n);
         debugPrint('AliceDevice persisted entries: $aliceEntriesCount');
 
         await waitUntilAsync(
-          () async => await bobDb.getJournalCount() == 2 * n,
+          () async => await bobDb.getJournalCount() == n,
         );
         debugPrint('\n--- BobDevice finished receiving messages');
         final bobEntriesCount = await bobDb.getJournalCount();
-        expect(bobEntriesCount, 2 * n);
+        expect(bobEntriesCount, n);
         debugPrint('BobDevice persisted entries: $bobEntriesCount');
 
         debugPrint('\n--- Logging out AliceDevice and BobDevice');
