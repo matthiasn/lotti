@@ -9,6 +9,8 @@ Future<XFile?> compressAndSave(File file, String targetPath) async {
   final result = await FlutterImageCompress.compressAndGetFile(
     sourcePath,
     targetPath,
+    minHeight: 10000,
+    minWidth: 10000,
     quality: 90,
     keepExif: true,
   );
