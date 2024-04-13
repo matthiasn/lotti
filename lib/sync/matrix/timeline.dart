@@ -84,14 +84,20 @@ Future<void> processNewTimelineEvents({
       await service.client.sync();
       final eventId = event.eventId;
 
-      if (event.messageType == syncMessageType) {
-        await processMatrixMessage(
-          event,
-          overriddenJournalDb: overriddenJournalDb,
-        );
-      }
+      // Terminates early when the message was emitted by the device itself,
+      // as it would be a waste of battery to try to ingest what the device
+      // already knows.
+      if (event.senderId != service.client.userID) {
+        if (event.messageType == syncMessageType) {
+          await processMatrixMessage(
+            event: event,
+            service: service,
+            overriddenJournalDb: overriddenJournalDb,
+          );
+        }
 
-      await saveAttachment(event);
+        await saveAttachment(event);
+      }
 
       try {
         if (eventId.startsWith(r'$')) {

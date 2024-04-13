@@ -14,6 +14,13 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 
+/// Sends a Matrix message for cross-device state synchronization. Takes a
+/// [SyncMessage] and also requires the system's [MatrixService]. A room can
+/// optionally be specified, e.g. in testing. Otherwise, the service's `syncRoom`
+/// is used.
+/// Also updates some stats on sent message counts on the [service].
+/// The send function will terminate early (and thus refuse to send anything)
+/// when there are users with unverified device in the room.
 Future<void> sendMessage(
   SyncMessage syncMessage, {
   required MatrixService service,
