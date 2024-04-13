@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/ui/homeserver_config_page.dart';
+import 'package:lotti/sync/ui/matrix_logged_in_config_page.dart';
 import 'package:lotti/sync/ui/room_config_page.dart';
 import 'package:lotti/sync/ui/unverified_devices_page.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
@@ -18,6 +21,12 @@ class MatrixSettingsCard extends StatelessWidget {
     return SettingsCard(
       title: localizations.settingsMatrixTitle,
       onTap: () {
+        if (getIt<MatrixService>().isLoggedIn()) {
+          pageIndexNotifier.value = 1;
+        } else {
+          pageIndexNotifier.value = 0;
+        }
+
         WoltModalSheet.show<void>(
           context: context,
           pageIndexNotifier: pageIndexNotifier,
@@ -25,6 +34,11 @@ class MatrixSettingsCard extends StatelessWidget {
             final textTheme = Theme.of(context).textTheme;
             return [
               homeServerConfigPage(
+                context: modalSheetContext,
+                textTheme: textTheme,
+                pageIndexNotifier: pageIndexNotifier,
+              ),
+              homeServerLoggedInPage(
                 context: modalSheetContext,
                 textTheme: textTheme,
                 pageIndexNotifier: pageIndexNotifier,

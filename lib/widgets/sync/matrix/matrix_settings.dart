@@ -32,7 +32,7 @@ class MatrixSettingsWidget extends ConsumerStatefulWidget {
 class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
   final _matrixService = getIt<MatrixService>();
   final _formKey = GlobalKey<FormBuilderState>();
-  final GlobalKey _qrKey = GlobalKey(debugLabel: 'matrix_QR_key');
+  final _qrKey = GlobalKey(debugLabel: 'matrix_QR_key');
 
   bool _dirty = false;
   MatrixConfig? _previous;

@@ -207,6 +207,7 @@
   "settingsMatrixCancel": "Cancel",
   "settingsMatrixDone": "Done",
   "settingsMatrixNextPage": "Next Page",
+  "settingsMatrixQrTextPage": "Scan this QR code from the device where you created the sync room.",
   "settingsMatrixPreviousPage": "Previous Page",
   "settingsMatrixUnverifiedDevicesPage": "Unverified Devices",
   "settingsMatrixUserLabel": "User",

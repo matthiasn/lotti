@@ -11,7 +11,6 @@ SliverWoltModalSheetPage roomConfigPage({
   final localizations = AppLocalizations.of(context)!;
 
   return WoltModalSheetPage(
-    hasSabGradient: false,
     stickyActionBar: Padding(
       padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
       child: Row(
