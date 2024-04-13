@@ -83,7 +83,7 @@ void main() {
     );
 
     const defaultDelay = 1;
-    const delayFactor = testSlowNetwork ? 5 : 1;
+    const delayFactor = testSlowNetwork ? 3 : 1;
 
     setUpAll(() async {
       final tmpDir = await getTemporaryDirectory();
@@ -115,92 +115,67 @@ void main() {
     test(
       'Create room & join',
       () async {
-        debugPrint('\n--- AliceDevice goes live');
-        final aliceDevice = MatrixService(
+        debugPrint('\n--- Alice goes live');
+        final alice = MatrixService(
           matrixConfig: config1,
-          hiveDbName: 'AliceDevice',
-          deviceDisplayName: 'AliceDevice',
+          hiveDbName: 'Alice',
+          deviceDisplayName: 'Alice',
           overriddenJournalDb: aliceDb,
         );
 
-        await aliceDevice.login();
-        await aliceDevice.startKeyVerificationListener();
-        debugPrint('AliceDevice - deviceId: ${aliceDevice.client.deviceID}');
+        await alice.login();
+        await alice.startKeyVerificationListener();
+        debugPrint('Alice - deviceId: ${alice.client.deviceID}');
 
-        final roomId = await aliceDevice.createRoom();
+        final roomId = await alice.createRoom();
 
-        debugPrint('AliceDevice - room created: $roomId');
+        debugPrint('Alice - room created: $roomId');
 
         expect(roomId, isNotEmpty);
 
-        final joinRes = await aliceDevice.joinRoom(roomId);
-        debugPrint('AliceDevice - room joined: $joinRes');
+        final joinRes = await alice.joinRoom(roomId);
+        debugPrint('Alice - room joined: $joinRes');
         debugPrint(
-          'AliceDevice - room encrypted: ${aliceDevice.syncRoom?.encrypted}',
+          'Alice - room encrypted: ${alice.syncRoom?.encrypted}',
         );
-        await aliceDevice.listenToTimeline();
+        await alice.listenToTimeline();
 
-        await aliceDevice.inviteToSyncRoom(userId: bobUserName);
-
-        debugPrint('\n--- BobDevice goes live');
-        final bobDevice = MatrixService(
+        debugPrint('\n--- Bob goes live');
+        final bob = MatrixService(
           matrixConfig: config2,
-          hiveDbName: 'BobDevice',
-          deviceDisplayName: 'BobDevice',
+          hiveDbName: 'Bob',
+          deviceDisplayName: 'Bob',
           overriddenJournalDb: bobDb,
         );
 
-        await bobDevice.login();
-        await bobDevice.startKeyVerificationListener();
-        debugPrint('BobDevice - deviceId: ${bobDevice.client.deviceID}');
+        await bob.login();
+        await bob.startKeyVerificationListener();
+        debugPrint('Bob - deviceId: ${bob.client.deviceID}');
 
-        final joinRes2 = await bobDevice.joinRoom(roomId);
-        debugPrint('BobDevice - room joined: $joinRes2');
-        await bobDevice.listenToTimeline();
+        debugPrint('\n--- Alice invites Bob into room $roomId');
+        await alice.inviteToSyncRoom(userId: bobUserName);
         await waitSeconds(defaultDelay * delayFactor);
 
-        final aliceUserDeviceKeys = aliceDevice.client.userDeviceKeys;
-        final bobUserDeviceKeys = bobDevice.client.userDeviceKeys;
+        final joinRes2 = await bob.joinRoom(roomId);
+        debugPrint('Bob - room joined: $joinRes2');
+        await bob.listenToTimeline();
+        await waitSeconds(defaultDelay * delayFactor);
 
-        for (final deviceKey in aliceUserDeviceKeys.keys) {
-          final value = aliceUserDeviceKeys[deviceKey];
-          debugPrint(
-            'aliceDevice $deviceKey ${value?.verified}',
-          );
-          value?.deviceKeys.values.forEach((element) {
-            debugPrint(
-              '>>> ${element.deviceId} ${element.deviceDisplayName} verified: ${element.verified} ',
-            );
-          });
-        }
+        await waitUntil(() => alice.getUnverifiedDevices().isNotEmpty);
+        await waitUntil(() => bob.getUnverifiedDevices().isNotEmpty);
 
-        for (final deviceKey in bobUserDeviceKeys.keys) {
-          final value = bobUserDeviceKeys[deviceKey];
-          debugPrint(
-            'bobDevice $deviceKey ${value?.verified}',
-          );
-          value?.deviceKeys.values.forEach((element) {
-            debugPrint(
-              '>>> ${element.deviceId} ${element.deviceDisplayName} verified: ${element.verified} ',
-            );
-          });
-        }
+        final unverifiedAlice = alice.getUnverifiedDevices();
+        final unverifiedBob = bob.getUnverifiedDevices();
 
-        await waitUntil(() => aliceDevice.getUnverifiedDevices().isNotEmpty);
-        await waitUntil(() => bobDevice.getUnverifiedDevices().isNotEmpty);
-
-        final unverifiedAlice = aliceDevice.getUnverifiedDevices();
-        final unverifiedBob = bobDevice.getUnverifiedDevices();
-
-        debugPrint('\nAliceDevice - unverified: $unverifiedAlice');
-        debugPrint('\nBobDevice - unverified: $unverifiedBob');
+        debugPrint('\nAlice - unverified: $unverifiedAlice');
+        debugPrint('\nBob - unverified: $unverifiedBob');
 
         expect(unverifiedAlice, isNotNull);
         expect(unverifiedBob, isNotNull);
 
-        final outgoingKeyVerificationStream = aliceDevice.keyVerificationStream;
+        final outgoingKeyVerificationStream = alice.keyVerificationStream;
         final incomingKeyVerificationRunnerStream =
-            bobDevice.incomingKeyVerificationRunnerStream;
+            bob.incomingKeyVerificationRunnerStream;
 
         await waitSeconds(defaultDelay * 2 * delayFactor);
 
@@ -210,14 +185,14 @@ void main() {
         unawaited(
           incomingKeyVerificationRunnerStream.forEach((runner) async {
             debugPrint(
-              'BobDevice - incoming verification runner step: ${runner.lastStep}',
+              'Bob - incoming verification runner step: ${runner.lastStep}',
             );
             if (runner.lastStep == 'm.key.verification.request') {
               await runner.acceptVerification();
             }
             if (runner.lastStep == 'm.key.verification.key') {
               emojisFromAlice = extractEmojiString(runner.emojis);
-              debugPrint('BobDevice received emojis: $emojisFromAlice');
+              debugPrint('Bob received emojis: $emojisFromAlice');
 
               await waitUntil(
                 () =>
@@ -233,11 +208,11 @@ void main() {
         unawaited(
           outgoingKeyVerificationStream.forEach((runner) async {
             debugPrint(
-              'AliceDevice - outgoing verification step: ${runner.lastStep}',
+              'Alice - outgoing verification step: ${runner.lastStep}',
             );
             if (runner.lastStep == 'm.key.verification.key') {
               emojisFromBob = extractEmojiString(runner.emojis);
-              debugPrint('AliceDevice received emojis: $emojisFromBob');
+              debugPrint('Alice received emojis: $emojisFromBob');
 
               await waitUntil(
                 () =>
@@ -252,8 +227,8 @@ void main() {
 
         await waitSeconds(defaultDelay * delayFactor);
 
-        debugPrint('\n--- AliceDevice verifies BobDevice');
-        await aliceDevice.verifyDevice(unverifiedAlice.first);
+        debugPrint('\n--- Alice verifies Bob');
+        await alice.verifyDevice(unverifiedAlice.first);
 
         await waitUntil(() => emojisFromAlice.isNotEmpty);
         await waitUntil(() => emojisFromBob.isNotEmpty);
@@ -263,14 +238,14 @@ void main() {
         expect(emojisFromAlice, emojisFromAlice);
 
         debugPrint(
-          '\n--- AliceDevice and BobDevice both have no unverified devices',
+          '\n--- Alice and Bob both have no unverified devices',
         );
 
-        await waitUntil(() => aliceDevice.getUnverifiedDevices().isEmpty);
-        await waitUntil(() => bobDevice.getUnverifiedDevices().isEmpty);
+        await waitUntil(() => alice.getUnverifiedDevices().isEmpty);
+        await waitUntil(() => bob.getUnverifiedDevices().isEmpty);
 
-        expect(aliceDevice.getUnverifiedDevices(), isEmpty);
-        expect(bobDevice.getUnverifiedDevices(), isEmpty);
+        expect(alice.getUnverifiedDevices(), isEmpty);
+        expect(bob.getUnverifiedDevices(), isEmpty);
 
         await waitSeconds(defaultDelay * delayFactor);
 
@@ -306,20 +281,20 @@ void main() {
 
         const n = testSlowNetwork ? 10 : 100;
 
-        debugPrint('\n--- AliceDevice sends $n message');
+        debugPrint('\n--- Alice sends $n message');
         for (var i = 0; i < n; i++) {
           await sendTestMessage(
             i,
-            device: aliceDevice,
+            device: alice,
             deviceName: 'aliceDevice',
           );
         }
 
-        debugPrint('\n--- BobDevice sends $n message');
+        debugPrint('\n--- Bob sends $n message');
         for (var i = 0; i < n; i++) {
           await sendTestMessage(
             i,
-            device: bobDevice,
+            device: bob,
             deviceName: 'bobDevice',
           );
         }
@@ -327,24 +302,24 @@ void main() {
         await waitUntilAsync(
           () async => await aliceDb.getJournalCount() == n,
         );
-        debugPrint('\n--- AliceDevice finished receiving messages');
+        debugPrint('\n--- Alice finished receiving messages');
         final aliceEntriesCount = await aliceDb.getJournalCount();
         expect(aliceEntriesCount, n);
-        debugPrint('AliceDevice persisted entries: $aliceEntriesCount');
+        debugPrint('Alice persisted $aliceEntriesCount entries');
 
         await waitUntilAsync(
           () async => await bobDb.getJournalCount() == n,
         );
-        debugPrint('\n--- BobDevice finished receiving messages');
+        debugPrint('\n--- Bob finished receiving messages');
         final bobEntriesCount = await bobDb.getJournalCount();
         expect(bobEntriesCount, n);
-        debugPrint('BobDevice persisted entries: $bobEntriesCount');
+        debugPrint('Bob persisted $bobEntriesCount entries');
 
-        debugPrint('\n--- Logging out AliceDevice and BobDevice');
+        debugPrint('\n--- Logging out Alice and Bob');
 
-        await aliceDevice.logout();
+        await alice.logout();
         await waitSeconds(defaultDelay * delayFactor);
-        await bobDevice.logout();
+        await bob.logout();
       },
       timeout: const Timeout(Duration(minutes: 15)),
     );
