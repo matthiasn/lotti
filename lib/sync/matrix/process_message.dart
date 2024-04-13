@@ -8,11 +8,18 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 
-Future<void> processMatrixMessage(
-  Event event, {
+/// Process a sync message from the room that the client has joined.
+/// Takes decrypted [Event] and tries to insert into the local database
+/// if not already contained, or in conflict with an existing entry.
+/// The conflicts are checked as part of the call to JournalDb.
+
+Future<void> processMatrixMessage({
+  required Event event,
+  required MatrixService service,
   JournalDb? overriddenJournalDb,
 }) async {
   final journalDb = overriddenJournalDb ?? getIt<JournalDb>();

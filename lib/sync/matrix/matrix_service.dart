@@ -100,9 +100,35 @@ class MatrixService {
     await listenToTimelineEvents(service: this);
   }
 
-  Future<String> createRoom() => createMatrixRoom(client: _client);
+  Future<String> createRoom({
+    List<String>? invite,
+  }) =>
+      createMatrixRoom(
+        client: _client,
+        invite: invite,
+      );
 
-  List<DeviceKeys> getUnverified() => _client.unverifiedDevices;
+  Future<void> inviteToSyncRoom({
+    required String userId,
+  }) =>
+      inviteToMatrixRoom(
+        service: this,
+        userId: userId,
+      );
+
+  List<DeviceKeys> getUnverifiedDevices() {
+    final unverifiedDevices = <DeviceKeys>[];
+
+    for (final deviceKeysList in client.userDeviceKeys.values) {
+      for (final deviceKeys in deviceKeysList.deviceKeys.values) {
+        if (!deviceKeys.verified) {
+          unverifiedDevices.add(deviceKeys);
+        }
+      }
+    }
+
+    return unverifiedDevices;
+  }
 
   Future<void> verifyDevice(DeviceKeys deviceKeys) => verifyMatrixDevice(
         deviceKeys: deviceKeys,
