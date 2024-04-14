@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/sync/matrix/matrix_service.dart';
+import 'package:lotti/sync/state/matrix_login_provider.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -17,37 +16,11 @@ SliverWoltModalSheetPage homeServerLoggedInPage({
   required TextTheme textTheme,
   required ValueNotifier<int> pageIndexNotifier,
 }) {
-  final matrixService = getIt<MatrixService>();
-
   final localizations = AppLocalizations.of(context)!;
 
   return WoltModalSheetPage(
-    stickyActionBar: Padding(
-      padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          OutlinedButton(
-            key: const Key('matrix_logout'),
-            onPressed: () {
-              pageIndexNotifier.value = 0;
-              matrixService.logout();
-            },
-            child: Text(
-              localizations.settingsMatrixLogoutButtonLabel,
-              semanticsLabel: localizations.settingsMatrixLogoutButtonLabel,
-            ),
-          ),
-          const SizedBox(height: 8),
-          FilledButton(
-            onPressed: () =>
-                pageIndexNotifier.value = pageIndexNotifier.value + 1,
-            child: Center(
-              child: Text(localizations.settingsMatrixNextPage),
-            ),
-          ),
-        ],
-      ),
+    stickyActionBar: LoggedInPageStickyActionBar(
+      pageIndexNotifier: pageIndexNotifier,
     ),
     topBarTitle: Text(
       localizations.settingsMatrixHomeserverConfigTitle,
@@ -66,6 +39,49 @@ SliverWoltModalSheetPage homeServerLoggedInPage({
   );
 }
 
+class LoggedInPageStickyActionBar extends ConsumerWidget {
+  const LoggedInPageStickyActionBar({
+    required this.pageIndexNotifier,
+    super.key,
+  });
+
+  final ValueNotifier<int> pageIndexNotifier;
+  @override
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return Padding(
+      padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          OutlinedButton(
+            key: const Key('matrix_logout'),
+            onPressed: () async {
+              await ref.read(matrixLoginControllerProvider.notifier).logout();
+              pageIndexNotifier.value = 0;
+            },
+            child: Text(
+              localizations.settingsMatrixLogoutButtonLabel,
+              semanticsLabel: localizations.settingsMatrixLogoutButtonLabel,
+            ),
+          ),
+          const SizedBox(height: 8),
+          FilledButton(
+            onPressed: () => pageIndexNotifier.value = 2,
+            child: Center(
+              child: Text(localizations.settingsMatrixNextPage),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class HomeserverLoggedInWidget extends ConsumerStatefulWidget {
   const HomeserverLoggedInWidget({super.key});
 
@@ -76,8 +92,6 @@ class HomeserverLoggedInWidget extends ConsumerStatefulWidget {
 
 class _HomeserverLoggedInWidgetState
     extends ConsumerState<HomeserverLoggedInWidget> {
-  final _matrixService = getIt<MatrixService>();
-
   @override
   void initState() {
     super.initState();
@@ -86,40 +100,51 @@ class _HomeserverLoggedInWidgetState
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final userIdAsyncValue = ref.watch(loggedInUserIdProvider);
 
-    final userId = _matrixService.client.userID;
+    return userIdAsyncValue.map(
+      data: (data) {
+        final userId = data.valueOrNull;
 
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        if (userId != null)
-          Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(8),
-                child: QrImageView(
-                  data: userId,
-                  padding: EdgeInsets.zero,
-                  size: 280,
-                  key: const Key('QrImage'),
+        if (userId == null) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          children: [
+            const SizedBox(height: 20),
+            Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(8),
+                  child: QrImageView(
+                    data: userId,
+                    padding: EdgeInsets.zero,
+                    size: 240,
+                    key: const Key('QrImage'),
+                  ),
                 ),
               ),
             ),
-          ),
-        const SizedBox(height: 20),
-        Text(
-          '${_matrixService.client.userID}',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 10),
-        Text(
-          localizations.settingsMatrixQrTextPage,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(height: 80),
-      ],
+            const SizedBox(height: 20),
+            Text(userId, style: Theme.of(context).textTheme.bodyLarge),
+            const SizedBox(height: 10),
+            Text(
+              localizations.settingsMatrixQrTextPage,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 80),
+          ],
+        );
+      },
+      error: (error) {
+        return Text(error.valueOrNull.toString());
+      },
+      loading: (loading) {
+        return const CircularProgressIndicator();
+      },
     );
   }
 }

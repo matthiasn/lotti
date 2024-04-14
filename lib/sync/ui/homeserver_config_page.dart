@@ -6,6 +6,7 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
+import 'package:lotti/sync/state/matrix_login_provider.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -23,32 +24,8 @@ SliverWoltModalSheetPage homeServerConfigPage({
   final localizations = AppLocalizations.of(context)!;
 
   return WoltModalSheetPage(
-    stickyActionBar: Padding(
-      padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Center(
-              child: Text(localizations.settingsMatrixCancel),
-            ),
-          ),
-          const SizedBox(height: 8),
-          FilledButton(
-            key: const Key('matrix_login'),
-            onPressed: () {
-              getIt<MatrixService>().loginAndListen();
-              Future<void>.delayed(const Duration(milliseconds: 300))
-                  .then((value) => pageIndexNotifier.value = 1);
-            },
-            child: Text(
-              localizations.settingsMatrixLoginButtonLabel,
-              semanticsLabel: localizations.settingsMatrixLoginButtonLabel,
-            ),
-          ),
-        ],
-      ),
+    stickyActionBar: HomeserverConfigPageStickyActionBar(
+      pageIndexNotifier: pageIndexNotifier,
     ),
     topBarTitle: Text(
       localizations.settingsMatrixHomeserverConfigTitle,
@@ -67,6 +44,50 @@ SliverWoltModalSheetPage homeServerConfigPage({
       ),
     ),
   );
+}
+
+class HomeserverConfigPageStickyActionBar extends ConsumerWidget {
+  const HomeserverConfigPageStickyActionBar({
+    required this.pageIndexNotifier,
+    super.key,
+  });
+
+  final ValueNotifier<int> pageIndexNotifier;
+  @override
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return Padding(
+      padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          OutlinedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Center(
+              child: Text(localizations.settingsMatrixCancel),
+            ),
+          ),
+          const SizedBox(height: 8),
+          FilledButton(
+            key: const Key('matrix_login'),
+            onPressed: () async {
+              await ref.read(matrixLoginControllerProvider.notifier).login();
+              await Future<void>.delayed(const Duration(milliseconds: 300));
+              pageIndexNotifier.value = 1;
+            },
+            child: Text(
+              localizations.settingsMatrixLoginButtonLabel,
+              semanticsLabel: localizations.settingsMatrixLoginButtonLabel,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class HomeserverSettingsWidget extends ConsumerStatefulWidget {
@@ -94,7 +115,7 @@ class _HomeserverSettingsWidgetState
   void initState() {
     super.initState();
     if (_matrixService.isLoggedIn()) {
-      widget.pageIndexNotifier.value = widget.pageIndexNotifier.value + 1;
+      widget.pageIndexNotifier.value = 1;
     }
 
     _matrixService.loadConfig().then((persisted) {
