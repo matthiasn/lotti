@@ -78,15 +78,37 @@ class MatrixService {
   final incomingKeyVerificationController =
       StreamController<KeyVerification>.broadcast();
 
-  Future<void> loginAndListen() async {
+  Future<void> init() async {
     await loadConfig();
-    await login();
+    await connect();
+    if (_client.onLoginStateChanged.value == LoginState.loggedIn) {
+      await listen();
+    }
+  }
+
+  Future<void> listen() async {
     await startKeyVerificationListener();
     await listenToTimeline();
   }
 
+  Future<void> loginAndListen() async {
+    await loadConfig();
+    await login();
+    await listen();
+  }
+
   Client get client => _client;
-  Future<void> login() => matrixLogin(service: this);
+
+  Future<void> login() => matrixConnect(
+        service: this,
+        shouldAttemptLogin: true,
+      );
+
+  Future<void> connect() => matrixConnect(
+        service: this,
+        shouldAttemptLogin: false,
+      );
+
   Future<String?> joinRoom(String roomId) =>
       joinMatrixRoom(roomId: roomId, service: this);
 

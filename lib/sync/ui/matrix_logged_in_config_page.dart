@@ -107,7 +107,7 @@ class _HomeserverLoggedInWidgetState
         final userId = data.valueOrNull;
 
         if (userId == null) {
-          return const SizedBox.shrink();
+          return const CircularProgressIndicator();
         }
 
         return Column(
