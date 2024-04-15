@@ -26,7 +26,8 @@ Stream<LoginState> loginStateStream(LoginStateStreamRef ref) {
 @riverpod
 Future<String?> loggedInUserId(LoggedInUserIdRef ref) async {
   final matrixService = getIt<MatrixService>();
-  final loginState = ref.watch(loginStateStreamProvider).valueOrNull;
+  final loginState = ref.watch(loginStateStreamProvider).valueOrNull ??
+      matrixService.client.onLoginStateChanged.value;
 
   if (loginState == LoginState.loggedIn) {
     return matrixService.client.userID;

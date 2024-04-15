@@ -21,7 +21,7 @@ final loginStateStreamProvider = AutoDisposeStreamProvider<LoginState>.internal(
 );
 
 typedef LoginStateStreamRef = AutoDisposeStreamProviderRef<LoginState>;
-String _$loggedInUserIdHash() => r'e4c038bb0be41c5ae7749e5f0981dad4611394f7';
+String _$loggedInUserIdHash() => r'5461bb2f51c4fd99c3ccdbfab6cdf6e2aa0acacc';
 
 /// See also [loggedInUserId].
 @ProviderFor(loggedInUserId)

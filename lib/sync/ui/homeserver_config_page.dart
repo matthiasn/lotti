@@ -76,7 +76,6 @@ class HomeserverConfigPageStickyActionBar extends ConsumerWidget {
             key: const Key('matrix_login'),
             onPressed: () async {
               await ref.read(matrixLoginControllerProvider.notifier).login();
-              await Future<void>.delayed(const Duration(milliseconds: 300));
               pageIndexNotifier.value = 1;
             },
             child: Text(

@@ -54,8 +54,9 @@ Future<String> createMatrixDeviceName() async {
   return '$deviceName $dateHhMm ${uuid.v1().substring(0, 4)}';
 }
 
-Future<void> matrixLogin({
+Future<void> matrixConnect({
   required MatrixService service,
+  required bool shouldAttemptLogin,
 }) async {
   final loggingDb = getIt<LoggingDb>();
 
@@ -87,7 +88,7 @@ Future<void> matrixLogin({
       waitUntilLoadCompletedLoaded: false,
     );
 
-    if (!service.isLoggedIn()) {
+    if (!service.isLoggedIn() && shouldAttemptLogin) {
       final initialDeviceDisplayName =
           service.deviceDisplayName ?? await createMatrixDeviceName();
 
