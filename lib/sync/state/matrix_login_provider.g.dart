@@ -21,6 +21,20 @@ final loginStateStreamProvider = AutoDisposeStreamProvider<LoginState>.internal(
 );
 
 typedef LoginStateStreamRef = AutoDisposeStreamProviderRef<LoginState>;
+String _$isLoggedInHash() => r'e6fca2a8e06f31e155da7448053c88df2f721a12';
+
+/// See also [isLoggedIn].
+@ProviderFor(isLoggedIn)
+final isLoggedInProvider = AutoDisposeFutureProvider<bool>.internal(
+  isLoggedIn,
+  name: r'isLoggedInProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$isLoggedInHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef IsLoggedInRef = AutoDisposeFutureProviderRef<bool>;
 String _$loggedInUserIdHash() => r'5461bb2f51c4fd99c3ccdbfab6cdf6e2aa0acacc';
 
 /// See also [loggedInUserId].
