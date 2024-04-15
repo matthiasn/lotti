@@ -113,7 +113,9 @@ class _HomeserverSettingsWidgetState
   @override
   void initState() {
     super.initState();
-    if (_matrixService.isLoggedIn()) {
+
+    final isLoggedIn = ref.read(isLoggedInProvider).valueOrNull ?? false;
+    if (isLoggedIn) {
       widget.pageIndexNotifier.value = 1;
     }
 
@@ -212,7 +214,6 @@ class _HomeserverSettingsWidgetState
                   OutlinedButton(
                     key: const Key('matrix_config_delete'),
                     onPressed: () async {
-                      await _matrixService.logout();
                       await _matrixService.deleteConfig();
                       setState(() {
                         _dirty = false;
