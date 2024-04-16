@@ -9,6 +9,13 @@ part 'matrix_unverified_provider.g.dart';
 
 @riverpod
 class MatrixUnverifiedController extends _$MatrixUnverifiedController {
+  MatrixUnverifiedController() {
+    Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      build();
+      ref.onDispose(timer.cancel);
+    });
+  }
+
   final _matrixService = getIt<MatrixService>();
 
   @override
