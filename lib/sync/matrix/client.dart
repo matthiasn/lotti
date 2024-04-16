@@ -25,6 +25,8 @@ Client createMatrixClient({
     databaseBuilder: (_) async {
       final docDir = getIt<Directory>();
       final path = '${docDir.path}/matrix/';
+      // TODO(matthiasn): use MatrixSdkDatabase instead
+      // ignore: deprecated_member_use
       final db = HiveCollectionsDatabase(hiveDbName ?? 'lotti_sync', path);
       await db.open();
       return db;
