@@ -4,8 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/sync/matrix/matrix_service.dart';
+import 'package:lotti/sync/state/matrix_config_provider.dart';
 import 'package:lotti/sync/state/matrix_login_provider.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
@@ -105,10 +104,7 @@ class HomeserverSettingsWidget extends ConsumerStatefulWidget {
 class _HomeserverSettingsWidgetState
     extends ConsumerState<HomeserverSettingsWidget> {
   final _formKey = GlobalKey<FormBuilderState>();
-  final _matrixService = getIt<MatrixService>();
-
   bool _dirty = false;
-  MatrixConfig? _previous;
 
   @override
   void initState() {
@@ -118,21 +114,6 @@ class _HomeserverSettingsWidgetState
     if (isLoggedIn) {
       widget.pageIndexNotifier.value = 1;
     }
-
-    _matrixService.loadConfig().then((persisted) {
-      _previous = persisted;
-
-      if (persisted != null) {
-        _formKey.currentState?.patchValue({
-          matrixHomeServerKey: persisted.homeServer,
-          matrixUserKey: persisted.user,
-          matrixPasswordKey: persisted.password,
-          matrixRoomIdKey: persisted.roomId,
-        });
-
-        setState(() => _dirty = false);
-      }
-    });
   }
 
   void onFormChanged() {
@@ -151,17 +132,18 @@ class _HomeserverSettingsWidgetState
     currentState.save();
 
     if (currentState.validate()) {
+      final previous = ref.read(matrixConfigControllerProvider).value;
+
       final config = MatrixConfig(
         homeServer: formData[matrixHomeServerKey] as String? ??
-            _previous?.homeServer ??
+            previous?.homeServer ??
             '',
-        user: formData[matrixUserKey] as String? ?? _previous?.user ?? '',
+        user: formData[matrixUserKey] as String? ?? previous?.user ?? '',
         password:
-            formData[matrixPasswordKey] as String? ?? _previous?.password ?? '',
-        roomId: formData[matrixRoomIdKey] as String? ?? _previous?.roomId ?? '',
+            formData[matrixPasswordKey] as String? ?? previous?.password ?? '',
       );
 
-      await _matrixService.setConfig(config);
+      await ref.read(matrixConfigControllerProvider.notifier).setConfig(config);
       setState(() => _dirty = false);
     }
   }
@@ -171,84 +153,99 @@ class _HomeserverSettingsWidgetState
     final localizations = AppLocalizations.of(context)!;
     void maybePop() => Navigator.of(context).maybePop();
 
-    return FormBuilder(
-      key: _formKey,
-      autovalidateMode: AutovalidateMode.disabled,
-      onChanged: onFormChanged,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          FormBuilderTextField(
-            name: matrixHomeServerKey,
-            validator: FormBuilderValidators.required(),
-            decoration: inputDecoration(
-              labelText: localizations.settingsMatrixHomeServerLabel,
-              themeData: Theme.of(context),
-            ),
-          ),
-          const SizedBox(height: 20),
-          FormBuilderTextField(
-            name: matrixUserKey,
-            validator: FormBuilderValidators.required(),
-            decoration: inputDecoration(
-              labelText: localizations.settingsMatrixUserLabel,
-              themeData: Theme.of(context),
-            ),
-          ),
-          const SizedBox(height: 20),
-          FormBuilderTextField(
-            name: matrixPasswordKey,
-            obscureText: true,
-            validator: FormBuilderValidators.required(),
-            decoration: inputDecoration(
-              labelText: localizations.settingsMatrixPasswordLabel,
-              themeData: Theme.of(context),
-            ),
-          ),
-          SizedBox(
-            height: 80,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (_previous != null)
-                  OutlinedButton(
-                    key: const Key('matrix_config_delete'),
-                    onPressed: () async {
-                      await _matrixService.deleteConfig();
-                      setState(() {
-                        _dirty = false;
-                      });
-                      maybePop();
-                    },
-                    child: Text(
-                      localizations.settingsMatrixDeleteLabel,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+    final config = ref.watch(matrixConfigControllerProvider);
+
+    return config.map(
+      data: (data) {
+        final config = data.value;
+        return FormBuilder(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.disabled,
+          onChanged: onFormChanged,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              FormBuilderTextField(
+                name: matrixHomeServerKey,
+                validator: FormBuilderValidators.required(),
+                initialValue: config?.homeServer,
+                decoration: inputDecoration(
+                  labelText: localizations.settingsMatrixHomeServerLabel,
+                  themeData: Theme.of(context),
+                ),
+              ),
+              const SizedBox(height: 20),
+              FormBuilderTextField(
+                name: matrixUserKey,
+                validator: FormBuilderValidators.required(),
+                initialValue: config?.user,
+                decoration: inputDecoration(
+                  labelText: localizations.settingsMatrixUserLabel,
+                  themeData: Theme.of(context),
+                ),
+              ),
+              const SizedBox(height: 20),
+              FormBuilderTextField(
+                name: matrixPasswordKey,
+                initialValue: config?.password,
+                obscureText: true,
+                validator: FormBuilderValidators.required(),
+                decoration: inputDecoration(
+                  labelText: localizations.settingsMatrixPasswordLabel,
+                  themeData: Theme.of(context),
+                ),
+              ),
+              SizedBox(
+                height: 80,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (config != null)
+                      OutlinedButton(
+                        key: const Key('matrix_config_delete'),
+                        onPressed: () async {
+                          await ref
+                              .read(matrixConfigControllerProvider.notifier)
+                              .deleteConfig();
+
+                          setState(() {
+                            _dirty = false;
+                          });
+                          maybePop();
+                        },
+                        child: Text(
+                          localizations.settingsMatrixDeleteLabel,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          semanticsLabel: 'Delete Matrix Config',
+                        ),
                       ),
-                      semanticsLabel: 'Delete Matrix Config',
-                    ),
-                  ),
-                if (_dirty)
-                  OutlinedButton(
-                    key: const Key('matrix_config_save'),
-                    onPressed: () {
-                      onSavePressed();
-                      maybePop();
-                    },
-                    child: Text(
-                      localizations.settingsMatrixSaveLabel,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                    if (_dirty)
+                      OutlinedButton(
+                        key: const Key('matrix_config_save'),
+                        onPressed: () {
+                          onSavePressed();
+                          maybePop();
+                        },
+                        child: Text(
+                          localizations.settingsMatrixSaveLabel,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          semanticsLabel: 'Save Matrix Config',
+                        ),
                       ),
-                      semanticsLabel: 'Save Matrix Config',
-                    ),
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 80),
+            ],
           ),
-          const SizedBox(height: 80),
-        ],
-      ),
+        );
+      },
+      error: (_) => const CircularProgressIndicator(),
+      loading: (_) => const CircularProgressIndicator(),
     );
   }
 }
