@@ -204,6 +204,7 @@
   "settingsMatrixTitle": "Matrix Sync Settings",
   "settingsMatrixHomeserverConfigTitle": "Matrix Homeserver Setup",
   "settingsMatrixRoomConfigTitle": "Matrix Sync Room Setup",
+  "settingsMatrixStatsTitle": "Matrix Stats",
   "settingsMatrixCancel": "Cancel",
   "settingsMatrixDone": "Done",
   "settingsMatrixNextPage": "Next Page",

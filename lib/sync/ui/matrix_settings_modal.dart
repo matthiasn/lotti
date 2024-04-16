@@ -4,6 +4,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/ui/homeserver_config_page.dart';
 import 'package:lotti/sync/ui/matrix_logged_in_config_page.dart';
+import 'package:lotti/sync/ui/matrix_stats_page.dart';
 import 'package:lotti/sync/ui/room_config_page.dart';
 import 'package:lotti/sync/ui/unverified_devices_page.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
@@ -49,6 +50,11 @@ class MatrixSettingsCard extends StatelessWidget {
                 pageIndexNotifier: pageIndexNotifier,
               ),
               unverifiedDevicesPage(
+                context: modalSheetContext,
+                textTheme: textTheme,
+                pageIndexNotifier: pageIndexNotifier,
+              ),
+              matrixStatsPage(
                 context: modalSheetContext,
                 textTheme: textTheme,
                 pageIndexNotifier: pageIndexNotifier,
