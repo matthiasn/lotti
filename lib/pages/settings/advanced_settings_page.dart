@@ -28,10 +28,6 @@ class AdvancedSettingsPage extends StatelessWidget {
               title: localizations.settingsSyncCfgTitle,
               path: '/settings/advanced/sync_settings',
             ),
-            SettingsNavCard(
-              title: localizations.settingsMatrixTitle,
-              path: '/settings/advanced/matrix_settings',
-            ),
             const MatrixSettingsCard(),
             SettingsNavCard(
               trailing: OutboxBadgeIcon(
