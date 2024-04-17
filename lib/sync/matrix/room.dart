@@ -33,7 +33,7 @@ Future<String?> joinMatrixRoom({
 
     service
       ..syncRoom = syncRoom
-      ..syncRoomId = joinRes;
+      ..syncRoomId = roomId;
 
     return joinRes;
   } catch (e, stackTrace) {
@@ -49,10 +49,12 @@ Future<String?> joinMatrixRoom({
 }
 
 Future<String> createMatrixRoom({
-  required Client client,
+  required MatrixService service,
   List<String>? invite,
 }) async {
   final name = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
+  final client = service.client;
+
   final roomId = await client.createRoom(
     visibility: Visibility.private,
     name: name,
@@ -63,6 +65,8 @@ Future<String> createMatrixRoom({
   await room?.enableEncryption();
 
   await saveMatrixRoom(client: client, roomId: roomId);
+  await joinMatrixRoom(roomId: roomId, service: service);
+
   return roomId;
 }
 
@@ -72,8 +76,12 @@ Future<void> leaveMatrixRoom({
   final roomId = await getMatrixRoom(client: client);
 
   if (roomId != null) {
-    await client.leaveRoom(roomId);
     await getIt<SettingsDb>().removeSettingsItem(matrixRoomKey);
+    try {
+      await client.leaveRoom(roomId);
+    } catch (e) {
+      debugPrint(e.toString());
+    }
   }
 }
 

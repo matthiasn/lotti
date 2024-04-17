@@ -49,7 +49,6 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
           matrixHomeServerKey: persisted.homeServer,
           matrixUserKey: persisted.user,
           matrixPasswordKey: persisted.password,
-          matrixRoomIdKey: persisted.roomId,
         });
 
         setState(() => _dirty = false);
@@ -80,7 +79,6 @@ class _MatrixSettingsWidgetState extends ConsumerState<MatrixSettingsWidget> {
         user: formData[matrixUserKey] as String? ?? _previous?.user ?? '',
         password:
             formData[matrixPasswordKey] as String? ?? _previous?.password ?? '',
-        roomId: formData[matrixRoomIdKey] as String? ?? _previous?.roomId ?? '',
       );
 
       await _matrixService.setConfig(config);

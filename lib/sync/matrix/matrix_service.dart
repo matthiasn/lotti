@@ -112,6 +112,11 @@ class MatrixService {
   Future<String?> joinRoom(String roomId) =>
       joinMatrixRoom(roomId: roomId, service: this);
 
+  Future<void> saveRoom(String roomId) => saveMatrixRoom(
+        roomId: roomId,
+        client: client,
+      );
+
   bool isLoggedIn() {
     // TODO(unassigned): find non-deprecated solution
     // ignore: deprecated_member_use
@@ -126,7 +131,7 @@ class MatrixService {
     List<String>? invite,
   }) =>
       createMatrixRoom(
-        client: _client,
+        service: this,
         invite: invite,
       );
 

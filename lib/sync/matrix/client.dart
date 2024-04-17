@@ -109,7 +109,7 @@ Future<void> matrixConnect({
       );
     }
 
-    final roomId = matrixConfig.roomId;
+    final roomId = await service.getRoom();
 
     if (roomId != null) {
       await service.joinRoom(roomId);
