@@ -1,8 +1,13 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/sync/state/matrix_room_provider.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 SliverWoltModalSheetPage roomConfigPage({
@@ -49,39 +54,113 @@ SliverWoltModalSheetPage roomConfigPage({
     child: Padding(
       padding: const EdgeInsets.all(WoltModalConfig.pagePadding) +
           const EdgeInsets.only(bottom: 80),
-      child: const RoomSetup(),
+      child: const RoomConfig(),
     ),
   );
 }
 
-class RoomSetup extends ConsumerWidget {
-  const RoomSetup({super.key});
+class RoomConfig extends ConsumerStatefulWidget {
+  const RoomConfig({super.key});
 
   @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  ConsumerState createState() => _RoomConfigState();
+}
+
+class _RoomConfigState extends ConsumerState<RoomConfig> {
+  final _qrKey = GlobalKey(debugLabel: 'matrix_QR_key');
+  QRViewController? controller;
+  bool showCam = false;
+  final joinRoomController = TextEditingController();
+  String manualRoomId = '';
+
+  @override
+  Widget build(BuildContext context) {
     final room = ref.watch(matrixRoomControllerProvider).value;
     final roomNotifier = ref.read(matrixRoomControllerProvider.notifier);
     final isRoomDefined = room != null;
 
+    final camDimension =
+        max(MediaQuery.of(context).size.width - 100, 300).toDouble();
+
+    void onQRViewCreated(QRViewController controller) {
+      this.controller = controller;
+      controller.scannedDataStream.listen((scanData) async {
+        final userId = scanData.code;
+
+        debugPrint('scanned: $userId');
+        if (userId != null) {
+          await roomNotifier.inviteToRoom(userId);
+          setState(() {
+            showCam = false;
+          });
+        }
+      });
+    }
+
+    Future<void> invitePressed() async {
+      setState(() {
+        showCam = true;
+      });
+    }
+
+    Future<void> joinRoom() async {
+      await roomNotifier.joinRoom(manualRoomId);
+    }
+
     return Column(
       children: [
-        if (isRoomDefined) Text(room),
+        if (isRoomDefined) SelectableText(room),
         const SizedBox(height: 20),
-        if (isRoomDefined)
+        if (isRoomDefined) ...[
+          OutlinedButton(
+            key: const Key('matrix_invite_to_room'),
+            onPressed: invitePressed,
+            child: const Text('Invite'),
+          ),
+          const SizedBox(height: 20),
           OutlinedButton(
             key: const Key('matrix_leave_room'),
             onPressed: roomNotifier.leaveRoom,
             child: const Text('Leave room'),
-          )
-        else
+          ),
+          const SizedBox(height: 20),
+          if (showCam && isMobile)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                height: camDimension,
+                width: camDimension,
+                child: QRView(
+                  key: _qrKey,
+                  onQRViewCreated: onQRViewCreated,
+                ),
+              ),
+            ),
+        ] else ...[
+          TextField(
+            controller: joinRoomController,
+            onChanged: (s) {
+              setState(() {
+                manualRoomId = s;
+              });
+            },
+          ),
+          if (manualRoomId.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: OutlinedButton(
+                key: const Key('matrix_join_room'),
+                onPressed: joinRoom,
+                child: const Text('Join room'),
+              ),
+            ),
+          const SizedBox(height: 20),
           OutlinedButton(
             key: const Key('matrix_create_room'),
             onPressed: roomNotifier.createRoom,
             child: const Text('Create room'),
           ),
+        ],
       ],
     );
   }

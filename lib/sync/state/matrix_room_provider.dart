@@ -20,6 +20,15 @@ class MatrixRoomController extends _$MatrixRoomController {
     ref.invalidateSelf();
   }
 
+  Future<void> inviteToRoom(String userId) async {
+    await _matrixService.inviteToSyncRoom(userId: userId);
+  }
+
+  Future<void> joinRoom(String roomId) async {
+    await _matrixService.saveRoom(roomId);
+    await _matrixService.joinRoom(roomId);
+  }
+
   Future<void> leaveRoom() async {
     await _matrixService.leaveRoom();
     ref.invalidateSelf();

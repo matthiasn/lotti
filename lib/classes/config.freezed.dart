@@ -238,7 +238,6 @@ mixin _$MatrixConfig {
   String get homeServer => throw _privateConstructorUsedError;
   String get user => throw _privateConstructorUsedError;
   String get password => throw _privateConstructorUsedError;
-  String? get roomId => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -252,7 +251,7 @@ abstract class $MatrixConfigCopyWith<$Res> {
           MatrixConfig value, $Res Function(MatrixConfig) then) =
       _$MatrixConfigCopyWithImpl<$Res, MatrixConfig>;
   @useResult
-  $Res call({String homeServer, String user, String password, String? roomId});
+  $Res call({String homeServer, String user, String password});
 }
 
 /// @nodoc
@@ -271,7 +270,6 @@ class _$MatrixConfigCopyWithImpl<$Res, $Val extends MatrixConfig>
     Object? homeServer = null,
     Object? user = null,
     Object? password = null,
-    Object? roomId = freezed,
   }) {
     return _then(_value.copyWith(
       homeServer: null == homeServer
@@ -286,10 +284,6 @@ class _$MatrixConfigCopyWithImpl<$Res, $Val extends MatrixConfig>
           ? _value.password
           : password // ignore: cast_nullable_to_non_nullable
               as String,
-      roomId: freezed == roomId
-          ? _value.roomId
-          : roomId // ignore: cast_nullable_to_non_nullable
-              as String?,
     ) as $Val);
   }
 }
@@ -302,7 +296,7 @@ abstract class _$$MatrixConfigImplCopyWith<$Res>
       __$$MatrixConfigImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String homeServer, String user, String password, String? roomId});
+  $Res call({String homeServer, String user, String password});
 }
 
 /// @nodoc
@@ -319,7 +313,6 @@ class __$$MatrixConfigImplCopyWithImpl<$Res>
     Object? homeServer = null,
     Object? user = null,
     Object? password = null,
-    Object? roomId = freezed,
   }) {
     return _then(_$MatrixConfigImpl(
       homeServer: null == homeServer
@@ -334,10 +327,6 @@ class __$$MatrixConfigImplCopyWithImpl<$Res>
           ? _value.password
           : password // ignore: cast_nullable_to_non_nullable
               as String,
-      roomId: freezed == roomId
-          ? _value.roomId
-          : roomId // ignore: cast_nullable_to_non_nullable
-              as String?,
     ));
   }
 }
@@ -346,10 +335,7 @@ class __$$MatrixConfigImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$MatrixConfigImpl implements _MatrixConfig {
   const _$MatrixConfigImpl(
-      {required this.homeServer,
-      required this.user,
-      required this.password,
-      this.roomId});
+      {required this.homeServer, required this.user, required this.password});
 
   factory _$MatrixConfigImpl.fromJson(Map<String, dynamic> json) =>
       _$$MatrixConfigImplFromJson(json);
@@ -360,12 +346,10 @@ class _$MatrixConfigImpl implements _MatrixConfig {
   final String user;
   @override
   final String password;
-  @override
-  final String? roomId;
 
   @override
   String toString() {
-    return 'MatrixConfig(homeServer: $homeServer, user: $user, password: $password, roomId: $roomId)';
+    return 'MatrixConfig(homeServer: $homeServer, user: $user, password: $password)';
   }
 
   @override
@@ -377,14 +361,12 @@ class _$MatrixConfigImpl implements _MatrixConfig {
                 other.homeServer == homeServer) &&
             (identical(other.user, user) || other.user == user) &&
             (identical(other.password, password) ||
-                other.password == password) &&
-            (identical(other.roomId, roomId) || other.roomId == roomId));
+                other.password == password));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, homeServer, user, password, roomId);
+  int get hashCode => Object.hash(runtimeType, homeServer, user, password);
 
   @JsonKey(ignore: true)
   @override
@@ -404,8 +386,7 @@ abstract class _MatrixConfig implements MatrixConfig {
   const factory _MatrixConfig(
       {required final String homeServer,
       required final String user,
-      required final String password,
-      final String? roomId}) = _$MatrixConfigImpl;
+      required final String password}) = _$MatrixConfigImpl;
 
   factory _MatrixConfig.fromJson(Map<String, dynamic> json) =
       _$MatrixConfigImpl.fromJson;
@@ -416,8 +397,6 @@ abstract class _MatrixConfig implements MatrixConfig {
   String get user;
   @override
   String get password;
-  @override
-  String? get roomId;
   @override
   @JsonKey(ignore: true)
   _$$MatrixConfigImplCopyWith<_$MatrixConfigImpl> get copyWith =>

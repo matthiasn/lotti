@@ -31,8 +31,7 @@ Future<void> sendMessage(
   try {
     final msg = json.encode(syncMessage);
     final syncRoom = service.syncRoom;
-    final roomId =
-        myRoomId ?? service.syncRoomId ?? service.matrixConfig?.roomId;
+    final roomId = myRoomId ?? service.syncRoomId;
 
     void incrementSentCount() {
       service.sentCount = service.sentCount + 1;
