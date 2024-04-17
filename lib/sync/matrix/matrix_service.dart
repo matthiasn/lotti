@@ -130,6 +130,10 @@ class MatrixService {
         invite: invite,
       );
 
+  Future<String?> getRoom() => getMatrixRoom(client: _client);
+
+  Future<void> leaveRoom() => leaveMatrixRoom(client: _client);
+
   Future<void> inviteToSyncRoom({
     required String userId,
   }) =>

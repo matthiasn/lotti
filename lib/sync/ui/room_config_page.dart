@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/sync/matrix/matrix_service.dart';
+import 'package:lotti/sync/state/matrix_room_provider.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -63,17 +62,26 @@ class RoomSetup extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final matrixService = getIt<MatrixService>();
+    final room = ref.watch(matrixRoomControllerProvider).value;
+    final roomNotifier = ref.read(matrixRoomControllerProvider.notifier);
+    final isRoomDefined = room != null;
 
     return Column(
       children: [
-        OutlinedButton(
-          key: const Key('matrix_create_room'),
-          onPressed: () async {
-            await matrixService.createRoom();
-          },
-          child: const Text('Create room'),
-        ),
+        if (isRoomDefined) Text(room),
+        const SizedBox(height: 20),
+        if (isRoomDefined)
+          OutlinedButton(
+            key: const Key('matrix_leave_room'),
+            onPressed: roomNotifier.leaveRoom,
+            child: const Text('Leave room'),
+          )
+        else
+          OutlinedButton(
+            key: const Key('matrix_create_room'),
+            onPressed: roomNotifier.createRoom,
+            child: const Text('Create room'),
+          ),
       ],
     );
   }

@@ -7,7 +7,7 @@ part of 'matrix_unverified_provider.dart';
 // **************************************************************************
 
 String _$matrixUnverifiedControllerHash() =>
-    r'00600bf6cbe8a4fcd67784d2ad9e5c2beef51781';
+    r'94a4f7b479c7716c74343211d9e392e510ecde80';
 
 /// See also [MatrixUnverifiedController].
 @ProviderFor(MatrixUnverifiedController)
