@@ -35,6 +35,12 @@ Future<String?> joinMatrixRoom({
       ..syncRoom = syncRoom
       ..syncRoomId = roomId;
 
+    loggingDb.captureEvent(
+      'joined $roomId $joinRes',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'joinRoom',
+    );
+
     return joinRes;
   } catch (e, stackTrace) {
     debugPrint('$e');
