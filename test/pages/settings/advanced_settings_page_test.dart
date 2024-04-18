@@ -45,8 +45,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Advanced Settings'), findsOneWidget);
-
-      expect(find.text('Sync Assistant'), findsOneWidget);
       expect(find.text('Sync Outbox'), findsOneWidget);
       expect(find.text('Sync Conflicts'), findsOneWidget);
       expect(find.text('Logs'), findsOneWidget);
