@@ -26,7 +26,6 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/imap_client.dart';
-import 'package:lotti/sync/inbox/inbox_service.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 
@@ -69,7 +68,6 @@ Future<void> registerSingletons() async {
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
     ..registerSingleton<HealthImport>(HealthImport())
-    ..registerSingleton<InboxService>(InboxService())
     ..registerSingleton<LinkService>(LinkService())
     ..registerSingleton<NotificationService>(NotificationService())
     ..registerSingleton<Maintenance>(Maintenance())
