@@ -24,10 +24,6 @@ class AdvancedSettingsPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SettingsNavCard(
-              title: localizations.settingsSyncCfgTitle,
-              path: '/settings/advanced/sync_settings',
-            ),
             const MatrixSettingsCard(),
             SettingsNavCard(
               trailing: OutboxBadgeIcon(
