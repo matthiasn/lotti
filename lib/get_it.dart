@@ -75,7 +75,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<Maintenance>(Maintenance())
     ..registerSingleton<NavService>(NavService());
 
-  unawaited(getIt<MatrixService>().loginAndListen());
+  unawaited(getIt<MatrixService>().init());
 
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
 }

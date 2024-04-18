@@ -23,7 +23,6 @@ import 'package:lotti/pages/settings/measurables/measurables_page.dart';
 import 'package:lotti/pages/settings/outbox/outbox_monitor.dart';
 import 'package:lotti/pages/settings/settings_page.dart';
 import 'package:lotti/pages/settings/speech/speech_settings_page.dart';
-import 'package:lotti/pages/settings/sync/matrix_settings_page.dart';
 import 'package:lotti/pages/settings/sync/sync_assistant_page.dart';
 import 'package:lotti/pages/settings/tags/create_tag_page.dart';
 import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
@@ -250,12 +249,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-sync_settings'),
           child: SyncAssistantPage(),
-        ),
-
-      if (pathContains('advanced/matrix_settings'))
-        const BeamPage(
-          key: ValueKey('settings-matrix_settings'),
-          child: MatrixSettingsPage(),
         ),
 
       if (pathContains('advanced/outbox_monitor'))

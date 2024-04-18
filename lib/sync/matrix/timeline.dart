@@ -61,8 +61,13 @@ Future<void> processNewTimelineEvents({
 
   try {
     final lastReadEventContextId = service.lastReadEventContextId;
+    await service.client.sync();
+    final hasMessage = await service.syncRoom
+            ?.getEventById(lastReadEventContextId.toString()) !=
+        null;
+
     final timeline = await service.syncRoom?.getTimeline(
-      eventContextId: lastReadEventContextId,
+      eventContextId: hasMessage ? lastReadEventContextId : null,
     );
 
     if (timeline == null) {
@@ -102,10 +107,10 @@ Future<void> processNewTimelineEvents({
       try {
         if (eventId.startsWith(r'$')) {
           service.lastReadEventContextId = eventId;
+          await setLastReadMatrixEventId(eventId);
         }
 
         await timeline.setReadMarker(eventId: eventId);
-        await setLastReadMatrixEventId(eventId);
       } catch (e) {
         debugPrint('$e');
       }
