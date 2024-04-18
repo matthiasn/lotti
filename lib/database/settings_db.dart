@@ -34,6 +34,13 @@ class SettingsDb extends _$SettingsDb {
     return into(settings).insertOnConflictUpdate(settingsItem);
   }
 
+  Future<void> removeSettingsItem(String configKey) async {
+    final existing = await watchSettingsItemByKey(configKey).first;
+    if (existing.isNotEmpty) {
+      await delete(settings).delete(existing.first);
+    }
+  }
+
   Stream<List<SettingsItem>> watchSettingsItemByKey(String configKey) {
     return settingsItemByKey(configKey).watch();
   }

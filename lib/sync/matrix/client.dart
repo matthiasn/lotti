@@ -25,6 +25,8 @@ Client createMatrixClient({
     databaseBuilder: (_) async {
       final docDir = getIt<Directory>();
       final path = '${docDir.path}/matrix/';
+      // TODO(matthiasn): use MatrixSdkDatabase instead
+      // ignore: deprecated_member_use
       final db = HiveCollectionsDatabase(hiveDbName ?? 'lotti_sync', path);
       await db.open();
       return db;
@@ -54,8 +56,9 @@ Future<String> createMatrixDeviceName() async {
   return '$deviceName $dateHhMm ${uuid.v1().substring(0, 4)}';
 }
 
-Future<void> matrixLogin({
+Future<void> matrixConnect({
   required MatrixService service,
+  required bool shouldAttemptLogin,
 }) async {
   final loggingDb = getIt<LoggingDb>();
 
@@ -87,7 +90,7 @@ Future<void> matrixLogin({
       waitUntilLoadCompletedLoaded: false,
     );
 
-    if (!service.isLoggedIn()) {
+    if (!service.isLoggedIn() && shouldAttemptLogin) {
       final initialDeviceDisplayName =
           service.deviceDisplayName ?? await createMatrixDeviceName();
 
@@ -106,7 +109,7 @@ Future<void> matrixLogin({
       );
     }
 
-    final roomId = matrixConfig.roomId;
+    final roomId = await service.getRoom();
 
     if (roomId != null) {
       await service.joinRoom(roomId);
