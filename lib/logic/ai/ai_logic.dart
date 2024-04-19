@@ -24,18 +24,12 @@ class AiLogic {
     }
 
     final text = headline.isNotEmpty ? '#$headline\n\n$markdown' : markdown;
-    debugPrint('${DateTime.now()} create Embedding document');
-
-    final doc = Document(pageContent: text);
-    debugPrint('${DateTime.now()} Embedding starting');
-
+    debugPrint('${DateTime.now()} Embedding started');
     final data = await _client.generateEmbedding(
       request: GenerateEmbeddingRequest(
-        model: 'llama2:13b',
-        prompt: doc.pageContent,
+        model: 'llama3:8b',
+        prompt: Document(pageContent: text).pageContent,
         options: const RequestOptions(
-          numGpu: 24,
-          embeddingOnly: true,
           useMmap: true,
         ),
       ),
