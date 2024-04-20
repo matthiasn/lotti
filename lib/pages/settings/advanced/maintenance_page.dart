@@ -5,7 +5,6 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
 class MaintenancePage extends StatelessWidget {
@@ -57,18 +56,6 @@ class MaintenancePage extends StatelessWidget {
               SettingsCard(
                 title: localizations.maintenancePurgeDeleted,
                 onTap: db.purgeDeleted,
-              ),
-              SettingsCard(
-                title: localizations.maintenanceReprocessSync,
-                onTap: () => getIt<SyncConfigService>().resetOffset(),
-              ),
-              SettingsCard(
-                title: localizations.maintenanceSyncSkip,
-                onTap: () => getIt<SyncConfigService>().resetOffset(),
-              ),
-              SettingsCard(
-                title: localizations.maintenanceResetHostId,
-                onTap: () => getIt<SyncConfigService>().resetHostId(),
               ),
               SettingsCard(
                 title: localizations.maintenanceCancelNotifications,

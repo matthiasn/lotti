@@ -19,13 +19,11 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
-import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 
@@ -57,10 +55,8 @@ Future<void> registerSingletons() async {
     ..registerSingleton<TagsService>(TagsService())
     ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())
     ..registerSingleton<SyncDatabase>(getSyncDatabase())
-    ..registerSingleton<ImapClientManager>(ImapClientManager())
     ..registerSingleton<AsrService>(AsrService())
     ..registerSingleton<VectorClockService>(VectorClockService())
-    ..registerSingleton<SyncConfigService>(SyncConfigService())
     ..registerSingleton<TimeService>(TimeService())
     ..registerSingleton<OutboxService>(OutboxService())
     ..registerSingleton<MatrixService>(MatrixService())
