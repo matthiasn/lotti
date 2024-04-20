@@ -59,11 +59,12 @@ Future<void> main() async {
 
     runApp(ProviderScope(child: MyBeamerApp()));
   }, (Object error, StackTrace stackTrace) {
-    getIt<LoggingDb>().captureException(
-      error,
-      domain: 'MAIN',
-      subDomain: 'runZonedGuarded',
-      stackTrace: stackTrace,
-    );
+    debugPrint('$error, $stackTrace');
+    // getIt<LoggingDb>().captureException(
+    //   error,
+    //   domain: 'MAIN',
+    //   subDomain: 'runZonedGuarded',
+    //   stackTrace: stackTrace,
+    // );
   });
 }

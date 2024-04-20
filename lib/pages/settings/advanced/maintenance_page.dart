@@ -71,6 +71,10 @@ class MaintenancePage extends StatelessWidget {
                 title: context.messages.maintenanceReSync10K,
                 onTap: () => getIt<Maintenance>().reSyncLastMessages(10000),
               ),
+              SettingsCard(
+                title: context.messages.maintenanceEmbedAudio1K,
+                onTap: () => getIt<Maintenance>().addToVectorDatabase(1000),
+              ),
             ],
           ),
         );

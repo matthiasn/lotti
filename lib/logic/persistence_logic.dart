@@ -1073,13 +1073,9 @@ class PersistenceLogic {
     bool enqueueSync = false,
   }) async {
     try {
-      unawaited(
-        getIt<AiLogic>().embed(
-          journalEntity,
-        ),
-      );
-
       await _journalDb.updateJournalEntity(journalEntity);
+
+      unawaited(getIt<AiLogic>().embed(journalEntity));
 
       await getIt<Fts5Db>().insertText(
         journalEntity,

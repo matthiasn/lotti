@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/common.dart';
@@ -7,6 +10,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/asr_service.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -53,6 +57,25 @@ class Maintenance {
             status: SyncEntryStatus.update,
           ),
         );
+      }
+    }
+  }
+
+  Future<void> addToVectorDatabase(int count) async {
+    final aiLogic = getIt<AiLogic>();
+    const pageSize = 100;
+    final pages = (count / pageSize).ceil();
+
+    for (var page = 0; page <= pages; page++) {
+      final dbEntities =
+          await _db.orderedAudioEntries(pageSize, page * pageSize).get();
+      final entries = entityStreamMapper(dbEntities);
+      for (final entry in entries) {
+        try {
+          await aiLogic.embed(entry);
+        } catch (e) {
+          debugPrint('$e');
+        }
       }
     }
   }
