@@ -105,14 +105,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-  basic_utils:
-    dependency: transitive
-    description:
-      name: basic_utils
-      sha256: "2064b21d3c41ed7654bc82cc476fd65542e04d60059b74d5eed490a4da08fc6c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.7.0"
   beamer:
     dependency: "direct main"
     description:
@@ -610,22 +602,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.4"
-  enough_convert:
-    dependency: transitive
-    description:
-      name: enough_convert
-      sha256: c67d85ca21aaa0648f155907362430701db41f7ec8e6501a58ad9cd9d8569d01
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.6.0"
-  enough_mail:
-    dependency: "direct main"
-    description:
-      name: enough_mail
-      sha256: a88d8c56907caeffdebc4cf34f3a5665c09a8d7496ef5e09b3166f41cf409f81
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.6"
   enum_to_string:
     dependency: "direct main"
     description:
@@ -642,14 +618,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.5"
-  event_bus:
-    dependency: transitive
-    description:
-      name: event_bus
-      sha256: "44baa799834f4c803921873e7446a2add0f3efa45e101a054b1f0ab9b95f8edc"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.0"
   exif:
     dependency: "direct main"
     description:

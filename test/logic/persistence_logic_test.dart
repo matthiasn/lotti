@@ -16,7 +16,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
@@ -30,8 +29,6 @@ import 'package:path_provider/path_provider.dart';
 
 import '../helpers/path_provider.dart';
 import '../mocks/mocks.dart';
-import '../mocks/sync_config_test_mocks.dart';
-import '../test_data/sync_config_test_data.dart';
 import '../test_data/test_data.dart';
 
 void main() {
@@ -68,10 +65,6 @@ void main() {
       final journalDb = JournalDb(inMemoryDatabase: true);
       await initConfigFlags(journalDb, inMemoryDatabase: true);
 
-      final syncConfigMock = MockSyncConfigService();
-      when(syncConfigMock.getSyncConfig)
-          .thenAnswer((_) async => testSyncConfigConfigured);
-
       when(() => secureStorageMock.readValue(hostKey))
           .thenAnswer((_) async => 'some_host');
       when(() => secureStorageMock.readValue(nextAvailableCounterKey))
@@ -107,7 +100,6 @@ void main() {
         ..registerSingleton<JournalDb>(journalDb)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<TagsService>(TagsService())
-        ..registerSingleton<SyncConfigService>(syncConfigMock)
         ..registerSingleton<OutboxService>(OutboxService())
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<NotificationService>(mockNotificationService)

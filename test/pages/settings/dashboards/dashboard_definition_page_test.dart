@@ -10,7 +10,6 @@ import 'package:lotti/pages/settings/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/widgets/sync/imap_config_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -512,4 +511,11 @@ void main() {
       await tester.pumpAndSettle();
     });
   });
+}
+
+String getTrimmed(Map<String, dynamic>? formData, String k) {
+  if (formData == null || formData[k] == null) {
+    return '';
+  }
+  return formData[k].toString().trim();
 }

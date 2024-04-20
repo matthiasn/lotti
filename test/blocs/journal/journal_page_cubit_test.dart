@@ -11,7 +11,6 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
@@ -22,7 +21,6 @@ import 'package:lotti/sync/utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
-import '../../mocks/sync_config_test_mocks.dart';
 import '../../test_data/sync_config_test_data.dart';
 
 void main() {
@@ -37,10 +35,6 @@ void main() {
       final mockConnectivityService = MockConnectivityService();
       final mockFgBgService = MockFgBgService();
       final mockTimeService = MockTimeService();
-
-      final syncConfigMock = MockSyncConfigService();
-      when(syncConfigMock.getSyncConfig)
-          .thenAnswer((_) async => testSyncConfigConfigured);
 
       when(() => mockConnectivityService.connectedStream).thenAnswer(
         (_) => Stream<bool>.fromIterable([true]),
@@ -67,7 +61,6 @@ void main() {
         ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<FgBgService>(mockFgBgService)
-        ..registerSingleton<SyncConfigService>(syncConfigMock)
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
