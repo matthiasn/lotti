@@ -1,10 +1,10 @@
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
@@ -38,7 +38,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
   @override
   Widget build(BuildContext context) {
     void maybePop() => Navigator.of(context).maybePop();
-    final localizations = AppLocalizations.of(context)!;
+
     final item = widget.dataType;
 
     Future<void> onSavePressed() async {
@@ -76,7 +76,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  localizations.settingsMeasurableSaveLabel,
+                  context.messages.settingsMeasurableSaveLabel,
                   style: saveButtonStyle(Theme.of(context)),
                   semanticsLabel: 'Save Measurable',
                 ),
@@ -100,7 +100,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                   FormTextField(
                     key: const Key('measurable_name_field'),
                     initialValue: item.displayName,
-                    labelText: localizations.settingsMeasurableNameLabel,
+                    labelText: context.messages.settingsMeasurableNameLabel,
                     name: 'displayName',
                     semanticsLabel: 'Measurable - name field',
                     large: true,
@@ -109,7 +109,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                   FormTextField(
                     key: const Key('measurable_description_field'),
                     initialValue: item.description,
-                    labelText: localizations.settingsMeasurableDescriptionLabel,
+                    labelText:
+                        context.messages.settingsMeasurableDescriptionLabel,
                     fieldRequired: false,
                     name: 'description',
                     semanticsLabel: 'Measurable - description field',
@@ -117,7 +118,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                   inputSpacer,
                   FormTextField(
                     initialValue: item.unitName,
-                    labelText: localizations.settingsMeasurableUnitLabel,
+                    labelText: context.messages.settingsMeasurableUnitLabel,
                     fieldRequired: false,
                     name: 'unitName',
                     semanticsLabel: 'Measurable - unit name field',
@@ -126,7 +127,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                   FormSwitch(
                     name: 'private',
                     initialValue: item.private,
-                    title: localizations.settingsMeasurablePrivateLabel,
+                    title: context.messages.settingsMeasurablePrivateLabel,
                     activeColor: Theme.of(context).colorScheme.error,
                   ),
                   inputSpacer,
@@ -135,7 +136,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                     initialValue: item.aggregationType,
                     decoration: inputDecoration(
                       labelText:
-                          localizations.settingsMeasurableAggregationLabel,
+                          context.messages.settingsMeasurableAggregationLabel,
                       suffixIcon: const Padding(
                         padding: EdgeInsets.only(right: 8),
                         child: Icon(Icons.close_rounded),
@@ -172,16 +173,16 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                   IconButton(
                     icon: Icon(MdiIcons.trashCanOutline),
                     iconSize: settingsIconSize,
-                    tooltip: localizations.settingsMeasurableDeleteTooltip,
+                    tooltip: context.messages.settingsMeasurableDeleteTooltip,
                     onPressed: () async {
                       const deleteKey = 'deleteKey';
                       final result = await showModalActionSheet<String>(
                         context: context,
-                        title: localizations.measurableDeleteQuestion,
+                        title: context.messages.measurableDeleteQuestion,
                         actions: [
                           ModalSheetAction(
                             icon: Icons.warning,
-                            label: localizations.measurableDeleteConfirm,
+                            label: context.messages.measurableDeleteConfirm,
                             key: deleteKey,
                             isDestructiveAction: true,
                             isDefaultAction: true,
@@ -219,8 +220,6 @@ class EditMeasurablePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder(
       stream: _db.watchMeasurableDataTypeById(measurableId),
       builder: (
@@ -230,7 +229,7 @@ class EditMeasurablePage extends StatelessWidget {
         final dataType = snapshot.data;
 
         if (dataType == null) {
-          return EmptyScaffoldWithTitle(localizations.measurableNotFound);
+          return EmptyScaffoldWithTitle(context.messages.measurableNotFound);
         }
 
         return MeasurableDetailsPage(

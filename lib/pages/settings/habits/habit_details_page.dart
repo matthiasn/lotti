@@ -2,12 +2,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
 import 'package:lotti/themes/colors.dart';
@@ -27,8 +27,6 @@ class HabitDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<HabitSettingsCubit, HabitSettingsState>(
       builder: (context, HabitSettingsState state) {
         final item = state.habitDefinition;
@@ -47,7 +45,7 @@ class HabitDetailsPage extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
-                      AppLocalizations.of(context)!.settingsHabitsSaveLabel,
+                      context.messages.settingsHabitsSaveLabel,
                       style: saveButtonStyle(Theme.of(context)),
                       semanticsLabel: 'Save Habit',
                     ),
@@ -67,8 +65,7 @@ class HabitDetailsPage extends StatelessWidget {
                       FormTextField(
                         key: const Key('habit_name_field'),
                         initialValue: item.name,
-                        labelText: AppLocalizations.of(context)!
-                            .settingsHabitsNameLabel,
+                        labelText: context.messages.settingsHabitsNameLabel,
                         name: 'name',
                         semanticsLabel: 'Habit name field',
                         large: true,
@@ -77,8 +74,8 @@ class HabitDetailsPage extends StatelessWidget {
                       FormTextField(
                         key: const Key('habit_description_field'),
                         initialValue: item.description,
-                        labelText: AppLocalizations.of(context)!
-                            .settingsHabitsDescriptionLabel,
+                        labelText:
+                            context.messages.settingsHabitsDescriptionLabel,
                         fieldRequired: false,
                         name: 'description',
                         semanticsLabel: 'Habit description field',
@@ -93,26 +90,26 @@ class HabitDetailsPage extends StatelessWidget {
                         key: const Key('habit_priority'),
                         semanticsLabel: 'Habit priority',
                         initialValue: state.habitDefinition.priority,
-                        title: localizations.habitPriorityLabel,
+                        title: context.messages.habitPriorityLabel,
                         activeColor: starredGold,
                       ),
                       FormSwitch(
                         name: 'private',
                         initialValue: item.private,
-                        title: localizations.settingsHabitsPrivateLabel,
+                        title: context.messages.settingsHabitsPrivateLabel,
                         activeColor: Theme.of(context).colorScheme.error,
                       ),
                       FormSwitch(
                         name: 'archived',
                         key: const Key('habit_archived'),
                         initialValue: !state.habitDefinition.active,
-                        title: localizations.habitArchivedLabel,
+                        title: context.messages.habitArchivedLabel,
                         activeColor: Theme.of(context).colorScheme.outline,
                       ),
                       inputSpacer,
                       DateTimeField(
                         dateTime: item.activeFrom,
-                        labelText: localizations.habitActiveFromLabel,
+                        labelText: context.messages.habitActiveFromLabel,
                         setDateTime: cubit.setActiveFrom,
                         mode: CupertinoDatePickerMode.date,
                       ),
@@ -120,7 +117,7 @@ class HabitDetailsPage extends StatelessWidget {
                       if (isDaily)
                         DateTimeField(
                           dateTime: showFrom,
-                          labelText: localizations.habitShowFromLabel,
+                          labelText: context.messages.habitShowFromLabel,
                           setDateTime: cubit.setShowFrom,
                           mode: CupertinoDatePickerMode.time,
                         ),
@@ -135,18 +132,17 @@ class HabitDetailsPage extends StatelessWidget {
                       IconButton(
                         icon: Icon(MdiIcons.trashCanOutline),
                         iconSize: settingsIconSize,
-                        tooltip: AppLocalizations.of(context)!
-                            .settingsHabitsDeleteTooltip,
+                        tooltip: context.messages.settingsHabitsDeleteTooltip,
                         color: Theme.of(context).colorScheme.outline,
                         onPressed: () async {
                           const deleteKey = 'deleteKey';
                           final result = await showModalActionSheet<String>(
                             context: context,
-                            title: localizations.habitDeleteQuestion,
+                            title: context.messages.habitDeleteQuestion,
                             actions: [
                               ModalSheetAction(
                                 icon: Icons.warning,
-                                label: localizations.habitDeleteConfirm,
+                                label: context.messages.habitDeleteConfirm,
                                 key: deleteKey,
                                 isDestructiveAction: true,
                                 isDefaultAction: true,

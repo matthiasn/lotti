@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/state/matrix_login_provider.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -16,14 +16,12 @@ SliverWoltModalSheetPage homeServerLoggedInPage({
   required TextTheme textTheme,
   required ValueNotifier<int> pageIndexNotifier,
 }) {
-  final localizations = AppLocalizations.of(context)!;
-
   return WoltModalSheetPage(
     stickyActionBar: LoggedInPageStickyActionBar(
       pageIndexNotifier: pageIndexNotifier,
     ),
     topBarTitle: Text(
-      localizations.settingsMatrixHomeserverConfigTitle,
+      context.messages.settingsMatrixHomeserverConfigTitle,
       style: textTheme.titleMedium,
     ),
     isTopBarLayerAlwaysVisible: true,
@@ -51,8 +49,6 @@ class LoggedInPageStickyActionBar extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final localizations = AppLocalizations.of(context)!;
-
     return Padding(
       padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
       child: Row(
@@ -65,15 +61,15 @@ class LoggedInPageStickyActionBar extends ConsumerWidget {
               pageIndexNotifier.value = 0;
             },
             child: Text(
-              localizations.settingsMatrixLogoutButtonLabel,
-              semanticsLabel: localizations.settingsMatrixLogoutButtonLabel,
+              context.messages.settingsMatrixLogoutButtonLabel,
+              semanticsLabel: context.messages.settingsMatrixLogoutButtonLabel,
             ),
           ),
           const SizedBox(height: 8),
           FilledButton(
             onPressed: () => pageIndexNotifier.value = 2,
             child: Center(
-              child: Text(localizations.settingsMatrixNextPage),
+              child: Text(context.messages.settingsMatrixNextPage),
             ),
           ),
         ],
@@ -99,7 +95,6 @@ class _HomeserverLoggedInWidgetState
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
     final userIdAsyncValue = ref.watch(loggedInUserIdProvider);
 
     return userIdAsyncValue.map(
@@ -132,7 +127,7 @@ class _HomeserverLoggedInWidgetState
             Text(userId, style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 10),
             Text(
-              localizations.settingsMatrixQrTextPage,
+              context.messages.settingsMatrixQrTextPage,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 80),

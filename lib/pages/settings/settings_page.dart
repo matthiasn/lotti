@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
@@ -13,60 +13,58 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return SliverBoxAdapterPage(
-      title: localizations.navTabTitleSettings,
+      title: context.messages.navTabTitleSettings,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 5),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SettingsNavCard(
-              title: localizations.settingsHabitsTitle,
+              title: context.messages.settingsHabitsTitle,
               semanticsLabel: 'Habit Management',
               path: '/settings/habits',
             ),
             SettingsNavCard(
-              title: localizations.settingsCategoriesTitle,
+              title: context.messages.settingsCategoriesTitle,
               semanticsLabel: 'Category Management',
               path: '/settings/categories',
             ),
             SettingsNavCard(
-              title: localizations.settingsTagsTitle,
+              title: context.messages.settingsTagsTitle,
               semanticsLabel: 'Tag Management',
               path: '/settings/tags',
             ),
             SettingsNavCard(
-              title: localizations.settingsDashboardsTitle,
+              title: context.messages.settingsDashboardsTitle,
               semanticsLabel: 'Dashboard Management',
               path: '/settings/dashboards',
             ),
             SettingsNavCard(
-              title: localizations.settingsMeasurablesTitle,
+              title: context.messages.settingsMeasurablesTitle,
               semanticsLabel: 'Measurable Data Types',
               path: '/settings/measurables',
             ),
             SettingsNavCard(
-              title: localizations.settingsThemingTitle,
+              title: context.messages.settingsThemingTitle,
               path: '/settings/theming',
             ),
             if (isMobile)
               SettingsNavCard(
-                title: localizations.settingsHealthImportTitle,
+                title: context.messages.settingsHealthImportTitle,
                 path: '/settings/health_import',
               ),
             SettingsNavCard(
-              title: localizations.settingsFlagsTitle,
+              title: context.messages.settingsFlagsTitle,
               path: '/settings/flags',
             ),
             if (Platform.isIOS || Platform.isMacOS)
               SettingsNavCard(
-                title: localizations.settingsSpeechTitle,
+                title: context.messages.settingsSpeechTitle,
                 path: '/settings/speech_settings',
               ),
             SettingsNavCard(
-              title: localizations.settingsAdvancedTitle,
+              title: context.messages.settingsAdvancedTitle,
               path: '/settings/advanced',
             ),
           ],

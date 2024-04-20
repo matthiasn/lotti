@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -48,15 +48,13 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     final items = <Widget>[];
 
     if (widget.isMacOS) {
       items.add(
         FloatingActionButton(
           heroTag: 'screenshot',
-          tooltip: localizations.addActionAddScreenshot,
+          tooltip: context.messages.addActionAddScreenshot,
           onPressed: () async {
             rebuild();
             await createScreenshot(linkedId: widget.linked?.meta.id);
@@ -73,7 +71,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       ..add(
         FloatingActionButton(
           heroTag: 'photo',
-          tooltip: localizations.addActionAddPhotos,
+          tooltip: context.messages.addActionAddPhotos,
           onPressed: () {
             rebuild();
 
@@ -91,7 +89,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       ..add(
         FloatingActionButton(
           heroTag: 'text',
-          tooltip: localizations.addActionAddText,
+          tooltip: context.messages.addActionAddText,
           onPressed: () async {
             rebuild();
             final linkedId = widget.linked?.meta.id;
@@ -105,7 +103,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       items.add(
         FloatingActionButton(
           heroTag: 'timer',
-          tooltip: localizations.addActionAddTimeRecording,
+          tooltip: context.messages.addActionAddTimeRecording,
           onPressed: () async {
             rebuild();
             final linkedId = widget.linked?.meta.id;
@@ -123,7 +121,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       ..add(
         FloatingActionButton(
           heroTag: 'audio',
-          tooltip: localizations.addActionAddAudioRecording,
+          tooltip: context.messages.addActionAddAudioRecording,
           onPressed: () {
             rebuild();
             final linkedId = widget.linked?.meta.id;
@@ -139,7 +137,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       ..add(
         FloatingActionButton(
           heroTag: 'task',
-          tooltip: localizations.addActionAddTask,
+          tooltip: context.messages.addActionAddTask,
           onPressed: () async {
             rebuild();
             final linkedId = widget.linked?.meta.id;

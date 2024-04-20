@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
@@ -15,8 +15,6 @@ class MaintenancePage extends StatelessWidget {
     final maintenance = getIt<Maintenance>();
     final db = getIt<JournalDb>();
 
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<int>(
       stream: db.watchTaggedCount(),
       builder: (
@@ -24,53 +22,53 @@ class MaintenancePage extends StatelessWidget {
         AsyncSnapshot<int> snapshot,
       ) {
         return SliverBoxAdapterPage(
-          title: localizations.settingsMaintenanceTitle,
+          title: context.messages.settingsMaintenanceTitle,
           showBackButton: true,
           child: Column(
             children: [
               SettingsCard(
                 title:
-                    '${localizations.maintenanceDeleteTagged}, n = ${snapshot.data}',
+                    '${context.messages.maintenanceDeleteTagged}, n = ${snapshot.data}',
                 onTap: maintenance.deleteTaggedLinks,
               ),
               SettingsCard(
-                title: localizations.maintenanceDeleteEditorDb,
+                title: context.messages.maintenanceDeleteEditorDb,
                 onTap: maintenance.deleteEditorDb,
               ),
               SettingsCard(
-                title: localizations.maintenanceDeleteLoggingDb,
+                title: context.messages.maintenanceDeleteLoggingDb,
                 onTap: maintenance.deleteLoggingDb,
               ),
               SettingsCard(
-                title: localizations.maintenanceRecreateTagged,
+                title: context.messages.maintenanceRecreateTagged,
                 onTap: maintenance.recreateTaggedLinks,
               ),
               SettingsCard(
-                title: localizations.maintenanceStories,
+                title: context.messages.maintenanceStories,
                 onTap: maintenance.recreateStoryAssignment,
               ),
               SettingsCard(
-                title: localizations.maintenanceSyncDefinitions,
+                title: context.messages.maintenanceSyncDefinitions,
                 onTap: maintenance.syncDefinitions,
               ),
               SettingsCard(
-                title: localizations.maintenancePurgeDeleted,
+                title: context.messages.maintenancePurgeDeleted,
                 onTap: db.purgeDeleted,
               ),
               SettingsCard(
-                title: localizations.maintenanceCancelNotifications,
+                title: context.messages.maintenanceCancelNotifications,
                 onTap: () => getIt<NotificationService>().cancelAll(),
               ),
               SettingsCard(
-                title: localizations.maintenanceRecreateFts5,
+                title: context.messages.maintenanceRecreateFts5,
                 onTap: () => getIt<Maintenance>().recreateFts5(),
               ),
               SettingsCard(
-                title: localizations.maintenanceReSync1K,
+                title: context.messages.maintenanceReSync1K,
                 onTap: () => getIt<Maintenance>().reSyncLastMessages(1000),
               ),
               SettingsCard(
-                title: localizations.maintenanceReSync10K,
+                title: context.messages.maintenanceReSync10K,
                 onTap: () => getIt<Maintenance>().reSyncLastMessages(10000),
               ),
             ],

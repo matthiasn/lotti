@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/widgets/buttons/rounded_filled_button.dart';
@@ -42,7 +42,6 @@ class _VerificationModalState extends State<VerificationModal> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
     final pop = Navigator.of(context).pop;
 
     return StreamBuilder<KeyVerificationRunner>(
@@ -101,26 +100,26 @@ class _VerificationModalState extends State<VerificationModal> {
                     key: const Key('matrix_start_verify'),
                     onPressed: startVerification,
                     labelText:
-                        localizations.settingsMatrixStartVerificationLabel,
+                        context.messages.settingsMatrixStartVerificationLabel,
                   ),
                 if (lastStep?.isEmpty ?? false)
                   Text(
-                    localizations.settingsMatrixContinueVerificationLabel,
+                    context.messages.settingsMatrixContinueVerificationLabel,
                   ),
                 if (isLastStepCancel)
                   Text(
-                    localizations.settingsMatrixVerificationCancelledLabel,
+                    context.messages.settingsMatrixVerificationCancelledLabel,
                   ),
                 if (isLastStepKey && emojis == null)
                   RoundedFilledButton(
                     key: const Key('matrix_accept_verify'),
                     onPressed: runner?.acceptEmojiVerification,
                     labelText:
-                        localizations.settingsMatrixAcceptVerificationLabel,
+                        context.messages.settingsMatrixAcceptVerificationLabel,
                   ),
                 if (!isDone && emojis != null) ...[
                   Text(
-                    localizations.settingsMatrixVerifyConfirm,
+                    context.messages.settingsMatrixVerifyConfirm,
                     style: Theme.of(context).textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
@@ -139,8 +138,8 @@ class _VerificationModalState extends State<VerificationModal> {
                           await runner?.cancelVerification();
                           pop();
                         },
-                        labelText:
-                            localizations.settingsMatrixCancelVerificationLabel,
+                        labelText: context
+                            .messages.settingsMatrixCancelVerificationLabel,
                       ),
                       RoundedFilledButton(
                         onPressed: runner?.acceptEmojiVerification,
@@ -152,7 +151,7 @@ class _VerificationModalState extends State<VerificationModal> {
                 ],
                 if (isDone) ...[
                   Text(
-                    localizations.settingsMatrixVerificationSuccessLabel(
+                    context.messages.settingsMatrixVerificationSuccessLabel(
                       widget.deviceKeys.deviceDisplayName ?? '',
                       widget.deviceKeys.deviceId ?? '',
                     ),
@@ -172,8 +171,8 @@ class _VerificationModalState extends State<VerificationModal> {
                           runner?.stopTimer();
                           pop();
                         },
-                        labelText: localizations
-                            .settingsMatrixVerificationSuccessConfirm,
+                        labelText: context
+                            .messages.settingsMatrixVerificationSuccessConfirm,
                       ),
                     ],
                   ),
