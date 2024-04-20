@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 
 class LinkedFromEntriesWidget extends StatelessWidget {
@@ -15,8 +15,6 @@ class LinkedFromEntriesWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<List<JournalEntity>>(
       stream: getIt<JournalDb>().watchLinkedToEntities(linkedTo: item.meta.id),
       builder: (
@@ -30,7 +28,7 @@ class LinkedFromEntriesWidget extends StatelessWidget {
           return Column(
             children: [
               Text(
-                localizations.journalLinkedFromLabel,
+                context.messages.journalLinkedFromLabel,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.outline,
                 ),

@@ -2,12 +2,12 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -39,8 +39,6 @@ class _ConflictsPageState extends State<ConflictsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<List<Conflict>>(
       stream: stream,
       builder: (
@@ -51,7 +49,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
 
         return Scaffold(
           appBar: TitleAppBar(
-            title: localizations.settingsConflictsTitle,
+            title: context.messages.settingsConflictsTitle,
             actions: [
               CupertinoSegmentedControl(
                 selectedColor: Theme.of(context).primaryColor,
@@ -72,14 +70,14 @@ class _ConflictsPageState extends State<ConflictsPage> {
                   'unresolved': Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 5),
                     child: Text(
-                      localizations.conflictsUnresolved,
+                      context.messages.conflictsUnresolved,
                       style: segmentItemStyle,
                     ),
                   ),
                   'resolved': Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 5),
                     child: Text(
-                      localizations.conflictsResolved,
+                      context.messages.conflictsResolved,
                       style: segmentItemStyle,
                     ),
                   ),
@@ -153,7 +151,6 @@ class ConflictDetailRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final db = getIt<JournalDb>();
-    final localizations = AppLocalizations.of(context)!;
 
     final stream = db.watchConflictById(conflictId);
 
@@ -192,7 +189,7 @@ class ConflictDetailRoute extends StatelessWidget {
 
             return Scaffold(
               appBar: TitleAppBar(
-                title: localizations.settingsConflictsResolutionTitle,
+                title: context.messages.settingsConflictsResolutionTitle,
               ),
               body: SingleChildScrollView(
                 padding: const EdgeInsets.all(8),

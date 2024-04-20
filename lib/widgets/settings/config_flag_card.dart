@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -19,14 +19,12 @@ class ConfigFlagCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     String getLocalizedDescription(ConfigFlag flag) {
       switch (flag.name) {
         case privateFlag:
-          return localizations.configFlagPrivate;
+          return context.messages.configFlagPrivate;
         case enableNotificationsFlag:
-          return localizations.configFlagEnableNotifications;
+          return context.messages.configFlagEnableNotifications;
         default:
           return item.description;
       }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/dashboards/dashboards_page_cubit.dart';
 import 'package:lotti/blocs/dashboards/dashboards_page_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/dashboards/dashboards_filter.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';
@@ -14,8 +14,6 @@ class DashboardsSliverAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<DashboardsPageCubit, DashboardsPageState>(
       builder: (context, DashboardsPageState state) {
         return SliverAppBar(
@@ -32,7 +30,7 @@ class DashboardsSliverAppBar extends StatelessWidget {
           ),
           flexibleSpace: FlexibleSpaceBar(
             title: Text(
-              localizations.navTabTitleInsights,
+              context.messages.navTabTitleInsights,
               style: appBarTextStyleNewLarge.copyWith(
                 color: Theme.of(context).primaryColor,
               ),

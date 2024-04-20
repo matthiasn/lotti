@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/sync/ui/matrix_settings_modal.dart';
@@ -14,10 +14,8 @@ class AdvancedSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return SliverBoxAdapterPage(
-      title: localizations.settingsAdvancedTitle,
+      title: context.messages.settingsAdvancedTitle,
       showBackButton: true,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -29,23 +27,23 @@ class AdvancedSettingsPage extends StatelessWidget {
               trailing: OutboxBadgeIcon(
                 icon: SettingsIcon(MdiIcons.mailboxOutline),
               ),
-              title: localizations.settingsSyncOutboxTitle,
+              title: context.messages.settingsSyncOutboxTitle,
               path: '/settings/advanced/outbox_monitor',
             ),
             SettingsNavCard(
-              title: localizations.settingsConflictsTitle,
+              title: context.messages.settingsConflictsTitle,
               path: '/settings/advanced/conflicts',
             ),
             SettingsNavCard(
-              title: localizations.settingsLogsTitle,
+              title: context.messages.settingsLogsTitle,
               path: '/settings/advanced/logging',
             ),
             SettingsNavCard(
-              title: localizations.settingsMaintenanceTitle,
+              title: context.messages.settingsMaintenanceTitle,
               path: '/settings/advanced/maintenance',
             ),
             SettingsNavCard(
-              title: localizations.settingsAboutTitle,
+              title: context.messages.settingsAboutTitle,
               path: '/settings/advanced/about',
             ),
           ],

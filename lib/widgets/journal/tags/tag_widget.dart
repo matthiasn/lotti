@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -19,7 +19,6 @@ class TagWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
     final tagColor = getTagColor(tagEntity);
 
     return Chip(
@@ -40,7 +39,7 @@ class TagWidget extends StatelessWidget {
         size: fontSizeMedium,
         color: tagTextColor,
       ),
-      deleteButtonTooltipMessage: localizations.journalTagsRemoveHint,
+      deleteButtonTooltipMessage: context.messages.journalTagsRemoveHint,
     );
   }
 }

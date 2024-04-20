@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 class TitleAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -48,8 +48,6 @@ class BackWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     void onPressed() {
       final beamedBack = dashboardsBeamerDelegate.beamBack();
 
@@ -74,7 +72,7 @@ class BackWidget extends StatelessWidget {
                   weight: 500,
                 ),
                 Text(
-                  localizations.appBarBack,
+                  context.messages.appBarBack,
                   style: appBarTextStyleNew,
                   semanticsLabel: 'Navigate back',
                 ),

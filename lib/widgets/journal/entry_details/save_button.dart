@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 class SaveButton extends StatelessWidget {
@@ -13,8 +13,6 @@ class SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (
         context,
@@ -35,7 +33,7 @@ class SaveButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
-              localizations.saveLabel,
+              context.messages.saveLabel,
               style: saveButtonStyle(Theme.of(context)),
             ),
           ),

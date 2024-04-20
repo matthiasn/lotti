@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -24,14 +25,12 @@ class DesktopMenuWrapper extends StatelessWidget {
     }
 
     return MaterialApp(
-      localizationsDelegates: const [AppLocalizations.delegate],
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
       home: StreamBuilder<Set<String>>(
         stream: _db.watchActiveConfigFlagNames(),
         builder: (context, snapshot) {
-          final localizations = AppLocalizations.of(context)!;
-
           return PlatformMenuBar(
             menus: [
               const PlatformMenu(
@@ -60,10 +59,10 @@ class DesktopMenuWrapper extends StatelessWidget {
                 ],
               ),
               PlatformMenu(
-                label: localizations.fileMenuTitle,
+                label: context.messages.fileMenuTitle,
                 menus: [
                   PlatformMenuItem(
-                    label: localizations.fileMenuNewEntry,
+                    label: context.messages.fileMenuNewEntry,
                     onSelected: () async {
                       final linkedId = await getIdFromSavedRoute();
                       await createTextEntry(linkedId: linkedId);
@@ -74,10 +73,10 @@ class DesktopMenuWrapper extends StatelessWidget {
                     ),
                   ),
                   PlatformMenu(
-                    label: localizations.fileMenuNewEllipsis,
+                    label: context.messages.fileMenuNewEllipsis,
                     menus: [
                       PlatformMenuItem(
-                        label: localizations.fileMenuNewTask,
+                        label: context.messages.fileMenuNewTask,
                         shortcut: const SingleActivator(
                           LogicalKeyboardKey.keyT,
                           meta: true,
@@ -88,7 +87,7 @@ class DesktopMenuWrapper extends StatelessWidget {
                         },
                       ),
                       PlatformMenuItem(
-                        label: localizations.fileMenuNewScreenshot,
+                        label: context.messages.fileMenuNewScreenshot,
                         shortcut: const SingleActivator(
                           LogicalKeyboardKey.keyS,
                           meta: true,
@@ -104,11 +103,11 @@ class DesktopMenuWrapper extends StatelessWidget {
                 ],
               ),
               PlatformMenu(
-                label: localizations.editMenuTitle,
+                label: context.messages.editMenuTitle,
                 menus: [],
               ),
               PlatformMenu(
-                label: localizations.viewMenuTitle,
+                label: context.messages.viewMenuTitle,
                 menus: [
                   const PlatformProvidedMenuItem(
                     type: PlatformProvidedMenuItemType.toggleFullScreen,

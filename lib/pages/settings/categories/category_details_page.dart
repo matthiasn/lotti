@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lotti/blocs/settings/categories/category_settings_cubit.dart';
 import 'package:lotti/blocs/settings/categories/category_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -24,8 +24,6 @@ class CategoryDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<List<CategoryDefinition>>(
       stream: getIt<JournalDb>().watchCategories(),
       builder: (context, snapshot) {
@@ -52,7 +50,7 @@ class CategoryDetailsPage extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
-                          AppLocalizations.of(context)!.settingsHabitsSaveLabel,
+                          context.messages.settingsHabitsSaveLabel,
                           style: saveButtonStyle(Theme.of(context)),
                           semanticsLabel: 'Save Category',
                         ),
@@ -87,15 +85,15 @@ class CategoryDetailsPage extends StatelessWidget {
                                     categoryNames[categoryName?.toLowerCase()];
                                 if (existingId != null &&
                                     existingId != item.id) {
-                                  return localizations
+                                  return context.messages
                                       .settingsCategoriesDuplicateError;
                                 }
                                 return null;
                               }
                             ]),
                             decoration: inputDecoration(
-                              labelText: AppLocalizations.of(context)!
-                                  .settingsCategoriesNameLabel,
+                              labelText:
+                                  context.messages.settingsCategoriesNameLabel,
                               semanticsLabel: 'Category name field',
                               themeData: Theme.of(context),
                             ),
@@ -104,14 +102,14 @@ class CategoryDetailsPage extends StatelessWidget {
                           FormSwitch(
                             name: 'private',
                             initialValue: item.private,
-                            title: localizations.settingsHabitsPrivateLabel,
+                            title: context.messages.settingsHabitsPrivateLabel,
                             activeColor: Theme.of(context).colorScheme.error,
                           ),
                           FormSwitch(
                             name: 'active',
                             key: const Key('category_active'),
                             initialValue: state.categoryDefinition.active,
-                            title: localizations.dashboardActiveLabel,
+                            title: context.messages.dashboardActiveLabel,
                             activeColor: starredGold,
                           ),
                           inputSpacer,
@@ -130,18 +128,17 @@ class CategoryDetailsPage extends StatelessWidget {
                           key: const Key('category_delete'),
                           icon: Icon(MdiIcons.trashCanOutline),
                           iconSize: settingsIconSize,
-                          tooltip: AppLocalizations.of(context)!
-                              .settingsHabitsDeleteTooltip,
+                          tooltip: context.messages.settingsHabitsDeleteTooltip,
                           color: Theme.of(context).colorScheme.outline,
                           onPressed: () async {
                             const deleteKey = 'deleteKey';
                             final result = await showModalActionSheet<String>(
                               context: context,
-                              title: localizations.categoryDeleteQuestion,
+                              title: context.messages.categoryDeleteQuestion,
                               actions: [
                                 ModalSheetAction(
                                   icon: Icons.warning,
-                                  label: localizations.categoryDeleteConfirm,
+                                  label: context.messages.categoryDeleteConfirm,
                                   key: deleteKey,
                                   isDestructiveAction: true,
                                   isDefaultAction: true,

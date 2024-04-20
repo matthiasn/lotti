@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 class DurationBottomSheet extends StatefulWidget {
   const DurationBottomSheet(this.initial, {super.key});
@@ -22,8 +22,6 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -40,13 +38,13 @@ class _DurationBottomSheetState extends State<DurationBottomSheet> {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: Text(localizations.cancelButton),
+                child: Text(context.messages.cancelButton),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context, duration);
                 },
-                child: Text(localizations.doneButton),
+                child: Text(context.messages.doneButton),
               ),
             ],
           ),

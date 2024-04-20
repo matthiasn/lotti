@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
@@ -16,8 +16,6 @@ class DeleteIconWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (
         context,
@@ -29,11 +27,11 @@ class DeleteIconWidget extends StatelessWidget {
           const deleteKey = 'deleteKey';
           final result = await showModalActionSheet<String>(
             context: context,
-            title: localizations.journalDeleteQuestion,
+            title: context.messages.journalDeleteQuestion,
             actions: [
               ModalSheetAction(
                 icon: Icons.warning_rounded,
-                label: localizations.journalDeleteConfirm,
+                label: context.messages.journalDeleteConfirm,
                 key: deleteKey,
                 isDestructiveAction: true,
                 isDefaultAction: true,
@@ -51,7 +49,7 @@ class DeleteIconWidget extends StatelessWidget {
           child: IconButton(
             icon: const Icon(Icons.delete_outline_rounded),
             splashColor: Colors.transparent,
-            tooltip: localizations.journalDeleteHint,
+            tooltip: context.messages.journalDeleteHint,
             padding: EdgeInsets.zero,
             onPressed: onPressed,
           ),

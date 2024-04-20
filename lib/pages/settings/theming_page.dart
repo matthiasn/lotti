@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/theming/theming_cubit.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
@@ -13,8 +13,6 @@ class ThemingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<ThemingCubit, ThemingState>(
       builder: (context, snapshot) {
         final cubit = context.read<ThemingCubit>();
@@ -45,7 +43,7 @@ class ThemingPage extends StatelessWidget {
           return const SizedBox.shrink();
         }
         return SliverBoxAdapterPage(
-          title: localizations.settingsThemingTitle,
+          title: context.messages.settingsThemingTitle,
           showBackButton: true,
           child: Card(
             margin: const EdgeInsets.all(10),
@@ -62,7 +60,7 @@ class ThemingPage extends StatelessWidget {
                         filter: ThemeMode.dark,
                         icon: Icons.nightlight_outlined,
                         activeIcon: Icons.nightlight,
-                        semanticLabel: localizations.settingsThemingDark,
+                        semanticLabel: context.messages.settingsThemingDark,
                       ),
                       segment(
                         filter: ThemeMode.system,
@@ -70,27 +68,28 @@ class ThemingPage extends StatelessWidget {
                         activeIcon: isMobile
                             ? Icons.smartphone_outlined
                             : Icons.laptop_outlined,
-                        semanticLabel: localizations.settingsThemingAutomatic,
+                        semanticLabel:
+                            context.messages.settingsThemingAutomatic,
                       ),
                       segment(
                         filter: ThemeMode.light,
                         icon: Icons.wb_sunny_outlined,
                         activeIcon: Icons.sunny,
-                        semanticLabel: localizations.settingsThemingLight,
+                        semanticLabel: context.messages.settingsThemingLight,
                       ),
                     ],
                   ),
                   const SizedBox(height: 25),
                   SelectTheme(
                     setTheme: cubit.setLightTheme,
-                    labelText: localizations.settingThemingLight,
+                    labelText: context.messages.settingThemingLight,
                     semanticsLabel: 'Select light theme',
                     getSelected: (snapshot) => snapshot.lightThemeName ?? '',
                   ),
                   const SizedBox(height: 25),
                   SelectTheme(
                     setTheme: cubit.setDarkTheme,
-                    labelText: localizations.settingThemingDark,
+                    labelText: context.messages.settingThemingDark,
                     semanticsLabel: 'Select dark theme',
                     getSelected: (snapshot) => snapshot.darkThemeName ?? '',
                   ),
