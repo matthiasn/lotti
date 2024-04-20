@@ -1,12 +1,12 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
@@ -17,7 +17,6 @@ class SelectCategoryWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
     final controller = TextEditingController();
 
     return StreamBuilder<List<CategoryDefinition>>(
@@ -93,8 +92,9 @@ class SelectCategoryWidget extends StatelessWidget {
               focusNode: FocusNode(),
               controller: controller,
               decoration: inputDecoration(
-                labelText:
-                    categoryUndefined ? '' : localizations.habitCategoryLabel,
+                labelText: categoryUndefined
+                    ? ''
+                    : context.messages.habitCategoryLabel,
                 semanticsLabel: 'Select category',
                 themeData: Theme.of(context),
               ).copyWith(
@@ -115,7 +115,7 @@ class SelectCategoryWidget extends StatelessWidget {
                           cubit.setCategory(null);
                         },
                       ),
-                hintText: localizations.habitCategoryHint,
+                hintText: context.messages.habitCategoryHint,
                 hintStyle: style?.copyWith(
                   color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
                 ),

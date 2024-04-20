@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -112,8 +112,6 @@ class _HabitDialogState extends State<HabitDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<HabitDefinition?>(
       stream: _db.watchHabitById(widget.habitId),
       builder: (
@@ -220,7 +218,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                     DateTimeField(
                                       dateTime: _started,
                                       labelText:
-                                          localizations.addHabitDateLabel,
+                                          context.messages.addHabitDateLabel,
                                       setDateTime: (picked) {
                                         setState(() {
                                           _startReset = true;
@@ -233,8 +231,8 @@ class _HabitDialogState extends State<HabitDialog> {
                                       initialValue: '',
                                       key: const Key('habit_comment_field'),
                                       decoration: createDialogInputDecoration(
-                                        labelText:
-                                            localizations.addHabitCommentLabel,
+                                        labelText: context
+                                            .messages.addHabitCommentLabel,
                                         themeData: Theme.of(context),
                                       ),
                                       minLines: 1,
@@ -261,7 +259,8 @@ class _HabitDialogState extends State<HabitDialog> {
                                       onPressed: () =>
                                           saveHabit(HabitCompletionType.fail),
                                       child: Text(
-                                        localizations.completeHabitFailButton,
+                                        context
+                                            .messages.completeHabitFailButton,
                                         style: failButtonStyle(),
                                       ),
                                     ),
@@ -270,7 +269,8 @@ class _HabitDialogState extends State<HabitDialog> {
                                       onPressed: () =>
                                           saveHabit(HabitCompletionType.skip),
                                       child: Text(
-                                        localizations.completeHabitSkipButton,
+                                        context
+                                            .messages.completeHabitSkipButton,
                                         style:
                                             saveButtonStyle(Theme.of(context))
                                                 .copyWith(
@@ -286,7 +286,7 @@ class _HabitDialogState extends State<HabitDialog> {
                                         HabitCompletionType.success,
                                       ),
                                       child: Text(
-                                        localizations
+                                        context.messages
                                             .completeHabitSuccessButton,
                                         style:
                                             saveButtonStyle(Theme.of(context))

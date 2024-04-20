@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/widgets/buttons/rounded_filled_button.dart';
 import 'package:lotti/widgets/sync/matrix/verification_modal.dart';
@@ -26,8 +26,6 @@ class _DeviceCardState extends State<DeviceCard> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return Card(
       child: ListTile(
         title: Row(
@@ -72,7 +70,7 @@ class _DeviceCardState extends State<DeviceCard> {
                 );
                 widget.refreshListCallback();
               },
-              labelText: localizations.settingsMatrixVerifyLabel,
+              labelText: context.messages.settingsMatrixVerifyLabel,
             ),
             const SizedBox(height: 10),
           ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 class TaskCounts extends StatelessWidget {
@@ -9,8 +9,6 @@ class TaskCounts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return SizedBox(
       width: MediaQuery.of(context).size.width,
       child: Wrap(
@@ -23,23 +21,23 @@ class TaskCounts extends StatelessWidget {
           ),
           TasksCountWidget(
             status: 'OPEN',
-            label: localizations.taskStatusOpen,
+            label: context.messages.taskStatusOpen,
           ),
           TasksCountWidget(
             status: 'IN PROGRESS',
-            label: localizations.taskStatusInProgress,
+            label: context.messages.taskStatusInProgress,
           ),
           TasksCountWidget(
             status: 'ON HOLD',
-            label: localizations.taskStatusOnHold,
+            label: context.messages.taskStatusOnHold,
           ),
           TasksCountWidget(
             status: 'BLOCKED',
-            label: localizations.taskStatusBlocked,
+            label: context.messages.taskStatusBlocked,
           ),
           TasksCountWidget(
             status: 'DONE',
-            label: localizations.taskStatusDone,
+            label: context.messages.taskStatusDone,
           ),
         ],
       ),

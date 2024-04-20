@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 // adapted from https://github.com/JohannesMilke/filter_listview_example
 class SearchWidget extends StatefulWidget implements PreferredSizeWidget {
@@ -28,8 +28,6 @@ class _SearchWidgetState extends State<SearchWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return Theme(
       data: Theme.of(context)
           .copyWith(inputDecorationTheme: const InputDecorationTheme()),
@@ -39,7 +37,7 @@ class _SearchWidgetState extends State<SearchWidget> {
         padding: const EdgeInsets.only(left: 10),
         child: SearchBar(
           controller: controller,
-          hintText: widget.hintText ?? localizations.searchHint,
+          hintText: widget.hintText ?? context.messages.searchHint,
           onChanged: widget.onChanged,
           leading: const Padding(
             padding: EdgeInsets.only(left: 8),

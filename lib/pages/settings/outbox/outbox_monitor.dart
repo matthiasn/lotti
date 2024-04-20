@@ -2,11 +2,11 @@ import 'package:drift/drift.dart' as drift;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -102,17 +102,16 @@ class OutboxItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
     final statusEnum = OutboxStatus.values[item.status];
 
     String getStringFromStatus(OutboxStatus x) {
       switch (x) {
         case OutboxStatus.pending:
-          return localizations.outboxMonitorLabelPending;
+          return context.messages.outboxMonitorLabelPending;
         case OutboxStatus.sent:
-          return localizations.outboxMonitorLabelSent;
+          return context.messages.outboxMonitorLabelSent;
         case OutboxStatus.error:
-          return localizations.outboxMonitorLabelError;
+          return context.messages.outboxMonitorLabelError;
       }
     }
 
@@ -130,8 +129,8 @@ class OutboxItemCard extends StatelessWidget {
     }
 
     final retriesText = item.retries == 1
-        ? localizations.outboxMonitorRetry
-        : localizations.outboxMonitorRetries;
+        ? context.messages.outboxMonitorRetry
+        : context.messages.outboxMonitorRetries;
 
     return Padding(
       padding: const EdgeInsets.all(2),
@@ -145,7 +144,7 @@ class OutboxItemCard extends StatelessWidget {
           ),
           subtitle: Text(
             '${item.retries} $retriesText \n'
-            '${item.filePath ?? localizations.outboxMonitorNoAttachment}',
+            '${item.filePath ?? context.messages.outboxMonitorNoAttachment}',
             style: const TextStyle(
               fontWeight: FontWeight.w200,
               fontSize: fontSizeSmall,
@@ -188,8 +187,6 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return AppBar(
       title: Column(
         children: [
@@ -197,14 +194,14 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                localizations.settingsSyncOutboxTitle,
+                context.messages.settingsSyncOutboxTitle,
                 style: appBarTextStyle,
               ),
               const SizedBox(width: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(localizations.outboxMonitorSwitchLabel),
+                  Text(context.messages.outboxMonitorSwitchLabel),
                   CupertinoSwitch(
                     value: onlineStatus,
                     onChanged: (_) {
@@ -224,7 +221,7 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
                 height: 32,
                 child: Center(
                   child: Text(
-                    localizations.outboxMonitorLabelPending,
+                    context.messages.outboxMonitorLabelPending,
                     style: segmentItemStyle,
                   ),
                 ),
@@ -232,7 +229,7 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
               'error': SizedBox(
                 child: Center(
                   child: Text(
-                    localizations.outboxMonitorLabelError,
+                    context.messages.outboxMonitorLabelError,
                     style: segmentItemStyle,
                   ),
                 ),
@@ -240,7 +237,7 @@ class OutboxAppBar extends StatelessWidget implements PreferredSizeWidget {
               'all': SizedBox(
                 child: Center(
                   child: Text(
-                    localizations.outboxMonitorLabelAll,
+                    context.messages.outboxMonitorLabelAll,
                     style: segmentItemStyle,
                   ),
                 ),

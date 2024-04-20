@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/widgets/sync/imap_config_status.dart';
 import 'package:lotti/widgets/sync/matrix/device_card.dart';
@@ -34,13 +34,11 @@ class _UnverifiedDevicesState extends State<UnverifiedDevices> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     if (_unverifiedDevices.isEmpty) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(localizations.settingsMatrixNoUnverifiedLabel),
+          Text(context.messages.settingsMatrixNoUnverifiedLabel),
           const StatusIndicator(
             Colors.greenAccent,
             semanticsLabel: 'No unverified devices',
@@ -55,8 +53,9 @@ class _UnverifiedDevicesState extends State<UnverifiedDevices> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              localizations.settingsMatrixListUnverifiedLabel,
-              semanticsLabel: localizations.settingsMatrixListUnverifiedLabel,
+              context.messages.settingsMatrixListUnverifiedLabel,
+              semanticsLabel:
+                  context.messages.settingsMatrixListUnverifiedLabel,
             ),
             IconButton(
               key: const Key('matrix_list_unverified'),

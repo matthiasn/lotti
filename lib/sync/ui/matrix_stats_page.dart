@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -10,8 +10,6 @@ SliverWoltModalSheetPage matrixStatsPage({
   required TextTheme textTheme,
   required ValueNotifier<int> pageIndexNotifier,
 }) {
-  final localizations = AppLocalizations.of(context)!;
-
   return WoltModalSheetPage(
     stickyActionBar: Padding(
       padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
@@ -22,21 +20,21 @@ SliverWoltModalSheetPage matrixStatsPage({
             onPressed: () =>
                 pageIndexNotifier.value = pageIndexNotifier.value - 1,
             child: Center(
-              child: Text(localizations.settingsMatrixPreviousPage),
+              child: Text(context.messages.settingsMatrixPreviousPage),
             ),
           ),
           const SizedBox(height: 8),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Center(
-              child: Text(localizations.settingsMatrixDone),
+              child: Text(context.messages.settingsMatrixDone),
             ),
           ),
         ],
       ),
     ),
     topBarTitle: Text(
-      localizations.settingsMatrixStatsTitle,
+      context.messages.settingsMatrixStatsTitle,
       style: textTheme.titleMedium,
     ),
     isTopBarLayerAlwaysVisible: true,

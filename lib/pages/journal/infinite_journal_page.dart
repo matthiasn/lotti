@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/pages/settings/definitions_list_page.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -28,8 +28,6 @@ class InfiniteJournalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocProvider<JournalPageCubit>(
       create: (BuildContext context) => JournalPageCubit(showTasks: showTasks),
       child: Scaffold(
@@ -41,7 +39,7 @@ class InfiniteJournalPage extends StatelessWidget {
                     getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
                   }
                 },
-                semanticLabel: localizations.addActionAddTask,
+                semanticLabel: context.messages.addActionAddTask,
               )
             : RadialAddActionButtons(
                 radius: isMobile ? 180 : 120,

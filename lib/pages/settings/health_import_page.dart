@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
@@ -27,10 +27,8 @@ class _HealthImportPageState extends State<HealthImportPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return SliverBoxAdapterPage(
-      title: localizations.settingsHealthImportTitle,
+      title: context.messages.settingsHealthImportTitle,
       showBackButton: true,
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -38,7 +36,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
           children: <Widget>[
             DateTimeField(
               dateTime: _dateFrom,
-              labelText: localizations.settingsHealthImportFromDate,
+              labelText: context.messages.settingsHealthImportFromDate,
               setDateTime: (DateTime value) {
                 setState(() {
                   _dateFrom = value;
@@ -49,7 +47,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
             const SizedBox(height: 20),
             DateTimeField(
               dateTime: _dateTo,
-              labelText: localizations.settingsHealthImportToDate,
+              labelText: context.messages.settingsHealthImportToDate,
               setDateTime: (DateTime value) {
                 setState(() {
                   _dateTo = value;

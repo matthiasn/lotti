@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -17,8 +17,6 @@ class ShareButtonWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (context, EntryState state) {
         final item = state.entry;
@@ -29,10 +27,10 @@ class ShareButtonWidget extends StatelessWidget {
         var tooltip = '';
 
         if (item is JournalImage) {
-          tooltip = localizations.journalSharePhotoHint;
+          tooltip = context.messages.journalSharePhotoHint;
         }
         if (item is JournalAudio) {
-          tooltip = localizations.journalShareAudioHint;
+          tooltip = context.messages.journalShareAudioHint;
         }
 
         Future<void> onPressed() async {

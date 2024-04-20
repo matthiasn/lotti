@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/settings/definitions_list_page.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -39,12 +39,10 @@ class TagsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return DefinitionsListPage<TagEntity>(
       stream: getIt<JournalDb>().watchTags(),
       floatingActionButton: const RadialAddTagButtons(),
-      title: localizations.settingsTagsTitle,
+      title: context.messages.settingsTagsTitle,
       getName: (tag) => tag.tag,
       searchCallback: (match) {
         getIt<TagsService>().match = match;

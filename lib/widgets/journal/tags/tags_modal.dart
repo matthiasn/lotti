@@ -2,10 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/journal/tags/tags_list_widget.dart';
@@ -29,7 +29,7 @@ class _TagsModalState extends State<TagsModal> {
   @override
   Widget build(BuildContext context) {
     final tagsService = getIt<TagsService>();
-    final localizations = AppLocalizations.of(context)!;
+
     final cubit = context.read<EntryCubit>();
     final item = cubit.entry;
 
@@ -98,7 +98,7 @@ class _TagsModalState extends State<TagsModal> {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: Text(localizations.journalTagsLabel),
+                  child: Text(context.messages.journalTagsLabel),
                 ),
                 Expanded(
                   child: CupertinoTextField(
@@ -120,7 +120,7 @@ class _TagsModalState extends State<TagsModal> {
                     bottom: 16,
                   ),
                   icon: Icon(MdiIcons.contentCopy),
-                  tooltip: localizations.journalTagsCopyHint,
+                  tooltip: context.messages.journalTagsCopyHint,
                 ),
                 IconButton(
                   onPressed: pasteTags,
@@ -130,7 +130,7 @@ class _TagsModalState extends State<TagsModal> {
                     bottom: 16,
                   ),
                   icon: Icon(MdiIcons.contentPaste),
-                  tooltip: localizations.journalTagsPasteHint,
+                  tooltip: context.messages.journalTagsPasteHint,
                 ),
               ],
             ),
