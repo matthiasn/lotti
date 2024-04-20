@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:drift/drift.dart';
-import 'package:drift/isolate.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
@@ -12,116 +11,31 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/connectivity.dart';
-import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
-import 'package:lotti/sync/outbox/messages.dart';
-import 'package:lotti/sync/outbox/outbox_service_isolate.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 
 class OutboxService {
-  final ConnectivityService _connectivityService = getIt<ConnectivityService>();
-  final FgBgService _fgBgService = getIt<FgBgService>();
-  final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Isolate? isolate;
-  SendPort? _sendPort;
 
   void dispose() {
     fgBgSubscription.cancel();
   }
 
   Future<void> restartRunner() async {
-    killIsolate();
-
     _loggingDb.captureEvent(
       'Restarting',
       domain: 'OUTBOX',
       subDomain: 'restartRunner()',
     );
-    await startIsolate();
-  }
-
-  void killIsolate() {
-    _loggingDb.captureEvent(
-      'Killing isolate',
-      domain: 'OUTBOX',
-      subDomain: 'killIsolate()',
-    );
-
-    isolate?.kill(priority: Isolate.immediate);
-  }
-
-  Future<void> startIsolate() async {
-    final syncConfig = await _syncConfigService.getSyncConfig();
-
-    final receivePort = ReceivePort();
-    isolate = await Isolate.spawn(entryPoint, receivePort.sendPort);
-    _sendPort = await receivePort.first as SendPort;
-
-    final syncDbIsolate = await getIt<Future<DriftIsolate>>(
-      instanceName: syncDbFileName,
-    );
-
-    final loggingDbIsolate = await getIt<Future<DriftIsolate>>(
-      instanceName: loggingDbFileName,
-    );
-
-    final settingsDbIsolate = await getIt<Future<DriftIsolate>>(
-      instanceName: settingsDbFileName,
-    );
-
-    final allowInvalidCert =
-        await getIt<JournalDb>().getConfigFlag(allowInvalidCertFlag);
-
-    if (syncConfig != null) {
-      _sendPort?.send(
-        OutboxIsolateMessage.init(
-          syncConfig: syncConfig,
-          syncDbConnectPort: syncDbIsolate.connectPort,
-          loggingDbConnectPort: loggingDbIsolate.connectPort,
-          settingsDbConnectPort: settingsDbIsolate.connectPort,
-          allowInvalidCert: allowInvalidCert,
-          docDir: getDocumentsDirectory(),
-        ),
-      );
-    }
-  }
-
-  Future<void> init() async {
-    final syncConfig = await _syncConfigService.getSyncConfig();
-
-    final enableSyncOutbox =
-        await getIt<JournalDb>().getConfigFlag(enableSyncFlag);
-
-    if (syncConfig != null && enableSyncOutbox) {
-      debugPrint('OutboxService init $enableSyncOutbox');
-      await startIsolate();
-
-      _connectivityService.connectedStream.listen((connected) {
-        if (connected) {
-          restartRunner();
-        } else {
-          killIsolate();
-        }
-      });
-
-      _fgBgService.fgBgStream.listen((foreground) {
-        if (foreground) {
-          //restartRunner();
-        }
-      });
-    }
   }
 
   Future<List<OutboxItem>> getNextItems() async {
