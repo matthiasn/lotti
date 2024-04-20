@@ -5,10 +5,10 @@ import 'dart:async';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/editor/editor_styles.dart';
@@ -32,8 +32,6 @@ class EditorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (
         context,
@@ -77,7 +75,7 @@ class EditorWidget extends StatelessWidget {
                     configurations: QuillEditorConfigurations(
                       autoFocus: autoFocus,
                       minHeight: minHeight,
-                      placeholder: localizations.editorPlaceholder,
+                      placeholder: context.messages.editorPlaceholder,
                       padding: EdgeInsets.only(
                         top: 8,
                         bottom: 16,

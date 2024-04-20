@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_cubit.dart';
 import 'package:lotti/blocs/settings/speech/speech_settings_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -13,8 +13,6 @@ class WhisperModelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<SpeechSettingsCubit, SpeechSettingsState>(
       builder: (context, snapshot) {
         final cubit = context.read<SpeechSettingsCubit>();
@@ -63,7 +61,7 @@ class WhisperModelCard extends StatelessWidget {
                 if (progress == 0.0)
                   TextButton(
                     child: Text(
-                      localizations.settingsSpeechDownloadButton,
+                      context.messages.settingsSpeechDownloadButton,
                       semanticsLabel: 'download $model',
                     ),
                     onPressed: () => cubit.downloadModel(model),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -34,8 +34,6 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
 
   @override
   Widget build(BuildContext _) {
-    final localizations = AppLocalizations.of(context)!;
-
     final valid = dateTo.isAfter(dateFrom) || dateTo == dateFrom;
     final changed = dateFrom != widget.item.meta.dateFrom ||
         dateTo != widget.item.meta.dateTo;
@@ -69,7 +67,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                   IntrinsicWidth(
                     child: DateTimeField(
                       dateTime: dateFrom,
-                      labelText: localizations.journalDateFromLabel,
+                      labelText: context.messages.journalDateFromLabel,
                       setDateTime: (picked) {
                         setState(() {
                           dateFrom = picked;
@@ -80,7 +78,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                   IntrinsicWidth(
                     child: DateTimeField(
                       dateTime: dateTo,
-                      labelText: localizations.journalDateToLabel,
+                      labelText: context.messages.journalDateToLabel,
                       setDateTime: (picked) {
                         setState(() {
                           dateTo = picked;
@@ -95,7 +93,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    localizations.journalDurationLabel,
+                    context.messages.journalDurationLabel,
                     textAlign: TextAlign.end,
                   ),
                   Padding(
@@ -122,7 +120,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                           pop();
                         },
                         child: Text(
-                          localizations.journalDateSaveButton,
+                          context.messages.journalDateSaveButton,
                           style: const TextStyle(
                             decoration: TextDecoration.underline,
                           ),
@@ -132,7 +130,7 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                     Visibility(
                       visible: !valid,
                       child: Text(
-                        localizations.journalDateInvalid,
+                        context.messages.journalDateInvalid,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.error,
                         ),

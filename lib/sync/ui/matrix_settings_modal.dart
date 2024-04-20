@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/ui/homeserver_config_page.dart';
 import 'package:lotti/sync/ui/matrix_logged_in_config_page.dart';
@@ -18,9 +18,8 @@ class MatrixSettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final pageIndexNotifier = ValueNotifier(0);
 
-    final localizations = AppLocalizations.of(context)!;
     return SettingsCard(
-      title: localizations.settingsMatrixTitle,
+      title: context.messages.settingsMatrixTitle,
       onTap: () {
         if (getIt<MatrixService>().isLoggedIn()) {
           pageIndexNotifier.value = 1;

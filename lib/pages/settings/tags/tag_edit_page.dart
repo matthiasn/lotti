@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/form_text_field.dart';
@@ -47,7 +47,6 @@ class _TagEditPageState extends State<TagEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
     void maybePop() => Navigator.of(context).maybePop();
 
     Future<void> onSavePressed() async {
@@ -127,7 +126,7 @@ class _TagEditPageState extends State<TagEditPage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  localizations.settingsTagsSaveLabel,
+                  context.messages.settingsTagsSaveLabel,
                   style: saveButtonStyle(Theme.of(context)),
                 ),
               ),
@@ -149,7 +148,7 @@ class _TagEditPageState extends State<TagEditPage> {
                 children: <Widget>[
                   FormTextField(
                     initialValue: widget.tagEntity.tag,
-                    labelText: localizations.settingsTagsTagName,
+                    labelText: context.messages.settingsTagsTagName,
                     name: 'tag',
                     key: const Key('tag_name_field'),
                     large: true,
@@ -158,26 +157,26 @@ class _TagEditPageState extends State<TagEditPage> {
                   FormSwitch(
                     name: 'private',
                     initialValue: widget.tagEntity.private,
-                    title: localizations.settingsTagsPrivateLabel,
+                    title: context.messages.settingsTagsPrivateLabel,
                     activeColor: errorColor,
                   ),
                   FormSwitch(
                     name: 'inactive',
                     initialValue: widget.tagEntity.inactive,
-                    title: localizations.settingsTagsHideLabel,
+                    title: context.messages.settingsTagsHideLabel,
                     activeColor: errorColor,
                   ),
                   inputSpacer,
                   FormBuilderChoiceChip<String>(
                     name: 'type',
                     initialValue: widget.tagEntity.map(
-                      genericTag: (_) => localizations.settingsTagsTypeTag,
-                      personTag: (_) => localizations.settingsTagsTypePerson,
+                      genericTag: (_) => context.messages.settingsTagsTypeTag,
+                      personTag: (_) => context.messages.settingsTagsTypePerson,
                       storyTag: (_) =>
-                          localizations.settingsTagsTypeStory, // 'STORY',
+                          context.messages.settingsTagsTypeStory, // 'STORY',
                     ),
                     decoration: inputDecoration(
-                      labelText: localizations.settingsTagsTypeLabel,
+                      labelText: context.messages.settingsTagsTypeLabel,
                       themeData: Theme.of(context),
                     ),
                     selectedColor: widget.tagEntity.map(
@@ -190,15 +189,15 @@ class _TagEditPageState extends State<TagEditPage> {
                     options: [
                       FormBuilderChipOption<String>(
                         value: 'TAG',
-                        child: Text(localizations.settingsTagsTypeTag),
+                        child: Text(context.messages.settingsTagsTypeTag),
                       ),
                       FormBuilderChipOption<String>(
                         value: 'PERSON',
-                        child: Text(localizations.settingsTagsTypePerson),
+                        child: Text(context.messages.settingsTagsTypePerson),
                       ),
                       FormBuilderChipOption<String>(
                         value: 'STORY',
-                        child: Text(localizations.settingsTagsTypeStory),
+                        child: Text(context.messages.settingsTagsTypeStory),
                       ),
                     ],
                   ),
@@ -214,7 +213,7 @@ class _TagEditPageState extends State<TagEditPage> {
                   IconButton(
                     icon: Icon(MdiIcons.trashCanOutline),
                     iconSize: 24,
-                    tooltip: localizations.settingsTagsDeleteTooltip,
+                    tooltip: context.messages.settingsTagsDeleteTooltip,
                     color: Theme.of(context).colorScheme.outline,
                     onPressed: () {
                       persistenceLogic.upsertTagEntity(

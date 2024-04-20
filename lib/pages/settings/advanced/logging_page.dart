@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -15,8 +15,6 @@ class LoggingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<List<LogEntry>>(
       stream: getIt<LoggingDb>().watchLogEntries(),
       builder: (
@@ -28,7 +26,7 @@ class LoggingPage extends StatelessWidget {
         return CustomScrollView(
           slivers: <Widget>[
             SliverTitleBar(
-              localizations.settingsLogsTitle,
+              context.messages.settingsLogsTitle,
               pinned: true,
               showBackButton: true,
             ),
@@ -97,10 +95,8 @@ class LogDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return Scaffold(
-      appBar: TitleAppBar(title: localizations.settingsLogsTitle),
+      appBar: TitleAppBar(title: context.messages.settingsLogsTitle),
       body: StreamBuilder(
         stream: _db.watchLogEntryById(logEntryId),
         builder: (

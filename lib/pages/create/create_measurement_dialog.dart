@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/form_utils.dart';
@@ -87,8 +87,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<MeasurableDataType?>(
       stream: _db.watchMeasurableDataTypeById(widget.measurableId),
       builder: (
@@ -137,7 +135,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                   measurementTime: measurementTime,
                 ),
                 child: Text(
-                  localizations.addMeasurementSaveButton,
+                  context.messages.addMeasurementSaveButton,
                   style: saveButtonStyle(
                     Theme.of(context),
                   ),
@@ -186,7 +184,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                       inputSpacer,
                       DateTimeField(
                         dateTime: measurementTime,
-                        labelText: localizations.addMeasurementDateLabel,
+                        labelText: context.messages.addMeasurementDateLabel,
                         setDateTime: (picked) {
                           setState(() {
                             measurementTime = picked;
@@ -213,7 +211,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                         initialValue: '',
                         key: const Key('measurement_comment_field'),
                         decoration: createDialogInputDecoration(
-                          labelText: localizations.addMeasurementCommentLabel,
+                          labelText:
+                              context.messages.addMeasurementCommentLabel,
                           themeData: Theme.of(context),
                         ),
                         keyboardAppearance: Theme.of(context).brightness,

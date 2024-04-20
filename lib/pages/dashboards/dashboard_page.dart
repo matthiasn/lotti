@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -37,8 +37,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     // TODO: bring back or remove
     // final int shiftDays = max((horizontalPan / scale).floor(), 0);
     // final rangeStart = getRangeStart(
@@ -88,7 +86,7 @@ class _DashboardPageState extends State<DashboardPage> {
         ) {
           if (!snapshot.hasData) {
             return EmptyScaffoldWithTitle(
-              localizations.dashboardsLoadingHint,
+              context.messages.dashboardsLoadingHint,
               body: const LoadingWidget(),
             );
           }
@@ -102,7 +100,7 @@ class _DashboardPageState extends State<DashboardPage> {
           if (dashboard == null) {
             beamToNamed('/dashboards');
             return EmptyScaffoldWithTitle(
-              localizations.dashboardNotFound,
+              context.messages.dashboardNotFound,
             );
           }
 

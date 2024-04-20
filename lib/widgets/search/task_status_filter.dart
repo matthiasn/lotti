@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
@@ -94,16 +94,14 @@ class TaskStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     final localizationLookup = {
-      'OPEN': localizations.taskStatusOpen,
-      'GROOMED': localizations.taskStatusGroomed,
-      'IN PROGRESS': localizations.taskStatusInProgress,
-      'BLOCKED': localizations.taskStatusBlocked,
-      'ON HOLD': localizations.taskStatusOnHold,
-      'DONE': localizations.taskStatusDone,
-      'REJECTED': localizations.taskStatusRejected,
+      'OPEN': context.messages.taskStatusOpen,
+      'GROOMED': context.messages.taskStatusGroomed,
+      'IN PROGRESS': context.messages.taskStatusInProgress,
+      'BLOCKED': context.messages.taskStatusBlocked,
+      'ON HOLD': context.messages.taskStatusOnHold,
+      'DONE': context.messages.taskStatusDone,
+      'REJECTED': context.messages.taskStatusRejected,
     };
 
     return BlocBuilder<JournalPageCubit, JournalPageState>(
@@ -154,8 +152,6 @@ class TaskStatusAllChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
@@ -175,7 +171,7 @@ class TaskStatusAllChip extends StatelessWidget {
         }
 
         return FilterChoiceChip(
-          label: localizations.taskStatusAll,
+          label: context.messages.taskStatusAll,
           isSelected: isSelected,
           selectedColor: Theme.of(context).colorScheme.secondary,
           onTap: onTap,

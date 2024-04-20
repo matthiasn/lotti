@@ -12,6 +12,7 @@ import 'package:lotti/blocs/theming/theming_cubit.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -39,8 +40,6 @@ class _AppScreenState extends State<AppScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<int>(
       stream: navService.getIndexStream(),
       builder: (context, snapshot) {
@@ -92,19 +91,19 @@ class _AppScreenState extends State<AppScreen> {
                 semanticLabel: 'Habits Tab',
                 icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
                 activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
-                label: localizations.navTabTitleHabits,
+                label: context.messages.navTabTitleHabits,
               ),
               createNavBarItem(
                 semanticLabel: 'Dashboards Tab',
                 icon: const Icon(Ionicons.bar_chart_outline),
                 activeIcon: const Icon(Ionicons.bar_chart),
-                label: localizations.navTabTitleInsights,
+                label: context.messages.navTabTitleInsights,
               ),
               createNavBarItem(
                 semanticLabel: 'Logbook Tab',
                 icon: const Icon(Ionicons.book_outline),
                 activeIcon: const Icon(Ionicons.book),
-                label: localizations.navTabTitleJournal,
+                label: context.messages.navTabTitleJournal,
               ),
               createNavBarItem(
                 semanticLabel: 'Tasks Tab',
@@ -114,7 +113,7 @@ class _AppScreenState extends State<AppScreen> {
                 activeIcon: TasksBadge(
                   child: Icon(MdiIcons.checkboxMarkedCircle),
                 ),
-                label: localizations.navTabTitleTasks,
+                label: context.messages.navTabTitleTasks,
               ),
               createNavBarItem(
                 semanticLabel: 'Settings Tab',
@@ -124,7 +123,7 @@ class _AppScreenState extends State<AppScreen> {
                 activeIcon: OutboxBadgeIcon(
                   icon: const Icon(Ionicons.settings),
                 ),
-                label: localizations.navTabTitleSettings,
+                label: context.messages.navTabTitleSettings,
               ),
             ],
             onTap: navService.tapIndex,

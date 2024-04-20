@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_prompt_icon_widget.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/platform.dart';
@@ -38,7 +38,6 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
     final linkService = getIt<LinkService>();
 
     return BlocBuilder<EntryCubit, EntryState>(
@@ -61,7 +60,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                 child: Row(
                   children: [
                     SwitchIconWidget(
-                      tooltip: localizations.journalFavoriteTooltip,
+                      tooltip: context.messages.journalFavoriteTooltip,
                       onPressed: cubit.toggleStarred,
                       value: item.meta.starred ?? false,
                       icon: Icons.star_outline_rounded,
@@ -69,7 +68,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                       activeColor: starredGold,
                     ),
                     SwitchIconWidget(
-                      tooltip: localizations.journalFlaggedTooltip,
+                      tooltip: context.messages.journalFlaggedTooltip,
                       onPressed: cubit.toggleFlagged,
                       value: item.meta.flag == EntryFlag.import,
                       icon: Icons.flag_outlined,
@@ -81,13 +80,13 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                         width: 40,
                         child: IconButton(
                           icon: const Icon(Icons.more_horiz),
-                          tooltip: localizations.journalHeaderExpand,
+                          tooltip: context.messages.journalHeaderExpand,
                           onPressed: () => setState(() => showAllIcons = true),
                         ),
                       )
                     else ...[
                       SwitchIconWidget(
-                        tooltip: localizations.journalPrivateTooltip,
+                        tooltip: context.messages.journalPrivateTooltip,
                         onPressed: cubit.togglePrivate,
                         value: item.meta.private ?? false,
                         icon: Icons.shield_outlined,
@@ -97,8 +96,8 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                       if (state.entry?.geolocation != null)
                         SwitchIconWidget(
                           tooltip: state.showMap
-                              ? localizations.journalHideMapHint
-                              : localizations.journalShowMapHint,
+                              ? context.messages.journalHideMapHint
+                              : context.messages.journalShowMapHint,
                           onPressed: cubit.toggleMapVisible,
                           value: cubit.showMap,
                           icon: Icons.map_outlined,
@@ -112,7 +111,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                         width: 40,
                         child: IconButton(
                           icon: const Icon(Icons.add_link),
-                          tooltip: localizations.journalLinkFromHint,
+                          tooltip: context.messages.journalLinkFromHint,
                           onPressed: () => linkService.linkFrom(id),
                         ),
                       ),
@@ -120,7 +119,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                         width: 40,
                         child: IconButton(
                           icon: Icon(MdiIcons.target),
-                          tooltip: localizations.journalLinkToHint,
+                          tooltip: context.messages.journalLinkToHint,
                           onPressed: () => linkService.linkTo(id),
                         ),
                       ),
@@ -129,7 +128,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                           width: 40,
                           child: IconButton(
                             icon: Icon(MdiIcons.linkOff),
-                            tooltip: localizations.journalUnlinkHint,
+                            tooltip: context.messages.journalUnlinkHint,
                             onPressed: widget.unlinkFn,
                           ),
                         ),
@@ -137,7 +136,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                         width: 40,
                         child: IconButton(
                           icon: const Icon(Icons.more_outlined),
-                          tooltip: localizations.journalHeaderContract,
+                          tooltip: context.messages.journalHeaderContract,
                           onPressed: () => setState(() => showAllIcons = false),
                         ),
                       ),

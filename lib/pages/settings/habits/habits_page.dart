@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/definitions_list_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
@@ -15,8 +15,6 @@ class HabitsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<List<CategoryDefinition>>(
       stream: getIt<JournalDb>().watchCategories(),
       builder: (context, snapshot) {
@@ -33,7 +31,7 @@ class HabitsPage extends StatelessWidget {
             createFn: () => beamToNamed('/settings/habits/create'),
             semanticLabel: 'Add Habit',
           ),
-          title: localizations.settingsHabitsTitle,
+          title: context.messages.settingsHabitsTitle,
           getName: (habitDefinition) => habitDefinition.name,
           initialSearchTerm: initialSearchTerm,
           definitionCard: (int index, HabitDefinition item) {

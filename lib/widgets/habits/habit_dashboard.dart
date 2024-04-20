@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/sort.dart';
@@ -18,7 +18,6 @@ class SelectDashboardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
     final controller = TextEditingController();
 
     return StreamBuilder<List<DashboardDefinition>>(
@@ -93,7 +92,8 @@ class SelectDashboardWidget extends StatelessWidget {
               focusNode: FocusNode(),
               controller: controller,
               decoration: inputDecoration(
-                labelText: undefined ? '' : localizations.habitDashboardLabel,
+                labelText:
+                    undefined ? '' : context.messages.habitDashboardLabel,
                 themeData: Theme.of(context),
               ).copyWith(
                 suffixIcon: undefined
@@ -108,7 +108,7 @@ class SelectDashboardWidget extends StatelessWidget {
                           cubit.setDashboard(null);
                         },
                       ),
-                hintText: localizations.habitDashboardHint,
+                hintText: context.messages.habitDashboardHint,
                 hintStyle: style?.copyWith(
                   color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
                 ),

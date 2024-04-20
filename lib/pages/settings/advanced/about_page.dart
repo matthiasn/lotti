@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
@@ -41,8 +41,6 @@ class _AboutPageState extends State<AboutPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder<int>(
       stream: countStream,
       builder: (
@@ -50,7 +48,7 @@ class _AboutPageState extends State<AboutPage> {
         AsyncSnapshot<int> snapshot,
       ) {
         return SliverBoxAdapterPage(
-          title: localizations.settingsAboutTitle,
+          title: context.messages.settingsAboutTitle,
           showBackButton: true,
           child: Padding(
             padding: const EdgeInsets.all(20),

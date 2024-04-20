@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/categories/categories_type_card.dart';
@@ -32,8 +32,6 @@ class _SelectColorFieldState extends State<SelectColorField> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     controller.addListener(() {
       final regex = RegExp('#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?');
       final text = controller.text;
@@ -90,13 +88,14 @@ class _SelectColorFieldState extends State<SelectColorField> {
     return TextField(
       controller: controller,
       decoration: inputDecoration(
-        labelText:
-            widget.hexColor == null || !valid ? '' : localizations.colorLabel,
+        labelText: widget.hexColor == null || !valid
+            ? ''
+            : context.messages.colorLabel,
         semanticsLabel: 'Select color',
         themeData: Theme.of(context),
       ).copyWith(
         icon: ColorIcon(color),
-        hintText: localizations.colorPickerHint,
+        hintText: context.messages.colorPickerHint,
         hintStyle: style?.copyWith(
           color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
         ),
@@ -108,7 +107,7 @@ class _SelectColorFieldState extends State<SelectColorField> {
             semanticLabel: 'Pick color',
           ),
         ),
-        errorText: valid ? null : localizations.colorPickerError,
+        errorText: valid ? null : context.messages.colorPickerError,
       ),
       style: style,
     );

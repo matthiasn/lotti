@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/pages/settings/dashboards/chart_multi_select.dart';
@@ -171,7 +171,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
     void maybePop() => Navigator.of(context).maybePop();
 
     final formKey = widget.formKey ?? _formKey;
-    final localizations = AppLocalizations.of(context)!;
+
     return StreamBuilder<List<HabitDefinition>>(
       stream: getIt<JournalDb>().watchHabitDefinitions(),
       builder: (
@@ -319,7 +319,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
-                          localizations.dashboardSaveLabel,
+                          context.messages.dashboardSaveLabel,
                           style: saveButtonStyle(Theme.of(context)),
                           semanticsLabel: 'Save Dashboard',
                         ),
@@ -343,7 +343,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         children: <Widget>[
                           FormTextField(
                             initialValue: widget.dashboard.name,
-                            labelText: localizations.dashboardNameLabel,
+                            labelText: context.messages.dashboardNameLabel,
                             name: 'name',
                             semanticsLabel: 'Dashboard - name field',
                             key: const Key('dashboard_name_field'),
@@ -352,7 +352,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           inputSpacer,
                           FormTextField(
                             initialValue: widget.dashboard.description,
-                            labelText: localizations.dashboardDescriptionLabel,
+                            labelText:
+                                context.messages.dashboardDescriptionLabel,
                             name: 'description',
                             semanticsLabel: 'Dashboard - description field',
                             fieldRequired: false,
@@ -364,13 +365,13 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           FormSwitch(
                             name: 'private',
                             initialValue: widget.dashboard.private,
-                            title: localizations.dashboardPrivateLabel,
+                            title: context.messages.dashboardPrivateLabel,
                             activeColor: Theme.of(context).colorScheme.error,
                           ),
                           FormSwitch(
                             name: 'active',
                             initialValue: widget.dashboard.active,
-                            title: localizations.dashboardActiveLabel,
+                            title: context.messages.dashboardActiveLabel,
                             activeColor: starredGold,
                           ),
                           SelectDashboardCategoryWidget(
@@ -427,13 +428,13 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         ),
                       ),
                     ),
-                    Text(localizations.dashboardAddChartsTitle),
+                    Text(context.messages.dashboardAddChartsTitle),
                     if (habitSelectItems.isNotEmpty)
                       ChartMultiSelect<HabitDefinition>(
                         multiSelectItems: habitSelectItems,
                         onConfirm: onConfirmAddHabit,
-                        title: localizations.dashboardAddHabitTitle,
-                        buttonText: localizations.dashboardAddHabitButton,
+                        title: context.messages.dashboardAddHabitTitle,
+                        buttonText: context.messages.dashboardAddHabitButton,
                         semanticsLabel: 'Add Habit Chart',
                         iconData: Icons.insights,
                       ),
@@ -441,32 +442,33 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                       ChartMultiSelect<MeasurableDataType>(
                         multiSelectItems: measurableSelectItems,
                         onConfirm: onConfirmAddMeasurement,
-                        title: localizations.dashboardAddMeasurementTitle,
-                        buttonText: localizations.dashboardAddMeasurementButton,
+                        title: context.messages.dashboardAddMeasurementTitle,
+                        buttonText:
+                            context.messages.dashboardAddMeasurementButton,
                         semanticsLabel: 'Add Measurable Data Chart',
                         iconData: Icons.insights,
                       ),
                     ChartMultiSelect<HealthTypeConfig>(
                       multiSelectItems: healthSelectItems,
                       onConfirm: onConfirmAddHealthType,
-                      title: localizations.dashboardAddHealthTitle,
-                      buttonText: localizations.dashboardAddHealthButton,
+                      title: context.messages.dashboardAddHealthTitle,
+                      buttonText: context.messages.dashboardAddHealthButton,
                       semanticsLabel: 'Add Health Chart',
                       iconData: MdiIcons.stethoscope,
                     ),
                     ChartMultiSelect<DashboardSurveyItem>(
                       multiSelectItems: surveySelectItems,
                       onConfirm: onConfirmAddSurveyType,
-                      title: localizations.dashboardAddSurveyTitle,
-                      buttonText: localizations.dashboardAddSurveyButton,
+                      title: context.messages.dashboardAddSurveyTitle,
+                      buttonText: context.messages.dashboardAddSurveyButton,
                       semanticsLabel: 'Add Survey Chart',
                       iconData: MdiIcons.clipboardOutline,
                     ),
                     ChartMultiSelect<DashboardWorkoutItem>(
                       multiSelectItems: workoutSelectItems,
                       onConfirm: onConfirmAddWorkoutType,
-                      title: localizations.dashboardAddWorkoutTitle,
-                      buttonText: localizations.dashboardAddWorkoutButton,
+                      title: context.messages.dashboardAddWorkoutTitle,
+                      buttonText: context.messages.dashboardAddWorkoutButton,
                       semanticsLabel: 'Add Workout Chart',
                       iconData: Icons.sports_gymnastics,
                     ),
@@ -535,7 +537,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               IconButton(
                                 icon: const Icon(Icons.copy),
                                 iconSize: settingsIconSize,
-                                tooltip: localizations.dashboardCopyHint,
+                                tooltip: context.messages.dashboardCopyHint,
                                 onPressed: copyDashboard,
                               ),
                               IconButton(
@@ -543,20 +545,20 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                   MdiIcons.trashCanOutline,
                                 ),
                                 iconSize: settingsIconSize,
-                                tooltip: localizations.dashboardDeleteHint,
+                                tooltip: context.messages.dashboardDeleteHint,
                                 color: Theme.of(context).colorScheme.outline,
                                 onPressed: () async {
                                   const deleteKey = 'deleteKey';
                                   final result =
                                       await showModalActionSheet<String>(
                                     context: context,
-                                    title:
-                                        localizations.dashboardDeleteQuestion,
+                                    title: context
+                                        .messages.dashboardDeleteQuestion,
                                     actions: [
                                       ModalSheetAction(
                                         icon: Icons.warning,
-                                        label: localizations
-                                            .dashboardDeleteConfirm,
+                                        label: context
+                                            .messages.dashboardDeleteConfirm,
                                         key: deleteKey,
                                         isDestructiveAction: true,
                                         isDefaultAction: true,
@@ -600,8 +602,6 @@ class EditDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return StreamBuilder(
       stream: _db.watchDashboardById(dashboardId),
       builder: (
@@ -615,7 +615,7 @@ class EditDashboardPage extends StatelessWidget {
         }
 
         if (dashboard == null) {
-          return EmptyScaffoldWithTitle(localizations.dashboardNotFound);
+          return EmptyScaffoldWithTitle(context.messages.dashboardNotFound);
         }
 
         return DashboardDefinitionPage(

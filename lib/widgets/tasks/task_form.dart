@@ -3,11 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/date_time/duration_bottom_sheet.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
@@ -32,8 +32,6 @@ class TaskForm extends StatefulWidget {
 class _TaskFormState extends State<TaskForm> {
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<EntryCubit, EntryState>(
       builder: (
         context,
@@ -59,7 +57,7 @@ class _TaskFormState extends State<TaskForm> {
                       initialValue: widget.data?.title ?? '',
                       decoration: inputDecoration(
                         labelText: '${widget.data?.title}'.isEmpty
-                            ? localizations.taskNameLabel
+                            ? context.messages.taskNameLabel
                             : '',
                         themeData: Theme.of(context),
                       ),
@@ -79,7 +77,7 @@ class _TaskFormState extends State<TaskForm> {
                           width: 120,
                           child: TextField(
                             decoration: inputDecoration(
-                              labelText: localizations.taskEstimateLabel,
+                              labelText: context.messages.taskEstimateLabel,
                               themeData: Theme.of(context),
                             ),
                             style: Theme.of(context).textTheme.titleMedium,
@@ -130,43 +128,43 @@ class _TaskFormState extends State<TaskForm> {
                               DropdownMenuItem<String>(
                                 value: 'OPEN',
                                 child: TaskStatusLabel(
-                                  localizations.taskStatusOpen,
+                                  context.messages.taskStatusOpen,
                                 ),
                               ),
                               DropdownMenuItem<String>(
                                 value: 'GROOMED',
                                 child: TaskStatusLabel(
-                                  localizations.taskStatusGroomed,
+                                  context.messages.taskStatusGroomed,
                                 ),
                               ),
                               DropdownMenuItem<String>(
                                 value: 'IN PROGRESS',
                                 child: TaskStatusLabel(
-                                  localizations.taskStatusInProgress,
+                                  context.messages.taskStatusInProgress,
                                 ),
                               ),
                               DropdownMenuItem<String>(
                                 value: 'BLOCKED',
                                 child: TaskStatusLabel(
-                                  localizations.taskStatusBlocked,
+                                  context.messages.taskStatusBlocked,
                                 ),
                               ),
                               DropdownMenuItem<String>(
                                 value: 'ON HOLD',
                                 child: TaskStatusLabel(
-                                  localizations.taskStatusOnHold,
+                                  context.messages.taskStatusOnHold,
                                 ),
                               ),
                               DropdownMenuItem<String>(
                                 value: 'DONE',
                                 child: TaskStatusLabel(
-                                  localizations.taskStatusDone,
+                                  context.messages.taskStatusDone,
                                 ),
                               ),
                               DropdownMenuItem<String>(
                                 value: 'REJECTED',
                                 child: TaskStatusLabel(
-                                  localizations.taskStatusRejected,
+                                  context.messages.taskStatusRejected,
                                 ),
                               ),
                             ],

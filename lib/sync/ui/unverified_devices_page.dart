@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/sync/imap_config_status.dart';
@@ -13,8 +13,6 @@ SliverWoltModalSheetPage unverifiedDevicesPage({
   required TextTheme textTheme,
   required ValueNotifier<int> pageIndexNotifier,
 }) {
-  final localizations = AppLocalizations.of(context)!;
-
   return WoltModalSheetPage(
     stickyActionBar: Padding(
       padding: const EdgeInsets.all(WoltModalConfig.pagePadding),
@@ -25,7 +23,7 @@ SliverWoltModalSheetPage unverifiedDevicesPage({
             onPressed: () =>
                 pageIndexNotifier.value = pageIndexNotifier.value - 1,
             child: Center(
-              child: Text(localizations.settingsMatrixPreviousPage),
+              child: Text(context.messages.settingsMatrixPreviousPage),
             ),
           ),
           const SizedBox(height: 8),
@@ -33,14 +31,14 @@ SliverWoltModalSheetPage unverifiedDevicesPage({
             onPressed: () =>
                 pageIndexNotifier.value = pageIndexNotifier.value + 1,
             child: Center(
-              child: Text(localizations.settingsMatrixNextPage),
+              child: Text(context.messages.settingsMatrixNextPage),
             ),
           ),
         ],
       ),
     ),
     topBarTitle: Text(
-      localizations.settingsMatrixUnverifiedDevicesPage,
+      context.messages.settingsMatrixUnverifiedDevicesPage,
       style: textTheme.titleMedium,
     ),
     isTopBarLayerAlwaysVisible: true,
@@ -65,7 +63,6 @@ class UnverifiedDevices extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final localizations = AppLocalizations.of(context)!;
     final unverifiedDevices =
         ref.watch(matrixUnverifiedControllerProvider).value ?? [];
 
@@ -77,7 +74,7 @@ class UnverifiedDevices extends ConsumerWidget {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(localizations.settingsMatrixNoUnverifiedLabel),
+          Text(context.messages.settingsMatrixNoUnverifiedLabel),
           const StatusIndicator(
             Colors.greenAccent,
             semanticsLabel: 'No unverified devices',
@@ -92,8 +89,9 @@ class UnverifiedDevices extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              localizations.settingsMatrixListUnverifiedLabel,
-              semanticsLabel: localizations.settingsMatrixListUnverifiedLabel,
+              context.messages.settingsMatrixListUnverifiedLabel,
+              semanticsLabel:
+                  context.messages.settingsMatrixListUnverifiedLabel,
             ),
             IconButton(
               key: const Key('matrix_list_unverified'),

@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/surveys/run_surveys.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
@@ -62,10 +62,8 @@ class FillSurveyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return Scaffold(
-      appBar: TitleAppBar(title: localizations.addSurveyTitle),
+      appBar: TitleAppBar(title: context.messages.addSurveyTitle),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

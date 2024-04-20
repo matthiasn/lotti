@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/widgets/buttons/rounded_filled_button.dart';
@@ -27,7 +27,6 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
     final pop = Navigator.of(context).pop;
 
     void closeModal() {
@@ -80,7 +79,7 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
                   ),
                 if (!isDone && emojis != null) ...[
                   Text(
-                    localizations.settingsMatrixVerifyIncomingConfirm,
+                    context.messages.settingsMatrixVerifyIncomingConfirm,
                     style: Theme.of(context).textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
@@ -98,8 +97,8 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
                         onPressed: () async {
                           closeModal();
                         },
-                        labelText:
-                            localizations.settingsMatrixCancelVerificationLabel,
+                        labelText: context
+                            .messages.settingsMatrixCancelVerificationLabel,
                       ),
                       RoundedFilledButton(
                         onPressed: runner?.acceptEmojiVerification,
@@ -111,7 +110,7 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
                 ],
                 if (isDone) ...[
                   Text(
-                    localizations.settingsMatrixVerificationSuccessLabel(
+                    context.messages.settingsMatrixVerificationSuccessLabel(
                       '',
                       runner?.keyVerification.deviceId ?? '',
                     ),
@@ -131,8 +130,8 @@ class _IncomingVerificationModalState extends State<IncomingVerificationModal> {
                           runner?.stopTimer();
                           pop();
                         },
-                        labelText: localizations
-                            .settingsMatrixVerificationSuccessConfirm,
+                        labelText: context
+                            .messages.settingsMatrixVerificationSuccessConfirm,
                       ),
                     ],
                   ),

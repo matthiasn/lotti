@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
@@ -59,8 +59,6 @@ class JournalFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
@@ -97,19 +95,19 @@ class JournalFilter extends StatelessWidget {
               filter: DisplayFilter.starredEntriesOnly,
               icon: Icons.star_outline,
               activeIcon: Icons.star,
-              semanticLabel: localizations.journalFavoriteTooltip,
+              semanticLabel: context.messages.journalFavoriteTooltip,
             ),
             segment(
               filter: DisplayFilter.flaggedEntriesOnly,
               icon: Icons.flag_outlined,
               activeIcon: Icons.flag,
-              semanticLabel: localizations.journalFlaggedTooltip,
+              semanticLabel: context.messages.journalFlaggedTooltip,
             ),
             segment(
               filter: DisplayFilter.privateEntriesOnly,
               icon: Icons.shield_outlined,
               activeIcon: Icons.shield,
-              semanticLabel: localizations.journalPrivateTooltip,
+              semanticLabel: context.messages.journalPrivateTooltip,
             ),
           ],
         );
