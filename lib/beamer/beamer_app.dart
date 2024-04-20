@@ -8,7 +8,6 @@ import 'package:ionicons/ionicons.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
-import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/blocs/theming/theming_cubit.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
@@ -154,12 +153,6 @@ class MyBeamerApp extends StatelessWidget {
       },
       child: MultiBlocProvider(
         providers: [
-          BlocProvider<SyncConfigCubit>(
-            lazy: false,
-            create: (BuildContext context) => SyncConfigCubit(
-              testOnNetworkChange: true,
-            ),
-          ),
           BlocProvider<OutboxCubit>(
             lazy: false,
             create: (BuildContext context) => OutboxCubit(),

@@ -1,30 +1,10 @@
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
-import 'package:lotti/blocs/sync/sync_config_cubit.dart';
-import 'package:lotti/blocs/sync/sync_config_state.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockSyncConfigService extends Mock implements SyncConfigService {}
-
 class MockOutboxService extends Mock implements OutboxService {}
-
-class MockSyncConfigCubit extends Mock implements SyncConfigCubit {}
-
-MockSyncConfigCubit mockSyncConfigCubitWithState(SyncConfigState state) {
-  final mock = MockSyncConfigCubit();
-  when(() => mock.state).thenReturn(state);
-
-  when(mock.close).thenAnswer((_) async {});
-
-  when(() => mock.stream).thenAnswer(
-    (_) => Stream<SyncConfigState>.fromIterable([state]),
-  );
-
-  return mock;
-}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
 

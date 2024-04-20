@@ -42,7 +42,6 @@ dependencies:
   drift: ^2.16.0
   easy_debounce: ^2.0.2+1
   encrypt: ^5.0.1
-  enough_mail: ^2.0.0
   enum_to_string: ^2.0.1
   equatable: ^2.0.3
   exif: ^3.0.1

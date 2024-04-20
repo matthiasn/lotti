@@ -29,7 +29,6 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/connectivity.dart';
 import 'package:lotti/sync/fg_bg.dart';
-import 'package:lotti/sync/imap_client.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/utils/consts.dart';
@@ -130,8 +129,6 @@ class MockVectorClockService extends Mock implements VectorClockService {}
 class MockConnectivityService extends Mock implements ConnectivityService {}
 
 class MockAiLogic extends Mock implements AiLogic {}
-
-class MockImapClientManager extends Mock implements ImapClientManager {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
 
