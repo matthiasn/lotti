@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -25,10 +27,15 @@ Future<void> listenToTimelineEvents({
     service.timeline = await service.syncRoom?.getTimeline(
       onNewEvent: () {
         final clientRunner = service.clientRunner;
-        if (clientRunner.queueSize < 2) {
+        if (clientRunner.queueSize < 5) {
           service.clientRunner.enqueueRequest(null);
         }
       },
+    );
+
+    unawaited(
+      Future<void>.delayed(const Duration(seconds: 1))
+          .then((value) => service.clientRunner.enqueueRequest(null)),
     );
 
     final timeline = service.timeline;
