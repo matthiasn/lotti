@@ -50,6 +50,13 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: resendAttachments,
+      description: 'Resend Attachments',
+      status: false,
+    ),
+  );
   if (Platform.isMacOS) {
     await db.insertFlagIfNotExists(
       const ConfigFlag(
