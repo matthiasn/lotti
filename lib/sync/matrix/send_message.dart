@@ -4,12 +4,14 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/matrix/consts.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/matrix/stats.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
@@ -87,9 +89,13 @@ Future<void> sendMessage(
     if (syncMessage is SyncJournalEntity) {
       final journalEntity = syncMessage.journalEntity;
 
+      final shouldResendAttachments =
+          await getIt<JournalDb>().getConfigFlag(resendAttachments);
+
       await journalEntity.maybeMap(
         journalAudio: (JournalAudio journalAudio) async {
-          if (syncMessage.status == SyncEntryStatus.initial) {
+          if (shouldResendAttachments ||
+              syncMessage.status == SyncEntryStatus.initial) {
             final relativePath = AudioUtils.getRelativeAudioPath(journalAudio);
             final fullPath = AudioUtils.getAudioPath(journalAudio, docDir);
             final bytes = await File(fullPath).readAsBytes();
@@ -118,7 +124,8 @@ Future<void> sendMessage(
           }
         },
         journalImage: (JournalImage journalImage) async {
-          if (syncMessage.status == SyncEntryStatus.initial) {
+          if (shouldResendAttachments ||
+              syncMessage.status == SyncEntryStatus.initial) {
             final relativePath = getRelativeImagePath(journalImage);
             final fullPath = getFullImagePath(journalImage);
             final bytes = await File(fullPath).readAsBytes();
