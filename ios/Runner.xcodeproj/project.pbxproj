@@ -631,7 +631,7 @@
 			repositoryURL = "https://github.com/argmaxinc/whisperkit";
 			requirement = {
 				kind = exactVersion;
-				version = 0.5.0;
+				version = 0.6.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
