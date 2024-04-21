@@ -27,6 +27,7 @@ class FlagsPage extends StatelessWidget {
           recordLocationFlag,
           allowInvalidCertFlag,
           enableMatrixFlag,
+          resendAttachments,
         };
 
         final filteredItems =
