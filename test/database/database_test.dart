@@ -41,6 +41,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable Matrix Sync',
     status: false,
   ),
+  const ConfigFlag(
+    name: resendAttachments,
+    description: 'Resend Attachments',
+    status: false,
+  ),
 };
 
 final expectedMacFlags = <ConfigFlag>{
