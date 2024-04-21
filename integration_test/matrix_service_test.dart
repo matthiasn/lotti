@@ -118,7 +118,7 @@ void main() {
         debugPrint('\n--- Alice goes live');
         final alice = MatrixService(
           matrixConfig: config1,
-          hiveDbName: 'Alice',
+          dbName: 'Alice',
           deviceDisplayName: 'Alice',
           overriddenJournalDb: aliceDb,
         );
@@ -143,7 +143,7 @@ void main() {
         debugPrint('\n--- Bob goes live');
         final bob = MatrixService(
           matrixConfig: config2,
-          hiveDbName: 'Bob',
+          dbName: 'Bob',
           deviceDisplayName: 'Bob',
           overriddenJournalDb: bobDb,
         );
