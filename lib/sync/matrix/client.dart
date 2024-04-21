@@ -9,10 +9,11 @@ import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 Client createMatrixClient({
   String? deviceDisplayName,
-  String? hiveDbName,
+  String? dbName,
 }) {
   return Client(
     deviceDisplayName ?? 'lotti',
@@ -24,10 +25,18 @@ Client createMatrixClient({
     sendMessageTimeoutSeconds: 120,
     databaseBuilder: (_) async {
       final docDir = getIt<Directory>();
-      final path = '${docDir.path}/matrix/';
-      // TODO(matthiasn): use MatrixSdkDatabase instead
-      // ignore: deprecated_member_use
-      final db = HiveCollectionsDatabase(hiveDbName ?? 'lotti_sync', path);
+      final name = dbName ?? 'lotti_sync';
+      final path = '${docDir.path}/matrix/$name.db';
+      final database = await databaseFactoryFfi.openDatabase(
+        path,
+        options: OpenDatabaseOptions(),
+      );
+      final db = MatrixSdkDatabase(
+        name,
+        database: database,
+        sqfliteFactory: databaseFactoryFfi,
+        fileStorageLocation: Uri(path: path),
+      );
       await db.open();
       return db;
     },

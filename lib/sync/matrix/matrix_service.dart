@@ -19,11 +19,11 @@ class MatrixService {
   MatrixService({
     this.matrixConfig,
     this.deviceDisplayName,
-    String? hiveDbName,
+    String? dbName,
     JournalDb? overriddenJournalDb,
   })  : keyVerificationController =
             StreamController<KeyVerificationRunner>.broadcast(),
-        _client = createMatrixClient(hiveDbName: hiveDbName) {
+        _client = createMatrixClient(dbName: dbName) {
     clientRunner = ClientRunner<void>(
       callback: (event) async {
         await processNewTimelineEvents(
