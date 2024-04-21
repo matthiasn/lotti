@@ -314,12 +314,6 @@ void main() {
         final bobEntriesCount = await bobDb.getJournalCount();
         expect(bobEntriesCount, n);
         debugPrint('Bob persisted $bobEntriesCount entries');
-
-        debugPrint('\n--- Logging out Alice and Bob');
-
-        await alice.logout();
-        await waitSeconds(defaultDelay * delayFactor);
-        await bob.logout();
       },
       timeout: const Timeout(Duration(minutes: 15)),
     );

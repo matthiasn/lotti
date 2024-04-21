@@ -195,6 +195,7 @@ class MatrixService {
 
   Future<void> logout() async {
     if (_client.isLogged()) {
+      timeline?.cancelSubscriptions();
       await _client.logout();
     }
   }
