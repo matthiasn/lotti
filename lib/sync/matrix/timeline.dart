@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -25,10 +27,15 @@ Future<void> listenToTimelineEvents({
     service.timeline = await service.syncRoom?.getTimeline(
       onNewEvent: () {
         final clientRunner = service.clientRunner;
-        if (clientRunner.queueSize < 2) {
+        if (clientRunner.queueSize < 5) {
           service.clientRunner.enqueueRequest(null);
         }
       },
+    );
+
+    unawaited(
+      Future<void>.delayed(const Duration(seconds: 1))
+          .then((value) => service.clientRunner.enqueueRequest(null)),
     );
 
     final timeline = service.timeline;
@@ -61,6 +68,7 @@ Future<void> processNewTimelineEvents({
 
   try {
     final lastReadEventContextId = service.lastReadEventContextId;
+
     await service.client.sync();
     final hasMessage = await service.syncRoom
             ?.getEventById(lastReadEventContextId.toString()) !=
@@ -109,21 +117,26 @@ Future<void> processNewTimelineEvents({
           service.lastReadEventContextId = eventId;
           await setLastReadMatrixEventId(eventId);
         }
-
-        await timeline.setReadMarker(eventId: eventId);
-      } catch (e) {
-        debugPrint('$e');
+        final loginState = service.client.onLoginStateChanged.value;
+        if (loginState == LoginState.loggedIn) {
+          await timeline.setReadMarker(eventId: eventId);
+        }
+      } catch (e, stackTrace) {
+        loggingDb.captureException(
+          e,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'setReadMarker ${service.client.deviceName}',
+          stackTrace: stackTrace,
+        );
       }
     }
   } catch (e, stackTrace) {
-    debugPrint('$e');
     loggingDb.captureException(
       e,
       domain: 'MATRIX_SERVICE',
       subDomain: 'listenToTimelineEvents ${service.client.deviceName}',
       stackTrace: stackTrace,
     );
-    rethrow;
   }
 }
 
