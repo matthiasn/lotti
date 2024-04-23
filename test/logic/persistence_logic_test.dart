@@ -18,8 +18,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/connectivity.dart';
-import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/utils.dart';
@@ -38,21 +36,11 @@ void main() {
   registerFallbackValue(FakeJournalEntity());
 
   final mockNotificationService = MockNotificationService();
-  final mockConnectivityService = MockConnectivityService();
-  final mockFgBgService = MockFgBgService();
   final mockAiLogic = MockAiLogic();
   final mockFts5Db = MockFts5Db();
 
   group('Database Tests - ', () {
     var vcMockNext = '1';
-
-    when(() => mockConnectivityService.connectedStream).thenAnswer(
-      (_) => Stream<bool>.fromIterable([true]),
-    );
-
-    when(() => mockFgBgService.fgBgStream).thenAnswer(
-      (_) => Stream<bool>.fromIterable([true]),
-    );
 
     when(() => mockAiLogic.embed(any())).thenAnswer(
       (_) async {},
@@ -92,9 +80,7 @@ void main() {
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<SettingsDb>(settingsDb)
-        ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<Fts5Db>(mockFts5Db)
-        ..registerSingleton<FgBgService>(mockFgBgService)
         ..registerSingleton<AiLogic>(mockAiLogic)
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(journalDb)
