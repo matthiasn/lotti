@@ -12,8 +12,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/connectivity.dart';
-import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/utils.dart';
@@ -32,17 +30,7 @@ void main() {
     setUpAll(() {
       final secureStorageMock = MockSecureStorage();
       final settingsDb = SettingsDb(inMemoryDatabase: true);
-      final mockConnectivityService = MockConnectivityService();
-      final mockFgBgService = MockFgBgService();
       final mockTimeService = MockTimeService();
-
-      when(() => mockConnectivityService.connectedStream).thenAnswer(
-        (_) => Stream<bool>.fromIterable([true]),
-      );
-
-      when(() => mockFgBgService.fgBgStream).thenAnswer(
-        (_) => Stream<bool>.fromIterable([true]),
-      );
 
       when(() => secureStorageMock.readValue(hostKey))
           .thenAnswer((_) async => 'some_host');
@@ -58,9 +46,7 @@ void main() {
       });
 
       getIt
-        ..registerSingleton<ConnectivityService>(mockConnectivityService)
         ..registerSingleton<SettingsDb>(settingsDb)
-        ..registerSingleton<FgBgService>(mockFgBgService)
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))

@@ -27,8 +27,6 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/connectivity.dart';
-import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/utils/consts.dart';
@@ -126,13 +124,9 @@ class MockSecureStorage extends Mock implements SecureStorage {}
 
 class MockVectorClockService extends Mock implements VectorClockService {}
 
-class MockConnectivityService extends Mock implements ConnectivityService {}
-
 class MockAiLogic extends Mock implements AiLogic {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
-
-class MockFgBgService extends Mock implements FgBgService {}
 
 class MockAudioRecorderCubit extends Mock implements AudioRecorderCubit {}
 

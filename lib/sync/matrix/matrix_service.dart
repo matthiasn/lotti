@@ -91,12 +91,6 @@ class MatrixService {
     await listenToTimeline();
   }
 
-  Future<void> loginAndListen() async {
-    await loadConfig();
-    await login();
-    await listen();
-  }
-
   Client get client => _client;
 
   Future<void> login() => matrixConnect(

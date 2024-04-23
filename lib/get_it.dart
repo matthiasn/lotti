@@ -22,8 +22,6 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/sync/connectivity.dart';
-import 'package:lotti/sync/fg_bg.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/outbox/outbox_service.dart';
 
@@ -49,8 +47,6 @@ Future<void> registerSingletons() async {
     ..registerSingleton<Fts5Db>(Fts5Db())
     ..registerSingleton<LoggingDb>(getLoggingDb())
     ..registerSingleton<JournalDb>(getJournalDb())
-    ..registerSingleton<ConnectivityService>(ConnectivityService())
-    ..registerSingleton<FgBgService>(FgBgService())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
     ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())

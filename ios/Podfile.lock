@@ -1,9 +1,6 @@
 PODS:
-  - audiofileplayer (0.0.1):
+  - audio_session (0.0.1):
     - Flutter
-  - connectivity_plus (0.0.1):
-    - Flutter
-    - FlutterMacOS
   - device_info_plus (0.0.1):
     - Flutter
   - ffmpeg-kit-ios-https (6.0)
@@ -14,8 +11,6 @@ PODS:
     - ffmpeg-kit-ios-https (= 6.0)
     - Flutter
   - Flutter (1.0.0)
-  - flutter_fgbg (0.0.1):
-    - Flutter
   - flutter_health_fit (0.0.1):
     - Flutter
   - flutter_image_compress_common (1.0.0):
@@ -43,6 +38,8 @@ PODS:
   - integration_test (0.0.1):
     - Flutter
   - irondash_engine_context (0.0.1):
+    - Flutter
+  - just_audio (0.0.1):
     - Flutter
   - libwebp (1.3.2):
     - libwebp/demux (= 1.3.2)
@@ -97,18 +94,18 @@ PODS:
   - sqflite (0.0.3):
     - Flutter
     - FlutterMacOS
-  - sqlite3 (3.45.1):
-    - sqlite3/common (= 3.45.1)
-  - sqlite3/common (3.45.1)
-  - sqlite3/fts5 (3.45.1):
+  - "sqlite3 (3.45.3+1)":
+    - "sqlite3/common (= 3.45.3+1)"
+  - "sqlite3/common (3.45.3+1)"
+  - "sqlite3/fts5 (3.45.3+1)":
     - sqlite3/common
-  - sqlite3/perf-threadsafe (3.45.1):
+  - "sqlite3/perf-threadsafe (3.45.3+1)":
     - sqlite3/common
-  - sqlite3/rtree (3.45.1):
+  - "sqlite3/rtree (3.45.3+1)":
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - Flutter
-    - sqlite3 (~> 3.45.1)
+    - "sqlite3 (~> 3.45.3+1)"
     - sqlite3/fts5
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
@@ -121,12 +118,10 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
-  - audiofileplayer (from `.symlinks/plugins/audiofileplayer/ios`)
-  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/darwin`)
+  - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - ffmpeg_kit_flutter (from `.symlinks/plugins/ffmpeg_kit_flutter/ios`)
   - Flutter (from `Flutter`)
-  - flutter_fgbg (from `.symlinks/plugins/flutter_fgbg/ios`)
   - flutter_health_fit (from `.symlinks/plugins/flutter_health_fit/ios`)
   - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_keyboard_visibility (from `.symlinks/plugins/flutter_keyboard_visibility/ios`)
@@ -139,6 +134,7 @@ DEPENDENCIES:
   - health (from `.symlinks/plugins/health/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - irondash_engine_context (from `.symlinks/plugins/irondash_engine_context/ios`)
+  - just_audio (from `.symlinks/plugins/just_audio/ios`)
   - location (from `.symlinks/plugins/location/ios`)
   - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
   - media_kit_native_event_loop (from `.symlinks/plugins/media_kit_native_event_loop/ios`)
@@ -168,18 +164,14 @@ SPEC REPOS:
     - sqlite3
 
 EXTERNAL SOURCES:
-  audiofileplayer:
-    :path: ".symlinks/plugins/audiofileplayer/ios"
-  connectivity_plus:
-    :path: ".symlinks/plugins/connectivity_plus/darwin"
+  audio_session:
+    :path: ".symlinks/plugins/audio_session/ios"
   device_info_plus:
     :path: ".symlinks/plugins/device_info_plus/ios"
   ffmpeg_kit_flutter:
     :path: ".symlinks/plugins/ffmpeg_kit_flutter/ios"
   Flutter:
     :path: Flutter
-  flutter_fgbg:
-    :path: ".symlinks/plugins/flutter_fgbg/ios"
   flutter_health_fit:
     :path: ".symlinks/plugins/flutter_health_fit/ios"
   flutter_image_compress_common:
@@ -204,6 +196,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/integration_test/ios"
   irondash_engine_context:
     :path: ".symlinks/plugins/irondash_engine_context/ios"
+  just_audio:
+    :path: ".symlinks/plugins/just_audio/ios"
   location:
     :path: ".symlinks/plugins/location/ios"
   media_kit_libs_ios_audio:
@@ -238,13 +232,11 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/video_player_avfoundation/darwin"
 
 SPEC CHECKSUMS:
-  audiofileplayer: 4aaff759a721ec3a850a682e0d9ec554e5f9e86f
-  connectivity_plus: ddd7f30999e1faaef5967c23d5b6d503d10434db
+  audio_session: 088d2483ebd1dc43f51d253d4a1c517d9a2e7207
   device_info_plus: 97af1d7e84681a90d0693e63169a5d50e0839a0d
   ffmpeg-kit-ios-https: f9c838aa5400a6c5ba12324c6b798f52197ba354
   ffmpeg_kit_flutter: b4ca70cac3fc1d8ac14cdc660754b60870358732
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_fgbg: 31c0d1140a131daea2d342121808f6aa0dcd879d
   flutter_health_fit: af332b5d7512b9cc8a05e7282cfcee02b056d32e
   flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
   flutter_keyboard_visibility: 0339d06371254c3eb25eeb90ba8d17dca8f9c069
@@ -257,6 +249,7 @@ SPEC CHECKSUMS:
   health: 5a380c0f6c4f619535845992993964293962e99e
   integration_test: 13825b8a9334a850581300559b8839134b124670
   irondash_engine_context: 3458bf979b90d616ffb8ae03a150bafe2e860cc9
+  just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
   libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
   location: d5cf8598915965547c3f36761ae9cc4f4e87d22e
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
@@ -275,8 +268,8 @@ SPEC CHECKSUMS:
   share_plus: 8875f4f2500512ea181eef553c3e27dba5135aad
   shared_preferences_foundation: b4c3b4cddf1c21f02770737f147a3f5da9d39695
   sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
-  sqlite3: 73b7fc691fdc43277614250e04d183740cb15078
-  sqlite3_flutter_libs: af0e8fe9bce48abddd1ffdbbf839db0302d72d80
+  sqlite3: 02d1f07eaaa01f80a1c16b4b31dfcbb3345ee01a
+  sqlite3_flutter_libs: 9bfe005308998aeca155330bbc2ea6dddf834a3b
   super_native_extensions: 4916b3c627a9c7fffdc48a23a9eca0b1ac228fa7
   url_launcher_ios: 6116280ddcfe98ab8820085d8d76ae7449447586
   video_player_avfoundation: 2b4384f3b157206b5e150a0083cdc0c905d260d3
