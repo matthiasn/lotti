@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
@@ -23,12 +21,6 @@ import 'package:lotti/utils/image_utils.dart';
 class OutboxService {
   final LoggingDb _loggingDb = getIt<LoggingDb>();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
-  late final StreamSubscription<FGBGType> fgBgSubscription;
-  Isolate? isolate;
-
-  void dispose() {
-    fgBgSubscription.cancel();
-  }
 
   Future<void> restartRunner() async {
     _loggingDb.captureEvent(
