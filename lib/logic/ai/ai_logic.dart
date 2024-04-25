@@ -17,6 +17,7 @@ class AiLogic {
   Future<void> loadDb() async {
     _vectorStore = MemoryVectorStore(
       embeddings: MyLlamaEmbedding(),
+      initialMemoryVectors: await loadVectors(),
     );
 
     _chroma = Chroma(
@@ -60,12 +61,12 @@ class AiLogic {
 
     // await _chroma.delete(ids: [id]);
     // await _chroma.addDocuments(documents: [document]);
-    //await search();
+    // await search();
   }
 
-  Future<void> search() async {
-    final res = await _chroma.similaritySearchWithScores(
-      query: 'find entry referring to a crash',
+  Future<void> search(String query) async {
+    final res = await _vectorStore.similaritySearchWithScores(
+      query: query,
       config: const ChromaSimilaritySearch(
         k: 10,
       ),
@@ -77,17 +78,38 @@ class AiLogic {
     debugPrint('\n');
   }
 
+  String getFilePath() => '${getIt<Directory>().path}/langchain/vectors.json';
+
   Future<void> persist() async {
-    final docDir = getIt<Directory>();
     final vectors = _vectorStore.memoryVectors;
-    final json = jsonEncode(vectors.map((e) => e.toMap()));
-    final file = await File('$docDir/vectors.json').create(recursive: true);
+    final json = jsonEncode(vectors.map((e) => e.toMap()).toList());
+    final file = await File(getFilePath()).create(recursive: true);
     await file.writeAsString(json);
+  }
+
+  Future<List<MemoryVector>?> loadVectors() async {
+    final file = File(getFilePath());
+    if (!file.existsSync()) {
+      return null;
+    }
+    final json = await file.readAsString();
+    final docs = jsonDecode(json) as List<dynamic>;
+
+    return docs.map((e) {
+      final map = e as Map<String, dynamic>;
+      final embedding = map['embedding'] as List<dynamic>;
+      return MemoryVector.fromMap({
+        'document': map['document'],
+        'embedding': embedding.map((e) => double.parse(e.toString())).toList(),
+      });
+    }).toList();
   }
 }
 
 class MyLlamaEmbedding implements Embeddings {
   MyLlamaEmbedding();
+
+  final client = OllamaClient();
 
   @override
   Future<List<List<double>>> embedDocuments(List<Document> documents) async {
@@ -95,7 +117,7 @@ class MyLlamaEmbedding implements Embeddings {
 
     for (final doc in documents) {
       final pageContent = doc.pageContent;
-      if (pageContent.length > 30) {
+      if (pageContent.length > 10) {
         final embedding = await createEmbedding(doc.pageContent);
         if (embedding != null) {
           embeddings.add(embedding);
@@ -109,21 +131,20 @@ class MyLlamaEmbedding implements Embeddings {
   Future<List<double>> embedQuery(String query) async {
     return await createEmbedding(query) ?? [];
   }
-}
 
-Future<List<double>?> createEmbedding(String text) async {
-  debugPrint('${DateTime.now()} Embedding started');
-  final client = OllamaClient();
-  final embeddingResponse = await client.generateEmbedding(
-    request: GenerateEmbeddingRequest(
-      model: 'llama3:8b',
-      prompt: text,
-      options: const RequestOptions(
-        useMmap: true,
+  Future<List<double>?> createEmbedding(String text) async {
+    debugPrint('${DateTime.now()} Embedding started');
+    final embeddingResponse = await client.generateEmbedding(
+      request: GenerateEmbeddingRequest(
+        model: 'llama3:8b',
+        prompt: text,
+        options: const RequestOptions(
+          useMmap: true,
+        ),
       ),
-    ),
-  );
-  final embedding = embeddingResponse.embedding;
-  debugPrint('${DateTime.now()} Embedding length ${embedding?.length}');
-  return embedding;
+    );
+    final embedding = embeddingResponse.embedding;
+    debugPrint('${DateTime.now()} Embedding length ${embedding?.length}');
+    return embedding;
+  }
 }
