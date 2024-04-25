@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.452+2474
+version: 0.9.452+2475
 
 msix_config:
   display_name: LottiApp
@@ -116,7 +116,7 @@ dependencies:
   meta: ^1.12.0
   multi_select_flutter: ^4.0.0
   ollama_dart: ^0.0.2
-  package_info_plus: ^7.0.0
+  package_info_plus: ^8.0.0
   path: ^1.8.1
   path_provider: ^2.0.12
   permission_handler: ^11.0.1
@@ -135,7 +135,7 @@ dependencies:
   riverpod_generator: ^2.4.0
   riverpod_lint: ^2.3.10
   rxdart: ^0.27.7
-  share_plus: ^8.0.2
+  share_plus: ^9.0.0
   sqflite: ^2.0.1
   sqflite_common_ffi: ^2.3.3
   sqlite3_flutter_libs: ^0.5.15
