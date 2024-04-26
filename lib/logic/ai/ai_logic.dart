@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:langchain/langchain.dart';
 import 'package:langchain_chroma/langchain_chroma.dart';
+import 'package:langchain_ollama/langchain_ollama.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/platform.dart';
@@ -16,13 +17,14 @@ class AiLogic {
 
   Future<void> loadDb() async {
     _vectorStore = MemoryVectorStore(
-      embeddings: MyLlamaEmbedding(),
+      embeddings: OllamaEmbeddings(model: 'llama3:8b'),
       initialMemoryVectors: await loadVectors(),
     );
 
     _chroma = Chroma(
-      collectionName: 'llama3-embeddings2',
-      embeddings: MyLlamaEmbedding(),
+      collectionName: 'llama3-embeddings3',
+      //embeddings: MyLlamaEmbedding(),
+      embeddings: OllamaEmbeddings(model: 'llama3:8b'),
       collectionMetadata: {
         'hnsw:space': 'cosine',
       },
@@ -59,9 +61,8 @@ class AiLogic {
     await _vectorStore.addDocuments(documents: [document]);
     await persist();
 
-    // await _chroma.delete(ids: [id]);
-    // await _chroma.addDocuments(documents: [document]);
-    // await search();
+    await _chroma.delete(ids: [id]);
+    await _chroma.addDocuments(documents: [document]);
   }
 
   Future<void> search(String query) async {

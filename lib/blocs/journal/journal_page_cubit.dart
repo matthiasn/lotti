@@ -9,6 +9,7 @@ import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/utils/platform.dart';
 
 class JournalPageCubit extends Cubit<JournalPageState> {
@@ -187,6 +188,9 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   Future<void> setSearchString(String query) async {
     _query = query;
+
+    unawaited(getIt<AiLogic>().search(query));
+
     refreshQuery();
   }
 
