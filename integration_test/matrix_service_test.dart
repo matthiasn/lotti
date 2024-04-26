@@ -95,7 +95,8 @@ void main() {
 
       getIt
         ..registerSingleton<Directory>(docDir)
-        ..registerSingleton<LoggingDb>(LoggingDb())
+        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
+        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<SettingsDb>(mockSettingsDb)
         ..registerSingleton<SecureStorage>(secureStorageMock);
 
