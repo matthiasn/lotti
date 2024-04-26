@@ -15,19 +15,30 @@ class TranscriptionProgressModalContent extends StatelessWidget {
     return StreamBuilder<(String, TranscriptionStatus)>(
       stream: asrService.progressController.stream,
       builder: (context, snapshot) {
+        debugPrint('$snapshot');
         final text = snapshot.data?.$1 ?? '';
         final status = snapshot.data?.$2;
+        final hasError = status == TranscriptionStatus.error;
 
         if (status == TranscriptionStatus.done) {
           Future<void>.delayed(const Duration(seconds: 3))
               .then((value) => Navigator.of(context).pop());
         }
 
-        return ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 100),
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: MarkdownBody(data: text),
+        if (hasError) {
+          Future<void>.delayed(const Duration(seconds: 5))
+              .then((value) => Navigator.of(context).pop());
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(32),
+          child: MarkdownBody(
+            data: text,
+            styleSheet: MarkdownStyleSheet(
+              p: TextStyle(
+                color: hasError ? Theme.of(context).colorScheme.error : null,
+              ),
+            ),
           ),
         );
       },
@@ -78,7 +89,6 @@ class TranscriptionProgressModal {
       },
       maxDialogWidth: WoltModalConfig.maxDialogWidth,
       minDialogWidth: WoltModalConfig.minDialogWidth,
-      minPageHeight: WoltModalConfig.minPageHeight,
       maxPageHeight: WoltModalConfig.maxPageHeight,
     );
   }
