@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
@@ -86,6 +87,16 @@ class AsrService {
   Future<void> _transcribe({required JournalAudio entry}) async {
     running = true;
     final audioFilePath = await AudioUtils.getFullAudioPath(entry);
+    final audioFileExists = File(audioFilePath).existsSync();
+
+    if (!audioFileExists) {
+      await Future<void>.delayed(const Duration(seconds: 1));
+      progressController.add(
+        ('File does not exist.', TranscriptionStatus.error),
+      );
+      running = false;
+      return;
+    }
 
     getIt<LoggingDb>().captureEvent(
       'transcribing $audioFilePath',
@@ -188,4 +199,5 @@ enum TranscriptionStatus {
   initializing,
   inProgress,
   done,
+  error,
 }
