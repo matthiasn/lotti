@@ -50,7 +50,7 @@ class RoundedButton extends StatelessWidget {
   final String label;
   final Color primaryColor;
   final Color textColor;
-  final void Function() onPressed;
+  final void Function()? onPressed;
   final EdgeInsets padding;
 
   @override

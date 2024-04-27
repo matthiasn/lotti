@@ -12,7 +12,7 @@ _$GeolocationImpl _$$GeolocationImplFromJson(Map<String, dynamic> json) =>
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
       geohashString: json['geohashString'] as String,
-      utcOffset: json['utcOffset'] as int?,
+      utcOffset: (json['utcOffset'] as num?)?.toInt(),
       timezone: json['timezone'] as String?,
       accuracy: (json['accuracy'] as num?)?.toDouble(),
       speed: (json['speed'] as num?)?.toDouble(),

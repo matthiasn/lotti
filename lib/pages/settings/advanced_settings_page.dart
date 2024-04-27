@@ -3,6 +3,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/outbox/outbox_badge.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/sync/ui/matrix_settings_modal.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -38,6 +39,11 @@ class AdvancedSettingsPage extends StatelessWidget {
               title: context.messages.settingsLogsTitle,
               path: '/settings/advanced/logging',
             ),
+            if (isMobile)
+              SettingsNavCard(
+                title: context.messages.settingsHealthImportTitle,
+                path: '/settings/health_import',
+              ),
             SettingsNavCard(
               title: context.messages.settingsMaintenanceTitle,
               path: '/settings/advanced/maintenance',

@@ -10,7 +10,7 @@ _$TaskOpenImpl _$$TaskOpenImplFromJson(Map<String, dynamic> json) =>
     _$TaskOpenImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      utcOffset: json['utcOffset'] as int,
+      utcOffset: (json['utcOffset'] as num).toInt(),
       timezone: json['timezone'] as String?,
       geolocation: json['geolocation'] == null
           ? null
@@ -32,7 +32,7 @@ _$TaskStartedImpl _$$TaskStartedImplFromJson(Map<String, dynamic> json) =>
     _$TaskStartedImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      utcOffset: json['utcOffset'] as int,
+      utcOffset: (json['utcOffset'] as num).toInt(),
       timezone: json['timezone'] as String?,
       geolocation: json['geolocation'] == null
           ? null
@@ -54,7 +54,7 @@ _$TaskInProgressImpl _$$TaskInProgressImplFromJson(Map<String, dynamic> json) =>
     _$TaskInProgressImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      utcOffset: json['utcOffset'] as int,
+      utcOffset: (json['utcOffset'] as num).toInt(),
       timezone: json['timezone'] as String?,
       geolocation: json['geolocation'] == null
           ? null
@@ -77,7 +77,7 @@ _$TaskGroomedImpl _$$TaskGroomedImplFromJson(Map<String, dynamic> json) =>
     _$TaskGroomedImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      utcOffset: json['utcOffset'] as int,
+      utcOffset: (json['utcOffset'] as num).toInt(),
       timezone: json['timezone'] as String?,
       geolocation: json['geolocation'] == null
           ? null
@@ -99,7 +99,7 @@ _$TaskBlockedImpl _$$TaskBlockedImplFromJson(Map<String, dynamic> json) =>
     _$TaskBlockedImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      utcOffset: json['utcOffset'] as int,
+      utcOffset: (json['utcOffset'] as num).toInt(),
       reason: json['reason'] as String,
       timezone: json['timezone'] as String?,
       geolocation: json['geolocation'] == null
@@ -123,7 +123,7 @@ _$TaskOnHoldImpl _$$TaskOnHoldImplFromJson(Map<String, dynamic> json) =>
     _$TaskOnHoldImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      utcOffset: json['utcOffset'] as int,
+      utcOffset: (json['utcOffset'] as num).toInt(),
       reason: json['reason'] as String,
       timezone: json['timezone'] as String?,
       geolocation: json['geolocation'] == null
@@ -147,7 +147,7 @@ _$TaskDoneImpl _$$TaskDoneImplFromJson(Map<String, dynamic> json) =>
     _$TaskDoneImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      utcOffset: json['utcOffset'] as int,
+      utcOffset: (json['utcOffset'] as num).toInt(),
       timezone: json['timezone'] as String?,
       geolocation: json['geolocation'] == null
           ? null
@@ -169,7 +169,7 @@ _$TaskRejectedImpl _$$TaskRejectedImplFromJson(Map<String, dynamic> json) =>
     _$TaskRejectedImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      utcOffset: json['utcOffset'] as int,
+      utcOffset: (json['utcOffset'] as num).toInt(),
       timezone: json['timezone'] as String?,
       geolocation: json['geolocation'] == null
           ? null
@@ -199,7 +199,7 @@ _$TaskDataImpl _$$TaskDataImplFromJson(Map<String, dynamic> json) =>
       due: json['due'] == null ? null : DateTime.parse(json['due'] as String),
       estimate: json['estimate'] == null
           ? null
-          : Duration(microseconds: json['estimate'] as int),
+          : Duration(microseconds: (json['estimate'] as num).toInt()),
       checklist: (json['checklist'] as List<dynamic>?)
           ?.map((e) => CheckListItem.fromJson(e as Map<String, dynamic>))
           .toList(),

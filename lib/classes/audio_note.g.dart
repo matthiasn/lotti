@@ -11,7 +11,7 @@ _$AudioNoteImpl _$$AudioNoteImplFromJson(Map<String, dynamic> json) =>
       createdAt: DateTime.parse(json['createdAt'] as String),
       audioFile: json['audioFile'] as String,
       audioDirectory: json['audioDirectory'] as String,
-      duration: Duration(microseconds: json['duration'] as int),
+      duration: Duration(microseconds: (json['duration'] as num).toInt()),
     );
 
 Map<String, dynamic> _$$AudioNoteImplToJson(_$AudioNoteImpl instance) =>
