@@ -264,6 +264,15 @@ SELECT * FROM journal
   LIMIT :limit
   OFFSET :offset;
 
+orderedJournalInterval:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND updated_at > :start
+  AND updated_at < :end
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
 orderedAudioEntries:
 SELECT * FROM journal
   WHERE type = 'JournalAudio'

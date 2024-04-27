@@ -9,7 +9,7 @@ part of 'entity_definitions.dart';
 _$DailyHabitScheduleImpl _$$DailyHabitScheduleImplFromJson(
         Map<String, dynamic> json) =>
     _$DailyHabitScheduleImpl(
-      requiredCompletions: json['requiredCompletions'] as int,
+      requiredCompletions: (json['requiredCompletions'] as num).toInt(),
       showFrom: json['showFrom'] == null
           ? null
           : DateTime.parse(json['showFrom'] as String),
@@ -27,7 +27,7 @@ Map<String, dynamic> _$$DailyHabitScheduleImplToJson(
 _$WeeklyHabitScheduleImpl _$$WeeklyHabitScheduleImplFromJson(
         Map<String, dynamic> json) =>
     _$WeeklyHabitScheduleImpl(
-      requiredCompletions: json['requiredCompletions'] as int,
+      requiredCompletions: (json['requiredCompletions'] as num).toInt(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -41,7 +41,7 @@ Map<String, dynamic> _$$WeeklyHabitScheduleImplToJson(
 _$MonthlyHabitScheduleImpl _$$MonthlyHabitScheduleImplFromJson(
         Map<String, dynamic> json) =>
     _$MonthlyHabitScheduleImpl(
-      requiredCompletions: json['requiredCompletions'] as int,
+      requiredCompletions: (json['requiredCompletions'] as num).toInt(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -170,7 +170,7 @@ _$AutoCompleteRuleMultipleImpl _$$AutoCompleteRuleMultipleImplFromJson(
       rules: (json['rules'] as List<dynamic>)
           .map((e) => AutoCompleteRule.fromJson(e as Map<String, dynamic>))
           .toList(),
-      successes: json['successes'] as int,
+      successes: (json['successes'] as num).toInt(),
       title: json['title'] as String?,
       $type: json['runtimeType'] as String?,
     );
@@ -193,7 +193,7 @@ _$MeasurableDataTypeImpl _$$MeasurableDataTypeImplFromJson(
       displayName: json['displayName'] as String,
       description: json['description'] as String,
       unitName: json['unitName'] as String,
-      version: json['version'] as int,
+      version: (json['version'] as num).toInt(),
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
@@ -352,7 +352,7 @@ _$DashboardDefinitionImpl _$$DashboardDefinitionImplFromJson(
       reviewAt: json['reviewAt'] == null
           ? null
           : DateTime.parse(json['reviewAt'] as String),
-      days: json['days'] as int? ?? 30,
+      days: (json['days'] as num?)?.toInt() ?? 30,
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),

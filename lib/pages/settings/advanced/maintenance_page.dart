@@ -5,6 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/sync/ui/re_sync_modal.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
 class MaintenancePage extends StatelessWidget {
@@ -64,12 +65,8 @@ class MaintenancePage extends StatelessWidget {
                 onTap: () => getIt<Maintenance>().recreateFts5(),
               ),
               SettingsCard(
-                title: context.messages.maintenanceReSync1K,
-                onTap: () => getIt<Maintenance>().reSyncLastMessages(1000),
-              ),
-              SettingsCard(
-                title: context.messages.maintenanceReSync10K,
-                onTap: () => getIt<Maintenance>().reSyncLastMessages(10000),
+                title: context.messages.maintenanceReSync,
+                onTap: () => ReSyncModal.show(context),
               ),
             ],
           ),
