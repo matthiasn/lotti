@@ -57,6 +57,7 @@ class _ReSyncModalContentState extends State<ReSyncModalContent> {
                       start: dateFrom,
                       end: dateTo,
                     );
+                    Navigator.of(context).pop();
                   }
                 : null,
           ),

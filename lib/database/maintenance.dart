@@ -35,28 +35,6 @@ class Maintenance {
     }
   }
 
-  Future<void> reSyncLastMessages(int count) async {
-    final outboxService = getIt<OutboxService>();
-
-    const pageSize = 100;
-    final pages = (count / pageSize).ceil();
-
-    for (var page = 0; page <= pages; page++) {
-      final dbEntities =
-          await _db.orderedJournal(pageSize, page * pageSize).get();
-
-      final entries = entityStreamMapper(dbEntities);
-      for (final entry in entries) {
-        await outboxService.enqueueMessage(
-          SyncMessage.journalEntity(
-            journalEntity: entry,
-            status: SyncEntryStatus.update,
-          ),
-        );
-      }
-    }
-  }
-
   Future<void> reSyncInterval({
     required DateTime start,
     required DateTime end,

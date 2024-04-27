@@ -65,10 +65,6 @@ class MaintenancePage extends StatelessWidget {
                 onTap: () => getIt<Maintenance>().recreateFts5(),
               ),
               SettingsCard(
-                title: context.messages.maintenanceReSync1K,
-                onTap: () => getIt<Maintenance>().reSyncLastMessages(1000),
-              ),
-              SettingsCard(
                 title: context.messages.maintenanceReSync,
                 onTap: () => ReSyncModal.show(context),
               ),
