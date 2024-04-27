@@ -12,7 +12,7 @@ _$ImapConfigImpl _$$ImapConfigImplFromJson(Map<String, dynamic> json) =>
       folder: json['folder'] as String,
       userName: json['userName'] as String,
       password: json['password'] as String,
-      port: json['port'] as int,
+      port: (json['port'] as num).toInt(),
     );
 
 Map<String, dynamic> _$$ImapConfigImplToJson(_$ImapConfigImpl instance) =>

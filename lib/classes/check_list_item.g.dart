@@ -10,7 +10,7 @@ _$CheckListItemImpl _$$CheckListItemImplFromJson(Map<String, dynamic> json) =>
     _$CheckListItemImpl(
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      utcOffset: json['utcOffset'] as int,
+      utcOffset: (json['utcOffset'] as num).toInt(),
       plainText: json['plainText'] as String,
       timezone: json['timezone'] as String?,
       geolocation: json['geolocation'] == null

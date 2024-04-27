@@ -16,7 +16,7 @@ _$MetadataImpl _$$MetadataImplFromJson(Map<String, dynamic> json) =>
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
       tagIds:
           (json['tagIds'] as List<dynamic>?)?.map((e) => e as String).toList(),
-      utcOffset: json['utcOffset'] as int?,
+      utcOffset: (json['utcOffset'] as num?)?.toInt(),
       timezone: json['timezone'] as String?,
       vectorClock: json['vectorClock'] == null
           ? null
@@ -79,7 +79,7 @@ _$AudioDataImpl _$$AudioDataImplFromJson(Map<String, dynamic> json) =>
       dateTo: DateTime.parse(json['dateTo'] as String),
       audioFile: json['audioFile'] as String,
       audioDirectory: json['audioDirectory'] as String,
-      duration: Duration(microseconds: json['duration'] as int),
+      duration: Duration(microseconds: (json['duration'] as num).toInt()),
       autoTranscribeWasActive:
           json['autoTranscribeWasActive'] as bool? ?? false,
       transcripts: (json['transcripts'] as List<dynamic>?)
@@ -108,7 +108,7 @@ _$AudioTranscriptImpl _$$AudioTranscriptImplFromJson(
       transcript: json['transcript'] as String,
       processingTime: json['processingTime'] == null
           ? null
-          : Duration(microseconds: json['processingTime'] as int),
+          : Duration(microseconds: (json['processingTime'] as num).toInt()),
     );
 
 Map<String, dynamic> _$$AudioTranscriptImplToJson(

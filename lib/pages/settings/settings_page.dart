@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/settings/sliver_box_adapter_page.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -49,11 +48,6 @@ class SettingsPage extends StatelessWidget {
               title: context.messages.settingsThemingTitle,
               path: '/settings/theming',
             ),
-            if (isMobile)
-              SettingsNavCard(
-                title: context.messages.settingsHealthImportTitle,
-                path: '/settings/health_import',
-              ),
             SettingsNavCard(
               title: context.messages.settingsFlagsTitle,
               path: '/settings/flags',
