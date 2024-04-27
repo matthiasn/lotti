@@ -35,15 +35,23 @@ class Maintenance {
     }
   }
 
-  Future<void> reSyncLastMessages(int count) async {
+  Future<void> reSyncInterval({
+    required DateTime start,
+    required DateTime end,
+  }) async {
     final outboxService = getIt<OutboxService>();
+    final count = double.maxFinite.toInt();
 
     const pageSize = 100;
     final pages = (count / pageSize).ceil();
 
     for (var page = 0; page <= pages; page++) {
-      final dbEntities =
-          await _db.orderedJournal(pageSize, page * pageSize).get();
+      final dbEntities = await _db
+          .orderedJournalInterval(start, end, pageSize, page * pageSize)
+          .get();
+      if (dbEntities.isEmpty) {
+        return;
+      }
 
       final entries = entityStreamMapper(dbEntities);
       for (final entry in entries) {
