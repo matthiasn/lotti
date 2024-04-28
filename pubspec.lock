@@ -45,10 +45,10 @@ packages:
     dependency: "direct dev"
     description:
       name: archive
-      sha256: "22600aa1e926be775fa5fe7e6894e7fb3df9efda8891c73f70fb3262399a432d"
+      sha256: "0763b45fa9294197a2885c8567927e2830ade852e5c896fd4ab7e0e348d0f373"
       url: "https://pub.dev"
     source: hosted
-    version: "3.4.10"
+    version: "3.5.0"
   args:
     dependency: transitive
     description:
@@ -437,10 +437,10 @@ packages:
     dependency: transitive
     description:
       name: dart_quill_delta
-      sha256: "7fce4cf5ff0aed70086df2cbb5d24edd69980d713a987ad5443ba34cb574a7ac"
+      sha256: ac6458828abaf1b3f0cbde52fdfe60fa325d6c335b80ef52b85c7bde23b441ad
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.8"
+    version: "9.3.9"
   dart_style:
     dependency: "direct dev"
     description:
@@ -974,10 +974,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_quill
-      sha256: "34fa4a76e7a520896e4af3fece91c8f75929ad09314fc102bb968d6ac1d6ddc3"
+      sha256: "51d5a9d2eef893875fa2dc29ea5be9ec07e03255fee9bacd5b4b329fa871d9a5"
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.8"
+    version: "9.3.9"
   flutter_riverpod:
     dependency: "direct main"
     description:
@@ -1983,14 +1983,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
-  pointycastle:
-    dependency: transitive
-    description:
-      name: pointycastle
-      sha256: "79fbafed02cfdbe85ef3fd06c7f4bc2cbcba0177e61b765264853d4253b21744"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.9.0"
   polylabel:
     dependency: transitive
     description:
