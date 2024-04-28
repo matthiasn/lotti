@@ -44,6 +44,7 @@ mixin _$HabitsState {
   int get timeSpanDays => throw _privateConstructorUsedError;
   double get minY => throw _privateConstructorUsedError;
   bool get zeroBased => throw _privateConstructorUsedError;
+  bool get isVisible => throw _privateConstructorUsedError;
   bool get showTimeSpan => throw _privateConstructorUsedError;
   bool get showSearch => throw _privateConstructorUsedError;
   String get searchString => throw _privateConstructorUsedError;
@@ -84,6 +85,7 @@ abstract class $HabitsStateCopyWith<$Res> {
       int timeSpanDays,
       double minY,
       bool zeroBased,
+      bool isVisible,
       bool showTimeSpan,
       bool showSearch,
       String searchString,
@@ -126,6 +128,7 @@ class _$HabitsStateCopyWithImpl<$Res, $Val extends HabitsState>
     Object? timeSpanDays = null,
     Object? minY = null,
     Object? zeroBased = null,
+    Object? isVisible = null,
     Object? showTimeSpan = null,
     Object? showSearch = null,
     Object? searchString = null,
@@ -224,6 +227,10 @@ class _$HabitsStateCopyWithImpl<$Res, $Val extends HabitsState>
           ? _value.zeroBased
           : zeroBased // ignore: cast_nullable_to_non_nullable
               as bool,
+      isVisible: null == isVisible
+          ? _value.isVisible
+          : isVisible // ignore: cast_nullable_to_non_nullable
+              as bool,
       showTimeSpan: null == showTimeSpan
           ? _value.showTimeSpan
           : showTimeSpan // ignore: cast_nullable_to_non_nullable
@@ -276,6 +283,7 @@ abstract class _$$HabitsStateSavedImplCopyWith<$Res>
       int timeSpanDays,
       double minY,
       bool zeroBased,
+      bool isVisible,
       bool showTimeSpan,
       bool showSearch,
       String searchString,
@@ -316,6 +324,7 @@ class __$$HabitsStateSavedImplCopyWithImpl<$Res>
     Object? timeSpanDays = null,
     Object? minY = null,
     Object? zeroBased = null,
+    Object? isVisible = null,
     Object? showTimeSpan = null,
     Object? showSearch = null,
     Object? searchString = null,
@@ -414,6 +423,10 @@ class __$$HabitsStateSavedImplCopyWithImpl<$Res>
           ? _value.zeroBased
           : zeroBased // ignore: cast_nullable_to_non_nullable
               as bool,
+      isVisible: null == isVisible
+          ? _value.isVisible
+          : isVisible // ignore: cast_nullable_to_non_nullable
+              as bool,
       showTimeSpan: null == showTimeSpan
           ? _value.showTimeSpan
           : showTimeSpan // ignore: cast_nullable_to_non_nullable
@@ -461,6 +474,7 @@ class _$HabitsStateSavedImpl implements _HabitsStateSaved {
       required this.timeSpanDays,
       required this.minY,
       required this.zeroBased,
+      required this.isVisible,
       required this.showTimeSpan,
       required this.showSearch,
       required this.searchString,
@@ -614,6 +628,8 @@ class _$HabitsStateSavedImpl implements _HabitsStateSaved {
   @override
   final bool zeroBased;
   @override
+  final bool isVisible;
+  @override
   final bool showTimeSpan;
   @override
   final bool showSearch;
@@ -624,7 +640,7 @@ class _$HabitsStateSavedImpl implements _HabitsStateSaved {
 
   @override
   String toString() {
-    return 'HabitsState(habitDefinitions: $habitDefinitions, openHabits: $openHabits, openNow: $openNow, pendingLater: $pendingLater, completed: $completed, habitCompletions: $habitCompletions, completedToday: $completedToday, successfulToday: $successfulToday, selectedCategoryIds: $selectedCategoryIds, days: $days, successfulByDay: $successfulByDay, skippedByDay: $skippedByDay, failedByDay: $failedByDay, allByDay: $allByDay, successPercentage: $successPercentage, skippedPercentage: $skippedPercentage, failedPercentage: $failedPercentage, selectedInfoYmd: $selectedInfoYmd, shortStreakCount: $shortStreakCount, longStreakCount: $longStreakCount, timeSpanDays: $timeSpanDays, minY: $minY, zeroBased: $zeroBased, showTimeSpan: $showTimeSpan, showSearch: $showSearch, searchString: $searchString, displayFilter: $displayFilter)';
+    return 'HabitsState(habitDefinitions: $habitDefinitions, openHabits: $openHabits, openNow: $openNow, pendingLater: $pendingLater, completed: $completed, habitCompletions: $habitCompletions, completedToday: $completedToday, successfulToday: $successfulToday, selectedCategoryIds: $selectedCategoryIds, days: $days, successfulByDay: $successfulByDay, skippedByDay: $skippedByDay, failedByDay: $failedByDay, allByDay: $allByDay, successPercentage: $successPercentage, skippedPercentage: $skippedPercentage, failedPercentage: $failedPercentage, selectedInfoYmd: $selectedInfoYmd, shortStreakCount: $shortStreakCount, longStreakCount: $longStreakCount, timeSpanDays: $timeSpanDays, minY: $minY, zeroBased: $zeroBased, isVisible: $isVisible, showTimeSpan: $showTimeSpan, showSearch: $showSearch, searchString: $searchString, displayFilter: $displayFilter)';
   }
 
   @override
@@ -674,6 +690,8 @@ class _$HabitsStateSavedImpl implements _HabitsStateSaved {
             (identical(other.minY, minY) || other.minY == minY) &&
             (identical(other.zeroBased, zeroBased) ||
                 other.zeroBased == zeroBased) &&
+            (identical(other.isVisible, isVisible) ||
+                other.isVisible == isVisible) &&
             (identical(other.showTimeSpan, showTimeSpan) ||
                 other.showTimeSpan == showTimeSpan) &&
             (identical(other.showSearch, showSearch) ||
@@ -710,6 +728,7 @@ class _$HabitsStateSavedImpl implements _HabitsStateSaved {
         timeSpanDays,
         minY,
         zeroBased,
+        isVisible,
         showTimeSpan,
         showSearch,
         searchString,
@@ -749,6 +768,7 @@ abstract class _HabitsStateSaved implements HabitsState {
           required final int timeSpanDays,
           required final double minY,
           required final bool zeroBased,
+          required final bool isVisible,
           required final bool showTimeSpan,
           required final bool showSearch,
           required final String searchString,
@@ -801,6 +821,8 @@ abstract class _HabitsStateSaved implements HabitsState {
   double get minY;
   @override
   bool get zeroBased;
+  @override
+  bool get isVisible;
   @override
   bool get showTimeSpan;
   @override

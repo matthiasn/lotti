@@ -10,6 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/habits/habits_page.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../mocks/mocks.dart';
 import '../../test_data/test_data.dart';
@@ -23,6 +24,8 @@ void main() {
 
   group('HabitsTabPage Widget Tests - ', () {
     setUp(() {
+      VisibilityDetectorController.instance.updateInterval = Duration.zero;
+
       mockJournalDb = mockJournalDbWithHabits([
         habitFlossing,
         habitFlossingDueLater,
@@ -91,7 +94,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       expect(
         find.text(habitFlossing.name),
@@ -102,20 +105,20 @@ void main() {
       expect(searchButtonFinder, findsOneWidget);
 
       await tester.tap(searchButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       final timeSpanButtonFinder = find.byIcon(Icons.calendar_month);
       expect(timeSpanButtonFinder, findsOneWidget);
 
       await tester.tap(timeSpanButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       final habitCategoryFilterFinder =
           find.byKey(const Key('habit_category_filter'));
       expect(habitCategoryFilterFinder, findsOneWidget);
 
       await tester.tap(habitCategoryFilterFinder);
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
     });
   });
 }

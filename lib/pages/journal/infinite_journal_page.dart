@@ -15,6 +15,7 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class InfiniteJournalPage extends StatelessWidget {
   const InfiniteJournalPage({
@@ -65,40 +66,46 @@ class InfiniteJournalPageBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, snapshot) {
-        return RefreshIndicator(
-          onRefresh: () => Future.sync(snapshot.pagingController.refresh),
-          child: CustomScrollView(
-            slivers: <Widget>[
-              const JournalSliverAppBar(),
-              PagedSliverList<int, JournalEntity>(
-                pagingController: snapshot.pagingController,
-                builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
-                  itemBuilder: (context, item, index) {
-                    final valueKey = ValueKey(item.meta.id);
-                    return item.maybeMap(
-                      journalImage: (JournalImage image) =>
-                          JournalImageCard(item: image, key: valueKey),
-                      task: (Task task) {
-                        if (snapshot.taskAsListView) {
-                          return TaskListCard(
-                            task: task,
-                            key: valueKey,
-                          );
-                        } else {
-                          return JournalCard(item: item, key: valueKey);
-                        }
-                      },
-                      orElse: () => JournalCard(item: item, key: valueKey),
-                    );
-                  },
+    final cubit = context.read<JournalPageCubit>();
+
+    return VisibilityDetector(
+      key: Key(showTasks ? 'tasks_page' : 'journal_page'),
+      onVisibilityChanged: cubit.updateVisibility,
+      child: BlocBuilder<JournalPageCubit, JournalPageState>(
+        builder: (context, snapshot) {
+          return RefreshIndicator(
+            onRefresh: () => Future.sync(snapshot.pagingController.refresh),
+            child: CustomScrollView(
+              slivers: <Widget>[
+                const JournalSliverAppBar(),
+                PagedSliverList<int, JournalEntity>(
+                  pagingController: snapshot.pagingController,
+                  builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
+                    itemBuilder: (context, item, index) {
+                      final valueKey = ValueKey(item.meta.id);
+                      return item.maybeMap(
+                        journalImage: (JournalImage image) =>
+                            JournalImageCard(item: image, key: valueKey),
+                        task: (Task task) {
+                          if (snapshot.taskAsListView) {
+                            return TaskListCard(
+                              task: task,
+                              key: valueKey,
+                            );
+                          } else {
+                            return JournalCard(item: item, key: valueKey);
+                          }
+                        },
+                        orElse: () => JournalCard(item: item, key: valueKey),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
