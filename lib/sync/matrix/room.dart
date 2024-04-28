@@ -110,3 +110,23 @@ Future<void> inviteToMatrixRoom({
 }) async {
   await service.syncRoom?.invite(userId);
 }
+
+void listenToMatrixRoomInvites({
+  required MatrixService service,
+}) {
+  final client = service.client;
+  client.onRoomState.stream.listen((event) async {
+    final roomIdFromEvent = event.room.id;
+    if (service.syncRoom?.id == null) {
+      await saveMatrixRoom(
+        client: client,
+        roomId: roomIdFromEvent,
+      );
+
+      await joinMatrixRoom(
+        roomId: roomIdFromEvent,
+        service: service,
+      );
+    }
+  });
+}
