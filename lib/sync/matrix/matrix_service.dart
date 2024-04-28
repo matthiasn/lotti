@@ -89,6 +89,7 @@ class MatrixService {
   Future<void> listen() async {
     await startKeyVerificationListener();
     await listenToTimeline();
+    listenToMatrixRoomInvites(service: this);
   }
 
   Client get client => _client;
