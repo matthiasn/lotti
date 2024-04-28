@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/common.dart';
-import 'package:lotti/database/stream_helpers.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 part 'logging_db.g.dart';
@@ -127,7 +126,7 @@ class LoggingDb extends _$LoggingDb {
   }
 
   Stream<List<LogEntry>> watchLogEntryById(String id) {
-    return logEntryById(id).watch().where(makeDuplicateFilter());
+    return logEntryById(id).watch();
   }
 
   Stream<List<LogEntry>> watchLogEntries({
