@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:rxdart/rxdart.dart';
 
 class JournalPageCubit extends Cubit<JournalPageState> {
   JournalPageCubit({required this.showTasks})
@@ -59,15 +60,29 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     }
 
     if (showTasks) {
-      _db.watchTasks(
-        starredStatuses: [true, false],
-        taskStatuses: state.taskStatuses,
-      ).listen((event) {
-        refreshQuery();
-      });
+      _db
+          .watchTasks(
+            starredStatuses: [true, false],
+            taskStatuses: state.taskStatuses,
+          )
+          .throttleTime(
+            const Duration(seconds: 5),
+            trailing: true,
+            leading: false,
+          )
+          .listen((event) {
+            refreshQuery();
+          });
     } else {
       if (!kDebugMode) {
-        _db.watchJournalCount().listen((event) {
+        _db
+            .watchJournalCount()
+            .throttleTime(
+              const Duration(seconds: 5),
+              trailing: true,
+              leading: false,
+            )
+            .listen((event) {
           refreshQuery();
         });
       }
