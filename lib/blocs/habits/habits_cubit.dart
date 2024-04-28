@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class HabitsCubit extends Cubit<HabitsState> {
   HabitsCubit()
@@ -44,6 +45,7 @@ class HabitsCubit extends Cubit<HabitsState> {
             showTimeSpan: false,
             searchString: '',
             selectedCategoryIds: <String>{},
+            isVisible: true,
           ),
         ) {
     _definitionsStream = _journalDb.watchHabitDefinitions();
@@ -64,6 +66,15 @@ class HabitsCubit extends Cubit<HabitsState> {
     startWatching();
   }
 
+  void updateVisibility(VisibilityInfo visibilityInfo) {
+    final isVisible = visibilityInfo.visibleBounds.size.width > 0;
+    if (!_isVisible && isVisible) {
+      determineHabitSuccessByDays();
+    }
+    _isVisible = isVisible;
+    emitState();
+  }
+
   void startWatching() {
     _completionsStream = _journalDb.watchHabitCompletionsInRange(
       rangeStart: getStartOfDay(
@@ -71,17 +82,17 @@ class HabitsCubit extends Cubit<HabitsState> {
       ),
     );
 
-    if (!isTestEnv) {
-      _completionsStream = _completionsStream.throttleTime(
-        const Duration(seconds: 5),
-        trailing: true,
-        leading: true,
-      );
-    }
+    _completionsStream = _completionsStream.throttleTime(
+      const Duration(seconds: 5),
+      trailing: true,
+      leading: true,
+    );
 
     _completionsSubscription = _completionsStream.listen((habitCompletions) {
       _habitCompletions = habitCompletions;
-      determineHabitSuccessByDays();
+      if (_isVisible) {
+        determineHabitSuccessByDays();
+      }
     });
   }
 
@@ -207,6 +218,7 @@ class HabitsCubit extends Cubit<HabitsState> {
   Map<String, HabitDefinition> _habitDefinitionsMap = {};
   List<HabitDefinition> _openHabits = [];
   List<HabitDefinition> _openNow = [];
+  bool _isVisible = true;
   List<HabitDefinition> _pendingLater = [];
   List<HabitDefinition> _completed = [];
   List<JournalEntity> _habitCompletions = [];
@@ -352,6 +364,7 @@ class HabitsCubit extends Cubit<HabitsState> {
         showSearch: _showSearch,
         searchString: _searchString,
         selectedCategoryIds: <String>{..._selectedCategoryIds},
+        isVisible: _isVisible,
       ),
     );
   }

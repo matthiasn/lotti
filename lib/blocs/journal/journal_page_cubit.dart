@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class JournalPageCubit extends Cubit<JournalPageState> {
   JournalPageCubit({required this.showTasks})
@@ -66,30 +68,35 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             taskStatuses: state.taskStatuses,
           )
           .throttleTime(
-            const Duration(seconds: 5),
-            trailing: true,
+            const Duration(seconds: 1),
             leading: false,
+            trailing: true,
           )
-          .listen((event) {
-            refreshQuery();
+          .where(makeDuplicateFilter())
+          .listen((_) {
+            if (_isVisible) {
+              refreshQuery();
+            }
           });
     } else {
-      if (!kDebugMode) {
-        _db
-            .watchJournalCount()
-            .throttleTime(
-              const Duration(seconds: 5),
-              trailing: true,
-              leading: false,
-            )
-            .listen((event) {
+      _db
+          .watchJournalCount()
+          .throttleTime(
+            const Duration(seconds: 2),
+            leading: false,
+            trailing: true,
+          )
+          .where(makeDuplicateFilter())
+          .listen((_) {
+        if (_isVisible) {
           refreshQuery();
-        });
-      }
+        }
+      });
     }
   }
 
   final JournalDb _db = getIt<JournalDb>();
+  bool _isVisible = false;
   static const _pageSize = 50;
   Set<String> _selectedEntryTypes = entryTypes.toSet();
   Set<DisplayFilter> _filters = {};
@@ -210,8 +217,17 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     state.pagingController.refresh();
   }
 
+  void updateVisibility(VisibilityInfo visibilityInfo) {
+    final isVisible = visibilityInfo.visibleBounds.size.width > 0;
+    if (!_isVisible && isVisible) {
+      refreshQuery();
+    }
+    _isVisible = isVisible;
+  }
+
   Future<void> _fetchPage(int pageKey) async {
     try {
+      final start = DateTime.now();
       final types = state.selectedEntryTypes.toList();
 
       await _fts5Search();
@@ -255,6 +271,9 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         final nextPageKey = pageKey + newItems.length;
         state.pagingController.appendPage(newItems, nextPageKey);
       }
+      final finished = DateTime.now();
+      final duration = finished.difference(start);
+      debugPrint('_fetchPage $showTasks duration $duration');
     } catch (error) {
       state.pagingController.error = error;
     }
@@ -278,3 +297,26 @@ final List<String> entryTypes = [
   'HabitCompletionEntry',
   'QuantitativeEntry',
 ];
+
+// This function returns a stateful stream filter
+// function that compares the previous event on
+// the stream with the latest, and filters those
+// that are found equal using deep collection
+// equality. This allows exactly once deliver on
+// a stream instead of at least once previously,
+// which lead to plenty of costly re-renders.
+bool Function(T next) makeDuplicateFilter<T>() {
+  final deepEq = const DeepCollectionEquality().equals;
+  T? prev;
+
+  bool duplicateFilter(T next) {
+    if (deepEq(prev, next)) {
+      return false;
+    } else {
+      prev = next;
+      return true;
+    }
+  }
+
+  return duplicateFilter;
+}
