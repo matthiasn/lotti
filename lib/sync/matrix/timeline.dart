@@ -116,10 +116,10 @@ Future<void> processNewTimelineEvents({
         if (eventId.startsWith(r'$')) {
           service.lastReadEventContextId = eventId;
           await setLastReadMatrixEventId(eventId);
-        }
-        final loginState = service.client.onLoginStateChanged.value;
-        if (loginState == LoginState.loggedIn) {
-          await timeline.setReadMarker(eventId: eventId);
+          final loginState = service.client.onLoginStateChanged.value;
+          if (loginState == LoginState.loggedIn) {
+            await timeline.setReadMarker(eventId: eventId);
+          }
         }
       } catch (e, stackTrace) {
         loggingDb.captureException(
