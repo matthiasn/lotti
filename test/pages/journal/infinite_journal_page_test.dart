@@ -23,6 +23,7 @@ import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
@@ -45,6 +46,7 @@ void main() {
       ensureMpvInitialized();
 
       registerFallbackValue(FakeMeasurementData());
+      VisibilityDetectorController.instance.updateInterval = Duration.zero;
     });
 
     setUp(() async {
@@ -71,6 +73,9 @@ void main() {
           [testTask],
         ]),
       );
+
+      when(mockJournalDb.watchJournalCount)
+          .thenAnswer((_) => Stream<int>.fromIterable([1]));
 
       mockPersistenceLogic = MockPersistenceLogic();
 
@@ -178,7 +183,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // TODO: test that entry text is rendered
 
@@ -230,7 +235,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // test task title is displayed
       expect(
@@ -271,7 +276,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // test task title is displayed
       expect(
@@ -321,7 +326,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // task entry displays expected date
       expect(
@@ -338,6 +343,7 @@ void main() {
       // weight task is neither starred nor private (icons invisible)
       expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
       expect(find.byIcon(MdiIcons.security).hitTestable(), findsNothing);
+      await tester.pump(VisibilityDetectorController.instance.updateInterval);
     });
 
     testWidgets(
@@ -425,7 +431,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // measurement entry displays expected date
       expect(
@@ -525,7 +531,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // measurement entry displays expected date
       expect(
