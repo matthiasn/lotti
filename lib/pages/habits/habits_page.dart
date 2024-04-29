@@ -12,140 +12,155 @@ import 'package:lotti/widgets/habits/habit_completion_card.dart';
 import 'package:lotti/widgets/habits/habit_streaks.dart';
 import 'package:lotti/widgets/habits/habits_search.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class HabitsTabPage extends StatelessWidget {
   const HabitsTabPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<HabitsCubit, HabitsState>(
-      builder: (context, HabitsState state) {
-        final cubit = context.read<HabitsCubit>();
-        final timeSpanDays = state.timeSpanDays;
+    final cubit = context.read<HabitsCubit>();
 
-        final rangeStart = getStartOfDay(
-          DateTime.now().subtract(Duration(days: timeSpanDays - 1)),
-        );
+    return VisibilityDetector(
+      key: const Key('habits_page'),
+      onVisibilityChanged: cubit.updateVisibility,
+      child: BlocBuilder<HabitsCubit, HabitsState>(
+        builder: (context, HabitsState state) {
+          if (!state.isVisible) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        final rangeEnd = getEndOfToday();
-        final showGaps = timeSpanDays < 180;
+          final timeSpanDays = state.timeSpanDays;
 
-        final displayFilter = state.displayFilter;
-        final showAll = displayFilter == HabitDisplayFilter.all;
+          final rangeStart = getStartOfDay(
+            DateTime.now().subtract(Duration(days: timeSpanDays - 1)),
+          );
 
-        List<HabitDefinition> filterMatching(List<HabitDefinition> items) {
-          return items
-              .where(
-                (item) =>
-                    item.name.toLowerCase().contains(state.searchString) ||
-                    item.description.toLowerCase().contains(state.searchString),
-              )
-              .toList();
-        }
+          final rangeEnd = getEndOfToday();
+          final showGaps = timeSpanDays < 180;
 
-        final openNow =
-            state.showSearch ? filterMatching(state.openNow) : state.openNow;
+          final displayFilter = state.displayFilter;
+          final showAll = displayFilter == HabitDisplayFilter.all;
 
-        final completed = state.showSearch
-            ? filterMatching(state.completed)
-            : state.completed;
+          List<HabitDefinition> filterMatching(List<HabitDefinition> items) {
+            return items
+                .where(
+                  (item) =>
+                      item.name.toLowerCase().contains(state.searchString) ||
+                      item.description
+                          .toLowerCase()
+                          .contains(state.searchString),
+                )
+                .toList();
+          }
 
-        final pendingLater = state.showSearch
-            ? filterMatching(state.pendingLater)
-            : state.pendingLater;
+          final openNow =
+              state.showSearch ? filterMatching(state.openNow) : state.openNow;
 
-        final showOpenNow = openNow.isNotEmpty &&
-            (displayFilter == HabitDisplayFilter.openNow || showAll);
-        final showCompleted = completed.isNotEmpty &&
-            (displayFilter == HabitDisplayFilter.completed || showAll);
-        final showPendingLater = pendingLater.isNotEmpty &&
-            (displayFilter == HabitDisplayFilter.pendingLater || showAll);
+          final completed = state.showSearch
+              ? filterMatching(state.completed)
+              : state.completed;
 
-        return Scaffold(
-          body: SafeArea(
-            child: CustomScrollView(
-              slivers: <Widget>[
-                SliverTitleBar(context.messages.settingsHabitsTitle),
-                const HabitsSliverAppBar(),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: Column(
-                      children: [
-                        if (state.showTimeSpan)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 5),
-                              child: TimeSpanSegmentedControl(
-                                timeSpanDays: timeSpanDays,
-                                onValueChanged: cubit.setTimeSpan,
+          final pendingLater = state.showSearch
+              ? filterMatching(state.pendingLater)
+              : state.pendingLater;
+
+          final showOpenNow = openNow.isNotEmpty &&
+              (displayFilter == HabitDisplayFilter.openNow || showAll);
+          final showCompleted = completed.isNotEmpty &&
+              (displayFilter == HabitDisplayFilter.completed || showAll);
+          final showPendingLater = pendingLater.isNotEmpty &&
+              (displayFilter == HabitDisplayFilter.pendingLater || showAll);
+
+          return Scaffold(
+            body: SafeArea(
+              child: CustomScrollView(
+                slivers: <Widget>[
+                  SliverTitleBar(context.messages.settingsHabitsTitle),
+                  const HabitsSliverAppBar(),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: Column(
+                        children: [
+                          if (state.showTimeSpan)
+                            Center(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 5),
+                                child: TimeSpanSegmentedControl(
+                                  timeSpanDays: timeSpanDays,
+                                  onValueChanged: cubit.setTimeSpan,
+                                ),
                               ),
                             ),
-                          ),
-                        if (state.showSearch) const HabitsSearchWidget(),
-                        const SizedBox(height: 20),
-                        if (showAll)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 15),
-                            child: Text(
-                              context.messages.habitsOpenHeader,
-                              style: chartTitleStyle,
+                          if (state.showSearch) const HabitsSearchWidget(),
+                          const SizedBox(height: 20),
+                          if (showAll)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 15),
+                              child: Text(
+                                context.messages.habitsOpenHeader,
+                                style: chartTitleStyle,
+                              ),
                             ),
-                          ),
-                        if (showOpenNow)
-                          ...openNow.map((habitDefinition) {
-                            return HabitCompletionCard(
-                              habitDefinition: habitDefinition,
-                              rangeStart: rangeStart,
-                              rangeEnd: rangeEnd,
-                              showGaps: showGaps,
-                            );
-                          }),
-                        if (showAll)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 20, bottom: 15),
-                            child: Text(
-                              context.messages.habitsPendingLaterHeader,
-                              style: chartTitleStyle,
+                          if (showOpenNow)
+                            ...openNow.map((habitDefinition) {
+                              return HabitCompletionCard(
+                                habitDefinition: habitDefinition,
+                                rangeStart: rangeStart,
+                                rangeEnd: rangeEnd,
+                                showGaps: showGaps,
+                              );
+                            }),
+                          if (showAll)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(top: 20, bottom: 15),
+                              child: Text(
+                                context.messages.habitsPendingLaterHeader,
+                                style: chartTitleStyle,
+                              ),
                             ),
-                          ),
-                        if (showPendingLater)
-                          ...pendingLater.map((habitDefinition) {
-                            return HabitCompletionCard(
-                              habitDefinition: habitDefinition,
-                              rangeStart: rangeStart,
-                              rangeEnd: rangeEnd,
-                              showGaps: showGaps,
-                            );
-                          }),
-                        if (showAll)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 20, bottom: 15),
-                            child: Text(
-                              context.messages.habitsCompletedHeader,
-                              style: chartTitleStyle,
+                          if (showPendingLater)
+                            ...pendingLater.map((habitDefinition) {
+                              return HabitCompletionCard(
+                                habitDefinition: habitDefinition,
+                                rangeStart: rangeStart,
+                                rangeEnd: rangeEnd,
+                                showGaps: showGaps,
+                              );
+                            }),
+                          if (showAll)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(top: 20, bottom: 15),
+                              child: Text(
+                                context.messages.habitsCompletedHeader,
+                                style: chartTitleStyle,
+                              ),
                             ),
-                          ),
-                        if (showCompleted)
-                          ...completed.map((habitDefinition) {
-                            return HabitCompletionCard(
-                              habitDefinition: habitDefinition,
-                              rangeStart: rangeStart,
-                              rangeEnd: rangeEnd,
-                              showGaps: showGaps,
-                            );
-                          }),
-                        const SizedBox(height: 20),
-                        const HabitStreaksCounter(),
-                      ],
+                          if (showCompleted)
+                            ...completed.map((habitDefinition) {
+                              return HabitCompletionCard(
+                                habitDefinition: habitDefinition,
+                                rangeStart: rangeStart,
+                                rangeEnd: rangeEnd,
+                                showGaps: showGaps,
+                              );
+                            }),
+                          const SizedBox(height: 20),
+                          const HabitStreaksCounter(),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
