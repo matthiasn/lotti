@@ -76,17 +76,17 @@ class HabitsCubit extends Cubit<HabitsState> {
   }
 
   void startWatching() {
-    _completionsStream = _journalDb.watchHabitCompletionsInRange(
-      rangeStart: getStartOfDay(
-        DateTime.now().subtract(const Duration(days: 180)),
-      ),
-    );
-
-    _completionsStream = _completionsStream.throttleTime(
-      const Duration(seconds: 5),
-      trailing: true,
-      leading: true,
-    );
+    _completionsStream = _journalDb
+        .watchHabitCompletionsInRange(
+          rangeStart: getStartOfDay(
+            DateTime.now().subtract(const Duration(days: 180)),
+          ),
+        )
+        .throttleTime(
+          const Duration(seconds: 5),
+          trailing: true,
+          leading: true,
+        );
 
     _completionsSubscription = _completionsStream.listen((habitCompletions) {
       _habitCompletions = habitCompletions;
