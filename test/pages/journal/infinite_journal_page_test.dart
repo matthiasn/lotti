@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/journal/infinite_journal_page.dart';
@@ -35,6 +36,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   var mockJournalDb = MockJournalDb();
+  final mockSettingsDb = MockSettingsDb();
   var mockPersistenceLogic = MockPersistenceLogic();
   final mockEntitiesCacheService = MockEntitiesCacheService();
 
@@ -89,12 +91,16 @@ void main() {
       when(mockJournalDb.watchCountImportFlagEntries)
           .thenAnswer((_) => Stream<int>.fromIterable([42]));
 
+      when(() => mockSettingsDb.itemByKey(any()))
+          .thenAnswer((_) => Future(() => null));
+
       when(mockJournalDb.watchInProgressTasksCount)
           .thenAnswer((_) => Stream<int>.fromIterable([42]));
 
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<SettingsDb>(mockSettingsDb)
         ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<TimeService>(mockTimeService)

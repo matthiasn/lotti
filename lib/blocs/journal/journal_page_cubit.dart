@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
 import 'package:collection/collection.dart';
@@ -9,6 +10,7 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:rxdart/rxdart.dart';
@@ -46,6 +48,26 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     getIt<JournalDb>().watchConfigFlag('private').listen((showPrivate) {
       _showPrivateEntries = showPrivate;
       emitState();
+    });
+
+    getIt<SettingsDb>().itemByKey(selectedTaskStatusesKey).then((value) {
+      if (value == null) {
+        return;
+      }
+      final json = jsonDecode(value) as List<dynamic>;
+      _selectedTaskStatuses = List<String>.from(json).toSet();
+      emitState();
+      refreshQuery();
+    });
+
+    getIt<SettingsDb>().itemByKey(selectedEntryTypesKey).then((value) {
+      if (value == null) {
+        return;
+      }
+      final json = jsonDecode(value) as List<dynamic>;
+      _selectedEntryTypes = List<String>.from(json).toSet();
+      emitState();
+      refreshQuery();
     });
 
     state.pagingController.addPageRequestListener(_fetchPage);
@@ -94,6 +116,9 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       });
     }
   }
+
+  static const selectedTaskStatusesKey = 'SELECTED_TASK_STATUSES';
+  static const selectedEntryTypesKey = 'SELECTED_ENTRY_TYPES';
 
   final JournalDb _db = getIt<JournalDb>();
   bool _isVisible = false;
@@ -150,7 +175,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       _selectedTaskStatuses = _selectedTaskStatuses.union({status});
     }
 
-    refreshQuery();
+    persistTaskStatuses();
   }
 
   void toggleTaskAsListView() {
@@ -165,37 +190,55 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       _selectedEntryTypes = _selectedEntryTypes.union({entryType});
     }
 
-    refreshQuery();
+    persistEntryTypes();
   }
 
   void selectSingleEntryType(String entryType) {
     _selectedEntryTypes = {entryType};
-    refreshQuery();
+    persistEntryTypes();
   }
 
   void selectAllEntryTypes() {
     _selectedEntryTypes = entryTypes.toSet();
-    refreshQuery();
+    persistEntryTypes();
   }
 
   void clearSelectedEntryTypes() {
     _selectedEntryTypes = {};
-    refreshQuery();
+    persistEntryTypes();
   }
 
   void selectSingleTaskStatus(String taskStatus) {
     _selectedTaskStatuses = {taskStatus};
-    refreshQuery();
+    persistTaskStatuses();
   }
 
   void selectAllTaskStatuses() {
     _selectedTaskStatuses = state.taskStatuses.toSet();
-    refreshQuery();
+    persistTaskStatuses();
   }
 
   void clearSelectedTaskStatuses() {
     _selectedTaskStatuses = {};
+    persistTaskStatuses();
+  }
+
+  Future<void> persistTaskStatuses() async {
     refreshQuery();
+
+    await getIt<SettingsDb>().saveSettingsItem(
+      selectedTaskStatusesKey,
+      jsonEncode(_selectedTaskStatuses.toList()),
+    );
+  }
+
+  Future<void> persistEntryTypes() async {
+    refreshQuery();
+
+    await getIt<SettingsDb>().saveSettingsItem(
+      selectedEntryTypesKey,
+      jsonEncode(_selectedEntryTypes.toList()),
+    );
   }
 
   Future<void> _fts5Search() async {
