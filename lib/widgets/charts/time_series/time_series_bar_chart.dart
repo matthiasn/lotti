@@ -131,7 +131,9 @@ class TimeSeriesBarChart extends StatelessWidget {
                 return BarTooltipItem(
                   '$formatted $unit\n'
                   '${chartDateFormatterYMD(groupData.x)}',
-                  chartTooltipStyleBold.copyWith(color: rodData.color),
+                  chartTooltipStyleBold.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
                 );
               },
             ),

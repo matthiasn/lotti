@@ -221,10 +221,10 @@ packages:
     dependency: transitive
     description:
       name: cached_network_image_web
-      sha256: "42a835caa27c220d1294311ac409a43361088625a4f23c820b006dd9bffb3316"
+      sha256: "205d6a9f1862de34b93184f22b9d2d94586b2f05c581d546695e3d8f6a805cd7"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1"
+    version: "1.2.0"
   canonical_json:
     dependency: transitive
     description:
@@ -245,10 +245,10 @@ packages:
     dependency: transitive
     description:
       name: carp_serializable
-      sha256: "9d3faf463e27831a36f01265ea937b75194690494954b6c0926a55c89a6a2f7a"
+      sha256: bd72f3e7521cfac78c2b34762d9240bded1bebe0c6e615703a516705a3a983a0
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1"
+    version: "1.2.0"
   characters:
     dependency: transitive
     description:
@@ -421,10 +421,10 @@ packages:
     dependency: transitive
     description:
       name: dart_console
-      sha256: "2f94b62ac492892bc5091b8f5d416937974405ececab7ad96e5f8aae9d9f1527"
+      sha256: eae9ddd7bb69477a6e9821c75d575874e290887da09292732a35ab510d1de713
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.2"
+    version: "4.1.0"
   dart_geohash:
     dependency: "direct main"
     description:
@@ -614,18 +614,18 @@ packages:
     dependency: transitive
     description:
       name: fetch_api
-      sha256: "74a1e426d41ed9c89353703b2d80400c5d0ecfa144b2d8a7bd8882fbc9e48787"
+      sha256: "6de87206bfc4b40a3084c791df806bb4c8cc0c7e54f06dcd25701466055caa57"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.3"
+    version: "2.0.0"
   fetch_client:
     dependency: transitive
     description:
       name: fetch_client
-      sha256: "83c07b07a63526a43630572c72715707ca113a8aa3459efbc7b2d366b79402af"
+      sha256: "29ce228fc9401626448a9758fe147bdf52e10195340e4ec42b58229111402c6a"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.2"
+    version: "1.1.0"
   ffi:
     dependency: transitive
     description:
@@ -897,10 +897,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_local_notifications
-      sha256: "8cdc719114ab1c86c64bb7a86d3a679674c3637edd229e3a994797d4a1504ce4"
+      sha256: "84a3af6c7fb43c85c3528b434dacc7a7ed4551d1209d93773bf6045cec9ace68"
       url: "https://pub.dev"
     source: hosted
-    version: "17.1.0"
+    version: "17.1.1"
   flutter_local_notifications_linux:
     dependency: transitive
     description:
@@ -1451,26 +1451,26 @@ packages:
     dependency: "direct main"
     description:
       name: langchain
-      sha256: "0852c8025066083556907f8a9bdb8cb0dfa983540f548893f42f8ebb13da0dd6"
+      sha256: "3d9ed95bda009729454db9d5a0536aec288492c23acd777922d7eadc34d1cb72"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.0+1"
+    version: "0.6.0+1"
   langchain_core:
     dependency: transitive
     description:
       name: langchain_core
-      sha256: "5362a1cb9c019fdb7ea96956966876561871add368c7f5cb3470169bd6a17720"
+      sha256: "23bedb73dbf696cff90c6134c09cffcecabb9c7b77d232c803615131bb162709"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.0"
+    version: "0.2.0+1"
   langchain_ollama:
     dependency: "direct main"
     description:
       name: langchain_ollama
-      sha256: a2a0624022631ae16ad6ebd3a635768fedca24d55b2a76a4e6d8d1d03f8d65fa
+      sha256: "0b945f3f00dbf3235a5daed3ef58f17bc7d76490e13525570057f4f380493dd7"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.0"
+    version: "0.1.0+2"
   langchain_tiktoken:
     dependency: transitive
     description:
@@ -1619,10 +1619,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: "21c9a096e2b3eaae23d2f990784081216162a364d2d979f20e4e57d1c623d507"
+      sha256: "32c21a2ac2c221ce887b00a87f965bd8df1a3a4ba8794bbe86be8b56214051fb"
       url: "https://pub.dev"
     source: hosted
-    version: "0.28.0"
+    version: "0.28.1"
   media_kit:
     dependency: "direct main"
     description:
@@ -1875,10 +1875,10 @@ packages:
     dependency: transitive
     description:
       name: permission_handler_android
-      sha256: "1acac6bae58144b442f11e66621c062aead9c99841093c38f5bcdcc24c1c3474"
+      sha256: "8bb852cd759488893805c3161d0b2b5db55db52f773dbb014420b304055ba2c5"
       url: "https://pub.dev"
     source: hosted
-    version: "12.0.5"
+    version: "12.0.6"
   permission_handler_apple:
     dependency: transitive
     description:
@@ -1923,10 +1923,10 @@ packages:
     dependency: "direct main"
     description:
       name: photo_manager
-      sha256: df594f989f0c31cdb3ed48f3d49cb9ffadf11cc3700d2c3460b1912c93432621
+      sha256: aec3fb848e4bf3f0e36630de90d1bcafff57a059b39f429009fe561fdf9acb74
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "3.1.0"
   photo_manager_image_provider:
     dependency: transitive
     description:
