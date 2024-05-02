@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/time_series/utils.dart';
@@ -88,7 +87,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
                     TextStyle(
                       fontSize: fontSizeSmall,
                       fontWeight: FontWeight.w300,
-                      color: oldPrimaryColor,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                     children: [
                       TextSpan(
