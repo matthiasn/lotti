@@ -1,8 +1,10 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/tasks/state/task_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
@@ -304,7 +306,7 @@ class JournalImageCard extends StatelessWidget {
   }
 }
 
-class TaskListCard extends StatelessWidget {
+class TaskListCard extends StatefulWidget {
   const TaskListCard({
     required this.task,
     super.key,
@@ -313,20 +315,55 @@ class TaskListCard extends StatelessWidget {
   final Task task;
 
   @override
+  State<TaskListCard> createState() => _TaskListCardState();
+}
+
+class _TaskListCardState extends State<TaskListCard> {
+  @override
   Widget build(BuildContext context) {
-    void onTap() => beamToNamed('/tasks/${task.meta.id}');
+    void onTap() => beamToNamed('/tasks/${widget.task.meta.id}');
+
+    debugPrint('TaskListCard build ${widget.task.meta.id}');
 
     return Card(
       child: ListTile(
         onTap: onTap,
-        trailing: TaskStatusWidget(task),
+        trailing: TaskStatusWidget(widget.task),
         title: Text(
-          task.data.title,
+          widget.task.data.title,
           style: const TextStyle(
             fontSize: fontSizeMediumLarge,
           ),
         ),
       ),
+    );
+  }
+}
+
+class TaskListCardWrapper extends ConsumerWidget {
+  const TaskListCardWrapper({
+    required this.id,
+    super.key,
+  });
+
+  final String id;
+
+  @override
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final task = ref.watch(entityByIdProvider(id: id)).value;
+
+    debugPrint('TaskListCardWrapper build');
+
+    if (task == null) {
+      return SizedBox.shrink();
+    }
+
+    return TaskListCard(
+      task: task as Task,
+      key: Key(task.meta.id),
     );
   }
 }

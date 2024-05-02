@@ -95,8 +95,9 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             leading: false,
             trailing: true,
           )
-          .where(makeDuplicateFilter())
+          //.where(makeDuplicateFilter())
           .listen((_) {
+            debugPrint('Update _isVisible $_isVisible');
             if (_isVisible) {
               refreshQuery();
             }

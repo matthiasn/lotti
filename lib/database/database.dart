@@ -18,6 +18,8 @@ import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
+import '../blocs/journal/journal_page_cubit.dart';
+
 part 'database.g.dart';
 
 const journalDbFileName = 'db.sqlite';
@@ -191,6 +193,7 @@ class JournalDb extends _$JournalDb {
   Stream<JournalEntity?> watchEntityById(String id) {
     final res = (select(journal)..where((t) => t.id.equals(id)))
         .watch()
+        .where(makeDuplicateFilter())
         .map(entityStreamMapper)
         .map((entities) => entities.isNotEmpty ? entities.first : null);
     return res;
