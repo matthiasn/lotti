@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:drift/isolate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/beamer/beamer_app.dart';
-import 'package:lotti/database/common.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
@@ -34,14 +32,8 @@ Future<void> main() async {
 
     getIt
       ..registerSingleton<SecureStorage>(SecureStorage())
-      ..registerSingleton<Directory>(docDir);
-
-    await getIt.registerSingleton<Future<DriftIsolate>>(
-      createDriftIsolate(settingsDbFileName),
-      instanceName: settingsDbFileName,
-    );
-    getIt
-      ..registerSingleton<SettingsDb>(getSettingsDb())
+      ..registerSingleton<Directory>(docDir)
+      ..registerSingleton<SettingsDb>(SettingsDb())
       ..registerSingleton<WindowService>(WindowService());
 
     await getIt<WindowService>().restore();
