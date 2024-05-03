@@ -17,6 +17,11 @@ final expectedFlags = <ConfigFlag>{
     status: true,
   ),
   const ConfigFlag(
+    name: attemptEmbedding,
+    description: 'Create LLM embedding',
+    status: false,
+  ),
+  const ConfigFlag(
     name: autoTranscribeFlag,
     description: 'Automatically transcribe audio',
     status: false,
