@@ -1,8 +1,6 @@
 import 'dart:async';
 
-import 'package:drift/isolate.dart';
 import 'package:get_it/get_it.dart';
-import 'package:lotti/database/common.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -14,6 +12,7 @@ import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/asr_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
@@ -28,29 +27,15 @@ import 'package:lotti/sync/outbox/outbox_service.dart';
 final getIt = GetIt.instance;
 
 Future<void> registerSingletons() async {
-  await getIt.registerSingleton<Future<DriftIsolate>>(
-    createDriftIsolate(journalDbFileName),
-    instanceName: journalDbFileName,
-  );
-
-  await getIt.registerSingleton<Future<DriftIsolate>>(
-    createDriftIsolate(loggingDbFileName),
-    instanceName: loggingDbFileName,
-  );
-
-  await getIt.registerSingleton<Future<DriftIsolate>>(
-    createDriftIsolate(syncDbFileName),
-    instanceName: syncDbFileName,
-  );
-
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
-    ..registerSingleton<LoggingDb>(getLoggingDb())
-    ..registerSingleton<JournalDb>(getJournalDb())
+    ..registerSingleton<LoggingDb>(LoggingDb())
+    ..registerSingleton<UpdateNotifications>(UpdateNotifications())
+    ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
     ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())
-    ..registerSingleton<SyncDatabase>(getSyncDatabase())
+    ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<AsrService>(AsrService())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<TimeService>(TimeService())

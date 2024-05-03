@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:drift/drift.dart';
-import 'package:drift/isolate.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:sqlite3/sqlite3.dart';
+import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
 Future<File> getDatabaseFile(String dbFileName) async {
   final dbFolder = getDocumentsDirectory();
@@ -33,83 +32,15 @@ LazyDatabase openDbConnection(
       return NativeDatabase.memory();
     }
 
-    final file = await getDatabaseFile(fileName);
-    debugPrint('DB LazyDatabase ${file.path}');
+    final dbFolder = await getApplicationDocumentsDirectory();
+    final file = File(p.join(dbFolder.path, fileName));
 
-    return NativeDatabase(file);
+    if (Platform.isAndroid) {
+      await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
+    }
+
+    sqlite3.tempDirectory = (await getTemporaryDirectory()).path;
+
+    return NativeDatabase.createInBackground(file);
   });
-}
-
-Future<DriftIsolate> createDriftIsolate(
-  String dbFileName, {
-  bool inMemory = false,
-}) async {
-  // this method is called from the main isolate. Since we can't use
-  // getApplicationDocumentsDirectory on a background isolate, we calculate
-  // the database path in the foreground isolate and then inform the
-  // background isolate about the path.
-  final dir = getDocumentsDirectory();
-  final path = p.join(dir.path, dbFileName);
-  final receivePort = ReceivePort();
-
-  await Isolate.spawn(
-    inMemory ? _startBackgroundInMem : _startBackground,
-    _IsolateStartRequest(receivePort.sendPort, path),
-  );
-
-  // _startBackground will send the DriftIsolate to this ReceivePort
-  return await receivePort.first as DriftIsolate;
-}
-
-void _startBackground(_IsolateStartRequest request) {
-  // this is the entry point from the background isolate! Let's create
-  // the database from the path we received
-  final executor = NativeDatabase(File(request.targetPath));
-  // we're using DriftIsolate.inCurrent here as this method already runs on a
-  // background isolate. If we used DriftIsolate.spawn, a third isolate would be
-  // started which is not what we want!
-  final driftIsolate = DriftIsolate.inCurrent(
-    () => DatabaseConnection(executor),
-  );
-  // inform the starting isolate about this, so that it can call .connect()
-  request.sendDriftIsolate.send(driftIsolate);
-}
-
-void _startBackgroundInMem(_IsolateStartRequest request) {
-  final executor = NativeDatabase.memory();
-  final driftIsolate = DriftIsolate.inCurrent(
-    () => DatabaseConnection(executor),
-  );
-  request.sendDriftIsolate.send(driftIsolate);
-}
-
-// used to bundle the SendPort and the target path, since isolate entry point
-// functions can only take one parameter.
-class _IsolateStartRequest {
-  _IsolateStartRequest(
-    this.sendDriftIsolate,
-    this.targetPath,
-  );
-
-  final SendPort sendDriftIsolate;
-  final String targetPath;
-}
-
-DatabaseConnection getDatabaseConnection(String dbFileName) {
-  return DatabaseConnection.delayed(
-    Future.sync(() async {
-      final isolate = await getIt<Future<DriftIsolate>>(
-        instanceName: dbFileName,
-      );
-      return isolate.connect();
-    }),
-  );
-}
-
-DatabaseConnection getDbConnFromIsolate(DriftIsolate isolate) {
-  return DatabaseConnection.delayed(
-    Future.sync(() async {
-      return isolate.connect();
-    }),
-  );
 }

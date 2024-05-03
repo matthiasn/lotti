@@ -3,7 +3,12 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../mocks/mocks.dart';
 
 final expectedActiveFlagNames = {
   privateFlag,
@@ -15,6 +20,11 @@ final expectedFlags = <ConfigFlag>{
     name: privateFlag,
     description: 'Show private entries?',
     status: true,
+  ),
+  const ConfigFlag(
+    name: attemptEmbedding,
+    description: 'Create LLM embedding',
+    status: false,
   ),
   const ConfigFlag(
     name: autoTranscribeFlag,
@@ -58,14 +68,22 @@ final expectedMacFlags = <ConfigFlag>{
 
 void main() {
   JournalDb? db;
+  final mockUpdateNotifications = MockUpdateNotifications();
 
   group('Database Tests - ', () {
     setUp(() async {
+      getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+
       db = JournalDb(inMemoryDatabase: true);
       await initConfigFlags(db!, inMemoryDatabase: true);
+
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<DatabaseType>.fromIterable([]),
+      );
     });
     tearDown(() async {
       await db?.close();
+      getIt.unregister<UpdateNotifications>();
     });
 
     test(

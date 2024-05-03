@@ -97,7 +97,3 @@ class SyncDatabase extends _$SyncDatabase {
   @override
   int get schemaVersion => 1;
 }
-
-SyncDatabase getSyncDatabase() {
-  return SyncDatabase.connect(getDatabaseConnection(syncDbFileName));
-}

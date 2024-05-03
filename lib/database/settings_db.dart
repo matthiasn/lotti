@@ -55,7 +55,3 @@ class SettingsDb extends _$SettingsDb {
     }
   }
 }
-
-SettingsDb getSettingsDb() {
-  return SettingsDb.connect(getDatabaseConnection(settingsDbFileName));
-}

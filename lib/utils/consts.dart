@@ -6,3 +6,4 @@ const recordLocationFlag = 'record_location';
 const autoTranscribeFlag = 'auto_transcribe';
 const enableMatrixFlag = 'enable_matrix';
 const resendAttachments = 'resend_attachments';
+const attemptEmbedding = 'attempt_embedding';

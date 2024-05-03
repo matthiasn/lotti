@@ -15,6 +15,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/journal/infinite_journal_page.dart';
 import 'package:lotti/services/asr_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -39,6 +40,7 @@ void main() {
   final mockSettingsDb = MockSettingsDb();
   var mockPersistenceLogic = MockPersistenceLogic();
   final mockEntitiesCacheService = MockEntitiesCacheService();
+  final mockUpdateNotifications = MockUpdateNotifications();
 
   final entryTypeStrings = entryTypes.toList();
 
@@ -100,6 +102,7 @@ void main() {
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<SettingsDb>(mockSettingsDb)
         ..registerSingleton<AsrService>(MockAsrService())
         ..registerSingleton<TagsService>(mockTagsService)
@@ -113,6 +116,10 @@ void main() {
 
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
+      );
+
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<DatabaseType>.fromIterable([]),
       );
 
       when(mockJournalDb.watchConfigFlags).thenAnswer(

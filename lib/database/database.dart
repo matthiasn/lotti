@@ -13,6 +13,7 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -40,9 +41,8 @@ class JournalDb extends _$JournalDb {
           ),
         );
 
-  JournalDb.connect(super.connection) : super.connect();
-
   bool inMemoryDatabase = false;
+  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   @override
   int get schemaVersion => 19;
@@ -723,10 +723,7 @@ class JournalDb extends _$JournalDb {
       dashboard: upsertDashboardDefinition,
       categoryDefinition: upsertCategoryDefinition,
     );
+    _updateNotifications.notifyUpdate(DatabaseType.journal);
     return linesAffected;
   }
-}
-
-JournalDb getJournalDb() {
-  return JournalDb.connect(getDatabaseConnection(journalDbFileName));
 }
