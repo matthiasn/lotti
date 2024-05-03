@@ -135,7 +135,3 @@ class LoggingDb extends _$LoggingDb {
     return allLogEntries(limit).watch();
   }
 }
-
-LoggingDb getLoggingDb() {
-  return LoggingDb.connect(getDatabaseConnection(loggingDbFileName));
-}

@@ -22,6 +22,7 @@ class FlagsPage extends StatelessWidget {
 
         const displayedItems = {
           privateFlag,
+          attemptEmbedding,
           enableNotificationsFlag,
           autoTranscribeFlag,
           recordLocationFlag,

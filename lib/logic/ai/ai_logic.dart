@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:langchain/langchain.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:ollama_dart/ollama_dart.dart';
 
@@ -13,6 +16,13 @@ class AiLogic {
     JournalEntity? journalEntity, {
     String? linkedFromId,
   }) async {
+    final shouldAttemptEmbedding = await getIt<JournalDb>().getConfigFlag(
+      attemptEmbedding,
+    );
+    if (!shouldAttemptEmbedding) {
+      return;
+    }
+
     final markdown = journalEntity?.entryText?.markdown;
     final headline = switch (journalEntity) {
       Task() => journalEntity.data.title,

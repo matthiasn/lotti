@@ -14,7 +14,13 @@ Future<void> initConfigFlags(
       status: true,
     ),
   );
-
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: attemptEmbedding,
+      description: 'Create LLM embedding',
+      status: false,
+    ),
+  );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: allowInvalidCertFlag,
