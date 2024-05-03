@@ -1,21 +1,20 @@
-import 'package:flutter/foundation.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
+import 'dart:async';
 
-class DatabaseUpdateNotifications {
-  DatabaseUpdateNotifications() {
-    listen();
-  }
+enum DatabaseType {
+  journal,
+  setting,
+  sync,
+  logging,
+}
 
-  final JournalDb _journalDb = getIt<JournalDb>();
+class UpdateNotifications {
+  UpdateNotifications();
 
-  void listen() {
-    _journalDb.countJournalEntries().watch().listen((event) async {
-      final start = DateTime.now();
-      final count = await _journalDb.countJournalEntries().getSingle();
-      final end = DateTime.now();
-      final duration = end.difference(start).inMicroseconds / 1000;
-      debugPrint('DatabaseUpdateNotifications $count - $duration ms');
-    });
+  final _updateStreamController = StreamController<DatabaseType>.broadcast();
+
+  Stream<DatabaseType> get updateStream => _updateStreamController.stream;
+
+  void notifyUpdate(DatabaseType databaseType) {
+    _updateStreamController.add(databaseType);
   }
 }

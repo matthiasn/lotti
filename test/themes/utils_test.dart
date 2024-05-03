@@ -2,8 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/utils.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -11,9 +15,14 @@ void main() {
 
   group('Theme Utils test -', () {
     setUpAll(() {
-      final db = JournalDb(inMemoryDatabase: true);
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<DatabaseType>.fromIterable([]),
+      );
 
-      getIt.registerSingleton<JournalDb>(db);
+      getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true));
     });
     tearDownAll(() async {
       await getIt.reset();

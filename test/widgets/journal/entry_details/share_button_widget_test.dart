@@ -6,6 +6,7 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -24,7 +25,13 @@ void main() {
     setUpAll(() async {
       setFakeDocumentsPath();
 
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<DatabaseType>.fromIterable([]),
+      );
+
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<TagsService>(TagsService());

@@ -9,6 +9,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -28,6 +29,12 @@ void main() {
     var vcMockNext = '1';
 
     setUpAll(() {
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<DatabaseType>.fromIterable([]),
+      );
+      getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+
       final secureStorageMock = MockSecureStorage();
       final settingsDb = SettingsDb(inMemoryDatabase: true);
       final mockTimeService = MockTimeService();

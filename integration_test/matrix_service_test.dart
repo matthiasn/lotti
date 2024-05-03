@@ -13,6 +13,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/sync/matrix/matrix_service.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/vector_clock.dart';
@@ -39,6 +40,18 @@ void main() {
 
     // create separate databases for each simulated device & suppress warning
     drift.driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+
+    final mockUpdateNotifications = MockUpdateNotifications();
+
+    when(() => mockUpdateNotifications.updateStream).thenAnswer(
+      (_) => Stream<DatabaseType>.fromIterable([]),
+    );
+
+    when(() => mockUpdateNotifications.notifyUpdate(DatabaseType.journal))
+        .thenAnswer((_) {});
+
+    getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+
     final aliceDb = JournalDb(overriddenFilename: 'alice_db.sqlite');
     final bobDb = JournalDb(overriddenFilename: 'bob_db.sqlite');
 

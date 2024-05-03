@@ -7,6 +7,7 @@ import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_footer.dart';
@@ -23,7 +24,13 @@ void main() {
     final mockTimeService = MockTimeService();
 
     setUpAll(() {
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<DatabaseType>.fromIterable([]),
+      );
+
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<TagsService>(TagsService())
         ..registerSingleton<TimeService>(mockTimeService);
