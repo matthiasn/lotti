@@ -12,6 +12,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -101,14 +102,12 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             }
           });
     } else {
-      _db
-          .watchJournalCount()
+      _updateNotifications.updateStream
           .throttleTime(
-            const Duration(seconds: 2),
-            leading: false,
-            trailing: true,
-          )
-          .where(makeDuplicateFilter())
+        const Duration(seconds: 1),
+        leading: false,
+        trailing: true,
+      )
           .listen((_) {
         if (_isVisible) {
           refreshQuery();
@@ -121,6 +120,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   static const selectedEntryTypesKey = 'SELECTED_ENTRY_TYPES';
 
   final JournalDb _db = getIt<JournalDb>();
+  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   bool _isVisible = false;
   static const _pageSize = 50;
   Set<String> _selectedEntryTypes = entryTypes.toSet();
@@ -308,6 +308,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
               .first;
 
       final isLastPage = newItems.length < _pageSize;
+
       if (isLastPage) {
         state.pagingController.appendLastPage(newItems);
       } else {
@@ -315,8 +316,10 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         state.pagingController.appendPage(newItems, nextPageKey);
       }
       final finished = DateTime.now();
-      final duration = finished.difference(start);
-      debugPrint('_fetchPage $showTasks duration $duration');
+      final duration = finished.difference(start).inMicroseconds / 1000;
+      debugPrint(
+        '_fetchPage ${showTasks ? 'TASK' : 'JOURNAL'} duration $duration ms',
+      );
     } catch (error) {
       state.pagingController.error = error;
     }

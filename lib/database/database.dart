@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -15,13 +13,10 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:sqlite3/sqlite3.dart';
-import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
 part 'database.g.dart';
 
@@ -40,35 +35,14 @@ class JournalDb extends _$JournalDb {
     this.inMemoryDatabase = false,
     String? overriddenFilename,
   }) : super(
-          _openConnection(
+          openDbConnection(
             overriddenFilename ?? journalDbFileName,
             inMemoryDatabase: inMemoryDatabase,
           ),
         );
 
-  static LazyDatabase _openConnection(
-    String fileName, {
-    bool inMemoryDatabase = false,
-  }) {
-    return LazyDatabase(() async {
-      if (inMemoryDatabase) {
-        return NativeDatabase.memory();
-      }
-
-      final dbFolder = await getApplicationDocumentsDirectory();
-      final file = File(p.join(dbFolder.path, fileName));
-
-      if (Platform.isAndroid) {
-        await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
-      }
-
-      sqlite3.tempDirectory = (await getTemporaryDirectory()).path;
-
-      return NativeDatabase.createInBackground(file);
-    });
-  }
-
   bool inMemoryDatabase = false;
+  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   @override
   int get schemaVersion => 19;
@@ -749,6 +723,7 @@ class JournalDb extends _$JournalDb {
       dashboard: upsertDashboardDefinition,
       categoryDefinition: upsertCategoryDefinition,
     );
+    _updateNotifications.notifyUpdate(DatabaseType.journal);
     return linesAffected;
   }
 }

@@ -19,6 +19,7 @@ import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/asr_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
@@ -114,6 +115,8 @@ class MockDownloadManager extends Mock implements DownloadManager {}
 class MockEditorStateService extends Mock implements EditorStateService {}
 
 class MockLinkService extends Mock implements LinkService {}
+
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 class MockEntryCubit extends MockBloc<EntryCubit, EntryState>
     implements EntryCubit {}

@@ -10,6 +10,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -27,7 +28,13 @@ void main() {
     final mockTimeService = MockTimeService();
 
     setUpAll(() {
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<DatabaseType>.fromIterable([]),
+      );
+
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<VectorClockService>(MockVectorClockService())
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))

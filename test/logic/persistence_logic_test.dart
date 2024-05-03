@@ -15,6 +15,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/ai/ai_logic.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -36,6 +37,7 @@ void main() {
   registerFallbackValue(FakeJournalEntity());
 
   final mockNotificationService = MockNotificationService();
+  final mockUpdateNotifications = MockUpdateNotifications();
   final mockAiLogic = MockAiLogic();
   final mockFts5Db = MockFts5Db();
 
@@ -48,6 +50,8 @@ void main() {
 
     setUpAll(() async {
       setFakeDocumentsPath();
+
+      getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
       final settingsDb = SettingsDb(inMemoryDatabase: true);
       final journalDb = JournalDb(inMemoryDatabase: true);
@@ -65,6 +69,10 @@ void main() {
       });
 
       when(mockNotificationService.updateBadge).thenAnswer((_) async {});
+
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<DatabaseType>.fromIterable([]),
+      );
 
       when(() => mockFts5Db.insertText(any())).thenAnswer((_) async {});
 

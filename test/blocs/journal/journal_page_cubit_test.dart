@@ -10,6 +10,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -23,6 +24,7 @@ import '../../test_data/sync_config_test_data.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  final mockUpdateNotifications = MockUpdateNotifications();
 
   group('JournalPageCubit Tests - ', () {
     var vcMockNext = '1';
@@ -31,6 +33,10 @@ void main() {
       final secureStorageMock = MockSecureStorage();
       final settingsDb = SettingsDb(inMemoryDatabase: true);
       final mockTimeService = MockTimeService();
+
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<DatabaseType>.fromIterable([]),
+      );
 
       when(() => secureStorageMock.readValue(hostKey))
           .thenAnswer((_) async => 'some_host');
@@ -46,6 +52,7 @@ void main() {
       });
 
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
