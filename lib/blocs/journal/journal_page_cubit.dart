@@ -29,7 +29,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             fullTextMatches: {},
             showTasks: showTasks,
             taskAsListView: true,
-            pagingController: PagingController(firstPageKey: 0),
+            pagingController: PagingController<int, String>(firstPageKey: 0),
             taskStatuses: [
               'OPEN',
               'GROOMED',
@@ -286,14 +286,14 @@ class JournalPageCubit extends Cubit<JournalPageState> {
           _filters.contains(DisplayFilter.flaggedEntriesOnly);
 
       final newItems = showTasks
-          ? await _db.getTasks(
+          ? await _db.getTasksIds(
               ids: ids,
               starredStatuses: starredEntriesOnly ? [true] : [true, false],
               taskStatuses: _selectedTaskStatuses.toList(),
               limit: _pageSize,
               offset: pageKey,
             )
-          : await _db.getJournalEntities(
+          : await _db.getJournalEntityIds(
               types: types,
               ids: ids,
               starredStatuses: starredEntriesOnly ? [true] : [true, false],
