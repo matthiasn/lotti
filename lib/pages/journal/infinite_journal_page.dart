@@ -82,21 +82,10 @@ class InfiniteJournalPageBody extends StatelessWidget {
                   pagingController: snapshot.pagingController,
                   builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
                     itemBuilder: (context, item, index) {
-                      final valueKey = ValueKey(item.meta.id);
-                      return item.maybeMap(
-                        journalImage: (JournalImage image) =>
-                            JournalImageCard(item: image, key: valueKey),
-                        task: (Task task) {
-                          if (snapshot.taskAsListView) {
-                            return TaskListCard2(
-                              id: task.meta.id,
-                              key: valueKey,
-                            );
-                          } else {
-                            return JournalCard(item: item, key: valueKey);
-                          }
-                        },
-                        orElse: () => JournalCard(item: item, key: valueKey),
+                      return EntryWrapperWidget(
+                        id: item.meta.id,
+                        taskAsListView: snapshot.taskAsListView,
+                        key: ValueKey(item.meta.id),
                       );
                     },
                   ),
