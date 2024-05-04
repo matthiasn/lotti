@@ -333,13 +333,15 @@ class TaskListCard extends StatelessWidget {
   }
 }
 
-class TaskListCard2 extends ConsumerWidget {
-  const TaskListCard2({
+class EntryWrapperWidget extends ConsumerWidget {
+  const EntryWrapperWidget({
     required this.id,
+    required this.taskAsListView,
     super.key,
   });
 
   final String id;
+  final bool taskAsListView;
 
   void onTap() => beamToNamed('/tasks/$id');
 
@@ -348,22 +350,21 @@ class TaskListCard2 extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final task = ref.watch(entryControllerProvider(id: id)).value;
-
-    if (task is Task) {
-      return Card(
-        child: ListTile(
-          onTap: onTap,
-          trailing: TaskStatusWidget(task),
-          title: Text(
-            task.data.title,
-            style: const TextStyle(
-              fontSize: fontSizeMediumLarge,
-            ),
-          ),
-        ),
-      );
+    final entry = ref.watch(entryControllerProvider(id: id)).value;
+    if (entry == null) {
+      return const SizedBox.shrink();
     }
-    return const SizedBox.shrink();
+
+    return entry.maybeMap(
+      journalImage: (JournalImage image) => JournalImageCard(item: image),
+      task: (Task task) {
+        if (taskAsListView) {
+          return TaskListCard(task: task);
+        } else {
+          return JournalCard(item: entry);
+        }
+      },
+      orElse: () => JournalCard(item: entry),
+    );
   }
 }

@@ -186,6 +186,9 @@ void main() {
         (_) => Stream<JournalEntity>.fromIterable([testTextEntry]),
       );
 
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<AudioPlayerCubit>(
@@ -236,6 +239,9 @@ void main() {
         ]),
       );
 
+      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+          .thenAnswer((_) async => testTask);
+
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
@@ -276,6 +282,9 @@ void main() {
           [testTask],
         ]),
       );
+
+      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+          .thenAnswer((_) async => testTask);
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
@@ -328,6 +337,9 @@ void main() {
       );
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      when(() => mockJournalDb.journalEntityById(testWeightEntry.meta.id))
+          .thenAnswer((_) async => testWeightEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -432,6 +444,11 @@ void main() {
         ]),
       );
 
+      when(
+        () => mockJournalDb
+            .journalEntityById(testMeasurementChocolateEntry.meta.id),
+      ).thenAnswer((_) async => testMeasurementChocolateEntry);
+
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
@@ -533,6 +550,11 @@ void main() {
           measurableCoverage,
         ]),
       );
+
+      when(
+        () =>
+            mockJournalDb.journalEntityById(testMeasuredCoverageEntry.meta.id),
+      ).thenAnswer((_) async => testMeasuredCoverageEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
