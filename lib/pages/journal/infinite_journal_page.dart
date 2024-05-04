@@ -88,8 +88,8 @@ class InfiniteJournalPageBody extends StatelessWidget {
                             JournalImageCard(item: image, key: valueKey),
                         task: (Task task) {
                           if (snapshot.taskAsListView) {
-                            return TaskListCard(
-                              task: task,
+                            return TaskListCard2(
+                              id: task.meta.id,
                               key: valueKey,
                             );
                           } else {

@@ -1,8 +1,10 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
@@ -328,5 +330,40 @@ class TaskListCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class TaskListCard2 extends ConsumerWidget {
+  const TaskListCard2({
+    required this.id,
+    super.key,
+  });
+
+  final String id;
+
+  void onTap() => beamToNamed('/tasks/$id');
+
+  @override
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final task = ref.watch(entryControllerProvider(id: id)).value;
+
+    if (task is Task) {
+      return Card(
+        child: ListTile(
+          onTap: onTap,
+          trailing: TaskStatusWidget(task),
+          title: Text(
+            task.data.title,
+            style: const TextStyle(
+              fontSize: fontSizeMediumLarge,
+            ),
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }

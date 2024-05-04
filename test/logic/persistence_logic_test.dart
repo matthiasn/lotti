@@ -71,7 +71,7 @@ void main() {
       when(mockNotificationService.updateBadge).thenAnswer((_) async {});
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<DatabaseType>.fromIterable([]),
+        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
       );
 
       when(() => mockFts5Db.insertText(any())).thenAnswer((_) async {});

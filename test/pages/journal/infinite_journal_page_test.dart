@@ -119,7 +119,7 @@ void main() {
       );
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<DatabaseType>.fromIterable([]),
+        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
       );
 
       when(mockJournalDb.watchConfigFlags).thenAnswer(
