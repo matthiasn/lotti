@@ -229,6 +229,68 @@ class JournalDb extends _$JournalDb {
     int limit = 500,
     int offset = 0,
   }) {
+    return _selectJournalEntities(
+      types: types,
+      starredStatuses: starredStatuses,
+      privateStatuses: privateStatuses,
+      flaggedStatuses: flaggedStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).watch().map(entityStreamMapper);
+  }
+
+  Future<List<JournalEntity>> getJournalEntities({
+    required List<String> types,
+    required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
+    required List<int> flaggedStatuses,
+    required List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) async {
+    final res = await _selectJournalEntities(
+      types: types,
+      starredStatuses: starredStatuses,
+      privateStatuses: privateStatuses,
+      flaggedStatuses: flaggedStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).get();
+    return res.map(fromDbEntity).toList();
+  }
+
+  Future<List<String>> getJournalEntityIds({
+    required List<String> types,
+    required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
+    required List<int> flaggedStatuses,
+    required List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) async {
+    final res = await _selectJournalEntities(
+      types: types,
+      starredStatuses: starredStatuses,
+      privateStatuses: privateStatuses,
+      flaggedStatuses: flaggedStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).get();
+    return res.map((e) => e.id).toList();
+  }
+
+  Selectable<JournalDbEntity> _selectJournalEntities({
+    required List<String> types,
+    required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
+    required List<int> flaggedStatuses,
+    required List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) {
     if (ids != null) {
       return filteredByTagJournal(
         types,
@@ -238,7 +300,7 @@ class JournalDb extends _$JournalDb {
         flaggedStatuses,
         limit,
         offset,
-      ).watch().map(entityStreamMapper);
+      );
     } else {
       return filteredJournal(
         types,
@@ -247,7 +309,7 @@ class JournalDb extends _$JournalDb {
         flaggedStatuses,
         limit,
         offset,
-      ).watch().map(entityStreamMapper);
+      );
     }
   }
 
@@ -284,6 +346,56 @@ class JournalDb extends _$JournalDb {
     int limit = 500,
     int offset = 0,
   }) {
+    return _selectTasks(
+      starredStatuses: starredStatuses,
+      taskStatuses: taskStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).watch().map(entityStreamMapper);
+  }
+
+  Future<List<String>> getTasksIds({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) async {
+    final res = await _selectTasks(
+      starredStatuses: starredStatuses,
+      taskStatuses: taskStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).get();
+    return res.map((e) => e.id).toList();
+  }
+
+  Future<List<JournalEntity>> getTasks({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) async {
+    final res = await _selectTasks(
+      starredStatuses: starredStatuses,
+      taskStatuses: taskStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).get();
+    return res.map(fromDbEntity).toList();
+  }
+
+  Selectable<JournalDbEntity> _selectTasks({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) {
     final types = <String>['Task'];
     if (ids != null) {
       return filteredTasksByTag(
@@ -293,7 +405,7 @@ class JournalDb extends _$JournalDb {
         taskStatuses,
         limit,
         offset,
-      ).watch().map(entityStreamMapper);
+      );
     } else {
       return filteredTasks(
         types,
@@ -301,7 +413,7 @@ class JournalDb extends _$JournalDb {
         taskStatuses,
         limit,
         offset,
-      ).watch().map(entityStreamMapper);
+      );
     }
   }
 
