@@ -286,26 +286,22 @@ class JournalPageCubit extends Cubit<JournalPageState> {
           _filters.contains(DisplayFilter.flaggedEntriesOnly);
 
       final newItems = showTasks
-          ? await _db
-              .watchTasks(
-                ids: ids,
-                starredStatuses: starredEntriesOnly ? [true] : [true, false],
-                taskStatuses: _selectedTaskStatuses.toList(),
-                limit: _pageSize,
-                offset: pageKey,
-              )
-              .first
-          : await _db
-              .watchJournalEntities(
-                types: types,
-                ids: ids,
-                starredStatuses: starredEntriesOnly ? [true] : [true, false],
-                privateStatuses: privateEntriesOnly ? [true] : [true, false],
-                flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
-                limit: _pageSize,
-                offset: pageKey,
-              )
-              .first;
+          ? await _db.getTasks(
+              ids: ids,
+              starredStatuses: starredEntriesOnly ? [true] : [true, false],
+              taskStatuses: _selectedTaskStatuses.toList(),
+              limit: _pageSize,
+              offset: pageKey,
+            )
+          : await _db.getJournalEntities(
+              types: types,
+              ids: ids,
+              starredStatuses: starredEntriesOnly ? [true] : [true, false],
+              privateStatuses: privateEntriesOnly ? [true] : [true, false],
+              flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
+              limit: _pageSize,
+              offset: pageKey,
+            );
 
       final isLastPage = newItems.length < _pageSize;
 
@@ -315,10 +311,9 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         final nextPageKey = pageKey + newItems.length;
         state.pagingController.appendPage(newItems, nextPageKey);
       }
-      final finished = DateTime.now();
-      final duration = finished.difference(start).inMicroseconds / 1000;
+      final duration2 = DateTime.now().difference(start).inMicroseconds / 1000;
       debugPrint(
-        '_fetchPage ${showTasks ? 'TASK' : 'JOURNAL'} duration $duration ms',
+        '_fetchPage ${showTasks ? 'TASK' : 'JOURNAL'} duration $duration2 ms',
       );
     } catch (error) {
       state.pagingController.error = error;
