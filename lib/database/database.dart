@@ -71,7 +71,14 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
-    return into(journal).insertOnConflictUpdate(entry);
+    final res = into(journal).insertOnConflictUpdate(entry);
+
+    _updateNotifications.notifyUpdate(
+      DatabaseType.journal,
+      entry.id,
+    );
+
+    return res;
   }
 
   Future<int> addConflict(Conflict conflict) async {
@@ -182,10 +189,7 @@ class JournalDb extends _$JournalDb {
 
   Future<JournalDbEntity?> entityById(String id) async {
     final res = await (select(journal)..where((t) => t.id.equals(id))).get();
-    if (res.isNotEmpty) {
-      return res.first;
-    }
-    return null;
+    return res.firstOrNull;
   }
 
   Stream<JournalEntity?> watchEntityById(String id) {
@@ -723,7 +727,10 @@ class JournalDb extends _$JournalDb {
       dashboard: upsertDashboardDefinition,
       categoryDefinition: upsertCategoryDefinition,
     );
-    _updateNotifications.notifyUpdate(DatabaseType.journal);
+    _updateNotifications.notifyUpdate(
+      DatabaseType.entity,
+      entityDefinition.id,
+    );
     return linesAffected;
   }
 }
