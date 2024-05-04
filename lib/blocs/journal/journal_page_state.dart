@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:lotti/classes/journal_entities.dart';
 
 part 'journal_page_state.freezed.dart';
 
@@ -21,7 +20,7 @@ class JournalPageState with _$JournalPageState {
     required bool taskAsListView,
     required List<String> selectedEntryTypes,
     required Set<String> fullTextMatches,
-    required PagingController<int, JournalEntity> pagingController,
+    required PagingController<int, String> pagingController,
     required List<String> taskStatuses,
     required Set<String> selectedTaskStatuses,
   }) = _JournalPageState;
