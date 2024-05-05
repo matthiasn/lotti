@@ -220,26 +220,6 @@ class JournalDb extends _$JournalDb {
     return entryIdsForTagId(tagId).get();
   }
 
-  Stream<List<JournalEntity>> watchJournalEntities({
-    required List<String> types,
-    required List<bool> starredStatuses,
-    required List<bool> privateStatuses,
-    required List<int> flaggedStatuses,
-    required List<String>? ids,
-    int limit = 500,
-    int offset = 0,
-  }) {
-    return _selectJournalEntities(
-      types: types,
-      starredStatuses: starredStatuses,
-      privateStatuses: privateStatuses,
-      flaggedStatuses: flaggedStatuses,
-      ids: ids,
-      limit: limit,
-      offset: offset,
-    ).watch().map(entityStreamMapper);
-  }
-
   Future<List<JournalEntity>> getJournalEntities({
     required List<String> types,
     required List<bool> starredStatuses,
@@ -366,22 +346,6 @@ class JournalDb extends _$JournalDb {
       '%$match%',
       rangeStart,
       rangeEnd,
-    ).watch().map(entityStreamMapper);
-  }
-
-  Stream<List<JournalEntity>> watchTasks({
-    required List<bool> starredStatuses,
-    required List<String> taskStatuses,
-    List<String>? ids,
-    int limit = 500,
-    int offset = 0,
-  }) {
-    return _selectTasks(
-      starredStatuses: starredStatuses,
-      taskStatuses: taskStatuses,
-      ids: ids,
-      limit: limit,
-      offset: offset,
     ).watch().map(entityStreamMapper);
   }
 
