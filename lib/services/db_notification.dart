@@ -2,6 +2,7 @@ import 'dart:async';
 
 enum DatabaseType {
   journal,
+  entity,
   setting,
   sync,
   logging,
@@ -10,11 +11,13 @@ enum DatabaseType {
 class UpdateNotifications {
   UpdateNotifications();
 
-  final _updateStreamController = StreamController<DatabaseType>.broadcast();
+  final _updateStreamController =
+      StreamController<({DatabaseType type, String id})>.broadcast();
 
-  Stream<DatabaseType> get updateStream => _updateStreamController.stream;
+  Stream<({DatabaseType type, String id})> get updateStream =>
+      _updateStreamController.stream;
 
-  void notifyUpdate(DatabaseType databaseType) {
-    _updateStreamController.add(databaseType);
+  void notifyUpdate(DatabaseType databaseType, String id) {
+    _updateStreamController.add((type: databaseType, id: id));
   }
 }

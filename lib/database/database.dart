@@ -71,7 +71,14 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
-    return into(journal).insertOnConflictUpdate(entry);
+    final res = into(journal).insertOnConflictUpdate(entry);
+
+    _updateNotifications.notifyUpdate(
+      DatabaseType.journal,
+      entry.id,
+    );
+
+    return res;
   }
 
   Future<int> addConflict(Conflict conflict) async {
@@ -182,10 +189,7 @@ class JournalDb extends _$JournalDb {
 
   Future<JournalDbEntity?> entityById(String id) async {
     final res = await (select(journal)..where((t) => t.id.equals(id))).get();
-    if (res.isNotEmpty) {
-      return res.first;
-    }
-    return null;
+    return res.firstOrNull;
   }
 
   Stream<JournalEntity?> watchEntityById(String id) {
@@ -225,6 +229,67 @@ class JournalDb extends _$JournalDb {
     int limit = 500,
     int offset = 0,
   }) {
+    return _selectJournalEntities(
+      types: types,
+      starredStatuses: starredStatuses,
+      privateStatuses: privateStatuses,
+      flaggedStatuses: flaggedStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).watch().map(entityStreamMapper);
+  }
+
+  Future<List<JournalEntity>> getJournalEntities({
+    required List<String> types,
+    required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
+    required List<int> flaggedStatuses,
+    required List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) async {
+    final res = await _selectJournalEntities(
+      types: types,
+      starredStatuses: starredStatuses,
+      privateStatuses: privateStatuses,
+      flaggedStatuses: flaggedStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).get();
+    return res.map(fromDbEntity).toList();
+  }
+
+  Future<List<String>> getJournalEntityIds({
+    required List<String> types,
+    required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
+    required List<int> flaggedStatuses,
+    required List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) async {
+    return _selectJournalEntityIds(
+      types: types,
+      starredStatuses: starredStatuses,
+      privateStatuses: privateStatuses,
+      flaggedStatuses: flaggedStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).get();
+  }
+
+  Selectable<JournalDbEntity> _selectJournalEntities({
+    required List<String> types,
+    required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
+    required List<int> flaggedStatuses,
+    required List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) {
     if (ids != null) {
       return filteredByTagJournal(
         types,
@@ -234,7 +299,7 @@ class JournalDb extends _$JournalDb {
         flaggedStatuses,
         limit,
         offset,
-      ).watch().map(entityStreamMapper);
+      );
     } else {
       return filteredJournal(
         types,
@@ -243,7 +308,38 @@ class JournalDb extends _$JournalDb {
         flaggedStatuses,
         limit,
         offset,
-      ).watch().map(entityStreamMapper);
+      );
+    }
+  }
+
+  Selectable<String> _selectJournalEntityIds({
+    required List<String> types,
+    required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
+    required List<int> flaggedStatuses,
+    required List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) {
+    if (ids != null) {
+      return filteredJournalIds2(
+        types,
+        ids,
+        starredStatuses,
+        privateStatuses,
+        flaggedStatuses,
+        limit,
+        offset,
+      );
+    } else {
+      return filteredJournalIds(
+        types,
+        starredStatuses,
+        privateStatuses,
+        flaggedStatuses,
+        limit,
+        offset,
+      );
     }
   }
 
@@ -280,16 +376,66 @@ class JournalDb extends _$JournalDb {
     int limit = 500,
     int offset = 0,
   }) {
+    return _selectTasks(
+      starredStatuses: starredStatuses,
+      taskStatuses: taskStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).watch().map(entityStreamMapper);
+  }
+
+  Future<List<JournalEntity>> getTasks({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) async {
+    final res = await _selectTasks(
+      starredStatuses: starredStatuses,
+      taskStatuses: taskStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).get();
+
+    return res.map(fromDbEntity).toList();
+  }
+
+  Future<List<String>> getTasksIds({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) async {
+    return _selectTaskIds(
+      starredStatuses: starredStatuses,
+      taskStatuses: taskStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).get();
+  }
+
+  Selectable<JournalDbEntity> _selectTasks({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) {
     final types = <String>['Task'];
     if (ids != null) {
-      return filteredTasksByTag(
+      return filteredTasks2(
         types,
         ids,
         starredStatuses,
         taskStatuses,
         limit,
         offset,
-      ).watch().map(entityStreamMapper);
+      );
     } else {
       return filteredTasks(
         types,
@@ -297,7 +443,35 @@ class JournalDb extends _$JournalDb {
         taskStatuses,
         limit,
         offset,
-      ).watch().map(entityStreamMapper);
+      );
+    }
+  }
+
+  Selectable<String> _selectTaskIds({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) {
+    final types = <String>['Task'];
+    if (ids != null) {
+      return filteredTaskIds2(
+        types,
+        ids,
+        starredStatuses,
+        taskStatuses,
+        limit,
+        offset,
+      );
+    } else {
+      return filteredTaskIds(
+        types,
+        starredStatuses,
+        taskStatuses,
+        limit,
+        offset,
+      );
     }
   }
 
@@ -723,7 +897,10 @@ class JournalDb extends _$JournalDb {
       dashboard: upsertDashboardDefinition,
       categoryDefinition: upsertCategoryDefinition,
     );
-    _updateNotifications.notifyUpdate(DatabaseType.journal);
+    _updateNotifications.notifyUpdate(
+      DatabaseType.entity,
+      entityDefinition.id,
+    );
     return linesAffected;
   }
 }

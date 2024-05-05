@@ -119,7 +119,7 @@ void main() {
       );
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<DatabaseType>.fromIterable([]),
+        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
       );
 
       when(mockJournalDb.watchConfigFlags).thenAnswer(
@@ -166,7 +166,7 @@ void main() {
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
       when(
-        () => mockJournalDb.watchJournalEntities(
+        () => mockJournalDb.getJournalEntities(
           types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
@@ -174,17 +174,16 @@ void main() {
           ids: null,
           limit: 50,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testTextEntry],
-        ]),
-      );
+      ).thenAnswer((_) async => [testTextEntry]);
 
       when(
         () => mockJournalDb.watchEntityById(testTextEntry.meta.id),
       ).thenAnswer(
         (_) => Stream<JournalEntity>.fromIterable([testTextEntry]),
       );
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -222,7 +221,7 @@ void main() {
       }
 
       when(
-        () => mockJournalDb.watchJournalEntities(
+        () => mockJournalDb.getJournalEntities(
           types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
@@ -230,11 +229,10 @@ void main() {
           ids: null,
           limit: 50,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testTask],
-        ]),
-      );
+      ).thenAnswer((_) async => [testTask]);
+
+      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+          .thenAnswer((_) async => testTask);
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
@@ -266,16 +264,15 @@ void main() {
       }
 
       when(
-        () => mockJournalDb.watchTasks(
+        () => mockJournalDb.getTasks(
           starredStatuses: [true, false],
           limit: 50,
           taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testTask],
-        ]),
-      );
+      ).thenAnswer((_) async => [testTask]);
+
+      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+          .thenAnswer((_) async => testTask);
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
@@ -307,7 +304,7 @@ void main() {
       }
 
       when(
-        () => mockJournalDb.watchJournalEntities(
+        () => mockJournalDb.getJournalEntities(
           types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
@@ -315,11 +312,7 @@ void main() {
           ids: null,
           limit: 50,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testWeightEntry],
-        ]),
-      );
+      ).thenAnswer((_) async => [testWeightEntry]);
 
       when(
         () => mockJournalDb.watchEntityById(testWeightEntry.meta.id),
@@ -328,6 +321,9 @@ void main() {
       );
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      when(() => mockJournalDb.journalEntityById(testWeightEntry.meta.id))
+          .thenAnswer((_) async => testWeightEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -408,7 +404,7 @@ void main() {
       ).thenAnswer((_) async => measurableChocolate);
 
       when(
-        () => mockJournalDb.watchJournalEntities(
+        () => mockJournalDb.getJournalEntities(
           types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
@@ -416,11 +412,7 @@ void main() {
           ids: null,
           limit: 50,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasurementChocolateEntry],
-        ]),
-      );
+      ).thenAnswer((_) async => [testMeasurementChocolateEntry]);
 
       when(
         () => mockJournalDb.watchMeasurableDataTypeById(
@@ -431,6 +423,11 @@ void main() {
           measurableChocolate,
         ]),
       );
+
+      when(
+        () => mockJournalDb
+            .journalEntityById(testMeasurementChocolateEntry.meta.id),
+      ).thenAnswer((_) async => testMeasurementChocolateEntry);
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
@@ -510,7 +507,7 @@ void main() {
       ).thenAnswer((_) async => measurableCoverage);
 
       when(
-        () => mockJournalDb.watchJournalEntities(
+        () => mockJournalDb.getJournalEntities(
           types: entryTypeStrings,
           starredStatuses: [true, false],
           privateStatuses: [true, false],
@@ -518,11 +515,7 @@ void main() {
           ids: null,
           limit: 50,
         ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testMeasuredCoverageEntry],
-        ]),
-      );
+      ).thenAnswer((_) async => [testMeasuredCoverageEntry]);
 
       when(
         () => mockJournalDb.watchMeasurableDataTypeById(
@@ -533,6 +526,11 @@ void main() {
           measurableCoverage,
         ]),
       );
+
+      when(
+        () =>
+            mockJournalDb.journalEntityById(testMeasuredCoverageEntry.meta.id),
+      ).thenAnswer((_) async => testMeasuredCoverageEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

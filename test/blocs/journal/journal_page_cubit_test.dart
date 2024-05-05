@@ -35,7 +35,7 @@ void main() {
       final mockTimeService = MockTimeService();
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<DatabaseType>.fromIterable([]),
+        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
       );
 
       when(() => secureStorageMock.readValue(hostKey))

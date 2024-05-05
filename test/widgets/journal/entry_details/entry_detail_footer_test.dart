@@ -26,7 +26,7 @@ void main() {
     setUpAll(() {
       final mockUpdateNotifications = MockUpdateNotifications();
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<DatabaseType>.fromIterable([]),
+        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
       );
 
       getIt

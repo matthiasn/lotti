@@ -81,22 +81,12 @@ class InfiniteJournalPageBody extends StatelessWidget {
                 PagedSliverList<int, JournalEntity>(
                   pagingController: snapshot.pagingController,
                   builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
+                    animateTransitions: true,
                     itemBuilder: (context, item, index) {
-                      final valueKey = ValueKey(item.meta.id);
-                      return item.maybeMap(
-                        journalImage: (JournalImage image) =>
-                            JournalImageCard(item: image, key: valueKey),
-                        task: (Task task) {
-                          if (snapshot.taskAsListView) {
-                            return TaskListCard(
-                              task: task,
-                              key: valueKey,
-                            );
-                          } else {
-                            return JournalCard(item: item, key: valueKey);
-                          }
-                        },
-                        orElse: () => JournalCard(item: item, key: valueKey),
+                      return EntryWrapperWidget(
+                        item: item,
+                        taskAsListView: snapshot.taskAsListView,
+                        key: ValueKey(item.meta.id),
                       );
                     },
                   ),

@@ -44,11 +44,12 @@ void main() {
     final mockUpdateNotifications = MockUpdateNotifications();
 
     when(() => mockUpdateNotifications.updateStream).thenAnswer(
-      (_) => Stream<DatabaseType>.fromIterable([]),
+      (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
     );
 
-    when(() => mockUpdateNotifications.notifyUpdate(DatabaseType.journal))
-        .thenAnswer((_) {});
+    when(
+      () => mockUpdateNotifications.notifyUpdate(DatabaseType.journal, any()),
+    ).thenAnswer((_) {});
 
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 

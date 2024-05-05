@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -29,7 +29,10 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             fullTextMatches: {},
             showTasks: showTasks,
             taskAsListView: true,
-            pagingController: PagingController(firstPageKey: 0),
+            pagingController: PagingController<int, JournalEntity>(
+              firstPageKey: 0,
+              invisibleItemsThreshold: 10,
+            ),
             taskStatuses: [
               'OPEN',
               'GROOMED',
@@ -84,36 +87,34 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       );
     }
 
-    if (showTasks) {
-      _db
-          .watchTasks(
-            starredStatuses: [true, false],
-            taskStatuses: state.taskStatuses,
-          )
-          .throttleTime(
-            const Duration(seconds: 1),
-            leading: false,
-            trailing: true,
-          )
-          .where(makeDuplicateFilter())
-          .listen((_) {
-            if (_isVisible) {
-              refreshQuery();
-            }
-          });
-    } else {
-      _updateNotifications.updateStream
-          .throttleTime(
-        const Duration(seconds: 1),
-        leading: false,
-        trailing: true,
-      )
-          .listen((_) {
-        if (_isVisible) {
-          refreshQuery();
+    String idMapper(JournalEntity entity) => entity.meta.id;
+
+    _updateNotifications.updateStream
+        .throttleTime(
+      const Duration(milliseconds: 500),
+      leading: false,
+      trailing: true,
+    )
+        .listen((event) async {
+      if (_isVisible) {
+        final displayedIds =
+            state.pagingController.itemList?.map(idMapper).toSet() ?? {};
+
+        if (showTasks) {
+          final newIds = (await _runQuery(0)).map(idMapper).toSet();
+          if (!setEquals(_lastIds, newIds)) {
+            _lastIds = newIds;
+            await refreshQuery();
+          } else if (displayedIds.contains(event.id)) {
+            await refreshQuery();
+          }
+        } else {
+          if (displayedIds.contains(event.id)) {
+            await refreshQuery();
+          }
         }
-      });
-    }
+      }
+    });
   }
 
   static const selectedTaskStatusesKey = 'SELECTED_TASK_STATUSES';
@@ -132,7 +133,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool taskAsListView = true;
 
   Set<String> _fullTextMatches = {};
-
+  Set<String> _lastIds = {};
   Set<String> _selectedTaskStatuses = {
     'OPEN',
     'GROOMED',
@@ -224,7 +225,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   }
 
   Future<void> persistTaskStatuses() async {
-    refreshQuery();
+    await refreshQuery();
 
     await getIt<SettingsDb>().saveSettingsItem(
       selectedTaskStatusesKey,
@@ -233,7 +234,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   }
 
   Future<void> persistEntryTypes() async {
-    refreshQuery();
+    await refreshQuery();
 
     await getIt<SettingsDb>().saveSettingsItem(
       selectedEntryTypesKey,
@@ -252,10 +253,10 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   Future<void> setSearchString(String query) async {
     _query = query;
-    refreshQuery();
+    await refreshQuery();
   }
 
-  void refreshQuery() {
+  Future<void> refreshQuery() async {
     emitState();
     state.pagingController.refresh();
   }
@@ -271,42 +272,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   Future<void> _fetchPage(int pageKey) async {
     try {
       final start = DateTime.now();
-      final types = state.selectedEntryTypes.toList();
-
-      await _fts5Search();
-
-      final fullTextMatches = _fullTextMatches.toList();
-      final ids = _query.isNotEmpty ? fullTextMatches : null;
-
-      final starredEntriesOnly =
-          _filters.contains(DisplayFilter.starredEntriesOnly);
-      final privateEntriesOnly =
-          _filters.contains(DisplayFilter.privateEntriesOnly);
-      final flaggedEntriesOnly =
-          _filters.contains(DisplayFilter.flaggedEntriesOnly);
-
-      final newItems = showTasks
-          ? await _db
-              .watchTasks(
-                ids: ids,
-                starredStatuses: starredEntriesOnly ? [true] : [true, false],
-                taskStatuses: _selectedTaskStatuses.toList(),
-                limit: _pageSize,
-                offset: pageKey,
-              )
-              .first
-          : await _db
-              .watchJournalEntities(
-                types: types,
-                ids: ids,
-                starredStatuses: starredEntriesOnly ? [true] : [true, false],
-                privateStatuses: privateEntriesOnly ? [true] : [true, false],
-                flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
-                limit: _pageSize,
-                offset: pageKey,
-              )
-              .first;
-
+      final newItems = await _runQuery(pageKey);
       final isLastPage = newItems.length < _pageSize;
 
       if (isLastPage) {
@@ -315,14 +281,45 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         final nextPageKey = pageKey + newItems.length;
         state.pagingController.appendPage(newItems, nextPageKey);
       }
-      final finished = DateTime.now();
-      final duration = finished.difference(start).inMicroseconds / 1000;
+      final duration2 = DateTime.now().difference(start).inMicroseconds / 1000;
       debugPrint(
-        '_fetchPage ${showTasks ? 'TASK' : 'JOURNAL'} duration $duration ms',
+        '_fetchPage ${showTasks ? 'TASK' : 'JOURNAL'} duration $duration2 ms',
       );
     } catch (error) {
       state.pagingController.error = error;
     }
+  }
+
+  Future<List<JournalEntity>> _runQuery(int pageKey) async {
+    final types = state.selectedEntryTypes.toList();
+    await _fts5Search();
+    final fullTextMatches = _fullTextMatches.toList();
+    final ids = _query.isNotEmpty ? fullTextMatches : null;
+
+    final starredEntriesOnly =
+        _filters.contains(DisplayFilter.starredEntriesOnly);
+    final privateEntriesOnly =
+        _filters.contains(DisplayFilter.privateEntriesOnly);
+    final flaggedEntriesOnly =
+        _filters.contains(DisplayFilter.flaggedEntriesOnly);
+
+    return showTasks
+        ? await _db.getTasks(
+            ids: ids,
+            starredStatuses: starredEntriesOnly ? [true] : [true, false],
+            taskStatuses: _selectedTaskStatuses.toList(),
+            limit: _pageSize,
+            offset: pageKey,
+          )
+        : await _db.getJournalEntities(
+            types: types,
+            ids: ids,
+            starredStatuses: starredEntriesOnly ? [true] : [true, false],
+            privateStatuses: privateEntriesOnly ? [true] : [true, false],
+            flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
+            limit: _pageSize,
+            offset: pageKey,
+          );
   }
 
   @override
@@ -343,26 +340,3 @@ final List<String> entryTypes = [
   'HabitCompletionEntry',
   'QuantitativeEntry',
 ];
-
-// This function returns a stateful stream filter
-// function that compares the previous event on
-// the stream with the latest, and filters those
-// that are found equal using deep collection
-// equality. This allows exactly once deliver on
-// a stream instead of at least once previously,
-// which lead to plenty of costly re-renders.
-bool Function(T next) makeDuplicateFilter<T>() {
-  final deepEq = const DeepCollectionEquality().equals;
-  T? prev;
-
-  bool duplicateFilter(T next) {
-    if (deepEq(prev, next)) {
-      return false;
-    } else {
-      prev = next;
-      return true;
-    }
-  }
-
-  return duplicateFilter;
-}
