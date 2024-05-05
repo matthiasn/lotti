@@ -208,38 +208,38 @@ void main() {
 
       // expect task lists by status in streams
       expect(
-        (await getIt<JournalDb>().watchTasks(
+        (await getIt<JournalDb>().getTasks(
           starredStatuses: [true, false],
           taskStatuses: ['OPEN'],
-        ).first)
+        ))
             .length,
         1,
       );
 
       expect(
-        (await getIt<JournalDb>().watchTasks(
+        (await getIt<JournalDb>().getTasks(
           starredStatuses: [true, false],
           taskStatuses: ['OPEN'],
           ids: [task.meta.id],
-        ).first)
+        ))
             .length,
         1,
       );
 
       expect(
-        (await getIt<JournalDb>().watchTasks(
+        (await getIt<JournalDb>().getTasks(
           starredStatuses: [true, false],
           taskStatuses: ['DONE'],
-        ).first)
+        ))
             .length,
         0,
       );
 
       expect(
-        (await getIt<JournalDb>().watchTasks(
+        (await getIt<JournalDb>().getTasks(
           starredStatuses: [true, false],
           taskStatuses: ['DONE'],
-        ).first)
+        ))
             .length,
         0,
       );
