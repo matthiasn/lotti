@@ -14,6 +14,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -83,11 +84,14 @@ class EntryCubit extends Cubit<EntryState> {
     try {
       setController();
 
-      _entryStream = _journalDb.watchEntityById(entryId);
-      _entryStreamSubscription = _entryStream.listen((updated) {
-        if (updated != null) {
-          entry = updated;
-          emitState();
+      _updateSubscription =
+          _updateNotifications.updateStream.listen((event) async {
+        if (event.id == entryId) {
+          final latest = await _fetch();
+          if (latest != null && latest != entry) {
+            entry = latest;
+            emitState();
+          }
         }
       });
     } catch (error, stackTrace) {
@@ -99,6 +103,9 @@ class EntryCubit extends Cubit<EntryState> {
       );
     }
   }
+
+  Future<JournalEntity?> _fetch() async =>
+      _journalDb.journalEntityById(entryId);
 
   void setController() {
     final serializedQuill =
@@ -134,8 +141,9 @@ class EntryCubit extends Cubit<EntryState> {
 
   QuillController controller = QuillController.basic();
   late final GlobalKey<FormBuilderState>? formKey;
-  late final Stream<JournalEntity?> _entryStream;
-  late final StreamSubscription<JournalEntity?> _entryStreamSubscription;
+  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
+  StreamSubscription<({DatabaseType type, String id})>? _updateSubscription;
+
   final FocusNode focusNode = FocusNode();
   final FocusNode taskTitleFocusNode = FocusNode();
   final EditorStateService _editorStateService = getIt<EditorStateService>();
@@ -308,7 +316,7 @@ class EntryCubit extends Cubit<EntryState> {
       await save();
     }
 
-    await _entryStreamSubscription.cancel();
+    await _updateSubscription?.cancel();
     await super.close();
   }
 }
