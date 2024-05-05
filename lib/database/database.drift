@@ -24,7 +24,7 @@ CREATE TABLE journal (
 
 CREATE INDEX idx_journal_created_at ON journal (created_at);
 CREATE INDEX idx_journal_updated_at ON journal (updated_at);
-CREATE INDEX idx_journal_date_from ON journal (date_from);
+CREATE INDEX idx_journal_date_from ON journal (date_from DESC);
 CREATE INDEX idx_journal_date_to ON journal (date_to);
 CREATE INDEX idx_journal_deleted ON journal (deleted);
 CREATE INDEX idx_journal_starred ON journal (starred);
@@ -185,6 +185,31 @@ SELECT * FROM journal
   LIMIT :limit
   OFFSET :offset;
 
+filteredJournalIds:
+SELECT id FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND private IN :privateStatuses
+  AND flag IN :flaggedStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredJournalIds2:
+SELECT id FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND id IN :ids
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND private IN :privateStatuses
+  AND flag IN :flaggedStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
 filteredByTagJournal:
 SELECT * FROM journal
   WHERE type IN :types
@@ -244,8 +269,33 @@ SELECT * FROM journal
   LIMIT :limit
   OFFSET :offset;
 
-filteredTasksByTag:
+filteredTasks2:
 SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND id IN :ids
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTaskIds:
+SELECT id FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTaskIds2:
+SELECT id FROM journal
   WHERE type IN :types
   AND deleted = false
   AND id IN :ids

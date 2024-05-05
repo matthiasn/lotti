@@ -71,7 +71,7 @@ void main() {
       when(mockNotificationService.updateBadge).thenAnswer((_) async {});
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<DatabaseType>.fromIterable([]),
+        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
       );
 
       when(() => mockFts5Db.insertText(any())).thenAnswer((_) async {});
@@ -246,13 +246,13 @@ void main() {
 
       // expect task in journal entities stream by type
       expect(
-        (await getIt<JournalDb>().watchJournalEntities(
+        (await getIt<JournalDb>().getJournalEntities(
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
           types: ['Task'],
           ids: null,
-        ).first)
+        ))
             .length,
         1,
       );

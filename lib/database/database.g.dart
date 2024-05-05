@@ -4291,7 +4291,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
   late final Index idxJournalUpdatedAt = Index('idx_journal_updated_at',
       'CREATE INDEX idx_journal_updated_at ON journal (updated_at)');
   late final Index idxJournalDateFrom = Index('idx_journal_date_from',
-      'CREATE INDEX idx_journal_date_from ON journal (date_from)');
+      'CREATE INDEX idx_journal_date_from ON journal (date_from DESC)');
   late final Index idxJournalDateTo = Index('idx_journal_date_to',
       'CREATE INDEX idx_journal_date_to ON journal (date_to)');
   late final Index idxJournalDeleted = Index('idx_journal_deleted',
@@ -4423,6 +4423,80 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<String> filteredJournalIds(
+      List<String> types,
+      List<bool> starredStatuses,
+      List<bool> privateStatuses,
+      List<int> flaggedStatuses,
+      int limit,
+      int offset) {
+    var $arrayStartIndex = 3;
+    final expandedtypes = $expandVar($arrayStartIndex, types.length);
+    $arrayStartIndex += types.length;
+    final expandedstarredStatuses =
+        $expandVar($arrayStartIndex, starredStatuses.length);
+    $arrayStartIndex += starredStatuses.length;
+    final expandedprivateStatuses =
+        $expandVar($arrayStartIndex, privateStatuses.length);
+    $arrayStartIndex += privateStatuses.length;
+    final expandedflaggedStatuses =
+        $expandVar($arrayStartIndex, flaggedStatuses.length);
+    $arrayStartIndex += flaggedStatuses.length;
+    return customSelect(
+        'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+        variables: [
+          Variable<int>(limit),
+          Variable<int>(offset),
+          for (var $ in types) Variable<String>($),
+          for (var $ in starredStatuses) Variable<bool>($),
+          for (var $ in privateStatuses) Variable<bool>($),
+          for (var $ in flaggedStatuses) Variable<int>($)
+        ],
+        readsFrom: {
+          journal,
+          configFlags,
+        }).map((QueryRow row) => row.read<String>('id'));
+  }
+
+  Selectable<String> filteredJournalIds2(
+      List<String> types,
+      List<String> ids,
+      List<bool> starredStatuses,
+      List<bool> privateStatuses,
+      List<int> flaggedStatuses,
+      int limit,
+      int offset) {
+    var $arrayStartIndex = 3;
+    final expandedtypes = $expandVar($arrayStartIndex, types.length);
+    $arrayStartIndex += types.length;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    final expandedstarredStatuses =
+        $expandVar($arrayStartIndex, starredStatuses.length);
+    $arrayStartIndex += starredStatuses.length;
+    final expandedprivateStatuses =
+        $expandVar($arrayStartIndex, privateStatuses.length);
+    $arrayStartIndex += privateStatuses.length;
+    final expandedflaggedStatuses =
+        $expandVar($arrayStartIndex, flaggedStatuses.length);
+    $arrayStartIndex += flaggedStatuses.length;
+    return customSelect(
+        'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+        variables: [
+          Variable<int>(limit),
+          Variable<int>(offset),
+          for (var $ in types) Variable<String>($),
+          for (var $ in ids) Variable<String>($),
+          for (var $ in starredStatuses) Variable<bool>($),
+          for (var $ in privateStatuses) Variable<bool>($),
+          for (var $ in flaggedStatuses) Variable<int>($)
+        ],
+        readsFrom: {
+          journal,
+          configFlags,
+        }).map((QueryRow row) => row.read<String>('id'));
+  }
+
   Selectable<JournalDbEntity> filteredByTagJournal(
       List<String> types,
       List<String> ids,
@@ -4546,7 +4620,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
-  Selectable<JournalDbEntity> filteredTasksByTag(
+  Selectable<JournalDbEntity> filteredTasks2(
       List<String> types,
       List<String> ids,
       List<bool> starredStatuses,
@@ -4578,6 +4652,70 @@ abstract class _$JournalDb extends GeneratedDatabase {
           journal,
           configFlags,
         }).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<String> filteredTaskIds(
+      List<String> types,
+      List<bool> starredStatuses,
+      List<String?> taskStatuses,
+      int limit,
+      int offset) {
+    var $arrayStartIndex = 3;
+    final expandedtypes = $expandVar($arrayStartIndex, types.length);
+    $arrayStartIndex += types.length;
+    final expandedstarredStatuses =
+        $expandVar($arrayStartIndex, starredStatuses.length);
+    $arrayStartIndex += starredStatuses.length;
+    final expandedtaskStatuses =
+        $expandVar($arrayStartIndex, taskStatuses.length);
+    $arrayStartIndex += taskStatuses.length;
+    return customSelect(
+        'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+        variables: [
+          Variable<int>(limit),
+          Variable<int>(offset),
+          for (var $ in types) Variable<String>($),
+          for (var $ in starredStatuses) Variable<bool>($),
+          for (var $ in taskStatuses) Variable<String>($)
+        ],
+        readsFrom: {
+          journal,
+          configFlags,
+        }).map((QueryRow row) => row.read<String>('id'));
+  }
+
+  Selectable<String> filteredTaskIds2(
+      List<String> types,
+      List<String> ids,
+      List<bool> starredStatuses,
+      List<String?> taskStatuses,
+      int limit,
+      int offset) {
+    var $arrayStartIndex = 3;
+    final expandedtypes = $expandVar($arrayStartIndex, types.length);
+    $arrayStartIndex += types.length;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    final expandedstarredStatuses =
+        $expandVar($arrayStartIndex, starredStatuses.length);
+    $arrayStartIndex += starredStatuses.length;
+    final expandedtaskStatuses =
+        $expandVar($arrayStartIndex, taskStatuses.length);
+    $arrayStartIndex += taskStatuses.length;
+    return customSelect(
+        'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+        variables: [
+          Variable<int>(limit),
+          Variable<int>(offset),
+          for (var $ in types) Variable<String>($),
+          for (var $ in ids) Variable<String>($),
+          for (var $ in starredStatuses) Variable<bool>($),
+          for (var $ in taskStatuses) Variable<String>($)
+        ],
+        readsFrom: {
+          journal,
+          configFlags,
+        }).map((QueryRow row) => row.read<String>('id'));
   }
 
   Selectable<JournalDbEntity> orderedJournal(int limit, int offset) {
