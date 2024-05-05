@@ -77,6 +77,7 @@ class EntryDetailWidget extends StatelessWidget {
                     orElse: () => const SizedBox.shrink(),
                   ),
                   EntryDetailHeader(
+                    entryId: itemId,
                     inLinkedEntries: unlinkFn != null,
                     linkedFromId: linkedFromId,
                     unlinkFn: unlinkFn,
@@ -113,7 +114,7 @@ class EntryDetailWidget extends StatelessWidget {
                     journalEntry: (_) => const SizedBox.shrink(),
                     journalImage: (_) => const SizedBox.shrink(),
                   ),
-                  const EntryDetailFooter(),
+                  EntryDetailFooter(entryId: itemId),
                 ],
               ),
             ),

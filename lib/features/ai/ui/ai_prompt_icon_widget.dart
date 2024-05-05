@@ -11,7 +11,7 @@ class AiPromptIconWidget extends ConsumerWidget {
     super.key,
   });
 
-  final JournalEntity journalEntity;
+  final JournalEntity? journalEntity;
   final String? linkedFromId;
 
   @override

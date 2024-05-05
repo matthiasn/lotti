@@ -151,6 +151,8 @@ class FakeTaskData extends Fake implements TaskData {}
 
 class FakeJournalEntity extends Fake implements JournalEntity {}
 
+class FakeMetadata extends Fake implements Metadata {}
+
 class FakeJournalAudio extends Fake implements JournalAudio {}
 
 class FakeMeasurementData extends Fake implements MeasurementData {}
