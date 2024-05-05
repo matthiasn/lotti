@@ -24,7 +24,7 @@ mixin _$JournalPageState {
   bool get taskAsListView => throw _privateConstructorUsedError;
   List<String> get selectedEntryTypes => throw _privateConstructorUsedError;
   Set<String> get fullTextMatches => throw _privateConstructorUsedError;
-  PagingController<int, String> get pagingController =>
+  PagingController<int, JournalEntity> get pagingController =>
       throw _privateConstructorUsedError;
   List<String> get taskStatuses => throw _privateConstructorUsedError;
   Set<String> get selectedTaskStatuses => throw _privateConstructorUsedError;
@@ -49,7 +49,7 @@ abstract class $JournalPageStateCopyWith<$Res> {
       bool taskAsListView,
       List<String> selectedEntryTypes,
       Set<String> fullTextMatches,
-      PagingController<int, String> pagingController,
+      PagingController<int, JournalEntity> pagingController,
       List<String> taskStatuses,
       Set<String> selectedTaskStatuses});
 }
@@ -115,7 +115,7 @@ class _$JournalPageStateCopyWithImpl<$Res, $Val extends JournalPageState>
       pagingController: null == pagingController
           ? _value.pagingController
           : pagingController // ignore: cast_nullable_to_non_nullable
-              as PagingController<int, String>,
+              as PagingController<int, JournalEntity>,
       taskStatuses: null == taskStatuses
           ? _value.taskStatuses
           : taskStatuses // ignore: cast_nullable_to_non_nullable
@@ -145,7 +145,7 @@ abstract class _$$JournalPageStateImplCopyWith<$Res>
       bool taskAsListView,
       List<String> selectedEntryTypes,
       Set<String> fullTextMatches,
-      PagingController<int, String> pagingController,
+      PagingController<int, JournalEntity> pagingController,
       List<String> taskStatuses,
       Set<String> selectedTaskStatuses});
 }
@@ -209,7 +209,7 @@ class __$$JournalPageStateImplCopyWithImpl<$Res>
       pagingController: null == pagingController
           ? _value.pagingController
           : pagingController // ignore: cast_nullable_to_non_nullable
-              as PagingController<int, String>,
+              as PagingController<int, JournalEntity>,
       taskStatuses: null == taskStatuses
           ? _value._taskStatuses
           : taskStatuses // ignore: cast_nullable_to_non_nullable
@@ -286,7 +286,7 @@ class _$JournalPageStateImpl implements _JournalPageState {
   }
 
   @override
-  final PagingController<int, String> pagingController;
+  final PagingController<int, JournalEntity> pagingController;
   final List<String> _taskStatuses;
   @override
   List<String> get taskStatuses {
@@ -368,7 +368,7 @@ abstract class _JournalPageState implements JournalPageState {
           required final bool taskAsListView,
           required final List<String> selectedEntryTypes,
           required final Set<String> fullTextMatches,
-          required final PagingController<int, String> pagingController,
+          required final PagingController<int, JournalEntity> pagingController,
           required final List<String> taskStatuses,
           required final Set<String> selectedTaskStatuses}) =
       _$JournalPageStateImpl;
@@ -390,7 +390,7 @@ abstract class _JournalPageState implements JournalPageState {
   @override
   Set<String> get fullTextMatches;
   @override
-  PagingController<int, String> get pagingController;
+  PagingController<int, JournalEntity> get pagingController;
   @override
   List<String> get taskStatuses;
   @override

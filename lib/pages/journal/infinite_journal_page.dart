@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -77,14 +78,15 @@ class InfiniteJournalPageBody extends StatelessWidget {
             child: CustomScrollView(
               slivers: <Widget>[
                 const JournalSliverAppBar(),
-                PagedSliverList<int, String>(
+                PagedSliverList<int, JournalEntity>(
                   pagingController: snapshot.pagingController,
-                  builderDelegate: PagedChildBuilderDelegate<String>(
-                    itemBuilder: (context, id, index) {
+                  builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
+                    animateTransitions: true,
+                    itemBuilder: (context, item, index) {
                       return EntryWrapperWidget(
-                        id: id,
+                        item: item,
                         taskAsListView: snapshot.taskAsListView,
-                        key: ValueKey(id),
+                        key: ValueKey(item.meta.id),
                       );
                     },
                   ),
