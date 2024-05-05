@@ -2,8 +2,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_datetime_widget.dart';
@@ -17,6 +19,9 @@ import '../../../widget_test_utils.dart';
 void main() {
   group('EntryDetailFooter', () {
     final entryCubit = MockEntryCubit();
+    final mockPersistenceLogic = MockPersistenceLogic();
+    final mockJournalDb = MockJournalDb();
+    final mockTagsService = mockTagsServiceWithTags([]);
 
     setUpAll(() {
       final mockUpdateNotifications = MockUpdateNotifications();
@@ -26,8 +31,16 @@ void main() {
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-        ..registerSingleton<TagsService>(TagsService());
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<TagsService>(mockTagsService);
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      when(mockTagsService.watchTags).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
+      );
 
       when(() => entryCubit.state).thenAnswer(
         (_) => EntryState.dirty(
@@ -61,7 +74,9 @@ void main() {
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: const EntryDatetimeWidget(),
+            child: EntryDatetimeWidget(
+              entryId: testTextEntry.meta.id,
+            ),
           ),
         ),
       );

@@ -5,8 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -22,6 +24,9 @@ void main() {
   group('EntryDetailFooter', () {
     final entryCubit = MockEntryCubit();
     final mockTimeService = MockTimeService();
+    final mockPersistenceLogic = MockPersistenceLogic();
+    final mockJournalDb = MockJournalDb();
+    final mockTagsService = mockTagsServiceWithTags([]);
 
     setUpAll(() {
       final mockUpdateNotifications = MockUpdateNotifications();
@@ -31,14 +36,26 @@ void main() {
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-        ..registerSingleton<TagsService>(TagsService())
-        ..registerSingleton<TimeService>(mockTimeService);
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<TagsService>(mockTagsService)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+      when(mockTagsService.watchTags).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([
+          [testStoryTag1],
+        ]),
+      );
+
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+      );
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
 
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
-      when(() => entryCubit.showMap).thenAnswer((_) => false);
 
       when(() => entryCubit.state).thenAnswer(
         (_) => EntryState.dirty(
@@ -52,13 +69,11 @@ void main() {
     });
 
     testWidgets('entry date is visible', (WidgetTester tester) async {
-      when(entryCubit.togglePrivate).thenAnswer((_) async => true);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: const EntryDetailFooter(),
+            child: EntryDetailFooter(entryId: testTextEntry.meta.id),
           ),
         ),
       );
@@ -69,32 +84,13 @@ void main() {
       expect(entryDateFromFinder, findsOneWidget);
     });
 
-    testWidgets('map is visible when set in cubit',
-        (WidgetTester tester) async {
-      when(() => entryCubit.showMap).thenAnswer((_) => true);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: const EntryDetailFooter(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      final mapFinder = find.byType(FlutterMap);
-      expect(mapFinder, findsOneWidget);
-    });
-
     testWidgets('map is invisible when not set in cubit',
         (WidgetTester tester) async {
-      when(() => entryCubit.showMap).thenAnswer((_) => false);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: const EntryDetailFooter(),
+            child: EntryDetailFooter(entryId: testTextEntry.meta.id),
           ),
         ),
       );
@@ -112,7 +108,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: const EntryDetailFooter(),
+            child: EntryDetailFooter(entryId: testTextEntry.meta.id),
           ),
         ),
       );
@@ -135,6 +131,9 @@ void main() {
         ),
       );
 
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testEntry);
+
       when(() => entryCubit.state).thenAnswer(
         (_) => EntryState.dirty(
           entryId: testEntry.meta.id,
@@ -151,7 +150,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: const EntryDetailFooter(),
+            child: EntryDetailFooter(entryId: testTextEntry.meta.id),
           ),
         ),
       );
@@ -182,6 +181,9 @@ void main() {
         ),
       );
 
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testEntry);
+
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([testEntry]));
 
@@ -204,7 +206,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           BlocProvider<EntryCubit>.value(
             value: entryCubit,
-            child: const EntryDetailFooter(),
+            child: EntryDetailFooter(entryId: testTextEntry.meta.id),
           ),
         ),
       );
