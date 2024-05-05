@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -74,16 +73,6 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.watchJournalEntitiesByTag(
-          tagId: any(named: 'tagId'),
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([]),
-      );
-
-      when(
         () => mockJournalDb.watchSurveysByType(
           type: any(named: 'type'),
           rangeStart: any(named: 'rangeStart'),
@@ -143,20 +132,6 @@ void main() {
       }
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
-
-      when(
-        () => mockJournalDb.watchJournalEntities(
-          types: entryTypes.toList(),
-          starredStatuses: [true, false],
-          privateStatuses: [true, false],
-          flaggedStatuses: [1, 0],
-          ids: null,
-        ),
-      ).thenAnswer(
-        (_) => Stream<List<JournalEntity>>.fromIterable([
-          [testTextEntry],
-        ]),
-      );
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
