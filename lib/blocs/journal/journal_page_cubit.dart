@@ -84,36 +84,17 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       );
     }
 
-    if (showTasks) {
-      _db
-          .watchTasks(
-            starredStatuses: [true, false],
-            taskStatuses: state.taskStatuses,
-          )
-          .throttleTime(
-            const Duration(seconds: 1),
-            leading: false,
-            trailing: true,
-          )
-          .where(makeDuplicateFilter())
-          .listen((_) {
-            if (_isVisible) {
-              //refreshQuery();
-            }
-          });
-    } else {
-      _updateNotifications.updateStream
-          .throttleTime(
-        const Duration(seconds: 1),
-        leading: false,
-        trailing: true,
-      )
-          .listen((_) {
-        if (_isVisible) {
-          refreshQuery();
-        }
-      });
-    }
+    _updateNotifications.updateStream
+        .throttleTime(
+      const Duration(milliseconds: 500),
+      leading: false,
+      trailing: true,
+    )
+        .listen((_) {
+      if (_isVisible) {
+        refreshQuery();
+      }
+    });
   }
 
   static const selectedTaskStatusesKey = 'SELECTED_TASK_STATUSES';
@@ -132,6 +113,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool taskAsListView = true;
 
   Set<String> _fullTextMatches = {};
+  Set<String> _lastIds = {};
 
   Set<String> _selectedTaskStatuses = {
     'OPEN',
@@ -224,7 +206,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   }
 
   Future<void> persistTaskStatuses() async {
-    refreshQuery();
+    await refreshQuery();
 
     await getIt<SettingsDb>().saveSettingsItem(
       selectedTaskStatusesKey,
@@ -233,7 +215,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   }
 
   Future<void> persistEntryTypes() async {
-    refreshQuery();
+    await refreshQuery();
 
     await getIt<SettingsDb>().saveSettingsItem(
       selectedEntryTypesKey,
@@ -252,12 +234,17 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   Future<void> setSearchString(String query) async {
     _query = query;
-    refreshQuery();
+    await refreshQuery();
   }
 
-  void refreshQuery() {
-    emitState();
-    state.pagingController.refresh();
+  Future<void> refreshQuery() async {
+    final newIds = (await _runQuery(0)).toSet();
+    if (!setEquals(_lastIds, newIds)) {
+      _lastIds = newIds;
+
+      emitState();
+      state.pagingController.refresh();
+    }
   }
 
   void updateVisibility(VisibilityInfo visibilityInfo) {
@@ -271,38 +258,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   Future<void> _fetchPage(int pageKey) async {
     try {
       final start = DateTime.now();
-      final types = state.selectedEntryTypes.toList();
-
-      await _fts5Search();
-
-      final fullTextMatches = _fullTextMatches.toList();
-      final ids = _query.isNotEmpty ? fullTextMatches : null;
-
-      final starredEntriesOnly =
-          _filters.contains(DisplayFilter.starredEntriesOnly);
-      final privateEntriesOnly =
-          _filters.contains(DisplayFilter.privateEntriesOnly);
-      final flaggedEntriesOnly =
-          _filters.contains(DisplayFilter.flaggedEntriesOnly);
-
-      final newItems = showTasks
-          ? await _db.getTasksIds(
-              ids: ids,
-              starredStatuses: starredEntriesOnly ? [true] : [true, false],
-              taskStatuses: _selectedTaskStatuses.toList(),
-              limit: _pageSize,
-              offset: pageKey,
-            )
-          : await _db.getJournalEntityIds(
-              types: types,
-              ids: ids,
-              starredStatuses: starredEntriesOnly ? [true] : [true, false],
-              privateStatuses: privateEntriesOnly ? [true] : [true, false],
-              flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
-              limit: _pageSize,
-              offset: pageKey,
-            );
-
+      final newItems = await _runQuery(pageKey);
       final isLastPage = newItems.length < _pageSize;
 
       if (isLastPage) {
@@ -318,6 +274,38 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     } catch (error) {
       state.pagingController.error = error;
     }
+  }
+
+  Future<List<String>> _runQuery(int pageKey) async {
+    final types = state.selectedEntryTypes.toList();
+    await _fts5Search();
+    final fullTextMatches = _fullTextMatches.toList();
+    final ids = _query.isNotEmpty ? fullTextMatches : null;
+
+    final starredEntriesOnly =
+        _filters.contains(DisplayFilter.starredEntriesOnly);
+    final privateEntriesOnly =
+        _filters.contains(DisplayFilter.privateEntriesOnly);
+    final flaggedEntriesOnly =
+        _filters.contains(DisplayFilter.flaggedEntriesOnly);
+
+    return showTasks
+        ? await _db.getTasksIds(
+            ids: ids,
+            starredStatuses: starredEntriesOnly ? [true] : [true, false],
+            taskStatuses: _selectedTaskStatuses.toList(),
+            limit: _pageSize,
+            offset: pageKey,
+          )
+        : await _db.getJournalEntityIds(
+            types: types,
+            ids: ids,
+            starredStatuses: starredEntriesOnly ? [true] : [true, false],
+            privateStatuses: privateEntriesOnly ? [true] : [true, false],
+            flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
+            limit: _pageSize,
+            offset: pageKey,
+          );
   }
 
   @override

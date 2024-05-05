@@ -270,7 +270,7 @@ class JournalDb extends _$JournalDb {
     int limit = 500,
     int offset = 0,
   }) async {
-    final res = await _selectJournalEntities(
+    return _selectJournalEntityIds(
       types: types,
       starredStatuses: starredStatuses,
       privateStatuses: privateStatuses,
@@ -279,7 +279,6 @@ class JournalDb extends _$JournalDb {
       limit: limit,
       offset: offset,
     ).get();
-    return res.map((e) => e.id).toList();
   }
 
   Selectable<JournalDbEntity> _selectJournalEntities({
@@ -303,6 +302,37 @@ class JournalDb extends _$JournalDb {
       );
     } else {
       return filteredJournal(
+        types,
+        starredStatuses,
+        privateStatuses,
+        flaggedStatuses,
+        limit,
+        offset,
+      );
+    }
+  }
+
+  Selectable<String> _selectJournalEntityIds({
+    required List<String> types,
+    required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
+    required List<int> flaggedStatuses,
+    required List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) {
+    if (ids != null) {
+      return filteredJournalIds2(
+        types,
+        ids,
+        starredStatuses,
+        privateStatuses,
+        flaggedStatuses,
+        limit,
+        offset,
+      );
+    } else {
+      return filteredJournalIds(
         types,
         starredStatuses,
         privateStatuses,
@@ -362,31 +392,13 @@ class JournalDb extends _$JournalDb {
     int limit = 500,
     int offset = 0,
   }) async {
-    final res = await _selectTasks(
+    return _selectTaskIds(
       starredStatuses: starredStatuses,
       taskStatuses: taskStatuses,
       ids: ids,
       limit: limit,
       offset: offset,
     ).get();
-    return res.map((e) => e.id).toList();
-  }
-
-  Future<List<JournalEntity>> getTasks({
-    required List<bool> starredStatuses,
-    required List<String> taskStatuses,
-    List<String>? ids,
-    int limit = 500,
-    int offset = 0,
-  }) async {
-    final res = await _selectTasks(
-      starredStatuses: starredStatuses,
-      taskStatuses: taskStatuses,
-      ids: ids,
-      limit: limit,
-      offset: offset,
-    ).get();
-    return res.map(fromDbEntity).toList();
   }
 
   Selectable<JournalDbEntity> _selectTasks({
@@ -398,7 +410,7 @@ class JournalDb extends _$JournalDb {
   }) {
     final types = <String>['Task'];
     if (ids != null) {
-      return filteredTasksByTag(
+      return filteredTasks2(
         types,
         ids,
         starredStatuses,
@@ -408,6 +420,34 @@ class JournalDb extends _$JournalDb {
       );
     } else {
       return filteredTasks(
+        types,
+        starredStatuses,
+        taskStatuses,
+        limit,
+        offset,
+      );
+    }
+  }
+
+  Selectable<String> _selectTaskIds({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) {
+    final types = <String>['Task'];
+    if (ids != null) {
+      return filteredTaskIds2(
+        types,
+        ids,
+        starredStatuses,
+        taskStatuses,
+        limit,
+        offset,
+      );
+    } else {
+      return filteredTaskIds(
         types,
         starredStatuses,
         taskStatuses,
