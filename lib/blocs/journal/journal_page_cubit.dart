@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -29,7 +29,10 @@ class JournalPageCubit extends Cubit<JournalPageState> {
             fullTextMatches: {},
             showTasks: showTasks,
             taskAsListView: true,
-            pagingController: PagingController<int, String>(firstPageKey: 0),
+            pagingController: PagingController<int, JournalEntity>(
+              firstPageKey: 0,
+              invisibleItemsThreshold: 10,
+            ),
             taskStatuses: [
               'OPEN',
               'GROOMED',
@@ -90,9 +93,15 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       leading: false,
       trailing: true,
     )
-        .listen((_) {
+        .listen((event) {
       if (_isVisible) {
-        refreshQuery();
+        final displayedIds =
+            state.pagingController.itemList?.map((e) => e.meta.id).toSet() ??
+                {};
+
+        if (displayedIds.contains(event.id)) {
+          refreshQuery();
+        }
       }
     });
   }
@@ -113,8 +122,6 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool taskAsListView = true;
 
   Set<String> _fullTextMatches = {};
-  Set<String> _lastIds = {};
-
   Set<String> _selectedTaskStatuses = {
     'OPEN',
     'GROOMED',
@@ -238,13 +245,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   }
 
   Future<void> refreshQuery() async {
-    final newIds = (await _runQuery(0)).toSet();
-    if (!setEquals(_lastIds, newIds)) {
-      _lastIds = newIds;
-
-      emitState();
-      state.pagingController.refresh();
-    }
+    emitState();
+    state.pagingController.refresh();
   }
 
   void updateVisibility(VisibilityInfo visibilityInfo) {
@@ -276,7 +278,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     }
   }
 
-  Future<List<String>> _runQuery(int pageKey) async {
+  Future<List<JournalEntity>> _runQuery(int pageKey) async {
     final types = state.selectedEntryTypes.toList();
     await _fts5Search();
     final fullTextMatches = _fullTextMatches.toList();
@@ -290,14 +292,14 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         _filters.contains(DisplayFilter.flaggedEntriesOnly);
 
     return showTasks
-        ? await _db.getTasksIds(
+        ? await _db.getTasks(
             ids: ids,
             starredStatuses: starredEntriesOnly ? [true] : [true, false],
             taskStatuses: _selectedTaskStatuses.toList(),
             limit: _pageSize,
             offset: pageKey,
           )
-        : await _db.getJournalEntityIds(
+        : await _db.getJournalEntities(
             types: types,
             ids: ids,
             starredStatuses: starredEntriesOnly ? [true] : [true, false],
@@ -326,26 +328,3 @@ final List<String> entryTypes = [
   'HabitCompletionEntry',
   'QuantitativeEntry',
 ];
-
-// This function returns a stateful stream filter
-// function that compares the previous event on
-// the stream with the latest, and filters those
-// that are found equal using deep collection
-// equality. This allows exactly once deliver on
-// a stream instead of at least once previously,
-// which lead to plenty of costly re-renders.
-bool Function(T next) makeDuplicateFilter<T>() {
-  final deepEq = const DeepCollectionEquality().equals;
-  T? prev;
-
-  bool duplicateFilter(T next) {
-    if (deepEq(prev, next)) {
-      return false;
-    } else {
-      prev = next;
-      return true;
-    }
-  }
-
-  return duplicateFilter;
-}

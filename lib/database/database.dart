@@ -385,6 +385,24 @@ class JournalDb extends _$JournalDb {
     ).watch().map(entityStreamMapper);
   }
 
+  Future<List<JournalEntity>> getTasks({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) async {
+    final res = await _selectTasks(
+      starredStatuses: starredStatuses,
+      taskStatuses: taskStatuses,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    ).get();
+
+    return res.map(fromDbEntity).toList();
+  }
+
   Future<List<String>> getTasksIds({
     required List<bool> starredStatuses,
     required List<String> taskStatuses,

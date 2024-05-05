@@ -333,8 +333,34 @@ class TaskListCard extends StatelessWidget {
   }
 }
 
-class EntryWrapperWidget extends ConsumerWidget {
+class EntryWrapperWidget extends StatelessWidget {
   const EntryWrapperWidget({
+    required this.item,
+    required this.taskAsListView,
+    super.key,
+  });
+
+  final JournalEntity item;
+  final bool taskAsListView;
+
+  @override
+  Widget build(BuildContext context) {
+    return item.maybeMap(
+      journalImage: (JournalImage image) => JournalImageCard(item: image),
+      task: (Task task) {
+        if (taskAsListView) {
+          return TaskListCard(task: task);
+        } else {
+          return JournalCard(item: task);
+        }
+      },
+      orElse: () => JournalCard(item: item),
+    );
+  }
+}
+
+class EntryWrapperConsumerWidget extends ConsumerWidget {
+  const EntryWrapperConsumerWidget({
     required this.id,
     required this.taskAsListView,
     super.key,
@@ -342,8 +368,6 @@ class EntryWrapperWidget extends ConsumerWidget {
 
   final String id;
   final bool taskAsListView;
-
-  void onTap() => beamToNamed('/tasks/$id');
 
   @override
   Widget build(
