@@ -23,7 +23,7 @@ class EntryController extends _$EntryController {
     _updateSubscription =
         _updateNotifications.updateStream.listen((event) async {
       if (event.id == _entryId) {
-        final latest = await fetch();
+        final latest = await _fetch();
         if (latest != state.value) {
           state = AsyncData(latest);
         }
@@ -35,10 +35,10 @@ class EntryController extends _$EntryController {
   Future<JournalEntity?> build({required String id}) async {
     _entryId = id;
     ref.onDispose(() => _updateSubscription?.cancel());
-    return fetch();
+    return _fetch();
   }
 
-  Future<JournalEntity?> fetch() async {
+  Future<JournalEntity?> _fetch() async {
     if (_entryId == null) {
       return null;
     }
