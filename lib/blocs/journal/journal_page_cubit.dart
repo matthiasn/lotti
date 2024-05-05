@@ -87,20 +87,31 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       );
     }
 
+    String idMapper(JournalEntity entity) => entity.meta.id;
+
     _updateNotifications.updateStream
         .throttleTime(
       const Duration(milliseconds: 500),
       leading: false,
       trailing: true,
     )
-        .listen((event) {
+        .listen((event) async {
       if (_isVisible) {
         final displayedIds =
-            state.pagingController.itemList?.map((e) => e.meta.id).toSet() ??
-                {};
+            state.pagingController.itemList?.map(idMapper).toSet() ?? {};
 
-        if (displayedIds.contains(event.id)) {
-          refreshQuery();
+        if (showTasks) {
+          final newIds = (await _runQuery(0)).map(idMapper).toSet();
+          if (!setEquals(_lastIds, newIds)) {
+            _lastIds = newIds;
+            await refreshQuery();
+          } else if (displayedIds.contains(event.id)) {
+            await refreshQuery();
+          }
+        } else {
+          if (displayedIds.contains(event.id)) {
+            await refreshQuery();
+          }
         }
       }
     });
@@ -122,6 +133,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   bool taskAsListView = true;
 
   Set<String> _fullTextMatches = {};
+  Set<String> _lastIds = {};
   Set<String> _selectedTaskStatuses = {
     'OPEN',
     'GROOMED',
