@@ -246,13 +246,13 @@ void main() {
 
       // expect task in journal entities stream by type
       expect(
-        (await getIt<JournalDb>().watchJournalEntities(
+        (await getIt<JournalDb>().getJournalEntities(
           starredStatuses: [true, false],
           privateStatuses: [true, false],
           flaggedStatuses: [1, 0],
           types: ['Task'],
           ids: null,
-        ).first)
+        ))
             .length,
         1,
       );
