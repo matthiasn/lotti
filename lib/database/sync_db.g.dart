@@ -399,10 +399,200 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
 abstract class _$SyncDatabase extends GeneratedDatabase {
   _$SyncDatabase(QueryExecutor e) : super(e);
   _$SyncDatabase.connect(DatabaseConnection c) : super.connect(c);
+  _$SyncDatabaseManager get managers => _$SyncDatabaseManager(this);
   late final $OutboxTable outbox = $OutboxTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [outbox];
+}
+
+typedef $$OutboxTableInsertCompanionBuilder = OutboxCompanion Function({
+  Value<int> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> status,
+  Value<int> retries,
+  required String message,
+  required String subject,
+  Value<String?> filePath,
+});
+typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
+  Value<int> id,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> status,
+  Value<int> retries,
+  Value<String> message,
+  Value<String> subject,
+  Value<String?> filePath,
+});
+
+class $$OutboxTableTableManager extends RootTableManager<
+    _$SyncDatabase,
+    $OutboxTable,
+    OutboxItem,
+    $$OutboxTableFilterComposer,
+    $$OutboxTableOrderingComposer,
+    $$OutboxTableProcessedTableManager,
+    $$OutboxTableInsertCompanionBuilder,
+    $$OutboxTableUpdateCompanionBuilder> {
+  $$OutboxTableTableManager(_$SyncDatabase db, $OutboxTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$OutboxTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$OutboxTableOrderingComposer(ComposerState(db, table)),
+          getChildManagerBuilder: (p) => $$OutboxTableProcessedTableManager(p),
+          getUpdateCompanionBuilder: ({
+            Value<int> id = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> status = const Value.absent(),
+            Value<int> retries = const Value.absent(),
+            Value<String> message = const Value.absent(),
+            Value<String> subject = const Value.absent(),
+            Value<String?> filePath = const Value.absent(),
+          }) =>
+              OutboxCompanion(
+            id: id,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            status: status,
+            retries: retries,
+            message: message,
+            subject: subject,
+            filePath: filePath,
+          ),
+          getInsertCompanionBuilder: ({
+            Value<int> id = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> status = const Value.absent(),
+            Value<int> retries = const Value.absent(),
+            required String message,
+            required String subject,
+            Value<String?> filePath = const Value.absent(),
+          }) =>
+              OutboxCompanion.insert(
+            id: id,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            status: status,
+            retries: retries,
+            message: message,
+            subject: subject,
+            filePath: filePath,
+          ),
+        ));
+}
+
+class $$OutboxTableProcessedTableManager extends ProcessedTableManager<
+    _$SyncDatabase,
+    $OutboxTable,
+    OutboxItem,
+    $$OutboxTableFilterComposer,
+    $$OutboxTableOrderingComposer,
+    $$OutboxTableProcessedTableManager,
+    $$OutboxTableInsertCompanionBuilder,
+    $$OutboxTableUpdateCompanionBuilder> {
+  $$OutboxTableProcessedTableManager(super.$state);
+}
+
+class $$OutboxTableFilterComposer
+    extends FilterComposer<_$SyncDatabase, $OutboxTable> {
+  $$OutboxTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get retries => $state.composableBuilder(
+      column: $state.table.retries,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get message => $state.composableBuilder(
+      column: $state.table.message,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get subject => $state.composableBuilder(
+      column: $state.table.subject,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get filePath => $state.composableBuilder(
+      column: $state.table.filePath,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$OutboxTableOrderingComposer
+    extends OrderingComposer<_$SyncDatabase, $OutboxTable> {
+  $$OutboxTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get retries => $state.composableBuilder(
+      column: $state.table.retries,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get message => $state.composableBuilder(
+      column: $state.table.message,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get subject => $state.composableBuilder(
+      column: $state.table.subject,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get filePath => $state.composableBuilder(
+      column: $state.table.filePath,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+class _$SyncDatabaseManager {
+  final _$SyncDatabase _db;
+  _$SyncDatabaseManager(this._db);
+  $$OutboxTableTableManager get outbox =>
+      $$OutboxTableTableManager(_db, _db.outbox);
 }

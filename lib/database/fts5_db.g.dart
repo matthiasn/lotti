@@ -315,6 +315,7 @@ class JournalFtsCompanion extends UpdateCompanion<JournalFt> {
 abstract class _$Fts5Db extends GeneratedDatabase {
   _$Fts5Db(QueryExecutor e) : super(e);
   _$Fts5Db.connect(DatabaseConnection c) : super.connect(c);
+  _$Fts5DbManager get managers => _$Fts5DbManager(this);
   late final JournalFts journalFts = JournalFts(this);
   Future<int> insertJournalEntry(String plainText, String title, String summary,
       String tags, String uuid) {
@@ -356,4 +357,150 @@ abstract class _$Fts5Db extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [journalFts];
+}
+
+typedef $JournalFtsInsertCompanionBuilder = JournalFtsCompanion Function({
+  required String plainText,
+  required String title,
+  required String summary,
+  required String tags,
+  required String uuid,
+  Value<int> rowid,
+});
+typedef $JournalFtsUpdateCompanionBuilder = JournalFtsCompanion Function({
+  Value<String> plainText,
+  Value<String> title,
+  Value<String> summary,
+  Value<String> tags,
+  Value<String> uuid,
+  Value<int> rowid,
+});
+
+class $JournalFtsTableManager extends RootTableManager<
+    _$Fts5Db,
+    JournalFts,
+    JournalFt,
+    $JournalFtsFilterComposer,
+    $JournalFtsOrderingComposer,
+    $JournalFtsProcessedTableManager,
+    $JournalFtsInsertCompanionBuilder,
+    $JournalFtsUpdateCompanionBuilder> {
+  $JournalFtsTableManager(_$Fts5Db db, JournalFts table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $JournalFtsFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $JournalFtsOrderingComposer(ComposerState(db, table)),
+          getChildManagerBuilder: (p) => $JournalFtsProcessedTableManager(p),
+          getUpdateCompanionBuilder: ({
+            Value<String> plainText = const Value.absent(),
+            Value<String> title = const Value.absent(),
+            Value<String> summary = const Value.absent(),
+            Value<String> tags = const Value.absent(),
+            Value<String> uuid = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              JournalFtsCompanion(
+            plainText: plainText,
+            title: title,
+            summary: summary,
+            tags: tags,
+            uuid: uuid,
+            rowid: rowid,
+          ),
+          getInsertCompanionBuilder: ({
+            required String plainText,
+            required String title,
+            required String summary,
+            required String tags,
+            required String uuid,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              JournalFtsCompanion.insert(
+            plainText: plainText,
+            title: title,
+            summary: summary,
+            tags: tags,
+            uuid: uuid,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $JournalFtsProcessedTableManager extends ProcessedTableManager<
+    _$Fts5Db,
+    JournalFts,
+    JournalFt,
+    $JournalFtsFilterComposer,
+    $JournalFtsOrderingComposer,
+    $JournalFtsProcessedTableManager,
+    $JournalFtsInsertCompanionBuilder,
+    $JournalFtsUpdateCompanionBuilder> {
+  $JournalFtsProcessedTableManager(super.$state);
+}
+
+class $JournalFtsFilterComposer extends FilterComposer<_$Fts5Db, JournalFts> {
+  $JournalFtsFilterComposer(super.$state);
+  ColumnFilters<String> get plainText => $state.composableBuilder(
+      column: $state.table.plainText,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get title => $state.composableBuilder(
+      column: $state.table.title,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get summary => $state.composableBuilder(
+      column: $state.table.summary,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get tags => $state.composableBuilder(
+      column: $state.table.tags,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $JournalFtsOrderingComposer
+    extends OrderingComposer<_$Fts5Db, JournalFts> {
+  $JournalFtsOrderingComposer(super.$state);
+  ColumnOrderings<String> get plainText => $state.composableBuilder(
+      column: $state.table.plainText,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get title => $state.composableBuilder(
+      column: $state.table.title,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get summary => $state.composableBuilder(
+      column: $state.table.summary,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get tags => $state.composableBuilder(
+      column: $state.table.tags,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+class _$Fts5DbManager {
+  final _$Fts5Db _db;
+  _$Fts5DbManager(this._db);
+  $JournalFtsTableManager get journalFts =>
+      $JournalFtsTableManager(_db, _db.journalFts);
 }

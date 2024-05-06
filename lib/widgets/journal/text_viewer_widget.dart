@@ -20,7 +20,7 @@ class TextViewerWidget extends StatelessWidget {
     final serializedQuill = entryText?.quill;
     final markdown = entryText?.markdown ?? entryText?.plainText ?? '';
     final quill = serializedQuill ?? markdownToDelta(markdown);
-    final controller = makeController(serializedQuill: quill);
+    final controller = makeController(serializedQuill: quill)..readOnly = true;
 
     return LimitedBox(
       maxHeight: maxHeight,
@@ -28,7 +28,6 @@ class TextViewerWidget extends StatelessWidget {
         scrollController: ScrollController(),
         focusNode: FocusNode(),
         configurations: QuillEditorConfigurations(
-          readOnly: true,
           customStyles: customEditorStyles(themeData: Theme.of(context)),
           controller: controller,
         ),
