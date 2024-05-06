@@ -471,6 +471,7 @@ class LogEntriesCompanion extends UpdateCompanion<LogEntry> {
 abstract class _$LoggingDb extends GeneratedDatabase {
   _$LoggingDb(QueryExecutor e) : super(e);
   _$LoggingDb.connect(DatabaseConnection c) : super.connect(c);
+  _$LoggingDbManager get managers => _$LoggingDbManager(this);
   late final LogEntries logEntries = LogEntries(this);
   late final Index logEntriesCreatedAt = Index('log_entries_created_at',
       'CREATE INDEX log_entries_created_at ON log_entries (created_at)');
@@ -525,4 +526,215 @@ abstract class _$LoggingDb extends GeneratedDatabase {
         logEntriesDomain,
         logEntriesSubDomain
       ];
+}
+
+typedef $LogEntriesInsertCompanionBuilder = LogEntriesCompanion Function({
+  required String id,
+  required String createdAt,
+  required String domain,
+  Value<String?> subDomain,
+  required String type,
+  required String level,
+  required String message,
+  Value<String?> stacktrace,
+  Value<String?> data,
+  Value<int> rowid,
+});
+typedef $LogEntriesUpdateCompanionBuilder = LogEntriesCompanion Function({
+  Value<String> id,
+  Value<String> createdAt,
+  Value<String> domain,
+  Value<String?> subDomain,
+  Value<String> type,
+  Value<String> level,
+  Value<String> message,
+  Value<String?> stacktrace,
+  Value<String?> data,
+  Value<int> rowid,
+});
+
+class $LogEntriesTableManager extends RootTableManager<
+    _$LoggingDb,
+    LogEntries,
+    LogEntry,
+    $LogEntriesFilterComposer,
+    $LogEntriesOrderingComposer,
+    $LogEntriesProcessedTableManager,
+    $LogEntriesInsertCompanionBuilder,
+    $LogEntriesUpdateCompanionBuilder> {
+  $LogEntriesTableManager(_$LoggingDb db, LogEntries table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $LogEntriesFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $LogEntriesOrderingComposer(ComposerState(db, table)),
+          getChildManagerBuilder: (p) => $LogEntriesProcessedTableManager(p),
+          getUpdateCompanionBuilder: ({
+            Value<String> id = const Value.absent(),
+            Value<String> createdAt = const Value.absent(),
+            Value<String> domain = const Value.absent(),
+            Value<String?> subDomain = const Value.absent(),
+            Value<String> type = const Value.absent(),
+            Value<String> level = const Value.absent(),
+            Value<String> message = const Value.absent(),
+            Value<String?> stacktrace = const Value.absent(),
+            Value<String?> data = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LogEntriesCompanion(
+            id: id,
+            createdAt: createdAt,
+            domain: domain,
+            subDomain: subDomain,
+            type: type,
+            level: level,
+            message: message,
+            stacktrace: stacktrace,
+            data: data,
+            rowid: rowid,
+          ),
+          getInsertCompanionBuilder: ({
+            required String id,
+            required String createdAt,
+            required String domain,
+            Value<String?> subDomain = const Value.absent(),
+            required String type,
+            required String level,
+            required String message,
+            Value<String?> stacktrace = const Value.absent(),
+            Value<String?> data = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LogEntriesCompanion.insert(
+            id: id,
+            createdAt: createdAt,
+            domain: domain,
+            subDomain: subDomain,
+            type: type,
+            level: level,
+            message: message,
+            stacktrace: stacktrace,
+            data: data,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $LogEntriesProcessedTableManager extends ProcessedTableManager<
+    _$LoggingDb,
+    LogEntries,
+    LogEntry,
+    $LogEntriesFilterComposer,
+    $LogEntriesOrderingComposer,
+    $LogEntriesProcessedTableManager,
+    $LogEntriesInsertCompanionBuilder,
+    $LogEntriesUpdateCompanionBuilder> {
+  $LogEntriesProcessedTableManager(super.$state);
+}
+
+class $LogEntriesFilterComposer
+    extends FilterComposer<_$LoggingDb, LogEntries> {
+  $LogEntriesFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get domain => $state.composableBuilder(
+      column: $state.table.domain,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get subDomain => $state.composableBuilder(
+      column: $state.table.subDomain,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get type => $state.composableBuilder(
+      column: $state.table.type,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get level => $state.composableBuilder(
+      column: $state.table.level,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get message => $state.composableBuilder(
+      column: $state.table.message,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get stacktrace => $state.composableBuilder(
+      column: $state.table.stacktrace,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get data => $state.composableBuilder(
+      column: $state.table.data,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $LogEntriesOrderingComposer
+    extends OrderingComposer<_$LoggingDb, LogEntries> {
+  $LogEntriesOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get domain => $state.composableBuilder(
+      column: $state.table.domain,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get subDomain => $state.composableBuilder(
+      column: $state.table.subDomain,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get type => $state.composableBuilder(
+      column: $state.table.type,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get level => $state.composableBuilder(
+      column: $state.table.level,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get message => $state.composableBuilder(
+      column: $state.table.message,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get stacktrace => $state.composableBuilder(
+      column: $state.table.stacktrace,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get data => $state.composableBuilder(
+      column: $state.table.data,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+class _$LoggingDbManager {
+  final _$LoggingDb _db;
+  _$LoggingDbManager(this._db);
+  $LogEntriesTableManager get logEntries =>
+      $LogEntriesTableManager(_db, _db.logEntries);
 }
