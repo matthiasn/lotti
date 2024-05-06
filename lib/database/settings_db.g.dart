@@ -236,6 +236,7 @@ class SettingsCompanion extends UpdateCompanion<SettingsItem> {
 abstract class _$SettingsDb extends GeneratedDatabase {
   _$SettingsDb(QueryExecutor e) : super(e);
   _$SettingsDb.connect(DatabaseConnection c) : super.connect(c);
+  _$SettingsDbManager get managers => _$SettingsDbManager(this);
   late final Settings settings = Settings(this);
   Selectable<SettingsItem> settingsItemByKey(String configKey) {
     return customSelect('SELECT * FROM settings WHERE config_key = ?1',
@@ -252,4 +253,116 @@ abstract class _$SettingsDb extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [settings];
+}
+
+typedef $SettingsInsertCompanionBuilder = SettingsCompanion Function({
+  required String configKey,
+  required String value,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $SettingsUpdateCompanionBuilder = SettingsCompanion Function({
+  Value<String> configKey,
+  Value<String> value,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $SettingsTableManager extends RootTableManager<
+    _$SettingsDb,
+    Settings,
+    SettingsItem,
+    $SettingsFilterComposer,
+    $SettingsOrderingComposer,
+    $SettingsProcessedTableManager,
+    $SettingsInsertCompanionBuilder,
+    $SettingsUpdateCompanionBuilder> {
+  $SettingsTableManager(_$SettingsDb db, Settings table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $SettingsFilterComposer(ComposerState(db, table)),
+          orderingComposer: $SettingsOrderingComposer(ComposerState(db, table)),
+          getChildManagerBuilder: (p) => $SettingsProcessedTableManager(p),
+          getUpdateCompanionBuilder: ({
+            Value<String> configKey = const Value.absent(),
+            Value<String> value = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SettingsCompanion(
+            configKey: configKey,
+            value: value,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          getInsertCompanionBuilder: ({
+            required String configKey,
+            required String value,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SettingsCompanion.insert(
+            configKey: configKey,
+            value: value,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $SettingsProcessedTableManager extends ProcessedTableManager<
+    _$SettingsDb,
+    Settings,
+    SettingsItem,
+    $SettingsFilterComposer,
+    $SettingsOrderingComposer,
+    $SettingsProcessedTableManager,
+    $SettingsInsertCompanionBuilder,
+    $SettingsUpdateCompanionBuilder> {
+  $SettingsProcessedTableManager(super.$state);
+}
+
+class $SettingsFilterComposer extends FilterComposer<_$SettingsDb, Settings> {
+  $SettingsFilterComposer(super.$state);
+  ColumnFilters<String> get configKey => $state.composableBuilder(
+      column: $state.table.configKey,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get value => $state.composableBuilder(
+      column: $state.table.value,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $SettingsOrderingComposer
+    extends OrderingComposer<_$SettingsDb, Settings> {
+  $SettingsOrderingComposer(super.$state);
+  ColumnOrderings<String> get configKey => $state.composableBuilder(
+      column: $state.table.configKey,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get value => $state.composableBuilder(
+      column: $state.table.value,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+class _$SettingsDbManager {
+  final _$SettingsDb _db;
+  _$SettingsDbManager(this._db);
+  $SettingsTableManager get settings =>
+      $SettingsTableManager(_db, _db.settings);
 }

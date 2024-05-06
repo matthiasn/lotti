@@ -352,6 +352,7 @@ class EditorDraftsCompanion extends UpdateCompanion<EditorDraftState> {
 abstract class _$EditorDb extends GeneratedDatabase {
   _$EditorDb(QueryExecutor e) : super(e);
   _$EditorDb.connect(DatabaseConnection c) : super.connect(c);
+  _$EditorDbManager get managers => _$EditorDbManager(this);
   late final EditorDrafts editorDrafts = EditorDrafts(this);
   late final Index editorDraftsId = Index('editor_drafts_id',
       'CREATE INDEX editor_drafts_id ON editor_drafts (id)');
@@ -393,4 +394,167 @@ abstract class _$EditorDb extends GeneratedDatabase {
         editorDraftsStatus,
         editorDraftsCreatedAt
       ];
+}
+
+typedef $EditorDraftsInsertCompanionBuilder = EditorDraftsCompanion Function({
+  required String id,
+  required String entryId,
+  required String status,
+  required DateTime createdAt,
+  required DateTime lastSaved,
+  required String delta,
+  Value<int> rowid,
+});
+typedef $EditorDraftsUpdateCompanionBuilder = EditorDraftsCompanion Function({
+  Value<String> id,
+  Value<String> entryId,
+  Value<String> status,
+  Value<DateTime> createdAt,
+  Value<DateTime> lastSaved,
+  Value<String> delta,
+  Value<int> rowid,
+});
+
+class $EditorDraftsTableManager extends RootTableManager<
+    _$EditorDb,
+    EditorDrafts,
+    EditorDraftState,
+    $EditorDraftsFilterComposer,
+    $EditorDraftsOrderingComposer,
+    $EditorDraftsProcessedTableManager,
+    $EditorDraftsInsertCompanionBuilder,
+    $EditorDraftsUpdateCompanionBuilder> {
+  $EditorDraftsTableManager(_$EditorDb db, EditorDrafts table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $EditorDraftsFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $EditorDraftsOrderingComposer(ComposerState(db, table)),
+          getChildManagerBuilder: (p) => $EditorDraftsProcessedTableManager(p),
+          getUpdateCompanionBuilder: ({
+            Value<String> id = const Value.absent(),
+            Value<String> entryId = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> lastSaved = const Value.absent(),
+            Value<String> delta = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              EditorDraftsCompanion(
+            id: id,
+            entryId: entryId,
+            status: status,
+            createdAt: createdAt,
+            lastSaved: lastSaved,
+            delta: delta,
+            rowid: rowid,
+          ),
+          getInsertCompanionBuilder: ({
+            required String id,
+            required String entryId,
+            required String status,
+            required DateTime createdAt,
+            required DateTime lastSaved,
+            required String delta,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              EditorDraftsCompanion.insert(
+            id: id,
+            entryId: entryId,
+            status: status,
+            createdAt: createdAt,
+            lastSaved: lastSaved,
+            delta: delta,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $EditorDraftsProcessedTableManager extends ProcessedTableManager<
+    _$EditorDb,
+    EditorDrafts,
+    EditorDraftState,
+    $EditorDraftsFilterComposer,
+    $EditorDraftsOrderingComposer,
+    $EditorDraftsProcessedTableManager,
+    $EditorDraftsInsertCompanionBuilder,
+    $EditorDraftsUpdateCompanionBuilder> {
+  $EditorDraftsProcessedTableManager(super.$state);
+}
+
+class $EditorDraftsFilterComposer
+    extends FilterComposer<_$EditorDb, EditorDrafts> {
+  $EditorDraftsFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get entryId => $state.composableBuilder(
+      column: $state.table.entryId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get lastSaved => $state.composableBuilder(
+      column: $state.table.lastSaved,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get delta => $state.composableBuilder(
+      column: $state.table.delta,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $EditorDraftsOrderingComposer
+    extends OrderingComposer<_$EditorDb, EditorDrafts> {
+  $EditorDraftsOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get entryId => $state.composableBuilder(
+      column: $state.table.entryId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get lastSaved => $state.composableBuilder(
+      column: $state.table.lastSaved,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get delta => $state.composableBuilder(
+      column: $state.table.delta,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+class _$EditorDbManager {
+  final _$EditorDb _db;
+  _$EditorDbManager(this._db);
+  $EditorDraftsTableManager get editorDrafts =>
+      $EditorDraftsTableManager(_db, _db.editorDrafts);
 }
