@@ -349,10 +349,10 @@ packages:
     dependency: transitive
     description:
       name: coverage
-      sha256: "8acabb8306b57a409bf4c83522065672ee13179297a6bb0cb9ead73948df7c76"
+      sha256: "3945034e86ea203af7a056d98e98e42a5518fff200d6e8e6647e1886b07e936e"
       url: "https://pub.dev"
     source: hosted
-    version: "1.7.2"
+    version: "1.8.0"
   cross_file:
     dependency: transitive
     description:
@@ -897,10 +897,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_local_notifications
-      sha256: "84a3af6c7fb43c85c3528b434dacc7a7ed4551d1209d93773bf6045cec9ace68"
+      sha256: "40e6fbd2da7dcc7ed78432c5cdab1559674b4af035fddbfb2f9a8f9c2112fcef"
       url: "https://pub.dev"
     source: hosted
-    version: "17.1.1"
+    version: "17.1.2"
   flutter_local_notifications_linux:
     dependency: transitive
     description:
@@ -1451,26 +1451,26 @@ packages:
     dependency: "direct main"
     description:
       name: langchain
-      sha256: "3d9ed95bda009729454db9d5a0536aec288492c23acd777922d7eadc34d1cb72"
+      sha256: e989faf956a305c004e2f8686d131e0b351ed0395aa26377ec7c637f29f3ca8b
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.0+1"
+    version: "0.7.0"
   langchain_core:
     dependency: transitive
     description:
       name: langchain_core
-      sha256: "23bedb73dbf696cff90c6134c09cffcecabb9c7b77d232c803615131bb162709"
+      sha256: "01a1a52d1a9a26f5e84b7bc9a5126ca5f66288430249f975ab8d9680dc9da5d4"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0+1"
+    version: "0.3.0"
   langchain_ollama:
     dependency: "direct main"
     description:
       name: langchain_ollama
-      sha256: "0b945f3f00dbf3235a5daed3ef58f17bc7d76490e13525570057f4f380493dd7"
+      sha256: e98c1a9cffe72f16a345170c2fae78288892e46525833b5b9ef831a2ffbd7d35
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.0+2"
+    version: "0.2.0"
   langchain_tiktoken:
     dependency: transitive
     description:
@@ -1539,10 +1539,10 @@ packages:
     dependency: "direct main"
     description:
       name: location
-      sha256: "2d88e4ffb464d0ca5510e7edd29723ab762c43479de39d2d19ed6194f5b6d624"
+      sha256: "37ffdadcd4b1498b769824f45ebb4de8ed46663a4a67ac27b33a590ee486579f"
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.1"
+    version: "6.0.2"
   location_platform_interface:
     dependency: transitive
     description:
@@ -1683,10 +1683,10 @@ packages:
     dependency: "direct main"
     description:
       name: meta
-      sha256: "25dfcaf170a0190f47ca6355bdd4552cb8924b430512ff0cafb8db9bd41fe33b"
+      sha256: bdb68674043280c3428e9ec998512fb681678676b3c54e773629ffe74419f8c7
       url: "https://pub.dev"
     source: hosted
-    version: "1.14.0"
+    version: "1.15.0"
   mgrs_dart:
     dependency: transitive
     description:
@@ -1835,10 +1835,10 @@ packages:
     dependency: transitive
     description:
       name: path_provider_foundation
-      sha256: "5a7999be66e000916500be4f15a3633ebceb8302719b47b9cc49ce924125350f"
+      sha256: f234384a3fdd67f989b4d54a5d73ca2a6c422fa55ae694381ae0f4375cd1ea16
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.2"
+    version: "2.4.0"
   path_provider_linux:
     dependency: transitive
     description:
@@ -2323,10 +2323,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_foundation
-      sha256: "7708d83064f38060c7b39db12aefe449cb8cdc031d6062280087bc4cdb988f5c"
+      sha256: "0a8a893bf4fd1152f93fec03a415d11c27c74454d96e2318a7ac38dd18683ab7"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.5"
+    version: "2.4.0"
   shared_preferences_linux:
     dependency: transitive
     description:

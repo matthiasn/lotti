@@ -99,8 +99,8 @@ dependencies:
   ionicons: ^0.2.2
   jiffy: ^6.1.0
   json_annotation: ^4.8.1
-  langchain: ^0.6.0+1
-  langchain_ollama: ^0.1.0
+  langchain: ^0.7.0
+  langchain_ollama: ^0.2.0
   latlong2: ^0.9.0
   location: ^6.0.1
   lottie: ^3.0.0
