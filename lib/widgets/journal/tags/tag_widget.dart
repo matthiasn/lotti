@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/pages/settings/tags/tag_edit_page.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/themes/utils.dart';
@@ -23,7 +23,15 @@ class TagWidget extends StatelessWidget {
 
     return Chip(
       label: GestureDetector(
-        onDoubleTap: () => beamToNamed('/settings/tags/${tagEntity.id}'),
+        onDoubleTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => EditExistingTagPage(
+                tagEntityId: tagEntity.id,
+              ),
+            ),
+          );
+        },
         child: Text(
           tagEntity.tag,
           style: TextStyle(
