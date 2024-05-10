@@ -107,7 +107,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                     beamBack: !widget.inLinkedEntries,
                   ),
                   ShareButtonWidget(entryId: id),
-                  TagAddIconWidget(),
+                  TagAddIconWidget(entryId: id),
                   SizedBox(
                     width: 40,
                     child: IconButton(

@@ -82,7 +82,7 @@ class EntryDetailWidget extends StatelessWidget {
                     linkedFromId: linkedFromId,
                     unlinkFn: unlinkFn,
                   ),
-                  TagsListWidget(parentTags: parentTags),
+                  TagsListWidget(entryId: itemId, parentTags: parentTags),
                   item.maybeMap(
                     task: (_) => const SizedBox.shrink(),
                     quantitative: (_) => const SizedBox.shrink(),
