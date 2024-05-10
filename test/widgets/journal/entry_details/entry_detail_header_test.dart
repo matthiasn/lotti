@@ -5,9 +5,11 @@ import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_detail_header.dart';
@@ -24,8 +26,13 @@ void main() {
     registerFallbackValue(FakeJournalEntity());
     registerFallbackValue(FakeMetadata());
     final mockJournalDb = MockJournalDb();
+    final mockEditorDb = MockEditorDb();
+    final mockEditorStateService = MockEditorStateService();
 
     setUpAll(() {
+      registerFallbackValue(FakeEntryText());
+      registerFallbackValue(FakeQuillController());
+
       final mockUpdateNotifications = MockUpdateNotifications();
       final mockPersistenceLogic = MockPersistenceLogic();
       final mockTagsService = mockTagsServiceWithTags([]);
@@ -39,12 +46,24 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<LinkService>(MockLinkService())
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<EditorDb>(mockEditorDb)
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<TagsService>(mockTagsService);
 
       when(() => entryCubit.showMap).thenAnswer((_) => false);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+      );
+
+      when(
+        () => mockEditorStateService.entryWasSaved(
+          id: any(named: 'id'),
+          lastSaved: any(named: 'lastSaved'),
+          controller: any(named: 'controller'),
+        ),
+      ).thenAnswer(
+        (_) async {},
       );
 
       when(() => mockPersistenceLogic.updateJournalEntity(any(), any()))

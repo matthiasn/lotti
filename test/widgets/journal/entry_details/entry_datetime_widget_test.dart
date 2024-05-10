@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -22,6 +23,7 @@ void main() {
     final mockPersistenceLogic = MockPersistenceLogic();
     final mockJournalDb = MockJournalDb();
     final mockTagsService = mockTagsServiceWithTags([]);
+    final mockEditorStateService = MockEditorStateService();
 
     setUpAll(() {
       final mockUpdateNotifications = MockUpdateNotifications();
@@ -33,6 +35,7 @@ void main() {
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<TagsService>(mockTagsService);
 
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))

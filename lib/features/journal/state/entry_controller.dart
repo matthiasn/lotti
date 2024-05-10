@@ -1,12 +1,22 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/journal/editor/editor_tools.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'entry_controller.g.dart';
@@ -15,15 +25,57 @@ part 'entry_controller.g.dart';
 class EntryController extends _$EntryController {
   EntryController() {
     listen();
+
+    focusNode.addListener(() {
+      _isFocused = true;
+      if (isDesktop) {
+        if (focusNode.hasFocus) {
+          hotKeyManager.register(
+            saveHotKey,
+            keyDownHandler: (hotKey) => save(),
+          );
+        } else {
+          hotKeyManager.unregister(saveHotKey);
+        }
+      }
+      emitState();
+    });
+
+    taskTitleFocusNode.addListener(() {
+      if (isDesktop) {
+        if (taskTitleFocusNode.hasFocus) {
+          hotKeyManager.register(
+            saveHotKey,
+            keyDownHandler: (hotKey) => save(),
+          );
+        } else {
+          hotKeyManager.unregister(saveHotKey);
+        }
+      }
+    });
   }
   late final String entryId;
-  final int _epoch = 0;
+  int _epoch = 0;
+  QuillController controller = QuillController.basic();
+  final _editorStateService = getIt<EditorStateService>();
+  late final GlobalKey<FormBuilderState>? formKey;
 
+  final FocusNode focusNode = FocusNode();
+  final FocusNode taskTitleFocusNode = FocusNode();
+
+  bool _dirty = false;
+  bool _isFocused = false;
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   StreamSubscription<({DatabaseType type, String id})>? _updateSubscription;
 
   final JournalDb _journalDb = getIt<JournalDb>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
+
+  final saveHotKey = HotKey(
+    key: LogicalKeyboardKey.keyS,
+    modifiers: [HotKeyModifier.meta],
+    scope: HotKeyScope.inapp,
+  );
 
   void listen() {
     _updateSubscription =
@@ -42,6 +94,11 @@ class EntryController extends _$EntryController {
     entryId = id;
     ref.onDispose(() => _updateSubscription?.cancel());
     final entry = await _fetch();
+
+    if (entry is Task) {
+      formKey = GlobalKey<FormBuilderState>();
+    }
+
     return EntryState.saved(
       entryId: id,
       entry: entry,
@@ -53,6 +110,47 @@ class EntryController extends _$EntryController {
 
   Future<JournalEntity?> _fetch() async {
     return _journalDb.journalEntityById(entryId);
+  }
+
+  Future<void> save({Duration? estimate}) async {
+    final entry = state.value?.entry;
+    if (entry == null) {
+      return;
+    }
+    if (entry is Task) {
+      final task = entry;
+      formKey?.currentState?.save();
+      final formData = formKey?.currentState?.value ?? {};
+      final title = formData['title'] as String?;
+      final status = formData['status'] as String?;
+
+      await _persistenceLogic.updateTask(
+        entryText: entryTextFromController(controller),
+        journalEntityId: entryId,
+        taskData: task.data.copyWith(
+          title: title ?? task.data.title,
+          estimate: estimate ?? task.data.estimate,
+          status:
+              status != null ? taskStatusFromString(status) : task.data.status,
+        ),
+      );
+    } else {
+      final running = getIt<TimeService>().getCurrent();
+
+      await _persistenceLogic.updateJournalEntityText(
+        entryId,
+        entryTextFromController(controller),
+        running?.meta.id == entryId ? DateTime.now() : entry.meta.dateTo,
+      );
+    }
+
+    await _editorStateService.entryWasSaved(
+      id: entryId,
+      lastSaved: entry.meta.updatedAt,
+      controller: controller,
+    );
+    _dirty = false;
+    await HapticFeedback.heavyImpact();
   }
 
   Future<bool> delete({
@@ -100,6 +198,46 @@ class EntryController extends _$EntryController {
         ),
       );
     }
+  }
+
+  void setDirty(dynamic _) {
+    _dirty = true;
+    emitState();
+  }
+
+  void emitState() {
+    _epoch++;
+
+    final entry = state.value?.entry;
+    if (entry == null) {
+      return;
+    }
+
+    if (_dirty) {
+      state = AsyncData(
+        EntryState.dirty(
+          entryId: entryId,
+          entry: entry,
+          showMap: state.value?.showMap ?? false,
+          isFocused: _isFocused,
+          epoch: _epoch,
+        ),
+      );
+    } else {
+      state = AsyncData(
+        EntryState.saved(
+          entryId: entryId,
+          entry: entry,
+          showMap: state.value?.showMap ?? false,
+          isFocused: _isFocused,
+          epoch: _epoch,
+        ),
+      );
+    }
+  }
+
+  void focus() {
+    focusNode.requestFocus();
   }
 
   Future<void> toggleFlagged() async {

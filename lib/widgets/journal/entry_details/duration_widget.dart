@@ -1,10 +1,7 @@
 // ignore_for_file: avoid_dynamic_calls
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -50,70 +47,63 @@ class DurationWidget extends ConsumerWidget {
         final labelColor =
             isRecording ? Theme.of(context).colorScheme.error : style?.color;
 
-        return BlocBuilder<EntryCubit, EntryState>(
-          builder: (
-            context,
-            EntryState snapshot,
-          ) {
-            final saveFn = context.read<EntryCubit>().save;
+        final saveFn = ref.read(provider.notifier).save;
 
-            return Visibility(
-              visible: entryDuration(displayed).inMilliseconds > 0 ||
-                  (isRecent && showRecordIcon),
-              child: Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: Icon(
-                      MdiIcons.timerOutline,
-                      color: labelColor,
-                      size: 15,
-                    ),
-                  ),
-                  FormattedTime(
-                    labelColor: labelColor,
-                    displayed: displayed,
-                  ),
-                  Visibility(
-                    visible: isRecent && showRecordIcon,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Visibility(
-                          visible: !isRecording,
-                          child: IconButton(
-                            padding: const EdgeInsets.only(right: 8),
-                            icon: const Icon(Icons.fiber_manual_record_sharp),
-                            iconSize: 20,
-                            tooltip: 'Record',
-                            color: Theme.of(context).colorScheme.error,
-                            onPressed: () {
-                              _timeService.start(item);
-                            },
-                          ),
-                        ),
-                        Visibility(
-                          visible: isRecording,
-                          child: IconButton(
-                            padding: const EdgeInsets.only(right: 8),
-                            icon: const Icon(Icons.stop),
-                            iconSize: 20,
-                            tooltip: 'Stop',
-                            color: labelColor,
-                            onPressed: () async {
-                              await _timeService.stop();
-                              await saveFn();
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 15),
-                ],
+        return Visibility(
+          visible: entryDuration(displayed).inMilliseconds > 0 ||
+              (isRecent && showRecordIcon),
+          child: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Icon(
+                  MdiIcons.timerOutline,
+                  color: labelColor,
+                  size: 15,
+                ),
               ),
-            );
-          },
+              FormattedTime(
+                labelColor: labelColor,
+                displayed: displayed,
+              ),
+              Visibility(
+                visible: isRecent && showRecordIcon,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Visibility(
+                      visible: !isRecording,
+                      child: IconButton(
+                        padding: const EdgeInsets.only(right: 8),
+                        icon: const Icon(Icons.fiber_manual_record_sharp),
+                        iconSize: 20,
+                        tooltip: 'Record',
+                        color: Theme.of(context).colorScheme.error,
+                        onPressed: () {
+                          _timeService.start(item);
+                        },
+                      ),
+                    ),
+                    Visibility(
+                      visible: isRecording,
+                      child: IconButton(
+                        padding: const EdgeInsets.only(right: 8),
+                        icon: const Icon(Icons.stop),
+                        iconSize: 20,
+                        tooltip: 'Stop',
+                        color: labelColor,
+                        onPressed: () async {
+                          await _timeService.stop();
+                          await saveFn();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 15),
+            ],
+          ),
         );
       },
     );
