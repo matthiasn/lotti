@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -10,57 +9,61 @@ import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
-class ShareButtonWidget extends StatelessWidget {
+class ShareButtonWidget extends ConsumerWidget {
   const ShareButtonWidget({
+    required this.entryId,
     super.key,
   });
 
+  final String entryId;
+
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<EntryCubit, EntryState>(
-      builder: (context, EntryState state) {
-        final item = state.entry;
-        if (item is! JournalImage && item is! JournalAudio) {
-          return const SizedBox.shrink();
-        }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: entryId);
+    final entryState = ref.watch(provider).value;
 
-        var tooltip = '';
+    final entry = entryState?.entry;
 
-        if (item is JournalImage) {
-          tooltip = context.messages.journalSharePhotoHint;
-        }
-        if (item is JournalAudio) {
-          tooltip = context.messages.journalShareAudioHint;
-        }
+    if (entryState == null ||
+        entry is! JournalImage && entry is! JournalAudio) {
+      return const SizedBox.shrink();
+    }
 
-        Future<void> onPressed() async {
-          if (isLinux || isWindows) {
-            return;
-          }
+    var tooltip = '';
 
-          if (item is JournalImage) {
-            final filePath = getFullImagePath(item);
-            await Share.shareXFiles([XFile(filePath)]);
-          }
-          if (item is JournalAudio) {
-            final filePath = await AudioUtils.getFullAudioPath(item);
-            await Share.shareXFiles([XFile(filePath)]);
-          }
-        }
+    if (entry is JournalImage) {
+      tooltip = context.messages.journalSharePhotoHint;
+    }
+    if (entry is JournalAudio) {
+      tooltip = context.messages.journalShareAudioHint;
+    }
 
-        return SizedBox(
-          width: 40,
-          child: IconButton(
-            icon: Icon(MdiIcons.shareOutline),
-            splashColor: Colors.transparent,
-            iconSize: 24,
-            tooltip: tooltip,
-            padding: EdgeInsets.zero,
-            color: Theme.of(context).colorScheme.outline,
-            onPressed: onPressed,
-          ),
-        );
-      },
+    Future<void> onPressed() async {
+      if (isLinux || isWindows) {
+        return;
+      }
+
+      if (entry is JournalImage) {
+        final filePath = getFullImagePath(entry);
+        await Share.shareXFiles([XFile(filePath)]);
+      }
+      if (entry is JournalAudio) {
+        final filePath = await AudioUtils.getFullAudioPath(entry);
+        await Share.shareXFiles([XFile(filePath)]);
+      }
+    }
+
+    return SizedBox(
+      width: 40,
+      child: IconButton(
+        icon: Icon(MdiIcons.shareOutline),
+        splashColor: Colors.transparent,
+        iconSize: 24,
+        tooltip: tooltip,
+        padding: EdgeInsets.zero,
+        color: Theme.of(context).colorScheme.outline,
+        onPressed: onPressed,
+      ),
     );
   }
 }

@@ -106,7 +106,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                     entryId: id,
                     beamBack: !widget.inLinkedEntries,
                   ),
-                  const ShareButtonWidget(),
+                  ShareButtonWidget(entryId: id),
                   TagAddIconWidget(),
                   SizedBox(
                     width: 40,
@@ -154,7 +154,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
             ),
           ),
         ),
-        const SaveButton(),
+        SaveButton(entryId: widget.entryId),
       ],
     );
   }

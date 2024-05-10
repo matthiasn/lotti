@@ -1,9 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -20,8 +17,6 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('ShareButtonWidget', () {
-    final entryCubit = MockEntryCubit();
-
     setUpAll(() async {
       setFakeDocumentsPath();
 
@@ -38,22 +33,9 @@ void main() {
     });
 
     testWidgets('tap share icon on image', (WidgetTester tester) async {
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testImageEntry.meta.id,
-          entry: testImageEntry,
-          showMap: false,
-          isFocused: false,
-          epoch: 0,
-        ),
-      );
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: const ShareButtonWidget(),
-          ),
+          ShareButtonWidget(entryId: testImageEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
@@ -65,22 +47,9 @@ void main() {
     });
 
     testWidgets('tap share icon on audio', (WidgetTester tester) async {
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testAudioEntry.meta.id,
-          entry: testAudioEntry,
-          showMap: false,
-          isFocused: false,
-          epoch: 0,
-        ),
-      );
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: const ShareButtonWidget(),
-          ),
+          ShareButtonWidget(entryId: testAudioEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
