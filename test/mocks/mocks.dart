@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_download_manager/flutter_download_manager.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
@@ -112,6 +114,8 @@ class MockLoggingDb extends Mock implements LoggingDb {}
 
 class MockDownloadManager extends Mock implements DownloadManager {}
 
+class MockEditorDb extends Mock implements EditorDb {}
+
 class MockEditorStateService extends Mock implements EditorStateService {}
 
 class MockLinkService extends Mock implements LinkService {}
@@ -152,6 +156,8 @@ class FakeTaskData extends Fake implements TaskData {}
 class FakeJournalEntity extends Fake implements JournalEntity {}
 
 class FakeMetadata extends Fake implements Metadata {}
+
+class FakeQuillController extends Fake implements QuillController {}
 
 class FakeJournalAudio extends Fake implements JournalAudio {}
 

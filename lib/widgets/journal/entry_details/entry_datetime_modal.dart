@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -7,7 +8,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
-class EntryDateTimeModal extends StatefulWidget {
+class EntryDateTimeModal extends ConsumerStatefulWidget {
   const EntryDateTimeModal({
     required this.item,
     super.key,
@@ -18,10 +19,10 @@ class EntryDateTimeModal extends StatefulWidget {
   final bool readOnly;
 
   @override
-  State<EntryDateTimeModal> createState() => _EntryDateTimeModalState();
+  ConsumerState<EntryDateTimeModal> createState() => _EntryDateTimeModalState();
 }
 
-class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
+class _EntryDateTimeModalState extends ConsumerState<EntryDateTimeModal> {
   late DateTime dateFrom;
   late DateTime dateTo;
 
