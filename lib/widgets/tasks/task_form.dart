@@ -31,7 +31,8 @@ class TaskForm extends ConsumerStatefulWidget {
 class _TaskFormState extends ConsumerState<TaskForm> {
   @override
   Widget build(BuildContext context) {
-    final provider = entryControllerProvider(id: widget.task!.meta.id);
+    final entryId = widget.task!.meta.id;
+    final provider = entryControllerProvider(id: entryId);
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
 
@@ -174,7 +175,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
             ),
           ),
         ),
-        const EditorWidget(),
+        EditorWidget(entryId: entryId),
       ],
     );
   }
