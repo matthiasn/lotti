@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
@@ -11,6 +13,7 @@ class EntryState with _$EntryState {
     required bool showMap,
     required bool isFocused,
     required int epoch,
+    GlobalKey<FormBuilderState>? formKey,
   }) = _EntryStateSaved;
 
   factory EntryState.dirty({
@@ -19,5 +22,6 @@ class EntryState with _$EntryState {
     required bool showMap,
     required bool isFocused,
     required int epoch,
+    GlobalKey<FormBuilderState>? formKey,
   }) = EntryStateDirty;
 }

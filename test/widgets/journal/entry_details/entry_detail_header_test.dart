@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -98,10 +96,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailHeader(entryId: entryCubit.entryId),
-          ),
+          EntryDetailHeader(entryId: entryCubit.entryId),
         ),
       );
       await tester.pumpAndSettle();
@@ -120,10 +115,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailHeader(entryId: entryCubit.entryId),
-          ),
+          EntryDetailHeader(entryId: entryCubit.entryId),
         ),
       );
       await tester.pumpAndSettle();
@@ -142,11 +134,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailHeader(
-              entryId: entryCubit.entryId,
-            ),
+          EntryDetailHeader(
+            entryId: entryCubit.entryId,
           ),
         ),
       );
@@ -181,10 +170,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailHeader(entryId: entryCubit.entryId),
-          ),
+          EntryDetailHeader(entryId: entryCubit.entryId),
         ),
       );
       await tester.pumpAndSettle();
@@ -209,10 +195,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailHeader(entryId: entryCubit.entryId),
-          ),
+          EntryDetailHeader(entryId: entryCubit.entryId),
         ),
       );
       await tester.pumpAndSettle();
@@ -243,10 +226,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailHeader(entryId: entryCubit.entryId),
-          ),
+          EntryDetailHeader(entryId: entryCubit.entryId),
         ),
       );
       await tester.pumpAndSettle();
@@ -277,10 +257,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailHeader(entryId: entryCubit.entryId),
-          ),
+          EntryDetailHeader(entryId: entryCubit.entryId),
         ),
       );
       await tester.pumpAndSettle();
