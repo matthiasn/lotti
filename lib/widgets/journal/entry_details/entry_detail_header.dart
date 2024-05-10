@@ -102,7 +102,10 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
                       activeIcon: Icons.map,
                       activeColor: Theme.of(context).primaryColor,
                     ),
-                  DeleteIconWidget(beamBack: !widget.inLinkedEntries),
+                  DeleteIconWidget(
+                    entryId: id,
+                    beamBack: !widget.inLinkedEntries,
+                  ),
                   const ShareButtonWidget(),
                   TagAddIconWidget(),
                   SizedBox(

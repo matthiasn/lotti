@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -24,7 +21,6 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('EntryDetailFooter', () {
-    final entryCubit = MockEntryCubit();
     final mockTimeService = MockTimeService();
     final mockPersistenceLogic = MockPersistenceLogic();
     final mockEditorDb = MockEditorDb();
@@ -85,25 +81,12 @@ void main() {
 
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testTextEntry.meta.id,
-          entry: testTextEntry,
-          showMap: false,
-          isFocused: false,
-          epoch: 0,
-        ),
-      );
     });
 
     testWidgets('entry date is visible', (WidgetTester tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailFooter(entryId: testTextEntry.meta.id),
-          ),
+          EntryDetailFooter(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
@@ -117,10 +100,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailFooter(entryId: testTextEntry.meta.id),
-          ),
+          EntryDetailFooter(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
@@ -135,10 +115,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailFooter(entryId: testTextEntry.meta.id),
-          ),
+          EntryDetailFooter(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
@@ -163,24 +140,12 @@ void main() {
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
           .thenAnswer((_) async => testEntry);
 
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testEntry.meta.id,
-          entry: testEntry,
-          showMap: false,
-          isFocused: false,
-          epoch: 0,
-        ),
-      );
       Future<void> mockStartTimer() => mockTimeService.start(testEntry);
       when(mockStartTimer).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailFooter(entryId: testTextEntry.meta.id),
-          ),
+          EntryDetailFooter(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
@@ -216,27 +181,12 @@ void main() {
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([testEntry]));
 
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testEntry.meta.id,
-          entry: testEntry,
-          showMap: false,
-          isFocused: false,
-          epoch: 0,
-        ),
-      );
-
       Future<void> mockStopTimer() => mockTimeService.stop();
       when(mockStopTimer).thenAnswer((_) async {});
 
-      when(entryCubit.save).thenAnswer((_) async => true);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: EntryDetailFooter(entryId: testTextEntry.meta.id),
-          ),
+          EntryDetailFooter(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
