@@ -95,6 +95,17 @@ class EntryController extends _$EntryController {
     ref.onDispose(() => _updateSubscription?.cancel());
     final entry = await _fetch();
 
+    final lastSaved = entry?.meta.updatedAt;
+
+    if (lastSaved != null) {
+      _editorStateService
+          .getUnsavedStream(entryId, lastSaved)
+          .listen((bool dirtyFromEditorDrafts) {
+        _dirty = dirtyFromEditorDrafts;
+        emitState();
+      });
+    }
+
     if (entry is Task) {
       formKey = GlobalKey<FormBuilderState>();
     }
