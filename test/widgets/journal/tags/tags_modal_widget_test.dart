@@ -1,8 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/get_it.dart';
@@ -80,9 +78,8 @@ void main() {
     testWidgets('tag copy and paste', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: const TagsModal(),
+          TagsModal(
+            entryId: testTextEntryWithTags.meta.id,
           ),
         ),
       );
@@ -106,10 +103,7 @@ void main() {
     testWidgets('select existing tag', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: const TagsModal(),
-          ),
+          TagsModal(entryId: testTextEntryWithTags.meta.id),
         ),
       );
 
@@ -156,10 +150,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: const TagsModal(),
-          ),
+          TagsModal(entryId: testTextEntryWithTags.meta.id),
         ),
       );
 
@@ -186,10 +177,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: const TagsModal(),
-          ),
+          TagsModal(entryId: testTextEntryWithTags.meta.id),
         ),
       );
 

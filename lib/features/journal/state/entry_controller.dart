@@ -278,4 +278,22 @@ class EntryController extends _$EntryController {
       );
     }
   }
+
+  Future<String> addTagDefinition(String tag) async {
+    return _persistenceLogic.addTagDefinition(tag);
+  }
+
+  Future<void> addTagIds(List<String> addedTagIds) async {
+    await _persistenceLogic.addTagsWithLinked(
+      journalEntityId: entryId,
+      addedTagIds: addedTagIds,
+    );
+  }
+
+  Future<void> removeTagId(String tagId) async {
+    await _persistenceLogic.removeTag(
+      journalEntityId: entryId,
+      tagId: tagId,
+    );
+  }
 }
