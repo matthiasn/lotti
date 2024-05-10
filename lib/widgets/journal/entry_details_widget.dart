@@ -88,7 +88,10 @@ class EntryDetailWidget extends StatelessWidget {
                     quantitative: (_) => const SizedBox.shrink(),
                     workout: (_) => const SizedBox.shrink(),
                     orElse: () {
-                      return EditorWidget(unlinkFn: unlinkFn);
+                      return EditorWidget(
+                        entryId: itemId,
+                        unlinkFn: unlinkFn,
+                      );
                     },
                   ),
                   item.map(

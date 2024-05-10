@@ -61,7 +61,8 @@ void main() {
               entryId: testTextEntry.meta.id,
               entry: testTextEntry,
             ),
-            child: const EditorWidget(
+            child: EditorWidget(
+              entryId: testTextEntry.meta.id,
               autoFocus: true,
               key: key,
             ),
@@ -88,7 +89,7 @@ void main() {
               entryId: testTextEntry.meta.id,
               entry: testTextEntry,
             ),
-            child: const EditorWidget(),
+            child: EditorWidget(entryId: testTextEntry.meta.id),
           ),
         ),
       );
