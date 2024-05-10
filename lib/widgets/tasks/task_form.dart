@@ -1,19 +1,18 @@
 // ignore_for_file: avoid_dynamic_calls
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/date_time/duration_bottom_sheet.dart';
 import 'package:lotti/widgets/journal/editor/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
-class TaskForm extends StatefulWidget {
+class TaskForm extends ConsumerStatefulWidget {
   const TaskForm({
     super.key,
     this.task,
@@ -26,161 +25,157 @@ class TaskForm extends StatefulWidget {
   final bool focusOnTitle;
 
   @override
-  State<TaskForm> createState() => _TaskFormState();
+  ConsumerState<TaskForm> createState() => _TaskFormState();
 }
 
-class _TaskFormState extends State<TaskForm> {
+class _TaskFormState extends ConsumerState<TaskForm> {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<EntryCubit, EntryState>(
-      builder: (
-        context,
-        EntryState snapshot,
-      ) {
-        final save = context.read<EntryCubit>().save;
-        final formKey = context.read<EntryCubit>().formKey;
+    final provider = entryControllerProvider(id: widget.task!.meta.id);
+    final notifier = ref.read(provider.notifier);
+    final entryState = ref.watch(provider).value;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: FormBuilder(
-                key: formKey,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                child: Column(
-                  children: <Widget>[
-                    const SizedBox(height: 10),
-                    FormBuilderTextField(
-                      autofocus: widget.focusOnTitle,
-                      focusNode: context.read<EntryCubit>().taskTitleFocusNode,
-                      initialValue: widget.data?.title ?? '',
-                      decoration: inputDecoration(
-                        labelText: '${widget.data?.title}'.isEmpty
-                            ? context.messages.taskNameLabel
-                            : '',
-                        themeData: Theme.of(context),
-                      ),
-                      textCapitalization: TextCapitalization.sentences,
-                      keyboardAppearance: Theme.of(context).brightness,
-                      maxLines: null,
-                      style: const TextStyle(fontSize: fontSizeLarge),
-                      name: 'title',
-                      onChanged: context.read<EntryCubit>().setDirty,
-                    ),
-                    inputSpacer,
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        SizedBox(
-                          width: 120,
-                          child: TextField(
-                            decoration: inputDecoration(
-                              labelText: context.messages.taskEstimateLabel,
-                              themeData: Theme.of(context),
-                            ),
-                            style: Theme.of(context).textTheme.titleMedium,
-                            readOnly: true,
-                            controller: TextEditingController(
-                              text: formatDuration(widget.data?.estimate)
-                                  .substring(0, 5),
-                            ),
-                            onTap: () async {
-                              final duration =
-                                  await showModalBottomSheet<Duration>(
-                                context: context,
-                                builder: (context) {
-                                  return DurationBottomSheet(
-                                    widget.data?.estimate,
-                                  );
-                                },
+    final save = notifier.save;
+    final formKey = entryState?.formKey;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: FormBuilder(
+            key: formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Column(
+              children: <Widget>[
+                const SizedBox(height: 10),
+                FormBuilderTextField(
+                  autofocus: widget.focusOnTitle,
+                  focusNode: notifier.taskTitleFocusNode,
+                  initialValue: widget.data?.title ?? '',
+                  decoration: inputDecoration(
+                    labelText: '${widget.data?.title}'.isEmpty
+                        ? context.messages.taskNameLabel
+                        : '',
+                    themeData: Theme.of(context),
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                  keyboardAppearance: Theme.of(context).brightness,
+                  maxLines: null,
+                  style: const TextStyle(fontSize: fontSizeLarge),
+                  name: 'title',
+                  onChanged: notifier.setDirty,
+                ),
+                inputSpacer,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      child: TextField(
+                        decoration: inputDecoration(
+                          labelText: context.messages.taskEstimateLabel,
+                          themeData: Theme.of(context),
+                        ),
+                        style: Theme.of(context).textTheme.titleMedium,
+                        readOnly: true,
+                        controller: TextEditingController(
+                          text: formatDuration(widget.data?.estimate)
+                              .substring(0, 5),
+                        ),
+                        onTap: () async {
+                          final duration = await showModalBottomSheet<Duration>(
+                            context: context,
+                            builder: (context) {
+                              return DurationBottomSheet(
+                                widget.data?.estimate,
                               );
-                              if (duration != null) {
-                                await save(estimate: duration);
-                              }
                             },
-                          ),
-                        ),
-                        SizedBox(
-                          width: 180,
-                          child: FormBuilderDropdown<String>(
-                            name: 'status',
-                            borderRadius: BorderRadius.circular(10),
-                            elevation: 2,
-                            onChanged: (dynamic _) => save(),
-                            decoration: inputDecoration(
-                              labelText: 'Status:',
-                              themeData: Theme.of(context),
-                            ),
-                            initialValue: widget.data?.status.map(
-                                  open: (_) => 'OPEN',
-                                  groomed: (_) => 'GROOMED',
-                                  started: (_) => 'STARTED',
-                                  inProgress: (_) => 'IN PROGRESS',
-                                  blocked: (_) => 'BLOCKED',
-                                  onHold: (_) => 'ON HOLD',
-                                  done: (_) => 'DONE',
-                                  rejected: (_) => 'REJECTED',
-                                ) ??
-                                'OPEN',
-                            items: [
-                              DropdownMenuItem<String>(
-                                value: 'OPEN',
-                                child: TaskStatusLabel(
-                                  context.messages.taskStatusOpen,
-                                ),
-                              ),
-                              DropdownMenuItem<String>(
-                                value: 'GROOMED',
-                                child: TaskStatusLabel(
-                                  context.messages.taskStatusGroomed,
-                                ),
-                              ),
-                              DropdownMenuItem<String>(
-                                value: 'IN PROGRESS',
-                                child: TaskStatusLabel(
-                                  context.messages.taskStatusInProgress,
-                                ),
-                              ),
-                              DropdownMenuItem<String>(
-                                value: 'BLOCKED',
-                                child: TaskStatusLabel(
-                                  context.messages.taskStatusBlocked,
-                                ),
-                              ),
-                              DropdownMenuItem<String>(
-                                value: 'ON HOLD',
-                                child: TaskStatusLabel(
-                                  context.messages.taskStatusOnHold,
-                                ),
-                              ),
-                              DropdownMenuItem<String>(
-                                value: 'DONE',
-                                child: TaskStatusLabel(
-                                  context.messages.taskStatusDone,
-                                ),
-                              ),
-                              DropdownMenuItem<String>(
-                                value: 'REJECTED',
-                                child: TaskStatusLabel(
-                                  context.messages.taskStatusRejected,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                          );
+                          if (duration != null) {
+                            await save(estimate: duration);
+                          }
+                        },
+                      ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: 180,
+                      child: FormBuilderDropdown<String>(
+                        name: 'status',
+                        borderRadius: BorderRadius.circular(10),
+                        elevation: 2,
+                        onChanged: (dynamic _) => save(),
+                        decoration: inputDecoration(
+                          labelText: 'Status:',
+                          themeData: Theme.of(context),
+                        ),
+                        initialValue: widget.data?.status.map(
+                              open: (_) => 'OPEN',
+                              groomed: (_) => 'GROOMED',
+                              started: (_) => 'STARTED',
+                              inProgress: (_) => 'IN PROGRESS',
+                              blocked: (_) => 'BLOCKED',
+                              onHold: (_) => 'ON HOLD',
+                              done: (_) => 'DONE',
+                              rejected: (_) => 'REJECTED',
+                            ) ??
+                            'OPEN',
+                        items: [
+                          DropdownMenuItem<String>(
+                            value: 'OPEN',
+                            child: TaskStatusLabel(
+                              context.messages.taskStatusOpen,
+                            ),
+                          ),
+                          DropdownMenuItem<String>(
+                            value: 'GROOMED',
+                            child: TaskStatusLabel(
+                              context.messages.taskStatusGroomed,
+                            ),
+                          ),
+                          DropdownMenuItem<String>(
+                            value: 'IN PROGRESS',
+                            child: TaskStatusLabel(
+                              context.messages.taskStatusInProgress,
+                            ),
+                          ),
+                          DropdownMenuItem<String>(
+                            value: 'BLOCKED',
+                            child: TaskStatusLabel(
+                              context.messages.taskStatusBlocked,
+                            ),
+                          ),
+                          DropdownMenuItem<String>(
+                            value: 'ON HOLD',
+                            child: TaskStatusLabel(
+                              context.messages.taskStatusOnHold,
+                            ),
+                          ),
+                          DropdownMenuItem<String>(
+                            value: 'DONE',
+                            child: TaskStatusLabel(
+                              context.messages.taskStatusDone,
+                            ),
+                          ),
+                          DropdownMenuItem<String>(
+                            value: 'REJECTED',
+                            child: TaskStatusLabel(
+                              context.messages.taskStatusRejected,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 20),
+              ],
             ),
-            const EditorWidget(),
-          ],
-        );
-      },
+          ),
+        ),
+        const EditorWidget(),
+      ],
     );
   }
 }

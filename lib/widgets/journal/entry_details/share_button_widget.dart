@@ -21,7 +21,6 @@ class ShareButtonWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = entryControllerProvider(id: entryId);
     final entryState = ref.watch(provider).value;
-
     final entry = entryState?.entry;
 
     if (entryState == null ||

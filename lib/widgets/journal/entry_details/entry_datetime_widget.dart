@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_datetime_modal.dart';
@@ -35,10 +33,7 @@ class EntryDatetimeWidget extends ConsumerWidget {
           showModalBottomSheet<void>(
             context: context,
             builder: (BuildContext _) {
-              return BlocProvider.value(
-                value: BlocProvider.of<EntryCubit>(context),
-                child: EntryDateTimeModal(item: entry),
-              );
+              return EntryDateTimeModal(item: entry);
             },
           );
         },

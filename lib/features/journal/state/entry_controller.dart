@@ -58,7 +58,7 @@ class EntryController extends _$EntryController {
   int _epoch = 0;
   QuillController controller = QuillController.basic();
   final _editorStateService = getIt<EditorStateService>();
-  late final GlobalKey<FormBuilderState>? formKey;
+  GlobalKey<FormBuilderState>? formKey;
 
   final FocusNode focusNode = FocusNode();
   final FocusNode taskTitleFocusNode = FocusNode();
@@ -116,6 +116,18 @@ class EntryController extends _$EntryController {
       showMap: false,
       isFocused: false,
       epoch: _epoch,
+      formKey: formKey,
+    );
+  }
+
+  Future<bool> updateFromTo({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
+    return _persistenceLogic.updateJournalEntityDate(
+      entryId,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
     );
   }
 
@@ -232,6 +244,7 @@ class EntryController extends _$EntryController {
           showMap: state.value?.showMap ?? false,
           isFocused: _isFocused,
           epoch: _epoch,
+          formKey: formKey,
         ),
       );
     } else {
@@ -242,6 +255,7 @@ class EntryController extends _$EntryController {
           showMap: state.value?.showMap ?? false,
           isFocused: _isFocused,
           epoch: _epoch,
+          formKey: formKey,
         ),
       );
     }
