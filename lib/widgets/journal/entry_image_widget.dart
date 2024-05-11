@@ -2,70 +2,55 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:photo_view/photo_view.dart';
 
-class EntryImageWidget extends StatefulWidget {
+class EntryImageWidget extends ConsumerWidget {
   const EntryImageWidget(this.journalImage, {super.key});
 
   final JournalImage journalImage;
 
   @override
-  State<EntryImageWidget> createState() => _EntryImageWidgetState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: journalImage.meta.id);
+    final notifier = ref.read(provider.notifier);
 
-class _EntryImageWidgetState extends State<EntryImageWidget> {
-  @override
-  void initState() {
-    super.initState();
-  }
+    final file = File(getFullImagePath(journalImage));
 
-  @override
-  Widget build(BuildContext context) {
-    final file = File(getFullImagePath(widget.journalImage));
+    final focusNode = notifier.focusNode;
 
-    return BlocBuilder<EntryCubit, EntryState>(
-      builder: (
-        context,
-        EntryState snapshot,
-      ) {
-        final focusNode = context.read<EntryCubit>().focusNode;
-
-        return GestureDetector(
-          onTap: () {
-            focusNode.unfocus();
-            Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute<HeroPhotoViewRouteWrapper>(
-                builder: (_) => HeroPhotoViewRouteWrapper(
-                  focusNode: focusNode,
-                  imageProvider: FileImage(file),
-                ),
-              ),
-            );
-          },
-          child: ColoredBox(
-            color: Colors.black,
-            child: Hero(
-              tag: 'entry_img',
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: isMobile ? 400 : MediaQuery.of(context).size.width,
-                ),
-                child: Image.file(
-                  file,
-                  width: MediaQuery.of(context).size.width,
-                  fit: BoxFit.contain,
-                ),
-              ),
+    return GestureDetector(
+      onTap: () {
+        focusNode.unfocus();
+        Navigator.of(context, rootNavigator: true).push(
+          MaterialPageRoute<HeroPhotoViewRouteWrapper>(
+            builder: (_) => HeroPhotoViewRouteWrapper(
+              focusNode: focusNode,
+              imageProvider: FileImage(file),
             ),
           ),
         );
       },
+      child: ColoredBox(
+        color: Colors.black,
+        child: Hero(
+          tag: 'entry_img',
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: isMobile ? 400 : MediaQuery.of(context).size.width,
+            ),
+            child: Image.file(
+              file,
+              width: MediaQuery.of(context).size.width,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

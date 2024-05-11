@@ -6,7 +6,7 @@ part of 'entry_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$entryControllerHash() => r'770196b31ca1a35cddef63eb1e2318ab76ec7c56';
+String _$entryControllerHash() => r'e1c146073732f5a05740e06bf1a0a3a210ba05f0';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,10 +30,10 @@ class _SystemHash {
 }
 
 abstract class _$EntryController
-    extends BuildlessAutoDisposeAsyncNotifier<JournalEntity?> {
+    extends BuildlessAutoDisposeAsyncNotifier<EntryState?> {
   late final String id;
 
-  FutureOr<JournalEntity?> build({
+  FutureOr<EntryState?> build({
     required String id,
   });
 }
@@ -43,7 +43,7 @@ abstract class _$EntryController
 const entryControllerProvider = EntryControllerFamily();
 
 /// See also [EntryController].
-class EntryControllerFamily extends Family<AsyncValue<JournalEntity?>> {
+class EntryControllerFamily extends Family<AsyncValue<EntryState?>> {
   /// See also [EntryController].
   const EntryControllerFamily();
 
@@ -81,8 +81,8 @@ class EntryControllerFamily extends Family<AsyncValue<JournalEntity?>> {
 }
 
 /// See also [EntryController].
-class EntryControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
-    EntryController, JournalEntity?> {
+class EntryControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<EntryController, EntryState?> {
   /// See also [EntryController].
   EntryControllerProvider({
     required String id,
@@ -113,7 +113,7 @@ class EntryControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   final String id;
 
   @override
-  FutureOr<JournalEntity?> runNotifierBuild(
+  FutureOr<EntryState?> runNotifierBuild(
     covariant EntryController notifier,
   ) {
     return notifier.build(
@@ -138,7 +138,7 @@ class EntryControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<EntryController, JournalEntity?>
+  AutoDisposeAsyncNotifierProviderElement<EntryController, EntryState?>
       createElement() {
     return _EntryControllerProviderElement(this);
   }
@@ -157,15 +157,14 @@ class EntryControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 }
 
-mixin EntryControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<JournalEntity?> {
+mixin EntryControllerRef on AutoDisposeAsyncNotifierProviderRef<EntryState?> {
   /// The parameter `id` of this provider.
   String get id;
 }
 
 class _EntryControllerProviderElement
     extends AutoDisposeAsyncNotifierProviderElement<EntryController,
-        JournalEntity?> with EntryControllerRef {
+        EntryState?> with EntryControllerRef {
   _EntryControllerProviderElement(super.provider);
 
   @override

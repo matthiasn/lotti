@@ -1,10 +1,10 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/journal/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -16,7 +16,10 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('EntryDetailFooter', () {
-    final entryCubit = MockEntryCubit();
+    final mockPersistenceLogic = MockPersistenceLogic();
+    final mockJournalDb = MockJournalDb();
+    final mockTagsService = mockTagsServiceWithTags([]);
+    final mockEditorStateService = MockEditorStateService();
 
     setUpAll(() {
       final mockUpdateNotifications = MockUpdateNotifications();
@@ -26,42 +29,36 @@ void main() {
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-        ..registerSingleton<TagsService>(TagsService());
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<TagsService>(mockTagsService);
 
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testTextEntry.meta.id,
-          entry: testTextEntry,
-          showMap: false,
-          isFocused: false,
-          epoch: 0,
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      when(mockTagsService.watchTags).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(
+          any(),
+          any(),
         ),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
       );
     });
 
     testWidgets('tap entry date', (WidgetTester tester) async {
-      when(entryCubit.togglePrivate).thenAnswer((_) async => true);
-
       // ignore: unused_local_variable
       DateTime? modifiedDateTo;
 
-      when(
-        () => entryCubit.updateFromTo(
-          dateFrom: testTextEntry.meta.dateFrom,
-          dateTo: any(named: 'dateTo'),
-        ),
-      ).thenAnswer((Invocation i) async {
-        const dateTo = Symbol('dateTo');
-        modifiedDateTo = i.namedArguments[dateTo] as DateTime;
-        return true;
-      });
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<EntryCubit>.value(
-            value: entryCubit,
-            child: const EntryDatetimeWidget(),
+          EntryDatetimeWidget(
+            entryId: testTextEntry.meta.id,
           ),
         ),
       );
