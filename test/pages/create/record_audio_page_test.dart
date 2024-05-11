@@ -49,7 +49,7 @@ void main() {
 
       when(mockAudioRecorderCubit.close).thenAnswer((_) async {});
 
-      when(mockAudioRecorderCubit.stop).thenAnswer((_) async {});
+      when(mockAudioRecorderCubit.stop).thenAnswer((_) async => 'entry-id');
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
