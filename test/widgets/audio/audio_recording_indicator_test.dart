@@ -19,7 +19,7 @@ void main() {
 
     final mockAudioRecorderCubit = MockAudioRecorderCubit();
 
-    testWidgets('widget is displayed, tapping stops recoder', (tester) async {
+    testWidgets('widget is displayed, tapping stops recorder', (tester) async {
       final recordingState = AudioRecorderState(
         status: AudioRecorderStatus.recording,
         decibels: 80,
@@ -37,7 +37,7 @@ void main() {
 
       when(mockAudioRecorderCubit.close).thenAnswer((_) async {});
 
-      when(mockAudioRecorderCubit.stop).thenAnswer((_) async {});
+      when(mockAudioRecorderCubit.stop).thenAnswer((_) async => 'entry-id');
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
