@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -13,7 +15,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 const double iconSize = 64;
 
-class AudioRecorderWidget extends StatelessWidget {
+class AudioRecorderWidget extends ConsumerWidget {
   const AudioRecorderWidget({
     super.key,
     this.linkedId,
@@ -26,13 +28,13 @@ class AudioRecorderWidget extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
       builder: (context, state) {
         final cubit = context.read<AudioRecorderCubit>();
 
         Future<void> stop() async {
-          await cubit.stop();
+          final entryId = await cubit.stop();
 
           final autoTranscribe = await getIt<JournalDb>().getConfigFlag(
             autoTranscribeFlag,
@@ -41,6 +43,14 @@ class AudioRecorderWidget extends StatelessWidget {
           if (autoTranscribe) {
             if (!context.mounted) return;
             await TranscriptionProgressModal.show(context);
+
+            if (entryId != null) {
+              await Future<void>.delayed(const Duration(milliseconds: 100));
+              final provider = entryControllerProvider(id: entryId);
+              ref.read(provider.notifier)
+                ..setController()
+                ..emitState();
+            }
           }
 
           getIt<NavService>().beamBack();
