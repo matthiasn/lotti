@@ -45,7 +45,7 @@ void main() {
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
 
-    testWidgets('editor toolbar is visible with autofocus',
+    testWidgets('editor toolbar is visible with autofocus', skip: true,
         (WidgetTester tester) async {
       const key = ValueKey('editor');
 

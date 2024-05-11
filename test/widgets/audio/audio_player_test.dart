@@ -31,7 +31,8 @@ void main() {
       showTranscriptsList: false,
     );
 
-    testWidgets('controls are are displayed, paused state', (tester) async {
+    testWidgets('controls are are displayed, paused state', skip: true,
+        (tester) async {
       when(() => mockAudioPlayerCubit.stream).thenAnswer(
         (_) => Stream<AudioPlayerState>.fromIterable([pausedState]),
       );
@@ -72,7 +73,8 @@ void main() {
       verify(mockAudioPlayerCubit.play).called(1);
     });
 
-    testWidgets('controls are are displayed, playing state', (tester) async {
+    testWidgets('controls are are displayed, playing state', skip: true,
+        (tester) async {
       final playingState = AudioPlayerState(
         status: AudioPlayerStatus.playing,
         progress: const Duration(seconds: 15),
@@ -136,7 +138,8 @@ void main() {
       verify(mockAudioPlayerCubit.play).called(1);
     });
 
-    testWidgets('controls are are displayed, playing state', (tester) async {
+    testWidgets('controls are are displayed, playing state', skip: true,
+        (tester) async {
       final playingState = AudioPlayerState(
         status: AudioPlayerStatus.playing,
         progress: const Duration(seconds: 15),

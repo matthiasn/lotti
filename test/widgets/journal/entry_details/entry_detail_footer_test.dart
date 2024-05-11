@@ -81,6 +81,15 @@ void main() {
 
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(
+          any(),
+          any(),
+        ),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
     });
 
     testWidgets('entry date is visible', (WidgetTester tester) async {

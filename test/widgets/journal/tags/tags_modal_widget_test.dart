@@ -2,7 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/journal/tags/tags_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -17,6 +21,14 @@ void main() {
 
   group('TagsModal Widget Tests -', () {
     final mockTagsService = MockTagsService();
+    final mockEditorStateService = MockEditorStateService();
+    final mockPersistenceLogic = MockPersistenceLogic();
+    final mockJournalDb = MockJournalDb();
+    final mockUpdateNotifications = MockUpdateNotifications();
+
+    when(() => mockUpdateNotifications.updateStream).thenAnswer(
+      (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+    );
 
     when(() => mockTagsService.stream).thenAnswer(
       (_) => Stream<List<TagEntity>>.fromIterable([
@@ -56,7 +68,42 @@ void main() {
         .thenAnswer((_) async => [testTag1]);
 
     setUpAll(() {
-      getIt.registerSingleton<TagsService>(mockTagsService);
+      getIt
+        ..registerSingleton<TagsService>(mockTagsService)
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<EditorStateService>(mockEditorStateService);
+
+      when(
+        () => mockPersistenceLogic.addTagsWithLinked(
+          journalEntityId: testTextEntryWithTags.meta.id,
+          addedTagIds: any(named: 'addedTagIds'),
+        ),
+      ).thenAnswer((invocation) async => true);
+
+      when(
+        () => mockPersistenceLogic.removeTag(
+          journalEntityId: testTextEntryWithTags.meta.id,
+          tagId: any(named: 'tagId'),
+        ),
+      ).thenAnswer((invocation) async => true);
+
+      when(
+        () => mockPersistenceLogic.addTagDefinition(any()),
+      ).thenAnswer((invocation) async => '');
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(
+          any(),
+          any(),
+        ),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
+
+      when(() => mockJournalDb.journalEntityById(testTextEntryWithTags.meta.id))
+          .thenAnswer((_) async => testTextEntryWithTags);
     });
 
     testWidgets('tag copy and paste', (tester) async {

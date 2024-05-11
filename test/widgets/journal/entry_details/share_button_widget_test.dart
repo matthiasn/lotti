@@ -1,9 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/widgets/journal/entry_details/share_button_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -17,10 +20,15 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('ShareButtonWidget', () {
+    final mockEditorStateService = MockEditorStateService();
+    final mockUpdateNotifications = MockUpdateNotifications();
+    final mockPersistenceLogic = MockPersistenceLogic();
+    final mockJournalDb = MockJournalDb();
+    final mockTagsService = mockTagsServiceWithTags([]);
+
     setUpAll(() async {
       setFakeDocumentsPath();
 
-      final mockUpdateNotifications = MockUpdateNotifications();
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
       );
@@ -28,11 +36,31 @@ void main() {
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-        ..registerSingleton<TagsService>(TagsService());
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<TagsService>(mockTagsService);
+
+      when(mockTagsService.watchTags).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([
+          [testStoryTag1],
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(
+          any(),
+          any(),
+        ),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
     });
 
     testWidgets('tap share icon on image', (WidgetTester tester) async {
+      when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
+          .thenAnswer((_) async => testImageEntry);
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ShareButtonWidget(entryId: testImageEntry.meta.id),
@@ -47,6 +75,9 @@ void main() {
     });
 
     testWidgets('tap share icon on audio', (WidgetTester tester) async {
+      when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
+          .thenAnswer((_) async => testAudioEntry);
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ShareButtonWidget(entryId: testAudioEntry.meta.id),
