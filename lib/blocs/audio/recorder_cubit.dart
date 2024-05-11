@@ -90,21 +90,21 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     }
   }
 
-  Future<void> stop() async {
+  Future<String?> stop() async {
     try {
       debugPrint('stop recording');
-
-      final foo = await _audioRecorder.stop();
-      debugPrint('stop $foo');
+      await _audioRecorder.stop();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
       emit(initialState);
 
       if (_audioNote != null) {
-        await persistenceLogic.createAudioEntry(
+        final journalAudio = await persistenceLogic.createAudioEntry(
           _audioNote!,
           linkedId: _linkedId,
         );
         _linkedId = null;
+        final entryId = journalAudio?.meta.id;
+        return entryId;
       }
     } catch (exception, stackTrace) {
       _loggingDb.captureException(
@@ -113,6 +113,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         stackTrace: stackTrace,
       );
     }
+    return null;
   }
 
   Future<void> pause() async {
