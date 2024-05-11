@@ -22,7 +22,6 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('EditorWidget', () {
-    final entryCubit = MockEntryCubit();
     final mockTimeService = MockTimeService();
 
     setUpAll(() {
@@ -48,8 +47,6 @@ void main() {
 
     testWidgets('editor toolbar is visible with autofocus',
         (WidgetTester tester) async {
-      when(entryCubit.togglePrivate).thenAnswer((_) async => true);
-
       const key = ValueKey('editor');
 
       await tester.pumpWidget(
@@ -72,8 +69,6 @@ void main() {
 
     testWidgets('editor toolbar is invisible without autofocus',
         (WidgetTester tester) async {
-      when(entryCubit.togglePrivate).thenAnswer((_) async => true);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EditorWidget(entryId: testTextEntry.meta.id),

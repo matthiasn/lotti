@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/entry_state.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -20,7 +19,6 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('EntryDetailHeader', () {
-    final entryCubit = MockEntryCubit();
     registerFallbackValue(FakeJournalEntity());
     registerFallbackValue(FakeMetadata());
     final mockJournalDb = MockJournalDb();
@@ -48,8 +46,6 @@ void main() {
         ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<TagsService>(mockTagsService);
 
-      when(() => entryCubit.showMap).thenAnswer((_) => false);
-
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
       );
@@ -73,29 +69,14 @@ void main() {
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
 
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testTextEntry.meta.id,
-          entry: testTextEntry,
-          showMap: false,
-          isFocused: false,
-        ),
-      );
-
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
           .thenAnswer((_) async => testTextEntry);
-
-      when(() => entryCubit.entryId).thenAnswer(
-        (invocation) => testTextEntry.meta.id,
-      );
     });
 
     testWidgets('tap star icon', (WidgetTester tester) async {
-      when(entryCubit.toggleStarred).thenAnswer((_) async => true);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailHeader(entryId: entryCubit.entryId),
+          EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
@@ -110,11 +91,9 @@ void main() {
     });
 
     testWidgets('tap flagged icon', (WidgetTester tester) async {
-      when(entryCubit.toggleFlagged).thenAnswer((_) async => true);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailHeader(entryId: entryCubit.entryId),
+          EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
@@ -129,12 +108,10 @@ void main() {
     });
 
     testWidgets('tap private icon', (WidgetTester tester) async {
-      when(entryCubit.togglePrivate).thenAnswer((_) async => true);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(
-            entryId: entryCubit.entryId,
+            entryId: testTextEntry.meta.id,
           ),
         ),
       );
@@ -157,18 +134,9 @@ void main() {
 
     testWidgets('save button invisible when saved/clean',
         (WidgetTester tester) async {
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.saved(
-          entryId: testTextEntry.meta.id,
-          entry: testTextEntry,
-          showMap: false,
-          isFocused: false,
-        ),
-      );
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailHeader(entryId: entryCubit.entryId),
+          EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
@@ -179,20 +147,9 @@ void main() {
 
     testWidgets('save button tappable when unsaved/dirty',
         (WidgetTester tester) async {
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testTextEntry.meta.id,
-          entry: testTextEntry,
-          showMap: false,
-          isFocused: false,
-        ),
-      );
-
-      when(entryCubit.save).thenAnswer((_) async => true);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailHeader(entryId: entryCubit.entryId),
+          EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
@@ -209,20 +166,9 @@ void main() {
 
     testWidgets('map icon invisible when no geolocation exists for entry',
         (WidgetTester tester) async {
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testTextEntry.meta.id,
-          entry: testTextEntry.copyWith(geolocation: null),
-          showMap: false,
-          isFocused: false,
-        ),
-      );
-
-      when(entryCubit.save).thenAnswer((_) async => true);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailHeader(entryId: entryCubit.entryId),
+          EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
@@ -237,22 +183,9 @@ void main() {
 
     testWidgets('map icon tappable when geolocation exists for entry',
         (WidgetTester tester) async {
-      when(() => entryCubit.state).thenAnswer(
-        (_) => EntryState.dirty(
-          entryId: testTextEntry.meta.id,
-          entry: testTextEntry,
-          showMap: false,
-          isFocused: false,
-        ),
-      );
-
-      when(entryCubit.toggleMapVisible).thenAnswer((_) async {});
-
-      when(entryCubit.save).thenAnswer((_) async => true);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          EntryDetailHeader(entryId: entryCubit.entryId),
+          EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
       await tester.pumpAndSettle();
