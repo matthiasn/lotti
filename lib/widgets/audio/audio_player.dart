@@ -3,10 +3,11 @@ import 'dart:io';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
-import 'package:lotti/blocs/journal/entry_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
@@ -14,13 +15,13 @@ import 'package:lotti/widgets/audio/transcription_progress_modal.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class AudioPlayerWidget extends StatelessWidget {
+class AudioPlayerWidget extends ConsumerWidget {
   const AudioPlayerWidget(this.journalAudio, {super.key});
 
   final JournalAudio journalAudio;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final speedToggleMap = <double, double>{
       0.5: 0.75,
       0.75: 1,
@@ -41,11 +42,13 @@ class AudioPlayerWidget extends StatelessWidget {
       2: '2x',
     };
 
+    final provider = entryControllerProvider(id: journalAudio.meta.id);
+    final notifier = ref.read(provider.notifier);
+
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
       builder: (BuildContext context, AudioPlayerState state) {
         final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
         final cubit = context.read<AudioPlayerCubit>();
-        final entryCubit = context.read<EntryCubit>();
         final transcripts = journalAudio.data.transcripts;
 
         return Column(
@@ -118,7 +121,7 @@ class AudioPlayerWidget extends StatelessWidget {
                       await Future<void>.delayed(
                         const Duration(milliseconds: 100),
                       );
-                      entryCubit
+                      notifier
                         ..setController()
                         ..emitState();
                     },
