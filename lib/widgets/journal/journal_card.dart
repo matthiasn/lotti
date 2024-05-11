@@ -1,10 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
@@ -355,40 +353,6 @@ class EntryWrapperWidget extends StatelessWidget {
         }
       },
       orElse: () => JournalCard(item: item),
-    );
-  }
-}
-
-class EntryWrapperConsumerWidget extends ConsumerWidget {
-  const EntryWrapperConsumerWidget({
-    required this.id,
-    required this.taskAsListView,
-    super.key,
-  });
-
-  final String id;
-  final bool taskAsListView;
-
-  @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
-    final entry = ref.watch(entryControllerProvider(id: id)).value;
-    if (entry == null) {
-      return const SizedBox.shrink();
-    }
-
-    return entry.maybeMap(
-      journalImage: (JournalImage image) => JournalImageCard(item: image),
-      task: (Task task) {
-        if (taskAsListView) {
-          return TaskListCard(task: task);
-        } else {
-          return JournalCard(item: entry);
-        }
-      },
-      orElse: () => JournalCard(item: entry),
     );
   }
 }

@@ -69,6 +69,10 @@ void main() {
             .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
       ).thenAnswer((_) async => measurableWater);
 
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<({DatabaseType type, String id})>.fromIterable([]),
+      );
+
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([
           [testStoryTag1],
@@ -220,6 +224,9 @@ void main() {
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailPage(itemId: testTextEntry.meta.id),
@@ -255,6 +262,9 @@ void main() {
       }
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+          .thenAnswer((_) async => testTask);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -301,6 +311,9 @@ void main() {
       }
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      when(() => mockJournalDb.journalEntityById(testWeightEntry.meta.id))
+          .thenAnswer((_) async => testWeightEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
